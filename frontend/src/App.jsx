@@ -2,17 +2,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 const uid = () => crypto?.randomUUID?.() || Math.random().toString(36).slice(2, 10);
 
-const getApiUrl = () => {
-  const envUrl = import.meta.env?.VITE_API_URL;
-  if (envUrl) return envUrl.trim();
-  try {
-    const host = window.location.hostname;
-    if (host.match(/^(192\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)/)) return `http://${host}:3000`;
-  } catch {}
-  return "http://localhost:3000";
-};
-
-const API_BASE = getApiUrl();
+const API_BASE = "https://alop-ai.onrender.com";
 
 const Storage = {
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },

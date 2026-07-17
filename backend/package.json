@@ -1,14 +1,242 @@
-{
-  "name": "cloud-ai-backend",
-  "version": "1.0.0",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "multer": "^2.2.0"
-  }
+import { useState, useEffect, useCallback, useRef } from "react";
+
+const API_BASE = "https://alop-ai.onrender.com";
+
+const Storage = {
+  get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }
+};
+
+const MODELS = {
+  'glm-5.2': 'GLM 5.2',
+  'glm-5.1': 'GLM 5.1',
+  'gemma4:31b': 'Gemma 4 (31B)',
+  'qwen3.5:397b': 'Qwen 3.5 (397B)',
+  'minimax-m2.7': 'MiniMax M2.7',
+  'minimax-m2.5': 'MiniMax M2.5',
+  'minimax-m3': 'MiniMax M3',
+  'nemotron-3-super': 'Nemotron 3 Super',
+  'nemotron-3-ultra': 'Nemotron 3 Ultra',
+  'nemotron-3-nano:30b': 'Nemotron 3 Nano (30B)',
+  'kimi-k2.7-code': 'Kimi K2.7 Code',
+  'kimi-k2.6': 'Kimi K2.6',
+  'kimi-k2.5': 'Kimi K2.5',
+  'deepseek-v4-flash': 'DeepSeek V4 Flash',
+  'deepseek-v4-pro': 'DeepSeek V4 Pro',
+  'gpt-oss:20b': 'GPT-OSS (20B)',
+  'gpt-oss:120b': 'GPT-OSS (120B)',
+  'mistral-large-3:675b': 'Mistral Large 3 (675B)'
+};
+
+const VISION_MODELS = ['gemma4:31b', 'kimi-k2.7-code', 'kimi-k2.6', 'kimi-k2.5', 'mistral-large-3:675b', 'deepseek-v4-pro'];
+
+const PERCHANCE = [
+  "Generate a random fantasy character backstory",
+  "Create a random startup idea and pitch it",
+  "Invent a new ice cream flavor and describe it",
+  "Generate a random D&D quest",
+  "Write a random plot twist for a sci-fi movie"
+];
+
+export default function App() {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState("");
+  const [model, setModel] = useState("glm-5.2");
+  const [loading, setLoading] = useState(false);
+  const [attachments, setAttachments] = useState([]);
+  const [showCamera, setShowCamera] = useState(false);
+  const [listening, setListening] = useState(false);
+  const [tts, setTts] = useState(false);
+  const [toast, setToast] = useState(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+  const streamRef = useRef(null);
+
+  useEffect(() => {
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(t);
+  }, [toast]);
+
+  const send = async () => {
+    if ((!input.trim() && attachments.length === 0) || loading) return;
+    if (attachments.length > 0 && !VISION_MODELS.includes(model)) {
+      setToast(`${MODELS[model]} cannot see images. Switch to Gemma/Kimi/Mistral/DeepSeek Pro.`);
+      return;
+    }
+    setLoading(true);
+    const userMsg = { role: "user", content: input, attachments };
+    setMessages(prev => [...prev, userMsg]);
+
+    let res;
+    if (attachments.length > 0) {
+      const formData = new FormData();
+      formData.append("message", input);
+      formData.append("modelType", model);
+      formData.append("temperature", "0.7");
+      formData.append("messages", JSON.stringify([]));
+      attachments.forEach(f => formData.append("files", f));
+      res = await fetch(`${API_BASE}/chat`, { method: "POST", body: formData });
+    } else {
+      res = await fetch(`${API_BASE}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: input, modelType: model, temperature: 0.7, messages: [] })
+      });
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+    let full = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      for (const line of lines) {
+        if (!line.trim().startsWith("data: ")) continue;
+        try {
+          const data = JSON.parse(line.trim().slice(6));
+          if (data.type === "chunk") full += data.text;
+        } catch {}
+      }
+    }
+
+    setMessages(prev => [...prev, { role: "assistant", content: full }]);
+    if (tts && full) {
+      const u = new SpeechSynthesisUtterance(full);
+      window.speechSynthesis.speak(u);
+    }
+    setInput("");
+    setAttachments([]);
+    setLoading(false);
+  };
+
+  const handleFiles = (e) => {
+    const files = Array.from(e.target.files).filter(f => f.type.startsWith("image/"));
+    if (files.length === 0) { setToast("Only images supported"); return; }
+    setAttachments(prev => [...prev, ...files]);
+    e.target.value = "";
+  };
+
+  const pasteImage = (e) => {
+    const items = e.clipboardData?.items || [];
+    for (const item of items) {
+      if (item.type.startsWith("image/")) {
+        const file = item.getAsFile();
+        if (file) setAttachments(prev => [...prev, file]);
+      }
+    }
+  };
+
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      streamRef.current = stream;
+      setShowCamera(true);
+      setTimeout(() => { if (videoRef.current) videoRef.current.srcObject = stream; }, 200);
+    } catch { setToast("Camera access denied"); }
+  };
+
+  const capture = () => {
+    const v = videoRef.current, c = canvasRef.current;
+    if (!v || !c) return;
+    c.width = v.videoWidth; c.height = v.videoHeight;
+    c.getContext("2d").drawImage(v, 0, 0);
+    c.toBlob(blob => {
+      setAttachments(prev => [...prev, new File([blob], `cam-${Date.now()}.png`, { type: "image/png" })]);
+      stopCamera();
+    }, "image/png");
+  };
+
+  const stopCamera = () => {
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+    setShowCamera(false);
+  };
+
+  const voice = () => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) { setToast("Voice only works in Chrome/Edge"); return; }
+    const r = new SR();
+    r.continuous = false; r.interimResults = true; r.lang = "en-US";
+    r.onstart = () => setListening(true);
+    r.onend = () => setListening(false);
+    r.onresult = (e) => {
+      let t = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript;
+      setInput(prev => prev + t + " ");
+    };
+    r.start();
+  };
+
+  const randomPrompt = () => setInput(PERCHANCE[Math.floor(Math.random() * PERCHANCE.length)]);
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#0f172a", color: "white", padding: 20, fontFamily: "sans-serif" }}>
+      {toast && <div style={{ position: "fixed", top: 10, left: "50%", transform: "translateX(-50%)", background: "#dc2626", color: "white", padding: "10px 20px", borderRadius: 20, zIndex: 999 }}>{toast}</div>}
+      {showCamera && <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.95)", zIndex: 1000, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20 }}>
+        <video ref={videoRef} autoPlay style={{ maxWidth: "80vw", maxHeight: "60vh", borderRadius: 16 }} />
+        <canvas ref={canvasRef} style={{ display: "none" }} />
+        <div style={{ display: "flex", gap: 20 }}>
+          <button onClick={capture} style={{ padding: "12px 30px", borderRadius: 30, border: "none", background: "#10b981", color: "black", fontWeight: "bold", cursor: "pointer" }}>📸 Capture</button>
+          <button onClick={stopCamera} style={{ padding: "12px 30px", borderRadius: 30, border: "1px solid #666", background: "transparent", color: "white", cursor: "pointer" }}>Cancel</button>
+        </div>
+      </div>}
+
+      <div style={{ maxWidth: 800, margin: "0 auto", background: "rgba(30,41,59,.8)", borderRadius: 24, padding: 20, border: "1px solid #334155" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <h2 style={{ margin: 0 }}>Cloud AI Assistant</h2>
+          <div style={{ display: "flex", gap: 10 }}>
+            <select value={model} onChange={e => setModel(e.target.value)} style={{ padding: 8, borderRadius: 10, background: "#1e293b", color: "white", border: "1px solid #334155" }}>
+              {Object.entries(MODELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+            </select>
+            <button onClick={() => setTts(v => !v)} style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: tts ? "#10b981" : "#334155", color: tts ? "black" : "white", cursor: "pointer" }}>{tts ? "🔊" : "🔇"}</button>
+            <button onClick={randomPrompt} style={{ padding: "8px 12px", borderRadius: 10, border: "none", background: "#334155", color: "white", cursor: "pointer" }}>🎲</button>
+          </div>
+        </div>
+
+        <div style={{ height: 400, overflowY: "auto", background: "#0f172a", borderRadius: 16, padding: 16, marginBottom: 16, border: "1px solid #334155" }}>
+          {messages.length === 0 && <p style={{ color: "#94a3b8", textAlign: "center" }}>Upload images, paste screenshots, use voice, or type a message.</p>}
+          {messages.map((m, i) => (
+            <div key={i} style={{ marginBottom: 12, padding: 12, borderRadius: 12, background: m.role === "user" ? "#1e293b" : "#064e3b", alignSelf: m.role === "user" ? "flex-end" : "flex-start" }}>
+              <strong>{m.role === "user" ? "You" : "AI"}</strong>
+              <p style={{ margin: "8px 0 0 0", whiteSpace: "pre-wrap" }}>{m.content}</p>
+              {m.attachments?.length > 0 && <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                {m.attachments.map((a, j) => <img key={j} src={URL.createObjectURL(a)} style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 8 }} alt="" />)}
+              </div>}
+            </div>
+          ))}
+          {loading && <p style={{ color: "#94a3b8" }}>AI is thinking...</p>}
+        </div>
+
+        {attachments.length > 0 && <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
+          {attachments.map((a, i) => (
+            <div key={i} style={{ position: "relative", width: 70, height: 70, borderRadius: 10, overflow: "hidden", border: "1px solid #334155" }}>
+              <img src={URL.createObjectURL(a)} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
+              <button onClick={() => setAttachments(prev => prev.filter((_, idx) => idx !== i))} style={{ position: "absolute", top: 2, right: 2, width: 18, height: 18, borderRadius: "50%", border: "none", background: "red", color: "white", cursor: "pointer", fontSize: 12 }}>×</button>
+            </div>
+          ))}
+        </div>}
+
+        <div style={{ display: "flex", gap: 10, alignItems: "center" }} onPaste={pasteImage}>
+          <input type="file" accept="image/*" multiple onChange={handleFiles} style={{ display: "none" }} id="file-input" />
+          <label htmlFor="file-input" style={{ padding: "12px 14px", borderRadius: 12, background: "#334155", cursor: "pointer" }}>📎</label>
+          <button onClick={startCamera} style={{ padding: "12px 14px", borderRadius: 12, border: "none", background: "#334155", color: "white", cursor: "pointer" }}>📷</button>
+          <button onClick={voice} style={{ padding: "12px 14px", borderRadius: 12, border: "none", background: listening ? "#10b981" : "#334155", color: listening ? "black" : "white", cursor: "pointer" }}>{listening ? "🎙️" : "🎤"}</button>
+          <input
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === "Enter" && send()}
+            placeholder="Ask anything..."
+            style={{ flex: 1, padding: 12, borderRadius: 12, border: "1px solid #334155", background: "#1e293b", color: "white", outline: "none" }}
+          />
+          <button onClick={send} disabled={loading} style={{ padding: "12px 20px", borderRadius: 12, border: "none", background: "#10b981", color: "black", fontWeight: "bold", cursor: "pointer" }}>{loading ? "..." : "↑"}</button>
+        </div>
+      </div>
+    </div>
+  );
 }

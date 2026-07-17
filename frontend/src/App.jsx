@@ -501,7 +501,7 @@ const GlobalStyles = () => (
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     body { font-family: 'Inter', system-ui, sans-serif; overflow:hidden; height:100vh; background: #000000; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-    .app-root { min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+    .app-root { min-height: 100vh; display: flex; alignItems: center; justify-content: center; position: relative; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
     .app-root.custom-bg { background-size: cover; background-position: center; background-repeat: no-repeat; }
     .glass-main { position: relative; z-index: 10; width: min(98vw, 1300px); height: min(98vh, 1000px); backdrop-filter: blur(32px) saturate(1.25); border: 1px solid var(--border); border-radius: 18px; display: flex; flex-direction: row; overflow: hidden; box-shadow: 0 50px 200px rgba(0,0,0,0.8), 0 0 0 1px rgba(255,255,255,.03) inset; }
     .chat-sidebar { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: rgba(0,0,0,.35); display: flex; flex-direction: column; overflow: hidden; transition: width .35s cubic-bezier(0.4,0,0.2,1), padding .35s ease; }

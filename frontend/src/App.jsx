@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 const uid = () => crypto?.randomUUID?.() || Math.random().toString(36).slice(2, 10);
 
@@ -9,7 +9,6 @@ const Storage = {
   set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }
 };
 
-// Helper to extract RGB numbers from rgba(...) string
 const extractRgb = (rgbaString) => {
   const match = rgbaString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
   if (!match) return "16, 185, 129";
@@ -99,7 +98,25 @@ const PERCHANCE_PROMPTS = [
   "Write a random email from a future civilization"
 ];
 
-/* ─── HOOKS ─── */
+const MATERIAL_BACKGROUNDS = {
+  forest: "https://images.unsplash.com/photo-1511497584788-876760111969?w=1920&q=80",
+  space: "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=1920&q=80",
+  beach: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80",
+  mountains: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80",
+  abstract: "https://images.unsplash.com/photo-1557683316-973673baf926?w=1920&q=80",
+  water: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1920&q=80",
+  fire: "https://images.unsplash.com/photo-1505009253807-0a4c86083162?w=1920&q=80",
+  wood: "https://images.unsplash.com/photo-1541123603104-512919d6a96c?w=1920&q=80",
+  metal: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80",
+  marble: "https://images.unsplash.com/photo-1566996533071-2c578080c06e?w=1920&q=80",
+  fabric: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=1920&q=80",
+  concrete: "https://images.unsplash.com/photo-1517524285303-d6fc683dddf8?w=1920&q=80",
+  brick: "https://images.unsplash.com/photo-1516571137133-19b90f42f3ba?w=1920&q=80",
+  leather: "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=1920&q=80",
+  paper: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=1920&q=80",
+  glass: "https://images.unsplash.com/photo-1495573542832-e339110fbd25?w=1920&q=80"
+};
+
 const useChatSession = () => {
   const [messages, setMessages] = useState(() => { try { return JSON.parse(Storage.get('pa_history') || '[]'); } catch { return []; } });
   const [sessionId] = useState(() => Storage.get('pa_session') || uid());
@@ -273,7 +290,6 @@ const useHealthCheck = () => {
   return health;
 };
 
-/* ─── COMPONENTS ─── */
 const GlobalStyles = () => (
   <style>{`
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
@@ -637,11 +653,25 @@ const App = () => {
                 placeholder="Paste image URL (e.g. painting of forest)"
               />
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <button onClick={() => setCustomBg("https://images.unsplash.com/photo-1511497584788-876760111969?w=1920&q=80")} className="theme-card">🌲 Forest</button>
-                <button onClick={() => setCustomBg("https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=1920&q=80")} className="theme-card">🌌 Space</button>
-                <button onClick={() => setCustomBg("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80")} className="theme-card">🏖️ Beach</button>
-                <button onClick={() => setCustomBg("https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80")} className="theme-card">🏔️ Mountains</button>
-                <button onClick={() => setCustomBg("https://images.unsplash.com/photo-1557683316-973673baf926?w=1920&q=80")} className="theme-card">🌅 Abstract</button>
+                <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.forest)} className="theme-card">🌲 Forest</button>
+                <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.space)} className="theme-card">🌌 Space</button>
+                <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.beach)} className="theme-card">🏖️ Beach</button>
+                <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.mountains)} className="theme-card">🏔️ Mountains</button>
+                <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.abstract)} className="theme-card">🌅 Abstract</button>
+                <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.water)} className="theme-card">💧 Water</button>
+                <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.fire)} className="theme-card">🔥 Fire</button>
+              </div>
+              <div className="setting-label">🧱 Materials</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.wood)} className="theme-card">🪵 Wood</button>
+                <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.metal)} className="theme-card">🔩 Metal</button>
+                <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.marble)} className="theme-card">🗿 Marble</button>
+                <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.fabric)} className="theme-card">🧵 Fabric</button>
+                <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.concrete)} className="theme-card">🧱 Concrete</button>
+                <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.brick)} className="theme-card">🧱 Brick</button>
+                <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.leather)} className="theme-card">👜 Leather</button>
+                <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.paper)} className="theme-card">📄 Paper</button>
+                <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.glass)} className="theme-card">🪟 Glass</button>
                 <button onClick={() => { setCustomBg(""); setCustomPrimary(""); setAccentColor(""); }} className="theme-card">🎨 Use Theme</button>
               </div>
             </div>
@@ -656,8 +686,8 @@ const App = () => {
             <div className="setting-row">
               <div className="setting-label">🪟 Chat Glass Opacity: {Math.round(glassOpacity * 100)}%</div>
               <div className="slider-container">
-                <span style={{ fontSize: 12, opacity: 0.7 }}>See-through</span>
-                <input type="range" min="0.2" max="1" step="0.05" value={glassOpacity} onChange={(e) => setGlassOpacity(parseFloat(e.target.value))} className="slider" />
+                <span style={{ fontSize: 12, opacity: 0.7 }}>Invisible</span>
+                <input type="range" min="0" max="1" step="0.05" value={glassOpacity} onChange={(e) => setGlassOpacity(parseFloat(e.target.value))} className="slider" />
                 <span style={{ fontSize: 12, opacity: 0.7 }}>Solid</span>
               </div>
             </div>

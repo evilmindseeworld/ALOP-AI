@@ -173,13 +173,18 @@ const buildImageUrl = (prompt, width = IMAGE_GENERATION.defaultWidth, height = I
 
 const isImageRequest = (text) => {
   const t = text.trim().toLowerCase();
-  return t.startsWith("/image") || /^(generate|create|make)\s+(an?\s+)?image\b/.test(t);
+  return (
+    t.startsWith("/image") ||
+    /\b(generate|create|make|draw|produce)\s+(an?\s+)?(image|picture|photo)\b/.test(t) ||
+    /\b(draw|generate|create|make)\s+(a|an|the|this|that)?\s*(picture|image|photo|scene|portrait|landscape)\s+(of|showing|with|for)\b/.test(t)
+  );
 };
 
 const parseImagePrompt = (text) => {
   return text
     .replace(/^\/image\s*/i, "")
-    .replace(/^(generate|create|make)\s+(an?\s+)?image\s*(of\s*)?/i, "")
+    .replace(/\b(can\s+you\s+)?(please\s+)?(generate|create|make|draw|produce)\s+(an?\s+)?(image|picture|photo)\s*(of\s*|for\s*|with\s*|showing\s*)?/i, "")
+    .replace(/\b(draw|generate|create|make)\s+(a|an|the|this|that)?\s*(picture|image|photo|scene|portrait|landscape)\s+(of\s|for\s|with\s|showing\s)?/i, "")
     .trim();
 };
 
@@ -626,6 +631,14 @@ const InputBar = ({ text, setText, onSend, disabled, status, stats, attachments,
         </button>
         <button onClick={toggleListening} disabled={disabled} className={`icon-btn ${isListening ? "active" : ""}`} title={isListening ? "Stop voice" : "Voice input"}>
           <Icon name={isListening ? "mic-off" : "mic"} size={18} />
+        </button>
+        <button
+          onClick={() => setText("/image ")}
+          disabled={disabled || text.startsWith("/image")}
+          className={`icon-btn ${text.startsWith("/image") ? "active" : ""}`}
+          title="Generate image"
+        >
+          <Icon name="image" size={18} />
         </button>
         <input
           value={text}

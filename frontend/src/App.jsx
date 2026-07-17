@@ -703,7 +703,7 @@ const InputBar = ({ text, setText, onSend, disabled, status, stats, attachments,
         <button
           onClick={handleSubmit}
           disabled={(!text.trim() && attachments.length === 0) || disabled}
-          style={{ padding: "0 18px", height: 42, borderRadius: 10, border: "none", cursor: (text.trim() || attachments.length > 0) && !disabled ? "pointer" : "not-allowed", background: (text.trim() || attachments.length > 0) && !disabled ? "var(--primary)" : "rgba(255,255,255,.06)", color: (text.trim() || attachments.length > 0) && !disabled ? "#000" : "rgba(255,255,255,.25)", fontWeight: 700, fontSize: 14, display: "flex", align-items: "center", justifyContent: "center" }}
+          style={{ padding: "0 18px", height: 42, borderRadius: 10, border: "none", cursor: (text.trim() || attachments.length > 0) && !disabled ? "pointer" : "not-allowed", background: (text.trim() || attachments.length > 0) && !disabled ? "var(--primary)" : "rgba(255,255,255,.06)", color: (text.trim() || attachments.length > 0) && !disabled ? "#000" : "rgba(255,255,255,.25)", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}
         >
           {status === "loading" ? <span style={{ width: 16, height: 16, border: "2px solid rgba(0,0,0,.3)", borderTopColor: "#000", borderRadius: "50%", animation: "spin 1s linear infinite" }} /> : <Icon name="send" size={18} />}
         </button>
@@ -1500,3 +1500,5 @@ const App = () => {
 };
 
 export default App;
+
+

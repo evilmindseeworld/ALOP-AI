@@ -12,7 +12,7 @@ const Storage = {
 
 const extractRgb = (rgbaString) => {
   const match = rgbaString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  if (!match) return "16, 185, 129";
+  if (!match) return "139, 92, 246";
   return `${match[1]}, ${match[2]}, ${match[3]}`;
 };
 
@@ -24,24 +24,24 @@ const rgbaToHex = (rgbaString, fallback) => {
 };
 
 const THEMES = {
-  midnight: { name: "Midnight", primary: "#8b5cf6", bg: "linear-gradient(135deg, #0a0a0f, #12121a, #1a1a2e)", cardBg: "rgba(16, 16, 24, 0.88)", borderColor: "rgba(139, 92, 246, 0.18)", userBubble: "rgba(139, 92, 246, 0.18)", aiBubble: "rgba(139, 92, 246, 0.10)", snowColor: "#8b5cf6", emoji: "AI" },
-  graphite: { name: "Graphite", primary: "#64748b", bg: "linear-gradient(135deg, #0f0f12, #1a1a1f, #0f0f12)", cardBg: "rgba(20, 20, 24, 0.9)", borderColor: "rgba(100, 116, 139, 0.2)", userBubble: "rgba(100, 116, 139, 0.2)", aiBubble: "rgba(100, 116, 139, 0.12)", snowColor: "#64748b", emoji: "AI" },
-  ocean: { name: "Ocean", primary: "#0ea5e9", bg: "linear-gradient(135deg, #020617, #0c1a2e, #020617)", cardBg: "rgba(8, 20, 36, 0.9)", borderColor: "rgba(14, 165, 233, 0.18)", userBubble: "rgba(14, 165, 233, 0.18)", aiBubble: "rgba(14, 165, 233, 0.10)", snowColor: "#0ea5e9", emoji: "AI" },
-  emerald: { name: "Emerald", primary: "#10b981", bg: "linear-gradient(135deg, #020c0b, #0a1f1a, #020c0b)", cardBg: "rgba(6, 24, 20, 0.9)", borderColor: "rgba(16, 185, 129, 0.18)", userBubble: "rgba(16, 185, 129, 0.18)", aiBubble: "rgba(16, 185, 129, 0.10)", snowColor: "#10b981", emoji: "AI" },
-  crimson: { name: "Crimson", primary: "#f43f5e", bg: "linear-gradient(135deg, #1a0508, #2a0a10, #1a0508)", cardBg: "rgba(26, 5, 8, 0.9)", borderColor: "rgba(244, 63, 94, 0.18)", userBubble: "rgba(244, 63, 94, 0.18)", aiBubble: "rgba(244, 63, 94, 0.10)", snowColor: "#f43f5e", emoji: "AI" },
-  amber: { name: "Amber", primary: "#f59e0b", bg: "linear-gradient(135deg, #1a1005, #2a1a0a, #1a1005)", cardBg: "rgba(26, 16, 5, 0.9)", borderColor: "rgba(245, 158, 11, 0.18)", userBubble: "rgba(245, 158, 11, 0.18)", aiBubble: "rgba(245, 158, 11, 0.10)", snowColor: "#f59e0b", emoji: "AI" },
-  arctic: { name: "Arctic", primary: "#3b82f6", bg: "linear-gradient(135deg, #f8fafc, #e2e8f0, #f8fafc)", cardBg: "rgba(255, 255, 255, 0.92)", borderColor: "rgba(59, 130, 246, 0.25)", userBubble: "rgba(59, 130, 246, 0.15)", aiBubble: "rgba(59, 130, 246, 0.08)", snowColor: "#3b82f6", emoji: "AI" }
+  midnight: { name: "Midnight", primary: "#8b5cf6", bg: "linear-gradient(135deg, #0a0a0f, #12121a, #1a1a2e)", cardBg: "rgba(16, 16, 24, 0.88)", borderColor: "rgba(139, 92, 246, 0.18)", userBubble: "rgba(139, 92, 246, 0.18)", aiBubble: "rgba(139, 92, 246, 0.10)" },
+  graphite: { name: "Graphite", primary: "#64748b", bg: "linear-gradient(135deg, #0f0f12, #1a1a1f, #0f0f12)", cardBg: "rgba(20, 20, 24, 0.9)", borderColor: "rgba(100, 116, 139, 0.2)", userBubble: "rgba(100, 116, 139, 0.2)", aiBubble: "rgba(100, 116, 139, 0.12)" },
+  ocean: { name: "Ocean", primary: "#0ea5e9", bg: "linear-gradient(135deg, #020617, #0c1a2e, #020617)", cardBg: "rgba(8, 20, 36, 0.9)", borderColor: "rgba(14, 165, 233, 0.18)", userBubble: "rgba(14, 165, 233, 0.18)", aiBubble: "rgba(14, 165, 233, 0.10)" },
+  emerald: { name: "Emerald", primary: "#10b981", bg: "linear-gradient(135deg, #020c0b, #0a1f1a, #020c0b)", cardBg: "rgba(6, 24, 20, 0.9)", borderColor: "rgba(16, 185, 129, 0.18)", userBubble: "rgba(16, 185, 129, 0.18)", aiBubble: "rgba(16, 185, 129, 0.10)" },
+  crimson: { name: "Crimson", primary: "#f43f5e", bg: "linear-gradient(135deg, #1a0508, #2a0a10, #1a0508)", cardBg: "rgba(26, 5, 8, 0.9)", borderColor: "rgba(244, 63, 94, 0.18)", userBubble: "rgba(244, 63, 94, 0.18)", aiBubble: "rgba(244, 63, 94, 0.10)" },
+  amber: { name: "Amber", primary: "#f59e0b", bg: "linear-gradient(135deg, #1a1005, #2a1a0a, #1a1005)", cardBg: "rgba(26, 16, 5, 0.9)", borderColor: "rgba(245, 158, 11, 0.18)", userBubble: "rgba(245, 158, 11, 0.18)", aiBubble: "rgba(245, 158, 11, 0.10)" },
+  arctic: { name: "Arctic", primary: "#3b82f6", bg: "linear-gradient(135deg, #f8fafc, #e2e8f0, #f8fafc)", cardBg: "rgba(255, 255, 255, 0.92)", borderColor: "rgba(59, 130, 246, 0.25)", userBubble: "rgba(59, 130, 246, 0.15)", aiBubble: "rgba(59, 130, 246, 0.08)" }
 };
 
 const DEFAULT_THEME = THEMES.midnight;
 
 const SUGGESTIONS = [
-  { text: "Explain quantum computing simply", icon: "●", category: "Science" },
-  { text: "Write Python for sales data analysis", icon: "●", category: "Coding" },
-  { text: "Create a tech startup business plan", icon: "●", category: "Business" },
-  { text: "Explain blockchain applications", icon: "●", category: "Technology" },
-  { text: "Optimize database performance", icon: "●", category: "Tech" },
-  { text: "Write a poem about AI", icon: "●", category: "Creative" }
+  { text: "Explain quantum computing simply", category: "Science" },
+  { text: "Write Python for sales data analysis", category: "Coding" },
+  { text: "Create a tech startup business plan", category: "Business" },
+  { text: "Explain blockchain applications", category: "Technology" },
+  { text: "Optimize database performance", category: "Tech" },
+  { text: "Write a poem about AI", category: "Creative" }
 ];
 
 const MODEL_DISPLAY_NAMES = {
@@ -117,6 +117,35 @@ const MATERIAL_OVERLAYS = {
   brick: "https://www.transparenttextures.com/patterns/brick-wall.png",
   canvas: "https://www.transparenttextures.com/patterns/canvas-orange.png",
   noise: "https://www.transparenttextures.com/patterns/stardust.png"
+};
+
+const Icon = ({ name, size = 18, color = "currentColor" }) => {
+  const icons = {
+    menu: <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />,
+    close: <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />,
+    plus: <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />,
+    send: <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    camera: <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    mic: <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />,
+    "mic-off": <path d="M1 1l22 22M9 9v6a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />,
+    search: <circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />,
+    settings: <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />,
+    copy: <rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    speaker: <path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    dice: <rect x="2" y="2" width="20" height="20" rx="5" ry="5" stroke="currentColor" strokeWidth="2" fill="none" /><circle cx="8" cy="8" r="1.5" fill="currentColor" /><circle cx="16" cy="8" r="1.5" fill="currentColor" /><circle cx="8" cy="16" r="1.5" fill="currentColor" /><circle cx="16" cy="16" r="1.5" fill="currentColor" />,
+    export: <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    crown: <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    volume: <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    volumeX: <path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    edit: <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    trash: <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  };
+
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ display: "inline-block", verticalAlign: "middle", color }}>
+      {icons[name] || icons.menu}
+    </svg>
+  );
 };
 
 const useChatManager = () => {
@@ -391,9 +420,9 @@ const GlobalStyles = () => (
     .chat-sidebar { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: rgba(0,0,0,.35); display: flex; flex-direction: column; overflow: hidden; transition: width .3s ease, padding .3s ease; }
     .chat-sidebar.collapsed { width: 0; padding: 0; border-right: none; overflow: hidden; }
     .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
-    .sidebar-btn { flex: 1; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--primary); color: #000; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .2s; }
+    .sidebar-btn { flex: 1; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: var(--primary); color: #000; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .2s; }
     .sidebar-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
-    .close-sidebar-btn { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: rgba(255,255,255,.7); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+    .close-sidebar-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: rgba(255,255,255,.7); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
     .close-sidebar-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
     .sidebar-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
     .sidebar-item { padding: 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all .15s; border: 1px solid transparent; position: relative; }
@@ -406,12 +435,12 @@ const GlobalStyles = () => (
     .sidebar-meta { font-size: 10px; color: rgba(255,255,255,.4); margin-top: 2px; }
     .sidebar-actions { display: flex; gap: 4px; opacity: 0; transition: opacity .2s; }
     .sidebar-item:hover .sidebar-actions { opacity: 1; }
-    .sidebar-action { width: 24px; height: 24px; border-radius: 6px; border: none; background: transparent; color: rgba(255,255,255,.4); cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .sidebar-action { width: 24px; height: 24px; border-radius: 6px; border: none; background: transparent; color: rgba(255,255,255,.4); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
     .sidebar-action:hover { background: rgba(255,255,255,.1); color: #fff; }
     .sidebar-action.delete:hover { background: rgba(239,68,68,.2); color: #fca5a5; }
     .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
     .app-header { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-    .menu-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: rgba(255,255,255,.7); cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+    .menu-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: rgba(255,255,255,.7); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
     .menu-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
     .logo-box { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,.06); display:flex; align-items:center; justify-content:center; font-size: 13px; font-weight: 700; color: var(--primary); cursor: pointer; border: 1px solid var(--border); transition: all .2s; }
     .logo-box:hover { background: rgba(255,255,255,.1); box-shadow: 0 0 20px rgba(139,92,246,.15); }
@@ -419,7 +448,7 @@ const GlobalStyles = () => (
     .main-title { font-size: 16px; font-weight: 600; color: #fff; letter-spacing: -.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .sub-title { font-size: 10px; color: rgba(255,255,255,.45); letter-spacing: .5px; text-transform: uppercase; margin-top: 2px; }
     .header-actions { display:flex; gap:8px; align-items:center; position:relative; }
-    .icon-btn { width:36px; height:36px; border-radius:10px; border:1px solid transparent; background: rgba(255,255,255,.05); color:rgba(255,255,255,.65); font-size:15px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition: all .15s; flex-shrink: 0; }
+    .icon-btn { width:36px; height:36px; border-radius:10px; border:1px solid transparent; background: rgba(255,255,255,.05); color:rgba(255,255,255,.65); cursor:pointer; display:flex; align-items:center; justify-content:center; transition: all .15s; flex-shrink: 0; }
     .icon-btn:hover { background:rgba(255,255,255,.1); border-color:var(--border); color:#fff; }
     .icon-btn.active { background: var(--primary); color: #000; border-color: transparent; }
     .dot { width: 22px; height: 22px; border-radius:50%; border:2px solid rgba(255,255,255,.15); cursor:pointer; transition: all .2s; background: var(--color); }
@@ -446,7 +475,7 @@ const GlobalStyles = () => (
     .search-bar { display:flex; align-items:center; gap:10px; margin: 10px 16px; padding: 10px 14px; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid var(--border); flex-shrink: 0; }
     .search-bar input { flex:1; background:none; border:none; outline:none; color:#fff; font-size:14px; caret-color:var(--primary); }
     .search-bar input::placeholder { color: rgba(255,255,255,.4); }
-    .search-bar button { background:none; border:none; color:rgba(255,255,255,.4); cursor:pointer; font-size:14px; padding:4px 8px; border-radius: 6px; transition: all .15s; }
+    .search-bar button { background:none; border:none; color:rgba(255,255,255,.4); cursor:pointer; font-size:14px; padding:4px 8px; border-radius: 6px; transition: all .15s; display: flex; align-items: center; justify-content: center; }
     .search-bar button:hover { background: rgba(255,255,255,.1); color: #fff; }
     .scroll-wrapper { flex:1; overflow-y:auto; scroll-behavior:smooth; padding:16px; display:flex; flex-direction:column; gap:14px; min-height:0; }
     .scroll-wrapper::-webkit-scrollbar { width:5px; }
@@ -456,7 +485,7 @@ const GlobalStyles = () => (
     .msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
     .msg-row.assistant { align-self: flex-start; }
     @keyframes msgIn { from { opacity:0; transform:translateY(10px);} to { opacity:1; transform:translateY(0);} }
-    .avatar { width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight: 700; flex-shrink:0; background:rgba(255,255,255,.06); border: 1px solid var(--border); color: rgba(255,255,255,.5); }
+    .avatar { width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight: 700; flex-shrink:0; background:rgba(255,255,255,.06); border: 1px solid var(--border); color: rgba(255,255,255,.5); }
     .msg-row.user .avatar { color: var(--primary); }
     .msg-row.assistant .avatar { color: var(--primary); }
     .bubble { padding: 12px 16px; border-radius: 14px; font-size: 15px; line-height: 1.55; word-break: break-word; position: relative; max-width: 100%; }
@@ -464,10 +493,11 @@ const GlobalStyles = () => (
     .msg-row.assistant .bubble { background: var(--ai-bubble, rgba(139, 92, 246, 0.08)); color:rgba(255,255,255,.9); border:1px solid var(--border); border-bottom-left-radius:4px; }
     .msg-actions { display:flex; gap:6px; margin-top:6px; justify-content:flex-end; opacity:0; transition:opacity .2s; }
     .msg-row:hover .msg-actions { opacity:1; }
-    .msg-action-btn { padding:4px 8px; border-radius:6px; border:1px solid var(--border); background:rgba(255,255,255,.05); color:rgba(255,255,255,.5); font-size:11px; cursor:pointer; transition: all .15s; }
+    .msg-action-btn { padding:4px 8px; border-radius:6px; border:1px solid var(--border); background:rgba(255,255,255,.05); color:rgba(255,255,255,.5); font-size:11px; cursor:pointer; transition: all .15s; display: flex; align-items: center; gap: 4px; }
     .msg-action-btn:hover { background:rgba(255,255,255,.1); color:#fff; }
     .msg-meta { font-size:10px; color:rgba(255,255,255,.35); margin-top:4px; text-align: right; }
     .error-banner { display:flex; gap:10px; align-items:center; padding: 10px 14px; margin:8px 16px; border-radius:12px; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); font-size:12px; color:#fca5a5; flex-shrink:0; }
+    .error-banner svg { flex-shrink: 0; }
     .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding:40px 24px; text-align: center; }
     .logo-big { width:64px; height:64px; border-radius:16px; background: rgba(255,255,255,.05); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:var(--primary); margin-bottom:8px; }
     .empty-title { font-size: 20px; font-weight: 600; color: #fff; margin-bottom: 6px; }
@@ -545,10 +575,14 @@ const InputBar = ({ text, setText, onSend, disabled, status, stats, attachments,
       )}
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={onFileSelect} style={{ display: "none" }} />
-        <button onClick={() => fileInputRef.current?.click()} disabled={disabled} className="icon-btn" title="Attach image">+</button>
-        <button onClick={onStartCamera} disabled={disabled} className="icon-btn" title="Camera">CAM</button>
+        <button onClick={() => fileInputRef.current?.click()} disabled={disabled} className="icon-btn" title="Attach image">
+          <Icon name="plus" size={18} />
+        </button>
+        <button onClick={onStartCamera} disabled={disabled} className="icon-btn" title="Camera">
+          <Icon name="camera" size={18} />
+        </button>
         <button onClick={toggleListening} disabled={disabled} className={`icon-btn ${isListening ? "active" : ""}`} title={isListening ? "Stop voice" : "Voice input"}>
-          {isListening ? "REC" : "MIC"}
+          <Icon name={isListening ? "mic-off" : "mic"} size={18} />
         </button>
         <input
           value={text}
@@ -561,9 +595,9 @@ const InputBar = ({ text, setText, onSend, disabled, status, stats, attachments,
         <button
           onClick={handleSubmit}
           disabled={(!text.trim() && attachments.length === 0) || disabled}
-          style={{ padding: "0 20px", borderRadius: 12, border: "none", cursor: (text.trim() || attachments.length > 0) && !disabled ? "pointer" : "not-allowed", background: (text.trim() || attachments.length > 0) && !disabled ? "var(--primary)" : "rgba(255,255,255,.08)", color: (text.trim() || attachments.length > 0) && !disabled ? "#000" : "rgba(255,255,255,.3)", fontWeight: 600, fontSize: 14 }}
+          style={{ padding: "0 18px", height: 42, borderRadius: 12, border: "none", cursor: (text.trim() || attachments.length > 0) && !disabled ? "pointer" : "not-allowed", background: (text.trim() || attachments.length > 0) && !disabled ? "var(--primary)" : "rgba(255,255,255,.08)", color: (text.trim() || attachments.length > 0) && !disabled ? "#000" : "rgba(255,255,255,.3)", fontWeight: 600, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}
         >
-          {status === "loading" ? "..." : "↑"}
+          {status === "loading" ? <span style={{ width: 16, height: 16, border: "2px solid rgba(0,0,0,.3)", borderTopColor: "#000", borderRadius: "50%", animation: "spin 1s linear infinite" }} /> : <Icon name="send" size={18} />}
         </button>
       </div>
       {stats && <div style={{ fontSize: 10, color: "rgba(255,255,255,.35)", marginTop: 6, display: "flex", gap: 12, justifyContent: "center" }}>
@@ -576,8 +610,12 @@ const InputBar = ({ text, setText, onSend, disabled, status, stats, attachments,
 
 const MessageActions = ({ content, onSpeak }) => (
   <div className="msg-actions">
-    <button onClick={() => navigator.clipboard.writeText(content)} className="msg-action-btn" title="Copy">Copy</button>
-    <button onClick={() => onSpeak(content)} className="msg-action-btn" title="Read aloud">Read</button>
+    <button onClick={() => navigator.clipboard.writeText(content)} className="msg-action-btn" title="Copy">
+      <Icon name="copy" size={12} /> Copy
+    </button>
+    <button onClick={() => onSpeak(content)} className="msg-action-btn" title="Read aloud">
+      <Icon name="speaker" size={12} /> Read
+    </button>
   </div>
 );
 
@@ -608,8 +646,12 @@ const ChatSidebar = ({ chats, activeChatId, onSelect, onCreate, onDelete, onRena
     <>
       <div className={`chat-sidebar ${sidebarOpen ? "open" : ""}`} onClick={e => e.stopPropagation()}>
         <div className="sidebar-header">
-          <button onClick={() => { onCreate(); setSidebarOpen(false); }} className="sidebar-btn">+ New Chat</button>
-          <button onClick={() => setSidebarOpen(false)} className="close-sidebar-btn">✕</button>
+          <button onClick={() => { onCreate(); setSidebarOpen(false); }} className="sidebar-btn">
+            <Icon name="plus" size={16} /> New Chat
+          </button>
+          <button onClick={() => setSidebarOpen(false)} className="close-sidebar-btn">
+            <Icon name="close" size={18} />
+          </button>
         </div>
         <div className="sidebar-list">
           {chats.map(chat => (
@@ -632,8 +674,12 @@ const ChatSidebar = ({ chats, activeChatId, onSelect, onCreate, onDelete, onRena
                 <div className="sidebar-meta">{chat.messages.length} messages • {formatDate(chat.updatedAt || chat.createdAt)}</div>
               </div>
               <div className="sidebar-actions">
-                <button onClick={e => startEdit(chat, e)} className="sidebar-action" title="Rename">✎</button>
-                <button onClick={e => { e.stopPropagation(); onDelete(chat.id); }} className="sidebar-action delete" title="Delete">×</button>
+                <button onClick={e => startEdit(chat, e)} className="sidebar-action" title="Rename">
+                  <Icon name="edit" size={14} />
+                </button>
+                <button onClick={e => { e.stopPropagation(); onDelete(chat.id); }} className="sidebar-action delete" title="Delete">
+                  <Icon name="trash" size={14} />
+                </button>
               </div>
             </div>
           ))}
@@ -730,7 +776,7 @@ const App = () => {
   useEffect(() => {
     const handler = (e) => { 
       if ((e.ctrlKey || e.metaKey) && e.key === "k") { e.preventDefault(); setSearchQuery(q => q ? "" : "focus"); }
-      if ((e.ctrlKey || e.metaKey) && e.key === "j") { e.preventDefault(); if (activeChatId) exportChatRef.current(activeChatId); setToast("Chat exported!"); }
+      if ((e.ctrlKey || e.metaKey) && e.key === "j") { e.preventDefault(); if (activeChatId) exportChatRef.current(activeChatId); setToast("Chat exported"); }
       if ((e.ctrlKey || e.metaKey) && e.key === "n") { e.preventDefault(); createChat(); }
       if ((e.ctrlKey || e.metaKey) && e.key === "b") { e.preventDefault(); setSidebarCollapsed(c => !c); setSidebarOpen(false); }
       if (e.key === "Escape") { setShowSettings(false); setSidebarOpen(false); setSearchQuery(""); stopCamera(); }
@@ -916,7 +962,6 @@ const App = () => {
     "--border": borderColor, 
     "--user-bubble": T.userBubble, 
     "--ai-bubble": T.aiBubble, 
-    "--snow-color": T.snowColor,
     "--font-size": `${fontSize}px`
   };
 
@@ -962,7 +1007,9 @@ const App = () => {
         />
         <div className="chat-main">
           <header className="app-header">
-            <button className="menu-btn" onClick={toggleSidebar} title="Toggle chats (Ctrl+B)">☰</button>
+            <button className="menu-btn" onClick={toggleSidebar} title="Toggle chats (Ctrl+B)">
+              <Icon name="menu" size={18} />
+            </button>
             <div className="logo-box" onClick={() => setShowSettings(s => !s)} title="Settings">AI</div>
             <div className="title-group">
               <h1 className="main-title">{activeChat?.title || "Cloud AI Assistant"}</h1>
@@ -972,11 +1019,21 @@ const App = () => {
               {showSettings && <div style={{ display: "flex", gap: 8, padding: 10, background: "rgba(0,0,0,.85)", borderRadius: 14, position: "absolute", top: 75, right: 20, zIndex: 20, alignItems: "center", boxShadow: "0 10px 30px rgba(0,0,0,.5)", border: "1px solid var(--border)" }}>
                 {Object.keys(THEMES).map(k => <button key={k} onClick={() => setThemeKey(k)} className={`dot ${themeKey === k ? "active" : ""}`} style={{ background: THEMES[k]?.primary || DEFAULT_THEME.primary }} title={THEMES[k]?.name} />)}
               </div>}
-              <button className={`icon-btn ${ttsEnabled ? "active" : ""}`} onClick={() => { if (isSpeaking) window.speechSynthesis.cancel(); setTtsEnabled(v => !v); }} title="Toggle AI voice">{ttsEnabled ? "TTS" : "MUTE"}</button>
-              <button className="icon-btn" onClick={handlePerchance} title="Random prompt">RND</button>
-              <button className="icon-btn" onClick={() => { if (activeChatId) exportChat(activeChatId); setToast("Chat exported"); }} title="Export chat (Ctrl+J)">EXP</button>
-              <button className="icon-btn" onClick={() => setToast("Premium features unlocked")}>PRO</button>
-              <button className={`icon-btn ${showSettings ? "active" : ""}`} onClick={() => setShowSettings(s => !s)} title="Settings">SET</button>
+              <button className={`icon-btn ${ttsEnabled ? "active" : ""}`} onClick={() => { if (isSpeaking) window.speechSynthesis.cancel(); setTtsEnabled(v => !v); }} title="Toggle AI voice">
+                <Icon name={ttsEnabled ? "volume" : "volumeX"} size={18} />
+              </button>
+              <button className="icon-btn" onClick={handlePerchance} title="Random prompt">
+                <Icon name="dice" size={18} />
+              </button>
+              <button className="icon-btn" onClick={() => { if (activeChatId) exportChat(activeChatId); setToast("Chat exported"); }} title="Export chat (Ctrl+J)">
+                <Icon name="export" size={18} />
+              </button>
+              <button className="icon-btn" onClick={() => setToast("Premium features unlocked")} title="Premium">
+                <Icon name="crown" size={18} />
+              </button>
+              <button className={`icon-btn ${showSettings ? "active" : ""}`} onClick={() => setShowSettings(s => !s)} title="Settings">
+                <Icon name="settings" size={18} />
+              </button>
             </div>
           </header>
           <main className="app-content">
@@ -1091,13 +1148,15 @@ const App = () => {
               </div>
             </div>}
             {activeMessages.length > 0 && <div className="search-bar">
-              <span style={{ color: "rgba(255,255,255,.4)", fontSize: "14px" }}>⌕</span>
+              <Icon name="search" size={16} />
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search conversation... (Ctrl+K)" />
-              <button onClick={() => setSearchQuery("")}>×</button>
+              <button onClick={() => setSearchQuery("")}>
+                <Icon name="close" size={16} />
+              </button>
             </div>}
             <div className="scroll-wrapper" ref={chatRef} style={{ fontSize: `${fontSize}px` }}>
               {(health?.status === 'error' || health?.status === 'degraded') && <div className="error-banner">
-                <span style={{ fontSize: 14 }}>⚠</span>
+                <Icon name="volumeX" size={16} color="#fca5a5" />
                 <div><strong style={{ fontSize: 12, textTransform: "uppercase" }}>Service {health?.status}</strong><p style={{ margin: 0, fontSize: 11, marginTop: 3, color: "rgba(255,255,255,.6)" }}>{health?.error || 'Connecting...'}</p></div>
               </div>}
               {activeMessages.length === 0 && !streamText && <div className="empty-state">
@@ -1108,7 +1167,7 @@ const App = () => {
                 </div>
                 <div className="suggestions">
                   {SUGGESTIONS.map((s, i) => <button key={i} onClick={() => setInputText(s.text)} className="suggestion-btn">
-                    <span style={{ color: "var(--primary)", fontSize: "8px" }}>{s.icon}</span>
+                    <span style={{ color: "var(--primary)", fontSize: "8px" }}>●</span>
                     <div><div>{s.text}</div><div className="suggestion-category">{s.category}</div></div>
                   </button>)}
                 </div>

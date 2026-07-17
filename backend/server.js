@@ -1,6 +1,7 @@
 require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
+const multer = require("multer");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,20 +15,36 @@ if (!fetch) {
 const OLLAMA_HOST = (process.env.OLLAMA_HOST || "https://api.ollama.com").replace(/\/$/, "");
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || "";
 
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",")
+  : ["http://localhost:5173", "http://localhost:3000"];
+
 app.use(
   cors({
-    origin: true,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Not allowed by CORS: ${origin}`));
+      }
+    },
     credentials: true,
   })
 );
 
 app.use(express.json({ limit: "20mb" }));
 
-// Health check — pings Ollama Cloud
+// File upload handler - up to 5 images, 10MB each
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
+
+// Health check
 app.get("/health", async (req, res) => {
   try {
     const headers = {};
-    if (OLLAMA_API_KEY) headers.Authorization = OLLAMA_API_KEY; // no Bearer prefix
+    if (OLLAMA_API_KEY) headers.Authorization = OLLAMA_API_KEY;
 
     const r = await fetch(`${OLLAMA_HOST}/api/tags`, {
       headers,
@@ -58,18 +75,14 @@ app.get("/api/dock", (req, res) => {
   });
 });
 
-// Chat endpoint
-app.post("/chat", async (req, res) => {
-  console.log("🔍 FULL BODY:", JSON.stringify(req.body));
-
-  const message = req.body.message;
-  const modelType = req.body.modelType || "glm-5.2";
-  const temperature = req.body.temperature || 0.7;
-  const history = req.body.messages || [];
-
-  console.log("🔍 modelType from frontend:", modelType);
-  console.log("🔍 message:", message);
-  console.log("🔍 history count:", history.length);
+// Chat endpoint with file upload support
+app.post("/chat", upload.array("files", 5), async (req, res) => {
+  const {
+    message,
+    modelType = "glm-5.2",
+    temperature = 0.7,
+    messages: history = [],
+  } = req.body;
 
   if (!message || typeof message !== "string") {
     return res.status(400).json({ error: "Valid message required" });
@@ -88,12 +101,30 @@ app.post("/chat", async (req, res) => {
   try {
     const model = modelType;
 
-    const messages =
-      Array.isArray(history) && history.length > 0
-        ? [...history, { role: "user", content: message.trim() }]
-        : [{ role: "user", content: message.trim() }];
+    const systemMessage = {
+      role: "system",
+      content: `You are ${model}, an AI assistant. Always identify yourself as ${model} when asked about your identity. Never claim to be Gemini, GPT, Claude, or any other model.`
+    };
 
-    console.log("🚀 Sending model to Ollama Cloud:", model);
+    const trimmedHistory = Array.isArray(history)
+      ? history.slice(-10).map(m => ({ role: m.role, content: m.content }))
+      : [];
+
+    // Convert uploaded images to base64 for Ollama vision models
+    const images = (req.files || [])
+      .filter(f => f.mimetype.startsWith("image/"))
+      .map(f => f.buffer.toString("base64"));
+
+    const userMessage = {
+      role: "user",
+      content: message.trim(),
+    };
+
+    if (images.length > 0) {
+      userMessage.images = images;
+    }
+
+    const messages = [systemMessage, ...trimmedHistory, userMessage];
 
     const headers = {
       "Content-Type": "application/json",
@@ -144,9 +175,7 @@ app.post("/chat", async (req, res) => {
           const content = data.message?.content || "";
 
           if (content) {
-            res.write(
-              `data: ${JSON.stringify({ type: "chunk", text: content })}\n\n`
-            );
+            res.write(`data: ${JSON.stringify({ type: "chunk", text: content })}\n\n`);
             if (res.flush) res.flush();
           }
         } catch (parseError) {
@@ -173,19 +202,13 @@ app.post("/chat", async (req, res) => {
     }
 
     try {
-      res.write(
-        `data: ${JSON.stringify({
-          type: "error",
-          text: err.message || "Processing failed",
-        })}\n\n`
-      );
+      res.write(`data: ${JSON.stringify({ type: "error", text: err.message || "Processing failed" })}\n\n`);
       res.end();
     } catch (writeError) {
       console.error("Failed to send error to client:", writeError);
     }
   }
 });
-
 
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Cloud AI Assistant`);

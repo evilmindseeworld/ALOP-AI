@@ -39,9 +39,9 @@ const SUGGESTIONS = [
   { text: "Explain quantum computing simply", category: "Science" },
   { text: "Write Python for sales data analysis", category: "Coding" },
   { text: "Create a tech startup business plan", category: "Business" },
-  { text: "Explain blockchain applications", category: "Technology" },
   { text: "Optimize database performance", category: "Tech" },
-  { text: "Write a poem about AI", category: "Creative" }
+  { text: "Write a poem about AI", category: "Creative" },
+  { text: "/image futuristic classroom with holographic desks", category: "Image" }
 ];
 
 const MODEL_DISPLAY_NAMES = {
@@ -119,6 +119,13 @@ const MATERIAL_OVERLAYS = {
   noise: "https://www.transparenttextures.com/patterns/stardust.png"
 };
 
+const IMAGE_GENERATION = {
+  endpoint: "https://image.pollinations.ai/prompt",
+  model: "flux",
+  defaultWidth: 1024,
+  defaultHeight: 1024
+};
+
 const Icon = ({ name, size = 18, color = "currentColor" }) => {
   const icons = {
     menu: <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />,
@@ -132,13 +139,16 @@ const Icon = ({ name, size = 18, color = "currentColor" }) => {
     settings: <g><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" /></g>,
     copy: <g><rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
     speaker: <path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    image: <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2" fill="none" /><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" /><path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     dice: <g><rect x="2" y="2" width="20" height="20" rx="5" ry="5" stroke="currentColor" strokeWidth="2" fill="none" /><circle cx="8" cy="8" r="1.5" fill="currentColor" /><circle cx="16" cy="8" r="1.5" fill="currentColor" /><circle cx="8" cy="16" r="1.5" fill="currentColor" /><circle cx="16" cy="16" r="1.5" fill="currentColor" /></g>,
     export: <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     crown: <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     volume: <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     volumeX: <path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     edit: <g><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
-    trash: <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    trash: <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    check: <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    warning: <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
   };
 
   return (
@@ -148,6 +158,30 @@ const Icon = ({ name, size = 18, color = "currentColor" }) => {
   );
 };
 
+const enhanceImagePrompt = (prompt) => {
+  if (!prompt) return "";
+  const enhancers = "professional photography, 8k uhd, highly detailed, sharp focus, cinematic lighting, masterpiece, best quality, ultra realistic";
+  return `${prompt}, ${enhancers}`;
+};
+
+const buildImageUrl = (prompt, width = IMAGE_GENERATION.defaultWidth, height = IMAGE_GENERATION.defaultHeight) => {
+  const enhanced = enhanceImagePrompt(prompt);
+  const encoded = encodeURIComponent(enhanced);
+  const seed = Math.floor(Math.random() * 10000000);
+  return `${IMAGE_GENERATION.endpoint}/${encoded}?width=${width}&height=${height}&nologo=true&model=${IMAGE_GENERATION.model}&seed=${seed}&enhance=true`;
+};
+
+const isImageRequest = (text) => {
+  const t = text.trim().toLowerCase();
+  return t.startsWith("/image") || /^(generate|create|make)\s+(an?\s+)?image\b/.test(t);
+};
+
+const parseImagePrompt = (text) => {
+  return text
+    .replace(/^\/image\s*/i, "")
+    .replace(/^(generate|create|make)\s+(an?\s+)?image\s*(of\s*)?/i, "")
+    .trim();
+};
 
 const useChatManager = () => {
   const [chats, setChats] = useState(() => {
@@ -200,7 +234,7 @@ const useChatManager = () => {
   const exportChat = useCallback((id) => {
     const chat = chats.find(c => c.id === id);
     if (!chat) return;
-    const data = chat.messages.map(m => ({ role: m.role, content: m.content, time: m.ts }));
+    const data = chat.messages.map(m => ({ role: m.role, content: m.content, time: m.ts, imageUrl: m.imageUrl, imagePrompt: m.imagePrompt }));
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -417,110 +451,116 @@ const GlobalStyles = () => (
     body { font-family: 'Inter', system-ui, sans-serif; overflow:hidden; height:100vh; background: #000000; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     .app-root { min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
     .app-root.custom-bg { background-size: cover; background-position: center; background-repeat: no-repeat; }
-    .glass-main { position: relative; z-index: 10; width: min(98vw, 1200px); height: min(98vh, 1000px); backdrop-filter: blur(24px) saturate(1.5); border: 1px solid var(--border); border-radius: 16px; display: flex; flex-direction: row; overflow: hidden; box-shadow: 0 32px 128px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,.05); }
-    .chat-sidebar { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: rgba(0,0,0,.35); display: flex; flex-direction: column; overflow: hidden; transition: width .3s ease, padding .3s ease; }
+    .glass-main { position: relative; z-index: 10; width: min(98vw, 1200px); height: min(98vh, 1000px); backdrop-filter: blur(28px) saturate(1.4); border: 1px solid var(--border); border-radius: 14px; display: flex; flex-direction: row; overflow: hidden; box-shadow: 0 40px 160px rgba(0,0,0,0.75), inset 0 1px 0 rgba(255,255,255,.04); }
+    .chat-sidebar { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: rgba(0,0,0,.32); display: flex; flex-direction: column; overflow: hidden; transition: width .3s ease, padding .3s ease; }
     .chat-sidebar.collapsed { width: 0; padding: 0; border-right: none; overflow: hidden; }
-    .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
-    .sidebar-btn { flex: 1; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: var(--primary); color: #000; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .2s; }
-    .sidebar-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
-    .close-sidebar-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: rgba(255,255,255,.7); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+    .sidebar-header { padding: 14px 16px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
+    .sidebar-btn { flex: 1; height: 36px; border-radius: 8px; border: none; background: var(--primary); color: #000; cursor: pointer; font-size: 13px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .2s; }
+    .sidebar-btn:hover { filter: brightness(1.12); transform: translateY(-1px); }
+    .close-sidebar-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,.04); color: rgba(255,255,255,.55); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
     .close-sidebar-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
     .sidebar-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
-    .sidebar-item { padding: 12px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all .15s; border: 1px solid transparent; position: relative; }
-    .sidebar-item:hover { background: rgba(255,255,255,.06); border-color: var(--border); }
-    .sidebar-item.active { background: rgba(255,255,255,.1); border-color: var(--primary); }
-    .sidebar-icon { width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,.06); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: rgba(255,255,255,.6); flex-shrink: 0; }
+    .sidebar-item { padding: 12px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all .15s; border: 1px solid transparent; position: relative; }
+    .sidebar-item:hover { background: rgba(255,255,255,.05); border-color: var(--border); }
+    .sidebar-item.active { background: rgba(255,255,255,.08); border-color: var(--primary); }
+    .sidebar-icon { width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,.05); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: rgba(255,255,255,.45); flex-shrink: 0; }
     .sidebar-item.active .sidebar-icon { color: var(--primary); background: rgba(255,255,255,.1); }
-    .sidebar-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 500; color: rgba(255,255,255,.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 500; color: rgba(255,255,255,.8); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .sidebar-item.active .sidebar-title { color: #fff; }
-    .sidebar-meta { font-size: 10px; color: rgba(255,255,255,.4); margin-top: 2px; }
+    .sidebar-meta { font-size: 10px; color: rgba(255,255,255,.35); margin-top: 2px; }
     .sidebar-actions { display: flex; gap: 4px; opacity: 0; transition: opacity .2s; }
     .sidebar-item:hover .sidebar-actions { opacity: 1; }
-    .sidebar-action { width: 24px; height: 24px; border-radius: 6px; border: none; background: transparent; color: rgba(255,255,255,.4); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .sidebar-action { width: 24px; height: 24px; border-radius: 6px; border: none; background: transparent; color: rgba(255,255,255,.35); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
     .sidebar-action:hover { background: rgba(255,255,255,.1); color: #fff; }
     .sidebar-action.delete:hover { background: rgba(239,68,68,.2); color: #fca5a5; }
     .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-    .app-header { display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-    .menu-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: rgba(255,255,255,.7); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+    .app-header { display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .menu-btn { width: 36px; height: 36px; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,.04); color: rgba(255,255,255,.55); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
     .menu-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
-    .logo-box { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,.06); display:flex; align-items:center; justify-content:center; font-size: 13px; font-weight: 700; color: var(--primary); cursor: pointer; border: 1px solid var(--border); transition: all .2s; }
-    .logo-box:hover { background: rgba(255,255,255,.1); box-shadow: 0 0 20px rgba(139,92,246,.15); }
+    .logo-box { width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,.05); display:flex; align-items:center; justify-content:center; font-size: 13px; font-weight: 700; color: var(--primary); cursor: pointer; border: 1px solid var(--border); transition: all .2s; }
+    .logo-box:hover { background: rgba(255,255,255,.1); box-shadow: 0 0 20px rgba(139,92,246,.12); }
     .title-group { flex:1; min-width:0; }
-    .main-title { font-size: 16px; font-weight: 600; color: #fff; letter-spacing: -.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .sub-title { font-size: 10px; color: rgba(255,255,255,.45); letter-spacing: .5px; text-transform: uppercase; margin-top: 2px; }
-    .header-actions { display:flex; gap:8px; align-items:center; position:relative; }
-    .icon-btn { width:36px; height:36px; border-radius:10px; border:1px solid transparent; background: rgba(255,255,255,.05); color:rgba(255,255,255,.65); cursor:pointer; display:flex; align-items:center; justify-content:center; transition: all .15s; flex-shrink: 0; }
+    .main-title { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: -.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sub-title { font-size: 10px; color: rgba(255,255,255,.4); letter-spacing: .5px; text-transform: uppercase; margin-top: 2px; }
+    .header-actions { display:flex; gap:6px; align-items:center; position:relative; }
+    .icon-btn { width:36px; height:36px; border-radius:8px; border:1px solid transparent; background: rgba(255,255,255,.04); color:rgba(255,255,255,.55); cursor:pointer; display:flex; align-items:center; justify-content:center; transition: all .15s; flex-shrink: 0; }
     .icon-btn:hover { background:rgba(255,255,255,.1); border-color:var(--border); color:#fff; }
     .icon-btn.active { background: var(--primary); color: #000; border-color: transparent; }
-    .dot { width: 22px; height: 22px; border-radius:50%; border:2px solid rgba(255,255,255,.15); cursor:pointer; transition: all .2s; background: var(--color); }
-    .dot:hover { transform: scale(1.2); border-color: rgba(255,255,255,.4); box-shadow: 0 0 8px var(--color); }
-    .dot.active { border-color: #fff; box-shadow: 0 0 12px var(--color); }
+    .dot { width: 20px; height: 20px; border-radius:50%; border:2px solid rgba(255,255,255,.12); cursor:pointer; transition: all .2s; background: var(--color); }
+    .dot:hover { transform: scale(1.2); border-color: rgba(255,255,255,.35); box-shadow: 0 0 8px var(--color); }
+    .dot.active { border-color: #fff; box-shadow: 0 0 10px var(--color); }
     .app-content { flex:1; display:flex; flex-direction:column; position:relative; overflow:hidden; min-height:0; }
-    .settings-drawer { background: rgba(0,0,0,.45); backdrop-filter:blur(20px); padding: 16px 18px; border-bottom: 1px solid var(--border); max-height: 60vh; overflow-y: auto; flex-shrink:0; }
-    .setting-row { margin-bottom: 16px; display:flex; flex-direction:column; gap:10px; }
-    .setting-label { color:rgba(255,255,255,.65); font-size:12px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; display: flex; align-items: center; gap: 8px; }
+    .settings-drawer { background: rgba(0,0,0,.42); backdrop-filter:blur(22px); padding: 18px; border-bottom: 1px solid var(--border); max-height: 58vh; overflow-y: auto; flex-shrink:0; }
+    .setting-row { margin-bottom: 18px; display:flex; flex-direction:column; gap:10px; }
+    .setting-row:last-child { margin-bottom: 0; }
+    .setting-label { color:rgba(255,255,255,.55); font-size:11px; font-weight: 600; text-transform: uppercase; letter-spacing: .8px; display: flex; align-items: center; gap: 8px; }
     .theme-grid { display:flex; gap:8px; flex-wrap:wrap; }
-    .theme-card { padding: 8px 12px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,.05); color:rgba(255,255,255,.8); cursor:pointer; font-size:12px; font-weight: 500; display:flex; align-items:center; gap:8px; transition: all .15s; flex: 1; min-width: 100px; }
-    .theme-card:hover { background:rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); transform: translateY(-1px); }
+    .theme-card { padding: 8px 12px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:rgba(255,255,255,.75); cursor:pointer; font-size:12px; font-weight: 500; display:flex; align-items:center; gap:8px; transition: all .15s; flex: 1; min-width: 90px; }
+    .theme-card:hover { background:rgba(255,255,255,.09); border-color: rgba(255,255,255,.18); transform: translateY(-1px); }
     .theme-card.selected { border-color: var(--primary); background: rgba(255,255,255,.1); color: #fff; }
-    .model-select-container { padding: 10px 14px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,.05); color:#fff; font-size:13px; }
+    .model-select-container { padding: 10px 14px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:#fff; font-size:13px; }
     .model-select { width: 100%; background: transparent; border: none; color: #fff; font-size: 13px; outline: none; cursor: pointer; padding: 4px 0; }
     .model-select option, .model-select optgroup { background: #0a0a0a; color:#fff; }
     .slider-container { display: flex; align-items: center; gap: 12px; }
-    .slider { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.1); outline: none; -webkit-appearance: none; }
-    .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; }
-    .custom-input { padding: 10px 14px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: #fff; font-size: 13px; outline: none; }
-    .custom-input::placeholder { color: rgba(255,255,255,.35); }
-    .color-picker { width: 36px; height: 32px; border: none; border-radius: 8px; cursor: pointer; background: transparent; }
-    .material-overlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; background-repeat: repeat; background-size: 180px 180px; mix-blend-mode: overlay; }
-    .search-bar { display:flex; align-items:center; gap:10px; margin: 10px 16px; padding: 10px 14px; border-radius:12px; background:rgba(255,255,255,.05); border:1px solid var(--border); flex-shrink: 0; }
+    .slider { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.08); outline: none; -webkit-appearance: none; }
+    .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--primary); cursor: pointer; }
+    .custom-input { padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,.04); color: #fff; font-size: 13px; outline: none; transition: all .15s; }
+    .custom-input:focus { border-color: var(--primary); background: rgba(255,255,255,.06); }
+    .custom-input::placeholder { color: rgba(255,255,255,.3); }
+    .color-picker { width: 34px; height: 30px; border: none; border-radius: 6px; cursor: pointer; background: transparent; }
+    .material-overlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; background-repeat: repeat; background-size: 160px 160px; mix-blend-mode: overlay; }
+    .search-bar { display:flex; align-items:center; gap:10px; margin: 10px 16px; padding: 10px 14px; border-radius:10px; background:rgba(255,255,255,.04); border:1px solid var(--border); flex-shrink: 0; }
     .search-bar input { flex:1; background:none; border:none; outline:none; color:#fff; font-size:14px; caret-color:var(--primary); }
-    .search-bar input::placeholder { color: rgba(255,255,255,.4); }
-    .search-bar button { background:none; border:none; color:rgba(255,255,255,.4); cursor:pointer; font-size:14px; padding:4px 8px; border-radius: 6px; transition: all .15s; display: flex; align-items: center; justify-content: center; }
+    .search-bar input::placeholder { color: rgba(255,255,255,.35); }
+    .search-bar button { background:none; border:none; color:rgba(255,255,255,.4); cursor:pointer; font-size:14px; padding:4px; border-radius: 6px; transition: all .15s; display: flex; align-items: center; justify-content: center; }
     .search-bar button:hover { background: rgba(255,255,255,.1); color: #fff; }
-    .scroll-wrapper { flex:1; overflow-y:auto; scroll-behavior:smooth; padding:16px; display:flex; flex-direction:column; gap:14px; min-height:0; }
+    .scroll-wrapper { flex:1; overflow-y:auto; scroll-behavior:smooth; padding:18px; display:flex; flex-direction:column; gap:14px; min-height:0; }
     .scroll-wrapper::-webkit-scrollbar { width:5px; }
     .scroll-wrapper::-webkit-scrollbar-track { background:transparent; }
     .scroll-wrapper::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
-    .msg-row { display:flex; gap:10px; max-width:92%; animation: msgIn .25s ease; }
+    .msg-row { display:flex; gap:10px; max-width:90%; animation: msgIn .25s ease; }
     .msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
     .msg-row.assistant { align-self: flex-start; }
     @keyframes msgIn { from { opacity:0; transform:translateY(10px);} to { opacity:1; transform:translateY(0);} }
-    .avatar { width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight: 700; flex-shrink:0; background:rgba(255,255,255,.06); border: 1px solid var(--border); color: rgba(255,255,255,.5); }
+    .avatar { width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight: 700; flex-shrink:0; background:rgba(255,255,255,.05); border: 1px solid var(--border); color: rgba(255,255,255,.45); }
     .msg-row.user .avatar { color: var(--primary); }
     .msg-row.assistant .avatar { color: var(--primary); }
-    .bubble { padding: 12px 16px; border-radius: 14px; font-size: 15px; line-height: 1.55; word-break: break-word; position: relative; max-width: 100%; }
-    .msg-row.user .bubble { background: var(--user-bubble, rgba(139, 92, 246, 0.15)); color:#f1f5f9; border-bottom-right-radius:4px; }
-    .msg-row.assistant .bubble { background: var(--ai-bubble, rgba(139, 92, 246, 0.08)); color:rgba(255,255,255,.9); border:1px solid var(--border); border-bottom-left-radius:4px; }
+    .bubble { padding: 12px 16px; border-radius: 12px; font-size: 15px; line-height: 1.55; word-break: break-word; position: relative; max-width: 100%; }
+    .msg-row.user .bubble { background: var(--user-bubble, rgba(139, 92, 246, 0.14)); color:#f1f5f9; border-bottom-right-radius:4px; }
+    .msg-row.assistant .bubble { background: var(--ai-bubble, rgba(139, 92, 246, 0.07)); color:rgba(255,255,255,.88); border:1px solid var(--border); border-bottom-left-radius:4px; }
     .msg-actions { display:flex; gap:6px; margin-top:6px; justify-content:flex-end; opacity:0; transition:opacity .2s; }
     .msg-row:hover .msg-actions { opacity:1; }
-    .msg-action-btn { padding:4px 8px; border-radius:6px; border:1px solid var(--border); background:rgba(255,255,255,.05); color:rgba(255,255,255,.5); font-size:11px; cursor:pointer; transition: all .15s; display: flex; align-items: center; gap: 4px; }
+    .msg-action-btn { padding:5px 10px; border-radius:6px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:rgba(255,255,255,.5); font-size:11px; cursor:pointer; transition: all .15s; display: flex; align-items: center; gap: 5px; }
     .msg-action-btn:hover { background:rgba(255,255,255,.1); color:#fff; }
-    .msg-meta { font-size:10px; color:rgba(255,255,255,.35); margin-top:4px; text-align: right; }
-    .error-banner { display:flex; gap:10px; align-items:center; padding: 10px 14px; margin:8px 16px; border-radius:12px; background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3); font-size:12px; color:#fca5a5; flex-shrink:0; }
-    .error-banner svg { flex-shrink: 0; }
-    .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; padding:40px 24px; text-align: center; }
-    .logo-big { width:64px; height:64px; border-radius:16px; background: rgba(255,255,255,.05); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:24px; font-weight:700; color:var(--primary); margin-bottom:8px; }
-    .empty-title { font-size: 20px; font-weight: 600; color: #fff; margin-bottom: 6px; }
-    .empty-subtitle { color:rgba(255,255,255,.45); font-size:13px; max-width:380px; line-height: 1.55; }
-    .suggestions { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:16px; max-width: 560px; }
-    .suggestion-btn { padding:12px 16px; border-radius:12px; border:1px solid var(--border); background:rgba(255,255,255,.05); color:rgba(255,255,255,.8); cursor:pointer; font-size:13px; display:flex; align-items:center; gap:10px; transition: all .15s; text-align: left; flex: 1; min-width: 200px; }
-    .suggestion-btn:hover { background:rgba(255,255,255,.1); border-color: rgba(255,255,255,.2); transform: translateY(-1px); }
-    .suggestion-category { font-size: 10px; color: rgba(255,255,255,.4); margin-top: 4px; text-transform: uppercase; letter-spacing: .5px; }
+    .msg-meta { font-size:10px; color:rgba(255,255,255,.3); margin-top:4px; text-align: right; }
+    .generated-image { max-width: 100%; max-height: 70vh; border-radius: 10px; border: 1px solid var(--border); display: block; box-shadow: 0 8px 32px rgba(0,0,0,.4); }
+    .image-prompt { font-size: 12px; color: rgba(255,255,255,.5); margin-top: 8px; font-style: italic; }
+    .error-banner { display:flex; gap:10px; align-items:center; padding: 10px 14px; margin:8px 16px; border-radius:10px; background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25); font-size:12px; color:#fca5a5; flex-shrink:0; }
+    .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:24px; padding:48px 28px; text-align: center; }
+    .logo-big { width:60px; height:60px; border-radius:14px; background: rgba(255,255,255,.04); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:22px; font-weight:700; color:var(--primary); margin-bottom:4px; }
+    .empty-title { font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+    .empty-subtitle { color:rgba(255,255,255,.4); font-size:13px; max-width:360px; line-height: 1.55; }
+    .suggestions { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:8px; max-width: 540px; }
+    .suggestion-btn { padding:12px 16px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:rgba(255,255,255,.75); cursor:pointer; font-size:13px; display:flex; align-items:flex-start; gap:10px; transition: all .15s; text-align: left; flex: 1; min-width: 190px; }
+    .suggestion-btn:hover { background:rgba(255,255,255,.09); border-color: rgba(255,255,255,.18); transform: translateY(-1px); }
+    .suggestion-category { font-size: 10px; color: var(--primary); margin-top: 4px; text-transform: uppercase; letter-spacing: .6px; font-weight: 600; }
     @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.3;} }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .typing-indicator { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--primary); margin-left: 4px; animation: blink 1s infinite; }
     .attachment-grid { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
     .attachment-thumb { width:64px; height:64px; border-radius:8px; overflow:hidden; border:1px solid var(--border); position:relative; }
     .attachment-thumb img { width:100%; height:100%; object-fit:cover; }
     .attachment-remove { position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; border:none; background:rgba(0,0,0,.7); color:#fff; cursor:pointer; font-size:11px; display:flex; align-items:center; justify-content:center; }
     .camera-overlay { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.95); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; }
-    .camera-video { max-width:90vw; max-height:70vh; border-radius:16px; border:2px solid var(--border); }
+    .camera-video { max-width:90vw; max-height:70vh; border-radius:14px; border:2px solid var(--border); }
     .camera-controls { display:flex; gap:20px; }
     .camera-btn { padding:12px 28px; border-radius:30px; border:none; font-weight:600; font-size:14px; cursor:pointer; }
     .camera-btn.primary { background:var(--primary); color:#000; }
-    .camera-btn.secondary { background:rgba(255,255,255,.1); color:#fff; border:1px solid var(--border); }
-    .keyboard-hint { position:fixed; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.6); color:rgba(255,255,255,.4); padding:6px 14px; border-radius:20px; font-size:11px; z-index:5; }
+    .camera-btn.secondary { background:rgba(255,255,255,.08); color:#fff; border:1px solid var(--border); }
+    .keyboard-hint { position:fixed; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.55); color:rgba(255,255,255,.35); padding:6px 14px; border-radius:20px; font-size:11px; z-index:5; }
     .no-anim .msg-row, .no-anim .typing-indicator { animation:none; }
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.9); color: #fff; padding: 12px 20px; border-radius: 10px; z-index: 9999; font-size: 13px; border-left: 3px solid var(--primary); box-shadow: 0 12px 40px rgba(0,0,0,.5); display: flex; align-items: center; gap: 10px; }
+    .image-hint { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; background: rgba(139,92,246,.15); color: rgba(255,255,255,.7); font-size: 11px; margin-left: 8px; border: 1px solid rgba(139,92,246,.25); }
     @media (max-width: 800px) {
       .chat-sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; transform: translateX(-100%); transition: transform .3s; width: 280px; }
       .chat-sidebar.collapsed { transform: translateX(-100%); }
@@ -534,21 +574,23 @@ const GlobalStyles = () => (
       .msg-row { max-width: 94%; }
       .main-title { font-size: 14px; }
       .keyboard-hint { display:none; }
+      .header-actions { gap: 4px; }
+      .icon-btn { width: 32px; height: 32px; }
     }
   `}</style>
 );
 
 const DockPanel = ({ dock }) => (
-  <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border)", background: "rgba(0,0,0,.25)", flexShrink: 0 }}>
-    <div style={{ fontSize: 10, color: "rgba(255,255,255,.45)", marginBottom: 6, display: "flex", justifyContent: "space-between", textTransform: "uppercase", letterSpacing: ".5px" }}>
+  <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border)", background: "rgba(0,0,0,.22)", flexShrink: 0 }}>
+    <div style={{ fontSize: 10, color: "rgba(255,255,255,.4)", marginBottom: 6, display: "flex", justifyContent: "space-between", textTransform: "uppercase", letterSpacing: ".6px" }}>
       <span>Active Requests</span>
       <span>{dock?.active || 0}</span>
     </div>
     {(dock?.requests || []).slice(0, 3).map(r => (
-      <div key={r.id || Math.random()} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, marginBottom: 4, color: "rgba(255,255,255,.7)" }}>
+      <div key={r.id || Math.random()} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 11, marginBottom: 4, color: "rgba(255,255,255,.65)" }}>
         <span style={{ width: 5, height: 5, borderRadius: "50%", background: r.status === 'completed' ? '#22c55e' : r.status === 'error' ? '#ef4444' : 'var(--primary)' }} />
         <span style={{ flex: 1 }}>{getModelDisplayName(r.model)}</span>
-        <span style={{ color: "rgba(255,255,255,.4)" }}>{Math.min(100, Math.round(r.progress || 0))}%</span>
+        <span style={{ color: "rgba(255,255,255,.35)" }}>{Math.min(100, Math.round(r.progress || 0))}%</span>
       </div>
     ))}
   </div>
@@ -563,7 +605,7 @@ const InputBar = ({ text, setText, onSend, disabled, status, stats, attachments,
   };
 
   return (
-    <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border)", flexShrink: 0, background: "rgba(0,0,0,.25)" }} onPaste={onPasteImage}>
+    <div style={{ padding: "12px 16px", borderTop: "1px solid var(--border)", flexShrink: 0, background: "rgba(0,0,0,.22)" }} onPaste={onPasteImage}>
       {attachments.length > 0 && (
         <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
           {attachments.map((file, idx) => (
@@ -589,19 +631,19 @@ const InputBar = ({ text, setText, onSend, disabled, status, stats, attachments,
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
-          placeholder={status === "loading" ? "AI is thinking..." : "Message..."}
+          placeholder={status === "loading" ? "AI is thinking..." : "Message... try /image to generate images"}
           disabled={disabled}
-          style={{ flex: 1, padding: "11px 16px", borderRadius: 12, border: "1px solid var(--border)", background: "rgba(255,255,255,.06)", color: "#fff", fontSize: 15, outline: "none", caretColor: "var(--primary)", minWidth: 0 }}
+          style={{ flex: 1, padding: "10px 16px", borderRadius: 10, border: "1px solid var(--border)", background: "rgba(255,255,255,.05)", color: "#fff", fontSize: 15, outline: "none", caretColor: "var(--primary)", minWidth: 0 }}
         />
         <button
           onClick={handleSubmit}
           disabled={(!text.trim() && attachments.length === 0) || disabled}
-          style={{ padding: "0 18px", height: 42, borderRadius: 12, border: "none", cursor: (text.trim() || attachments.length > 0) && !disabled ? "pointer" : "not-allowed", background: (text.trim() || attachments.length > 0) && !disabled ? "var(--primary)" : "rgba(255,255,255,.08)", color: (text.trim() || attachments.length > 0) && !disabled ? "#000" : "rgba(255,255,255,.3)", fontWeight: 600, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}
+          style={{ padding: "0 18px", height: 40, borderRadius: 10, border: "none", cursor: (text.trim() || attachments.length > 0) && !disabled ? "pointer" : "not-allowed", background: (text.trim() || attachments.length > 0) && !disabled ? "var(--primary)" : "rgba(255,255,255,.06)", color: (text.trim() || attachments.length > 0) && !disabled ? "#000" : "rgba(255,255,255,.25)", fontWeight: 600, fontSize: 14, display: "flex", alignItems: "center", justifyContent: "center" }}
         >
           {status === "loading" ? <span style={{ width: 16, height: 16, border: "2px solid rgba(0,0,0,.3)", borderTopColor: "#000", borderRadius: "50%", animation: "spin 1s linear infinite" }} /> : <Icon name="send" size={18} />}
         </button>
       </div>
-      {stats && <div style={{ fontSize: 10, color: "rgba(255,255,255,.35)", marginTop: 6, display: "flex", gap: 12, justifyContent: "center" }}>
+      {stats && <div style={{ fontSize: 10, color: "rgba(255,255,255,.3)", marginTop: 6, display: "flex", gap: 12, justifyContent: "center" }}>
         <span>{stats.duration > 1000 ? `${(stats.duration / 1000).toFixed(1)}s` : `${stats.duration}ms`}</span>
         <span>{getModelDisplayName(stats.model)}</span>
       </div>}
@@ -708,6 +750,7 @@ const App = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState(null);
+  const [imageLoading, setImageLoading] = useState(false);
 
   const { chats, activeChatId, setActiveChatId, createChat, deleteChat, renameChat, updateChatMessages, exportChat, exportAllChats } = useChatManager();
   const activeChat = useMemo(() => chats.find(c => c.id === activeChatId), [chats, activeChatId]);
@@ -760,7 +803,7 @@ const App = () => {
   useEffect(() => {
     if (!ttsEnabled || !window.speechSynthesis || status !== "idle") return;
     const last = activeMessages[activeMessages.length - 1];
-    if (last && last.role === "assistant" && last.id !== lastSpokenRef.current) {
+    if (last && last.role === "assistant" && last.id !== lastSpokenRef.current && !last.imageUrl) {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(last.content.replace(/^⚠️ /, ""));
       u.onstart = () => setIsSpeaking(true);
@@ -798,8 +841,59 @@ const App = () => {
 
   const filteredMessages = useMemo(() => searchQuery.trim() ? activeMessages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase())) : activeMessages, [activeMessages, searchQuery]);
 
-  const handleSend = useCallback((text) => {
-    if (health?.status === 'error' || health?.status === 'degraded') { setToast(`Service ${health.status}: ${health.error || 'Check connection'}`); return; }
+  const handleSend = useCallback(async (text) => {
+    const cleanText = text.trim();
+
+    // IMAGE GENERATION MODE
+    if (isImageRequest(cleanText)) {
+      const imagePrompt = parseImagePrompt(cleanText);
+      if (!imagePrompt) {
+        setToast("Describe the image. Example: /image a futuristic classroom");
+        return;
+      }
+
+      setImageLoading(true);
+      const userMsg = {
+        role: "user",
+        content: cleanText,
+        ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        id: uid()
+      };
+      const withUser = [...activeMessages, userMsg];
+      updateChatMessages(activeChatId, withUser);
+
+      try {
+        await new Promise(r => setTimeout(r, 800));
+        const imageUrl = buildImageUrl(imagePrompt);
+        const aiMsg = {
+          role: "assistant",
+          content: "",
+          imageUrl,
+          imagePrompt,
+          ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          id: uid()
+        };
+        updateChatMessages(activeChatId, [...withUser, aiMsg]);
+      } catch (err) {
+        updateChatMessages(activeChatId, [...withUser, {
+          role: "assistant",
+          content: "⚠️ Failed to generate image. Please try again.",
+          ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          id: uid()
+        }]);
+      } finally {
+        setImageLoading(false);
+        setInputText("");
+        setAttachments([]);
+      }
+      return;
+    }
+
+    // NORMAL CHAT MODE
+    if (health?.status === 'error' || health?.status === 'degraded') {
+      setToast(`Service ${health.status}: ${health.error || 'Check connection'}`);
+      return;
+    }
     if (!VISION_MODELS.includes(model) && attachments.length > 0) {
       setToast(`${getModelDisplayName(model)} cannot see images. Switch to a vision model.`);
       return;
@@ -807,7 +901,7 @@ const App = () => {
     sendMessage(text, attachments);
     setAttachments([]);
     setInputText("");
-  }, [sendMessage, health, attachments, model]);
+  }, [sendMessage, health, attachments, model, activeChatId, activeMessages, updateChatMessages]);
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files).filter(f => f.type.startsWith("image/"));
@@ -983,7 +1077,7 @@ const App = () => {
       <GlobalStyles />
       {customBg && <div style={{ position: "absolute", inset: 0, zIndex: 1, ...overlayStyle, pointerEvents: "none" }} />}
       {customBg && materialOverlay && <div className="material-overlay" style={{ backgroundImage: `url(${materialOverlay})`, opacity: overlayStrength }} />}
-      {toast && <div style={{ position: "fixed", top: 20, left: "50%", transform: "translateX(-50%)", background: "rgba(0,0,0,.9)", color: "#fff", padding: "12px 20px", borderRadius: 12, zIndex: 9999, fontSize: 13, borderLeft: "3px solid var(--primary)", boxShadow: "0 10px 30px rgba(0,0,0,.5)" }}>{toast}</div>}
+      {toast && <div className="toast"><Icon name="warning" size={16} color="#fca5a5" /> <span>{toast}</span></div>}
       {showCamera && (
         <div className="camera-overlay">
           <video ref={videoRef} autoPlay className="camera-video" />
@@ -1017,7 +1111,7 @@ const App = () => {
               <span className="sub-title">{T.name} • {getModelDisplayName(model)}{isSpeaking ? " • SPEAKING" : ""}{isListening ? " • LISTENING" : ""}</span>
             </div>
             <div className="header-actions">
-              {showSettings && <div style={{ display: "flex", gap: 8, padding: 10, background: "rgba(0,0,0,.85)", borderRadius: 14, position: "absolute", top: 75, right: 20, zIndex: 20, alignItems: "center", boxShadow: "0 10px 30px rgba(0,0,0,.5)", border: "1px solid var(--border)" }}>
+              {showSettings && <div style={{ display: "flex", gap: 8, padding: 10, background: "rgba(0,0,0,.85)", borderRadius: 12, position: "absolute", top: 70, right: 18, zIndex: 20, alignItems: "center", boxShadow: "0 10px 30px rgba(0,0,0,.5)", border: "1px solid var(--border)" }}>
                 {Object.keys(THEMES).map(k => <button key={k} onClick={() => setThemeKey(k)} className={`dot ${themeKey === k ? "active" : ""}`} style={{ background: THEMES[k]?.primary || DEFAULT_THEME.primary }} title={THEMES[k]?.name} />)}
               </div>}
               <button className={`icon-btn ${ttsEnabled ? "active" : ""}`} onClick={() => { if (isSpeaking) window.speechSynthesis.cancel(); setTtsEnabled(v => !v); }} title="Toggle AI voice">
@@ -1157,18 +1251,18 @@ const App = () => {
             </div>}
             <div className="scroll-wrapper" ref={chatRef} style={{ fontSize: `${fontSize}px` }}>
               {(health?.status === 'error' || health?.status === 'degraded') && <div className="error-banner">
-                <Icon name="volumeX" size={16} color="#fca5a5" />
-                <div><strong style={{ fontSize: 12, textTransform: "uppercase" }}>Service {health?.status}</strong><p style={{ margin: 0, fontSize: 11, marginTop: 3, color: "rgba(255,255,255,.6)" }}>{health?.error || 'Connecting...'}</p></div>
+                <Icon name="warning" size={16} color="#fca5a5" />
+                <div><strong style={{ fontSize: 12, textTransform: "uppercase" }}>Service {health?.status}</strong><p style={{ margin: 0, fontSize: 11, marginTop: 3, color: "rgba(255,255,255,.55)" }}>{health?.error || 'Connecting...'}</p></div>
               </div>}
-              {activeMessages.length === 0 && !streamText && <div className="empty-state">
+              {activeMessages.length === 0 && !streamText && !imageLoading && <div className="empty-state">
                 <div className="logo-big">AI</div>
                 <div>
                   <h2 className="empty-title">Cloud AI Assistant</h2>
-                  <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message. Manage multiple chats from the sidebar.</p>
+                  <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message. Try <span className="image-hint"><Icon name="image" size={12} /> /image</span> to generate professional images.</p>
                 </div>
                 <div className="suggestions">
                   {SUGGESTIONS.map((s, i) => <button key={i} onClick={() => setInputText(s.text)} className="suggestion-btn">
-                    <span style={{ color: "var(--primary)", fontSize: "8px" }}>●</span>
+                    <span style={{ color: "var(--primary)", fontSize: "8px", marginTop: 4 }}>●</span>
                     <div><div>{s.text}</div><div className="suggestion-category">{s.category}</div></div>
                   </button>)}
                 </div>
@@ -1176,11 +1270,22 @@ const App = () => {
               {filteredMessages.map((msg, idx) => <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
                 <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="bubble" style={{ padding: compactMode ? "8px 12px" : "12px 16px" }}>{formatMessage(msg.content)}</div>
+                  {msg.content && <div className="bubble" style={{ padding: compactMode ? "8px 12px" : "12px 16px" }}>{formatMessage(msg.content)}</div>}
+                  {msg.imageUrl && (
+                    <div style={{ marginTop: 10 }}>
+                      <img className="generated-image" src={msg.imageUrl} alt={msg.imagePrompt || "Generated image"} loading="lazy" />
+                      <div className="image-prompt">{msg.imagePrompt}</div>
+                      <div className="msg-actions" style={{ opacity: 1, marginTop: 6 }}>
+                        <a href={msg.imageUrl} download="generated-image.png" target="_blank" rel="noopener noreferrer" className="msg-action-btn">
+                          <Icon name="export" size={12} /> Download
+                        </a>
+                      </div>
+                    </div>
+                  )}
                   {msg.attachments?.length > 0 && <div className="attachment-grid">
                     {msg.attachments.map((a, i) => <div key={i} className="attachment-thumb"><img src={a.url} alt={a.name} /></div>)}
                   </div>}
-                  {msg.role === "assistant" && <MessageActions content={msg.content} onSpeak={speakText} />}
+                  {msg.role === "assistant" && !msg.imageUrl && <MessageActions content={msg.content} onSpeak={speakText} />}
                   <div className="msg-meta">{msg.ts}</div>
                 </div>
               </div>)}
@@ -1201,12 +1306,22 @@ const App = () => {
                   <div className="msg-meta">thinking</div>
                 </div>
               </div>}
+              {imageLoading && <div className="msg-row assistant">
+                <div className="avatar">AI</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div className="bubble" style={{ display: "flex", alignItems: "center", gap: 10, padding: compactMode ? "8px 12px" : "12px 16px" }}>
+                    <span style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,.2)", borderTopColor: "var(--primary)", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+                    <span>Generating image with FLUX...</span>
+                  </div>
+                  <div className="msg-meta">this may take a few seconds</div>
+                </div>
+              </div>}
             </div>
             <InputBar
               text={inputText}
               setText={setInputText}
               onSend={handleSend}
-              disabled={status !== "idle"}
+              disabled={status !== "idle" || imageLoading}
               status={status}
               stats={stats}
               attachments={attachments}
@@ -1221,7 +1336,7 @@ const App = () => {
           </main>
         </div>
       </div>
-      <div className="keyboard-hint">Ctrl+N new • Ctrl+B sidebar • Ctrl+K search • Ctrl+J export</div>
+      <div className="keyboard-hint">Ctrl+N new • Ctrl+B sidebar • Ctrl+K search • Ctrl+J export • /image</div>
     </div>
   );
 };

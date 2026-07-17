@@ -9,6 +9,13 @@ const Storage = {
   set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }
 };
 
+// Helper to extract RGB numbers from rgba(...) string
+const extractRgb = (rgbaString) => {
+  const match = rgbaString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+  if (!match) return "16, 185, 129";
+  return `${match[1]}, ${match[2]}, ${match[3]}`;
+};
+
 const THEMES = {
   forest: { name: "Enchanted Forest", primary: "#10b981", bg: "linear-gradient(135deg, #0f2027, #203a43, #2c5364)", cardBg: "rgba(15, 32, 39, 0.92)", borderColor: "rgba(16, 185, 129, 0.25)", userBubble: "rgba(5, 150, 105, 0.2)", aiBubble: "rgba(16, 185, 129, 0.15)", snowColor: "#10b981", emoji: "🌲" },
   waterfall: { name: "Majestic Waterfall", primary: "#0ea5e9", bg: "linear-gradient(135deg, #000428, #004e92, #000428)", cardBg: "rgba(0, 4, 40, 0.92)", borderColor: "rgba(14, 165, 233, 0.25)", userBubble: "rgba(2, 132, 199, 0.2)", aiBubble: "rgba(14, 165, 233, 0.15)", snowColor: "#0ea5e9", emoji: "🌊" },
@@ -272,8 +279,7 @@ const GlobalStyles = () => (
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     body { font-family: 'Inter', system-ui, -apple-system, sans-serif; overflow:hidden; height:100vh; background: #000000; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     .app-root { min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
-    .app-root.custom-bg::before { content:""; position:absolute; inset:0; z-index:1; pointer-events:none; transition: background .2s ease; }
-    .glass-main { position: relative; z-index: 10; width: min(98vw, 1000px); height: min(98vh, 1000px); background: var(--card-bg); backdrop-filter: blur(24px) saturate(1.5); border: 1px solid var(--border); border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 100px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,.1); }
+    .glass-main { position: relative; z-index: 10; width: min(98vw, 1000px); height: min(98vh, 1000px); backdrop-filter: blur(24px) saturate(1.5); border: 1px solid var(--border); border-radius: 24px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 100px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,.1); }
     .app-header { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
     .logo-box { width: 42px; height: 42px; border-radius: 16px; background: rgba(255,255,255,.08); display:flex; align-items:center; justify-content:center; font-size: 22px; cursor: pointer; position: relative; border: 1px solid var(--border); transition: all .3s cubic-bezier(0.4, 0, 0.2, 1); }
     .logo-box:hover { transform: scale(1.08); background: rgba(255,255,255,.12); box-shadow: 0 0 20px var(--primary); }
@@ -304,7 +310,6 @@ const GlobalStyles = () => (
     .custom-input { padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.08); color: #fff; font-size: 13px; outline: none; }
     .custom-input::placeholder { color: rgba(255,255,255,.4); }
     .color-picker { width: 44px; height: 36px; border: none; border-radius: 10px; cursor: pointer; background: transparent; }
-    .opacity-value { font-size: 12px; opacity: 0.8; min-width: 40px; text-align: right; }
     .search-bar { display:flex; align-items:center; gap:10px; margin: 10px 16px; padding: 10px 14px; border-radius:14px; background:rgba(255,255,255,.07); border:1px solid var(--border); flex-shrink: 0; }
     .search-bar input { flex:1; background:none; border:none; outline:none; color:#fff; font-size:14px; caret-color:var(--primary); }
     .search-bar button { background:none; border:none; color:rgba(255,255,255,.5); cursor:pointer; font-size:16px; padding:4px 8px; border-radius: 6px; }
@@ -423,7 +428,9 @@ const App = () => {
   const [themeKey, setThemeKey] = useState(() => { const savedTheme = Storage.get("pa-theme"); return savedTheme && THEMES[savedTheme] ? savedTheme : "forest"; });
   const [customBg, setCustomBg] = useState(() => Storage.get("pa-custom-bg") || "");
   const [customPrimary, setCustomPrimary] = useState(() => Storage.get("pa-custom-primary") || "");
+  const [accentColor, setAccentColor] = useState(() => Storage.get("pa-accent-color") || "");
   const [bgOpacity, setBgOpacity] = useState(() => { const v = Storage.get("pa-bg-opacity"); return v !== null ? parseFloat(v) : 0.4; });
+  const [glassOpacity, setGlassOpacity] = useState(() => { const v = Storage.get("pa-glass-opacity"); return v !== null ? parseFloat(v) : 0.92; });
   const { messages, streamText, status, stats, model, setModel, temperature, setTemperature, sendMessage, clearChat } = useChatSession();
   const [showSettings, setShowSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -434,6 +441,7 @@ const App = () => {
   const T = THEMES[themeKey] || DEFAULT_THEME;
 
   const primaryColor = customPrimary || T.primary;
+  const borderColor = accentColor || T.borderColor;
 
   const [attachments, setAttachments] = useState([]);
   const [inputText, setInputText] = useState("");
@@ -454,7 +462,9 @@ const App = () => {
   useEffect(() => { Storage.set("pa-theme", themeKey); }, [themeKey]);
   useEffect(() => { Storage.set("pa-custom-bg", customBg); }, [customBg]);
   useEffect(() => { Storage.set("pa-custom-primary", customPrimary); }, [customPrimary]);
+  useEffect(() => { Storage.set("pa-accent-color", accentColor); }, [accentColor]);
   useEffect(() => { Storage.set("pa-bg-opacity", bgOpacity.toString()); }, [bgOpacity]);
+  useEffect(() => { Storage.set("pa-glass-opacity", glassOpacity.toString()); }, [glassOpacity]);
   useEffect(() => { Storage.set("pa-tts", ttsEnabled.toString()); }, [ttsEnabled]);
   useEffect(() => { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [messages, streamText]);
 
@@ -563,18 +573,20 @@ const App = () => {
 
   const handlePerchance = () => setInputText(PERCHANCE_PROMPTS[Math.floor(Math.random() * PERCHANCE_PROMPTS.length)]);
 
-  const instanceVars = { "--primary": primaryColor, "--user-bubble": T.userBubble, "--ai-bubble": T.aiBubble, "--snow-color": T.snowColor };
+  const instanceVars = { "--primary": primaryColor, "--border": borderColor, "--user-bubble": T.userBubble, "--ai-bubble": T.aiBubble, "--snow-color": T.snowColor };
 
   const appBgStyle = customBg
     ? { backgroundImage: `url(${customBg})`, backgroundColor: "#000" }
     : { backgroundImage: T.bg };
+
+  const glassBg = `rgba(${extractRgb(T.cardBg)}, ${glassOpacity})`;
 
   const overlayStyle = customBg
     ? { backgroundColor: `rgba(0,0,0,${1 - bgOpacity})` }
     : {};
 
   return (
-    <div className={`app-root ${customBg ? "custom-bg" : ""}`} style={{ "--bg": customBg ? "none" : T.bg, "--card-bg": T.cardBg, "--border": T.borderColor, ...instanceVars, ...appBgStyle }} onDrop={handleDrop} onDragOver={e => { e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)}>
+    <div className={`app-root ${customBg ? "custom-bg" : ""}`} style={{ "--bg": customBg ? "none" : T.bg, ...instanceVars, ...appBgStyle }} onDrop={handleDrop} onDragOver={e => { e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)}>
       <GlobalStyles />
       {customBg && <div style={{ position: "absolute", inset: 0, zIndex: 1, ...overlayStyle, pointerEvents: "none" }} />}
       {toast && <div className="toast toast-error">❌ <span>{toast}</span></div>}
@@ -588,7 +600,7 @@ const App = () => {
           </div>
         </div>
       )}
-      <div className="glass-main">
+      <div className="glass-main" style={{ background: glassBg }}>
         <header className="app-header">
           <div className="logo-box" onClick={() => setShowSettings(s => !s)} title="Settings">
             <span>{T.emoji}</span>
@@ -612,7 +624,7 @@ const App = () => {
             <div className="setting-row">
               <div className="setting-label">🎨 Premium Themes ({Object.keys(THEMES).length})</div>
               <div className="theme-grid">
-                {Object.entries(THEMES).map(([k, v]) => <button key={k} onClick={() => { setThemeKey(k); setCustomBg(""); setCustomPrimary(""); }} className={`theme-card ${themeKey === k && !customBg && !customPrimary ? "selected" : ""}`}><span style={{ fontSize: "14px" }}>{v.emoji}</span><span>{v.name}</span></button>)}
+                {Object.entries(THEMES).map(([k, v]) => <button key={k} onClick={() => { setThemeKey(k); setCustomBg(""); setCustomPrimary(""); setAccentColor(""); }} className={`theme-card ${themeKey === k && !customBg && !customPrimary && !accentColor ? "selected" : ""}`}><span style={{ fontSize: "14px" }}>{v.emoji}</span><span>{v.name}</span></button>)}
               </div>
             </div>
             <div className="setting-row">
@@ -630,7 +642,7 @@ const App = () => {
                 <button onClick={() => setCustomBg("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80")} className="theme-card">🏖️ Beach</button>
                 <button onClick={() => setCustomBg("https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80")} className="theme-card">🏔️ Mountains</button>
                 <button onClick={() => setCustomBg("https://images.unsplash.com/photo-1557683316-973673baf926?w=1920&q=80")} className="theme-card">🌅 Abstract</button>
-                <button onClick={() => { setCustomBg(""); setCustomPrimary(""); }} className="theme-card">🎨 Use Theme</button>
+                <button onClick={() => { setCustomBg(""); setCustomPrimary(""); setAccentColor(""); }} className="theme-card">🎨 Use Theme</button>
               </div>
             </div>
             <div className="setting-row">
@@ -642,10 +654,26 @@ const App = () => {
               </div>
             </div>
             <div className="setting-row">
-              <div className="setting-label">🎨 Custom Accent Color</div>
-              <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+              <div className="setting-label">🪟 Chat Glass Opacity: {Math.round(glassOpacity * 100)}%</div>
+              <div className="slider-container">
+                <span style={{ fontSize: 12, opacity: 0.7 }}>See-through</span>
+                <input type="range" min="0.2" max="1" step="0.05" value={glassOpacity} onChange={(e) => setGlassOpacity(parseFloat(e.target.value))} className="slider" />
+                <span style={{ fontSize: 12, opacity: 0.7 }}>Solid</span>
+              </div>
+            </div>
+            <div className="setting-row">
+              <div className="setting-label">🖌️ Accent / Border Color</div>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <input type="color" value={accentColor || T.borderColor.replace(")", "").replace("rgba(", "").split(",").slice(0,3).map(v => parseInt(v).toString(16).padStart(2,'0')).join('') || T.primary} onChange={e => setAccentColor(e.target.value)} className="color-picker" />
+                <span style={{ fontSize: 12, opacity: 0.7 }}>{accentColor || "Theme default"}</span>
+                {accentColor && <button onClick={() => setAccentColor("")} className="theme-card">Reset</button>}
+              </div>
+            </div>
+            <div className="setting-row">
+              <div className="setting-label">🎨 Button Accent Color</div>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <input type="color" value={customPrimary || T.primary} onChange={e => setCustomPrimary(e.target.value)} className="color-picker" />
-                <span style={{ fontSize: 12, opacity: 0.7 }}>{customPrimary || T.primary}</span>
+                <span style={{ fontSize: 12, opacity: 0.7 }}>{customPrimary || "Theme default"}</span>
                 {customPrimary && <button onClick={() => setCustomPrimary("")} className="theme-card">Reset</button>}
               </div>
             </div>
@@ -686,7 +714,7 @@ const App = () => {
               <div className="logo-big">{T.emoji}</div>
               <div>
                 <h2 className="empty-title">Cloud AI Assistant</h2>
-                <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message. Customize your background and accent color in settings.</p>
+                <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message. Customize your background, glass opacity, and accent colors in settings.</p>
               </div>
               <div className="suggestions">
                 {SUGGESTIONS.map((s, i) => <button key={i} onClick={() => setInputText(s.text)} className="suggestion-btn">

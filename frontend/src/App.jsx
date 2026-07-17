@@ -1,4 +1,4 @@
- import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 const uid = () => crypto?.randomUUID?.() || Math.random().toString(36).slice(2, 10);
 
@@ -115,6 +115,52 @@ const MATERIAL_BACKGROUNDS = {
   leather: "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=1920&q=80",
   paper: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=1920&q=80",
   glass: "https://images.unsplash.com/photo-1495573542832-e339110fbd25?w=1920&q=80"
+};
+
+const MATERIAL_OVERLAYS = {
+  none: "",
+  wood: "https://www.transparenttextures.com/patterns/wood-pattern.png",
+  metal: "https://www.transparenttextures.com/patterns/brushed-alum.png",
+  paper: "https://www.transparenttextures.com/patterns/cream-paper.png",
+  fabric: "https://www.transparenttextures.com/patterns/gray-flannel.png",
+  concrete: "https://www.transparenttextures.com/patterns/concrete-wall.png",
+  leather: "https://www.transparenttextures.com/patterns/leather-nunchuk.png",
+  brick: "https://www.transparenttextures.com/patterns/brick-wall.png",
+  canvas: "https://www.transparenttextures.com/patterns/canvas-orange.png",
+  noise: "https://www.transparenttextures.com/patterns/stardust.png"
+};
+
+// Confetti effect helper
+const fireConfetti = () => {
+  if (!document.body) return;
+  const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff'];
+  for (let i = 0; i < 60; i++) {
+    const conf = document.createElement('div');
+    conf.style.position = 'fixed';
+    conf.style.width = '8px';
+    conf.style.height = '8px';
+    conf.style.background = colors[Math.floor(Math.random() * colors.length)];
+    conf.style.left = '50%';
+    conf.style.top = '50%';
+    conf.style.borderRadius = '50%';
+    conf.style.pointerEvents = 'none';
+    conf.style.zIndex = '99999';
+    document.body.appendChild(conf);
+    const angle = Math.random() * Math.PI * 2;
+    const velocity = 100 + Math.random() * 200;
+    const vx = Math.cos(angle) * velocity;
+    const vy = Math.sin(angle) * velocity;
+    const grav = 300 + Math.random() * 100;
+    let x = 0, y = 0, t = 0;
+    const anim = setInterval(() => {
+      t += 0.03;
+      x = vx * t;
+      y = vy * t + 0.5 * grav * t * t;
+      conf.style.transform = `translate(${x}px, ${y}px)`;
+      conf.style.opacity = 1 - t / 2;
+      if (t >= 2) { clearInterval(anim); conf.remove(); }
+    }, 16);
+  }
 };
 
 const useChatSession = () => {
@@ -244,7 +290,22 @@ const useChatSession = () => {
 
   const clearChat = useCallback(() => { setMessages([]); setStreamText(""); setStatus("idle"); accRef.current = ""; setStats(null); }, []);
 
-  return { messages, streamText, status, stats, model, setModel, temperature, setTemperature, sendMessage, clearChat };
+  const exportChat = useCallback(() => {
+    const data = messages.map(m => ({
+      role: m.role,
+      content: m.content,
+      time: m.ts
+    }));
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `chat-export-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [messages]);
+
+  return { messages, streamText, status, stats, model, setModel, temperature, setTemperature, sendMessage, clearChat, exportChat };
 };
 
 const useDockStatus = () => {
@@ -290,6 +351,24 @@ const useHealthCheck = () => {
   return health;
 };
 
+const CodeBlock = ({ code }) => (
+  <pre style={{ background: "rgba(0,0,0,.6)", padding: 12, borderRadius: 10, overflowX: "auto", fontFamily: "monospace", fontSize: 13, border: "1px solid var(--border)", marginTop: 8, marginBottom: 8 }}>
+    <code style={{ color: "#e2e8f0", whiteSpace: "pre" }}>{code}</code>
+  </pre>
+);
+
+const formatMessage = (text) => {
+  if (!text) return null;
+  const parts = text.split(/(```[\s\S]*?```)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith("```") && part.endsWith("```")) {
+      const code = part.slice(3, -3).replace(/^\w+\n/, "");
+      return <CodeBlock key={i} code={code} />;
+    }
+    return <span key={i} style={{ whiteSpace: "pre-wrap" }}>{part}</span>;
+  });
+};
+
 const GlobalStyles = () => (
   <style>{`
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
@@ -310,7 +389,7 @@ const GlobalStyles = () => (
     .dot:hover { transform: scale(1.25); border-color: rgba(255,255,255,.5); box-shadow: 0 0 10px var(--color); }
     .dot.active { border-color: #fff; box-shadow: 0 0 15px var(--color); }
     .app-content { flex:1; display:flex; flex-direction:column; position:relative; overflow:hidden; min-height:0; }
-    .settings-drawer { background: rgba(0,0,0,.5); backdrop-filter:blur(16px); padding: 14px 18px; border-bottom: 1px solid var(--border); max-height: 60vh; overflow-y: auto; flex-shrink:0; }
+    .settings-drawer { background: rgba(0,0,0,.5); backdrop-filter:blur(16px); padding: 14px 18px; border-bottom: 1px solid var(--border); max-height: 65vh; overflow-y: auto; flex-shrink:0; }
     .setting-row { margin-bottom: 14px; display:flex; flex-direction:column; gap:8px; }
     .setting-label { color:rgba(255,255,255,.7); font-size:13px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
     .theme-grid { display:flex; gap:8px; flex-wrap:wrap; }
@@ -326,6 +405,7 @@ const GlobalStyles = () => (
     .custom-input { padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.08); color: #fff; font-size: 13px; outline: none; }
     .custom-input::placeholder { color: rgba(255,255,255,.4); }
     .color-picker { width: 44px; height: 36px; border: none; border-radius: 10px; cursor: pointer; background: transparent; }
+    .material-overlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; background-repeat: repeat; background-size: 300px 300px; mix-blend-mode: overlay; }
     .search-bar { display:flex; align-items:center; gap:10px; margin: 10px 16px; padding: 10px 14px; border-radius:14px; background:rgba(255,255,255,.07); border:1px solid var(--border); flex-shrink: 0; }
     .search-bar input { flex:1; background:none; border:none; outline:none; color:#fff; font-size:14px; caret-color:var(--primary); }
     .search-bar button { background:none; border:none; color:rgba(255,255,255,.5); cursor:pointer; font-size:16px; padding:4px 8px; border-radius: 6px; }
@@ -342,10 +422,15 @@ const GlobalStyles = () => (
     .bubble { padding: 12px 16px; border-radius: 18px; font-size: 15px; line-height: 1.55; word-break: break-word; position: relative; max-width: 100%; }
     .msg-row.user .bubble { background: var(--user-bubble, rgba(16, 185, 129, 0.2)); color:#e0f2fe; border-bottom-right-radius:6px; }
     .msg-row.assistant .bubble { background: var(--ai-bubble, rgba(16, 185, 129, 0.15)); color:rgba(255,255,255,.92); border:1px solid var(--border); border-bottom-left-radius:6px; }
+    .msg-actions { display:flex; gap:6px; marginTop:6px; justifyContent:flex-end; opacity:0; transition:opacity .2s; }
+    .msg-row:hover .msg-actions { opacity:1; }
+    .msg-action-btn { padding:4px 8px; border-radius:6px; border:1px solid var(--border); background:rgba(255,255,255,.08); color:rgba(255,255,255,.7); fontSize:11px; cursor:pointer; }
+    .msg-action-btn:hover { background:rgba(255,255,255,.15); color:#fff; }
     .msg-meta { font-size:11px; opacity:.5; margin-top:4px; text-align: right; }
     .error-banner { display:flex; gap:12px; align-items:center; padding: 12px 16px; margin:8px 14px; border-radius:14px; background: rgba(239,68,68,.15); border: 1px solid rgba(239,68,68,.4); font-size:13px; color:#fca5a5; flex-shrink:0; }
     .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:18px; padding:30px 20px; text-align: center; }
-    .logo-big { font-size:52px; margin-bottom:8px; filter: drop-shadow(0 8px 24px rgba(0,0,0,.5)); }
+    .logo-big { font-size:52px; margin-bottom:8px; filter: drop-shadow(0 8px 24px rgba(0,0,0,.5)); animation: floatLogo 4s ease-in-out infinite; }
+    @keyframes floatLogo { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
     .empty-title { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 6px; }
     .empty-subtitle { color:rgba(255,255,255,.5); font-size:13px; max-width:360px; line-height: 1.5; }
     .suggestions { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:16px; max-width: 520px; }
@@ -364,12 +449,14 @@ const GlobalStyles = () => (
     .camera-btn { padding:12px 28px; border-radius:30px; border:none; font-weight:700; font-size:15px; cursor:pointer; }
     .camera-btn.primary { background:var(--primary); color:#000; }
     .camera-btn.secondary { background:rgba(255,255,255,.1); color:#fff; border:1px solid var(--border); }
+    .keyboard-hint { position:fixed; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.7); color:rgba(255,255,255,.5); padding:6px 14px; border-radius:20px; font-size:11px; zIndex:5; }
     @media (max-width: 640px) {
       .glass-main { width: 100vw; height: 100vh; border-radius: 0; max-height: none; }
       .scroll-wrapper { padding: 12px; gap: 10px; }
       .bubble { font-size: 14px; padding: 10px 14px; }
       .msg-row { max-width: 94%; }
       .main-title { font-size: 16px; }
+      .keyboard-hint { display:none; }
     }
   `}</style>
 );
@@ -440,6 +527,13 @@ const InputBar = ({ text, setText, onSend, disabled, status, stats, attachments,
   );
 };
 
+const MessageActions = ({ content, onSpeak }) => (
+  <div className="msg-actions">
+    <button onClick={() => navigator.clipboard.writeText(content)} className="msg-action-btn" title="Copy">📋 Copy</button>
+    <button onClick={() => onSpeak(content)} className="msg-action-btn" title="Read aloud">🔊 Read</button>
+  </div>
+);
+
 const App = () => {
   const [themeKey, setThemeKey] = useState(() => { const savedTheme = Storage.get("pa-theme"); return savedTheme && THEMES[savedTheme] ? savedTheme : "forest"; });
   const [customBg, setCustomBg] = useState(() => Storage.get("pa-custom-bg") || "");
@@ -447,7 +541,12 @@ const App = () => {
   const [accentColor, setAccentColor] = useState(() => Storage.get("pa-accent-color") || "");
   const [bgOpacity, setBgOpacity] = useState(() => { const v = Storage.get("pa-bg-opacity"); return v !== null ? parseFloat(v) : 0.4; });
   const [glassOpacity, setGlassOpacity] = useState(() => { const v = Storage.get("pa-glass-opacity"); return v !== null ? parseFloat(v) : 0.92; });
-  const { messages, streamText, status, stats, model, setModel, temperature, setTemperature, sendMessage, clearChat } = useChatSession();
+  const [materialOverlay, setMaterialOverlay] = useState(() => Storage.get("pa-material-overlay") || "");
+  const [overlayStrength, setOverlayStrength] = useState(() => { const v = Storage.get("pa-overlay-strength"); return v !== null ? parseFloat(v) : 0.35; });
+  const [fontSize, setFontSize] = useState(() => { const v = Storage.get("pa-font-size"); return v !== null ? parseFloat(v) : 15; });
+  const [compactMode, setCompactMode] = useState(() => Storage.get("pa-compact") === "true");
+  const [animations, setAnimations] = useState(() => Storage.get("pa-animations") !== "false");
+  const { messages, streamText, status, stats, model, setModel, temperature, setTemperature, sendMessage, clearChat, exportChat } = useChatSession();
   const [showSettings, setShowSettings] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [toast, setToast] = useState(null);
@@ -481,16 +580,26 @@ const App = () => {
   useEffect(() => { Storage.set("pa-accent-color", accentColor); }, [accentColor]);
   useEffect(() => { Storage.set("pa-bg-opacity", bgOpacity.toString()); }, [bgOpacity]);
   useEffect(() => { Storage.set("pa-glass-opacity", glassOpacity.toString()); }, [glassOpacity]);
+  useEffect(() => { Storage.set("pa-material-overlay", materialOverlay); }, [materialOverlay]);
+  useEffect(() => { Storage.set("pa-overlay-strength", overlayStrength.toString()); }, [overlayStrength]);
+  useEffect(() => { Storage.set("pa-font-size", fontSize.toString()); }, [fontSize]);
+  useEffect(() => { Storage.set("pa-compact", compactMode.toString()); }, [compactMode]);
+  useEffect(() => { Storage.set("pa-animations", animations.toString()); }, [animations]);
   useEffect(() => { Storage.set("pa-tts", ttsEnabled.toString()); }, [ttsEnabled]);
   useEffect(() => { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [messages, streamText]);
 
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); }, [toast]);
 
   useEffect(() => {
-    const handler = (e) => { if ((e.ctrlKey || e.metaKey) && e.key === "k") { e.preventDefault(); setSearchQuery(q => q ? "" : "focus"); } if (e.key === "Escape") { setShowSettings(false); setSearchQuery(""); stopCamera(); } };
+    const handler = (e) => { 
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") { e.preventDefault(); setSearchQuery(q => q ? "" : "focus"); }
+      if ((e.ctrlKey || e.metaKey) && e.key === "j") { e.preventDefault(); exportChat(); setToast("Chat exported!"); }
+      if ((e.ctrlKey || e.metaKey) && e.key === ".") { e.preventDefault(); setShowSettings(s => !s); }
+      if (e.key === "Escape") { setShowSettings(false); setSearchQuery(""); stopCamera(); }
+    };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, []);
+  }, [exportChat]);
 
   useEffect(() => {
     if (!ttsEnabled || !window.speechSynthesis) return;
@@ -505,6 +614,16 @@ const App = () => {
       lastSpokenRef.current = last.id;
     }
   }, [messages, status, ttsEnabled]);
+
+  const speakText = (text) => {
+    if (!window.speechSynthesis) { setToast("Speech not supported"); return; }
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text.replace(/^⚠️ /, ""));
+    u.onstart = () => setIsSpeaking(true);
+    u.onend = () => setIsSpeaking(false);
+    u.onerror = () => setIsSpeaking(false);
+    window.speechSynthesis.speak(u);
+  };
 
   const filteredMessages = useMemo(() => searchQuery.trim() ? messages.filter(m => m.content.toLowerCase().includes(searchQuery.toLowerCase())) : messages, [messages, searchQuery]);
 
@@ -589,7 +708,20 @@ const App = () => {
 
   const handlePerchance = () => setInputText(PERCHANCE_PROMPTS[Math.floor(Math.random() * PERCHANCE_PROMPTS.length)]);
 
-  const instanceVars = { "--primary": primaryColor, "--border": borderColor, "--user-bubble": T.userBubble, "--ai-bubble": T.aiBubble, "--snow-color": T.snowColor };
+  const handleConfetti = () => {
+    fireConfetti();
+    setToast("🎉 Celebration mode activated!");
+  };
+
+  const instanceVars = { 
+    "--primary": primaryColor, 
+    "--border": borderColor, 
+    "--user-bubble": T.userBubble, 
+    "--ai-bubble": T.aiBubble, 
+    "--snow-color": T.snowColor,
+    "--font-size": `${fontSize}px`,
+    "--bubble-padding": compactMode ? "8px 12px" : "12px 16px"
+  };
 
   const appBgStyle = customBg
     ? { backgroundImage: `url(${customBg})`, backgroundColor: "#000" }
@@ -602,9 +734,10 @@ const App = () => {
     : {};
 
   return (
-    <div className={`app-root ${customBg ? "custom-bg" : ""}`} style={{ "--bg": customBg ? "none" : T.bg, ...instanceVars, ...appBgStyle }} onDrop={handleDrop} onDragOver={e => { e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)}>
+    <div className={`app-root ${customBg ? "custom-bg" : ""} ${animations ? "" : "no-anim"}`} style={{ "--bg": customBg ? "none" : T.bg, ...instanceVars, ...appBgStyle }} onDrop={handleDrop} onDragOver={e => { e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)}>
       <GlobalStyles />
       {customBg && <div style={{ position: "absolute", inset: 0, zIndex: 1, ...overlayStyle, pointerEvents: "none" }} />}
+      {customBg && materialOverlay && <div className="material-overlay" style={{ backgroundImage: `url(${materialOverlay})`, opacity: overlayStrength }} />}
       {toast && <div className="toast toast-error">❌ <span>{toast}</span></div>}
       {showCamera && (
         <div className="camera-overlay">
@@ -616,7 +749,7 @@ const App = () => {
           </div>
         </div>
       )}
-      <div className="glass-main" style={{ background: glassBg }}>
+      <div className="glass-main" style={{ background: glassBg, fontSize: `${fontSize}px` }}>
         <header className="app-header">
           <div className="logo-box" onClick={() => setShowSettings(s => !s)} title="Settings">
             <span>{T.emoji}</span>
@@ -631,6 +764,8 @@ const App = () => {
             </div>}
             <button className={`icon-btn ${ttsEnabled ? "active" : ""}`} onClick={() => { if (isSpeaking) window.speechSynthesis.cancel(); setTtsEnabled(v => !v); }} title="Toggle AI voice">{ttsEnabled ? "🔊" : "🔇"}</button>
             <button className="icon-btn" onClick={handlePerchance} title="Surprise me!">🎲</button>
+            <button className="icon-btn" onClick={handleConfetti} title="Celebrate">🎉</button>
+            <button className="icon-btn" onClick={() => { exportChat(); setToast("Chat exported!"); }} title="Export chat (Ctrl+J)">💾</button>
             <button className="icon-btn" onClick={() => setToast("Premium features unlocked!")}>⭐</button>
             <button className={`icon-btn ${showSettings ? "active" : ""}`} onClick={() => setShowSettings(s => !s)}>⚙️</button>
           </div>
@@ -640,7 +775,7 @@ const App = () => {
             <div className="setting-row">
               <div className="setting-label">🎨 Premium Themes ({Object.keys(THEMES).length})</div>
               <div className="theme-grid">
-                {Object.entries(THEMES).map(([k, v]) => <button key={k} onClick={() => { setThemeKey(k); setCustomBg(""); setCustomPrimary(""); setAccentColor(""); }} className={`theme-card ${themeKey === k && !customBg && !customPrimary && !accentColor ? "selected" : ""}`}><span style={{ fontSize: "14px" }}>{v.emoji}</span><span>{v.name}</span></button>)}
+                {Object.entries(THEMES).map(([k, v]) => <button key={k} onClick={() => { setThemeKey(k); setCustomBg(""); setCustomPrimary(""); setAccentColor(""); setMaterialOverlay(""); }} className={`theme-card ${themeKey === k && !customBg && !customPrimary && !accentColor ? "selected" : ""}`}><span style={{ fontSize: "14px" }}>{v.emoji}</span><span>{v.name}</span></button>)}
               </div>
             </div>
             <div className="setting-row">
@@ -672,7 +807,28 @@ const App = () => {
                 <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.leather)} className="theme-card">👜 Leather</button>
                 <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.paper)} className="theme-card">📄 Paper</button>
                 <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.glass)} className="theme-card">🪟 Glass</button>
-                <button onClick={() => { setCustomBg(""); setCustomPrimary(""); setAccentColor(""); }} className="theme-card">🎨 Use Theme</button>
+                <button onClick={() => { setCustomBg(""); setCustomPrimary(""); setAccentColor(""); setMaterialOverlay(""); }} className="theme-card">🎨 Use Theme</button>
+              </div>
+            </div>
+            <div className="setting-row">
+              <div className="setting-label">🎨 Material Overlay (over your image)</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button onClick={() => setMaterialOverlay("")} className={`theme-card ${materialOverlay === "" ? "selected" : ""}`}>✨ None</button>
+                <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.wood)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.wood ? "selected" : ""}`}>🪵 Wood</button>
+                <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.metal)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.metal ? "selected" : ""}`}>🔩 Metal</button>
+                <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.paper)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.paper ? "selected" : ""}`}>📄 Paper</button>
+                <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.fabric)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.fabric ? "selected" : ""}`}>🧵 Fabric</button>
+                <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.concrete)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.concrete ? "selected" : ""}`}>🧱 Concrete</button>
+                <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.leather)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.leather ? "selected" : ""}`}>👜 Leather</button>
+                <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.brick)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.brick ? "selected" : ""}`}>🧱 Brick</button>
+                <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.canvas)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.canvas ? "selected" : ""}`}>🎨 Canvas</button>
+                <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.noise)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.noise ? "selected" : ""}`}>✨ Noise</button>
+              </div>
+              <div className="setting-label">🎚️ Overlay Strength: {Math.round(overlayStrength * 100)}%</div>
+              <div className="slider-container">
+                <span style={{ fontSize: 12, opacity: 0.7 }}>Subtle</span>
+                <input type="range" min="0.05" max="1" step="0.05" value={overlayStrength} onChange={(e) => setOverlayStrength(parseFloat(e.target.value))} className="slider" />
+                <span style={{ fontSize: 12, opacity: 0.7 }}>Strong</span>
               </div>
             </div>
             <div className="setting-row">
@@ -692,6 +848,14 @@ const App = () => {
               </div>
             </div>
             <div className="setting-row">
+              <div className="setting-label">🔤 Font Size: {fontSize}px</div>
+              <div className="slider-container">
+                <span style={{ fontSize: 12, opacity: 0.7 }}>Small</span>
+                <input type="range" min="12" max="22" step="1" value={fontSize} onChange={(e) => setFontSize(parseFloat(e.target.value))} className="slider" />
+                <span style={{ fontSize: 12, opacity: 0.7 }}>Large</span>
+              </div>
+            </div>
+            <div className="setting-row">
               <div className="setting-label">🖌️ Accent / Border Color</div>
               <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                 <input type="color" value={accentColor || T.borderColor.replace(")", "").replace("rgba(", "").split(",").slice(0,3).map(v => parseInt(v).toString(16).padStart(2,'0')).join('') || T.primary} onChange={e => setAccentColor(e.target.value)} className="color-picker" />
@@ -705,6 +869,15 @@ const App = () => {
                 <input type="color" value={customPrimary || T.primary} onChange={e => setCustomPrimary(e.target.value)} className="color-picker" />
                 <span style={{ fontSize: 12, opacity: 0.7 }}>{customPrimary || "Theme default"}</span>
                 {customPrimary && <button onClick={() => setCustomPrimary("")} className="theme-card">Reset</button>}
+              </div>
+            </div>
+            <div className="setting-row">
+              <div className="setting-label">⚡ Quick Toggles</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <button onClick={() => setCompactMode(v => !v)} className={`theme-card ${compactMode ? "selected" : ""}`}>{compactMode ? "📦 Compact On" : "📦 Compact Off"}</button>
+                <button onClick={() => setAnimations(v => !v)} className={`theme-card ${animations ? "selected" : ""}`}>{animations ? "✨ Animations On" : "✨ Animations Off"}</button>
+                <button onClick={clearChat} className="theme-card">🗑️ Clear Chat</button>
+                <button onClick={() => { exportChat(); setToast("Chat exported!"); }} className="theme-card">💾 Export Chat</button>
               </div>
             </div>
             <div className="setting-row">
@@ -725,17 +898,13 @@ const App = () => {
                 <span>📈</span>
               </div>
             </div>
-            <div className="setting-row">
-              <div className="setting-label">🗑️ Clear History</div>
-              <button onClick={clearChat} style={{ padding: "10px 14px", borderRadius: 12, border: "1px solid rgba(239,68,68,.4)", background: "rgba(239,68,68,.15)", color: "#fca5a5", cursor: "pointer", fontSize: 13 }}>Clear Chat History</button>
-            </div>
           </div>}
           {messages.length > 0 && <div className="search-bar">
             <span style={{ color: "rgba(255,255,255,.6)", fontSize: "14px" }}>🔍</span>
             <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search conversation... (Ctrl+K)" />
             <button onClick={() => setSearchQuery("")}>✕</button>
           </div>}
-          <div className="scroll-wrapper" ref={chatRef}>
+          <div className="scroll-wrapper" ref={chatRef} style={{ fontSize: `${fontSize}px` }}>
             {(health?.status === 'error' || health?.status === 'degraded') && <div className="error-banner">
               <span>⚠️</span>
               <div><strong>Service: {health?.status}</strong><p style={{ margin: 0, fontSize: 12, marginTop: 4 }}>{health?.error || 'Connecting...'}</p></div>
@@ -744,7 +913,7 @@ const App = () => {
               <div className="logo-big">{T.emoji}</div>
               <div>
                 <h2 className="empty-title">Cloud AI Assistant</h2>
-                <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message. Customize your background, glass opacity, and accent colors in settings.</p>
+                <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message. Customize your background, glass opacity, material overlays, and accent colors in settings.</p>
               </div>
               <div className="suggestions">
                 {SUGGESTIONS.map((s, i) => <button key={i} onClick={() => setInputText(s.text)} className="suggestion-btn">
@@ -756,24 +925,25 @@ const App = () => {
             {filteredMessages.map((msg, idx) => <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
               <div className="avatar">{msg.role === "user" ? "👤" : T.emoji}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="bubble">{msg.content}</div>
+                <div className="bubble" style={{ padding: compactMode ? "8px 12px" : "12px 16px" }}>{formatMessage(msg.content)}</div>
                 {msg.attachments?.length > 0 && <div className="attachment-grid">
                   {msg.attachments.map((a, i) => <div key={i} className="attachment-thumb"><img src={a.url} alt={a.name} /></div>)}
                 </div>}
+                {msg.role === "assistant" && <MessageActions content={msg.content} onSpeak={speakText} />}
                 <div className="msg-meta">{msg.ts}</div>
               </div>
             </div>)}
             {status === "streaming" && streamText && <div className="msg-row assistant">
               <div className="avatar">{T.emoji}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="bubble">{streamText}<span className="typing-indicator" /></div>
+                <div className="bubble" style={{ padding: compactMode ? "8px 12px" : "12px 16px" }}>{formatMessage(streamText)}<span className="typing-indicator" /></div>
                 <div className="msg-meta">AI is typing...</div>
               </div>
             </div>}
             {status === "loading" && <div className="msg-row assistant">
               <div className="avatar">{T.emoji}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="bubble" style={{ fontStyle: "italic", opacity: .7, display: "flex", alignItems: "center", gap: 8 }}>
+                <div className="bubble" style={{ fontStyle: "italic", opacity: .7, display: "flex", alignItems: "center", gap: 8, padding: compactMode ? "8px 12px" : "12px 16px" }}>
                   <span>⚡</span><span>Processing with {getModelDisplayName(model)}...</span>
                 </div>
                 <div className="msg-meta">AI is thinking</div>
@@ -798,6 +968,7 @@ const App = () => {
           <DockPanel dock={dock} />
         </main>
       </div>
+      <div className="keyboard-hint">Ctrl+K search • Ctrl+J export • Ctrl+. settings</div>
     </div>
   );
 };

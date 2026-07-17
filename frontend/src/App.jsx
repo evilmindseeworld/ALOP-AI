@@ -537,7 +537,7 @@ const GlobalStyles = () => (
     .sidebar-action.delete:hover { background: rgba(239,68,68,.2); color: #fca5a5; }
     .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
     .app-header { display: flex; align-items: center; gap: 14px; padding: 14px 20px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-    .menu-btn { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.04); color: rgba(255,255,255,.55); cursor: pointer; display: flex; alignItems: center; justifyContent: center; transition: all .2s; }
+    .menu-btn { width: 38px; height: 38px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.04); color: rgba(255,255,255,.55); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
     .menu-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
     .brand { display: flex; align-items: center; gap: 12px; cursor: default; user-select: none; }
     .brand-logo { width: 38px; height: 38px; border-radius: 10px; background: linear-gradient(135deg, var(--primary), rgba(255,255,255,.2)); display:flex; align-items:center; justify-content:center; font-size: 14px; font-weight: 900; color: #000; border: 1px solid rgba(255,255,255,.1); box-shadow: 0 6px 24px rgba(0,0,0,.35); }
@@ -545,13 +545,13 @@ const GlobalStyles = () => (
     .main-title { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: -.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .sub-title { font-size: 10px; color: rgba(255,255,255,.38); letter-spacing: .6px; text-transform: uppercase; margin-top: 2px; }
     .header-actions { display:flex; gap:6px; align-items:center; position:relative; }
-    .icon-btn { width:38px; height:38px; border-radius:10px; border:1px solid transparent; background: rgba(255,255,255,.04); color:rgba(255,255,255,.55); cursor:pointer; display:flex; alignItems: center; justifyContent: center; transition: all .15s; flex-shrink: 0; }
+    .icon-btn { width:38px; height:38px; border-radius:10px; border:1px solid transparent; background: rgba(255,255,255,.04); color:rgba(255,255,255,.55); cursor:pointer; display:flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
     .icon-btn:hover { background:rgba(255,255,255,.1); border-color:var(--border); color:#fff; }
     .icon-btn.active { background: var(--primary); color: #000; border-color: transparent; }
     .icon-btn.premium { position: relative; overflow: hidden; }
     .icon-btn.premium::after { content: ""; position: absolute; inset: 0; border-radius: 10px; padding: 1px; background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: shimmer 2.5s linear infinite; background-size: 200% 200%; }
     @keyframes shimmer { 0%{background-position: 0% 50%} 50%{background-position: 100% 50%} 100%{background-position: 0% 50%} }
-    .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.65); zIndex: 95; backdropFilter: blur(4px); opacity: 0; pointer-events: none; transition: opacity .25s; }
+    .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 95; backdropFilter: blur(4px); opacity: 0; pointer-events: none; transition: opacity .25s; }
     .drawer-overlay.open { opacity: 1; pointer-events: auto; }
     .settings-panel { position: absolute; top: 70px; right: 18px; width: 320px; max-height: calc(100vh - 100px); overflow-y: auto; background: rgba(0,0,0,.92); border: 1px solid var(--border); border-radius: 16px; padding: 18px; z-index: 100; box-shadow: 0 24px 80px rgba(0,0,0,.7); }
     .memory-panel-full { background: rgba(0,0,0,.42); backdrop-filter:blur(26px); padding: 20px; border-bottom: 1px solid var(--border); max-height: 60vh; overflow-y: auto; flex-shrink:0; }
@@ -577,7 +577,7 @@ const GlobalStyles = () => (
     .search-bar { display:flex; align-items:center; gap:10px; margin: 10px 16px; padding: 10px 14px; border-radius:10px; background:rgba(255,255,255,.04); border:1px solid var(--border); flex-shrink: 0; }
     .search-bar input { flex:1; background:none; border:none; outline:none; color:#fff; font-size:14px; caret-color:var(--primary); }
     .search-bar input::placeholder { color: rgba(255,255,255,.35); }
-    .search-bar button { background:none; border:none; color:rgba(255,255,255,.4); cursor:pointer; font-size:14px; padding:4px; border-radius: 6px; transition: all .15s; display: flex; alignItems: center; justifyContent: center; }
+    .search-bar button { background:none; border:none; color:rgba(255,255,255,.4); cursor:pointer; font-size:14px; padding:4px; border-radius: 6px; transition: all .15s; display: flex; align-items: center; justify-content: center; }
     .search-bar button:hover { background: rgba(255,255,255,.1); color: #fff; }
     .scroll-wrapper { flex:1; overflow-y:auto; scroll-behavior:smooth; padding:22px; display:flex; flex-direction:column; gap:14px; min-height:0; }
     .scroll-wrapper::-webkit-scrollbar { width:5px; }
@@ -587,7 +587,7 @@ const GlobalStyles = () => (
     .msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
     .msg-row.assistant { align-self: flex-start; }
     @keyframes msgIn { from { opacity:0; transform:translateY(10px);} to { opacity:1; transform:translateY(0);} }
-    .avatar { width:32px; height:32px; border-radius:9px; display:flex; alignItems: center; justifyContent: center; font-size:10px; font-weight: 900; flex-shrink:0; background:rgba(255,255,255,.05); border: 1px solid var(--border); color: rgba(255,255,255,.45); }
+    .avatar { width:32px; height:32px; border-radius:9px; display:flex; align-items: center; justify-content: center; font-size:10px; font-weight: 900; flex-shrink:0; background:rgba(255,255,255,.05); border: 1px solid var(--border); color: rgba(255,255,255,.45); }
     .msg-row.user .avatar { color: var(--primary); background: rgba(255,255,255,.08); }
     .msg-row.assistant .avatar { color: var(--primary); background: rgba(255,255,255,.08); }
     .bubble { padding: 14px 18px; border-radius: 14px; font-size: 15px; line-height: 1.6; word-break: break-word; position: relative; max-width: 100%; }
@@ -595,7 +595,7 @@ const GlobalStyles = () => (
     .msg-row.assistant .bubble { background: var(--ai-bubble, rgba(139, 92, 246, 0.06)); color:rgba(255,255,255,.88); border:1px solid var(--border); border-bottom-left-radius:4px; }
     .msg-actions { display:flex; gap:6px; margin-top:6px; justify-content:flex-end; opacity:0; transition:opacity .2s; }
     .msg-row:hover .msg-actions { opacity:1; }
-    .msg-action-btn { padding:5px 10px; border-radius:6px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:rgba(255,255,255,.5); font-size:11px; cursor:pointer; transition: all .15s; display: flex; alignItems: center; gap: 5px; }
+    .msg-action-btn { padding:5px 10px; border-radius:6px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:rgba(255,255,255,.5); font-size:11px; cursor:pointer; transition: all .15s; display: flex; align-items: center; gap: 5px; }
     .msg-action-btn:hover { background:rgba(255,255,255,.1); color:#fff; }
     .msg-meta { font-size:10px; color:rgba(255,255,255,.26); margin-top:4px; text-align: right; }
     .generated-image { max-width: 100%; max-height: 70vh; border-radius: 12px; border: 1px solid var(--border); display: block; box-shadow: 0 16px 48px rgba(0,0,0,.5); transition: transform .3s; cursor: pointer; }
@@ -603,7 +603,7 @@ const GlobalStyles = () => (
     .image-prompt { font-size: 12px; color: rgba(255,255,255,.45); margin-top: 10px; font-style: italic; }
     .error-banner { display:flex; gap:10px; align-items:center; padding: 10px 14px; margin:8px 16px; border-radius:10px; background: rgba(239,68,68,.07); border: 1px solid rgba(239,68,68,.22); font-size:12px; color:#fca5a5; flex-shrink:0; }
     .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:28px; padding:56px 28px; text-align: center; }
-    .logo-big { width:68px; height:68px; border-radius:18px; background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); border:1px solid var(--border); display:flex; alignItems: center; justifyContent: center; font-size:26px; font-weight:900; color:var(--primary); margin-bottom:4px; box-shadow: 0 16px 48px rgba(0,0,0,.35); }
+        .logo-big { width:56px; height:56px; border-radius:14px; background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); border:1px solid var(--border); display:flex; align-items: center; justify-content: center; font-size:22px; font-weight:900; color:var(--primary); margin:0 auto 8px auto; box-shadow: 0 16px 48px rgba(0,0,0,.35); }
     .empty-title { font-size: 24px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: -.3px; }
     .empty-subtitle { color:rgba(255,255,255,.4); font-size:13px; max-width:380px; line-height: 1.6; }
     .suggestions { display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:4px; max-width: 560px; }
@@ -616,7 +616,7 @@ const GlobalStyles = () => (
     .attachment-grid { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
     .attachment-thumb { width:64px; height:64px; border-radius:8px; overflow:hidden; border:1px solid var(--border); position:relative; }
     .attachment-thumb img { width:100%; height:100%; object-fit:cover; }
-    .attachment-remove { position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; border:none; background:rgba(0,0,0,.7); color:#fff; cursor:pointer; font-size:11px; display:flex; alignItems: center; justifyContent: center; }
+    .attachment-remove { position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; border:none; background:rgba(0,0,0,.7); color:#fff; cursor:pointer; font-size:11px; display:flex; align-items: center; justify-content: center; }
     .camera-overlay { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.97); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; }
     .camera-video { max-width:90vw; max-height:70vh; border-radius:14px; border:2px solid var(--border); }
     .camera-controls { display:flex; gap:20px; }
@@ -625,7 +625,7 @@ const GlobalStyles = () => (
     .camera-btn.secondary { background:rgba(255,255,255,.08); color:#fff; border:1px solid var(--border); }
     .keyboard-hint { position:fixed; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.55); color:rgba(255,255,255,.3); padding:6px 14px; border-radius:20px; font-size:11px; z-index:5; }
     .no-anim .msg-row, .no-anim .typing-indicator { animation:none; }
-    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.94); color: #fff; padding: 12px 20px; border-radius: 10px; z-index: 9999; font-size: 13px; border-left: 3px solid var(--primary); box-shadow: 0 20px 60px rgba(0,0,0,.6); display: flex; alignItems: center; gap: 10px; }
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.94); color: #fff; padding: 12px 20px; border-radius: 10px; z-index: 9999; font-size: 13px; border-left: 3px solid var(--primary); box-shadow: 0 20px 60px rgba(0,0,0,.6); display: flex; align-items: center; gap: 10px; }
     .image-hint { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; background: rgba(139,92,246,.12); color: rgba(255,255,255,.7); font-size: 11px; border: 1px solid rgba(139,92,246,.2); }
     .memory-card { padding: 16px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid var(--border); margin-bottom: 14px; }
     .memory-card-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,.75); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
@@ -1302,7 +1302,7 @@ const App = () => {
               <div className="setting-row">
                 <div className="setting-label">Theme</div>
                 <div className="theme-grid">
-                  {Object.entries(THEMES).map(([k, v]) => <button key={k} onClick={() => { setThemeKey(k); setCustomBg(""); setCustomPrimary(""); setAccentColor(""); }} className={`theme-card ${themeCardSelected(k) ? "selected" : ""}`}>{v.name}</button>)}
+                 {Object.entries(THEMES).map(([k, v]) => <button key={k} onClick={() => { setThemeKey(k); setCustomPrimary(""); setAccentColor(""); }} className={`theme-card ${themeCardSelected(k) ? "selected" : ""}`}>{v.name}</button>)}
                 </div>
               </div>
               <div className="setting-row">

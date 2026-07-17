@@ -31,6 +31,15 @@ const THEMES = {
 
 const DEFAULT_THEME = THEMES.forest;
 
+const SUGGESTIONS = [
+  { text: "Explain quantum computing in simple terms", icon: "🔬", category: "Science" },
+  { text: "Write Python code to analyze sales data", icon: "💻", category: "Coding" },
+  { text: "Create a business plan for a tech startup", icon: "📊", category: "Business" },
+  { text: "Explain blockchain technology and applications", icon: "🔗", category: "Technology" },
+  { text: "How to optimize database performance?", icon: "🗄️", category: "Tech" },
+  { text: "Write a poem about artificial intelligence", icon: "✍️", category: "Creative" }
+];
+
 const MODEL_DISPLAY_NAMES = {
   'glm-5.2': '🧠 GLM 5.2',
   'glm-5.1': '🧠 GLM 5.1',

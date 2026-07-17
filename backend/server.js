@@ -15,22 +15,13 @@ if (!fetch) {
 const OLLAMA_HOST = (process.env.OLLAMA_HOST || "https://api.ollama.com").replace(/\/$/, "");
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY || "";
 
-const allowedOrigins = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(",")
-  : ["http://localhost:5173", "http://localhost:3000"];
-
 app.use(
   cors({
-    origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error(`Not allowed by CORS: ${origin}`));
-      }
-    },
+    origin: true,
     credentials: true,
   })
 );
+
 
 app.use(express.json({ limit: "20mb" }));
 

@@ -106,23 +106,14 @@ const PERCHANCE_PROMPTS = [
   "Write a random email from a future civilization"
 ];
 
-const MATERIAL_BACKGROUNDS = {
+const BACKGROUND_PRESETS = {
   forest: "https://images.unsplash.com/photo-1511497584788-876760111969?w=1920&q=80",
   space: "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=1920&q=80",
   beach: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80",
   mountains: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80",
   abstract: "https://images.unsplash.com/photo-1557683316-973673baf926?w=1920&q=80",
   water: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1920&q=80",
-  fire: "https://images.unsplash.com/photo-1505009253807-0a4c86083162?w=1920&q=80",
-  wood: "https://images.unsplash.com/photo-1541123603104-512919d6a96c?w=1920&q=80",
-  metal: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1920&q=80",
-  marble: "https://images.unsplash.com/photo-1566996533071-2c578080c06e?w=1920&q=80",
-  fabric: "https://images.unsplash.com/photo-1620799140408-edc6dcb6d633?w=1920&q=80",
-  concrete: "https://images.unsplash.com/photo-1517524285303-d6fc683dddf8?w=1920&q=80",
-  brick: "https://images.unsplash.com/photo-1516571137133-19b90f42f3ba?w=1920&q=80",
-  leather: "https://images.unsplash.com/photo-1550989460-0adf9ea622e2?w=1920&q=80",
-  paper: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=1920&q=80",
-  glass: "https://images.unsplash.com/photo-1495573542832-e339110fbd25?w=1920&q=80"
+  fire: "https://images.unsplash.com/photo-1505009253807-0a4c86083162?w=1920&q=80"
 };
 
 const MATERIAL_OVERLAYS = {
@@ -138,38 +129,6 @@ const MATERIAL_OVERLAYS = {
   noise: "https://www.transparenttextures.com/patterns/stardust.png"
 };
 
-const fireConfetti = () => {
-  if (!document.body) return;
-  const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff'];
-  for (let i = 0; i < 60; i++) {
-    const conf = document.createElement('div');
-    conf.style.position = 'fixed';
-    conf.style.width = '8px';
-    conf.style.height = '8px';
-    conf.style.background = colors[Math.floor(Math.random() * colors.length)];
-    conf.style.left = '50%';
-    conf.style.top = '50%';
-    conf.style.borderRadius = '50%';
-    conf.style.pointerEvents = 'none';
-    conf.style.zIndex = '99999';
-    document.body.appendChild(conf);
-    const angle = Math.random() * Math.PI * 2;
-    const velocity = 100 + Math.random() * 200;
-    const vx = Math.cos(angle) * velocity;
-    const vy = Math.sin(angle) * velocity;
-    const grav = 300 + Math.random() * 100;
-    let t = 0;
-    const anim = setInterval(() => {
-      t += 0.03;
-      const x = vx * t;
-      const y = vy * t + 0.5 * grav * t * t;
-      conf.style.transform = `translate(${x}px, ${y}px)`;
-      conf.style.opacity = 1 - t / 2;
-      if (t >= 2) { clearInterval(anim); conf.remove(); }
-    }, 16);
-  }
-};
-
 const useChatManager = () => {
   const [chats, setChats] = useState(() => {
     try {
@@ -178,11 +137,15 @@ const useChatManager = () => {
     } catch { return []; }
   });
 
-  const [activeChatId, setActiveChatId] = useState(() => {
-    const saved = Storage.get('pa_active_chat');
-    if (saved && chats.some(c => c.id === saved)) return saved;
-    return null;
-  });
+  const [activeChatId, setActiveChatId] = useState(null);
+
+  useEffect(() => {
+    if (!activeChatId && chats.length > 0) {
+      const saved = Storage.get('pa_active_chat');
+      const found = chats.find(c => c.id === saved);
+      setActiveChatId(found ? found.id : chats[0].id);
+    }
+  }, [activeChatId, chats]);
 
   const createChat = useCallback((title = "New Chat") => {
     const newChat = { id: uid(), title, messages: [], createdAt: Date.now() };
@@ -192,10 +155,8 @@ const useChatManager = () => {
   }, []);
 
   useEffect(() => {
-    if (chats.length === 0) {
-      createChat("New Chat");
-    }
-  }, []);
+    if (chats.length === 0) createChat("New Chat");
+  }, [chats.length, createChat]);
 
   const deleteChat = useCallback((id) => {
     const chat = chats.find(c => c.id === id);
@@ -481,7 +442,7 @@ const GlobalStyles = () => (
     .custom-input { padding: 10px 14px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.08); color: #fff; font-size: 13px; outline: none; }
     .custom-input::placeholder { color: rgba(255,255,255,.4); }
     .color-picker { width: 44px; height: 36px; border: none; border-radius: 10px; cursor: pointer; background: transparent; }
-    .material-overlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; background-repeat: repeat; background-size: 300px 300px; mix-blend-mode: overlay; }
+    .material-overlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; background-repeat: repeat; background-size: 200px 200px; mix-blend-mode: overlay; }
     .search-bar { display:flex; align-items:center; gap:10px; margin: 10px 16px; padding: 10px 14px; border-radius:14px; background:rgba(255,255,255,.07); border:1px solid var(--border); flex-shrink: 0; }
     .search-bar input { flex:1; background:none; border:none; outline:none; color:#fff; font-size:14px; caret-color:var(--primary); }
     .search-bar button { background:none; border:none; color:rgba(255,255,255,.5); cursor:pointer; font-size:16px; padding:4px 8px; border-radius: 6px; }
@@ -641,7 +602,8 @@ const ChatSidebar = ({ chats, activeChatId, onSelect, onCreate, onDelete, onRena
     <>
       <div className={`chat-sidebar ${sidebarOpen ? "open" : ""}`} onClick={e => e.stopPropagation()}>
         <div className="sidebar-header">
-          <button onClick={onCreate} className="sidebar-btn">+ New Chat</button>
+          <button onClick={() => { onCreate(); setSidebarOpen(false); }} className="sidebar-btn">+ New Chat</button>
+          <button onClick={() => setSidebarOpen(false)} className="icon-btn" title="Close sidebar">✕</button>
         </div>
         <div className="sidebar-list">
           {chats.map(chat => (
@@ -682,7 +644,7 @@ const App = () => {
   const [bgOpacity, setBgOpacity] = useState(() => { const v = Storage.get("pa-bg-opacity"); return v !== null ? parseFloat(v) : 0.4; });
   const [glassOpacity, setGlassOpacity] = useState(() => { const v = Storage.get("pa-glass-opacity"); return v !== null ? parseFloat(v) : 0.92; });
   const [materialOverlay, setMaterialOverlay] = useState(() => Storage.get("pa-material-overlay") || "");
-  const [overlayStrength, setOverlayStrength] = useState(() => { const v = Storage.get("pa-overlay-strength"); return v !== null ? parseFloat(v) : 0.35; });
+  const [overlayStrength, setOverlayStrength] = useState(() => { const v = Storage.get("pa-overlay-strength"); return v !== null ? parseFloat(v) : 0.55; });
   const [fontSize, setFontSize] = useState(() => { const v = Storage.get("pa-font-size"); return v !== null ? parseFloat(v) : 15; });
   const [compactMode, setCompactMode] = useState(() => Storage.get("pa-compact") === "true");
   const [animations, setAnimations] = useState(() => Storage.get("pa-animations") !== "false");
@@ -708,6 +670,7 @@ const App = () => {
 
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
+  const listeningTimeoutRef = useRef(null);
 
   const [ttsEnabled, setTtsEnabled] = useState(() => Storage.get("pa-tts") === "true");
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -839,31 +802,78 @@ const App = () => {
     }, "image/png");
   };
 
-  const startListening = () => {
+  const stopListening = useCallback(() => {
+    if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current);
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch {}
+      recognitionRef.current = null;
+    }
+    setIsListening(false);
+  }, []);
+
+  const startListening = useCallback(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) { setToast("Voice input needs Chrome/Edge"); return; }
-    const recognition = new SpeechRecognition();
-    recognition.continuous = false; recognition.interimResults = true; recognition.lang = "en-US";
-    recognition.onstart = () => setIsListening(true);
-    recognition.onend = () => setIsListening(false);
-    recognition.onresult = (event) => {
-      let transcript = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) transcript += event.results[i][0].transcript;
-      setInputText(prev => prev + transcript + " ");
-    };
-    recognition.onerror = (event) => { setToast("Voice error: " + event.error); setIsListening(false); };
-    recognition.start();
-    recognitionRef.current = recognition;
-  };
 
-  const stopListening = () => { recognitionRef.current?.stop(); setIsListening(false); };
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch {}
+      recognitionRef.current = null;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.lang = "en-US";
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        listeningTimeoutRef.current = setTimeout(() => {
+          try { recognition.stop(); } catch {}
+        }, 10000);
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+        if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current);
+        recognitionRef.current = null;
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript.trim()) setInputText(prev => prev + transcript + " ");
+      };
+
+      recognition.onerror = (event) => {
+        console.warn("Voice error:", event.error);
+        if (event.error === "not-allowed") setToast("Microphone permission denied");
+        else if (event.error === "no-speech") setToast("No speech detected");
+        else if (event.error === "network") setToast("Voice network error. Try again.");
+        else if (event.error === "aborted") {}
+        else setToast("Voice error: " + event.error);
+        setIsListening(false);
+        if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current);
+        recognitionRef.current = null;
+      };
+
+      recognition.start();
+      recognitionRef.current = recognition;
+    } catch (err) {
+      setToast("Could not start voice input");
+      setIsListening(false);
+    }
+  }, []);
+
+  const toggleListening = useCallback(() => {
+    if (isListening) stopListening();
+    else startListening();
+  }, [isListening, stopListening, startListening]);
 
   const handlePerchance = () => setInputText(PERCHANCE_PROMPTS[Math.floor(Math.random() * PERCHANCE_PROMPTS.length)]);
-
-  const handleConfetti = () => {
-    fireConfetti();
-    setToast("🎉 Celebration mode activated!");
-  };
 
   const handleCreateChat = () => {
     createChat();
@@ -934,9 +944,7 @@ const App = () => {
                 {Object.keys(THEMES).map(k => <button key={k} onClick={() => setThemeKey(k)} className={`dot ${themeKey === k ? "active" : ""}`} style={{ background: THEMES[k]?.primary || DEFAULT_THEME.primary }} title={THEMES[k]?.name} />)}
               </div>}
               <button className={`icon-btn ${ttsEnabled ? "active" : ""}`} onClick={() => { if (isSpeaking) window.speechSynthesis.cancel(); setTtsEnabled(v => !v); }} title="Toggle AI voice">{ttsEnabled ? "🔊" : "🔇"}</button>
-              <button className="icon-btn" onClick={handleCreateChat} title="New chat (Ctrl+N)">➕</button>
               <button className="icon-btn" onClick={handlePerchance} title="Surprise me!">🎲</button>
-              <button className="icon-btn" onClick={handleConfetti} title="Celebrate">🎉</button>
               <button className="icon-btn" onClick={() => { if (activeChatId) exportChat(activeChatId); setToast("Chat exported!"); }} title="Export chat (Ctrl+J)">💾</button>
               <button className="icon-btn" onClick={() => setToast("Premium features unlocked!")}>⭐</button>
               <button className={`icon-btn ${showSettings ? "active" : ""}`} onClick={() => setShowSettings(s => !s)}>⚙️</button>
@@ -954,30 +962,18 @@ const App = () => {
                 <div className="setting-label">🖼️ Custom Background</div>
                 <input className="custom-input" type="text" value={customBg} onChange={e => setCustomBg(e.target.value)} placeholder="Paste image URL (e.g. painting of forest)" />
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.forest)} className="theme-card">🌲 Forest</button>
-                  <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.space)} className="theme-card">🌌 Space</button>
-                  <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.beach)} className="theme-card">🏖️ Beach</button>
-                  <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.mountains)} className="theme-card">🏔️ Mountains</button>
-                  <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.abstract)} className="theme-card">🌅 Abstract</button>
-                  <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.water)} className="theme-card">💧 Water</button>
-                  <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.fire)} className="theme-card">🔥 Fire</button>
-                </div>
-                <div className="setting-label">🧱 Materials</div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.wood)} className="theme-card">🪵 Wood</button>
-                  <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.metal)} className="theme-card">🔩 Metal</button>
-                  <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.marble)} className="theme-card">🗿 Marble</button>
-                  <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.fabric)} className="theme-card">🧵 Fabric</button>
-                  <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.concrete)} className="theme-card">🧱 Concrete</button>
-                  <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.brick)} className="theme-card">🧱 Brick</button>
-                  <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.leather)} className="theme-card">👜 Leather</button>
-                  <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.paper)} className="theme-card">📄 Paper</button>
-                  <button onClick={() => setCustomBg(MATERIAL_BACKGROUNDS.glass)} className="theme-card">🪟 Glass</button>
+                  <button onClick={() => setCustomBg(BACKGROUND_PRESETS.forest)} className="theme-card">🌲 Forest</button>
+                  <button onClick={() => setCustomBg(BACKGROUND_PRESETS.space)} className="theme-card">🌌 Space</button>
+                  <button onClick={() => setCustomBg(BACKGROUND_PRESETS.beach)} className="theme-card">🏖️ Beach</button>
+                  <button onClick={() => setCustomBg(BACKGROUND_PRESETS.mountains)} className="theme-card">🏔️ Mountains</button>
+                  <button onClick={() => setCustomBg(BACKGROUND_PRESETS.abstract)} className="theme-card">🌅 Abstract</button>
+                  <button onClick={() => setCustomBg(BACKGROUND_PRESETS.water)} className="theme-card">💧 Water</button>
+                  <button onClick={() => setCustomBg(BACKGROUND_PRESETS.fire)} className="theme-card">🔥 Fire</button>
                   <button onClick={() => { setCustomBg(""); setCustomPrimary(""); setAccentColor(""); setMaterialOverlay(""); }} className="theme-card">🎨 Use Theme</button>
                 </div>
               </div>
               <div className="setting-row">
-                <div className="setting-label">🎨 Material Overlay (over your image)</div>
+                <div className="setting-label">🎨 Texture Overlay (over your image)</div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button onClick={() => setMaterialOverlay("")} className={`theme-card ${materialOverlay === "" ? "selected" : ""}`}>✨ None</button>
                   <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.wood)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.wood ? "selected" : ""}`}>🪵 Wood</button>
@@ -1129,7 +1125,7 @@ const App = () => {
               onPasteImage={pasteImage}
               onStartCamera={startCamera}
               isListening={isListening}
-              toggleListening={isListening ? stopListening : startListening}
+              toggleListening={toggleListening}
             />
             <DockPanel dock={dock} />
           </main>

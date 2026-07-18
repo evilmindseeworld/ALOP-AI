@@ -74,7 +74,6 @@ const Icon = ({ name, size = 18, color = "currentColor" }) => {
     download: <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     brain: <g><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-5 0v-1M12 4.5A2.5 2.5 0 0 1 14.5 2a2.5 2.5 0 0 1 2.5 2.5v1M12 19.5a2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5v-1" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
     star: <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
-    crown: <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     volume: <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     volumeX: <path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
   };
@@ -206,15 +205,13 @@ const GlobalStyles = () => (
     html, body, #root { height: 100%; }
     body { font-family: 'Inter', system-ui, sans-serif; background: #000; overflow: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     .app-root { width: 100vw; height: 100vh; display: flex; position: relative; overflow: hidden; }
-    .app-root.custom-bg { background-size: cover; background-position: center; background-repeat: no-repeat; }
     .bg-layer { position: absolute; inset: 0; z-index: 1; background-size: cover; background-position: center; background-repeat: no-repeat; }
-    .bg-overlay { position: absolute; inset: 0; z-index: 2; background: transparent; pointer-events: none; }
-    .app-shell { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
-    .app-header { display: flex; align-items: center; gap: 14px; padding: 14px 22px; flex-shrink: 0;  background: rgba(255,255,255,0.02);  }
+    .bg-overlay { position: absolute; inset: 0; z-index: 2; background: rgba(0,0,0,0.55); pointer-events: none; }
+    .app-shell { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; background: transparent; }
+    .app-header { position: absolute; top: 0; left: 0; right: 0; z-index: 50; display: flex; align-items: center; gap: 14px; padding: 14px 22px; background: transparent; }
     .menu-btn { width: 40px; height: 40px; border-radius: 11px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); backdrop-filter: blur(10px); color: rgba(255,255,255,.7); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
-    .menu-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
+    .menu-btn:hover { background: rgba(0,0,0,0.55); color: #fff; }
     .brand { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; cursor: default; user-select: none; }
-    .brand-logo { width: 40px; height: 40px; border-radius: 11px; background: linear-gradient(135deg, var(--primary), rgba(255,255,255,.25)); display:flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900; color: #000; border: 1px solid rgba(255,255,255,.1); }
     .title-group { flex:1; min-width:0; }
     .main-title { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .sub-title { font-size: 10px; color: rgba(255,255,255,.4); letter-spacing: .6px; text-transform: uppercase; margin-top: 1px; }
@@ -222,13 +219,10 @@ const GlobalStyles = () => (
     .icon-btn { width:40px; height:40px; border-radius:11px; border:1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); backdrop-filter: blur(10px); color:rgba(255,255,255,.7); cursor:pointer; display:flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
     .icon-btn:hover { background:rgba(0,0,0,0.55); border-color:rgba(255,255,255,0.15); color:#fff; }
     .icon-btn.active { background: var(--primary); color: #000; border-color: transparent; }
-    .icon-btn.premium { position: relative; overflow: hidden; }
-    .icon-btn.premium::after { content: ""; position: absolute; inset: 0; border-radius: 11px; padding: 1px; background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: shimmer 2.5s linear infinite; background-size: 200% 200%; }
-    @keyframes shimmer { 0%{background-position: 0% 50%} 50%{background-position: 100% 50%} 100%{background-position: 0% 50%} }
     .app-body { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; overflow: hidden; }
-    .chat-sidebar { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: transparent;  display: flex; flex-direction: column; overflow: hidden; transition: width .3s ease, padding .3s ease; }
+    .chat-sidebar { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: rgba(0,0,0,0.75); backdrop-filter: blur(30px); display: flex; flex-direction: column; overflow: hidden; transition: width .3s ease, padding .3s ease; }
     .chat-sidebar.collapsed { width: 0; padding: 0; border-right: none; overflow: hidden; }
-    .sidebar-header { padding: 16px;  }
+    .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); }
     .sidebar-btn { width: 100%; height: 42px; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--primary), rgba(255,255,255,.25)); color: #000; cursor: pointer; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .2s; }
     .sidebar-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
     .sidebar-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
@@ -249,12 +243,14 @@ const GlobalStyles = () => (
     .sidebar-action.active { color: var(--primary); }
     .sidebar-action.delete:hover { background: rgba(239,68,68,.2); color: #fca5a5; }
     .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; padding-top: 70px; padding-bottom: 80px; }
-    .chat-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .chat-content { flex: 1; display: flex; flex-direction: column; position: relative; background: transparent; overflow: hidden; }
     .panel-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,.4); backdrop-filter: blur(2px); }
     .panel { position: absolute; top: 70px; right: 16px; width: 340px; max-height: calc(100vh - 100px); overflow-y: auto; background: rgba(0,0,0,.92); border: 1px solid var(--border); border-radius: 16px; padding: 18px; z-index: 100; box-shadow: 0 24px 80px rgba(0,0,0,.7); }
     .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .panel-title { font-size: 12px; font-weight: 800; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
-    .memory-panel { position: absolute; top: 0; left: 0; right: 0; z-index: 80; background: rgba(0,0,0,.85); backdrop-filter: blur(24px);  padding: 18px 22px; max-height: 65vh; overflow-y: auto; }
+    .memory-panel { position: absolute; top: 0; left: 0; right: 0; z-index: 80; background: rgba(0,0,0,.85); backdrop-filter: blur(24px); border-bottom: 1px solid var(--border); padding: 18px 22px; max-height: 65vh; overflow-y: auto; }
+    .memory-card { padding: 18px; border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid var(--border); margin-bottom: 16px; }
+    .memory-card-title { font-size: 14px; font-weight: 700; color: rgba(255,255,255,.78); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
     .setting-row { margin-bottom: 16px; display:flex; flex-direction:column; gap:10px; }
     .setting-row:last-child { margin-bottom: 0; }
     .setting-label { color:rgba(255,255,255,.45); font-size:10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
@@ -281,22 +277,21 @@ const GlobalStyles = () => (
     .msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
     .msg-row.assistant { align-self: flex-start; }
     @keyframes msgIn { from { opacity:0; transform:translateY(10px);} to { opacity:1; transform:translateY(0);} }
-    .avatar { width:32px; height:32px; border-radius:9px; display:flex; align-items: center; justify-content: center; font-size:10px; font-weight: 900; flex-shrink:0; background:rgba(255,255,255,.05); border: 1px solid var(--border); color: rgba(255,255,255,.45); }
+    .avatar { width:32px; height:32px; border-radius:9px; display:flex; align-items: center; justify-content: center; font-size:10px; font-weight: 900; flex-shrink:0; background:rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,0.08); color: rgba(255,255,255,.45); }
     .msg-row.user .avatar { color: var(--primary); background: rgba(255,255,255,.08); }
     .bubble { padding: 14px 18px; border-radius: 14px; font-size: 15px; line-height: 1.6; word-break: break-word; max-width: 100%; }
     .msg-row.user .bubble { background: rgba(139, 92, 246, 0.75); color:#f8fafc; border-bottom-right-radius:4px; }
     .msg-row.assistant .bubble { background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(14px); color:rgba(255,255,255,.95); border:1px solid rgba(255,255,255,0.08); border-bottom-left-radius:4px; }
     .msg-actions { display:flex; gap:5px; margin-top:5px; justify-content:flex-end; opacity:0; transition:opacity .2s; }
     .msg-row:hover .msg-actions { opacity:1; }
-    .msg-action-btn { padding:5px 10px; border-radius:6px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:rgba(255,255,255,.5); font-size:11px; cursor:pointer; transition: all .15s; display: flex; align-items: center; gap: 5px; }
-    .msg-action-btn:hover { background:rgba(255,255,255,.1); color:#fff; }
+    .msg-action-btn { padding:5px 10px; border-radius:6px; border:1px solid rgba(255,255,255,0.08); background:rgba(0,0,0,0.4); color:rgba(255,255,255,.6); font-size:11px; cursor:pointer; transition: all .15s; display: flex; align-items: center; gap: 5px; }
+    .msg-action-btn:hover { background:rgba(0,0,0,0.6); color:#fff; }
     .msg-meta { font-size:10px; color:rgba(255,255,255,.25); margin-top:3px; text-align: right; }
-    .generated-image { max-width: 100%; max-height: 70vh; border-radius: 12px; border: 1px solid var(--border); display: block; box-shadow: 0 14px 42px rgba(0,0,0,.5); transition: transform .3s; cursor: pointer; }
+    .generated-image { max-width: 100%; max-height: 70vh; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); display: block; box-shadow: 0 14px 42px rgba(0,0,0,.5); transition: transform .3s; cursor: pointer; }
     .generated-image:hover { transform: scale(1.01); }
     .image-prompt { font-size: 12px; color: rgba(255,255,255,.4); margin-top: 8px; font-style: italic; }
     .error-banner { display:flex; gap:10px; align-items:center; padding: 10px 14px; margin:8px 18px; border-radius:10px; background: rgba(239,68,68,.07); border: 1px solid rgba(239,68,68,.22); font-size:12px; color:#fca5a5; flex-shrink:0; }
     .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; padding:40px 24px; text-align: center; }
-    .logo-big { width:64px; height:64px; border-radius:16px; background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); border:1px solid var(--border); display:flex; align-items: center; justify-content: center; font-size:24px; font-weight:900; color:var(--primary); margin:0 auto; box-shadow: 0 14px 42px rgba(0,0,0,.35); }
     .empty-title { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
     .empty-subtitle { color:rgba(255,255,255,.45); font-size:14px; max-width:420px; line-height: 1.6; }
     .empty-subtitle strong { color: var(--primary); font-weight: 700; }
@@ -304,18 +299,23 @@ const GlobalStyles = () => (
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .typing-indicator { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--primary); margin-left: 4px; animation: blink 1s infinite; }
     .attachment-grid { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
-    .attachment-thumb { width:60px; height:60px; border-radius:7px; overflow:hidden; border:1px solid var(--border); position:relative; }
+    .attachment-thumb { width:60px; height:60px; border-radius:7px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); position:relative; }
     .attachment-thumb img { width:100%; height:100%; object-fit:cover; }
     .attachment-remove { position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; border:none; background:rgba(0,0,0,.7); color:#fff; cursor:pointer; font-size:11px; display:flex; align-items: center; justify-content: center; }
-    .input-area { padding: 14px 18px;  background: rgba(255,255,255,0.02);  flex-shrink: 0; }
+    .input-area { position: absolute; bottom: 0; left: 0; right: 0; z-index: 50; padding: 14px 18px; background: transparent; }
     .input-area-inner { max-width: 900px; margin: 0 auto; display: flex; gap: 8px; align-items: center; }
     .input-field { flex: 1; padding: 12px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); backdrop-filter: blur(14px); color: #fff; font-size: 15px; outline: none; caret-color: var(--primary); min-width: 0; }
     .input-field:focus { border-color: var(--primary); background: rgba(0,0,0,0.45); box-shadow: 0 0 0 3px rgba(139,92,246,.08); }
     .input-field::placeholder { color: rgba(255,255,255,.35); }
     .send-btn { padding: 0 18px; height: 44px; border-radius: 12px; border: none; cursor: pointer; background: var(--primary); color: #000; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all .15s; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
     .send-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
-    .send-btn:disabled { background: rgba(255,255,255,.06); color: rgba(255,255,255,.25); cursor: not-allowed; transform: none; filter: none; }
+    .send-btn:disabled { background: rgba(255,255,255,.06); color: rgba(255,255,255,.25); cursor: not-allowed; transform: none; filter: none; box-shadow: none; }
     .attachment-preview { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; max-width: 900px; margin-left: auto; margin-right: auto; }
+    .search-bar { display:flex; align-items:center; gap:10px; margin: 12px 22px; padding: 12px 16px; border-radius:12px; background:rgba(0,0,0,0.45); backdrop-filter: blur(14px); border:1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+    .search-bar input { flex:1; background:none; border:none; outline:none; color:#fff; font-size:15px; caret-color:var(--primary); }
+    .search-bar input::placeholder { color: rgba(255,255,255,.35); }
+    .search-bar button { background:none; border:none; color:rgba(255,255,255,.4); cursor:pointer; font-size:15px; padding:4px; border-radius: 6px; transition: all .15s; display: flex; align-items: center; justify-content: center; }
+    .search-bar button:hover { background: rgba(255,255,255,.1); color: #fff; }
     .wake-banner { display:flex; gap:10px; align-items:center; padding: 10px 14px; margin:8px 18px; border-radius:10px; background: rgba(251, 191, 36, .1); border: 1px solid rgba(251, 191, 36, .25); font-size:12px; color:#fbbf24; flex-shrink:0; }
     .wake-banner svg { flex-shrink: 0; animation: spin 2s linear infinite; }
     .camera-overlay { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.97); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; }
@@ -441,13 +441,13 @@ const App = () => {
   const [customBg, setCustomBg] = useState(() => Storage.get("pa-custom-bg") || "");
   const [customPrimary, setCustomPrimary] = useState(() => Storage.get("pa-custom-primary") || "");
   const [accentColor, setAccentColor] = useState(() => Storage.get("pa-accent-color") || "");
-  const [bgOpacity, setBgOpacity] = useState(() => { const v = Storage.get("pa-bg-opacity"); return v !== null ? parseFloat(v) : 0.45; });
+  const [bgOpacity, setBgOpacity] = useState(() => { const v = Storage.get("pa-bg-opacity"); return v !== null ? parseFloat(v) : 0.55; });
   const [glassOpacity, setGlassOpacity] = useState(() => { const v = Storage.get("pa-glass-opacity"); return v !== null ? parseFloat(v) : 0.92; });
   const [fontSize, setFontSize] = useState(() => { const v = Storage.get("pa-font-size"); return v !== null ? parseFloat(v) : 15; });
   const [compactMode, setCompactMode] = useState(() => Storage.get("pa-compact") === "true");
   const [animations, setAnimations] = useState(() => Storage.get("pa-animations") !== "false");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => { const saved = Storage.get("pa-sidebar-collapsed"); return saved === null ? true : saved === "true"; });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => { const s = Storage.get("pa-sidebar-collapsed"); return s === null ? true : s === "true"; });
   const [showSettings, setShowSettings] = useState(false);
   const [showMemory, setShowMemory] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -609,9 +609,6 @@ const App = () => {
   const instanceVars = { "--primary": primaryColor, "--border": borderColor, "--user-bubble": T.userBubble, "--ai-bubble": T.aiBubble, "--font-size": `${fontSize}px` };
   const bgLayerStyle = customBg ? { backgroundImage: `url(${customBg})` } : { backgroundImage: T.bg };
   const overlayStyle = customBg ? { backgroundColor: `rgba(0,0,0,${1 - bgOpacity})` } : { backgroundColor: "rgba(0,0,0,0.55)" };
-  const shellBg = `rgba(${extractRgb(T.cardBg)}, ${glassOpacity})`;
-  const themeCardSelected = (k) => themeKey === k && !customBg && !customPrimary && !accentColor;
-
   return (
     <div className={`app-root ${customBg ? "custom-bg" : ""} ${animations ? "" : "no-anim"}`} style={{ ...instanceVars }} onDrop={handleDrop} onDragOver={e => e.preventDefault()}>
       <GlobalStyles />
@@ -619,11 +616,10 @@ const App = () => {
       <div className="bg-overlay" style={overlayStyle} />
       {toast && <div className="toast"><Icon name="warning" size={16} color="#fca5a5" /> <span>{toast}</span></div>}
       {showCamera && <div className="camera-overlay"><video ref={videoRef} autoPlay className="camera-video" /><canvas ref={canvasRef} style={{ display: "none" }} /><div className="camera-controls"><button onClick={capturePhoto} className="camera-btn primary">Capture</button><button onClick={stopCamera} className="camera-btn secondary">Cancel</button></div></div>}
-      <div className="app-shell" style={{ background: "transparent", fontSize: `${fontSize}px` }}>
+      <div className="app-shell">
         <header className="app-header">
           <button className="menu-btn" onClick={toggleSidebar} title="Toggle chats (Ctrl+B)"><Icon name="menu" size={20} /></button>
           <div className="brand">
-            
             <div className="title-group">
               <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
               <span className="sub-title">{T.name} • {getModelDisplayName(model)}{isSpeaking ? " • SPEAKING" : ""}{isListening ? " • LISTENING" : ""}</span>
@@ -768,7 +764,6 @@ const App = () => {
                   <div><strong style={{ fontSize: 13 }}>Waking up the AI server...</strong><p style={{ margin: 0, fontSize: 12, marginTop: 3, color: "rgba(255,255,255,.6)" }}>Free servers sleep after inactivity. First response may take 30-60 seconds.</p></div>
                 </div>}
                 {activeMessages.length === 0 && !streamText && !imageLoading && <div className="empty-state">
-                  
                   <div>
                     <h2 className="empty-title">ALOP-AI</h2>
                     <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message. Try <strong>/image</strong> to generate professional images.</p>

@@ -406,7 +406,11 @@ const GlobalStyles = () => (
     .camera-btn { padding:12px 28px; border-radius:30px; border:none; font-weight:700; font-size:14px; cursor:pointer; }
     .camera-btn.primary { background:var(--primary); color:#000; }
     .camera-btn.secondary { background:rgba(255,255,255,.08); color:#fff; border:1px solid var(--border); }
-    .keyboard-hint { position:fixed; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.55); color:rgba(255,255,255,.3); padding:6px 14px; border-radius:20px; font-size:11px; z-index:5; }
+    .icon-btn.send-active { box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.4); }
+    .input-wrapper { display: flex; align-items: center; gap: 8px; padding: 14px 18px; border-top: 1px solid var(--border); background: rgba(0,0,0,.18); }
+    .input-wrapper:focus-within { background: rgba(255,255,255,.03); }
+
+ left:50%; transform:translateX(-50%); background:rgba(0,0,0,.55); color:rgba(255,255,255,.3); padding:6px 14px; border-radius:20px; font-size:11px; z-index:5; }
     .no-anim .msg-row, .no-anim .typing-indicator { animation:none; }
     .toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.95); color: #fff; padding: 14px 22px; border-radius: 12px; z-index: 9999; font-size: 14px; border-left: 3px solid var(--primary); box-shadow: 0 22px 70px rgba(0,0,0,.65); display: flex; align-items: center; gap: 10px; }
     .memory-card { padding: 18px; border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid var(--border); margin-bottom: 16px; }
@@ -917,7 +921,7 @@ const App = () => {
                 <div className="logo-big">AI</div>
                 <div>
                   <h2 className="empty-title">Cloud AI Assistant</h2>
-                  <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message. Try /image to generate professional images.</p>
+                  <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message.<br/>Try <strong style={{ color: `"var(--primary)`" }}>/image</strong> to generate professional images.</p>
                 </div>
               </div>}
               {filteredMessages.map((msg, idx) => <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
@@ -970,7 +974,7 @@ const App = () => {
               </div>}
             </div>
             <InputBar text={inputText} setText={setInputText} onSend={handleSend} disabled={status !== "idle" || imageLoading} status={status} stats={stats} attachments={attachments} setAttachments={setAttachments} onFileSelect={handleFileSelect} onPasteImage={pasteImage} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} />
-            <DockPanel dock={dock} />
+
           </main>
         </div>
       </div>

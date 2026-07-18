@@ -1,80 +1,44 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 
 const uid = () => crypto?.randomUUID?.() || Math.random().toString(36).slice(2, 10);
-
 const API_BASE = "https://alop-ai.onrender.com";
-
 const Storage = {
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
   remove: (k) => { try { localStorage.removeItem(k); } catch {} }
 };
-
-const extractRgb = (rgbaString) => {
-  const match = rgbaString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  if (!match) return "139, 92, 246";
-  return `${match[1]}, ${match[2]}, ${match[3]}`;
-};
-
-const rgbaToHex = (rgbaString, fallback) => {
-  const match = rgbaString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
-  if (!match) return fallback;
-  const hex = [match[1], match[2], match[3]].map(v => parseInt(v).toString(16).padStart(2, '0')).join('');
-  return `#${hex}`;
-};
+const extractRgb = (rgbaString) => { const m = rgbaString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/); return m ? `${m[1]}, ${m[2]}, ${m[3]}` : "139, 92, 246"; };
+const rgbaToHex = (rgbaString, fb) => { const m = rgbaString.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/); if (!m) return fb; return "#" + [m[1],m[2],m[3]].map(v => parseInt(v).toString(16).padStart(2,'0')).join(''); };
 
 const THEMES = {
-  midnight: { name: "Midnight", primary: "#8b5cf6", bg: "linear-gradient(135deg, #050507, #0b0b12, #12121f)", cardBg: "rgba(11, 11, 16, 0.94)", borderColor: "rgba(139, 92, 246, 0.14)", userBubble: "rgba(139, 92, 246, 0.13)", aiBubble: "rgba(139, 92, 246, 0.06)" },
-  obsidian: { name: "Obsidian", primary: "#a78bfa", bg: "radial-gradient(circle at 30% 20%, #1a1033 0%, #0d0d12 50%, #050507 100%)", cardBg: "rgba(10, 10, 14, 0.95)", borderColor: "rgba(167, 139, 250, 0.15)", userBubble: "rgba(167, 139, 250, 0.13)", aiBubble: "rgba(167, 139, 250, 0.06)" },
-  graphite: { name: "Graphite", primary: "#94a3b8", bg: "linear-gradient(135deg, #0a0a0c, #111116, #0a0a0c)", cardBg: "rgba(16, 16, 20, 0.94)", borderColor: "rgba(148, 163, 184, 0.16)", userBubble: "rgba(148, 163, 184, 0.15)", aiBubble: "rgba(148, 163, 184, 0.07)" },
-  ocean: { name: "Ocean", primary: "#38bdf8", bg: "radial-gradient(circle at 70% 30%, #0a1f3d 0%, #051020 50%, #02050c 100%)", cardBg: "rgba(5, 16, 32, 0.94)", borderColor: "rgba(56, 189, 248, 0.14)", userBubble: "rgba(56, 189, 248, 0.13)", aiBubble: "rgba(56, 189, 248, 0.06)" },
-  emerald: { name: "Emerald", primary: "#34d399", bg: "radial-gradient(circle at 20% 80%, #0a2a1f 0%, #05120d 50%, #020604 100%)", cardBg: "rgba(5, 18, 13, 0.94)", borderColor: "rgba(52, 211, 153, 0.14)", userBubble: "rgba(52, 211, 153, 0.13)", aiBubble: "rgba(52, 211, 153, 0.06)" },
-  crimson: { name: "Crimson", primary: "#fb7185", bg: "radial-gradient(circle at 80% 20%, #2a0a12 0%, #120408 50%, #050203 100%)", cardBg: "rgba(18, 4, 8, 0.94)", borderColor: "rgba(251, 113, 133, 0.14)", userBubble: "rgba(251, 113, 133, 0.13)", aiBubble: "rgba(251, 113, 133, 0.06)" },
-  gold: { name: "Royal Gold", primary: "#fbbf24", bg: "radial-gradient(circle at 50% 50%, #1f1508 0%, #0f0b05 50%, #050402 100%)", cardBg: "rgba(20, 14, 6, 0.95)", borderColor: "rgba(251, 191, 36, 0.16)", userBubble: "rgba(251, 191, 36, 0.13)", aiBubble: "rgba(251, 191, 36, 0.06)" },
-  arctic: { name: "Arctic", primary: "#60a5fa", bg: "linear-gradient(135deg, #f8fafc, #e8eef4, #f8fafc)", cardBg: "rgba(255, 255, 255, 0.96)", borderColor: "rgba(96, 165, 250, 0.22)", userBubble: "rgba(96, 165, 250, 0.1)", aiBubble: "rgba(96, 165, 250, 0.05)" }
+  midnight: { name: "Midnight", primary: "#8b5cf6", bg: "linear-gradient(135deg, #050507, #0b0b12, #12121f)", cardBg: "rgba(11, 11, 16, 0.96)", borderColor: "rgba(139, 92, 246, 0.14)", userBubble: "rgba(139, 92, 246, 0.13)", aiBubble: "rgba(139, 92, 246, 0.06)" },
+  obsidian: { name: "Obsidian", primary: "#a78bfa", bg: "radial-gradient(circle at 30% 20%, #1a1033 0%, #0d0d12 50%, #050507 100%)", cardBg: "rgba(10, 10, 14, 0.97)", borderColor: "rgba(167, 139, 250, 0.15)", userBubble: "rgba(167, 139, 250, 0.13)", aiBubble: "rgba(167, 139, 250, 0.06)" },
+  graphite: { name: "Graphite", primary: "#94a3b8", bg: "linear-gradient(135deg, #0a0a0c, #111116, #0a0a0c)", cardBg: "rgba(16, 16, 20, 0.96)", borderColor: "rgba(148, 163, 184, 0.16)", userBubble: "rgba(148, 163, 184, 0.15)", aiBubble: "rgba(148, 163, 184, 0.07)" },
+  ocean: { name: "Ocean", primary: "#38bdf8", bg: "radial-gradient(circle at 70% 30%, #0a1f3d 0%, #051020 50%, #02050c 100%)", cardBg: "rgba(5, 16, 32, 0.97)", borderColor: "rgba(56, 189, 248, 0.14)", userBubble: "rgba(56, 189, 248, 0.13)", aiBubble: "rgba(56, 189, 248, 0.06)" },
+  emerald: { name: "Emerald", primary: "#34d399", bg: "radial-gradient(circle at 20% 80%, #0a2a1f 0%, #05120d 50%, #020604 100%)", cardBg: "rgba(5, 18, 13, 0.97)", borderColor: "rgba(52, 211, 153, 0.14)", userBubble: "rgba(52, 211, 153, 0.13)", aiBubble: "rgba(52, 211, 153, 0.06)" },
+  crimson: { name: "Crimson", primary: "#fb7185", bg: "radial-gradient(circle at 80% 20%, #2a0a12 0%, #120408 50%, #050203 100%)", cardBg: "rgba(18, 4, 8, 0.97)", borderColor: "rgba(251, 113, 133, 0.14)", userBubble: "rgba(251, 113, 133, 0.13)", aiBubble: "rgba(251, 113, 133, 0.06)" },
+  gold: { name: "Royal Gold", primary: "#fbbf24", bg: "radial-gradient(circle at 50% 50%, #1f1508 0%, #0f0b05 50%, #050402 100%)", cardBg: "rgba(20, 14, 6, 0.97)", borderColor: "rgba(251, 191, 36, 0.16)", userBubble: "rgba(251, 191, 36, 0.13)", aiBubble: "rgba(251, 191, 36, 0.06)" },
+  arctic: { name: "Arctic", primary: "#60a5fa", bg: "linear-gradient(135deg, #f8fafc, #e8eef4, #f8fafc)", cardBg: "rgba(255, 255, 255, 0.98)", borderColor: "rgba(96, 165, 250, 0.22)", userBubble: "rgba(96, 165, 250, 0.1)", aiBubble: "rgba(96, 165, 250, 0.05)" }
 };
-
 const DEFAULT_THEME = THEMES.midnight;
 
 const MODEL_DISPLAY_NAMES = {
-  'glm-5.2': 'GLM 5.2', 'glm-5.1': 'GLM 5.1', 'gemma4:31b': 'Gemma 4',
-  'qwen3.5:397b': 'Qwen 3.5', 'minimax-m2.7': 'MiniMax M2.7', 'minimax-m2.5': 'MiniMax M2.5',
-  'minimax-m3': 'MiniMax M3', 'nemotron-3-super': 'Nemotron Super', 'nemotron-3-ultra': 'Nemotron Ultra',
-  'nemotron-3-nano:30b': 'Nemotron Nano', 'kimi-k2.7-code': 'Kimi K2.7', 'kimi-k2.6': 'Kimi K2.6',
-  'kimi-k2.5': 'Kimi K2.5', 'deepseek-v4-flash': 'DeepSeek Flash', 'deepseek-v4-pro': 'DeepSeek Pro',
+  'glm-5.2': 'GLM 5.2', 'glm-5.1': 'GLM 5.1', 'gemma4:31b': 'Gemma 4', 'qwen3.5:397b': 'Qwen 3.5',
+  'minimax-m2.7': 'MiniMax M2.7', 'minimax-m2.5': 'MiniMax M2.5', 'minimax-m3': 'MiniMax M3',
+  'nemotron-3-super': 'Nemotron Super', 'nemotron-3-ultra': 'Nemotron Ultra', 'nemotron-3-nano:30b': 'Nemotron Nano',
+  'kimi-k2.7-code': 'Kimi K2.7', 'kimi-k2.6': 'Kimi K2.6', 'kimi-k2.5': 'Kimi K2.5',
+  'deepseek-v4-flash': 'DeepSeek Flash', 'deepseek-v4-pro': 'DeepSeek Pro',
   'gpt-oss:20b': 'GPT-OSS 20B', 'gpt-oss:120b': 'GPT-OSS 120B', 'mistral-large-3:675b': 'Mistral Large 3'
 };
-
-const getModelDisplayName = (key) => MODEL_DISPLAY_NAMES[key] || key;
+const getModelDisplayName = (k) => MODEL_DISPLAY_NAMES[k] || k;
 
 const MODEL_CATEGORIES = {
-  'GLM': ['glm-5.2', 'glm-5.1'],
-  'Google': ['gemma4:31b'],
-  'Alibaba': ['qwen3.5:397b'],
-  'MiniMax': ['minimax-m2.7', 'minimax-m2.5', 'minimax-m3'],
-  'NVIDIA': ['nemotron-3-super', 'nemotron-3-ultra', 'nemotron-3-nano:30b'],
-  'Moonshot': ['kimi-k2.7-code', 'kimi-k2.6', 'kimi-k2.5'],
-  'DeepSeek': ['deepseek-v4-flash', 'deepseek-v4-pro'],
-  'OpenAI': ['gpt-oss:20b', 'gpt-oss:120b'],
-  'Mistral': ['mistral-large-3:675b']
+  'GLM': ['glm-5.2','glm-5.1'], 'Google': ['gemma4:31b'], 'Alibaba': ['qwen3.5:397b'],
+  'MiniMax': ['minimax-m2.7','minimax-m2.5','minimax-m3'], 'NVIDIA': ['nemotron-3-super','nemotron-3-ultra','nemotron-3-nano:30b'],
+  'Moonshot': ['kimi-k2.7-code','kimi-k2.6','kimi-k2.5'], 'DeepSeek': ['deepseek-v4-flash','deepseek-v4-pro'],
+  'OpenAI': ['gpt-oss:20b','gpt-oss:120b'], 'Mistral': ['mistral-large-3:675b']
 };
-
 const VISION_MODELS = ['gemma4:31b', 'kimi-k2.7-code', 'kimi-k2.6', 'kimi-k2.5', 'mistral-large-3:675b', 'deepseek-v4-pro'];
-
-const PERCHANCE_PROMPTS = [
-  "Generate a random fantasy character backstory",
-  "Create a random startup idea and pitch it",
-  "Write a random plot twist for a sci-fi movie",
-  "Invent a new ice cream flavor and describe it vividly",
-  "Generate a random D&D quest for level 5 heroes",
-  "Describe a random alien planet and its inhabitants",
-  "Write a random advertisement for an absurd product",
-  "Create a random recipe with unusual ingredients",
-  "Generate a random superhero origin story",
-  "Describe a random haunted house room",
-  "Invent a random video game mechanic",
-  "Write a random email from a future civilization"
-];
 
 const BACKGROUND_PRESETS = {
   forest: "https://images.unsplash.com/photo-1511497584788-876760111969?w=1920&q=80",
@@ -86,12 +50,7 @@ const BACKGROUND_PRESETS = {
   fire: "https://images.unsplash.com/photo-1505009253807-0a4c86083162?w=1920&q=80"
 };
 
-const IMAGE_GENERATION = {
-  endpoint: "https://image.pollinations.ai/prompt",
-  model: "flux",
-  defaultWidth: 1024,
-  defaultHeight: 1024
-};
+const IMAGE_GENERATION = { endpoint: "https://image.pollinations.ai/prompt", model: "flux" };
 
 const Icon = ({ name, size = 18, color = "currentColor" }) => {
   const icons = {
@@ -123,34 +82,25 @@ const Icon = ({ name, size = 18, color = "currentColor" }) => {
 };
 
 const enhanceImagePrompt = (prompt) => prompt ? `${prompt}, professional photography, 8k uhd, highly detailed, sharp focus, cinematic lighting, masterpiece, best quality, ultra realistic` : "";
-
-const buildImageUrl = (prompt, width = 1024, height = 1024) => {
-  const encoded = encodeURIComponent(enhanceImagePrompt(prompt));
-  return `${IMAGE_GENERATION.endpoint}/${encoded}?width=${width}&height=${height}&nologo=true&model=${IMAGE_GENERATION.model}&seed=${Math.floor(Math.random() * 10000000)}&enhance=true`;
-};
-
-const isImageRequest = (text) => {
-  const t = text.trim().toLowerCase();
-  return t.startsWith("/image") || /\b(generate|create|make|draw|produce)\s+(an?\s+)?(image|picture|photo)\b/.test(t) || /\b(draw|generate|create|make)\s+(a|an|the|this|that)?\s*(picture|image|photo|scene|portrait|landscape)\s+(of|showing|with|for)\b/.test(t);
-};
-
-const parseImagePrompt = (text) => text.replace(/^\/image\s*/i, "").replace(/\b(can\s+you\s+)?(please\s+)?(generate|create|make|draw|produce)\s+(an?\s+)?(image|picture|photo)\s*(of\s*|for\s*|with\s*|showing\s*)?/i, "").replace(/\b(draw|generate|create|make)\s+(a|an|the|this|that)?\s*(picture|image|photo|scene|portrait|landscape)\s+(of\s|for\s|with\s|showing\s)?/i, "").trim();
+const buildImageUrl = (prompt, w = 1024, h = 1024) => `${IMAGE_GENERATION.endpoint}/${encodeURIComponent(enhanceImagePrompt(prompt))}?width=${w}&height=${h}&nologo=true&model=${IMAGE_GENERATION.model}&seed=${Math.floor(Math.random()*1e7)}&enhance=true`;
+const isImageRequest = (text) => { const t = text.trim().toLowerCase(); return t.startsWith("/image") || /\b(generate|create|make|draw|produce)\s+(an?\s+)?(image|picture|photo)\b/.test(t) || /\b(draw|generate|create|make)\s+(a|an|the|this|that)?\s*(picture|image|photo|scene|portrait|landscape)\s+(of|showing|with|for)\b/.test(t); };
+const parseImagePrompt = (text) => text.replace(/^\/image\s*/i,"").replace(/\b(can\s+you\s+)?(please\s+)?(generate|create|make|draw|produce)\s+(an?\s+)?(image|picture|photo)\s*(of\s*|for\s*|with\s*|showing\s*)?/i,"").replace(/\b(draw|generate|create|make)\s+(a|an|the|this|that)?\s*(picture|image|photo|scene|portrait|landscape)\s+(of\s|for\s|with\s|showing\s)?/i,"").trim();
 
 const useChatManager = () => {
-  const [chats, setChats] = useState(() => { try { const saved = JSON.parse(Storage.get('pa_chats') || '[]'); return Array.isArray(saved) && saved.length > 0 ? saved : []; } catch { return []; } });
+  const [chats, setChats] = useState(() => { try { const s = JSON.parse(Storage.get('pa_chats') || '[]'); return Array.isArray(s) && s.length ? s : []; } catch { return []; } });
   const [activeChatId, setActiveChatId] = useState(null);
-  useEffect(() => { if (!activeChatId && chats.length > 0) { const saved = Storage.get('pa_active_chat'); const found = chats.find(c => c.id === saved); setActiveChatId(found ? found.id : chats[0].id); } }, [activeChatId, chats]);
-  const createChat = useCallback((title = "New Chat") => { const newChat = { id: uid(), title, messages: [], createdAt: Date.now(), pinned: false, favorite: false }; setChats(prev => [newChat, ...prev]); setActiveChatId(newChat.id); return newChat.id; }, []);
-  useEffect(() => { if (chats.length === 0) createChat("New Chat"); }, [chats.length, createChat]);
-  const deleteChat = useCallback((id) => { const chat = chats.find(c => c.id === id); chat?.messages?.forEach(m => m.attachments?.forEach(a => { try { URL.revokeObjectURL(a.url); } catch {} })); setChats(prev => prev.filter(c => c.id !== id)); setActiveChatId(prev => { if (prev !== id) return prev; const remaining = chats.filter(c => c.id !== id); return remaining[0]?.id || null; }); }, [chats]);
-  const renameChat = useCallback((id, title) => setChats(prev => prev.map(c => c.id === id ? { ...c, title } : c)), []);
-  const togglePinChat = useCallback((id) => setChats(prev => prev.map(c => c.id === id ? { ...c, pinned: !c.pinned } : c)), []);
-  const toggleFavoriteChat = useCallback((id) => setChats(prev => prev.map(c => c.id === id ? { ...c, favorite: !c.favorite } : c)), []);
-  const updateChatMessages = useCallback((id, messages) => setChats(prev => prev.map(c => c.id === id ? { ...c, messages, updatedAt: Date.now() } : c)), []);
-  const sortedChats = useMemo(() => [...chats].sort((a, b) => { if (a.pinned !== b.pinned) return a.pinned ? -1 : 1; if (a.favorite !== b.favorite) return a.favorite ? -1 : 1; return (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt); }), [chats]);
-  const exportChat = useCallback((id, format = "json") => { const chat = chats.find(c => c.id === id); if (!chat) return; if (format === "markdown") { const md = chat.messages.map(m => m.imageUrl ? `**${m.role.toUpperCase()}** — Image: ${m.imagePrompt || "Generated image"}\n\n![Generated](${m.imageUrl})\n\n` : `**${m.role.toUpperCase()}** (${m.ts}):\n\n${m.content}\n\n---\n\n`).join(""); const blob = new Blob([md], { type: "text/markdown" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `${chat.title.replace(/\s+/g, '-').toLowerCase()}.md`; a.click(); URL.revokeObjectURL(url); } else { const blob = new Blob([JSON.stringify(chat.messages.map(m => ({ role: m.role, content: m.content, time: m.ts, imageUrl: m.imageUrl, imagePrompt: m.imagePrompt })), null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `${chat.title.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url); } }, [chats]);
-  const exportAllChats = useCallback(() => { const blob = new Blob([JSON.stringify(chats, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `all-chats-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(url); }, [chats]);
-  useEffect(() => { Storage.set('pa_chats', JSON.stringify(chats)); }, [chats]);
+  useEffect(() => { if (!activeChatId && chats.length) { const s = Storage.get('pa_active_chat'); const f = chats.find(c => c.id === s); setActiveChatId(f ? f.id : chats[0].id); } }, [activeChatId, chats]);
+  const createChat = useCallback((title = "New Chat") => { const c = { id: uid(), title, messages: [], createdAt: Date.now(), pinned: false, favorite: false }; setChats(p => [c, ...p]); setActiveChatId(c.id); return c.id; }, []);
+  useEffect(() => { if (!chats.length) createChat("New Chat"); }, [chats.length, createChat]);
+  const deleteChat = useCallback((id) => { const c = chats.find(x => x.id === id); c?.messages?.forEach(m => m.attachments?.forEach(a => { try { URL.revokeObjectURL(a.url); } catch {} })); setChats(p => p.filter(x => x.id !== id)); setActiveChatId(p => { if (p !== id) return p; const r = chats.filter(x => x.id !== id); return r[0]?.id || null; }); }, [chats]);
+  const renameChat = useCallback((id, title) => setChats(p => p.map(c => c.id === id ? { ...c, title } : c)), []);
+  const togglePinChat = useCallback((id) => setChats(p => p.map(c => c.id === id ? { ...c, pinned: !c.pinned } : c)), []);
+  const toggleFavoriteChat = useCallback((id) => setChats(p => p.map(c => c.id === id ? { ...c, favorite: !c.favorite } : c)), []);
+  const updateChatMessages = useCallback((id, messages) => setChats(p => p.map(c => c.id === id ? { ...c, messages, updatedAt: Date.now() } : c)), []);
+  const sortedChats = useMemo(() => [...chats].sort((a,b) => { if (a.pinned !== b.pinned) return a.pinned ? -1 : 1; if (a.favorite !== b.favorite) return a.favorite ? -1 : 1; return (b.updatedAt||b.createdAt) - (a.updatedAt||a.createdAt); }), [chats]);
+  const exportChat = useCallback((id, format = "json") => { const c = chats.find(x => x.id === id); if (!c) return; if (format === "markdown") { const md = c.messages.map(m => m.imageUrl ? `**${m.role.toUpperCase()}** — Image: ${m.imagePrompt || "Generated image"}\n\n![Generated](${m.imageUrl})\n\n` : `**${m.role.toUpperCase()}** (${m.ts}):\n\n${m.content}\n\n---\n\n`).join(""); const b = new Blob([md], { type: "text/markdown" }); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = `${c.title.replace(/\s+/g,'-').toLowerCase()}.md`; a.click(); URL.revokeObjectURL(u); } else { const b = new Blob([JSON.stringify(c.messages.map(m => ({ role:m.role, content:m.content, time:m.ts, imageUrl:m.imageUrl, imagePrompt:m.imagePrompt })), null, 2)], { type: "application/json" }); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = `${c.title.replace(/\s+/g,'-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(u); } }, [chats]);
+  const exportAllChats = useCallback(() => { const b = new Blob([JSON.stringify(chats, null, 2)], { type: "application/json" }); const u = URL.createObjectURL(b); const a = document.createElement("a"); a.href = u; a.download = `all-chats-${new Date().toISOString().slice(0,10)}.json`; a.click(); URL.revokeObjectURL(u); }, [chats]);
+  useEffect(() => Storage.set('pa_chats', JSON.stringify(chats)), [chats]);
   useEffect(() => { if (activeChatId) Storage.set('pa_active_chat', activeChatId); }, [activeChatId]);
   return { chats, sortedChats, activeChatId, setActiveChatId, createChat, deleteChat, renameChat, togglePinChat, toggleFavoriteChat, updateChatMessages, exportChat, exportAllChats };
 };
@@ -163,13 +113,10 @@ const useChatSession = (chatId, messages, updateMessages, userProfile, systemPro
   const [status, setStatus] = useState("idle");
   const [stats, setStats] = useState(null);
   const [wakeUp, setWakeUp] = useState(false);
-  const abortRef = useRef(null);
-  const accRef = useRef("");
-  const rafIdRef = useRef(null);
-  const wakeTimerRef = useRef(null);
+  const abortRef = useRef(null), accRef = useRef(""), rafIdRef = useRef(null), wakeTimerRef = useRef(null);
 
-  useEffect(() => { Storage.set("pa-model", model); }, [model]);
-  useEffect(() => { Storage.set("pa-temperature", temperature.toString()); }, [temperature]);
+  useEffect(() => Storage.set("pa-model", model), [model]);
+  useEffect(() => Storage.set("pa-temperature", temperature.toString()), [temperature]);
 
   const buildContext = useCallback(() => {
     const ctx = [];
@@ -178,107 +125,66 @@ const useChatSession = (chatId, messages, updateMessages, userProfile, systemPro
     return ctx;
   }, [systemPrompt, userProfile]);
 
-  const stopGeneration = useCallback(() => {
-    if (abortRef.current) abortRef.current.abort();
-    abortRef.current = null;
-    setStatus("idle");
-    accRef.current = "";
-    setStreamText("");
-    setWakeUp(false);
-  }, []);
+  const stopGeneration = useCallback(() => { if (abortRef.current) abortRef.current.abort(); abortRef.current = null; setStatus("idle"); accRef.current = ""; setStreamText(""); setWakeUp(false); }, []);
 
   const sendMessage = useCallback(async (text, attachments = []) => {
-    const hasContent = text?.trim() || attachments.length > 0;
-    if (!hasContent || status !== "idle" || !chatId) return;
-
-    setStatus("loading");
-    setWakeUp(false);
-    accRef.current = "";
-    setStreamText("");
-    setStats(null);
-
-    const newUserMsg = { role: "user", content: text || "", attachments: attachments.map(f => ({ name: f.name, url: URL.createObjectURL(f), type: f.type })), ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() };
-    const updatedMessages = [...messages.slice(-99), newUserMsg];
-    updateMessages(chatId, updatedMessages);
-
+    if ((!text?.trim() && !attachments.length) || status !== "idle" || !chatId) return;
+    setStatus("loading"); setWakeUp(false); accRef.current = ""; setStreamText(""); setStats(null);
+    const userMsg = { role: "user", content: text || "", attachments: attachments.map(f => ({ name: f.name, url: URL.createObjectURL(f), type: f.type })), ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() };
+    const updated = [...messages.slice(-99), userMsg];
+    updateMessages(chatId, updated);
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
-
     wakeTimerRef.current = setTimeout(() => setWakeUp(true), 3000);
 
     try {
-      const systemContext = buildContext();
+      const ctx = buildContext();
       let res;
-      if (attachments.length > 0) {
-        const formData = new FormData();
-        formData.append("message", text || "");
-        formData.append("modelType", model);
-        formData.append("temperature", temperature.toString());
-        formData.append("sessionId", sessionId);
-        formData.append("messages", JSON.stringify([...systemContext, ...messages.slice(-10)].map(m => ({ role: m.role, content: m.content }))));
-        attachments.forEach(file => formData.append("files", file));
-        res = await fetch(`${API_BASE}/chat`, { method: "POST", body: formData, signal: abortRef.current.signal });
+      if (attachments.length) {
+        const fd = new FormData();
+        fd.append("message", text || ""); fd.append("modelType", model); fd.append("temperature", temperature.toString()); fd.append("sessionId", sessionId);
+        fd.append("messages", JSON.stringify([...ctx, ...messages.slice(-10)].map(m => ({ role: m.role, content: m.content }))));
+        attachments.forEach(f => fd.append("files", f));
+        res = await fetch(`${API_BASE}/chat`, { method: "POST", body: fd, signal: abortRef.current.signal });
       } else {
-        res = await fetch(`${API_BASE}/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, signal: abortRef.current.signal, body: JSON.stringify({ message: text, messages: [...systemContext, ...messages.slice(-10)].map(m => ({ role: m.role, content: m.content })), modelType: model, sessionId, temperature }) });
+        res = await fetch(`${API_BASE}/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, signal: abortRef.current.signal, body: JSON.stringify({ message: text, messages: [...ctx, ...messages.slice(-10)].map(m => ({ role: m.role, content: m.content })), modelType: model, sessionId, temperature }) });
       }
-
-      if (!res.ok) { const errorData = await res.json().catch(() => ({})); throw new Error(errorData.error || `Server error: ${res.status}`); }
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || `Server error: ${res.status}`); }
       if (!res.body) throw new Error("Streaming not supported");
-
-      clearTimeout(wakeTimerRef.current);
-      setWakeUp(false);
-      setStatus("streaming");
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
+      clearTimeout(wakeTimerRef.current); setWakeUp(false); setStatus("streaming");
+      const reader = res.body.getReader(), decoder = new TextDecoder(); let buf = "";
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n"); buf = lines.pop() || "";
         for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith("data: ")) continue;
-          const jsonStr = trimmed.slice(6).trim();
-          if (jsonStr === "[DONE]") break;
+          const t = line.trim(); if (!t.startsWith("data: ")) continue;
+          const j = t.slice(6).trim(); if (j === "[DONE]") break;
           try {
-            const data = JSON.parse(jsonStr);
-            if (data.type === "chunk") {
-              accRef.current += data.text;
-              if (!rafIdRef.current) rafIdRef.current = requestAnimationFrame(() => { setStreamText(accRef.current); rafIdRef.current = null; });
-            } else if (data.type === "end") {
-              if (data.stats) setStats(data.stats);
-              updateMessages(chatId, [...updatedMessages, { role: "assistant", content: accRef.current, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() }]);
-              accRef.current = ""; setStreamText(""); setStatus("idle");
-            } else if (data.type === "error") throw new Error(data.text);
-          } catch (parseError) { console.warn('Parse error:', parseError); }
+            const d = JSON.parse(j);
+            if (d.type === "chunk") { accRef.current += d.text; if (!rafIdRef.current) rafIdRef.current = requestAnimationFrame(() => { setStreamText(accRef.current); rafIdRef.current = null; }); }
+            else if (d.type === "end") { if (d.stats) setStats(d.stats); updateMessages(chatId, [...updated, { role: "assistant", content: accRef.current, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() }]); accRef.current = ""; setStreamText(""); setStatus("idle"); }
+            else if (d.type === "error") throw new Error(d.text);
+          } catch (e) { console.warn('Parse error:', e); }
         }
       }
-      if (accRef.current) { updateMessages(chatId, [...updatedMessages, { role: "assistant", content: accRef.current, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() }]); accRef.current = ""; }
+      if (accRef.current) { updateMessages(chatId, [...updated, { role: "assistant", content: accRef.current, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() }]); accRef.current = ""; }
       setStreamText(""); setStatus("idle");
     } catch (err) {
-      clearTimeout(wakeTimerRef.current);
-      setWakeUp(false);
+      clearTimeout(wakeTimerRef.current); setWakeUp(false);
       if (err.name === "AbortError") return;
       setStatus("error");
-      updateMessages(chatId, [...updatedMessages, { role: "assistant", content: `⚠️ ${err.message || 'Connection failed'}`, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() }]);
+      updateMessages(chatId, [...updated, { role: "assistant", content: `⚠️ ${err.message || 'Connection failed'}`, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() }]);
     }
   }, [chatId, messages, model, sessionId, temperature, status, updateMessages, buildContext]);
 
   return { streamText, status, stats, model, setModel, temperature, setTemperature, sendMessage, stopGeneration, wakeUp };
 };
 
-const useDockStatus = () => {
-  const [dock, setDock] = useState({ active: 0, requests: [] });
-  useEffect(() => { let cancelled = false; const poll = async () => { try { const r = await fetch(`${API_BASE}/api/dock`, { signal: AbortSignal.timeout(3000) }); if (!cancelled) setDock(await r.json()); } catch { if (!cancelled) setDock({ active: 0, requests: [] }); } }; poll(); const id = setInterval(poll, 2000); return () => { cancelled = true; clearInterval(id); }; }, []);
-  return dock;
-};
-
 const useHealthCheck = () => {
   const [health, setHealth] = useState(null);
-  useEffect(() => { let cancelled = false; const check = async () => { try { const r = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) }); if (!cancelled) { const d = await r.json(); setHealth(d.status === 'premium' ? d : { status: 'degraded', error: d.error || 'Service disconnected' }); } } catch (err) { if (!cancelled) setHealth({ status: 'error', error: err.name === 'AbortError' ? 'Timeout' : 'Connection failed' }); } }; check(); const id = setInterval(check, 8000); return () => { cancelled = true; clearInterval(id); }; }, []);
+  useEffect(() => { let c = false; const check = async () => { try { const r = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) }); if (!c) { const d = await r.json(); setHealth(d.status === 'premium' ? d : { status: 'degraded', error: d.error || 'Service disconnected' }); } } catch (e) { if (!c) setHealth({ status: 'error', error: e.name === 'AbortError' ? 'Timeout' : 'Connection failed' }); } }; check(); const i = setInterval(check, 8000); return () => { c = true; clearInterval(i); }; }, []);
   return health;
 };
 
@@ -297,200 +203,174 @@ const GlobalStyles = () => (
   <style>{`
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-    body { font-family: 'Inter', system-ui, sans-serif; overflow:hidden; height:100vh; background: #000000; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
-    .app-root { min-height: 100vh; display: flex; align-items: center; justify-content: center; position: relative; padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); }
+    html, body, #root { height: 100%; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #000; overflow: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    .app-root { width: 100vw; height: 100vh; display: flex; position: relative; overflow: hidden; }
     .app-root.custom-bg { background-size: cover; background-position: center; background-repeat: no-repeat; }
-    .glass-main { position: relative; z-index: 10; width: min(99vw, 1500px); height: min(98vh, 1050px); backdrop-filter: blur(36px) saturate(1.2); border: 1px solid var(--border); border-radius: 22px; display: flex; flex-direction: row; overflow: hidden; box-shadow: 0 60px 240px rgba(0,0,0,0.85), 0 0 0 1px rgba(255,255,255,.02) inset; }
-    .chat-sidebar { width: 300px; flex-shrink: 0; border-right: 1px solid var(--border); background: rgba(0,0,0,.32); display: flex; flex-direction: column; overflow: hidden; transition: width .35s cubic-bezier(0.4,0,0.2,1), padding .35s ease; }
+    .bg-layer { position: absolute; inset: 0; z-index: 1; background-size: cover; background-position: center; background-repeat: no-repeat; }
+    .bg-overlay { position: absolute; inset: 0; z-index: 2; background: rgba(0,0,0,0.55); pointer-events: none; }
+    .app-shell { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
+    .app-header { display: flex; align-items: center; gap: 14px; padding: 14px 22px; flex-shrink: 0; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.35); backdrop-filter: blur(20px); }
+    .menu-btn { width: 40px; height: 40px; border-radius: 11px; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: rgba(255,255,255,.55); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+    .menu-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
+    .brand { display: flex; align-items: center; gap: 12px; cursor: default; user-select: none; }
+    .brand-logo { width: 40px; height: 40px; border-radius: 11px; background: linear-gradient(135deg, var(--primary), rgba(255,255,255,.25)); display:flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900; color: #000; border: 1px solid rgba(255,255,255,.1); }
+    .title-group { flex:1; min-width:0; }
+    .main-title { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .sub-title { font-size: 10px; color: rgba(255,255,255,.4); letter-spacing: .6px; text-transform: uppercase; margin-top: 1px; }
+    .header-actions { display:flex; gap:6px; align-items:center; }
+    .icon-btn { width:40px; height:40px; border-radius:11px; border:1px solid transparent; background: rgba(255,255,255,.05); color:rgba(255,255,255,.55); cursor:pointer; display:flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
+    .icon-btn:hover { background:rgba(255,255,255,.12); border-color:var(--border); color:#fff; }
+    .icon-btn.active { background: var(--primary); color: #000; border-color: transparent; }
+    .icon-btn.premium { position: relative; overflow: hidden; }
+    .icon-btn.premium::after { content: ""; position: absolute; inset: 0; border-radius: 11px; padding: 1px; background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: shimmer 2.5s linear infinite; background-size: 200% 200%; }
+    @keyframes shimmer { 0%{background-position: 0% 50%} 50%{background-position: 100% 50%} 100%{background-position: 0% 50%} }
+    .app-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+    .chat-sidebar { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: rgba(0,0,0,.45); backdrop-filter: blur(20px); display: flex; flex-direction: column; overflow: hidden; transition: width .3s ease, padding .3s ease; }
     .chat-sidebar.collapsed { width: 0; padding: 0; border-right: none; overflow: hidden; }
-    .sidebar-header { padding: 20px 18px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; align-items: center; }
-    .sidebar-btn { flex: 1; height: 44px; border-radius: 12px; border: none; background: linear-gradient(135deg, var(--primary), rgba(255,255,255,.25)); color: #000; cursor: pointer; font-size: 14px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .2s; box-shadow: 0 4px 24px rgba(0,0,0,.4); }
-    .sidebar-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 32px rgba(0,0,0,.5); filter: brightness(1.12); }
-    .sidebar-list { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 6px; }
-    .sidebar-section { font-size: 10px; font-weight: 800; color: rgba(255,255,255,.22); text-transform: uppercase; letter-spacing: 1.2px; margin: 8px 4px 4px 4px; }
-    .sidebar-item { padding: 14px; border-radius: 12px; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all .15s; border: 1px solid transparent; position: relative; }
+    .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-btn { width: 100%; height: 42px; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--primary), rgba(255,255,255,.25)); color: #000; cursor: pointer; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .2s; }
+    .sidebar-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+    .sidebar-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
+    .sidebar-section { font-size: 10px; font-weight: 800; color: rgba(255,255,255,.2); text-transform: uppercase; letter-spacing: 1px; margin: 6px 4px 4px 4px; }
+    .sidebar-item { padding: 11px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; transition: all .15s; border: 1px solid transparent; position: relative; }
     .sidebar-item:hover { background: rgba(255,255,255,.05); border-color: var(--border); }
     .sidebar-item.active { background: rgba(255,255,255,.08); border-color: var(--primary); }
     .sidebar-item.pinned { border-left: 2px solid var(--primary); }
-    .sidebar-icon { width: 34px; height: 34px; border-radius: 9px; background: rgba(255,255,255,.05); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; color: rgba(255,255,255,.4); flex-shrink: 0; }
+    .sidebar-icon { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,.05); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: rgba(255,255,255,.4); flex-shrink: 0; }
     .sidebar-item.active .sidebar-icon { color: var(--primary); background: rgba(255,255,255,.1); }
-    .sidebar-title { flex: 1; min-width: 0; font-size: 14px; font-weight: 500; color: rgba(255,255,255,.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar-title { flex: 1; min-width: 0; font-size: 13px; font-weight: 500; color: rgba(255,255,255,.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .sidebar-item.active .sidebar-title { color: #fff; }
-    .sidebar-meta { font-size: 11px; color: rgba(255,255,255,.35); margin-top: 2px; }
-    .sidebar-actions { display: flex; gap: 4px; opacity: 0; transition: opacity .2s; }
+    .sidebar-meta { font-size: 10px; color: rgba(255,255,255,.32); margin-top: 1px; }
+    .sidebar-actions { display: flex; gap: 3px; opacity: 0; transition: opacity .2s; }
     .sidebar-item:hover .sidebar-actions { opacity: 1; }
-    .sidebar-action { width: 28px; height: 28px; border-radius: 7px; border: none; background: transparent; color: rgba(255,255,255,.35); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .sidebar-action { width: 24px; height: 24px; border-radius: 6px; border: none; background: transparent; color: rgba(255,255,255,.35); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
     .sidebar-action:hover { background: rgba(255,255,255,.1); color: #fff; }
     .sidebar-action.active { color: var(--primary); }
     .sidebar-action.delete:hover { background: rgba(239,68,68,.2); color: #fca5a5; }
-    .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-    .app-header { display: flex; align-items: center; gap: 16px; padding: 18px 24px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-    .menu-btn { width: 42px; height: 42px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.04); color: rgba(255,255,255,.55); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
-    .menu-btn:hover { background: rgba(255,255,255,.1); color: #fff; }
-    .brand { display: flex; align-items: center; gap: 14px; cursor: default; user-select: none; }
-    .brand-logo { width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, var(--primary), rgba(255,255,255,.2)); display:flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900; color: #000; border: 1px solid rgba(255,255,255,.1); box-shadow: 0 6px 24px rgba(0,0,0,.35); }
-    .title-group { flex:1; min-width:0; }
-    .main-title { font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .sub-title { font-size: 11px; color: rgba(255,255,255,.4); letter-spacing: .6px; text-transform: uppercase; margin-top: 2px; }
-    .header-actions { display:flex; gap:8px; align-items:center; position:relative; }
-    .icon-btn { width:42px; height:42px; border-radius:12px; border:1px solid transparent; background: rgba(255,255,255,.04); color:rgba(255,255,255,.55); cursor:pointer; display:flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
-    .icon-btn:hover { background:rgba(255,255,255,.1); border-color:var(--border); color:#fff; }
-    .icon-btn.active { background: var(--primary); color: #000; border-color: transparent; }
-    .icon-btn.premium { position: relative; overflow: hidden; }
-    .icon-btn.premium::after { content: ""; position: absolute; inset: 0; border-radius: 12px; padding: 1px; background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: shimmer 2.5s linear infinite; background-size: 200% 200%; }
-    @keyframes shimmer { 0%{background-position: 0% 50%} 50%{background-position: 100% 50%} 100%{background-position: 0% 50%} }
-    .panel { position: absolute; top: 78px; right: 20px; width: 360px; max-height: calc(100vh - 110px); overflow-y: auto; background: rgba(0,0,0,.94); border: 1px solid var(--border); border-radius: 18px; padding: 22px; z-index: 100; box-shadow: 0 28px 90px rgba(0,0,0,.7); }
-    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
-    .panel-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
-    .memory-panel-full { background: rgba(0,0,0,.42); backdrop-filter:blur(26px); padding: 20px; border-bottom: 1px solid var(--border); max-height: 60vh; overflow-y: auto; flex-shrink:0; }
-    .setting-row { margin-bottom: 20px; display:flex; flex-direction:column; gap:12px; }
+    .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+    .chat-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; position: relative; }
+    .panel-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,.4); backdrop-filter: blur(2px); }
+    .panel { position: absolute; top: 70px; right: 16px; width: 340px; max-height: calc(100vh - 100px); overflow-y: auto; background: rgba(0,0,0,.92); border: 1px solid var(--border); border-radius: 16px; padding: 18px; z-index: 100; box-shadow: 0 24px 80px rgba(0,0,0,.7); }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .panel-title { font-size: 12px; font-weight: 800; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+    .memory-panel { position: absolute; top: 0; left: 0; right: 0; z-index: 80; background: rgba(0,0,0,.85); backdrop-filter: blur(24px); border-bottom: 1px solid var(--border); padding: 18px 22px; max-height: 65vh; overflow-y: auto; }
+    .setting-row { margin-bottom: 16px; display:flex; flex-direction:column; gap:10px; }
     .setting-row:last-child { margin-bottom: 0; }
-    .setting-label { color:rgba(255,255,255,.5); font-size:11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
-    .theme-grid { display:flex; gap:8px; flex-wrap:wrap; }
-    .theme-card { padding: 9px 14px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:rgba(255,255,255,.75); cursor:pointer; font-size:13px; font-weight: 500; display:flex; align-items:center; gap:8px; transition: all .15s; flex: 1; min-width: 100px; }
+    .setting-label { color:rgba(255,255,255,.45); font-size:10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+    .theme-grid { display:flex; gap:6px; flex-wrap:wrap; }
+    .theme-card { padding: 7px 11px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:rgba(255,255,255,.75); cursor:pointer; font-size:12px; font-weight: 500; display:flex; align-items:center; gap:6px; transition: all .15s; flex: 1; min-width: 90px; }
     .theme-card:hover { background:rgba(255,255,255,.09); border-color: rgba(255,255,255,.18); transform: translateY(-1px); }
     .theme-card.selected { border-color: var(--primary); background: rgba(255,255,255,.1); color: #fff; }
-    .model-select-container { padding: 12px 16px; border-radius:10px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:#fff; font-size:14px; }
-    .model-select { width: 100%; background: transparent; border: none; color: #fff; font-size: 14px; outline: none; cursor: pointer; padding: 4px 0; }
+    .model-select-container { padding: 10px 12px; border-radius:8px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:#fff; font-size:13px; }
+    .model-select { width: 100%; background: transparent; border: none; color: #fff; font-size: 13px; outline: none; cursor: pointer; padding: 4px 0; }
     .model-select option, .model-select optgroup { background: #0a0a0a; color:#fff; }
-    .slider-container { display: flex; align-items: center; gap: 12px; }
-    .slider { flex: 1; height: 5px; border-radius: 3px; background: rgba(255,255,255,.08); outline: none; -webkit-appearance: none; }
-    .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--primary); cursor: pointer; }
-    .custom-input { padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border); background: rgba(255,255,255,.04); color: #fff; font-size: 14px; outline: none; transition: all .15s; }
+    .slider-container { display: flex; align-items: center; gap: 10px; }
+    .slider { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.08); outline: none; -webkit-appearance: none; }
+    .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--primary); cursor: pointer; }
+    .custom-input { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); background: rgba(255,255,255,.04); color: #fff; font-size: 13px; outline: none; transition: all .15s; }
     .custom-input:focus { border-color: var(--primary); background: rgba(255,255,255,.06); }
     .custom-input::placeholder { color: rgba(255,255,255,.3); }
-    .textarea { min-height: 100px; resize: vertical; font-family: inherit; line-height: 1.5; }
-    .color-picker { width: 38px; height: 34px; border: none; border-radius: 8px; cursor: pointer; background: transparent; }
-    .search-bar { display:flex; align-items:center; gap:10px; margin: 12px 22px; padding: 12px 16px; border-radius:12px; background:rgba(255,255,255,.04); border:1px solid var(--border); flex-shrink: 0; }
-    .search-bar input { flex:1; background:none; border:none; outline:none; color:#fff; font-size:15px; caret-color:var(--primary); }
-    .search-bar input::placeholder { color: rgba(255,255,255,.35); }
-    .search-bar button { background:none; border:none; color:rgba(255,255,255,.4); cursor:pointer; font-size:15px; padding:4px; border-radius: 6px; transition: all .15s; display: flex; align-items: center; justify-content: center; }
-    .search-bar button:hover { background: rgba(255,255,255,.1); color: #fff; }
-    .scroll-wrapper { flex:1; overflow-y:auto; scroll-behavior:smooth; padding:24px; display:flex; flex-direction:column; gap:16px; min-height:0; }
-    .scroll-wrapper::-webkit-scrollbar { width:6px; }
+    .textarea { min-height: 80px; resize: vertical; font-family: inherit; line-height: 1.5; }
+    .color-picker { width: 32px; height: 28px; border: none; border-radius: 6px; cursor: pointer; background: transparent; }
+    .scroll-wrapper { flex:1; overflow-y:auto; scroll-behavior:smooth; padding:22px; display:flex; flex-direction:column; gap:14px; min-height:0; }
+    .scroll-wrapper::-webkit-scrollbar { width:5px; }
     .scroll-wrapper::-webkit-scrollbar-track { background:transparent; }
-    .scroll-wrapper::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
-    .msg-row { display:flex; gap:14px; max-width:88%; animation: msgIn .25s ease; }
+    .scroll-wrapper::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+    .msg-row { display:flex; gap:12px; max-width:86%; animation: msgIn .25s ease; }
     .msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
     .msg-row.assistant { align-self: flex-start; }
     @keyframes msgIn { from { opacity:0; transform:translateY(10px);} to { opacity:1; transform:translateY(0);} }
-    .avatar { width:36px; height:36px; border-radius:10px; display:flex; align-items: center; justify-content: center; font-size:11px; font-weight: 900; flex-shrink:0; background:rgba(255,255,255,.05); border: 1px solid var(--border); color: rgba(255,255,255,.45); }
+    .avatar { width:32px; height:32px; border-radius:9px; display:flex; align-items: center; justify-content: center; font-size:10px; font-weight: 900; flex-shrink:0; background:rgba(255,255,255,.05); border: 1px solid var(--border); color: rgba(255,255,255,.45); }
     .msg-row.user .avatar { color: var(--primary); background: rgba(255,255,255,.08); }
-    .msg-row.assistant .avatar { color: var(--primary); background: rgba(255,255,255,.08); }
-    .bubble { padding: 16px 20px; border-radius: 16px; font-size: 16px; line-height: 1.65; word-break: break-word; position: relative; max-width: 100%; }
+    .bubble { padding: 14px 18px; border-radius: 14px; font-size: 15px; line-height: 1.6; word-break: break-word; max-width: 100%; }
     .msg-row.user .bubble { background: var(--user-bubble, rgba(139, 92, 246, 0.12)); color:#f8fafc; border-bottom-right-radius:4px; }
     .msg-row.assistant .bubble { background: var(--ai-bubble, rgba(139, 92, 246, 0.06)); color:rgba(255,255,255,.9); border:1px solid var(--border); border-bottom-left-radius:4px; }
-    .msg-actions { display:flex; gap:6px; margin-top:6px; justify-content:flex-end; opacity:0; transition:opacity .2s; }
+    .msg-actions { display:flex; gap:5px; margin-top:5px; justify-content:flex-end; opacity:0; transition:opacity .2s; }
     .msg-row:hover .msg-actions { opacity:1; }
-    .msg-action-btn { padding:6px 12px; border-radius:6px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:rgba(255,255,255,.5); font-size:12px; cursor:pointer; transition: all .15s; display: flex; align-items: center; gap: 5px; }
+    .msg-action-btn { padding:5px 10px; border-radius:6px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:rgba(255,255,255,.5); font-size:11px; cursor:pointer; transition: all .15s; display: flex; align-items: center; gap: 5px; }
     .msg-action-btn:hover { background:rgba(255,255,255,.1); color:#fff; }
-    .msg-meta { font-size:11px; color:rgba(255,255,255,.28); margin-top:4px; text-align: right; }
-    .generated-image { max-width: 100%; max-height: 75vh; border-radius: 14px; border: 1px solid var(--border); display: block; box-shadow: 0 18px 54px rgba(0,0,0,.55); transition: transform .3s; cursor: pointer; }
+    .msg-meta { font-size:10px; color:rgba(255,255,255,.25); margin-top:3px; text-align: right; }
+    .generated-image { max-width: 100%; max-height: 70vh; border-radius: 12px; border: 1px solid var(--border); display: block; box-shadow: 0 14px 42px rgba(0,0,0,.5); transition: transform .3s; cursor: pointer; }
     .generated-image:hover { transform: scale(1.01); }
-    .image-prompt { font-size: 13px; color: rgba(255,255,255,.45); margin-top: 10px; font-style: italic; }
-    .error-banner { display:flex; gap:10px; align-items:center; padding: 10px 16px; margin:8px 22px; border-radius:12px; background: rgba(239,68,68,.07); border: 1px solid rgba(239,68,68,.22); font-size:13px; color:#fca5a5; flex-shrink:0; }
-    .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:28px; padding:56px 28px; text-align: center; }
-    .logo-big { width:72px; height:72px; border-radius:18px; background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); border:1px solid var(--border); display:flex; align-items: center; justify-content: center; font-size:28px; font-weight:900; color:var(--primary); margin:0 auto 8px auto; box-shadow: 0 18px 54px rgba(0,0,0,.4); }
-    .empty-title { font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: -.3px; }
-    .empty-subtitle { color:rgba(255,255,255,.42); font-size:15px; max-width:420px; line-height: 1.6; }
+    .image-prompt { font-size: 12px; color: rgba(255,255,255,.4); margin-top: 8px; font-style: italic; }
+    .error-banner { display:flex; gap:10px; align-items:center; padding: 10px 14px; margin:8px 18px; border-radius:10px; background: rgba(239,68,68,.07); border: 1px solid rgba(239,68,68,.22); font-size:12px; color:#fca5a5; flex-shrink:0; }
+    .empty-state { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:22px; padding:40px 24px; text-align: center; }
+    .logo-big { width:64px; height:64px; border-radius:16px; background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); border:1px solid var(--border); display:flex; align-items: center; justify-content: center; font-size:24px; font-weight:900; color:var(--primary); margin:0 auto; box-shadow: 0 14px 42px rgba(0,0,0,.35); }
+    .empty-title { font-size: 24px; font-weight: 800; color: #fff; letter-spacing: -.3px; }
+    .empty-subtitle { color:rgba(255,255,255,.45); font-size:14px; max-width:420px; line-height: 1.6; }
+    .empty-subtitle strong { color: var(--primary); font-weight: 700; }
     @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.3;} }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .typing-indicator { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--primary); margin-left: 4px; animation: blink 1s infinite; }
     .attachment-grid { display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
-    .attachment-thumb { width:68px; height:68px; border-radius:8px; overflow:hidden; border:1px solid var(--border); position:relative; }
+    .attachment-thumb { width:60px; height:60px; border-radius:7px; overflow:hidden; border:1px solid var(--border); position:relative; }
     .attachment-thumb img { width:100%; height:100%; object-fit:cover; }
-    .attachment-remove { position:absolute; top:2px; right:2px; width:20px; height:20px; border-radius:50%; border:none; background:rgba(0,0,0,.7); color:#fff; cursor:pointer; font-size:12px; display:flex; align-items: center; justify-content: center; }
+    .attachment-remove { position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; border:none; background:rgba(0,0,0,.7); color:#fff; cursor:pointer; font-size:11px; display:flex; align-items: center; justify-content: center; }
+    .input-area { padding: 14px 18px; border-top: 1px solid var(--border); background: rgba(0,0,0,0.45); backdrop-filter: blur(20px); flex-shrink: 0; }
+    .input-area-inner { max-width: 900px; margin: 0 auto; display: flex; gap: 8px; align-items: center; }
+    .input-field { flex: 1; padding: 12px 18px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.06); color: #fff; font-size: 15px; outline: none; caret-color: var(--primary); min-width: 0; }
+    .input-field:focus { border-color: var(--primary); background: rgba(255,255,255,.09); box-shadow: 0 0 0 3px rgba(139,92,246,.08); }
+    .input-field::placeholder { color: rgba(255,255,255,.35); }
+    .send-btn { padding: 0 18px; height: 44px; border-radius: 12px; border: none; cursor: pointer; background: var(--primary); color: #000; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .send-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+    .send-btn:disabled { background: rgba(255,255,255,.06); color: rgba(255,255,255,.25); cursor: not-allowed; transform: none; filter: none; }
+    .attachment-preview { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; max-width: 900px; margin-left: auto; margin-right: auto; }
+    .wake-banner { display:flex; gap:10px; align-items:center; padding: 10px 14px; margin:8px 18px; border-radius:10px; background: rgba(251, 191, 36, .1); border: 1px solid rgba(251, 191, 36, .25); font-size:12px; color:#fbbf24; flex-shrink:0; }
+    .wake-banner svg { flex-shrink: 0; animation: spin 2s linear infinite; }
     .camera-overlay { position:fixed; inset:0; z-index:1000; background:rgba(0,0,0,.97); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; }
     .camera-video { max-width:90vw; max-height:70vh; border-radius:14px; border:2px solid var(--border); }
     .camera-controls { display:flex; gap:20px; }
     .camera-btn { padding:12px 28px; border-radius:30px; border:none; font-weight:700; font-size:14px; cursor:pointer; }
     .camera-btn.primary { background:var(--primary); color:#000; }
     .camera-btn.secondary { background:rgba(255,255,255,.08); color:#fff; border:1px solid var(--border); }
-    .icon-btn.send-active { box-shadow: 0 0 20px rgba(var(--primary-rgb), 0.4); }
-    .input-wrapper { display: flex; align-items: center; gap: 8px; padding: 14px 18px; border-top: 1px solid var(--border); background: rgba(0,0,0,.18); }
-    .input-wrapper:focus-within { background: rgba(255,255,255,.03); }
-
- left:50%; transform:translateX(-50%); background:rgba(0,0,0,.55); color:rgba(255,255,255,.3); padding:6px 14px; border-radius:20px; font-size:11px; z-index:5; }
-    .no-anim .msg-row, .no-anim .typing-indicator { animation:none; }
-    .toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.95); color: #fff; padding: 14px 22px; border-radius: 12px; z-index: 9999; font-size: 14px; border-left: 3px solid var(--primary); box-shadow: 0 22px 70px rgba(0,0,0,.65); display: flex; align-items: center; gap: 10px; }
-    .memory-card { padding: 18px; border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid var(--border); margin-bottom: 16px; }
-    .memory-card-title { font-size: 14px; font-weight: 700; color: rgba(255,255,255,.78); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
-    .memory-text { font-size: 14px; color: rgba(255,255,255,.55); line-height: 1.5; white-space: pre-wrap; }
-    .wake-banner { display:flex; gap:10px; align-items:center; padding: 10px 16px; margin:8px 22px; border-radius:12px; background: rgba(251, 191, 36, .1); border: 1px solid rgba(251, 191, 36, .25); font-size:13px; color:#fbbf24; flex-shrink:0; }
-    .wake-banner svg { flex-shrink: 0; animation: spin 2s linear infinite; }
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.95); color: #fff; padding: 12px 20px; border-radius: 10px; z-index: 9999; font-size: 13px; border-left: 3px solid var(--primary); box-shadow: 0 20px 60px rgba(0,0,0,.6); display: flex; align-items: center; gap: 10px; }
     @media (max-width: 900px) {
-      .chat-sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; transform: translateX(-100%); transition: transform .3s; width: 280px; }
+      .chat-sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; transform: translateX(-100%); transition: transform .3s; width: 260px; }
       .chat-sidebar.collapsed { transform: translateX(-100%); }
       .chat-sidebar.open { transform: translateX(0); }
-      .glass-main { width: 100vw; height: 100vh; border-radius: 0; }
-      .panel { width: calc(100vw - 40px); right: 20px; left: 20px; top: 90px; }
+      .panel { width: calc(100vw - 32px); right: 16px; left: 16px; top: 80px; }
+      .memory-panel { padding: 14px 16px; }
     }
     @media (max-width: 640px) {
-      .scroll-wrapper { padding: 14px; gap: 12px; }
-      .bubble { font-size: 15px; padding: 12px 16px; }
+      .app-header { padding: 10px 14px; }
+      .scroll-wrapper { padding: 14px; gap: 10px; }
+      .bubble { font-size: 14px; padding: 12px 14px; }
       .msg-row { max-width: 94%; }
-      .main-title { font-size: 15px; }
-      .keyboard-hint { display:none; }
-      .header-actions { gap: 4px; }
+      .input-area { padding: 10px 12px; }
+      .empty-title { font-size: 20px; }
       .icon-btn { width: 36px; height: 36px; }
       .brand-logo { width: 36px; height: 36px; }
     }
   `}</style>
 );
 
-const DockPanel = ({ dock }) => (
-  <div style={{ padding: "12px 18px", borderTop: "1px solid var(--border)", background: "rgba(0,0,0,.18)", flexShrink: 0 }}>
-    <div style={{ fontSize: 10, color: "rgba(255,255,255,.35)", marginBottom: 6, display: "flex", justifyContent: "space-between", textTransform: "uppercase", letterSpacing: ".7px" }}>
-      <span>Active Requests</span>
-      <span>{dock?.active || 0}</span>
-    </div>
-    {(dock?.requests || []).slice(0, 3).map(r => (
-      <div key={r.id || Math.random()} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, marginBottom: 4, color: "rgba(255,255,255,.62)" }}>
-        <span style={{ width: 5, height: 5, borderRadius: "50%", background: r.status === 'completed' ? '#22c55e' : r.status === 'error' ? '#ef4444' : 'var(--primary)' }} />
-        <span style={{ flex: 1 }}>{getModelDisplayName(r.model)}</span>
-        <span style={{ color: "rgba(255,255,255,.3)" }}>{Math.min(100, Math.round(r.progress || 0))}%</span>
-      </div>
-    ))}
-  </div>
-);
-
 const InputBar = ({ text, setText, onSend, disabled, status, stats, attachments, setAttachments, onFileSelect, onPasteImage, onStartCamera, isListening, toggleListening }) => {
   const fileInputRef = useRef(null);
   const handleSubmit = () => { if ((!text.trim() && attachments.length === 0) || disabled) return; onSend(text); };
   return (
-    <div style={{ padding: "14px 18px", borderTop: "1px solid var(--border)", flexShrink: 0, background: "rgba(0,0,0,.18)" }} onPaste={onPasteImage}>
+    <div className="input-area" onPaste={onPasteImage}>
       {attachments.length > 0 && (
-        <div style={{ display: "flex", gap: 6, marginBottom: 8, flexWrap: "wrap" }}>
+        <div className="attachment-preview">
           {attachments.map((file, idx) => (
-            <div key={idx} style={{ width: 68, height: 68, borderRadius: 8, overflow: "hidden", border: "1px solid var(--border)", position: "relative" }}>
+            <div key={idx} style={{ width: 60, height: 60, borderRadius: 7, overflow: "hidden", border: "1px solid var(--border)", position: "relative" }}>
               <img src={URL.createObjectURL(file)} style={{ width: "100%", height: "100%", objectFit: "cover" }} alt="" />
               <button onClick={() => setAttachments(prev => prev.filter((_, i) => i !== idx))} className="attachment-remove">×</button>
             </div>
           ))}
         </div>
       )}
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+      <div className="input-area-inner">
         <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={onFileSelect} style={{ display: "none" }} />
-        <button onClick={() => fileInputRef.current?.click()} disabled={disabled} className="icon-btn" title="Attach image"><Icon name="plus" size={20} /></button>
-        <button onClick={onStartCamera} disabled={disabled} className="icon-btn" title="Camera"><Icon name="camera" size={20} /></button>
-        <button onClick={toggleListening} disabled={disabled} className={`icon-btn ${isListening ? "active" : ""}`} title={isListening ? "Stop voice" : "Voice input"}><Icon name={isListening ? "mic-off" : "mic"} size={20} /></button>
-        <input
-          value={text}
-          onChange={e => setText(e.target.value)}
-          onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }}
-          placeholder={status === "loading" ? "AI is thinking..." : "Message... try /image to generate images"}
-          disabled={disabled}
-          style={{ flex: 1, padding: "12px 18px", borderRadius: 12, border: "1px solid var(--border)", background: "rgba(255,255,255,.05)", color: "#fff", fontSize: 16, outline: "none", caretColor: "var(--primary)", minWidth: 0 }}
-        />
-        <button
-          onClick={handleSubmit}
-          disabled={(!text.trim() && attachments.length === 0) || disabled}
-          style={{ padding: "0 20px", height: 46, borderRadius: 12, border: "none", cursor: (text.trim() || attachments.length > 0) && !disabled ? "pointer" : "not-allowed", background: (text.trim() || attachments.length > 0) && !disabled ? "var(--primary)" : "rgba(255,255,255,.06)", color: (text.trim() || attachments.length > 0) && !disabled ? "#000" : "rgba(255,255,255,.25)", fontWeight: 800, fontSize: 15, display: "flex", alignItems: "center", justifyContent: "center" }}
-        >
-          {status === "loading" ? <span style={{ width: 18, height: 18, border: "2px solid rgba(0,0,0,.3)", borderTopColor: "#000", borderRadius: "50%", animation: "spin 1s linear infinite" }} /> : <Icon name="send" size={20} />}
+        <button onClick={() => fileInputRef.current?.click()} disabled={disabled} className="icon-btn" title="Attach image"><Icon name="plus" size={18} /></button>
+        <button onClick={onStartCamera} disabled={disabled} className="icon-btn" title="Camera"><Icon name="camera" size={18} /></button>
+        <button onClick={toggleListening} disabled={disabled} className={`icon-btn ${isListening ? "active" : ""}`} title={isListening ? "Stop voice" : "Voice input"}><Icon name={isListening ? "mic-off" : "mic"} size={18} /></button>
+        <input className="input-field" value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }} placeholder={status === "loading" ? "AI is thinking..." : "Message... try /image to generate images"} disabled={disabled} />
+        <button className="send-btn" onClick={handleSubmit} disabled={(!text.trim() && attachments.length === 0) || disabled}>
+          {status === "loading" ? <span style={{ width: 16, height: 16, border: "2px solid rgba(0,0,0,.3)", borderTopColor: "#000", borderRadius: "50%", animation: "spin 1s linear infinite" }} /> : <Icon name="send" size={18} />}
         </button>
       </div>
-      {stats && <div style={{ fontSize: 11, color: "rgba(255,255,255,.26)", marginTop: 6, display: "flex", gap: 14, justifyContent: "center" }}>
+      {stats && <div style={{ fontSize: 10, color: "rgba(255,255,255,.25)", marginTop: 5, display: "flex", gap: 12, justifyContent: "center" }}>
         <span>{stats.duration > 1000 ? `${(stats.duration / 1000).toFixed(1)}s` : `${stats.duration}ms`}</span>
         <span>{getModelDisplayName(stats.model)}</span>
       </div>}
@@ -500,9 +380,9 @@ const InputBar = ({ text, setText, onSend, disabled, status, stats, attachments,
 
 const MessageActions = ({ content, onSpeak, onRegenerate }) => (
   <div className="msg-actions">
-    <button onClick={() => navigator.clipboard.writeText(content)} className="msg-action-btn" title="Copy"><Icon name="copy" size={12} /> Copy</button>
-    <button onClick={() => onSpeak(content)} className="msg-action-btn" title="Read aloud"><Icon name="volume" size={12} /> Read</button>
-    {onRegenerate && <button onClick={onRegenerate} className="msg-action-btn" title="Regenerate"><Icon name="refresh" size={12} /> Regenerate</button>}
+    <button onClick={() => navigator.clipboard.writeText(content)} className="msg-action-btn" title="Copy"><Icon name="copy" size={11} /> Copy</button>
+    <button onClick={() => onSpeak(content)} className="msg-action-btn" title="Read aloud"><Icon name="volume" size={11} /> Read</button>
+    {onRegenerate && <button onClick={onRegenerate} className="msg-action-btn" title="Regenerate"><Icon name="refresh" size={11} /> Regenerate</button>}
   </div>
 );
 
@@ -518,7 +398,7 @@ const ChatSidebar = ({ chats, activeChatId, onSelect, onCreate, onDelete, onRena
     <>
       <div className={`chat-sidebar ${sidebarOpen ? "open" : ""}`} onClick={e => e.stopPropagation()}>
         <div className="sidebar-header">
-          <button onClick={handleCreate} className="sidebar-btn"><Icon name="plus" size={18} /> New Chat</button>
+          <button onClick={handleCreate} className="sidebar-btn"><Icon name="plus" size={16} /> New Chat</button>
         </div>
         <div className="sidebar-list">
           {chats.filter(c => c.pinned).length > 0 && <div className="sidebar-section">Pinned</div>}
@@ -527,7 +407,7 @@ const ChatSidebar = ({ chats, activeChatId, onSelect, onCreate, onDelete, onRena
           {chats.filter(c => !c.pinned).map(chat => <SidebarItem key={chat.id} chat={chat} activeChatId={activeChatId} editingId={editingId} editTitle={editTitle} setEditTitle={setEditTitle} startEdit={startEdit} saveEdit={saveEdit} formatDate={formatDate} onSelect={onSelect} onDelete={onDelete} onPin={onPin} onFavorite={onFavorite} setSidebarOpen={setSidebarOpen} />)}
         </div>
       </div>
-      {sidebarOpen && <div onClick={() => setSidebarOpen(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.6)", zIndex: 90, backdropFilter: "blur(2px)" }} />}
+      {sidebarOpen && <div className="panel-overlay" onClick={() => setSidebarOpen(false)} />}
     </>
   );
 };
@@ -537,33 +417,33 @@ const SidebarItem = ({ chat, activeChatId, editingId, editTitle, setEditTitle, s
   const isEditing = editingId === chat.id;
   return (
     <div onClick={() => { onSelect(chat.id); setSidebarOpen(false); }} className={`sidebar-item ${isActive ? "active" : ""} ${chat.pinned ? "pinned" : ""}`}>
-      <div className="sidebar-icon">{chat.pinned ? <Icon name="pin" size={13} /> : chat.messages.length > 0 ? chat.messages[0].content.slice(0, 1).toUpperCase() : "N"}</div>
+      <div className="sidebar-icon">{chat.pinned ? <Icon name="pin" size={12} /> : chat.messages.length > 0 ? chat.messages[0].content.slice(0, 1).toUpperCase() : "N"}</div>
       <div style={{ flex: 1, minWidth: 0 }}>
         {isEditing ? (
-          <input value={editTitle} onChange={e => setEditTitle(e.target.value)} onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditTitle(chat.title); }} onBlur={saveEdit} autoFocus onClick={e => e.stopPropagation()} style={{ width: "100%", background: "rgba(255,255,255,.1)", border: "1px solid var(--border)", borderRadius: 6, padding: "4px 8px", color: "#fff", fontSize: 13, outline: "none" }} />
+          <input value={editTitle} onChange={e => setEditTitle(e.target.value)} onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditTitle(chat.title); }} onBlur={saveEdit} autoFocus onClick={e => e.stopPropagation()} style={{ width: "100%", background: "rgba(255,255,255,.1)", border: "1px solid var(--border)", borderRadius: 6, padding: "3px 7px", color: "#fff", fontSize: 12, outline: "none" }} />
         ) : (
           <div className="sidebar-title">{chat.title}</div>
         )}
         <div className="sidebar-meta">{chat.messages.length} messages • {formatDate(chat.updatedAt || chat.createdAt)}</div>
       </div>
       <div className="sidebar-actions">
-        <button onClick={e => { e.stopPropagation(); onFavorite(chat.id); }} className={`sidebar-action ${chat.favorite ? "active" : ""}`} title={chat.favorite ? "Unfavorite" : "Favorite"}><Icon name="star" size={14} /></button>
-        <button onClick={e => { e.stopPropagation(); onPin(chat.id); }} className={`sidebar-action ${chat.pinned ? "active" : ""}`} title={chat.pinned ? "Unpin" : "Pin"}><Icon name="pin" size={14} /></button>
-        <button onClick={e => startEdit(chat, e)} className="sidebar-action" title="Rename"><Icon name="edit" size={14} /></button>
-        <button onClick={e => { e.stopPropagation(); onDelete(chat.id); }} className="sidebar-action delete" title="Delete"><Icon name="trash" size={14} /></button>
+        <button onClick={e => { e.stopPropagation(); onFavorite(chat.id); }} className={`sidebar-action ${chat.favorite ? "active" : ""}`} title={chat.favorite ? "Unfavorite" : "Favorite"}><Icon name="star" size={13} /></button>
+        <button onClick={e => { e.stopPropagation(); onPin(chat.id); }} className={`sidebar-action ${chat.pinned ? "active" : ""}`} title={chat.pinned ? "Unpin" : "Pin"}><Icon name="pin" size={13} /></button>
+        <button onClick={e => startEdit(chat, e)} className="sidebar-action" title="Rename"><Icon name="edit" size={13} /></button>
+        <button onClick={e => { e.stopPropagation(); onDelete(chat.id); }} className="sidebar-action delete" title="Delete"><Icon name="trash" size={13} /></button>
       </div>
     </div>
   );
 };
 
 const App = () => {
-  const [themeKey, setThemeKey] = useState(() => { const savedTheme = Storage.get("pa-theme"); return savedTheme && THEMES[savedTheme] ? savedTheme : "midnight"; });
+  const [themeKey, setThemeKey] = useState(() => { const s = Storage.get("pa-theme"); return s && THEMES[s] ? s : "midnight"; });
   const [customBg, setCustomBg] = useState(() => Storage.get("pa-custom-bg") || "");
   const [customPrimary, setCustomPrimary] = useState(() => Storage.get("pa-custom-primary") || "");
   const [accentColor, setAccentColor] = useState(() => Storage.get("pa-accent-color") || "");
-  const [bgOpacity, setBgOpacity] = useState(() => { const v = Storage.get("pa-bg-opacity"); return v !== null ? parseFloat(v) : 0.4; });
+  const [bgOpacity, setBgOpacity] = useState(() => { const v = Storage.get("pa-bg-opacity"); return v !== null ? parseFloat(v) : 0.45; });
   const [glassOpacity, setGlassOpacity] = useState(() => { const v = Storage.get("pa-glass-opacity"); return v !== null ? parseFloat(v) : 0.92; });
-  const [fontSize, setFontSize] = useState(() => { const v = Storage.get("pa-font-size"); return v !== null ? parseFloat(v) : 16; });
+  const [fontSize, setFontSize] = useState(() => { const v = Storage.get("pa-font-size"); return v !== null ? parseFloat(v) : 15; });
   const [compactMode, setCompactMode] = useState(() => Storage.get("pa-compact") === "true");
   const [animations, setAnimations] = useState(() => Storage.get("pa-animations") !== "false");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -586,23 +466,15 @@ const App = () => {
 
   const [attachments, setAttachments] = useState([]);
   const [inputText, setInputText] = useState("");
-  const [isDragging, setIsDragging] = useState(false);
 
   const [showCamera, setShowCamera] = useState(false);
-  const cameraStreamRef = useRef(null);
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-
+  const cameraStreamRef = useRef(null), videoRef = useRef(null), canvasRef = useRef(null);
   const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef(null);
-  const listeningTimeoutRef = useRef(null);
-
+  const recognitionRef = useRef(null), listeningTimeoutRef = useRef(null);
   const [ttsEnabled, setTtsEnabled] = useState(() => Storage.get("pa-tts") === "true");
   const [isSpeaking, setIsSpeaking] = useState(false);
   const lastSpokenRef = useRef("");
   const chatRef = useRef(null);
-
-  const dock = useDockStatus();
   const health = useHealthCheck();
   const T = THEMES[themeKey] || DEFAULT_THEME;
 
@@ -613,38 +485,29 @@ const App = () => {
     if (!autoExtractMemory || activeMessages.length < 4) return;
     const recent = activeMessages.slice(-6).map(m => `${m.role}: ${m.content}`).join("\n");
     try {
-      const res = await fetch(`${API_BASE}/chat`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: `Based on this conversation, extract 3-5 key facts about the user's preferences, goals, or identity that would help future conversations. Return only a concise bullet list.\n\n${recent}`, messages: [], modelType: model, sessionId: "memory-extract", temperature: 0.3 })
-      });
+      const res = await fetch(`${API_BASE}/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: `Based on this conversation, extract 3-5 key facts about the user's preferences, goals, or identity. Return only a concise bullet list.\n\n${recent}`, messages: [], modelType: model, sessionId: "memory-extract", temperature: 0.3 }) });
       const data = await res.json();
       const newFacts = data?.response || data?.text || "";
       if (newFacts.trim()) {
-        setUserProfile(prev => {
-          const existing = prev.split("\n").filter(f => f.trim()).slice(0, 15);
-          const updated = [...new Set([...existing, ...newFacts.split("\n").filter(f => f.trim())])].slice(0, 20).join("\n");
-          Storage.set("pa-user-profile", updated);
-          return updated;
-        });
+        setUserProfile(prev => { const existing = prev.split("\n").filter(f => f.trim()).slice(0, 15); const updated = [...new Set([...existing, ...newFacts.split("\n").filter(f => f.trim())])].slice(0, 20).join("\n"); Storage.set("pa-user-profile", updated); return updated; });
       }
     } catch {}
   }, [activeMessages, autoExtractMemory, model]);
 
-  useEffect(() => { Storage.set("pa-theme", themeKey); }, [themeKey]);
-  useEffect(() => { Storage.set("pa-custom-bg", customBg); }, [customBg]);
-  useEffect(() => { Storage.set("pa-custom-primary", customPrimary); }, [customPrimary]);
-  useEffect(() => { Storage.set("pa-accent-color", accentColor); }, [accentColor]);
-  useEffect(() => { Storage.set("pa-bg-opacity", bgOpacity.toString()); }, [bgOpacity]);
-  useEffect(() => { Storage.set("pa-glass-opacity", glassOpacity.toString()); }, [glassOpacity]);
-  useEffect(() => { Storage.set("pa-font-size", fontSize.toString()); }, [fontSize]);
-  useEffect(() => { Storage.set("pa-compact", compactMode.toString()); }, [compactMode]);
-  useEffect(() => { Storage.set("pa-animations", animations.toString()); }, [animations]);
-  useEffect(() => { Storage.set("pa-sidebar-collapsed", sidebarCollapsed.toString()); }, [sidebarCollapsed]);
-  useEffect(() => { Storage.set("pa-tts", ttsEnabled.toString()); }, [ttsEnabled]);
-  useEffect(() => { Storage.set("pa-user-profile", userProfile); }, [userProfile]);
-  useEffect(() => { Storage.set("pa-system-prompt", systemPrompt); }, [systemPrompt]);
-  useEffect(() => { Storage.set("pa-auto-memory", autoExtractMemory.toString()); }, [autoExtractMemory]);
+  useEffect(() => Storage.set("pa-theme", themeKey), [themeKey]);
+  useEffect(() => Storage.set("pa-custom-bg", customBg), [customBg]);
+  useEffect(() => Storage.set("pa-custom-primary", customPrimary), [customPrimary]);
+  useEffect(() => Storage.set("pa-accent-color", accentColor), [accentColor]);
+  useEffect(() => Storage.set("pa-bg-opacity", bgOpacity.toString()), [bgOpacity]);
+  useEffect(() => Storage.set("pa-glass-opacity", glassOpacity.toString()), [glassOpacity]);
+  useEffect(() => Storage.set("pa-font-size", fontSize.toString()), [fontSize]);
+  useEffect(() => Storage.set("pa-compact", compactMode.toString()), [compactMode]);
+  useEffect(() => Storage.set("pa-animations", animations.toString()), [animations]);
+  useEffect(() => Storage.set("pa-sidebar-collapsed", sidebarCollapsed.toString()), [sidebarCollapsed]);
+  useEffect(() => Storage.set("pa-tts", ttsEnabled.toString()), [ttsEnabled]);
+  useEffect(() => Storage.set("pa-user-profile", userProfile), [userProfile]);
+  useEffect(() => Storage.set("pa-system-prompt", systemPrompt), [systemPrompt]);
+  useEffect(() => Storage.set("pa-auto-memory", autoExtractMemory.toString()), [autoExtractMemory]);
   useEffect(() => { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [activeMessages, streamText]);
 
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 4000); return () => clearTimeout(t); }, [toast]);
@@ -687,7 +550,6 @@ const App = () => {
 
   const handleSend = useCallback(async (text) => {
     const cleanText = text.trim();
-
     if (isImageRequest(cleanText)) {
       const imagePrompt = parseImagePrompt(cleanText);
       if (!imagePrompt) { setToast("Describe the image. Example: /image a futuristic classroom"); return; }
@@ -703,11 +565,9 @@ const App = () => {
       } finally { setImageLoading(false); setInputText(""); setAttachments([]); }
       return;
     }
-
     if (health?.status === 'error' || health?.status === 'degraded') { setToast(`Service ${health.status}: ${health.error || 'Check connection'}`); return; }
     if (!VISION_MODELS.includes(model) && attachments.length > 0) { setToast(`${getModelDisplayName(model)} cannot see images. Switch to a vision model.`); return; }
-    sendMessage(text, attachments);
-    setAttachments([]); setInputText("");
+    sendMessage(text, attachments); setAttachments([]); setInputText("");
   }, [sendMessage, health, attachments, model, activeChatId, activeMessages, updateChatMessages]);
 
   const regenerateLast = useCallback(() => {
@@ -717,81 +577,71 @@ const App = () => {
     setTimeout(() => handleSend(lastUser.content), 100);
   }, [activeMessages, activeChatId, updateChatMessages, handleSend]);
 
-  const handleFileSelect = (e) => {
-    const files = Array.from(e.target.files).filter(f => f.type.startsWith("image/"));
-    if (files.length === 0) { setToast("Only image files are supported"); return; }
-    setAttachments(prev => [...prev, ...files]); e.target.value = "";
-  };
+  const handleFileSelect = (e) => { const files = Array.from(e.target.files).filter(f => f.type.startsWith("image/")); if (!files.length) { setToast("Only image files are supported"); return; } setAttachments(prev => [...prev, ...files]); e.target.value = ""; };
+  const handleDrop = (e) => { e.preventDefault(); setAttachments(prev => [...prev, ...Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/"))]); };
+  const pasteImage = (e) => { const items = e.clipboardData?.items; if (!items) return; for (const item of items) if (item.type.startsWith("image/")) { const f = item.getAsFile(); if (f) setAttachments(prev => [...prev, f]); } };
 
-  const handleDrop = (e) => { e.preventDefault(); setIsDragging(false); setAttachments(prev => [...prev, ...Array.from(e.dataTransfer.files).filter(f => f.type.startsWith("image/"))]); };
-  const pasteImage = (e) => { const items = e.clipboardData?.items; if (!items) return; for (const item of items) if (item.type.startsWith("image/")) { const file = item.getAsFile(); if (file) setAttachments(prev => [...prev, file]); } };
-
-  const startCamera = async () => { try { const stream = await navigator.mediaDevices.getUserMedia({ video: true }); cameraStreamRef.current = stream; setShowCamera(true); setTimeout(() => { if (videoRef.current) videoRef.current.srcObject = stream; }, 100); } catch { setToast("Camera access denied or unavailable"); } };
+  const startCamera = async () => { try { const s = await navigator.mediaDevices.getUserMedia({ video: true }); cameraStreamRef.current = s; setShowCamera(true); setTimeout(() => { if (videoRef.current) videoRef.current.srcObject = s; }, 100); } catch { setToast("Camera access denied or unavailable"); } };
   const stopCamera = () => { if (cameraStreamRef.current) { cameraStreamRef.current.getTracks().forEach(t => t.stop()); cameraStreamRef.current = null; } setShowCamera(false); };
-  const capturePhoto = () => { if (!videoRef.current || !canvasRef.current) return; const video = videoRef.current, canvas = canvasRef.current; canvas.width = video.videoWidth; canvas.height = video.videoHeight; canvas.getContext("2d").drawImage(video, 0, 0); canvas.toBlob(blob => { setAttachments(prev => [...prev, new File([blob], `camera-${Date.now()}.png`, { type: "image/png" })]); stopCamera(); }, "image/png"); };
+  const capturePhoto = () => { if (!videoRef.current || !canvasRef.current) return; const v = videoRef.current, c = canvasRef.current; c.width = v.videoWidth; c.height = v.videoHeight; c.getContext("2d").drawImage(v, 0, 0); c.toBlob(b => { setAttachments(prev => [...prev, new File([b], `camera-${Date.now()}.png`, { type: "image/png" })]); stopCamera(); }, "image/png"); };
 
-  const stopListening = useCallback(() => {
-    if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current);
-    if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; }
-    setIsListening(false);
-  }, []);
-
+  const stopListening = useCallback(() => { if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current); if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; } setIsListening(false); }, []);
   const startListening = useCallback(() => {
-    if (!window.navigator || !window.navigator.mediaDevices) { setToast("Microphone not available in this browser"); return; }
+    if (!window.navigator?.mediaDevices) { setToast("Microphone not available in this browser"); return; }
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) { setToast("Voice input needs Chrome, Edge, or Safari"); return; }
     if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; }
     try {
-      const recognition = new SpeechRecognition();
-      recognition.continuous = false; recognition.interimResults = false; recognition.lang = "en-US"; recognition.maxAlternatives = 1;
-      recognition.onstart = () => { setIsListening(true); listeningTimeoutRef.current = setTimeout(() => { try { recognition.stop(); } catch {} }, 10000); };
-      recognition.onend = () => { setIsListening(false); if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current); recognitionRef.current = null; };
-      recognition.onresult = (event) => { let transcript = ""; for (let i = event.resultIndex; i < event.results.length; i++) transcript += event.results[i][0].transcript; if (transcript.trim()) setInputText(prev => prev + transcript + " "); };
-      recognition.onerror = (event) => { console.warn("Voice error:", event.error); if (event.error === "not-allowed") setToast("Microphone permission denied"); else if (event.error === "no-speech") setToast("No speech detected — try again"); else if (event.error === "network") setToast("Voice recognition needs an internet connection. Try Chrome desktop with a stable connection."); else if (event.error !== "aborted") setToast("Voice error: " + event.error); setIsListening(false); if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current); recognitionRef.current = null; };
-      recognition.start(); recognitionRef.current = recognition;
+      const r = new SpeechRecognition();
+      r.continuous = false; r.interimResults = false; r.lang = "en-US"; r.maxAlternatives = 1;
+      r.onstart = () => { setIsListening(true); listeningTimeoutRef.current = setTimeout(() => { try { r.stop(); } catch {} }, 10000); };
+      r.onend = () => { setIsListening(false); if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current); recognitionRef.current = null; };
+      r.onresult = (e) => { let t = ""; for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript; if (t.trim()) setInputText(p => p + t + " "); };
+      r.onerror = (e) => { console.warn("Voice error:", e.error); if (e.error === "not-allowed") setToast("Microphone permission denied"); else if (e.error === "no-speech") setToast("No speech detected — try again"); else if (e.error === "network") setToast("Voice recognition needs an internet connection. Try Chrome desktop with a stable connection."); else if (e.error !== "aborted") setToast("Voice error: " + e.error); setIsListening(false); if (listeningTimeoutRef.current) clearTimeout(listeningTimeoutRef.current); recognitionRef.current = null; };
+      r.start(); recognitionRef.current = r;
     } catch { setToast("Could not start voice input"); setIsListening(false); }
   }, []);
-
   const toggleListening = useCallback(() => { if (isListening) stopListening(); else startListening(); }, [isListening, stopListening, startListening]);
-  const handlePerchance = () => setInputText(PERCHANCE_PROMPTS[Math.floor(Math.random() * PERCHANCE_PROMPTS.length)]);
+  const handlePerchance = () => { const p = ["Generate a random fantasy character backstory","Create a random startup idea and pitch it","Write a random plot twist for a sci-fi movie","Invent a new ice cream flavor and describe it vividly","Generate a random D&D quest for level 5 heroes","Describe a random alien planet and its inhabitants","Write a random advertisement for an absurd product","Create a random recipe with unusual ingredients","Generate a random superhero origin story","Describe a random haunted house room","Invent a random video game mechanic","Write a random email from a future civilization"]; setInputText(p[Math.floor(Math.random()*p.length)]); };
   const handleCreateChat = () => { createChat(); setInputText(""); setAttachments([]); };
   const toggleSidebar = () => { if (window.innerWidth <= 900) { setSidebarOpen(o => !o); setSidebarCollapsed(false); } else { setSidebarCollapsed(c => !c); setSidebarOpen(false); } };
 
   const instanceVars = { "--primary": primaryColor, "--border": borderColor, "--user-bubble": T.userBubble, "--ai-bubble": T.aiBubble, "--font-size": `${fontSize}px` };
-  const appBgStyle = customBg ? { backgroundImage: `url(${customBg})`, backgroundColor: "#000" } : { backgroundImage: T.bg };
-  const glassBg = `rgba(${extractRgb(T.cardBg)}, ${glassOpacity})`;
-  const overlayStyle = customBg ? { backgroundColor: `rgba(0,0,0,${1 - bgOpacity})` } : {};
+  const bgLayerStyle = customBg ? { backgroundImage: `url(${customBg})` } : { backgroundImage: T.bg };
+  const overlayStyle = customBg ? { backgroundColor: `rgba(0,0,0,${1 - bgOpacity})` } : { backgroundColor: "rgba(0,0,0,0.55)" };
+  const shellBg = `rgba(${extractRgb(T.cardBg)}, ${glassOpacity})`;
   const themeCardSelected = (k) => themeKey === k && !customBg && !customPrimary && !accentColor;
 
   return (
-    <div className={`app-root ${customBg ? "custom-bg" : ""} ${animations ? "" : "no-anim"}`} style={{ "--bg": customBg ? "none" : T.bg, ...instanceVars, ...appBgStyle }} onDrop={handleDrop} onDragOver={e => { e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)}>
+    <div className={`app-root ${customBg ? "custom-bg" : ""} ${animations ? "" : "no-anim"}`} style={{ ...instanceVars }} onDrop={handleDrop} onDragOver={e => e.preventDefault()}>
       <GlobalStyles />
-      {customBg && <div style={{ position: "absolute", inset: 0, zIndex: 1, ...overlayStyle, pointerEvents: "none" }} />}
+      <div className="bg-layer" style={bgLayerStyle} />
+      <div className="bg-overlay" style={overlayStyle} />
       {toast && <div className="toast"><Icon name="warning" size={16} color="#fca5a5" /> <span>{toast}</span></div>}
       {showCamera && <div className="camera-overlay"><video ref={videoRef} autoPlay className="camera-video" /><canvas ref={canvasRef} style={{ display: "none" }} /><div className="camera-controls"><button onClick={capturePhoto} className="camera-btn primary">Capture</button><button onClick={stopCamera} className="camera-btn secondary">Cancel</button></div></div>}
-      <div className="glass-main" style={{ background: glassBg, fontSize: `${fontSize}px` }}>
-        <ChatSidebar chats={sortedChats} activeChatId={activeChatId} onSelect={setActiveChatId} onCreate={handleCreateChat} onDelete={deleteChat} onRename={renameChat} onPin={togglePinChat} onFavorite={toggleFavoriteChat} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} collapsed={sidebarCollapsed} />
-        <div className="chat-main">
-          <header className="app-header">
-            <button className="menu-btn" onClick={toggleSidebar} title="Toggle chats (Ctrl+B)"><Icon name="menu" size={20} /></button>
-            <div className="brand">
-              <div className="brand-logo">AI</div>
-              <div className="title-group">
-                <h1 className="main-title">{activeChat?.title || "Cloud AI Assistant"}</h1>
-                <span className="sub-title">{T.name} • {getModelDisplayName(model)}{isSpeaking ? " • SPEAKING" : ""}{isListening ? " • LISTENING" : ""}</span>
-              </div>
+      <div className="app-shell" style={{ background: shellBg, fontSize: `${fontSize}px` }}>
+        <header className="app-header">
+          <button className="menu-btn" onClick={toggleSidebar} title="Toggle chats (Ctrl+B)"><Icon name="menu" size={20} /></button>
+          <div className="brand">
+            <div className="brand-logo">AI</div>
+            <div className="title-group">
+              <h1 className="main-title">{activeChat?.title || "Cloud AI Assistant"}</h1>
+              <span className="sub-title">{T.name} • {getModelDisplayName(model)}{isSpeaking ? " • SPEAKING" : ""}{isListening ? " • LISTENING" : ""}</span>
             </div>
-            <div className="header-actions">
-              <button className={`icon-btn ${ttsEnabled ? "active" : ""}`} onClick={() => { if (isSpeaking) window.speechSynthesis.cancel(); setTtsEnabled(v => !v); }} title="Toggle AI voice"><Icon name={ttsEnabled ? "volume" : "volumeX"} size={20} /></button>
-              <button className={`icon-btn ${showMemory ? "active" : ""}`} onClick={() => { setShowMemory(s => !s); setShowSettings(false); }} title="Memory & Learning"><Icon name="brain" size={20} /></button>
-              <button className="icon-btn" onClick={handlePerchance} title="Random prompt"><Icon name="refresh" size={20} /></button>
-              <button className="icon-btn" onClick={() => { if (activeChatId) exportChat(activeChatId, "markdown"); setToast("Chat exported as Markdown"); }} title="Export chat (Ctrl+J)"><Icon name="download" size={20} /></button>
-              <button className="icon-btn premium" onClick={() => setToast("Premium features unlocked")} title="Premium"><Icon name="crown" size={20} /></button>
-              <button className={`icon-btn ${showSettings ? "active" : ""}`} onClick={() => { setShowSettings(s => !s); setShowMemory(false); }} title="Settings"><Icon name="settings" size={20} /></button>
-            </div>
-          </header>
-          <main className="app-content">
-            {showMemory && <div className="memory-panel-full">
+          </div>
+          <div className="header-actions">
+            <button className={`icon-btn ${ttsEnabled ? "active" : ""}`} onClick={() => { if (isSpeaking) window.speechSynthesis.cancel(); setTtsEnabled(v => !v); }} title="Toggle AI voice"><Icon name={ttsEnabled ? "volume" : "volumeX"} size={20} /></button>
+            <button className={`icon-btn ${showMemory ? "active" : ""}`} onClick={() => { setShowMemory(s => !s); setShowSettings(false); }} title="Memory & Learning"><Icon name="brain" size={20} /></button>
+            <button className="icon-btn" onClick={handlePerchance} title="Random prompt"><Icon name="refresh" size={20} /></button>
+            <button className="icon-btn" onClick={() => { if (activeChatId) exportChat(activeChatId, "markdown"); setToast("Chat exported as Markdown"); }} title="Export chat (Ctrl+J)"><Icon name="download" size={20} /></button>
+            <button className="icon-btn premium" onClick={() => setToast("Premium features unlocked")} title="Premium"><Icon name="crown" size={20} /></button>
+            <button className={`icon-btn ${showSettings ? "active" : ""}`} onClick={() => { setShowSettings(s => !s); setShowMemory(false); }} title="Settings"><Icon name="settings" size={20} /></button>
+          </div>
+        </header>
+        <div className="app-body">
+          <ChatSidebar chats={sortedChats} activeChatId={activeChatId} onSelect={setActiveChatId} onCreate={handleCreateChat} onDelete={deleteChat} onRename={renameChat} onPin={togglePinChat} onFavorite={toggleFavoriteChat} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} collapsed={sidebarCollapsed} />
+          <div className="chat-main">
+            {showMemory && <div className="memory-panel">
               <div className="panel-header">
                 <div className="panel-title"><Icon name="brain" size={16} /> Memory & Learning</div>
                 <button onClick={() => setShowMemory(false)} className="icon-btn" title="Close"><Icon name="close" size={18} /></button>
@@ -810,7 +660,7 @@ const App = () => {
                 </div>
               </div>
             </div>}
-            {showSettings && <div className="memory-panel-full">
+            {showSettings && <div className="memory-panel">
               <div className="panel-header">
                 <div className="panel-title">Settings</div>
                 <button onClick={() => setShowSettings(false)} className="icon-btn" title="Close"><Icon name="close" size={18} /></button>
@@ -908,77 +758,77 @@ const App = () => {
               <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search conversation... (Ctrl+K)" />
               <button onClick={() => setSearchQuery("")}><Icon name="close" size={18} /></button>
             </div>}
-            <div className="scroll-wrapper" ref={chatRef} style={{ fontSize: `${fontSize}px` }}>
-              {(health?.status === 'error' || health?.status === 'degraded') && <div className="error-banner">
-                <Icon name="warning" size={18} color="#fca5a5" />
-                <div><strong style={{ fontSize: 13, textTransform: "uppercase" }}>Service {health?.status}</strong><p style={{ margin: 0, fontSize: 12, marginTop: 3, color: "rgba(255,255,255,.55)" }}>{health?.error || 'Connecting...'}</p></div>
-              </div>}
-              {wakeUp && status === "loading" && <div className="wake-banner">
-                <Icon name="refresh" size={16} color="#fbbf24" />
-                <div><strong style={{ fontSize: 13 }}>Waking up the AI server...</strong><p style={{ margin: 0, fontSize: 12, marginTop: 3, color: "rgba(255,255,255,.6)" }}>Free servers sleep after inactivity. First response may take 30-60 seconds.</p></div>
-              </div>}
-              {activeMessages.length === 0 && !streamText && !imageLoading && <div className="empty-state">
-                <div className="logo-big">AI</div>
-                <div>
-                  <h2 className="empty-title">Cloud AI Assistant</h2>
-                  <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message.<br/>Try <strong style={{ color: "var(--primary)" }}>/image</strong> to generate professional images.</p>
-                </div>
-              </div>}
-              {filteredMessages.map((msg, idx) => <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
-                <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  {msg.content && <div className="bubble" style={{ padding: compactMode ? "10px 14px" : "16px 20px" }}>{formatMessage(msg.content)}</div>}
-                  {msg.imageUrl && (
-                    <div style={{ marginTop: 10 }}>
-                      <img className="generated-image" src={msg.imageUrl} alt={msg.imagePrompt || "Generated image"} loading="lazy" onClick={() => window.open(msg.imageUrl, "_blank")} />
-                      <div className="image-prompt">{msg.imagePrompt}</div>
-                      <div className="msg-actions" style={{ opacity: 1, marginTop: 6 }}>
-                        <a href={msg.imageUrl} download="generated-image.png" target="_blank" rel="noopener noreferrer" className="msg-action-btn"><Icon name="download" size={12} /> Download</a>
+            <div className="chat-content">
+              <div className="scroll-wrapper" ref={chatRef} style={{ fontSize: `${fontSize}px` }}>
+                {(health?.status === 'error' || health?.status === 'degraded') && <div className="error-banner">
+                  <Icon name="warning" size={18} color="#fca5a5" />
+                  <div><strong style={{ fontSize: 13, textTransform: "uppercase" }}>Service {health?.status}</strong><p style={{ margin: 0, fontSize: 12, marginTop: 3, color: "rgba(255,255,255,.55)" }}>{health?.error || 'Connecting...'}</p></div>
+                </div>}
+                {wakeUp && status === "loading" && <div className="wake-banner">
+                  <Icon name="refresh" size={16} color="#fbbf24" />
+                  <div><strong style={{ fontSize: 13 }}>Waking up the AI server...</strong><p style={{ margin: 0, fontSize: 12, marginTop: 3, color: "rgba(255,255,255,.6)" }}>Free servers sleep after inactivity. First response may take 30-60 seconds.</p></div>
+                </div>}
+                {activeMessages.length === 0 && !streamText && !imageLoading && <div className="empty-state">
+                  <div className="logo-big">AI</div>
+                  <div>
+                    <h2 className="empty-title">Cloud AI Assistant</h2>
+                    <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message. Try <strong>/image</strong> to generate professional images.</p>
+                  </div>
+                </div>}
+                {filteredMessages.map((msg, idx) => <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
+                  <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {msg.content && <div className="bubble" style={{ padding: compactMode ? "10px 14px" : "14px 18px" }}>{formatMessage(msg.content)}</div>}
+                    {msg.imageUrl && (
+                      <div style={{ marginTop: 10 }}>
+                        <img className="generated-image" src={msg.imageUrl} alt={msg.imagePrompt || "Generated image"} loading="lazy" onClick={() => window.open(msg.imageUrl, "_blank")} />
+                        <div className="image-prompt">{msg.imagePrompt}</div>
+                        <div className="msg-actions" style={{ opacity: 1, marginTop: 6 }}>
+                          <a href={msg.imageUrl} download="generated-image.png" target="_blank" rel="noopener noreferrer" className="msg-action-btn"><Icon name="download" size={11} /> Download</a>
+                        </div>
                       </div>
+                    )}
+                    {msg.attachments?.length > 0 && <div className="attachment-grid">
+                      {msg.attachments.map((a, i) => <div key={i} className="attachment-thumb"><img src={a.url} alt={a.name} /></div>)}
+                    </div>}
+                    {msg.role === "assistant" && !msg.imageUrl && <MessageActions content={msg.content} onSpeak={speakText} onRegenerate={idx === filteredMessages.length - 1 ? regenerateLast : null} />}
+                    <div className="msg-meta">{msg.ts}</div>
+                  </div>
+                </div>)}
+                {status === "streaming" && streamText && <div className="msg-row assistant">
+                  <div className="avatar">AI</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="bubble" style={{ padding: compactMode ? "10px 14px" : "14px 18px" }}>{formatMessage(streamText)}<span className="typing-indicator" /></div>
+                    <div className="msg-actions" style={{ opacity: 1 }}><button onClick={stopGeneration} className="msg-action-btn"><Icon name="stop" size={11} /> Stop</button></div>
+                    <div className="msg-meta">typing...</div>
+                  </div>
+                </div>}
+                {status === "loading" && <div className="msg-row assistant">
+                  <div className="avatar">AI</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="bubble" style={{ fontStyle: "italic", opacity: .7, display: "flex", alignItems: "center", gap: 8, padding: compactMode ? "10px 14px" : "14px 18px" }}>
+                      <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--primary)" }} />
+                      <span>Processing with {getModelDisplayName(model)}...</span>
                     </div>
-                  )}
-                  {msg.attachments?.length > 0 && <div className="attachment-grid">
-                    {msg.attachments.map((a, i) => <div key={i} className="attachment-thumb"><img src={a.url} alt={a.name} /></div>)}
-                  </div>}
-                  {msg.role === "assistant" && !msg.imageUrl && <MessageActions content={msg.content} onSpeak={speakText} onRegenerate={idx === filteredMessages.length - 1 ? regenerateLast : null} />}
-                  <div className="msg-meta">{msg.ts}</div>
-                </div>
-              </div>)}
-              {status === "streaming" && streamText && <div className="msg-row assistant">
-                <div className="avatar">AI</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="bubble" style={{ padding: compactMode ? "10px 14px" : "16px 20px" }}>{formatMessage(streamText)}<span className="typing-indicator" /></div>
-                  <div className="msg-actions" style={{ opacity: 1 }}><button onClick={stopGeneration} className="msg-action-btn"><Icon name="stop" size={12} /> Stop</button></div>
-                  <div className="msg-meta">typing...</div>
-                </div>
-              </div>}
-              {status === "loading" && <div className="msg-row assistant">
-                <div className="avatar">AI</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="bubble" style={{ fontStyle: "italic", opacity: .7, display: "flex", alignItems: "center", gap: 8, padding: compactMode ? "10px 14px" : "16px 20px" }}>
-                    <span style={{ width: 4, height: 4, borderRadius: "50%", background: "var(--primary)" }} />
-                    <span>Processing with {getModelDisplayName(model)}...</span>
+                    <div className="msg-meta">thinking</div>
                   </div>
-                  <div className="msg-meta">thinking</div>
-                </div>
-              </div>}
-              {imageLoading && <div className="msg-row assistant">
-                <div className="avatar">AI</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="bubble" style={{ display: "flex", alignItems: "center", gap: 10, padding: compactMode ? "10px 14px" : "16px 20px" }}>
-                    <span style={{ width: 18, height: 18, border: "2px solid rgba(255,255,255,.2)", borderTopColor: "var(--primary)", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
-                    <span>Generating image with FLUX...</span>
+                </div>}
+                {imageLoading && <div className="msg-row assistant">
+                  <div className="avatar">AI</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="bubble" style={{ display: "flex", alignItems: "center", gap: 10, padding: compactMode ? "10px 14px" : "14px 18px" }}>
+                      <span style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,.2)", borderTopColor: "var(--primary)", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+                      <span>Generating image with FLUX...</span>
+                    </div>
+                    <div className="msg-meta">this may take a few seconds</div>
                   </div>
-                  <div className="msg-meta">this may take a few seconds</div>
-                </div>
-              </div>}
+                </div>}
+              </div>
+              <InputBar text={inputText} setText={setInputText} onSend={handleSend} disabled={status !== "idle" || imageLoading} status={status} stats={stats} attachments={attachments} setAttachments={setAttachments} onFileSelect={handleFileSelect} onPasteImage={pasteImage} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} />
             </div>
-            <InputBar text={inputText} setText={setInputText} onSend={handleSend} disabled={status !== "idle" || imageLoading} status={status} stats={stats} attachments={attachments} setAttachments={setAttachments} onFileSelect={handleFileSelect} onPasteImage={pasteImage} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} />
-
-          </main>
+          </div>
         </div>
       </div>
-      <div className="keyboard-hint">Ctrl+N new • Ctrl+B sidebar • Ctrl+K search • Ctrl+J export • /image</div>
     </div>
   );
 };

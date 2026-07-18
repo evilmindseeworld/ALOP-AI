@@ -210,7 +210,7 @@ const GlobalStyles = () => (
     .bg-layer { position: absolute; inset: 0; z-index: 1; background-size: cover; background-position: center; background-repeat: no-repeat; }
     .bg-overlay { position: absolute; inset: 0; z-index: 2; background: transparent; pointer-events: none; }
     .app-shell { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
-    .app-header { display: flex; align-items: center; gap: 14px; padding: 14px 22px; flex-shrink: 0; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);  }
+    .app-header { display: flex; align-items: center; gap: 14px; padding: 14px 22px; flex-shrink: 0;  background: rgba(255,255,255,0.02);  }
     .menu-btn { width: 40px; height: 40px; border-radius: 11px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); backdrop-filter: blur(10px); color: rgba(255,255,255,.7); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
     .menu-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
     .brand { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; cursor: default; user-select: none; }
@@ -225,10 +225,10 @@ const GlobalStyles = () => (
     .icon-btn.premium { position: relative; overflow: hidden; }
     .icon-btn.premium::after { content: ""; position: absolute; inset: 0; border-radius: 11px; padding: 1px; background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: shimmer 2.5s linear infinite; background-size: 200% 200%; }
     @keyframes shimmer { 0%{background-position: 0% 50%} 50%{background-position: 100% 50%} 100%{background-position: 0% 50%} }
-    .app-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+    .app-body { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; overflow: hidden; }
     .chat-sidebar { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: transparent;  display: flex; flex-direction: column; overflow: hidden; transition: width .3s ease, padding .3s ease; }
     .chat-sidebar.collapsed { width: 0; padding: 0; border-right: none; overflow: hidden; }
-    .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-header { padding: 16px;  }
     .sidebar-btn { width: 100%; height: 42px; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--primary), rgba(255,255,255,.25)); color: #000; cursor: pointer; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .2s; }
     .sidebar-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
     .sidebar-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 5px; }
@@ -248,13 +248,13 @@ const GlobalStyles = () => (
     .sidebar-action:hover { background: rgba(255,255,255,.1); color: #fff; }
     .sidebar-action.active { color: var(--primary); }
     .sidebar-action.delete:hover { background: rgba(239,68,68,.2); color: #fca5a5; }
-    .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+    .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; padding-top: 70px; padding-bottom: 80px; }
     .chat-content { flex: 1; overflow: hidden; display: flex; flex-direction: column; position: relative; }
     .panel-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,.4); backdrop-filter: blur(2px); }
     .panel { position: absolute; top: 70px; right: 16px; width: 340px; max-height: calc(100vh - 100px); overflow-y: auto; background: rgba(0,0,0,.92); border: 1px solid var(--border); border-radius: 16px; padding: 18px; z-index: 100; box-shadow: 0 24px 80px rgba(0,0,0,.7); }
     .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .panel-title { font-size: 12px; font-weight: 800; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
-    .memory-panel { position: absolute; top: 0; left: 0; right: 0; z-index: 80; background: rgba(0,0,0,.85); backdrop-filter: blur(24px); border-bottom: 1px solid var(--border); padding: 18px 22px; max-height: 65vh; overflow-y: auto; }
+    .memory-panel { position: absolute; top: 0; left: 0; right: 0; z-index: 80; background: rgba(0,0,0,.85); backdrop-filter: blur(24px);  padding: 18px 22px; max-height: 65vh; overflow-y: auto; }
     .setting-row { margin-bottom: 16px; display:flex; flex-direction:column; gap:10px; }
     .setting-row:last-child { margin-bottom: 0; }
     .setting-label { color:rgba(255,255,255,.45); font-size:10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
@@ -307,7 +307,7 @@ const GlobalStyles = () => (
     .attachment-thumb { width:60px; height:60px; border-radius:7px; overflow:hidden; border:1px solid var(--border); position:relative; }
     .attachment-thumb img { width:100%; height:100%; object-fit:cover; }
     .attachment-remove { position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; border:none; background:rgba(0,0,0,.7); color:#fff; cursor:pointer; font-size:11px; display:flex; align-items: center; justify-content: center; }
-    .input-area { padding: 14px 18px; border-top: 1px solid var(--border); background: rgba(255,255,255,0.02);  flex-shrink: 0; }
+    .input-area { padding: 14px 18px;  background: rgba(255,255,255,0.02);  flex-shrink: 0; }
     .input-area-inner { max-width: 900px; margin: 0 auto; display: flex; gap: 8px; align-items: center; }
     .input-field { flex: 1; padding: 12px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); backdrop-filter: blur(14px); color: #fff; font-size: 15px; outline: none; caret-color: var(--primary); min-width: 0; }
     .input-field:focus { border-color: var(--primary); background: rgba(0,0,0,0.45); box-shadow: 0 0 0 3px rgba(139,92,246,.08); }
@@ -447,7 +447,7 @@ const App = () => {
   const [compactMode, setCompactMode] = useState(() => Storage.get("pa-compact") === "true");
   const [animations, setAnimations] = useState(() => Storage.get("pa-animations") !== "false");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => Storage.get("pa-sidebar-collapsed") === "true");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => { const saved = Storage.get("pa-sidebar-collapsed"); return saved === null ? true : saved === "true"; });
   const [showSettings, setShowSettings] = useState(false);
   const [showMemory, setShowMemory] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");

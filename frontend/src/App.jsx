@@ -33,9 +33,7 @@ const MODELS = {
   ]
 };
 
-const getModelDisplayName = (k) => {
-  return [...MODELS.fast, ...MODELS.reasoning].find(m => m.key === k)?.name || k;
-};
+const getModelDisplayName = (k) => [...MODELS.fast, ...MODELS.reasoning].find(m => m.key === k)?.name || k;
 
 const VISION_MODELS = ['gemma4:31b', 'kimi-k2.7-code', 'kimi-k2.6', 'kimi-k2.5', 'mistral-large-3:675b', 'deepseek-v4-pro'];
 
@@ -48,6 +46,17 @@ const BACKGROUND_PRESETS = {
   water: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1920&q=80",
   fire: "https://images.unsplash.com/photo-1505009253807-0a4c86083162?w=1920&q=80"
 };
+
+const RANDOM_PROMPTS = [
+  "Generate an image of a futuristic city at sunset",
+  "Create an image of a cozy cabin in the mountains",
+  "Draw an image of a dragon flying over a castle",
+  "Make an image of an astronaut exploring Mars",
+  "Generate an image of a magical forest with glowing trees",
+  "Create an image of a cyberpunk street market",
+  "Draw an image of a peaceful beach with crystal water",
+  "Make an image of a robot helping a human in a garden"
+];
 
 const Icon = ({ name, size = 18 }) => {
   const icons = {
@@ -64,12 +73,15 @@ const Icon = ({ name, size = 18 }) => {
     edit: <g><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
     trash: <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     warning: <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    pin: <g><path d="M12 2v8M5 12a7 7 0 0 1 14 0v0a7 7 0 0 1-7 7h0a7 7 0 0 1-7-7v0z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
     refresh: <g><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /><path d="M20.49 9A9 9 0 1 0 5.64 15.36" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
     stop: <rect x="6" y="6" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />,
     download: <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     brain: <g><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-5 0v-1M12 4.5A2.5 2.5 0 0 1 14.5 2a2.5 2.5 0 0 1 2.5 2.5v1M12 19.5a2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5v-1" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
+    star: <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     volume: <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
-    volumeX: <path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    volumeX: <path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    image: <g><rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2" fill="none" /><circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ display: "inline-block", verticalAlign: "middle" }}>{icons[name] || null}</svg>;
 };
@@ -79,9 +91,21 @@ const buildImageUrl = (prompt) => {
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(enhanced)}?width=1024&height=1024&nologo=true&model=flux&seed=${Math.floor(Math.random()*1e7)}&enhance=true`;
 };
 
-const isImageRequest = (text) => text.trim().toLowerCase().startsWith("/image") || /\b(generate|create|make|draw|produce)\s+(an?\s+)?(image|picture|photo)\b/.test(text);
+const isImageRequest = (text) => {
+  const t = text.trim().toLowerCase();
+  return t.startsWith("/image") ||
+    /\b(generate|create|make|draw|produce|render|design)\s+(an?\s+|the\s+|some\s+)?(image|picture|photo|artwork|illustration|drawing|painting|render|scene|portrait|landscape|wallpaper)\b/.test(t) ||
+    /\b(draw|paint|sketch|generate|create|make)\s+(me\s+|us\s+)?(a|an|the|this|that|some)?\s*(image|picture|photo|drawing|painting|illustration|art|scene|portrait|landscape|wallpaper|logo|icon)\b/.test(t) ||
+    /\b(image|picture|photo)\s+(of|showing|with|for|about)\b/.test(t);
+};
 
-const parseImagePrompt = (text) => text.replace(/^\/image\s*/i, "").replace(/\b(can\s+you\s+)?(please\s+)?(generate|create|make|draw|produce)\s+(an?\s+)?(image|picture|photo)\s*(of\s*|for\s*|with\s*|showing\s*)?/i, "").trim();
+const parseImagePrompt = (text) => {
+  return text.replace(/^\/image\s*/i, "")
+    .replace(/\b(can\s+you\s+)?(please\s+)?(generate|create|make|draw|produce|render|design)\s+(me\s+|us\s+)?(an?\s+|the\s+|some\s+)?(image|picture|photo|artwork|illustration|drawing|painting|render|scene|portrait|landscape|wallpaper)\s*(of\s*|for\s*|with\s*|showing\s*|about\s*)?/i, "")
+    .replace(/\b(draw|paint|sketch|generate|create|make)\s+(me\s+|us\s+)?(a|an|the|this|that|some)?\s*(image|picture|photo|drawing|painting|illustration|art|scene|portrait|landscape|wallpaper|logo|icon)\s*(of\s*|for\s*|with\s*|showing\s*|about\s*)?/i, "")
+    .replace(/\b(image|picture|photo)\s+(of|showing|with|for|about)\s*/i, "")
+    .trim();
+};
 
 const useChatManager = () => {
   const [chats, setChats] = useState(() => { try { const s = JSON.parse(Storage.get('pa_chats') || '[]'); return Array.isArray(s) && s.length ? s : []; } catch { return []; } });
@@ -205,55 +229,58 @@ const GlobalStyles = () => (
     .bg-layer { position: absolute; inset: 0; z-index: 1; background-size: cover; background-position: center; background-repeat: no-repeat; }
     .bg-overlay { position: absolute; inset: 0; z-index: 2; background: rgba(0,0,0,0.55); pointer-events: none; }
     .app-shell { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; }
-    .app-header { flex-shrink: 0; display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: transparent; }
+    .app-header { flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: transparent; min-height: 56px; }
     .brand { display: flex; flex-direction: column; flex: 1; min-width: 0; }
     .main-title { font-size: 15px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .sub-title { font-size: 10px; color: rgba(255,255,255,.45); letter-spacing: .5px; text-transform: uppercase; }
-    .header-actions { display: flex; gap: 6px; align-items: center; }
-    .icon-btn { width: 38px; height: 38px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); color: rgba(255,255,255,.7); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .header-actions { display: flex; gap: 4px; align-items: center; }
+    .icon-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); color: rgba(255,255,255,.7); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
     .icon-btn:hover { background: rgba(0,0,0,0.55); color: #fff; }
     .icon-btn.active { background: var(--primary); color: #000; border-color: transparent; }
     .app-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
-    .chat-sidebar { width: 260px; flex-shrink: 0; border-right: 1px solid var(--border); background: rgba(0,0,0,0.8); display: flex; flex-direction: column; overflow: hidden; }
+    .chat-sidebar { width: 260px; flex-shrink: 0; border-right: 1px solid var(--border); background: rgba(0,0,0,0.85); display: flex; flex-direction: column; overflow: hidden; }
     .chat-sidebar.collapsed { width: 0; border-right: none; overflow: hidden; }
-    .sidebar-header { padding: 14px; border-bottom: 1px solid var(--border); }
+    .chat-sidebar.mobile { position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; transform: translateX(-100%); transition: transform .25s ease; }
+    .chat-sidebar.mobile.open { transform: translateX(0); }
+    .sidebar-header { padding: 12px; border-bottom: 1px solid var(--border); }
     .sidebar-btn { width: 100%; height: 40px; border-radius: 10px; border: none; background: var(--primary); color: #000; cursor: pointer; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .sidebar-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
-    .sidebar-section { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.3); text-transform: uppercase; letter-spacing: 1px; margin: 8px 4px 4px 4px; }
-    .sidebar-item { padding: 10px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; border: 1px solid transparent; position: relative; }
+    .sidebar-list { flex: 1; overflow-y: auto; padding: 8px; display: flex; flex-direction: column; gap: 5px; }
+    .sidebar-section { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.3); text-transform: uppercase; letter-spacing: 1px; margin: 6px 4px 4px 4px; }
+    .sidebar-item { padding: 10px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 8px; border: 1px solid transparent; position: relative; }
     .sidebar-item:hover { background: rgba(255,255,255,.05); border-color: var(--border); }
     .sidebar-item.active { background: rgba(255,255,255,.08); border-color: var(--primary); }
-    .sidebar-icon { width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,.06); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: rgba(255,255,255,.4); flex-shrink: 0; }
+    .sidebar-icon { width: 28px; height: 28px; border-radius: 7px; background: rgba(255,255,255,.06); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: rgba(255,255,255,.4); flex-shrink: 0; }
     .sidebar-title { flex: 1; font-size: 13px; color: rgba(255,255,255,.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .sidebar-meta { font-size: 10px; color: rgba(255,255,255,.35); }
-    .sidebar-actions { display: flex; gap: 2px; opacity: 0; transition: opacity .2s; position: absolute; right: 8px; }
+    .sidebar-actions { display: flex; gap: 2px; opacity: 0; transition: opacity .2s; position: absolute; right: 6px; background: rgba(0,0,0,0.7); border-radius: 6px; padding: 2px; }
     .sidebar-item:hover .sidebar-actions { opacity: 1; }
     .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
     .chat-content { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
-    .scroll-wrapper { flex: 1; overflow-y: auto; padding: 18px 18px 90px 18px; display: flex; flex-direction: column; gap: 12px; }
-    .msg-row { display: flex; gap: 10px; max-width: 88%; }
+    .scroll-wrapper { flex: 1; overflow-y: auto; padding: 14px 14px 100px 14px; display: flex; flex-direction: column; gap: 10px; }
+    .msg-row { display: flex; gap: 8px; max-width: 92%; }
     .msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
     .msg-row.assistant { align-self: flex-start; }
-    .avatar { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; background: rgba(255,255,255,.06); color: rgba(255,255,255,.5); flex-shrink: 0; }
-    .bubble { padding: 12px 16px; border-radius: 14px; font-size: 15px; line-height: 1.55; word-break: break-word; max-width: 100%; }
+    .avatar { width: 28px; height: 28px; border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; background: rgba(255,255,255,.06); color: rgba(255,255,255,.5); flex-shrink: 0; }
+    .bubble { padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.5; word-break: break-word; max-width: 100%; }
     .msg-row.user .bubble { background: rgba(139, 92, 246, 0.85); color: #fff; border-bottom-right-radius: 4px; }
     .msg-row.assistant .bubble { background: rgba(0, 0, 0, 0.6); color: rgba(255,255,255,.95); border: 1px solid rgba(255,255,255,0.08); border-bottom-left-radius: 4px; }
     .msg-actions { display: flex; gap: 4px; margin-top: 4px; justify-content: flex-end; opacity: 0; transition: opacity .2s; }
     .msg-row:hover .msg-actions { opacity: 1; }
     .msg-action-btn { padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.4); color: rgba(255,255,255,.6); font-size: 11px; cursor: pointer; }
     .msg-action-btn:hover { background: rgba(0,0,0,0.6); color: #fff; }
-    .msg-meta { font-size: 10px; color: rgba(255,255,255,.25); margin-top: 3px; text-align: right; }
-    .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; padding: 40px 20px; }
-    .empty-title { font-size: 32px; font-weight: 800; color: #fff; }
-    .empty-subtitle { color: rgba(255,255,255,.45); font-size: 15px; max-width: 420px; line-height: 1.5; }
+    .msg-meta { font-size: 9px; color: rgba(255,255,255,.25); margin-top: 2px; text-align: right; }
+    .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 30px 16px; }
+    .empty-title { font-size: 28px; font-weight: 800; color: #fff; }
+    .empty-subtitle { color: rgba(255,255,255,.45); font-size: 14px; max-width: 320px; line-height: 1.5; }
     .empty-subtitle strong { color: var(--primary); }
-    .input-area { flex-shrink: 0; padding: 12px 16px; background: transparent; }
-    .input-area-inner { max-width: 850px; margin: 0 auto; display: flex; gap: 8px; align-items: center; }
-    .input-field { flex: 1; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.4); color: #fff; font-size: 15px; outline: none; caret-color: var(--primary); }
+    .input-area { flex-shrink: 0; padding: 10px 12px; background: transparent; }
+    .input-area-inner { max-width: 850px; margin: 0 auto; display: flex; gap: 6px; align-items: center; }
+    .input-field { flex: 1; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.4); color: #fff; font-size: 15px; outline: none; caret-color: var(--primary); min-width: 0; }
     .input-field:focus { border-color: var(--primary); background: rgba(0,0,0,0.55); }
-    .send-btn { padding: 0 18px; height: 44px; border-radius: 12px; border: none; cursor: pointer; background: var(--primary); color: #000; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+    .input-field::placeholder { color: rgba(255,255,255,.35); }
+    .send-btn { padding: 0 16px; height: 44px; border-radius: 12px; border: none; cursor: pointer; background: var(--primary); color: #000; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .send-btn:disabled { background: rgba(255,255,255,.06); color: rgba(255,255,255,.25); cursor: not-allowed; }
-    .side-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 340px; max-width: 90vw; background: #0f0f12; border-left: 1px solid rgba(255,255,255,0.08); padding: 20px; z-index: 100; overflow-y: auto; }
+    .side-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 340px; max-width: 85vw; background: #0f0f12; border-left: 1px solid rgba(255,255,255,0.08); padding: 16px; z-index: 100; overflow-y: auto; }
     .panel-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,0.5); }
     .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
     .panel-title { font-size: 12px; font-weight: 800; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
@@ -262,47 +289,72 @@ const GlobalStyles = () => (
     .custom-input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,.04); color: #fff; font-size: 13px; outline: none; }
     .custom-input:focus { border-color: var(--primary); }
     .textarea { min-height: 80px; resize: vertical; font-family: inherit; line-height: 1.5; }
-    .setting-row { margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .setting-row { margin-bottom: 14px; display: flex; flex-direction: column; gap: 8px; }
     .setting-label { color: rgba(255,255,255,.5); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
     .theme-grid { display: flex; gap: 6px; flex-wrap: wrap; }
     .theme-card { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,.04); color: rgba(255,255,255,.75); cursor: pointer; font-size: 12px; transition: all .15s; }
     .theme-card:hover { background: rgba(255,255,255,.08); }
     .theme-card.selected { border-color: var(--primary); background: rgba(255,255,255,.1); color: #fff; }
-    .model-select-wrapper { position: relative; width: 100%; }
     .model-select { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,.04); color: #fff; font-size: 13px; outline: none; cursor: pointer; appearance: none; -webkit-appearance: none; }
     .model-select option, .model-select optgroup { background: #1a1a1f; color: #fff; }
     .model-select:focus { border-color: var(--primary); }
     .slider { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.08); outline: none; -webkit-appearance: none; }
     .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--primary); cursor: pointer; }
     .slider-container { display: flex; align-items: center; gap: 8px; font-size: 11px; color: rgba(255,255,255,.4); }
-    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.95); color: #fff; padding: 12px 20px; border-radius: 10px; z-index: 9999; font-size: 13px; border-left: 3px solid var(--primary); }
-    .camera-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.95); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
-    .camera-video { max-width: 90vw; max-height: 70vh; border-radius: 14px; border: 2px solid rgba(255,255,255,0.1); }
+    .toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.95); color: #fff; padding: 12px 18px; border-radius: 10px; z-index: 9999; font-size: 13px; border-left: 3px solid var(--primary); max-width: 90vw; }
+    .camera-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.95); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; }
+    .camera-video { max-width: 95vw; max-height: 70vh; border-radius: 14px; border: 2px solid rgba(255,255,255,0.1); }
     .camera-controls { display: flex; gap: 16px; }
     .camera-btn { padding: 12px 28px; border-radius: 30px; border: none; font-weight: 700; font-size: 14px; cursor: pointer; }
     .camera-btn.primary { background: var(--primary); color: #000; }
     .camera-btn.secondary { background: rgba(255,255,255,.08); color: #fff; border: 1px solid rgba(255,255,255,0.1); }
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-    @media (max-width: 640px) {
-      .chat-sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; transform: translateX(-100%); }
-      .chat-sidebar.open { transform: translateX(0); }
+    .mobile-only { display: none; }
+    @media (max-width: 900px) {
+      .chat-sidebar.desktop { display: none; }
+      .chat-sidebar.mobile { display: flex; }
       .side-panel { width: 100vw; max-width: 100vw; }
-      .sidebar-actions { opacity: 1; }
     }
+    @media (max-width: 640px) {
+      .app-header { padding: 8px 10px; min-height: 52px; gap: 8px; }
+      .main-title { font-size: 14px; }
+      .icon-btn { width: 34px; height: 34px; }
+      .scroll-wrapper { padding: 10px 10px 90px 10px; gap: 8px; }
+      .msg-row { max-width: 95%; }
+      .bubble { font-size: 13px; padding: 9px 12px; border-radius: 10px; }
+      .avatar { width: 24px; height: 24px; font-size: 8px; }
+      .empty-title { font-size: 22px; }
+      .empty-subtitle { font-size: 12px; }
+      .input-area { padding: 8px 10px; }
+      .input-field { padding: 10px 12px; font-size: 14px; border-radius: 10px; }
+      .send-btn { padding: 0 12px; height: 40px; border-radius: 10px; }
+      .msg-actions { opacity: 1; }
+      .sidebar-actions { opacity: 1; }
+      .mobile-only { display: flex; }
+      .desktop-only { display: none; }
+    }
+    @media (max-width: 360px) {
+      .app-header { padding: 6px 8px; }
+      .icon-btn { width: 32px; height: 32px; }
+      .input-area-inner { gap: 4px; }
+      .bubble { font-size: 12px; padding: 8px 10px; }
+      .empty-title { font-size: 20px; }
+    }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   `}</style>
 );
 
-const InputBar = ({ text, setText, onSend, disabled, attachments, setAttachments, onFileSelect, onStartCamera, isListening, toggleListening }) => {
+const InputBar = ({ text, setText, onSend, disabled, attachments, setAttachments, onFileSelect, onStartCamera, isListening, toggleListening, onGenerateImage }) => {
   const fileInputRef = useRef(null);
   const handleSubmit = () => { if ((!text.trim() && attachments.length === 0) || disabled) return; onSend(text); };
   return (
     <div className="input-area">
       <div className="input-area-inner">
         <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={onFileSelect} style={{ display: "none" }} />
-        <button onClick={() => fileInputRef.current?.click()} disabled={disabled} className="icon-btn" title="Attach image"><Icon name="plus" size={18} /></button>
+        <button onClick={() => fileInputRef.current?.click()} disabled={disabled} className="icon-btn desktop-only" title="Attach image"><Icon name="plus" size={18} /></button>
         <button onClick={onStartCamera} disabled={disabled} className="icon-btn" title="Camera"><Icon name="camera" size={18} /></button>
         <button onClick={toggleListening} disabled={disabled} className={`icon-btn ${isListening ? "active" : ""}`} title={isListening ? "Stop voice" : "Voice input"}><Icon name={isListening ? "mic-off" : "mic"} size={18} /></button>
-        <input className="input-field" value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }} placeholder={disabled ? "AI is thinking..." : "Message... try /image to generate images"} disabled={disabled} />
+        <button onClick={onGenerateImage} disabled={disabled} className="icon-btn" title="Generate image"><Icon name="image" size={18} /></button>
+        <input className="input-field" value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }} placeholder={disabled ? "AI is thinking..." : "Ask anything or type an image description..."} disabled={disabled} />
         <button className="send-btn" onClick={handleSubmit} disabled={(!text.trim() && attachments.length === 0) || disabled}><Icon name="send" size={18} /></button>
       </div>
     </div>
@@ -319,37 +371,42 @@ const MessageActions = ({ content, onCopy, onRegenerate }) => (
 const ChatSidebar = ({ chats, activeChatId, onSelect, onCreate, onDelete, onRename, onPin, onFavorite, collapsed, mobileOpen, setMobileOpen }) => {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
-  const isMobile = window.innerWidth <= 640;
+  const isMobile = window.innerWidth <= 900;
+
+  const renderItem = (chat) => {
+    const isActive = activeChatId === chat.id;
+    const isEditing = editingId === chat.id;
+    return (
+      <div key={chat.id} onClick={() => { onSelect(chat.id); if (isMobile) setMobileOpen(false); }} className={`sidebar-item ${isActive ? "active" : ""}`}>
+        <div className="sidebar-icon">{chat.messages.length > 0 ? chat.messages[0].content.slice(0,1).toUpperCase() : "N"}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {isEditing ? (
+            <input value={editTitle} onChange={e => setEditTitle(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { onRename(chat.id, editTitle); setEditingId(null); } if (e.key === "Escape") setEditingId(null); }} onBlur={() => setEditingId(null)} autoFocus onClick={e => e.stopPropagation()} className="custom-input" style={{ padding: "3px 6px", fontSize: 12 }} />
+          ) : (
+            <div className="sidebar-title">{chat.title}</div>
+          )}
+          <div className="sidebar-meta">{chat.messages.length} messages</div>
+        </div>
+        <div className="sidebar-actions">
+          <button onClick={e => { e.stopPropagation(); onFavorite(chat.id); }} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6, background: "transparent" }}><Icon name="star" size={12} /></button>
+          <button onClick={e => { e.stopPropagation(); onPin(chat.id); }} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6, background: "transparent" }}><Icon name="pin" size={12} /></button>
+          <button onClick={e => { e.stopPropagation(); setEditingId(chat.id); setEditTitle(chat.title); }} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6, background: "transparent" }}><Icon name="edit" size={12} /></button>
+          <button onClick={e => { e.stopPropagation(); onDelete(chat.id); }} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6, background: "transparent" }}><Icon name="trash" size={12} /></button>
+        </div>
+      </div>
+    );
+  };
 
   const content = (
-    <div className={`chat-sidebar ${mobileOpen ? "open" : ""}`} onClick={e => e.stopPropagation()}>
+    <div className={`chat-sidebar ${isMobile ? "mobile" : "desktop"} ${mobileOpen ? "open" : ""}`} onClick={e => e.stopPropagation()}>
       <div className="sidebar-header">
         <button onClick={onCreate} className="sidebar-btn"><Icon name="plus" size={16} /> New Chat</button>
       </div>
       <div className="sidebar-list">
-        {chats.map(chat => {
-          const isActive = activeChatId === chat.id;
-          const isEditing = editingId === chat.id;
-          return (
-            <div key={chat.id} onClick={() => { onSelect(chat.id); if (isMobile) setMobileOpen(false); }} className={`sidebar-item ${isActive ? "active" : ""}`}>
-              <div className="sidebar-icon">{chat.messages.length > 0 ? chat.messages[0].content.slice(0,1).toUpperCase() : "N"}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                {isEditing ? (
-                  <input value={editTitle} onChange={e => setEditTitle(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { onRename(chat.id, editTitle); setEditingId(null); } if (e.key === "Escape") setEditingId(null); }} onBlur={() => setEditingId(null)} autoFocus onClick={e => e.stopPropagation()} className="custom-input" style={{ padding: "3px 6px", fontSize: 12 }} />
-                ) : (
-                  <div className="sidebar-title">{chat.title}</div>
-                )}
-                <div className="sidebar-meta">{chat.messages.length} messages</div>
-              </div>
-              <div className="sidebar-actions">
-                <button onClick={e => { e.stopPropagation(); onFavorite(chat.id); }} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6 }}><Icon name="star" size={12} /></button>
-                <button onClick={e => { e.stopPropagation(); onPin(chat.id); }} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6 }}><Icon name="pin" size={12} /></button>
-                <button onClick={e => { e.stopPropagation(); setEditingId(chat.id); setEditTitle(chat.title); }} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6 }}><Icon name="edit" size={12} /></button>
-                <button onClick={e => { e.stopPropagation(); onDelete(chat.id); }} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6 }}><Icon name="trash" size={12} /></button>
-              </div>
-            </div>
-          );
-        })}
+        {chats.filter(c => c.pinned).length > 0 && <div className="sidebar-section">Pinned</div>}
+        {chats.filter(c => c.pinned).map(renderItem)}
+        <div className="sidebar-section">Recent</div>
+        {chats.filter(c => !c.pinned).map(renderItem)}
       </div>
     </div>
   );
@@ -426,20 +483,22 @@ const App = () => {
   }, []);
   const toggleListening = useCallback(() => { if (isListening) stopListening(); else startListening(); }, [isListening, stopListening, startListening]);
 
+  const generateImage = useCallback(async (promptText) => {
+    const imagePrompt = parseImagePrompt(promptText) || promptText;
+    if (!imagePrompt) { setToast("Describe what image to generate"); return; }
+    setInputText("");
+    const userMsg = { role: "user", content: `Generate an image: ${imagePrompt}`, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() };
+    const withUser = [...activeMessages, userMsg];
+    updateChatMessages(activeChatId, withUser);
+    await new Promise(r => setTimeout(r, 300));
+    updateChatMessages(activeChatId, [...withUser, { role: "assistant", content: "", imageUrl: buildImageUrl(imagePrompt), imagePrompt, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() }]);
+  }, [activeMessages, activeChatId, updateChatMessages]);
+
   const handleSend = useCallback(async (text) => {
-    const cleanText = text.trim();
-    if (isImageRequest(cleanText)) {
-      const imagePrompt = parseImagePrompt(cleanText);
-      if (!imagePrompt) { setToast("Describe the image. Example: /image a cat in space"); return; }
-      const userMsg = { role: "user", content: cleanText, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() };
-      const withUser = [...activeMessages, userMsg];
-      updateChatMessages(activeChatId, withUser);
-      updateChatMessages(activeChatId, [...withUser, { role: "assistant", content: "", imageUrl: buildImageUrl(imagePrompt), imagePrompt, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() }]);
-      setInputText(""); setAttachments([]); return;
-    }
+    if (isImageRequest(text)) { generateImage(text); return; }
     if (!VISION_MODELS.includes(model) && attachments.length > 0) { setToast(`${getModelDisplayName(model)} cannot see images`); return; }
     sendMessage(text, attachments); setInputText(""); setAttachments([]);
-  }, [sendMessage, model, attachments, activeChatId, activeMessages, updateChatMessages]);
+  }, [sendMessage, model, attachments, activeChatId, activeMessages, updateChatMessages, generateImage]);
 
   const handleCreateChat = () => { createChat(); setInputText(""); setAttachments([]); };
 
@@ -471,8 +530,8 @@ const App = () => {
       </div>}
       <div className="app-shell">
         <header className="app-header">
-          <button className="icon-btn" onClick={() => setMobileSidebarOpen(true)} style={{ display: window.innerWidth <= 640 ? "flex" : "none" }} title="Chats"><Icon name="menu" size={20} /></button>
-          <button className="icon-btn" onClick={() => setSidebarCollapsed(c => !c)} style={{ display: window.innerWidth > 640 ? "flex" : "none" }} title="Chats"><Icon name="menu" size={20} /></button>
+          <button className="icon-btn mobile-only" onClick={() => setMobileSidebarOpen(true)} title="Chats"><Icon name="menu" size={20} /></button>
+          <button className="icon-btn desktop-only" onClick={() => setSidebarCollapsed(c => !c)} title="Chats"><Icon name="menu" size={20} /></button>
           <div className="brand">
             <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
             <span className="sub-title">{getModelDisplayName(model)}</span>
@@ -534,16 +593,14 @@ const App = () => {
                 </div>
                 <div className="setting-row">
                   <div className="setting-label">AI Model</div>
-                  <div className="model-select-wrapper">
-                    <select value={model} onChange={e => setModel(e.target.value)} className="model-select">
-                      <optgroup label="Fast Models">
-                        {MODELS.fast.map(m => <option key={m.key} value={m.key}>{m.name}</option>)}
-                      </optgroup>
-                      <optgroup label="Reasoning Models">
-                        {MODELS.reasoning.map(m => <option key={m.key} value={m.key}>{m.name}</option>)}
-                      </optgroup>
-                    </select>
-                  </div>
+                  <select value={model} onChange={e => setModel(e.target.value)} className="model-select">
+                    <optgroup label="Fast Models">
+                      {MODELS.fast.map(m => <option key={m.key} value={m.key}>{m.name}</option>)}
+                    </optgroup>
+                    <optgroup label="Reasoning Models">
+                      {MODELS.reasoning.map(m => <option key={m.key} value={m.key}>{m.name}</option>)}
+                    </optgroup>
+                  </select>
                 </div>
                 <div className="setting-row">
                   <div className="setting-label">Creativity: {temperature.toFixed(1)}</div>
@@ -562,7 +619,7 @@ const App = () => {
               <div className="scroll-wrapper">
                 {activeMessages.length === 0 && !streamText && <div className="empty-state">
                   <h2 className="empty-title">ALOP-AI</h2>
-                  <p className="empty-subtitle">Upload images, take photos, use your voice, or type.<br />Try <strong>/image</strong> to generate images.</p>
+                  <p className="empty-subtitle">Ask anything, upload photos, take a picture, use your voice, or tap the image button to generate art.</p>
                 </div>}
                 {activeMessages.map((msg, idx) => <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
                   <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
@@ -572,7 +629,7 @@ const App = () => {
                       <img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: 12, cursor: "pointer" }} onClick={() => window.open(msg.imageUrl, "_blank")} />
                       <div className="msg-meta" style={{ textAlign: "left" }}>{msg.imagePrompt}</div>
                     </div>}
-                    {msg.attachments?.length > 0 && <div style={{ display: "flex", gap: 6, marginTop: 6 }}>{msg.attachments.map((a, i) => <img key={i} src={a.url} alt={a.name} style={{ width: 60, height: 60, borderRadius: 8, objectFit: "cover" }} />)}</div>}
+                    {msg.attachments?.length > 0 && <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>{msg.attachments.map((a, i) => <img key={i} src={a.url} alt={a.name} style={{ width: 60, height: 60, borderRadius: 8, objectFit: "cover" }} />)}</div>}
                     {msg.role === "assistant" && !msg.imageUrl && <MessageActions content={msg.content} onCopy={() => navigator.clipboard.writeText(msg.content)} onRegenerate={idx === activeMessages.length - 1 ? () => {} : null} />}
                     <div className="msg-meta">{msg.ts}</div>
                   </div>
@@ -582,7 +639,7 @@ const App = () => {
                   <div style={{ flex: 1, minWidth: 0 }}><div className="bubble">{streamText}</div></div>
                 </div>}
               </div>
-              <InputBar text={inputText} setText={setInputText} onSend={handleSend} disabled={status !== "idle"} attachments={attachments} setAttachments={setAttachments} onFileSelect={handleFileSelect} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} />
+              <InputBar text={inputText} setText={setInputText} onSend={handleSend} disabled={status !== "idle"} attachments={attachments} setAttachments={setAttachments} onFileSelect={handleFileSelect} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} onGenerateImage={() => { if (inputText.trim()) generateImage(inputText); else setToast("Type what image to generate"); }} />
             </div>
           </div>
         </div>

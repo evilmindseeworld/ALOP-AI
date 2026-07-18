@@ -226,7 +226,7 @@ const GlobalStyles = () => (
     .icon-btn.premium::after { content: ""; position: absolute; inset: 0; border-radius: 11px; padding: 1px; background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: shimmer 2.5s linear infinite; background-size: 200% 200%; }
     @keyframes shimmer { 0%{background-position: 0% 50%} 50%{background-position: 100% 50%} 100%{background-position: 0% 50%} }
     .app-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
-    .chat-sidebar { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: rgba(0,0,0,.45); backdrop-filter: blur(20px); display: flex; flex-direction: column; overflow: hidden; transition: width .3s ease, padding .3s ease; }
+    .chat-sidebar { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: rgba(0,0,0,0.55); backdrop-filter: blur(30px); display: flex; flex-direction: column; overflow: hidden; transition: width .3s ease, padding .3s ease; }
     .chat-sidebar.collapsed { width: 0; padding: 0; border-right: none; overflow: hidden; }
     .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); }
     .sidebar-btn { width: 100%; height: 42px; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--primary), rgba(255,255,255,.25)); color: #000; cursor: pointer; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .2s; }
@@ -619,7 +619,7 @@ const App = () => {
       <div className="bg-overlay" style={overlayStyle} />
       {toast && <div className="toast"><Icon name="warning" size={16} color="#fca5a5" /> <span>{toast}</span></div>}
       {showCamera && <div className="camera-overlay"><video ref={videoRef} autoPlay className="camera-video" /><canvas ref={canvasRef} style={{ display: "none" }} /><div className="camera-controls"><button onClick={capturePhoto} className="camera-btn primary">Capture</button><button onClick={stopCamera} className="camera-btn secondary">Cancel</button></div></div>}
-      <div className="app-shell" style={{ background: shellBg, fontSize: `${fontSize}px` }}>
+      <div className="app-shell" style={{ fontSize: `${fontSize}px` }}>
         <header className="app-header">
           <button className="menu-btn" onClick={toggleSidebar} title="Toggle chats (Ctrl+B)"><Icon name="menu" size={20} /></button>
           <div className="brand">
@@ -768,7 +768,7 @@ const App = () => {
                   <div><strong style={{ fontSize: 13 }}>Waking up the AI server...</strong><p style={{ margin: 0, fontSize: 12, marginTop: 3, color: "rgba(255,255,255,.6)" }}>Free servers sleep after inactivity. First response may take 30-60 seconds.</p></div>
                 </div>}
                 {activeMessages.length === 0 && !streamText && !imageLoading && <div className="empty-state">
-                  <div className="logo-big">AI</div>
+                  
                   <div>
                     <h2 className="empty-title">ALOP-AI</h2>
                     <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message. Try <strong>/image</strong> to generate professional images.</p>

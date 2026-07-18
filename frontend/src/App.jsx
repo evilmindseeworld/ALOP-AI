@@ -301,6 +301,7 @@ const AuthenticatedApp = () => {
   const [themeKey, setThemeKey] = useState(() => Storage.get("pa-theme") || "midnight");
   const [customBg, setCustomBg] = useState(() => Storage.get("pa-custom-bg") || "");
   const [customPrimary, setCustomPrimary] = useState(() => Storage.get("pa-custom-primary") || "");
+  const [accentColor, setAccentColor] = useState(() => Storage.get("pa-accent-color") || "");
   const [bgOpacity, setBgOpacity] = useState(() => parseFloat(Storage.get("pa-bg-opacity") || "1"));
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => Storage.get("pa-sidebar-collapsed") === null ? true : Storage.get("pa-sidebar-collapsed") === "true");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);

@@ -110,4 +110,52 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 3000;
+// ===== ADMIN ROUTES (protected, requires is_admin) =====
+
+const requireAdmin = async (req, res, next) => {
+  try {
+    const { data: user } = await supabase
+      .from('users')
+      .select('is_admin')
+      .eq('clerk_id', req.auth.user.id)
+      .single();
+    if (!user?.is_admin) return res.status(403).json({ error: 'Admin only' });
+    next();
+  } catch (err) { res.status(500).json({ error: err.message }); }
+};
+
+app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, clerk_id, email, name, avatar_url, plan, is_admin, created_at');
+    if (error) throw error;
+    res.json(users || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/admin/chats/:userId', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('chats')
+      .select('*')
+      .eq('user_id', req.params.userId)
+      .order('updated_at', { ascending: false });
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('usage')
+      .select('*')
+      .eq('user_id', req.params.userId)
+      .order('date', { ascending: false })
+      .limit(30);
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
 app.listen(PORT, () => console.log(`ALOP-AI backend running on ${PORT}`));

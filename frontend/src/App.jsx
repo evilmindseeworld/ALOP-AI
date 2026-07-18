@@ -1,33 +1,523 @@
-function App() {
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
+
+const uid = () => crypto?.randomUUID?.() || Math.random().toString(36).slice(2, 10);
+const API_BASE = "https://alop-ai.onrender.com";
+
+const Storage = {
+  get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }
+};
+
+const getModelDisplayName = (k) => {
+  const names = {
+    'glm-5.2': 'GLM 5.2', 'glm-5.1': 'GLM 5.1', 'gemma4:31b': 'Gemma 4',
+    'qwen3.5:397b': 'Qwen 3.5', 'minimax-m2.7': 'MiniMax M2.7',
+    'minimax-m2.5': 'MiniMax M2.5', 'minimax-m3': 'MiniMax M3',
+    'nemotron-3-super': 'Nemotron Super', 'nemotron-3-ultra': 'Nemotron Ultra',
+    'nemotron-3-nano:30b': 'Nemotron Nano', 'kimi-k2.7-code': 'Kimi K2.7',
+    'kimi-k2.6': 'Kimi K2.6', 'kimi-k2.5': 'Kimi K2.5',
+    'deepseek-v4-flash': 'DeepSeek Flash', 'deepseek-v4-pro': 'DeepSeek Pro',
+    'gpt-oss:20b': 'GPT-OSS 20B', 'gpt-oss:120b': 'GPT-OSS 120B',
+    'mistral-large-3:675b': 'Mistral Large 3'
+  };
+  return names[k] || k;
+};
+
+const VISION_MODELS = ['gemma4:31b', 'kimi-k2.7-code', 'kimi-k2.6', 'kimi-k2.5', 'mistral-large-3:675b', 'deepseek-v4-pro'];
+
+const BACKGROUND_PRESETS = {
+  forest: "https://images.unsplash.com/photo-1511497584788-876760111969?w=1920&q=80",
+  space: "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=1920&q=80",
+  beach: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80",
+  mountains: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80",
+  abstract: "https://images.unsplash.com/photo-1557683316-973673baf926?w=1920&q=80",
+  water: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1920&q=80",
+  fire: "https://images.unsplash.com/photo-1505009253807-0a4c86083162?w=1920&q=80"
+};
+
+const Icon = ({ name, size = 18 }) => {
+  const icons = {
+    menu: <path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />,
+    close: <path d="M18 6L6 18M6 6l12 12" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />,
+    plus: <path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />,
+    send: <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    camera: <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    mic: <g><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" /><path d="M12 19v4M8 23h8" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" /></g>,
+    "mic-off": <path d="M1 1l22 22M9 9v6a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6M19 10v2a7 7 0 0 1-.11 1.23M12 19v4M8 23h8" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" />,
+    search: <g><circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" /></g>,
+    settings: <g><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" /></g>,
+    copy: <g><rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
+    edit: <g><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
+    trash: <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    check: <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    warning: <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    pin: <g><path d="M12 2v8M5 12a7 7 0 0 1 14 0v0a7 7 0 0 1-7 7h0a7 7 0 0 1-7-7v0z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
+    refresh: <g><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /><path d="M20.49 9A9 9 0 1 0 5.64 15.36" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
+    stop: <rect x="6" y="6" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />,
+    download: <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    brain: <g><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-5 0v-1M12 4.5A2.5 2.5 0 0 1 14.5 2a2.5 2.5 0 0 1 2.5 2.5v1M12 19.5a2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5v-1" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
+    star: <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    volume: <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    volumeX: <path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+  };
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ display: "inline-block", verticalAlign: "middle" }}>{icons[name] || null}</svg>;
+};
+
+const buildImageUrl = (prompt) => {
+  const enhanced = `${prompt}, professional photography, 8k uhd, highly detailed, sharp focus, cinematic lighting, masterpiece, best quality, ultra realistic`;
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(enhanced)}?width=1024&height=1024&nologo=true&model=flux&seed=${Math.floor(Math.random()*1e7)}&enhance=true`;
+};
+
+const isImageRequest = (text) => {
+  const t = text.trim().toLowerCase();
+  return t.startsWith("/image") || /\b(generate|create|make|draw|produce)\s+(an?\s+)?(image|picture|photo)\b/.test(t);
+};
+
+const parseImagePrompt = (text) => text.replace(/^\/image\s*/i, "").replace(/\b(can\s+you\s+)?(please\s+)?(generate|create|make|draw|produce)\s+(an?\s+)?(image|picture|photo)\s*(of\s*|for\s*|with\s*|showing\s*)?/i, "").trim();
+
+const useChatManager = () => {
+  const [chats, setChats] = useState(() => { try { const s = JSON.parse(Storage.get('pa_chats') || '[]'); return Array.isArray(s) && s.length ? s : []; } catch { return []; } });
+  const [activeChatId, setActiveChatId] = useState(null);
+
+  useEffect(() => {
+    if (!activeChatId && chats.length) {
+      const saved = Storage.get('pa_active_chat');
+      const found = chats.find(c => c.id === saved);
+      setActiveChatId(found ? found.id : chats[0].id);
+    }
+  }, [activeChatId, chats]);
+
+  const createChat = useCallback((title = "New Chat") => {
+    const c = { id: uid(), title, messages: [], createdAt: Date.now(), pinned: false, favorite: false };
+    setChats(p => [c, ...p]);
+    setActiveChatId(c.id);
+    return c.id;
+  }, []);
+
+  useEffect(() => { if (!chats.length) createChat("New Chat"); }, [chats.length, createChat]);
+
+  const deleteChat = useCallback((id) => {
+    const c = chats.find(x => x.id === id);
+    c?.messages?.forEach(m => m.attachments?.forEach(a => { try { URL.revokeObjectURL(a.url); } catch {} }));
+    setChats(p => p.filter(x => x.id !== id));
+    setActiveChatId(p => { if (p !== id) return p; const r = chats.filter(x => x.id !== id); return r[0]?.id || null; });
+  }, [chats]);
+
+  const renameChat = useCallback((id, title) => setChats(p => p.map(c => c.id === id ? { ...c, title } : c)), []);
+  const togglePinChat = useCallback((id) => setChats(p => p.map(c => c.id === id ? { ...c, pinned: !c.pinned } : c)), []);
+  const toggleFavoriteChat = useCallback((id) => setChats(p => p.map(c => c.id === id ? { ...c, favorite: !c.favorite } : c)), []);
+  const updateChatMessages = useCallback((id, messages) => setChats(p => p.map(c => c.id === id ? { ...c, messages, updatedAt: Date.now() } : c)), []);
+  const sortedChats = useMemo(() => [...chats].sort((a,b) => { if (a.pinned !== b.pinned) return a.pinned ? -1 : 1; if (a.favorite !== b.favorite) return a.favorite ? -1 : 1; return (b.updatedAt||b.createdAt) - (a.updatedAt||a.createdAt); }), [chats]);
+
+  useEffect(() => Storage.set('pa_chats', JSON.stringify(chats)), [chats]);
+  useEffect(() => { if (activeChatId) Storage.set('pa_active_chat', activeChatId); }, [activeChatId]);
+
+  return { chats, sortedChats, activeChatId, setActiveChatId, createChat, deleteChat, renameChat, togglePinChat, toggleFavoriteChat, updateChatMessages };
+};
+
+const useChatSession = (chatId, messages, updateMessages) => {
+  const [model, setModel] = useState(() => Storage.get("pa-model") || "glm-5.2");
+  const [temperature, setTemperature] = useState(() => parseFloat(Storage.get("pa-temperature")) || 0.7);
+  const [streamText, setStreamText] = useState("");
+  const [status, setStatus] = useState("idle");
+  const [stats, setStats] = useState(null);
+  const abortRef = useRef(null);
+
+  useEffect(() => Storage.set("pa-model", model), [model]);
+  useEffect(() => Storage.set("pa-temperature", temperature.toString()), [temperature]);
+
+  const sendMessage = useCallback(async (text, attachments = []) => {
+    if ((!text?.trim() && !attachments.length) || status !== "idle" || !chatId) return;
+    setStatus("loading");
+    const userMsg = { role: "user", content: text || "", attachments: attachments.map(f => ({ name: f.name, url: URL.createObjectURL(f), type: f.type })), ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() };
+    const updated = [...messages.slice(-99), userMsg];
+    updateMessages(chatId, updated);
+
+    abortRef.current = new AbortController();
+
+    try {
+      let res;
+      if (attachments.length) {
+        const fd = new FormData();
+        fd.append("message", text || "");
+        fd.append("modelType", model);
+        fd.append("temperature", temperature.toString());
+        fd.append("messages", JSON.stringify(messages.slice(-10).map(m => ({ role: m.role, content: m.content }))));
+        attachments.forEach(f => fd.append("files", f));
+        res = await fetch(`${API_BASE}/chat`, { method: "POST", body: fd, signal: abortRef.current.signal });
+      } else {
+        res = await fetch(`${API_BASE}/chat`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: abortRef.current.signal,
+          body: JSON.stringify({
+            message: text,
+            messages: messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
+            modelType: model,
+            temperature
+          })
+        });
+      }
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || `Server error: ${res.status}`); }
+      if (!res.body) throw new Error("Streaming not supported");
+
+      setStatus("streaming");
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let acc = "", buf = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n");
+        buf = lines.pop() || "";
+        for (const line of lines) {
+          const t = line.trim();
+          if (!t.startsWith("data: ")) continue;
+          const j = t.slice(6).trim();
+          if (j === "[DONE]") break;
+          try {
+            const d = JSON.parse(j);
+            if (d.type === "chunk") acc += d.text;
+            else if (d.type === "end") { if (d.stats) setStats(d.stats); }
+            else if (d.type === "error") throw new Error(d.text);
+          } catch {}
+        }
+        setStreamText(acc);
+      }
+      updateMessages(chatId, [...updated, { role: "assistant", content: acc, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() }]);
+      setStreamText(""); setStatus("idle");
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      setStatus("error");
+      updateMessages(chatId, [...updated, { role: "assistant", content: `⚠️ ${err.message || 'Connection failed'}`, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() }]);
+    }
+  }, [chatId, messages, model, temperature, status, updateMessages]);
+
+  return { streamText, status, stats, model, setModel, temperature, setTemperature, sendMessage };
+};
+
+const GlobalStyles = () => (
+  <style>{`
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+    html, body, #root { height: 100%; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #0a0a0a; overflow: hidden; -webkit-font-smoothing: antialiased; }
+    .app-root { width: 100vw; height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
+    .bg-layer { position: absolute; inset: 0; z-index: 1; background-size: cover; background-position: center; background-repeat: no-repeat; }
+    .bg-overlay { position: absolute; inset: 0; z-index: 2; background: rgba(0,0,0,0.55); pointer-events: none; }
+    .app-shell { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; }
+    .app-header { flex-shrink: 0; display: flex; align-items: center; gap: 12px; padding: 12px 20px; background: transparent; }
+    .brand { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+    .main-title { font-size: 15px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sub-title { font-size: 10px; color: rgba(255,255,255,.45); letter-spacing: .5px; text-transform: uppercase; }
+    .header-actions { display: flex; gap: 6px; align-items: center; }
+    .icon-btn { width: 38px; height: 38px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); color: rgba(255,255,255,.7); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .icon-btn:hover { background: rgba(0,0,0,0.55); color: #fff; }
+    .icon-btn.active { background: var(--primary); color: #000; border-color: transparent; }
+    .app-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
+    .chat-sidebar { width: 260px; flex-shrink: 0; border-right: 1px solid var(--border); background: rgba(0,0,0,0.8); display: flex; flex-direction: column; overflow: hidden; }
+    .chat-sidebar.collapsed { width: 0; border-right: none; overflow: hidden; }
+    .sidebar-header { padding: 14px; border-bottom: 1px solid var(--border); }
+    .sidebar-btn { width: 100%; height: 40px; border-radius: 10px; border: none; background: var(--primary); color: #000; cursor: pointer; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .sidebar-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+    .sidebar-section { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.3); text-transform: uppercase; letter-spacing: 1px; margin: 8px 4px 4px 4px; }
+    .sidebar-item { padding: 10px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; border: 1px solid transparent; }
+    .sidebar-item:hover { background: rgba(255,255,255,.05); border-color: var(--border); }
+    .sidebar-item.active { background: rgba(255,255,255,.08); border-color: var(--primary); }
+    .sidebar-icon { width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,.06); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: rgba(255,255,255,.4); flex-shrink: 0; }
+    .sidebar-title { flex: 1; font-size: 13px; color: rgba(255,255,255,.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sidebar-meta { font-size: 10px; color: rgba(255,255,255,.35); }
+    .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .chat-content { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
+    .scroll-wrapper { flex: 1; overflow-y: auto; padding: 18px 18px 90px 18px; display: flex; flex-direction: column; gap: 12px; }
+    .msg-row { display: flex; gap: 10px; max-width: 88%; }
+    .msg-row.user { align-self: flex-end; flex-direction: row-reverse; }
+    .msg-row.assistant { align-self: flex-start; }
+    .avatar { width: 30px; height: 30px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 800; background: rgba(255,255,255,.06); color: rgba(255,255,255,.5); flex-shrink: 0; }
+    .bubble { padding: 12px 16px; border-radius: 14px; font-size: 15px; line-height: 1.55; word-break: break-word; max-width: 100%; }
+    .msg-row.user .bubble { background: rgba(139, 92, 246, 0.85); color: #fff; border-bottom-right-radius: 4px; }
+    .msg-row.assistant .bubble { background: rgba(0, 0, 0, 0.6); color: rgba(255,255,255,.95); border: 1px solid rgba(255,255,255,0.08); border-bottom-left-radius: 4px; }
+    .msg-actions { display: flex; gap: 4px; margin-top: 4px; justify-content: flex-end; opacity: 0; transition: opacity .2s; }
+    .msg-row:hover .msg-actions { opacity: 1; }
+    .msg-action-btn { padding: 4px 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.4); color: rgba(255,255,255,.6); font-size: 11px; cursor: pointer; }
+    .msg-action-btn:hover { background: rgba(0,0,0,0.6); color: #fff; }
+    .msg-meta { font-size: 10px; color: rgba(255,255,255,.25); margin-top: 3px; text-align: right; }
+    .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; padding: 40px 20px; }
+    .empty-title { font-size: 32px; font-weight: 800; color: #fff; }
+    .empty-subtitle { color: rgba(255,255,255,.45); font-size: 15px; max-width: 420px; line-height: 1.5; }
+    .empty-subtitle strong { color: var(--primary); }
+    .input-area { flex-shrink: 0; padding: 12px 16px; background: transparent; }
+    .input-area-inner { max-width: 850px; margin: 0 auto; display: flex; gap: 8px; align-items: center; }
+    .input-field { flex: 1; padding: 12px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.4); color: #fff; font-size: 15px; outline: none; caret-color: var(--primary); }
+    .input-field:focus { border-color: var(--primary); background: rgba(0,0,0,0.55); }
+    .send-btn { padding: 0 18px; height: 44px; border-radius: 12px; border: none; cursor: pointer; background: var(--primary); color: #000; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+    .send-btn:disabled { background: rgba(255,255,255,.06); color: rgba(255,255,255,.25); cursor: not-allowed; }
+    .side-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 340px; max-width: 90vw; background: #0f0f12; border-left: 1px solid rgba(255,255,255,0.08); padding: 20px; z-index: 100; overflow-y: auto; }
+    .panel-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,0.5); }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .panel-title { font-size: 12px; font-weight: 800; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+    .memory-card { padding: 14px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 12px; }
+    .memory-card-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,.8); margin-bottom: 10px; }
+    .custom-input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,.04); color: #fff; font-size: 13px; outline: none; }
+    .custom-input:focus { border-color: var(--primary); }
+    .textarea { min-height: 80px; resize: vertical; font-family: inherit; line-height: 1.5; }
+    .setting-row { margin-bottom: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .setting-label { color: rgba(255,255,255,.5); font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; }
+    .theme-grid { display: flex; gap: 6px; flex-wrap: wrap; }
+    .theme-card { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,.04); color: rgba(255,255,255,.75); cursor: pointer; font-size: 12px; transition: all .15s; }
+    .theme-card:hover { background: rgba(255,255,255,.08); }
+    .theme-card.selected { border-color: var(--primary); background: rgba(255,255,255,.1); color: #fff; }
+    .model-select { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,.04); color: #fff; font-size: 13px; outline: none; cursor: pointer; }
+    .slider { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.08); outline: none; -webkit-appearance: none; }
+    .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--primary); cursor: pointer; }
+    .slider-container { display: flex; align-items: center; gap: 8px; font-size: 11px; color: rgba(255,255,255,.4); }
+    .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.95); color: #fff; padding: 12px 20px; border-radius: 10px; z-index: 9999; font-size: 13px; border-left: 3px solid var(--primary); }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @media (max-width: 640px) {
+      .chat-sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; transform: translateX(-100%); }
+      .chat-sidebar.open { transform: translateX(0); }
+      .side-panel { width: 100vw; max-width: 100vw; }
+    }
+  `}</style>
+);
+
+const InputBar = ({ text, setText, onSend, disabled, attachments, setAttachments, onFileSelect }) => {
+  const fileInputRef = useRef(null);
+  const handleSubmit = () => { if ((!text.trim() && attachments.length === 0) || disabled) return; onSend(text); };
   return (
-    <div style={{ 
-      width: '100vw', 
-      height: '100vh', 
-      background: 'linear-gradient(135deg, #050507, #1a1033, #050507)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      color: 'white',
-      fontFamily: 'sans-serif',
-      fontSize: '24px'
-    }}>
-      <div>
-        <h1 style={{ margin: 0 }}>ALOP-AI</h1>
-        <p style={{ opacity: 0.6 }}>Test page is working</p>
-        <input 
-          type='text' 
-          placeholder='Type here...' 
-          style={{ 
-            padding: '12px 20px', 
-            borderRadius: '8px', 
-            border: 'none', 
-            marginTop: '20px',
-            width: '300px'
-          }}
-        />
+    <div className="input-area">
+      <div className="input-area-inner">
+        <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={onFileSelect} style={{ display: "none" }} />
+        <button onClick={() => fileInputRef.current?.click()} disabled={disabled} className="icon-btn" title="Attach"><Icon name="plus" size={18} /></button>
+        <input className="input-field" value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }} placeholder={disabled ? "AI is thinking..." : "Message... try /image to generate images"} disabled={disabled} />
+        <button className="send-btn" onClick={handleSubmit} disabled={(!text.trim() && attachments.length === 0) || disabled}><Icon name="send" size={18} /></button>
       </div>
     </div>
   );
-}
+};
+
+const MessageActions = ({ content, onRegenerate }) => (
+  <div className="msg-actions">
+    <button onClick={() => navigator.clipboard.writeText(content)} className="msg-action-btn">Copy</button>
+    {onRegenerate && <button onClick={onRegenerate} className="msg-action-btn">Regen</button>}
+  </div>
+);
+
+const ChatSidebar = ({ chats, activeChatId, onSelect, onCreate, onDelete, onRename, collapsed }) => {
+  const [editingId, setEditingId] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+  if (collapsed) return null;
+  return (
+    <div className="chat-sidebar">
+      <div className="sidebar-header">
+        <button onClick={onCreate} className="sidebar-btn"><Icon name="plus" size={16} /> New Chat</button>
+      </div>
+      <div className="sidebar-list">
+        {chats.map(chat => {
+          const isActive = activeChatId === chat.id;
+          const isEditing = editingId === chat.id;
+          return (
+            <div key={chat.id} onClick={() => onSelect(chat.id)} className={`sidebar-item ${isActive ? "active" : ""}`}>
+              <div className="sidebar-icon">{chat.messages.length > 0 ? chat.messages[0].content.slice(0,1).toUpperCase() : "N"}</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                {isEditing ? (
+                  <input value={editTitle} onChange={e => setEditTitle(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { onRename(chat.id, editTitle); setEditingId(null); } if (e.key === "Escape") setEditingId(null); }} onBlur={() => setEditingId(null)} autoFocus onClick={e => e.stopPropagation()} style={{ width: "100%", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, padding: "3px 6px", color: "#fff", fontSize: 12, outline: "none" }} />
+                ) : (
+                  <div className="sidebar-title">{chat.title}</div>
+                )}
+                <div className="sidebar-meta">{chat.messages.length} messages</div>
+              </div>
+              <div style={{ display: "flex", gap: 2 }} onClick={e => e.stopPropagation()}>
+                <button onClick={() => setEditingId(chat.id)} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6 }}><Icon name="edit" size={12} /></button>
+                <button onClick={() => onDelete(chat.id)} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6 }}><Icon name="trash" size={12} /></button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const App = () => {
+  const [themeKey, setThemeKey] = useState(() => Storage.get("pa-theme") || "midnight");
+  const [customBg, setCustomBg] = useState(() => Storage.get("pa-custom-bg") || "");
+  const [customPrimary, setCustomPrimary] = useState(() => Storage.get("pa-custom-primary") || "");
+  const [accentColor, setAccentColor] = useState(() => Storage.get("pa-accent-color") || "");
+  const [bgOpacity, setBgOpacity] = useState(() => parseFloat(Storage.get("pa-bg-opacity") || "0.55"));
+  const [fontSize] = useState(() => parseFloat(Storage.get("pa-font-size") || "15"));
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => Storage.get("pa-sidebar-collapsed") === null ? true : Storage.get("pa-sidebar-collapsed") === "true");
+  const [showSettings, setShowSettings] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  const { chats, sortedChats, activeChatId, setActiveChatId, createChat, deleteChat, renameChat, updateChatMessages } = useChatManager();
+  const activeChat = useMemo(() => chats.find(c => c.id === activeChatId), [chats, activeChatId]);
+  const activeMessages = activeChat?.messages || [];
+
+  const { streamText, status, model, setModel, temperature, setTemperature, sendMessage } = useChatSession(activeChatId, activeMessages, updateChatMessages);
+
+  const [attachments, setAttachments] = useState([]);
+  const [inputText, setInputText] = useState("");
+
+  useEffect(() => Storage.set("pa-theme", themeKey), [themeKey]);
+  useEffect(() => Storage.set("pa-custom-bg", customBg), [customBg]);
+  useEffect(() => Storage.set("pa-custom-primary", customPrimary), [customPrimary]);
+  useEffect(() => Storage.set("pa-accent-color", accentColor), [accentColor]);
+  useEffect(() => Storage.set("pa-bg-opacity", bgOpacity.toString()), [bgOpacity]);
+  useEffect(() => Storage.set("pa-sidebar-collapsed", sidebarCollapsed.toString()), [sidebarCollapsed]);
+
+  useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); }, [toast]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "n") { e.preventDefault(); createChat(); }
+      if ((e.ctrlKey || e.metaKey) && e.key === "b") { e.preventDefault(); setSidebarCollapsed(c => !c); }
+      if (e.key === "Escape") { setShowSettings(false); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [createChat]);
+
+  const handleFileSelect = (e) => { const files = Array.from(e.target.files).filter(f => f.type.startsWith("image/")); if (!files.length) { setToast("Only image files supported"); return; } setAttachments(prev => [...prev, ...files]); e.target.value = ""; };
+
+  const handleSend = useCallback(async (text) => {
+    const cleanText = text.trim();
+    if (isImageRequest(cleanText)) {
+      const imagePrompt = parseImagePrompt(cleanText);
+      if (!imagePrompt) { setToast("Describe the image. Example: /image a cat in space"); return; }
+      const userMsg = { role: "user", content: cleanText, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() };
+      const withUser = [...activeMessages, userMsg];
+      updateChatMessages(activeChatId, withUser);
+      updateChatMessages(activeChatId, [...withUser, { role: "assistant", content: "", imageUrl: buildImageUrl(imagePrompt), imagePrompt, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() }]);
+      setInputText(""); setAttachments([]);
+      return;
+    }
+    if (!VISION_MODELS.includes(model) && attachments.length > 0) { setToast(`${getModelDisplayName(model)} cannot see images`); return; }
+    sendMessage(text, attachments); setInputText(""); setAttachments([]);
+  }, [sendMessage, model, attachments, activeChatId, activeMessages, updateChatMessages]);
+
+  const handleCreateChat = () => { createChat(); setInputText(""); setAttachments([]); };
+
+  const theme = themeKey === "midnight" ? { primary: "#8b5cf6", bg: "linear-gradient(135deg, #050507, #0b0b12, #12121f)", borderColor: "rgba(139, 92, 246, 0.2)" }
+    : themeKey === "ocean" ? { primary: "#38bdf8", bg: "radial-gradient(circle at 70% 30%, #0a1f3d 0%, #051020 50%, #02050c 100%)", borderColor: "rgba(56, 189, 248, 0.2)" }
+    : themeKey === "emerald" ? { primary: "#34d399", bg: "radial-gradient(circle at 20% 80%, #0a2a1f 0%, #05120d 50%, #020604 100%)", borderColor: "rgba(52, 211, 153, 0.2)" }
+    : themeKey === "crimson" ? { primary: "#fb7185", bg: "radial-gradient(circle at 80% 20%, #2a0a12 0%, #120408 50%, #050203 100%)", borderColor: "rgba(251, 113, 133, 0.2)" }
+    : themeKey === "gold" ? { primary: "#fbbf24", bg: "radial-gradient(circle at 50% 50%, #1f1508 0%, #0f0b05 50%, #050402 100%)", borderColor: "rgba(251, 191, 36, 0.2)" }
+    : { primary: "#8b5cf6", bg: "linear-gradient(135deg, #050507, #0b0b12, #12121f)", borderColor: "rgba(139, 92, 246, 0.2)" };
+
+  const primary = customPrimary || theme.primary;
+  const border = accentColor || theme.borderColor;
+  const bgLayerStyle = customBg ? { backgroundImage: `url(${customBg})` } : { backgroundImage: theme.bg };
+  const overlayStyle = { backgroundColor: `rgba(0,0,0,${1 - bgOpacity})` };
+
+  return (
+    <div className="app-root" style={{ "--primary": primary, "--border": border }}>
+      <GlobalStyles />
+      <div className="bg-layer" style={bgLayerStyle} />
+      <div className="bg-overlay" style={overlayStyle} />
+      {toast && <div className="toast">{toast}</div>}
+      <div className="app-shell">
+        <header className="app-header">
+          <button className="icon-btn" onClick={() => setSidebarCollapsed(c => !c)} title="Chats"><Icon name="menu" size={20} /></button>
+          <div className="brand">
+            <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
+            <span className="sub-title">{getModelDisplayName(model)}</span>
+          </div>
+          <div className="header-actions">
+            <button className="icon-btn" onClick={() => { setShowSettings(s => !s); }} title="Settings"><Icon name="settings" size={20} /></button>
+          </div>
+        </header>
+        <div className="app-body">
+          <ChatSidebar chats={sortedChats} activeChatId={activeChatId} onSelect={setActiveChatId} onCreate={handleCreateChat} onDelete={deleteChat} onRename={renameChat} collapsed={sidebarCollapsed} />
+          <div className="chat-main">
+            {showSettings && <>
+              <div className="panel-overlay" onClick={() => setShowSettings(false)} />
+              <div className="side-panel">
+                <div className="panel-header">
+                  <div className="panel-title">Settings</div>
+                  <button onClick={() => setShowSettings(false)} className="icon-btn"><Icon name="close" size={18} /></button>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Theme</div>
+                  <div className="theme-grid">
+                    {["midnight","ocean","emerald","crimson","gold"].map(k => <button key={k} onClick={() => setThemeKey(k)} className={`theme-card ${themeKey === k ? "selected" : ""}`} style={{ textTransform: "capitalize" }}>{k}</button>)}
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Background Image</div>
+                  <input className="custom-input" type="text" value={customBg} onChange={e => setCustomBg(e.target.value)} placeholder="Paste image URL" />
+                  <div className="theme-grid">
+                    {Object.entries(BACKGROUND_PRESETS).map(([k, url]) => <button key={k} onClick={() => setCustomBg(url)} className="theme-card" style={{ textTransform: "capitalize" }}>{k}</button>)}
+                    <button onClick={() => setCustomBg("")} className="theme-card">Reset</button>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Background Intensity: {Math.round(bgOpacity * 100)}%</div>
+                  <div className="slider-container">
+                    <span>Dim</span>
+                    <input type="range" min="0" max="1" step="0.05" value={bgOpacity} onChange={e => setBgOpacity(parseFloat(e.target.value))} className="slider" />
+                    <span>Bright</span>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Button Color</div>
+                  <input type="color" value={customPrimary || primary} onChange={e => setCustomPrimary(e.target.value)} style={{ width: 50, height: 36 }} />
+                  {customPrimary && <button onClick={() => setCustomPrimary("")} className="theme-card">Reset</button>}
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">AI Model</div>
+                  <select value={model} onChange={e => setModel(e.target.value)} className="model-select">
+                    {["glm-5.2","gemma4:31b","qwen3.5:397b","kimi-k2.5","deepseek-v4-pro","gpt-oss:120b","mistral-large-3:675b"].map(m => <option key={m} value={m}>{getModelDisplayName(m)}</option>)}
+                  </select>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Creativity: {temperature.toFixed(1)}</div>
+                  <div className="slider-container">
+                    <span>Precise</span>
+                    <input type="range" min="0" max="1" step="0.1" value={temperature} onChange={e => setTemperature(parseFloat(e.target.value))} className="slider" />
+                    <span>Creative</span>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <button onClick={() => deleteChat(activeChatId)} className="theme-card">Delete Chat</button>
+                </div>
+              </div>
+            </>}
+            <div className="chat-content">
+              <div className="scroll-wrapper" style={{ fontSize: `${fontSize}px` }}>
+                {activeMessages.length === 0 && !streamText && <div className="empty-state">
+                  <h2 className="empty-title">ALOP-AI</h2>
+                  <p className="empty-subtitle">Upload images, paste screenshots, or type a message.<br />Try <strong>/image</strong> to generate images.</p>
+                </div>}
+                {activeMessages.map((msg, idx) => <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
+                  <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {msg.content && <div className="bubble">{msg.content}</div>}
+                    {msg.imageUrl && <div style={{ marginTop: 8 }}>
+                      <img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: 12, cursor: "pointer" }} onClick={() => window.open(msg.imageUrl, "_blank")} />
+                      <div className="msg-meta" style={{ textAlign: "left" }}>{msg.imagePrompt}</div>
+                    </div>}
+                    {msg.attachments?.length > 0 && <div style={{ display: "flex", gap: 6, marginTop: 6 }}>{msg.attachments.map((a, i) => <img key={i} src={a.url} alt={a.name} style={{ width: 60, height: 60, borderRadius: 8, objectFit: "cover" }} />)}</div>}
+                    {msg.role === "assistant" && !msg.imageUrl && <MessageActions content={msg.content} onRegenerate={idx === activeMessages.length - 1 ? () => {} : null} />}
+                    <div className="msg-meta">{msg.ts}</div>
+                  </div>
+                </div>)}
+                {streamText && <div className="msg-row assistant">
+                  <div className="avatar">AI</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="bubble">{streamText}</div>
+                  </div>
+                </div>}
+              </div>
+              <InputBar text={inputText} setText={setInputText} onSend={handleSend} disabled={status !== "idle"} attachments={attachments} setAttachments={setAttachments} onFileSelect={handleFileSelect} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 export default App;

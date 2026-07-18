@@ -224,11 +224,11 @@ const GlobalStyles = () => (
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     html, body, #root { height: 100%; }
-    body { font-family: 'Inter', system-ui, sans-serif; background: #0a0a0a; overflow: hidden; -webkit-font-smoothing: antialiased; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #0a0a0a; min-height: 100vh; min-height: 100dvh; -webkit-font-smoothing: antialiased; }
     .app-root { width: 100vw; height: 100vh; display: flex; flex-direction: column; position: relative; overflow: hidden; }
     .bg-layer { position: absolute; inset: 0; z-index: 1; background-size: cover; background-position: center; background-repeat: no-repeat; }
     .bg-overlay { position: absolute; inset: 0; z-index: 2; background: rgba(0,0,0,0.55); pointer-events: none; }
-    .app-shell { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; }
+    .app-shell { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
     .app-header { flex-shrink: 0; display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: transparent; min-height: 56px; }
     .brand { display: flex; flex-direction: column; flex: 1; min-width: 0; }
     .main-title { font-size: 15px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -273,7 +273,7 @@ const GlobalStyles = () => (
     .empty-title { font-size: 28px; font-weight: 800; color: #fff; }
     .empty-subtitle { color: rgba(255,255,255,.45); font-size: 14px; max-width: 320px; line-height: 1.5; }
     .empty-subtitle strong { color: var(--primary); }
-    .input-area { flex-shrink: 0; padding: 10px 12px; background: transparent; }
+    .input-area { flex-shrink: 0; padding: 10px 12px 24px 12px; background: transparent; }
     .input-area-inner { max-width: 850px; margin: 0 auto; display: flex; gap: 6px; align-items: center; }
     .input-field { flex: 1; padding: 12px 14px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.4); color: #fff; font-size: 15px; outline: none; caret-color: var(--primary); min-width: 0; }
     .input-field:focus { border-color: var(--primary); background: rgba(0,0,0,0.55); }
@@ -421,7 +421,7 @@ const App = () => {
   const [customBg, setCustomBg] = useState(() => Storage.get("pa-custom-bg") || "");
   const [customPrimary, setCustomPrimary] = useState(() => Storage.get("pa-custom-primary") || "");
   const [accentColor, setAccentColor] = useState(() => Storage.get("pa-accent-color") || "");
-  const [bgOpacity, setBgOpacity] = useState(() => parseFloat(Storage.get("pa-bg-opacity") || "0.55"));
+  const [bgOpacity, setBgOpacity] = useState(() => parseFloat(Storage.get("pa-bg-opacity") || "1"));
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => Storage.get("pa-sidebar-collapsed") === null ? true : Storage.get("pa-sidebar-collapsed") === "true");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -619,7 +619,7 @@ const App = () => {
               <div className="scroll-wrapper">
                 {activeMessages.length === 0 && !streamText && <div className="empty-state">
                   <h2 className="empty-title">ALOP-AI</h2>
-                  <p className="empty-subtitle">Ask anything, upload photos, take a picture, use your voice, or tap the image button to generate art.</p>
+                  <p className="empty-subtitle">Ask anything, upload photos, take a picture, use your voice, or tap the image button.</p>
                 </div>}
                 {activeMessages.map((msg, idx) => <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
                   <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>

@@ -1,6 +1,5 @@
 const App = () => {
   console.log("Clerk key exists:", !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
-  console.log("API base:", import.meta.env.VITE_API_BASE);
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { ClerkProvider, SignIn, useUser, useAuth } from "@clerk/clerk-react";

@@ -203,12 +203,12 @@ const GlobalStyles = () => (
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
     *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
     html, body, #root { height: 100%; }
-    body { font-family: 'Inter', system-ui, sans-serif; background: #000; overflow: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #0a0a0a; overflow: hidden; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     .app-root { width: 100vw; height: 100vh; display: flex; position: relative; overflow: hidden; }
     .bg-layer { position: absolute; inset: 0; z-index: 1; background-size: cover; background-position: center; background-repeat: no-repeat; }
     .bg-overlay { position: absolute; inset: 0; z-index: 2; background: rgba(0,0,0,0.55); pointer-events: none; }
     .app-shell { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; background: transparent; }
-    .app-header { position: absolute; top: 0; left: 0; right: 0; z-index: 50; display: flex; align-items: center; gap: 14px; padding: 14px 22px; background: transparent; }
+    .app-header { flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding: 14px 22px; background: transparent; }
     .menu-btn { width: 40px; height: 40px; border-radius: 11px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); backdrop-filter: blur(10px); color: rgba(255,255,255,.7); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
     .menu-btn:hover { background: rgba(0,0,0,0.55); color: #fff; }
     .brand { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; cursor: default; user-select: none; }
@@ -219,9 +219,10 @@ const GlobalStyles = () => (
     .icon-btn { width:40px; height:40px; border-radius:11px; border:1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); backdrop-filter: blur(10px); color:rgba(255,255,255,.7); cursor:pointer; display:flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
     .icon-btn:hover { background:rgba(0,0,0,0.55); border-color:rgba(255,255,255,0.15); color:#fff; }
     .icon-btn.active { background: var(--primary); color: #000; border-color: transparent; }
-    .app-body { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; overflow: hidden; }
+    .app-body { flex: 1; display: flex; min-height: 0; overflow: hidden; position: relative; }
     .chat-sidebar { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: rgba(0,0,0,0.75); backdrop-filter: blur(30px); display: flex; flex-direction: column; overflow: hidden; transition: width .3s ease, padding .3s ease; }
     .chat-sidebar.collapsed { width: 0; padding: 0; border-right: none; overflow: hidden; }
+    .chat-sidebar.open { width: 280px; padding: initial; border-right: 1px solid var(--border); }
     .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); }
     .sidebar-btn { width: 100%; height: 42px; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--primary), rgba(255,255,255,.25)); color: #000; cursor: pointer; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .2s; }
     .sidebar-btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
@@ -242,13 +243,12 @@ const GlobalStyles = () => (
     .sidebar-action:hover { background: rgba(255,255,255,.1); color: #fff; }
     .sidebar-action.active { color: var(--primary); }
     .sidebar-action.delete:hover { background: rgba(239,68,68,.2); color: #fca5a5; }
-    .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; padding-top: 70px; padding-bottom: 80px; }
-    .chat-content { flex: 1; display: flex; flex-direction: column; position: relative; background: transparent; overflow: hidden; }
+    .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+    .chat-content { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; background: transparent; }
     .panel-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,.4); backdrop-filter: blur(2px); }
-    .panel { position: absolute; top: 70px; right: 16px; width: 340px; max-height: calc(100vh - 100px); overflow-y: auto; background: rgba(0,0,0,.92); border: 1px solid var(--border); border-radius: 16px; padding: 18px; z-index: 100; box-shadow: 0 24px 80px rgba(0,0,0,.7); }
-    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+    .side-panel { position: absolute; top: 0; right: 0; bottom: 0; width: 360px; max-width: 90vw; background: rgba(0,0,0,.92); border-left: 1px solid var(--border); padding: 20px; z-index: 100; overflow-y: auto; box-shadow: -24px 0 80px rgba(0,0,0,.7); }
+    .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
     .panel-title { font-size: 12px; font-weight: 800; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
-    .memory-panel { position: absolute; top: 0; left: 0; right: 0; z-index: 80; background: rgba(0,0,0,.85); backdrop-filter: blur(24px); border-bottom: 1px solid var(--border); padding: 18px 22px; max-height: 65vh; overflow-y: auto; }
     .memory-card { padding: 18px; border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid var(--border); margin-bottom: 16px; }
     .memory-card-title { font-size: 14px; font-weight: 700; color: rgba(255,255,255,.78); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
     .setting-row { margin-bottom: 16px; display:flex; flex-direction:column; gap:10px; }
@@ -269,7 +269,7 @@ const GlobalStyles = () => (
     .custom-input::placeholder { color: rgba(255,255,255,.3); }
     .textarea { min-height: 80px; resize: vertical; font-family: inherit; line-height: 1.5; }
     .color-picker { width: 32px; height: 28px; border: none; border-radius: 6px; cursor: pointer; background: transparent; }
-    .scroll-wrapper { flex:1; overflow-y:auto; scroll-behavior:smooth; padding:22px; display:flex; flex-direction:column; gap:14px; min-height:0; }
+    .scroll-wrapper { flex:1; overflow-y:auto; scroll-behavior:smooth; padding:22px 22px 100px 22px; display:flex; flex-direction:column; gap:14px; min-height:0; }
     .scroll-wrapper::-webkit-scrollbar { width:5px; }
     .scroll-wrapper::-webkit-scrollbar-track { background:transparent; }
     .scroll-wrapper::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
@@ -302,7 +302,7 @@ const GlobalStyles = () => (
     .attachment-thumb { width:60px; height:60px; border-radius:7px; overflow:hidden; border:1px solid rgba(255,255,255,0.08); position:relative; }
     .attachment-thumb img { width:100%; height:100%; object-fit:cover; }
     .attachment-remove { position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; border:none; background:rgba(0,0,0,.7); color:#fff; cursor:pointer; font-size:11px; display:flex; align-items: center; justify-content: center; }
-    .input-area { position: absolute; bottom: 0; left: 0; right: 0; z-index: 50; padding: 14px 18px; background: transparent; }
+    .input-area { flex-shrink: 0; padding: 14px 18px; background: transparent; }
     .input-area-inner { max-width: 900px; margin: 0 auto; display: flex; gap: 8px; align-items: center; }
     .input-field { flex: 1; padding: 12px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); backdrop-filter: blur(14px); color: #fff; font-size: 15px; outline: none; caret-color: var(--primary); min-width: 0; }
     .input-field:focus { border-color: var(--primary); background: rgba(0,0,0,0.45); box-shadow: 0 0 0 3px rgba(139,92,246,.08); }
@@ -329,18 +329,17 @@ const GlobalStyles = () => (
       .chat-sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; transform: translateX(-100%); transition: transform .3s; width: 260px; }
       .chat-sidebar.collapsed { transform: translateX(-100%); }
       .chat-sidebar.open { transform: translateX(0); }
-      .panel { width: calc(100vw - 32px); right: 16px; left: 16px; top: 80px; }
-      .memory-panel { padding: 14px 16px; }
+      .side-panel { width: 100vw; max-width: 100vw; }
+      .panel-overlay { z-index: 95; }
     }
     @media (max-width: 640px) {
       .app-header { padding: 10px 14px; }
-      .scroll-wrapper { padding: 14px; gap: 10px; }
+      .scroll-wrapper { padding: 14px 14px 90px 14px; gap: 10px; }
       .bubble { font-size: 14px; padding: 12px 14px; }
       .msg-row { max-width: 94%; }
       .input-area { padding: 10px 12px; }
       .empty-title { font-size: 20px; }
       .icon-btn { width: 36px; height: 36px; }
-      .brand-logo { width: 36px; height: 36px; }
     }
   `}</style>
 );
@@ -635,8 +634,126 @@ const App = () => {
         </header>
         <div className="app-body">
           <ChatSidebar chats={sortedChats} activeChatId={activeChatId} onSelect={setActiveChatId} onCreate={handleCreateChat} onDelete={deleteChat} onRename={renameChat} onPin={togglePinChat} onFavorite={toggleFavoriteChat} sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen} collapsed={sidebarCollapsed} />
-          <div className="chat-main">
-            {showMemory && <div className="memory-panel">
+                    <div className="chat-main">
+            {showMemory && <>
+              <div className="panel-overlay" onClick={() => setShowMemory(false)} />
+              <div className="side-panel">
+                <div className="panel-header">
+                  <div className="panel-title"><Icon name="brain" size={16} /> Memory & Learning</div>
+                  <button onClick={() => setShowMemory(false)} className="icon-btn" title="Close"><Icon name="close" size={18} /></button>
+                </div>
+                <div className="memory-card">
+                  <div className="memory-card-title">AI Instructions (system prompt)</div>
+                  <textarea className="custom-input textarea" value={systemPrompt} onChange={e => setSystemPrompt(e.target.value)} placeholder="Example: You are a helpful tutor for high school students. Always explain concepts simply." />
+                </div>
+                <div className="memory-card">
+                  <div className="memory-card-title">What the AI remembers about you</div>
+                  <textarea className="custom-input textarea" value={userProfile} onChange={e => setUserProfile(e.target.value)} placeholder="The AI uses this in every conversation. Example: I am a biology teacher. I prefer short answers with examples." />
+                  <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+                    <button onClick={() => { setUserProfile(""); setToast("Memory cleared"); }} className="theme-card">Clear Memory</button>
+                    <button onClick={() => { extractMemory(); setToast("Memory updated from chat"); }} className="theme-card">Extract from Chat</button>
+                    <button onClick={() => setAutoExtractMemory(v => !v)} className={`theme-card ${autoExtractMemory ? "selected" : ""}`}>{autoExtractMemory ? "Auto-Memory On" : "Auto-Memory Off"}</button>
+                  </div>
+                </div>
+              </div>
+            </>}
+            {showSettings && <>
+              <div className="panel-overlay" onClick={() => setShowSettings(false)} />
+              <div className="side-panel">
+                <div className="panel-header">
+                  <div className="panel-title">Settings</div>
+                  <button onClick={() => setShowSettings(false)} className="icon-btn" title="Close"><Icon name="close" size={18} /></button>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Theme</div>
+                  <div className="theme-grid">
+                    {Object.entries(THEMES).map(([k, v]) => <button key={k} onClick={() => { setThemeKey(k); setCustomPrimary(""); setAccentColor(""); }} className={`theme-card ${themeCardSelected(k) ? "selected" : ""}`}>{v.name}</button>)}
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Background Image</div>
+                  <input className="custom-input" type="text" value={customBg} onChange={e => setCustomBg(e.target.value)} placeholder="Paste image URL" />
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button onClick={() => setCustomBg(BACKGROUND_PRESETS.forest)} className="theme-card">Forest</button>
+                    <button onClick={() => setCustomBg(BACKGROUND_PRESETS.space)} className="theme-card">Space</button>
+                    <button onClick={() => setCustomBg(BACKGROUND_PRESETS.beach)} className="theme-card">Beach</button>
+                    <button onClick={() => setCustomBg(BACKGROUND_PRESETS.mountains)} className="theme-card">Mountains</button>
+                    <button onClick={() => setCustomBg(BACKGROUND_PRESETS.abstract)} className="theme-card">Abstract</button>
+                    <button onClick={() => setCustomBg(BACKGROUND_PRESETS.water)} className="theme-card">Water</button>
+                    <button onClick={() => setCustomBg(BACKGROUND_PRESETS.fire)} className="theme-card">Fire</button>
+                    <button onClick={() => { setCustomBg(""); setCustomPrimary(""); setAccentColor(""); }} className="theme-card">Reset</button>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Background Intensity: {Math.round(bgOpacity * 100)}%</div>
+                  <div className="slider-container">
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>Dim</span>
+                    <input type="range" min="0" max="1" step="0.05" value={bgOpacity} onChange={(e) => setBgOpacity(parseFloat(e.target.value))} className="slider" />
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>Bright</span>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Chat Opacity: {Math.round(glassOpacity * 100)}%</div>
+                  <div className="slider-container">
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>Clear</span>
+                    <input type="range" min="0" max="1" step="0.05" value={glassOpacity} onChange={(e) => setGlassOpacity(parseFloat(e.target.value))} className="slider" />
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>Solid</span>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Font Size: {fontSize}px</div>
+                  <div className="slider-container">
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>Small</span>
+                    <input type="range" min="12" max="22" step="1" value={fontSize} onChange={(e) => setFontSize(parseFloat(e.target.value))} className="slider" />
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>Large</span>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Accent Color</div>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                    <input type="color" value={accentColor || rgbaToHex(T.borderColor, T.primary)} onChange={e => setAccentColor(e.target.value)} className="color-picker" />
+                    <span style={{ fontSize: 12, color: "rgba(255,255,255,.5)" }}>{accentColor || "Theme default"}</span>
+                    {accentColor && <button onClick={() => setAccentColor("")} className="theme-card">Reset</button>}
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Button Color</div>
+                  <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                    <input type="color" value={customPrimary || T.primary} onChange={e => setCustomPrimary(e.target.value)} className="color-picker" />
+                    <span style={{ fontSize: 12, color: "rgba(255,255,255,.5)" }}>{customPrimary || "Theme default"}</span>
+                    {customPrimary && <button onClick={() => setCustomPrimary("")} className="theme-card">Reset</button>}
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Options</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button onClick={() => setCompactMode(v => !v)} className={`theme-card ${compactMode ? "selected" : ""}`}>{compactMode ? "Compact On" : "Compact Off"}</button>
+                    <button onClick={() => setAnimations(v => !v)} className={`theme-card ${animations ? "selected" : ""}`}>{animations ? "Animations On" : "Animations Off"}</button>
+                    <button onClick={() => { if (activeChatId) deleteChat(activeChatId); }} className="theme-card">Delete Chat</button>
+                    <button onClick={() => { exportAllChats(); setToast("All chats exported"); }} className="theme-card">Export All</button>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">AI Model</div>
+                  <div className="model-select-container">
+                    <select value={model} onChange={(e) => setModel(e.target.value)} className="model-select">
+                      {Object.entries(MODEL_CATEGORIES).map(([category, models]) => <optgroup key={category} label={category}>
+                        {models.map(modelKey => <option key={modelKey} value={modelKey}>{getModelDisplayName(modelKey)}</option>)}
+                      </optgroup>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Creativity: {temperature.toFixed(1)}</div>
+                  <div className="slider-container">
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>Precise</span>
+                    <input type="range" min="0" max="1" step="0.1" value={temperature} onChange={(e) => setTemperature(parseFloat(e.target.value))} className="slider" />
+                    <span style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>Creative</span>
+                  </div>
+                </div>
+              </div>
+            </>}
+            {activeMessages.length > 0 && <div className="search-bar">
               <div className="panel-header">
                 <div className="panel-title"><Icon name="brain" size={16} /> Memory & Learning</div>
                 <button onClick={() => setShowMemory(false)} className="icon-btn" title="Close"><Icon name="close" size={18} /></button>

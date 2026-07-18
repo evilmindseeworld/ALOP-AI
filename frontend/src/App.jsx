@@ -36,16 +36,6 @@ const THEMES = {
 
 const DEFAULT_THEME = THEMES.midnight;
 
-const SUGGESTIONS = [
-  { text: "Explain quantum computing simply", category: "Science" },
-  { text: "Write Python for sales data analysis", category: "Coding" },
-  { text: "Create a tech startup business plan", category: "Business" },
-  { text: "Optimize database performance", category: "Tech" },
-  { text: "Write a poem about AI", category: "Creative" },
-  { text: "/image futuristic classroom with holographic desks", category: "Image" },
-  { text: "Create a lesson plan about photosynthesis", category: "Education" }
-];
-
 const MODEL_DISPLAY_NAMES = {
   'glm-5.2': 'GLM 5.2', 'glm-5.1': 'GLM 5.1', 'gemma4:31b': 'Gemma 4',
   'qwen3.5:397b': 'Qwen 3.5', 'minimax-m2.7': 'MiniMax M2.7', 'minimax-m2.5': 'MiniMax M2.5',
@@ -71,6 +61,21 @@ const MODEL_CATEGORIES = {
 
 const VISION_MODELS = ['gemma4:31b', 'kimi-k2.7-code', 'kimi-k2.6', 'kimi-k2.5', 'mistral-large-3:675b', 'deepseek-v4-pro'];
 
+const PERCHANCE_PROMPTS = [
+  "Generate a random fantasy character backstory",
+  "Create a random startup idea and pitch it",
+  "Write a random plot twist for a sci-fi movie",
+  "Invent a new ice cream flavor and describe it vividly",
+  "Generate a random D&D quest for level 5 heroes",
+  "Describe a random alien planet and its inhabitants",
+  "Write a random advertisement for an absurd product",
+  "Create a random recipe with unusual ingredients",
+  "Generate a random superhero origin story",
+  "Describe a random haunted house room",
+  "Invent a random video game mechanic",
+  "Write a random email from a future civilization"
+];
+
 const BACKGROUND_PRESETS = {
   forest: "https://images.unsplash.com/photo-1511497584788-876760111969?w=1920&q=80",
   space: "https://images.unsplash.com/photo-1534796636912-3b95b3ab5986?w=1920&q=80",
@@ -79,18 +84,6 @@ const BACKGROUND_PRESETS = {
   abstract: "https://images.unsplash.com/photo-1557683316-973673baf926?w=1920&q=80",
   water: "https://images.unsplash.com/photo-1518837695005-2083093ee35b?w=1920&q=80",
   fire: "https://images.unsplash.com/photo-1505009253807-0a4c86083162?w=1920&q=80"
-};
-
-const MATERIAL_OVERLAYS = {
-  none: "", wood: "https://www.transparenttextures.com/patterns/wood-pattern.png",
-  metal: "https://www.transparenttextures.com/patterns/brushed-alum.png",
-  paper: "https://www.transparenttextures.com/patterns/cream-paper.png",
-  fabric: "https://www.transparenttextures.com/patterns/gray-flannel.png",
-  concrete: "https://www.transparenttextures.com/patterns/concrete-wall.png",
-  leather: "https://www.transparenttextures.com/patterns/leather-nunchuk.png",
-  brick: "https://www.transparenttextures.com/patterns/brick-wall.png",
-  canvas: "https://www.transparenttextures.com/patterns/canvas-orange.png",
-  noise: "https://www.transparenttextures.com/patterns/stardust.png"
 };
 
 const IMAGE_GENERATION = {
@@ -112,13 +105,6 @@ const Icon = ({ name, size = 18, color = "currentColor" }) => {
     search: <g><circle cx="11" cy="11" r="8" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M21 21l-4.35-4.35" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" /></g>,
     settings: <g><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" /></g>,
     copy: <g><rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
-    speaker: <path d="M11 5L6 9H2v6h4l5 4V5z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
-    image: <g><rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2" fill="none" /><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor" /><path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
-    dice: <g><rect x="2" y="2" width="20" height="20" rx="5" ry="5" stroke="currentColor" strokeWidth="2" fill="none" /><circle cx="8" cy="8" r="1.5" fill="currentColor" /><circle cx="16" cy="8" r="1.5" fill="currentColor" /><circle cx="8" cy="16" r="1.5" fill="currentColor" /><circle cx="16" cy="16" r="1.5" fill="currentColor" /></g>,
-    export: <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
-    crown: <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
-    volume: <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
-    volumeX: <path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     edit: <g><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
     trash: <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     check: <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
@@ -127,8 +113,11 @@ const Icon = ({ name, size = 18, color = "currentColor" }) => {
     refresh: <g><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /><path d="M20.49 9A9 9 0 1 0 5.64 15.36" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
     stop: <rect x="6" y="6" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />,
     download: <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
-    brain: <g><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-5 0v-1M12 4.5A2.5 2.5 0 0 1 14.5 2a2.5 2.5 0 0 1 2.5 2.5v1M12 19.5a2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5v-1" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /><path d="M12 4.5v15" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="round" /></g>,
-    star: <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    brain: <g><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-5 0v-1M12 4.5A2.5 2.5 0 0 1 14.5 2a2.5 2.5 0 0 1 2.5 2.5v1M12 19.5a2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5v-1" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
+    star: <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    crown: <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    volume: <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
+    volumeX: <path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ display: "inline-block", verticalAlign: "middle", color }}>{icons[name] || null}</svg>;
 };
@@ -219,14 +208,6 @@ const useChatSession = (chatId, messages, updateMessages, userProfile, systemPro
 
     try {
       const systemContext = buildContext();
-      const payload = {
-        message: text,
-        messages: [...systemContext, ...messages.slice(-10)].map(m => ({ role: m.role, content: m.content })),
-        modelType: model,
-        sessionId,
-        temperature
-      };
-
       let res;
       if (attachments.length > 0) {
         const formData = new FormData();
@@ -238,7 +219,7 @@ const useChatSession = (chatId, messages, updateMessages, userProfile, systemPro
         attachments.forEach(file => formData.append("files", file));
         res = await fetch(`${API_BASE}/chat`, { method: "POST", body: formData, signal: abortRef.current.signal });
       } else {
-        res = await fetch(`${API_BASE}/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, signal: abortRef.current.signal, body: JSON.stringify(payload) });
+        res = await fetch(`${API_BASE}/chat`, { method: "POST", headers: { "Content-Type": "application/json" }, signal: abortRef.current.signal, body: JSON.stringify({ message: text, messages: [...systemContext, ...messages.slice(-10)].map(m => ({ role: m.role, content: m.content })), modelType: model, sessionId, temperature }) });
       }
 
       if (!res.ok) { const errorData = await res.json().catch(() => ({})); throw new Error(errorData.error || `Server error: ${res.status}`); }
@@ -291,7 +272,7 @@ const useChatSession = (chatId, messages, updateMessages, userProfile, systemPro
 
 const useDockStatus = () => {
   const [dock, setDock] = useState({ active: 0, requests: [] });
-  useEffect(() => { let cancelled = false; const poll = async () => { try { const r = await fetch(`${API_BASE}/api/dock`, { signal: AbortSignal.timeout(3000) }); if (!cancelled) { const data = await r.json(); setDock(data); } } catch { if (!cancelled) setDock({ active: 0, requests: [] }); } }; poll(); const id = setInterval(poll, 2000); return () => { cancelled = true; clearInterval(id); }; }, []);
+  useEffect(() => { let cancelled = false; const poll = async () => { try { const r = await fetch(`${API_BASE}/api/dock`, { signal: AbortSignal.timeout(3000) }); if (!cancelled) setDock(await r.json()); } catch { if (!cancelled) setDock({ active: 0, requests: [] }); } }; poll(); const id = setInterval(poll, 2000); return () => { cancelled = true; clearInterval(id); }; }, []);
   return dock;
 };
 
@@ -361,6 +342,7 @@ const GlobalStyles = () => (
     .panel { position: absolute; top: 78px; right: 20px; width: 360px; max-height: calc(100vh - 110px); overflow-y: auto; background: rgba(0,0,0,.94); border: 1px solid var(--border); border-radius: 18px; padding: 22px; z-index: 100; box-shadow: 0 28px 90px rgba(0,0,0,.7); }
     .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
     .panel-title { font-size: 13px; font-weight: 800; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
+    .memory-panel-full { background: rgba(0,0,0,.42); backdrop-filter:blur(26px); padding: 20px; border-bottom: 1px solid var(--border); max-height: 60vh; overflow-y: auto; flex-shrink:0; }
     .setting-row { margin-bottom: 20px; display:flex; flex-direction:column; gap:12px; }
     .setting-row:last-child { margin-bottom: 0; }
     .setting-label { color:rgba(255,255,255,.5); font-size:11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
@@ -379,7 +361,6 @@ const GlobalStyles = () => (
     .custom-input::placeholder { color: rgba(255,255,255,.3); }
     .textarea { min-height: 100px; resize: vertical; font-family: inherit; line-height: 1.5; }
     .color-picker { width: 38px; height: 34px; border: none; border-radius: 8px; cursor: pointer; background: transparent; }
-    .material-overlay { position: absolute; inset: 0; z-index: 2; pointer-events: none; background-repeat: repeat; background-size: 140px 140px; mix-blend-mode: overlay; }
     .search-bar { display:flex; align-items:center; gap:10px; margin: 12px 22px; padding: 12px 16px; border-radius:12px; background:rgba(255,255,255,.04); border:1px solid var(--border); flex-shrink: 0; }
     .search-bar input { flex:1; background:none; border:none; outline:none; color:#fff; font-size:15px; caret-color:var(--primary); }
     .search-bar input::placeholder { color: rgba(255,255,255,.35); }
@@ -412,10 +393,6 @@ const GlobalStyles = () => (
     .logo-big { width:72px; height:72px; border-radius:18px; background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); border:1px solid var(--border); display:flex; align-items: center; justify-content: center; font-size:28px; font-weight:900; color:var(--primary); margin:0 auto 8px auto; box-shadow: 0 18px 54px rgba(0,0,0,.4); }
     .empty-title { font-size: 28px; font-weight: 800; color: #fff; margin-bottom: 6px; letter-spacing: -.3px; }
     .empty-subtitle { color:rgba(255,255,255,.42); font-size:15px; max-width:420px; line-height: 1.6; }
-    .suggestions { display:flex; flex-wrap:wrap; gap:12px; justify-content:center; margin-top:4px; max-width: 680px; }
-    .suggestion-btn { padding:14px 18px; border-radius:12px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:rgba(255,255,255,.78); cursor:pointer; font-size:14px; display:flex; align-items:flex-start; gap:10px; transition: all .15s; text-align: left; flex: 1; min-width: 220px; }
-    .suggestion-btn:hover { background:rgba(255,255,255,.09); border-color: rgba(255,255,255,.18); transform: translateY(-1px); }
-    .suggestion-category { font-size: 10px; color: var(--primary); margin-top: 4px; text-transform: uppercase; letter-spacing: .7px; font-weight: 800; }
     @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:.3;} }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     .typing-indicator { display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: var(--primary); margin-left: 4px; animation: blink 1s infinite; }
@@ -432,7 +409,6 @@ const GlobalStyles = () => (
     .keyboard-hint { position:fixed; bottom:10px; left:50%; transform:translateX(-50%); background:rgba(0,0,0,.55); color:rgba(255,255,255,.3); padding:6px 14px; border-radius:20px; font-size:11px; z-index:5; }
     .no-anim .msg-row, .no-anim .typing-indicator { animation:none; }
     .toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.95); color: #fff; padding: 14px 22px; border-radius: 12px; z-index: 9999; font-size: 14px; border-left: 3px solid var(--primary); box-shadow: 0 22px 70px rgba(0,0,0,.65); display: flex; align-items: center; gap: 10px; }
-    .image-hint { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 6px; background: rgba(139,92,246,.12); color: rgba(255,255,255,.7); font-size: 11px; border: 1px solid rgba(139,92,246,.2); }
     .memory-card { padding: 18px; border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid var(--border); margin-bottom: 16px; }
     .memory-card-title { font-size: 14px; font-weight: 700; color: rgba(255,255,255,.78); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
     .memory-text { font-size: 14px; color: rgba(255,255,255,.55); line-height: 1.5; white-space: pre-wrap; }
@@ -510,7 +486,7 @@ const InputBar = ({ text, setText, onSend, disabled, status, stats, attachments,
           {status === "loading" ? <span style={{ width: 18, height: 18, border: "2px solid rgba(0,0,0,.3)", borderTopColor: "#000", borderRadius: "50%", animation: "spin 1s linear infinite" }} /> : <Icon name="send" size={20} />}
         </button>
       </div>
-      {stats && <div style={{ fontSize: 11, color: "rgba(255,255,255,.28)", marginTop: 6, display: "flex", gap: 14, justifyContent: "center" }}>
+      {stats && <div style={{ fontSize: 11, color: "rgba(255,255,255,.26)", marginTop: 6, display: "flex", gap: 14, justifyContent: "center" }}>
         <span>{stats.duration > 1000 ? `${(stats.duration / 1000).toFixed(1)}s` : `${stats.duration}ms`}</span>
         <span>{getModelDisplayName(stats.model)}</span>
       </div>}
@@ -521,7 +497,7 @@ const InputBar = ({ text, setText, onSend, disabled, status, stats, attachments,
 const MessageActions = ({ content, onSpeak, onRegenerate }) => (
   <div className="msg-actions">
     <button onClick={() => navigator.clipboard.writeText(content)} className="msg-action-btn" title="Copy"><Icon name="copy" size={12} /> Copy</button>
-    <button onClick={() => onSpeak(content)} className="msg-action-btn" title="Read aloud"><Icon name="speaker" size={12} /> Read</button>
+    <button onClick={() => onSpeak(content)} className="msg-action-btn" title="Read aloud"><Icon name="volume" size={12} /> Read</button>
     {onRegenerate && <button onClick={onRegenerate} className="msg-action-btn" title="Regenerate"><Icon name="refresh" size={12} /> Regenerate</button>}
   </div>
 );
@@ -583,8 +559,6 @@ const App = () => {
   const [accentColor, setAccentColor] = useState(() => Storage.get("pa-accent-color") || "");
   const [bgOpacity, setBgOpacity] = useState(() => { const v = Storage.get("pa-bg-opacity"); return v !== null ? parseFloat(v) : 0.4; });
   const [glassOpacity, setGlassOpacity] = useState(() => { const v = Storage.get("pa-glass-opacity"); return v !== null ? parseFloat(v) : 0.92; });
-  const [materialOverlay, setMaterialOverlay] = useState(() => Storage.get("pa-material-overlay") || "");
-  const [overlayStrength, setOverlayStrength] = useState(() => { const v = Storage.get("pa-overlay-strength"); return v !== null ? parseFloat(v) : 0.55; });
   const [fontSize, setFontSize] = useState(() => { const v = Storage.get("pa-font-size"); return v !== null ? parseFloat(v) : 16; });
   const [compactMode, setCompactMode] = useState(() => Storage.get("pa-compact") === "true");
   const [animations, setAnimations] = useState(() => Storage.get("pa-animations") !== "false");
@@ -659,8 +633,6 @@ const App = () => {
   useEffect(() => { Storage.set("pa-accent-color", accentColor); }, [accentColor]);
   useEffect(() => { Storage.set("pa-bg-opacity", bgOpacity.toString()); }, [bgOpacity]);
   useEffect(() => { Storage.set("pa-glass-opacity", glassOpacity.toString()); }, [glassOpacity]);
-  useEffect(() => { Storage.set("pa-material-overlay", materialOverlay); }, [materialOverlay]);
-  useEffect(() => { Storage.set("pa-overlay-strength", overlayStrength.toString()); }, [overlayStrength]);
   useEffect(() => { Storage.set("pa-font-size", fontSize.toString()); }, [fontSize]);
   useEffect(() => { Storage.set("pa-compact", compactMode.toString()); }, [compactMode]);
   useEffect(() => { Storage.set("pa-animations", animations.toString()); }, [animations]);
@@ -791,7 +763,6 @@ const App = () => {
     <div className={`app-root ${customBg ? "custom-bg" : ""} ${animations ? "" : "no-anim"}`} style={{ "--bg": customBg ? "none" : T.bg, ...instanceVars, ...appBgStyle }} onDrop={handleDrop} onDragOver={e => { e.preventDefault(); setIsDragging(true); }} onDragLeave={() => setIsDragging(false)}>
       <GlobalStyles />
       {customBg && <div style={{ position: "absolute", inset: 0, zIndex: 1, ...overlayStyle, pointerEvents: "none" }} />}
-      {customBg && materialOverlay && <div className="material-overlay" style={{ backgroundImage: `url(${materialOverlay})`, opacity: overlayStrength }} />}
       {toast && <div className="toast"><Icon name="warning" size={16} color="#fca5a5" /> <span>{toast}</span></div>}
       {showCamera && <div className="camera-overlay"><video ref={videoRef} autoPlay className="camera-video" /><canvas ref={canvasRef} style={{ display: "none" }} /><div className="camera-controls"><button onClick={capturePhoto} className="camera-btn primary">Capture</button><button onClick={stopCamera} className="camera-btn secondary">Cancel</button></div></div>}
       <div className="glass-main" style={{ background: glassBg, fontSize: `${fontSize}px` }}>
@@ -809,7 +780,7 @@ const App = () => {
             <div className="header-actions">
               <button className={`icon-btn ${ttsEnabled ? "active" : ""}`} onClick={() => { if (isSpeaking) window.speechSynthesis.cancel(); setTtsEnabled(v => !v); }} title="Toggle AI voice"><Icon name={ttsEnabled ? "volume" : "volumeX"} size={20} /></button>
               <button className={`icon-btn ${showMemory ? "active" : ""}`} onClick={() => { setShowMemory(s => !s); setShowSettings(false); }} title="Memory & Learning"><Icon name="brain" size={20} /></button>
-              <button className="icon-btn" onClick={handlePerchance} title="Random prompt"><Icon name="dice" size={20} /></button>
+              <button className="icon-btn" onClick={handlePerchance} title="Random prompt"><Icon name="refresh" size={20} /></button>
               <button className="icon-btn" onClick={() => { if (activeChatId) exportChat(activeChatId, "markdown"); setToast("Chat exported as Markdown"); }} title="Export chat (Ctrl+J)"><Icon name="download" size={20} /></button>
               <button className="icon-btn premium" onClick={() => setToast("Premium features unlocked")} title="Premium"><Icon name="crown" size={20} /></button>
               <button className={`icon-btn ${showSettings ? "active" : ""}`} onClick={() => { setShowSettings(s => !s); setShowMemory(false); }} title="Settings"><Icon name="settings" size={20} /></button>
@@ -857,28 +828,7 @@ const App = () => {
                   <button onClick={() => setCustomBg(BACKGROUND_PRESETS.abstract)} className="theme-card">Abstract</button>
                   <button onClick={() => setCustomBg(BACKGROUND_PRESETS.water)} className="theme-card">Water</button>
                   <button onClick={() => setCustomBg(BACKGROUND_PRESETS.fire)} className="theme-card">Fire</button>
-                  <button onClick={() => { setCustomBg(""); setCustomPrimary(""); setAccentColor(""); setMaterialOverlay(""); }} className="theme-card">Reset</button>
-                </div>
-              </div>
-              <div className="setting-row">
-                <div className="setting-label">Texture Overlay</div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button onClick={() => setMaterialOverlay("")} className={`theme-card ${materialOverlay === "" ? "selected" : ""}`}>None</button>
-                  <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.wood)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.wood ? "selected" : ""}`}>Wood</button>
-                  <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.metal)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.metal ? "selected" : ""}`}>Metal</button>
-                  <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.paper)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.paper ? "selected" : ""}`}>Paper</button>
-                  <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.fabric)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.fabric ? "selected" : ""}`}>Fabric</button>
-                  <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.concrete)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.concrete ? "selected" : ""}`}>Concrete</button>
-                  <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.leather)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.leather ? "selected" : ""}`}>Leather</button>
-                  <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.brick)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.brick ? "selected" : ""}`}>Brick</button>
-                  <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.canvas)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.canvas ? "selected" : ""}`}>Canvas</button>
-                  <button onClick={() => setMaterialOverlay(MATERIAL_OVERLAYS.noise)} className={`theme-card ${materialOverlay === MATERIAL_OVERLAYS.noise ? "selected" : ""}`}>Noise</button>
-                </div>
-                <div className="setting-label">Overlay Strength: {Math.round(overlayStrength * 100)}%</div>
-                <div className="slider-container">
-                  <span style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>Subtle</span>
-                  <input type="range" min="0.05" max="1" step="0.05" value={overlayStrength} onChange={(e) => setOverlayStrength(parseFloat(e.target.value))} className="slider" />
-                  <span style={{ fontSize: 11, color: "rgba(255,255,255,.4)" }}>Strong</span>
+                  <button onClick={() => { setCustomBg(""); setCustomPrimary(""); setAccentColor(""); }} className="theme-card">Reset</button>
                 </div>
               </div>
               <div className="setting-row">
@@ -967,13 +917,7 @@ const App = () => {
                 <div className="logo-big">AI</div>
                 <div>
                   <h2 className="empty-title">Cloud AI Assistant</h2>
-                  <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message. Try <span className="image-hint"><Icon name="image" size={14} /> /image</span> to generate professional images.</p>
-                </div>
-                <div className="suggestions">
-                  {SUGGESTIONS.map((s, i) => <button key={i} onClick={() => setInputText(s.text)} className="suggestion-btn">
-                    <span style={{ color: "var(--primary)", fontSize: "8px", marginTop: 4 }}>●</span>
-                    <div><div>{s.text}</div><div className="suggestion-category">{s.category}</div></div>
-                  </button>)}
+                  <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message. Try /image to generate professional images.</p>
                 </div>
               </div>}
               {filteredMessages.map((msg, idx) => <div key={msg.id || idx} className={`msg-row ${msg.role}`}>

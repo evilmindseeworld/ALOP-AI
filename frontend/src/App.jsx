@@ -1,6 +1,4 @@
 const App = () => {
-  console.log("VITE_CLERK_KEY:", import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ? "EXISTS" : "MISSING");
-  console.log("VITE_API_BASE:", import.meta.env.VITE_API_BASE);
   console.log("Clerk key exists:", !!import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
   console.log("API base:", import.meta.env.VITE_API_BASE);
 

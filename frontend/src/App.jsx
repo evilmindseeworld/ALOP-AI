@@ -207,7 +207,7 @@ const GlobalStyles = () => (
     .app-root { width: 100vw; height: 100vh; display: flex; position: relative; overflow: hidden; }
     .bg-layer { position: absolute; inset: 0; z-index: 1; background-size: cover; background-position: center; background-repeat: no-repeat; }
     .bg-overlay { position: absolute; inset: 0; z-index: 2; background: rgba(0,0,0,0.55); pointer-events: none; }
-    .app-shell { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; background: transparent; }
+    .app-shell { width: 100%; height: 100%; display: flex; flex-direction: column; background: transparent; }
     .app-header { flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding: 14px 22px; background: transparent; }
     .menu-btn { width: 40px; height: 40px; border-radius: 11px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); backdrop-filter: blur(10px); color: rgba(255,255,255,.7); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
     .menu-btn:hover { background: rgba(0,0,0,0.55); color: #fff; }
@@ -243,10 +243,10 @@ const GlobalStyles = () => (
     .sidebar-action:hover { background: rgba(255,255,255,.1); color: #fff; }
     .sidebar-action.active { color: var(--primary); }
     .sidebar-action.delete:hover { background: rgba(239,68,68,.2); color: #fca5a5; }
-    .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+    .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
     .chat-content { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative; background: transparent; }
-    .panel-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,.4); backdrop-filter: blur(2px); }
-    .side-panel { position: absolute; top: 0; right: 0; bottom: 0; width: 360px; max-width: 90vw; background: rgba(0,0,0,.92); border-left: 1px solid var(--border); padding: 20px; z-index: 100; overflow-y: auto; box-shadow: -24px 0 80px rgba(0,0,0,.7); }
+    .panel-overlay { position: fixed; inset: 0; z-index: 90; background: rgba(0,0,0,0.6); }
+    .side-panel { position: fixed; top: 0; right: 0; bottom: 0; width: 360px; max-width: 90vw; background: #0f0f12; border-left: 1px solid rgba(255,255,255,0.1); padding: 20px; z-index: 100; overflow-y: auto; box-shadow: -24px 0 80px rgba(0,0,0,.8); }
     .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
     .panel-title { font-size: 12px; font-weight: 800; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
     .memory-card { padding: 18px; border-radius: 14px; background: rgba(255,255,255,.04); border: 1px solid var(--border); margin-bottom: 16px; }

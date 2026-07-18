@@ -210,10 +210,10 @@ const GlobalStyles = () => (
     .bg-layer { position: absolute; inset: 0; z-index: 1; background-size: cover; background-position: center; background-repeat: no-repeat; }
     .bg-overlay { position: absolute; inset: 0; z-index: 2; background: rgba(0,0,0,0.55); pointer-events: none; }
     .app-shell { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
-    .app-header { display: flex; align-items: center; gap: 14px; padding: 14px 22px; flex-shrink: 0; border-bottom: 1px solid var(--border); background: rgba(0,0,0,0.35); backdrop-filter: blur(20px); }
+    .app-header { display: flex; align-items: center; gap: 14px; padding: 14px 22px; flex-shrink: 0; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); backdrop-filter: blur(20px); }
     .menu-btn { width: 40px; height: 40px; border-radius: 11px; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: rgba(255,255,255,.55); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
     .menu-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
-    .brand { display: flex; align-items: center; gap: 12px; cursor: default; user-select: none; }
+    .brand { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; cursor: default; user-select: none; }
     .brand-logo { width: 40px; height: 40px; border-radius: 11px; background: linear-gradient(135deg, var(--primary), rgba(255,255,255,.25)); display:flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900; color: #000; border: 1px solid rgba(255,255,255,.1); }
     .title-group { flex:1; min-width:0; }
     .main-title { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -307,7 +307,7 @@ const GlobalStyles = () => (
     .attachment-thumb { width:60px; height:60px; border-radius:7px; overflow:hidden; border:1px solid var(--border); position:relative; }
     .attachment-thumb img { width:100%; height:100%; object-fit:cover; }
     .attachment-remove { position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; border:none; background:rgba(0,0,0,.7); color:#fff; cursor:pointer; font-size:11px; display:flex; align-items: center; justify-content: center; }
-    .input-area { padding: 14px 18px; border-top: 1px solid var(--border); background: rgba(0,0,0,0.45); backdrop-filter: blur(20px); flex-shrink: 0; }
+    .input-area { padding: 14px 18px; border-top: 1px solid var(--border); background: rgba(255,255,255,0.02); backdrop-filter: blur(20px); flex-shrink: 0; }
     .input-area-inner { max-width: 900px; margin: 0 auto; display: flex; gap: 8px; align-items: center; }
     .input-field { flex: 1; padding: 12px 18px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.06); color: #fff; font-size: 15px; outline: none; caret-color: var(--primary); min-width: 0; }
     .input-field:focus { border-color: var(--primary); background: rgba(255,255,255,.09); box-shadow: 0 0 0 3px rgba(139,92,246,.08); }
@@ -623,9 +623,9 @@ const App = () => {
         <header className="app-header">
           <button className="menu-btn" onClick={toggleSidebar} title="Toggle chats (Ctrl+B)"><Icon name="menu" size={20} /></button>
           <div className="brand">
-            <div className="brand-logo">AI</div>
+            
             <div className="title-group">
-              <h1 className="main-title">{activeChat?.title || "Cloud AI Assistant"}</h1>
+              <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
               <span className="sub-title">{T.name} • {getModelDisplayName(model)}{isSpeaking ? " • SPEAKING" : ""}{isListening ? " • LISTENING" : ""}</span>
             </div>
           </div>
@@ -634,7 +634,6 @@ const App = () => {
             <button className={`icon-btn ${showMemory ? "active" : ""}`} onClick={() => { setShowMemory(s => !s); setShowSettings(false); }} title="Memory & Learning"><Icon name="brain" size={20} /></button>
             <button className="icon-btn" onClick={handlePerchance} title="Random prompt"><Icon name="refresh" size={20} /></button>
             <button className="icon-btn" onClick={() => { if (activeChatId) exportChat(activeChatId, "markdown"); setToast("Chat exported as Markdown"); }} title="Export chat (Ctrl+J)"><Icon name="download" size={20} /></button>
-            <button className="icon-btn premium" onClick={() => setToast("Premium features unlocked")} title="Premium"><Icon name="crown" size={20} /></button>
             <button className={`icon-btn ${showSettings ? "active" : ""}`} onClick={() => { setShowSettings(s => !s); setShowMemory(false); }} title="Settings"><Icon name="settings" size={20} /></button>
           </div>
         </header>
@@ -771,7 +770,7 @@ const App = () => {
                 {activeMessages.length === 0 && !streamText && !imageLoading && <div className="empty-state">
                   <div className="logo-big">AI</div>
                   <div>
-                    <h2 className="empty-title">Cloud AI Assistant</h2>
+                    <h2 className="empty-title">ALOP-AI</h2>
                     <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message. Try <strong>/image</strong> to generate professional images.</p>
                   </div>
                 </div>}

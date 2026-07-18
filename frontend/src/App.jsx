@@ -211,7 +211,7 @@ const GlobalStyles = () => (
     .bg-overlay { position: absolute; inset: 0; z-index: 2; background: rgba(0,0,0,0.55); pointer-events: none; }
     .app-shell { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
     .app-header { display: flex; align-items: center; gap: 14px; padding: 14px 22px; flex-shrink: 0; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); backdrop-filter: blur(20px); }
-    .menu-btn { width: 40px; height: 40px; border-radius: 11px; border: 1px solid var(--border); background: rgba(255,255,255,.05); color: rgba(255,255,255,.55); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
+    .menu-btn { width: 40px; height: 40px; border-radius: 11px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); backdrop-filter: blur(10px); color: rgba(255,255,255,.7); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
     .menu-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
     .brand { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; cursor: default; user-select: none; }
     .brand-logo { width: 40px; height: 40px; border-radius: 11px; background: linear-gradient(135deg, var(--primary), rgba(255,255,255,.25)); display:flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 900; color: #000; border: 1px solid rgba(255,255,255,.1); }
@@ -219,8 +219,8 @@ const GlobalStyles = () => (
     .main-title { font-size: 16px; font-weight: 700; color: #fff; letter-spacing: -.2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
     .sub-title { font-size: 10px; color: rgba(255,255,255,.4); letter-spacing: .6px; text-transform: uppercase; margin-top: 1px; }
     .header-actions { display:flex; gap:6px; align-items:center; }
-    .icon-btn { width:40px; height:40px; border-radius:11px; border:1px solid transparent; background: rgba(255,255,255,.05); color:rgba(255,255,255,.55); cursor:pointer; display:flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
-    .icon-btn:hover { background:rgba(255,255,255,.12); border-color:var(--border); color:#fff; }
+    .icon-btn { width:40px; height:40px; border-radius:11px; border:1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); backdrop-filter: blur(10px); color:rgba(255,255,255,.7); cursor:pointer; display:flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
+    .icon-btn:hover { background:rgba(0,0,0,0.55); border-color:rgba(255,255,255,0.15); color:#fff; }
     .icon-btn.active { background: var(--primary); color: #000; border-color: transparent; }
     .icon-btn.premium { position: relative; overflow: hidden; }
     .icon-btn.premium::after { content: ""; position: absolute; inset: 0; border-radius: 11px; padding: 1px; background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: shimmer 2.5s linear infinite; background-size: 200% 200%; }
@@ -284,8 +284,8 @@ const GlobalStyles = () => (
     .avatar { width:32px; height:32px; border-radius:9px; display:flex; align-items: center; justify-content: center; font-size:10px; font-weight: 900; flex-shrink:0; background:rgba(255,255,255,.05); border: 1px solid var(--border); color: rgba(255,255,255,.45); }
     .msg-row.user .avatar { color: var(--primary); background: rgba(255,255,255,.08); }
     .bubble { padding: 14px 18px; border-radius: 14px; font-size: 15px; line-height: 1.6; word-break: break-word; max-width: 100%; }
-    .msg-row.user .bubble { background: var(--user-bubble, rgba(139, 92, 246, 0.12)); color:#f8fafc; border-bottom-right-radius:4px; }
-    .msg-row.assistant .bubble { background: var(--ai-bubble, rgba(139, 92, 246, 0.06)); color:rgba(255,255,255,.9); border:1px solid var(--border); border-bottom-left-radius:4px; }
+    .msg-row.user .bubble { background: rgba(139, 92, 246, 0.75); color:#f8fafc; border-bottom-right-radius:4px; }
+    .msg-row.assistant .bubble { background: rgba(0, 0, 0, 0.65); backdrop-filter: blur(14px); color:rgba(255,255,255,.95); border:1px solid rgba(255,255,255,0.08); border-bottom-left-radius:4px; }
     .msg-actions { display:flex; gap:5px; margin-top:5px; justify-content:flex-end; opacity:0; transition:opacity .2s; }
     .msg-row:hover .msg-actions { opacity:1; }
     .msg-action-btn { padding:5px 10px; border-radius:6px; border:1px solid var(--border); background:rgba(255,255,255,.04); color:rgba(255,255,255,.5); font-size:11px; cursor:pointer; transition: all .15s; display: flex; align-items: center; gap: 5px; }
@@ -309,10 +309,10 @@ const GlobalStyles = () => (
     .attachment-remove { position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; border:none; background:rgba(0,0,0,.7); color:#fff; cursor:pointer; font-size:11px; display:flex; align-items: center; justify-content: center; }
     .input-area { padding: 14px 18px; border-top: 1px solid var(--border); background: rgba(255,255,255,0.02); backdrop-filter: blur(20px); flex-shrink: 0; }
     .input-area-inner { max-width: 900px; margin: 0 auto; display: flex; gap: 8px; align-items: center; }
-    .input-field { flex: 1; padding: 12px 18px; border-radius: 12px; border: 1px solid var(--border); background: rgba(255,255,255,.06); color: #fff; font-size: 15px; outline: none; caret-color: var(--primary); min-width: 0; }
-    .input-field:focus { border-color: var(--primary); background: rgba(255,255,255,.09); box-shadow: 0 0 0 3px rgba(139,92,246,.08); }
+    .input-field { flex: 1; padding: 12px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); backdrop-filter: blur(14px); color: #fff; font-size: 15px; outline: none; caret-color: var(--primary); min-width: 0; }
+    .input-field:focus { border-color: var(--primary); background: rgba(0,0,0,0.45); box-shadow: 0 0 0 3px rgba(139,92,246,.08); }
     .input-field::placeholder { color: rgba(255,255,255,.35); }
-    .send-btn { padding: 0 18px; height: 44px; border-radius: 12px; border: none; cursor: pointer; background: var(--primary); color: #000; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+    .send-btn { padding: 0 18px; height: 44px; border-radius: 12px; border: none; cursor: pointer; background: var(--primary); color: #000; font-weight: 800; font-size: 14px; display: flex; align-items: center; justify-content: center; transition: all .15s; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
     .send-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
     .send-btn:disabled { background: rgba(255,255,255,.06); color: rgba(255,255,255,.25); cursor: not-allowed; transform: none; filter: none; }
     .attachment-preview { display: flex; gap: 6px; margin-bottom: 8px; flex-wrap: wrap; max-width: 900px; margin-left: auto; margin-right: auto; }

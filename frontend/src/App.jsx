@@ -208,9 +208,9 @@ const GlobalStyles = () => (
     .app-root { width: 100vw; height: 100vh; display: flex; position: relative; overflow: hidden; }
     .app-root.custom-bg { background-size: cover; background-position: center; background-repeat: no-repeat; }
     .bg-layer { position: absolute; inset: 0; z-index: 1; background-size: cover; background-position: center; background-repeat: no-repeat; }
-    .bg-overlay { position: absolute; inset: 0; z-index: 2; background: rgba(0,0,0,0.55); pointer-events: none; }
+    .bg-overlay { position: absolute; inset: 0; z-index: 2; background: transparent; pointer-events: none; }
     .app-shell { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; flex-direction: column; overflow: hidden; }
-    .app-header { display: flex; align-items: center; gap: 14px; padding: 14px 22px; flex-shrink: 0; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02); backdrop-filter: blur(20px); }
+    .app-header { display: flex; align-items: center; gap: 14px; padding: 14px 22px; flex-shrink: 0; border-bottom: 1px solid var(--border); background: rgba(255,255,255,0.02);  }
     .menu-btn { width: 40px; height: 40px; border-radius: 11px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); backdrop-filter: blur(10px); color: rgba(255,255,255,.7); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .2s; }
     .menu-btn:hover { background: rgba(255,255,255,.12); color: #fff; }
     .brand { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; cursor: default; user-select: none; }
@@ -226,7 +226,7 @@ const GlobalStyles = () => (
     .icon-btn.premium::after { content: ""; position: absolute; inset: 0; border-radius: 11px; padding: 1px; background: linear-gradient(135deg, #ffd700, #ff8c00, #ffd700); -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0); -webkit-mask-composite: xor; mask-composite: exclude; animation: shimmer 2.5s linear infinite; background-size: 200% 200%; }
     @keyframes shimmer { 0%{background-position: 0% 50%} 50%{background-position: 100% 50%} 100%{background-position: 0% 50%} }
     .app-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
-    .chat-sidebar { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: rgba(0,0,0,0.55); backdrop-filter: blur(30px); display: flex; flex-direction: column; overflow: hidden; transition: width .3s ease, padding .3s ease; }
+    .chat-sidebar { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: transparent;  display: flex; flex-direction: column; overflow: hidden; transition: width .3s ease, padding .3s ease; }
     .chat-sidebar.collapsed { width: 0; padding: 0; border-right: none; overflow: hidden; }
     .sidebar-header { padding: 16px; border-bottom: 1px solid var(--border); }
     .sidebar-btn { width: 100%; height: 42px; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--primary), rgba(255,255,255,.25)); color: #000; cursor: pointer; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all .2s; }
@@ -307,7 +307,7 @@ const GlobalStyles = () => (
     .attachment-thumb { width:60px; height:60px; border-radius:7px; overflow:hidden; border:1px solid var(--border); position:relative; }
     .attachment-thumb img { width:100%; height:100%; object-fit:cover; }
     .attachment-remove { position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; border:none; background:rgba(0,0,0,.7); color:#fff; cursor:pointer; font-size:11px; display:flex; align-items: center; justify-content: center; }
-    .input-area { padding: 14px 18px; border-top: 1px solid var(--border); background: rgba(255,255,255,0.02); backdrop-filter: blur(20px); flex-shrink: 0; }
+    .input-area { padding: 14px 18px; border-top: 1px solid var(--border); background: rgba(255,255,255,0.02);  flex-shrink: 0; }
     .input-area-inner { max-width: 900px; margin: 0 auto; display: flex; gap: 8px; align-items: center; }
     .input-field { flex: 1; padding: 12px 18px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); backdrop-filter: blur(14px); color: #fff; font-size: 15px; outline: none; caret-color: var(--primary); min-width: 0; }
     .input-field:focus { border-color: var(--primary); background: rgba(0,0,0,0.45); box-shadow: 0 0 0 3px rgba(139,92,246,.08); }
@@ -619,7 +619,7 @@ const App = () => {
       <div className="bg-overlay" style={overlayStyle} />
       {toast && <div className="toast"><Icon name="warning" size={16} color="#fca5a5" /> <span>{toast}</span></div>}
       {showCamera && <div className="camera-overlay"><video ref={videoRef} autoPlay className="camera-video" /><canvas ref={canvasRef} style={{ display: "none" }} /><div className="camera-controls"><button onClick={capturePhoto} className="camera-btn primary">Capture</button><button onClick={stopCamera} className="camera-btn secondary">Cancel</button></div></div>}
-      <div className="app-shell" style={{ fontSize: `${fontSize}px` }}>
+      <div className="app-shell" style={{ background: "transparent", fontSize: `${fontSize}px` }}>
         <header className="app-header">
           <button className="menu-btn" onClick={toggleSidebar} title="Toggle chats (Ctrl+B)"><Icon name="menu" size={20} /></button>
           <div className="brand">

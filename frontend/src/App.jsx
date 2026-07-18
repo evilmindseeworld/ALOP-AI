@@ -1,5 +1,3 @@
-const App = () => {
-
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { ClerkProvider, SignIn, useUser, useAuth } from "@clerk/clerk-react";
 
@@ -222,3 +220,458 @@ const GlobalStyles = () => (
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   `}</style>
 );
+
+const InputBar = ({ text, setText, onSend, disabled, attachments, setAttachments, onFileSelect, onStartCamera, isListening, toggleListening, onGenerateImage }) => {
+  const fileInputRef = useRef(null);
+  const handleSubmit = () => { if ((!text.trim() && attachments.length === 0) || disabled) return; onSend(text); };
+  return (
+    <div className="input-area">
+      <div className="input-area-inner">
+        <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={onFileSelect} style={{ display: "none" }} />
+        <button onClick={() => fileInputRef.current?.click()} disabled={disabled} className="icon-btn desktop-only" title="Attach image"><Icon name="plus" size={18} /></button>
+        <button onClick={onStartCamera} disabled={disabled} className="icon-btn" title="Camera"><Icon name="camera" size={18} /></button>
+        <button onClick={toggleListening} disabled={disabled} className={`icon-btn ${isListening ? "active" : ""}`} title={isListening ? "Stop voice" : "Voice input"}><Icon name={isListening ? "mic-off" : "mic"} size={18} /></button>
+        <button onClick={onGenerateImage} disabled={disabled} className="icon-btn" title="Generate image"><Icon name="image" size={18} /></button>
+        <input className="input-field" value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }} placeholder={disabled ? "AI is thinking..." : "Ask anything, describe an image..."} disabled={disabled} />
+        <button className="send-btn" onClick={handleSubmit} disabled={(!text.trim() && attachments.length === 0) || disabled}><Icon name="send" size={18} /></button>
+      </div>
+    </div>
+  );
+};
+
+const MessageActions = ({ content, onCopy, onRegenerate }) => (
+  <div className="msg-actions">
+    <button onClick={onCopy} className="msg-action-btn">Copy</button>
+    {onRegenerate && <button onClick={onRegenerate} className="msg-action-btn">Regenerate</button>}
+  </div>
+);
+
+const ChatSidebar = ({ chats, activeChatId, onSelect, onCreate, onDelete, onRename, onPin, onFavorite, collapsed, mobileOpen, setMobileOpen }) => {
+  const [editingId, setEditingId] = useState(null);
+  const [editTitle, setEditTitle] = useState("");
+  const isMobile = typeof window !== 'undefined' && window.innerWidth <= 900;
+
+  const renderItem = (chat) => {
+    const isActive = activeChatId === chat.id;
+    const isEditing = editingId === chat.id;
+    return (
+      <div key={chat.id} onClick={() => { onSelect(chat.id); if (isMobile) setMobileOpen(false); }} className={`sidebar-item ${isActive ? "active" : ""}`}>
+        <div className="sidebar-icon">{chat.messages?.length > 0 ? chat.messages[0].content.slice(0,1).toUpperCase() : "N"}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          {isEditing ? (
+            <input value={editTitle} onChange={e => setEditTitle(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { onRename(chat.id, editTitle); setEditingId(null); } if (e.key === "Escape") setEditingId(null); }} onBlur={() => setEditingId(null)} autoFocus onClick={e => e.stopPropagation()} className="custom-input" style={{ padding: "3px 6px", fontSize: 12 }} />
+          ) : (
+            <div className="sidebar-title">{chat.title}</div>
+          )}
+          <div className="sidebar-meta">{chat.messages?.length || 0} messages</div>
+        </div>
+        <div className="sidebar-actions">
+          <button onClick={e => { e.stopPropagation(); onFavorite(chat.id); }} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6, background: "transparent" }}><Icon name="star" size={12} /></button>
+          <button onClick={e => { e.stopPropagation(); onPin(chat.id); }} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6, background: "transparent" }}><Icon name="pin" size={12} /></button>
+          <button onClick={e => { e.stopPropagation(); setEditingId(chat.id); setEditTitle(chat.title); }} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6, background: "transparent" }}><Icon name="edit" size={12} /></button>
+          <button onClick={e => { e.stopPropagation(); onDelete(chat.id); }} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6, background: "transparent" }}><Icon name="trash" size={12} /></button>
+        </div>
+      </div>
+    );
+  };
+
+  const content = (
+    <div className={`chat-sidebar ${isMobile ? "mobile" : "desktop"} ${mobileOpen ? "open" : ""}`} onClick={e => e.stopPropagation()}>
+      <div className="sidebar-header">
+        <button onClick={onCreate} className="sidebar-btn"><Icon name="plus" size={16} /> New Chat</button>
+      </div>
+      <div className="sidebar-list">
+        {chats.filter(c => c.pinned).length > 0 && <div className="sidebar-section">Pinned</div>}
+        {chats.filter(c => c.pinned).map(renderItem)}
+        <div className="sidebar-section">Recent</div>
+        {chats.filter(c => !c.pinned).map(renderItem)}
+      </div>
+    </div>
+  );
+
+  if (isMobile) return <>{content}{mobileOpen && <div className="panel-overlay" onClick={() => setMobileOpen(false)} />}</>;
+  if (collapsed) return null;
+  return content;
+};
+
+const AuthenticatedApp = () => {
+  const { user, isLoaded } = useUser();
+  const { getToken } = useAuth();
+
+  const [themeKey, setThemeKey] = useState(() => Storage.get("pa-theme") || "midnight");
+  const [customBg, setCustomBg] = useState(() => Storage.get("pa-custom-bg") || "");
+  const [customPrimary, setCustomPrimary] = useState(() => Storage.get("pa-custom-primary") || "");
+  const [bgOpacity, setBgOpacity] = useState(() => parseFloat(Storage.get("pa-bg-opacity") || "1"));
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => Storage.get("pa-sidebar-collapsed") === null ? true : Storage.get("pa-sidebar-collapsed") === "true");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showMemory, setShowMemory] = useState(false);
+  const [toast, setToast] = useState(null);
+
+  const [chats, setChats] = useState([]);
+  const [activeChatId, setActiveChatId] = useState(null);
+  const [model, setModel] = useState(() => Storage.get("pa-model") || "glm-5.2");
+  const [temperature, setTemperature] = useState(() => parseFloat(Storage.get("pa-temperature") || "0.7"));
+  const [streamText, setStreamText] = useState("");
+  const [status, setStatus] = useState("idle");
+
+  const [attachments, setAttachments] = useState([]);
+  const [inputText, setInputText] = useState("");
+  const [showCamera, setShowCamera] = useState(false);
+  const cameraStreamRef = useRef(null), videoRef = useRef(null), canvasRef = useRef(null);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null), listenTimerRef = useRef(null);
+  const chatRef = useRef(null);
+  const abortRef = useRef(null);
+
+  useEffect(() => Storage.set("pa-theme", themeKey), [themeKey]);
+  useEffect(() => Storage.set("pa-custom-bg", customBg), [customBg]);
+  useEffect(() => Storage.set("pa-custom-primary", customPrimary), [customPrimary]);
+  useEffect(() => Storage.set("pa-bg-opacity", bgOpacity.toString()), [bgOpacity]);
+  useEffect(() => Storage.set("pa-sidebar-collapsed", sidebarCollapsed.toString()), [sidebarCollapsed]);
+  useEffect(() => Storage.set("pa-model", model), [model]);
+  useEffect(() => Storage.set("pa-temperature", temperature.toString()), [temperature]);
+
+  useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); }, [toast]);
+  useEffect(() => { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [chats, activeChatId, streamText]);
+
+  const api = async (path, options = {}) => {
+    const token = await getToken();
+    return fetch(`${API_BASE}${path}`, {
+      ...options,
+      headers: {
+        ...options.headers,
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
+    });
+  };
+
+  const loadChats = useCallback(async () => {
+    try {
+      const r = await api('/api/chats');
+      const data = await r.json();
+      if (Array.isArray(data)) {
+        setChats(data);
+        if (!activeChatId && data.length) setActiveChatId(data[0].id);
+      }
+    } catch (err) { console.error('Load chats failed', err); }
+  }, [activeChatId]);
+
+  useEffect(() => { if (isLoaded && user) loadChats(); }, [isLoaded, user, loadChats]);
+
+  const activeChat = useMemo(() => chats.find(c => c.id === activeChatId), [chats, activeChatId]);
+  const activeMessages = activeChat?.messages || [];
+
+  const createChat = async () => {
+    try {
+      const r = await api('/api/chats', { method: 'POST', body: JSON.stringify({ title: 'New Chat' }) });
+      const data = await r.json();
+      setChats(prev => [data, ...prev]);
+      setActiveChatId(data.id);
+      setInputText(""); setAttachments([]);
+    } catch (err) { setToast('Failed to create chat'); }
+  };
+
+  const updateChatMessages = async (chatId, messages) => {
+    setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages, updated_at: new Date().toISOString() } : c));
+    try {
+      await api(`/api/chats/${chatId}`, { method: 'PUT', body: JSON.stringify({ messages }) });
+    } catch (err) { console.error('Save chat failed', err); }
+  };
+
+  const deleteChat = async (id) => {
+    try {
+      await api(`/api/chats/${id}`, { method: 'DELETE' });
+      setChats(prev => prev.filter(c => c.id !== id));
+      if (activeChatId === id) setActiveChatId(null);
+    } catch (err) { setToast('Failed to delete chat'); }
+  };
+
+  const renameChat = async (id, title) => {
+    setChats(prev => prev.map(c => c.id === id ? { ...c, title } : c));
+  };
+
+  const togglePinChat = (id) => setChats(prev => prev.map(c => c.id === id ? { ...c, pinned: !c.pinned } : c));
+  const toggleFavoriteChat = (id) => setChats(prev => prev.map(c => c.id === id ? { ...c, favorite: !c.favorite } : c));
+
+  const sortedChats = useMemo(() => [...chats].sort((a,b) => {
+    if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+    if (a.favorite !== b.favorite) return a.favorite ? -1 : 1;
+    return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at);
+  }), [chats]);
+
+  const handleFileSelect = (e) => { const files = Array.from(e.target.files).filter(f => f.type.startsWith("image/")); if (!files.length) { setToast("Only image files supported"); return; } setAttachments(prev => [...prev, ...files]); e.target.value = ""; };
+
+  const startCamera = async () => { try { const s = await navigator.mediaDevices.getUserMedia({ video: true }); cameraStreamRef.current = s; setShowCamera(true); setTimeout(() => { if (videoRef.current) videoRef.current.srcObject = s; }, 100); } catch { setToast("Camera access denied"); } };
+  const stopCamera = () => { if (cameraStreamRef.current) { cameraStreamRef.current.getTracks().forEach(t => t.stop()); cameraStreamRef.current = null; } setShowCamera(false); };
+  const capturePhoto = () => { if (!videoRef.current || !canvasRef.current) return; const v = videoRef.current, c = canvasRef.current; c.width = v.videoWidth; c.height = v.videoHeight; c.getContext("2d").drawImage(v, 0, 0); c.toBlob(b => { setAttachments(prev => [...prev, new File([b], `camera-${Date.now()}.png`, { type: "image/png" })]); stopCamera(); }, "image/png"); };
+
+  const stopListening = useCallback(() => { if (listenTimerRef.current) clearTimeout(listenTimerRef.current); if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; } setIsListening(false); }, []);
+  const startListening = useCallback(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) { setToast("Voice input needs Chrome/Edge/Safari"); return; }
+    if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; }
+    try {
+      const r = new SpeechRecognition();
+      r.continuous = false; r.interimResults = false; r.lang = "en-US"; r.maxAlternatives = 1;
+      r.onstart = () => { setIsListening(true); listenTimerRef.current = setTimeout(() => { try { r.stop(); } catch {} }, 10000); };
+      r.onend = () => { setIsListening(false); if (listenTimerRef.current) clearTimeout(listenTimerRef.current); recognitionRef.current = null; };
+      r.onresult = (e) => { let t = ""; for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript; if (t.trim()) setInputText(p => p + t + " "); };
+      r.onerror = (e) => { if (e.error === "not-allowed") setToast("Microphone permission denied"); else if (e.error === "no-speech") setToast("No speech detected"); else if (e.error !== "aborted") setToast("Voice error: " + e.error); setIsListening(false); if (listenTimerRef.current) clearTimeout(listenTimerRef.current); recognitionRef.current = null; };
+      r.start(); recognitionRef.current = r;
+    } catch { setToast("Could not start voice input"); setIsListening(false); }
+  }, []);
+  const toggleListening = useCallback(() => { if (isListening) stopListening(); else startListening(); }, [isListening, stopListening, startListening]);
+
+  const generateImage = useCallback(async (promptText) => {
+    const imagePrompt = parseImagePrompt(promptText) || promptText;
+    if (!imagePrompt) { setToast("Describe what image to generate"); return; }
+    let chatId = activeChatId;
+    if (!chatId) { await createChat(); chatId = activeChatId; }
+    if (!chatId) return;
+    const userMsg = { role: "user", content: `Generate image: ${imagePrompt}`, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() };
+    const withUser = [...(activeMessages || []), userMsg];
+    await updateChatMessages(chatId, withUser);
+    await new Promise(r => setTimeout(r, 300));
+    await updateChatMessages(chatId, [...withUser, { role: "assistant", content: "", imageUrl: buildImageUrl(imagePrompt), imagePrompt, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() }]);
+    setInputText(""); setAttachments([]);
+  }, [activeChatId, activeMessages]);
+
+  const handleSend = useCallback(async (text) => {
+    let chatId = activeChatId;
+    if (!chatId) { await createChat(); chatId = activeChatId; }
+    if (!chatId) return;
+    const cleanText = text.trim();
+    if (isImageRequest(cleanText)) { generateImage(cleanText); return; }
+    if (!VISION_MODELS.includes(model) && attachments.length > 0) { setToast(`${getModelDisplayName(model)} cannot see images`); return; }
+    if ((!cleanText && !attachments.length) || status !== "idle") return;
+
+    setStatus("loading"); setStreamText("");
+    const userMsg = { role: "user", content: cleanText || "", attachments: attachments.map(f => ({ name: f.name, url: URL.createObjectURL(f), type: f.type })), ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() };
+    const updated = [...activeMessages, userMsg];
+    await updateChatMessages(chatId, updated);
+
+    if (abortRef.current) abortRef.current.abort();
+    abortRef.current = new AbortController();
+
+    try {
+      const token = await getToken();
+      const formData = new FormData();
+      formData.append("message", cleanText || "");
+      formData.append("modelType", model);
+      formData.append("temperature", temperature.toString());
+      formData.append("messages", JSON.stringify(activeMessages.slice(-10).map(m => ({ role: m.role, content: m.content }))));
+      attachments.forEach(f => formData.append("files", f));
+
+      const res = await fetch(`${API_BASE}/chat`, {
+        method: "POST",
+        body: formData,
+        signal: abortRef.current.signal,
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || `Server error: ${res.status}`); }
+      if (!res.body) throw new Error("Streaming not supported");
+
+      setStatus("streaming");
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let acc = "", buf = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split("\n"); buf = lines.pop() || "";
+        for (const line of lines) {
+          const t = line.trim();
+          if (!t.startsWith("data: ")) continue;
+          const j = t.slice(6).trim();
+          if (j === "[DONE]") break;
+          try {
+            const d = JSON.parse(j);
+            if (d.type === "chunk") acc += d.text;
+            else if (d.type === "error") throw new Error(d.text);
+          } catch {}
+        }
+        setStreamText(acc);
+      }
+      await updateChatMessages(chatId, [...updated, { role: "assistant", content: acc, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() }]);
+      setStreamText(""); setStatus("idle");
+    } catch (err) {
+      if (err.name === "AbortError") return;
+      setStatus("error");
+      await updateChatMessages(chatId, [...updated, { role: "assistant", content: `⚠️ ${err.message || 'Connection failed'}`, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() }]);
+    }
+    setAttachments([]); setInputText("");
+  }, [activeChatId, activeMessages, model, temperature, status, attachments, generateImage]);
+
+  const theme = themeKey === "ocean" ? { primary: "#38bdf8", bg: "radial-gradient(circle at 70% 30%, #0a1f3d 0%, #051020 50%, #02050c 100%)", border: "rgba(56, 189, 248, 0.2)" }
+    : themeKey === "emerald" ? { primary: "#34d399", bg: "radial-gradient(circle at 20% 80%, #0a2a1f 0%, #05120d 50%, #020604 100%)", border: "rgba(52, 211, 153, 0.2)" }
+    : themeKey === "crimson" ? { primary: "#fb7185", bg: "radial-gradient(circle at 80% 20%, #2a0a12 0%, #120408 50%, #050203 100%)", border: "rgba(251, 113, 133, 0.2)" }
+    : themeKey === "gold" ? { primary: "#fbbf24", bg: "radial-gradient(circle at 50% 50%, #1f1508 0%, #0f0b05 50%, #050402 100%)", border: "rgba(251, 191, 36, 0.2)" }
+    : { primary: "#8b5cf6", bg: "linear-gradient(135deg, #050507, #0b0b12, #12121f)", border: "rgba(139, 92, 246, 0.2)" };
+
+  const primary = customPrimary || theme.primary;
+  const border = accentColor || theme.border;
+  const bgLayerStyle = customBg ? { backgroundImage: `url(${customBg})` } : { backgroundImage: theme.bg };
+  const overlayStyle = { backgroundColor: `rgba(0,0,0,${1 - bgOpacity})` };
+
+  if (!isLoaded) return null;
+
+  return (
+    <div className="app-root" style={{ "--primary": primary, "--border": border }}>
+      <GlobalStyles />
+      <div className="bg-layer" style={bgLayerStyle} />
+      <div className="bg-overlay" style={overlayStyle} />
+      {toast && <div className="toast">{toast}</div>}
+      {showCamera && <div className="camera-overlay">
+        <video ref={videoRef} autoPlay className="camera-video" />
+        <canvas ref={canvasRef} style={{ display: "none" }} />
+        <div className="camera-controls">
+          <button onClick={capturePhoto} className="camera-btn primary">Capture</button>
+          <button onClick={stopCamera} className="camera-btn secondary">Cancel</button>
+        </div>
+      </div>}
+      <div className="app-shell">
+        <header className="app-header">
+          <button className="icon-btn mobile-only" onClick={() => setMobileSidebarOpen(true)} title="Chats"><Icon name="menu" size={20} /></button>
+          <button className="icon-btn desktop-only" onClick={() => setSidebarCollapsed(c => !c)} title="Chats"><Icon name="menu" size={20} /></button>
+          <div className="brand">
+            <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
+            <span className="sub-title">{getModelDisplayName(model)}</span>
+          </div>
+          <div className="header-actions">
+            <button className="icon-btn" onClick={() => { setShowMemory(s => !s); setShowSettings(false); }} title="Memory"><Icon name="brain" size={20} /></button>
+            <button className="icon-btn" onClick={() => { setShowSettings(s => !s); setShowMemory(false); }} title="Settings"><Icon name="settings" size={20} /></button>
+          </div>
+        </header>
+        <div className="app-body">
+          <ChatSidebar chats={sortedChats} activeChatId={activeChatId} onSelect={setActiveChatId} onCreate={createChat} onDelete={deleteChat} onRename={renameChat} onPin={togglePinChat} onFavorite={toggleFavoriteChat} collapsed={sidebarCollapsed} mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />
+          <div className="chat-main">
+            {showMemory && <>
+              <div className="panel-overlay" onClick={() => setShowMemory(false)} />
+              <div className="side-panel">
+                <div className="panel-header">
+                  <div className="panel-title">Memory</div>
+                  <button onClick={() => setShowMemory(false)} className="icon-btn"><Icon name="close" size={18} /></button>
+                </div>
+                <div className="memory-card">
+                  <div className="memory-card-title">AI Instructions</div>
+                  <textarea className="custom-input textarea" placeholder="Tell the AI how to behave..." />
+                </div>
+              </div>
+            </>}
+            {showSettings && <>
+              <div className="panel-overlay" onClick={() => setShowSettings(false)} />
+              <div className="side-panel">
+                <div className="panel-header">
+                  <div className="panel-title">Settings</div>
+                  <button onClick={() => setShowSettings(false)} className="icon-btn"><Icon name="close" size={18} /></button>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Theme</div>
+                  <div className="theme-grid">
+                    {["midnight","ocean","emerald","crimson","gold"].map(k => <button key={k} onClick={() => setThemeKey(k)} className={`theme-card ${themeKey === k ? "selected" : ""}`} style={{ textTransform: "capitalize" }}>{k}</button>)}
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Background</div>
+                  <input className="custom-input" type="text" value={customBg} onChange={e => setCustomBg(e.target.value)} placeholder="Image URL" />
+                  <div className="theme-grid">
+                    {Object.entries(BACKGROUND_PRESETS).map(([k, url]) => <button key={k} onClick={() => setCustomBg(url)} className="theme-card" style={{ textTransform: "capitalize" }}>{k}</button>)}
+                    <button onClick={() => setCustomBg("")} className="theme-card">Reset</button>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Background Intensity: {Math.round(bgOpacity * 100)}%</div>
+                  <div className="slider-container">
+                    <span>Dim</span>
+                    <input type="range" min="0" max="1" step="0.05" value={bgOpacity} onChange={e => setBgOpacity(parseFloat(e.target.value))} className="slider" />
+                    <span>Bright</span>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Button Color</div>
+                  <input type="color" value={customPrimary || primary} onChange={e => setCustomPrimary(e.target.value)} style={{ width: 50, height: 36, borderRadius: 8, border: "none", cursor: "pointer" }} />
+                  {customPrimary && <button onClick={() => setCustomPrimary("")} className="theme-card">Reset</button>}
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">AI Model</div>
+                  <select value={model} onChange={e => setModel(e.target.value)} className="model-select">
+                    <optgroup label="Fast Models">{MODELS.fast.map(m => <option key={m.key} value={m.key}>{m.name}</option>)}</optgroup>
+                    <optgroup label="Reasoning Models">{MODELS.reasoning.map(m => <option key={m.key} value={m.key}>{m.name}</option>)}</optgroup>
+                  </select>
+                </div>
+                <div className="setting-row">
+                  <div className="setting-label">Creativity: {temperature.toFixed(1)}</div>
+                  <div className="slider-container">
+                    <span>Precise</span>
+                    <input type="range" min="0" max="1" step="0.1" value={temperature} onChange={e => setTemperature(parseFloat(e.target.value))} className="slider" />
+                    <span>Creative</span>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <button onClick={() => activeChatId && deleteChat(activeChatId)} className="theme-card">Delete Chat</button>
+                </div>
+              </div>
+            </>}
+            <div className="chat-content">
+              <div className="scroll-wrapper" ref={chatRef}>
+                {activeMessages.length === 0 && !streamText && <div className="empty-state">
+                  <h2 className="empty-title">ALOP-AI</h2>
+                  <p className="empty-subtitle">Ask anything, upload photos, take a picture, use your voice, or tap the image button.</p>
+                </div>}
+                {activeMessages.map((msg, idx) => <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
+                  <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    {msg.content && <div className="bubble">{msg.content}</div>}
+                    {msg.imageUrl && <div style={{ marginTop: 8 }}>
+                      <img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: 12, cursor: "pointer" }} onClick={() => window.open(msg.imageUrl, "_blank")} />
+                      <div className="msg-meta" style={{ textAlign: "left" }}>{msg.imagePrompt}</div>
+                    </div>}
+                    {msg.attachments?.length > 0 && <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>{msg.attachments.map((a, i) => <img key={i} src={a.url} alt={a.name} style={{ width: 60, height: 60, borderRadius: 8, objectFit: "cover" }} />)}</div>}
+                    {msg.role === "assistant" && !msg.imageUrl && <MessageActions content={msg.content} onCopy={() => navigator.clipboard.writeText(msg.content)} onRegenerate={idx === activeMessages.length - 1 ? () => {} : null} />}
+                    <div className="msg-meta">{msg.ts}</div>
+                  </div>
+                </div>)}
+                {streamText && <div className="msg-row assistant">
+                  <div className="avatar">AI</div>
+                  <div style={{ flex: 1, minWidth: 0 }}><div className="bubble">{streamText}</div></div>
+                </div>}
+              </div>
+              <InputBar text={inputText} setText={setInputText} onSend={handleSend} disabled={status !== "idle"} attachments={attachments} setAttachments={setAttachments} onFileSelect={handleFileSelect} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} onGenerateImage={() => { if (inputText.trim()) generateImage(inputText); else setToast("Type what image to generate"); }} />
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const App = () => {
+  const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  return (
+    <ClerkProvider publishableKey={clerkKey}>
+      <div style={{ width: "100vw", height: "100vh", height: "100dvh" }}>
+        <AuthenticatedAppWrapper />
+      </div>
+    </ClerkProvider>
+  );
+};
+
+const AuthenticatedAppWrapper = () => {
+  const { isSignedIn, isLoaded } = useUser();
+  if (!isLoaded) return null;
+  if (!isSignedIn) {
+    return (
+      <div className="sign-in-overlay">
+        <SignIn />
+      </div>
+    );
+  }
+  return <AuthenticatedApp />;
+};
+
+export default App;
+

@@ -921,7 +921,7 @@ const App = () => {
                 <div className="logo-big">AI</div>
                 <div>
                   <h2 className="empty-title">Cloud AI Assistant</h2>
-                  <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message.<br/>Try <strong style={{ color: `"var(--primary)`" }}>/image</strong> to generate professional images.</p>
+                  <p className="empty-subtitle">Upload images, paste screenshots, use your voice, or type a message.<br/>Try <strong style={{ color: "var(--primary)" }}>/image</strong> to generate professional images.</p>
                 </div>
               </div>}
               {filteredMessages.map((msg, idx) => <div key={msg.id || idx} className={`msg-row ${msg.role}`}>

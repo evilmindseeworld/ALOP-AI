@@ -8,19 +8,33 @@ const Storage = {
   set: (k, v) => { try { localStorage.setItem(k, v); } catch {} }
 };
 
+const MODELS = {
+  fast: [
+    { key: "glm-5.2", name: "GLM 5.2" },
+    { key: "glm-5.1", name: "GLM 5.1" },
+    { key: "deepseek-v4-flash", name: "DeepSeek Flash" }
+  ],
+  reasoning: [
+    { key: "gemma4:31b", name: "Gemma 4" },
+    { key: "qwen3.5:397b", name: "Qwen 3.5" },
+    { key: "minimax-m2.7", name: "MiniMax M2.7" },
+    { key: "minimax-m2.5", name: "MiniMax M2.5" },
+    { key: "minimax-m3", name: "MiniMax M3" },
+    { key: "nemotron-3-super", name: "Nemotron Super" },
+    { key: "nemotron-3-ultra", name: "Nemotron Ultra" },
+    { key: "nemotron-3-nano:30b", name: "Nemotron Nano" },
+    { key: "kimi-k2.7-code", name: "Kimi K2.7" },
+    { key: "kimi-k2.6", name: "Kimi K2.6" },
+    { key: "kimi-k2.5", name: "Kimi K2.5" },
+    { key: "deepseek-v4-pro", name: "DeepSeek Pro" },
+    { key: "gpt-oss:20b", name: "GPT-OSS 20B" },
+    { key: "gpt-oss:120b", name: "GPT-OSS 120B" },
+    { key: "mistral-large-3:675b", name: "Mistral Large 3" }
+  ]
+};
+
 const getModelDisplayName = (k) => {
-  const names = {
-    'glm-5.2': 'GLM 5.2', 'glm-5.1': 'GLM 5.1', 'gemma4:31b': 'Gemma 4',
-    'qwen3.5:397b': 'Qwen 3.5', 'minimax-m2.7': 'MiniMax M2.7',
-    'minimax-m2.5': 'MiniMax M2.5', 'minimax-m3': 'MiniMax M3',
-    'nemotron-3-super': 'Nemotron Super', 'nemotron-3-ultra': 'Nemotron Ultra',
-    'nemotron-3-nano:30b': 'Nemotron Nano', 'kimi-k2.7-code': 'Kimi K2.7',
-    'kimi-k2.6': 'Kimi K2.6', 'kimi-k2.5': 'Kimi K2.5',
-    'deepseek-v4-flash': 'DeepSeek Flash', 'deepseek-v4-pro': 'DeepSeek Pro',
-    'gpt-oss:20b': 'GPT-OSS 20B', 'gpt-oss:120b': 'GPT-OSS 120B',
-    'mistral-large-3:675b': 'Mistral Large 3'
-  };
-  return names[k] || k;
+  return [...MODELS.fast, ...MODELS.reasoning].find(m => m.key === k)?.name || k;
 };
 
 const VISION_MODELS = ['gemma4:31b', 'kimi-k2.7-code', 'kimi-k2.6', 'kimi-k2.5', 'mistral-large-3:675b', 'deepseek-v4-pro'];
@@ -49,14 +63,11 @@ const Icon = ({ name, size = 18 }) => {
     copy: <g><rect x="9" y="9" width="13" height="13" rx="2" ry="2" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
     edit: <g><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /><path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
     trash: <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
-    check: <path d="M20 6L9 17l-5-5" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     warning: <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
-    pin: <g><path d="M12 2v8M5 12a7 7 0 0 1 14 0v0a7 7 0 0 1-7 7h0a7 7 0 0 1-7-7v0z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
     refresh: <g><path d="M23 4v6h-6M1 20v-6h6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /><path d="M20.49 9A9 9 0 1 0 5.64 15.36" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
     stop: <rect x="6" y="6" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="2" fill="none" />,
     download: <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     brain: <g><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-5 0v-1M12 4.5A2.5 2.5 0 0 1 14.5 2a2.5 2.5 0 0 1 2.5 2.5v1M12 19.5a2.5 2.5 0 0 0 2.5 2.5 2.5 2.5 0 0 0 2.5-2.5v-1" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
-    star: <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     volume: <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     volumeX: <path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
   };
@@ -68,10 +79,7 @@ const buildImageUrl = (prompt) => {
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(enhanced)}?width=1024&height=1024&nologo=true&model=flux&seed=${Math.floor(Math.random()*1e7)}&enhance=true`;
 };
 
-const isImageRequest = (text) => {
-  const t = text.trim().toLowerCase();
-  return t.startsWith("/image") || /\b(generate|create|make|draw|produce)\s+(an?\s+)?(image|picture|photo)\b/.test(t);
-};
+const isImageRequest = (text) => text.trim().toLowerCase().startsWith("/image") || /\b(generate|create|make|draw|produce)\s+(an?\s+)?(image|picture|photo)\b/.test(text);
 
 const parseImagePrompt = (text) => text.replace(/^\/image\s*/i, "").replace(/\b(can\s+you\s+)?(please\s+)?(generate|create|make|draw|produce)\s+(an?\s+)?(image|picture|photo)\s*(of\s*|for\s*|with\s*|showing\s*)?/i, "").trim();
 
@@ -117,10 +125,9 @@ const useChatManager = () => {
 
 const useChatSession = (chatId, messages, updateMessages) => {
   const [model, setModel] = useState(() => Storage.get("pa-model") || "glm-5.2");
-  const [temperature, setTemperature] = useState(() => parseFloat(Storage.get("pa-temperature")) || 0.7);
+  const [temperature, setTemperature] = useState(() => parseFloat(Storage.get("pa-temperature") || "0.7"));
   const [streamText, setStreamText] = useState("");
   const [status, setStatus] = useState("idle");
-  const [stats, setStats] = useState(null);
   const abortRef = useRef(null);
 
   useEffect(() => Storage.set("pa-model", model), [model]);
@@ -132,7 +139,6 @@ const useChatSession = (chatId, messages, updateMessages) => {
     const userMsg = { role: "user", content: text || "", attachments: attachments.map(f => ({ name: f.name, url: URL.createObjectURL(f), type: f.type })), ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() };
     const updated = [...messages.slice(-99), userMsg];
     updateMessages(chatId, updated);
-
     abortRef.current = new AbortController();
 
     try {
@@ -150,28 +156,20 @@ const useChatSession = (chatId, messages, updateMessages) => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           signal: abortRef.current.signal,
-          body: JSON.stringify({
-            message: text,
-            messages: messages.slice(-10).map(m => ({ role: m.role, content: m.content })),
-            modelType: model,
-            temperature
-          })
+          body: JSON.stringify({ message: text, messages: messages.slice(-10).map(m => ({ role: m.role, content: m.content })), modelType: model, temperature })
         });
       }
       if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || `Server error: ${res.status}`); }
       if (!res.body) throw new Error("Streaming not supported");
-
       setStatus("streaming");
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let acc = "", buf = "";
-
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
         buf += decoder.decode(value, { stream: true });
-        const lines = buf.split("\n");
-        buf = lines.pop() || "";
+        const lines = buf.split("\n"); buf = lines.pop() || "";
         for (const line of lines) {
           const t = line.trim();
           if (!t.startsWith("data: ")) continue;
@@ -180,7 +178,6 @@ const useChatSession = (chatId, messages, updateMessages) => {
           try {
             const d = JSON.parse(j);
             if (d.type === "chunk") acc += d.text;
-            else if (d.type === "end") { if (d.stats) setStats(d.stats); }
             else if (d.type === "error") throw new Error(d.text);
           } catch {}
         }
@@ -195,7 +192,7 @@ const useChatSession = (chatId, messages, updateMessages) => {
     }
   }, [chatId, messages, model, temperature, status, updateMessages]);
 
-  return { streamText, status, stats, model, setModel, temperature, setTemperature, sendMessage };
+  return { streamText, status, model, setModel, temperature, setTemperature, sendMessage };
 };
 
 const GlobalStyles = () => (
@@ -223,12 +220,14 @@ const GlobalStyles = () => (
     .sidebar-btn { width: 100%; height: 40px; border-radius: 10px; border: none; background: var(--primary); color: #000; cursor: pointer; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .sidebar-list { flex: 1; overflow-y: auto; padding: 10px; display: flex; flex-direction: column; gap: 6px; }
     .sidebar-section { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.3); text-transform: uppercase; letter-spacing: 1px; margin: 8px 4px 4px 4px; }
-    .sidebar-item { padding: 10px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; border: 1px solid transparent; }
+    .sidebar-item { padding: 10px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; border: 1px solid transparent; position: relative; }
     .sidebar-item:hover { background: rgba(255,255,255,.05); border-color: var(--border); }
     .sidebar-item.active { background: rgba(255,255,255,.08); border-color: var(--primary); }
     .sidebar-icon { width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,.06); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: rgba(255,255,255,.4); flex-shrink: 0; }
     .sidebar-title { flex: 1; font-size: 13px; color: rgba(255,255,255,.85); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .sidebar-meta { font-size: 10px; color: rgba(255,255,255,.35); }
+    .sidebar-actions { display: flex; gap: 2px; opacity: 0; transition: opacity .2s; position: absolute; right: 8px; }
+    .sidebar-item:hover .sidebar-actions { opacity: 1; }
     .chat-main { flex: 1; display: flex; flex-direction: column; min-width: 0; }
     .chat-content { flex: 1; display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
     .scroll-wrapper { flex: 1; overflow-y: auto; padding: 18px 18px 90px 18px; display: flex; flex-direction: column; gap: 12px; }
@@ -269,28 +268,40 @@ const GlobalStyles = () => (
     .theme-card { padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,.04); color: rgba(255,255,255,.75); cursor: pointer; font-size: 12px; transition: all .15s; }
     .theme-card:hover { background: rgba(255,255,255,.08); }
     .theme-card.selected { border-color: var(--primary); background: rgba(255,255,255,.1); color: #fff; }
-    .model-select { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,.04); color: #fff; font-size: 13px; outline: none; cursor: pointer; }
+    .model-select-wrapper { position: relative; width: 100%; }
+    .model-select { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,.04); color: #fff; font-size: 13px; outline: none; cursor: pointer; appearance: none; -webkit-appearance: none; }
+    .model-select option, .model-select optgroup { background: #1a1a1f; color: #fff; }
+    .model-select:focus { border-color: var(--primary); }
     .slider { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,.08); outline: none; -webkit-appearance: none; }
     .slider::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--primary); cursor: pointer; }
     .slider-container { display: flex; align-items: center; gap: 8px; font-size: 11px; color: rgba(255,255,255,.4); }
     .toast { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.95); color: #fff; padding: 12px 20px; border-radius: 10px; z-index: 9999; font-size: 13px; border-left: 3px solid var(--primary); }
+    .camera-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,.95); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+    .camera-video { max-width: 90vw; max-height: 70vh; border-radius: 14px; border: 2px solid rgba(255,255,255,0.1); }
+    .camera-controls { display: flex; gap: 16px; }
+    .camera-btn { padding: 12px 28px; border-radius: 30px; border: none; font-weight: 700; font-size: 14px; cursor: pointer; }
+    .camera-btn.primary { background: var(--primary); color: #000; }
+    .camera-btn.secondary { background: rgba(255,255,255,.08); color: #fff; border: 1px solid rgba(255,255,255,0.1); }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
     @media (max-width: 640px) {
       .chat-sidebar { position: fixed; left: 0; top: 0; bottom: 0; z-index: 100; transform: translateX(-100%); }
       .chat-sidebar.open { transform: translateX(0); }
       .side-panel { width: 100vw; max-width: 100vw; }
+      .sidebar-actions { opacity: 1; }
     }
   `}</style>
 );
 
-const InputBar = ({ text, setText, onSend, disabled, attachments, setAttachments, onFileSelect }) => {
+const InputBar = ({ text, setText, onSend, disabled, attachments, setAttachments, onFileSelect, onStartCamera, isListening, toggleListening }) => {
   const fileInputRef = useRef(null);
   const handleSubmit = () => { if ((!text.trim() && attachments.length === 0) || disabled) return; onSend(text); };
   return (
     <div className="input-area">
       <div className="input-area-inner">
         <input ref={fileInputRef} type="file" accept="image/*" multiple onChange={onFileSelect} style={{ display: "none" }} />
-        <button onClick={() => fileInputRef.current?.click()} disabled={disabled} className="icon-btn" title="Attach"><Icon name="plus" size={18} /></button>
+        <button onClick={() => fileInputRef.current?.click()} disabled={disabled} className="icon-btn" title="Attach image"><Icon name="plus" size={18} /></button>
+        <button onClick={onStartCamera} disabled={disabled} className="icon-btn" title="Camera"><Icon name="camera" size={18} /></button>
+        <button onClick={toggleListening} disabled={disabled} className={`icon-btn ${isListening ? "active" : ""}`} title={isListening ? "Stop voice" : "Voice input"}><Icon name={isListening ? "mic-off" : "mic"} size={18} /></button>
         <input className="input-field" value={text} onChange={e => setText(e.target.value)} onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSubmit(); } }} placeholder={disabled ? "AI is thinking..." : "Message... try /image to generate images"} disabled={disabled} />
         <button className="send-btn" onClick={handleSubmit} disabled={(!text.trim() && attachments.length === 0) || disabled}><Icon name="send" size={18} /></button>
       </div>
@@ -298,19 +309,20 @@ const InputBar = ({ text, setText, onSend, disabled, attachments, setAttachments
   );
 };
 
-const MessageActions = ({ content, onRegenerate }) => (
+const MessageActions = ({ content, onCopy, onRegenerate }) => (
   <div className="msg-actions">
-    <button onClick={() => navigator.clipboard.writeText(content)} className="msg-action-btn">Copy</button>
-    {onRegenerate && <button onClick={onRegenerate} className="msg-action-btn">Regen</button>}
+    <button onClick={onCopy} className="msg-action-btn">Copy</button>
+    {onRegenerate && <button onClick={onRegenerate} className="msg-action-btn">Regenerate</button>}
   </div>
 );
 
-const ChatSidebar = ({ chats, activeChatId, onSelect, onCreate, onDelete, onRename, collapsed }) => {
+const ChatSidebar = ({ chats, activeChatId, onSelect, onCreate, onDelete, onRename, onPin, onFavorite, collapsed, mobileOpen, setMobileOpen }) => {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState("");
-  if (collapsed) return null;
-  return (
-    <div className="chat-sidebar">
+  const isMobile = window.innerWidth <= 640;
+
+  const content = (
+    <div className={`chat-sidebar ${mobileOpen ? "open" : ""}`} onClick={e => e.stopPropagation()}>
       <div className="sidebar-header">
         <button onClick={onCreate} className="sidebar-btn"><Icon name="plus" size={16} /> New Chat</button>
       </div>
@@ -319,19 +331,21 @@ const ChatSidebar = ({ chats, activeChatId, onSelect, onCreate, onDelete, onRena
           const isActive = activeChatId === chat.id;
           const isEditing = editingId === chat.id;
           return (
-            <div key={chat.id} onClick={() => onSelect(chat.id)} className={`sidebar-item ${isActive ? "active" : ""}`}>
+            <div key={chat.id} onClick={() => { onSelect(chat.id); if (isMobile) setMobileOpen(false); }} className={`sidebar-item ${isActive ? "active" : ""}`}>
               <div className="sidebar-icon">{chat.messages.length > 0 ? chat.messages[0].content.slice(0,1).toUpperCase() : "N"}</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 {isEditing ? (
-                  <input value={editTitle} onChange={e => setEditTitle(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { onRename(chat.id, editTitle); setEditingId(null); } if (e.key === "Escape") setEditingId(null); }} onBlur={() => setEditingId(null)} autoFocus onClick={e => e.stopPropagation()} style={{ width: "100%", background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6, padding: "3px 6px", color: "#fff", fontSize: 12, outline: "none" }} />
+                  <input value={editTitle} onChange={e => setEditTitle(e.target.value)} onKeyDown={e => { if (e.key === "Enter") { onRename(chat.id, editTitle); setEditingId(null); } if (e.key === "Escape") setEditingId(null); }} onBlur={() => setEditingId(null)} autoFocus onClick={e => e.stopPropagation()} className="custom-input" style={{ padding: "3px 6px", fontSize: 12 }} />
                 ) : (
                   <div className="sidebar-title">{chat.title}</div>
                 )}
                 <div className="sidebar-meta">{chat.messages.length} messages</div>
               </div>
-              <div style={{ display: "flex", gap: 2 }} onClick={e => e.stopPropagation()}>
-                <button onClick={() => setEditingId(chat.id)} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6 }}><Icon name="edit" size={12} /></button>
-                <button onClick={() => onDelete(chat.id)} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6 }}><Icon name="trash" size={12} /></button>
+              <div className="sidebar-actions">
+                <button onClick={e => { e.stopPropagation(); onFavorite(chat.id); }} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6 }}><Icon name="star" size={12} /></button>
+                <button onClick={e => { e.stopPropagation(); onPin(chat.id); }} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6 }}><Icon name="pin" size={12} /></button>
+                <button onClick={e => { e.stopPropagation(); setEditingId(chat.id); setEditTitle(chat.title); }} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6 }}><Icon name="edit" size={12} /></button>
+                <button onClick={e => { e.stopPropagation(); onDelete(chat.id); }} className="icon-btn" style={{ width: 24, height: 24, borderRadius: 6 }}><Icon name="trash" size={12} /></button>
               </div>
             </div>
           );
@@ -339,6 +353,10 @@ const ChatSidebar = ({ chats, activeChatId, onSelect, onCreate, onDelete, onRena
       </div>
     </div>
   );
+
+  if (isMobile) return <>{content}{mobileOpen && <div className="panel-overlay" onClick={() => setMobileOpen(false)} />}</>;
+  if (collapsed) return null;
+  return content;
 };
 
 const App = () => {
@@ -347,12 +365,13 @@ const App = () => {
   const [customPrimary, setCustomPrimary] = useState(() => Storage.get("pa-custom-primary") || "");
   const [accentColor, setAccentColor] = useState(() => Storage.get("pa-accent-color") || "");
   const [bgOpacity, setBgOpacity] = useState(() => parseFloat(Storage.get("pa-bg-opacity") || "0.55"));
-  const [fontSize] = useState(() => parseFloat(Storage.get("pa-font-size") || "15"));
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => Storage.get("pa-sidebar-collapsed") === null ? true : Storage.get("pa-sidebar-collapsed") === "true");
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showMemory, setShowMemory] = useState(false);
   const [toast, setToast] = useState(null);
 
-  const { chats, sortedChats, activeChatId, setActiveChatId, createChat, deleteChat, renameChat, updateChatMessages } = useChatManager();
+  const { chats, sortedChats, activeChatId, setActiveChatId, createChat, deleteChat, renameChat, togglePinChat, toggleFavoriteChat, updateChatMessages } = useChatManager();
   const activeChat = useMemo(() => chats.find(c => c.id === activeChatId), [chats, activeChatId]);
   const activeMessages = activeChat?.messages || [];
 
@@ -360,6 +379,10 @@ const App = () => {
 
   const [attachments, setAttachments] = useState([]);
   const [inputText, setInputText] = useState("");
+  const [showCamera, setShowCamera] = useState(false);
+  const cameraStreamRef = useRef(null), videoRef = useRef(null), canvasRef = useRef(null);
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null), listenTimerRef = useRef(null);
 
   useEffect(() => Storage.set("pa-theme", themeKey), [themeKey]);
   useEffect(() => Storage.set("pa-custom-bg", customBg), [customBg]);
@@ -374,13 +397,34 @@ const App = () => {
     const handler = (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "n") { e.preventDefault(); createChat(); }
       if ((e.ctrlKey || e.metaKey) && e.key === "b") { e.preventDefault(); setSidebarCollapsed(c => !c); }
-      if (e.key === "Escape") { setShowSettings(false); }
+      if (e.key === "Escape") { setShowSettings(false); setShowMemory(false); setShowCamera(false); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [createChat]);
 
   const handleFileSelect = (e) => { const files = Array.from(e.target.files).filter(f => f.type.startsWith("image/")); if (!files.length) { setToast("Only image files supported"); return; } setAttachments(prev => [...prev, ...files]); e.target.value = ""; };
+
+  const startCamera = async () => { try { const s = await navigator.mediaDevices.getUserMedia({ video: true }); cameraStreamRef.current = s; setShowCamera(true); setTimeout(() => { if (videoRef.current) videoRef.current.srcObject = s; }, 100); } catch { setToast("Camera access denied"); } };
+  const stopCamera = () => { if (cameraStreamRef.current) { cameraStreamRef.current.getTracks().forEach(t => t.stop()); cameraStreamRef.current = null; } setShowCamera(false); };
+  const capturePhoto = () => { if (!videoRef.current || !canvasRef.current) return; const v = videoRef.current, c = canvasRef.current; c.width = v.videoWidth; c.height = v.videoHeight; c.getContext("2d").drawImage(v, 0, 0); c.toBlob(b => { setAttachments(prev => [...prev, new File([b], `camera-${Date.now()}.png`, { type: "image/png" })]); stopCamera(); }, "image/png"); };
+
+  const stopListening = useCallback(() => { if (listenTimerRef.current) clearTimeout(listenTimerRef.current); if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; } setIsListening(false); }, []);
+  const startListening = useCallback(() => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) { setToast("Voice input needs Chrome/Edge/Safari"); return; }
+    if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; }
+    try {
+      const r = new SpeechRecognition();
+      r.continuous = false; r.interimResults = false; r.lang = "en-US"; r.maxAlternatives = 1;
+      r.onstart = () => { setIsListening(true); listenTimerRef.current = setTimeout(() => { try { r.stop(); } catch {} }, 10000); };
+      r.onend = () => { setIsListening(false); if (listenTimerRef.current) clearTimeout(listenTimerRef.current); recognitionRef.current = null; };
+      r.onresult = (e) => { let t = ""; for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript; if (t.trim()) setInputText(p => p + t + " "); };
+      r.onerror = (e) => { if (e.error === "not-allowed") setToast("Microphone permission denied"); else if (e.error === "no-speech") setToast("No speech detected"); else if (e.error !== "aborted") setToast("Voice error: " + e.error); setIsListening(false); if (listenTimerRef.current) clearTimeout(listenTimerRef.current); recognitionRef.current = null; };
+      r.start(); recognitionRef.current = r;
+    } catch { setToast("Could not start voice input"); setIsListening(false); }
+  }, []);
+  const toggleListening = useCallback(() => { if (isListening) stopListening(); else startListening(); }, [isListening, stopListening, startListening]);
 
   const handleSend = useCallback(async (text) => {
     const cleanText = text.trim();
@@ -391,8 +435,7 @@ const App = () => {
       const withUser = [...activeMessages, userMsg];
       updateChatMessages(activeChatId, withUser);
       updateChatMessages(activeChatId, [...withUser, { role: "assistant", content: "", imageUrl: buildImageUrl(imagePrompt), imagePrompt, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: uid() }]);
-      setInputText(""); setAttachments([]);
-      return;
+      setInputText(""); setAttachments([]); return;
     }
     if (!VISION_MODELS.includes(model) && attachments.length > 0) { setToast(`${getModelDisplayName(model)} cannot see images`); return; }
     sendMessage(text, attachments); setInputText(""); setAttachments([]);
@@ -400,15 +443,15 @@ const App = () => {
 
   const handleCreateChat = () => { createChat(); setInputText(""); setAttachments([]); };
 
-  const theme = themeKey === "midnight" ? { primary: "#8b5cf6", bg: "linear-gradient(135deg, #050507, #0b0b12, #12121f)", borderColor: "rgba(139, 92, 246, 0.2)" }
-    : themeKey === "ocean" ? { primary: "#38bdf8", bg: "radial-gradient(circle at 70% 30%, #0a1f3d 0%, #051020 50%, #02050c 100%)", borderColor: "rgba(56, 189, 248, 0.2)" }
-    : themeKey === "emerald" ? { primary: "#34d399", bg: "radial-gradient(circle at 20% 80%, #0a2a1f 0%, #05120d 50%, #020604 100%)", borderColor: "rgba(52, 211, 153, 0.2)" }
-    : themeKey === "crimson" ? { primary: "#fb7185", bg: "radial-gradient(circle at 80% 20%, #2a0a12 0%, #120408 50%, #050203 100%)", borderColor: "rgba(251, 113, 133, 0.2)" }
-    : themeKey === "gold" ? { primary: "#fbbf24", bg: "radial-gradient(circle at 50% 50%, #1f1508 0%, #0f0b05 50%, #050402 100%)", borderColor: "rgba(251, 191, 36, 0.2)" }
-    : { primary: "#8b5cf6", bg: "linear-gradient(135deg, #050507, #0b0b12, #12121f)", borderColor: "rgba(139, 92, 246, 0.2)" };
+  const theme = themeKey === "ocean" ? { primary: "#38bdf8", bg: "radial-gradient(circle at 70% 30%, #0a1f3d 0%, #051020 50%, #02050c 100%)", border: "rgba(56, 189, 248, 0.2)" }
+    : themeKey === "emerald" ? { primary: "#34d399", bg: "radial-gradient(circle at 20% 80%, #0a2a1f 0%, #05120d 50%, #020604 100%)", border: "rgba(52, 211, 153, 0.2)" }
+    : themeKey === "crimson" ? { primary: "#fb7185", bg: "radial-gradient(circle at 80% 20%, #2a0a12 0%, #120408 50%, #050203 100%)", border: "rgba(251, 113, 133, 0.2)" }
+    : themeKey === "gold" ? { primary: "#fbbf24", bg: "radial-gradient(circle at 50% 50%, #1f1508 0%, #0f0b05 50%, #050402 100%)", border: "rgba(251, 191, 36, 0.2)" }
+    : themeKey === "midnight" ? { primary: "#8b5cf6", bg: "linear-gradient(135deg, #050507, #0b0b12, #12121f)", border: "rgba(139, 92, 246, 0.2)" }
+    : { primary: "#8b5cf6", bg: "linear-gradient(135deg, #050507, #0b0b12, #12121f)", border: "rgba(139, 92, 246, 0.2)" };
 
   const primary = customPrimary || theme.primary;
-  const border = accentColor || theme.borderColor;
+  const border = accentColor || theme.border;
   const bgLayerStyle = customBg ? { backgroundImage: `url(${customBg})` } : { backgroundImage: theme.bg };
   const overlayStyle = { backgroundColor: `rgba(0,0,0,${1 - bgOpacity})` };
 
@@ -418,20 +461,43 @@ const App = () => {
       <div className="bg-layer" style={bgLayerStyle} />
       <div className="bg-overlay" style={overlayStyle} />
       {toast && <div className="toast">{toast}</div>}
+      {showCamera && <div className="camera-overlay">
+        <video ref={videoRef} autoPlay className="camera-video" />
+        <canvas ref={canvasRef} style={{ display: "none" }} />
+        <div className="camera-controls">
+          <button onClick={capturePhoto} className="camera-btn primary">Capture</button>
+          <button onClick={stopCamera} className="camera-btn secondary">Cancel</button>
+        </div>
+      </div>}
       <div className="app-shell">
         <header className="app-header">
-          <button className="icon-btn" onClick={() => setSidebarCollapsed(c => !c)} title="Chats"><Icon name="menu" size={20} /></button>
+          <button className="icon-btn" onClick={() => setMobileSidebarOpen(true)} style={{ display: window.innerWidth <= 640 ? "flex" : "none" }} title="Chats"><Icon name="menu" size={20} /></button>
+          <button className="icon-btn" onClick={() => setSidebarCollapsed(c => !c)} style={{ display: window.innerWidth > 640 ? "flex" : "none" }} title="Chats"><Icon name="menu" size={20} /></button>
           <div className="brand">
             <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
             <span className="sub-title">{getModelDisplayName(model)}</span>
           </div>
           <div className="header-actions">
-            <button className="icon-btn" onClick={() => { setShowSettings(s => !s); }} title="Settings"><Icon name="settings" size={20} /></button>
+            <button className="icon-btn" onClick={() => { setShowMemory(s => !s); setShowSettings(false); }} title="Memory"><Icon name="brain" size={20} /></button>
+            <button className="icon-btn" onClick={() => { setShowSettings(s => !s); setShowMemory(false); }} title="Settings"><Icon name="settings" size={20} /></button>
           </div>
         </header>
         <div className="app-body">
-          <ChatSidebar chats={sortedChats} activeChatId={activeChatId} onSelect={setActiveChatId} onCreate={handleCreateChat} onDelete={deleteChat} onRename={renameChat} collapsed={sidebarCollapsed} />
+          <ChatSidebar chats={sortedChats} activeChatId={activeChatId} onSelect={setActiveChatId} onCreate={handleCreateChat} onDelete={deleteChat} onRename={renameChat} onPin={togglePinChat} onFavorite={toggleFavoriteChat} collapsed={sidebarCollapsed} mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />
           <div className="chat-main">
+            {showMemory && <>
+              <div className="panel-overlay" onClick={() => setShowMemory(false)} />
+              <div className="side-panel">
+                <div className="panel-header">
+                  <div className="panel-title">Memory</div>
+                  <button onClick={() => setShowMemory(false)} className="icon-btn"><Icon name="close" size={18} /></button>
+                </div>
+                <div className="memory-card">
+                  <div className="memory-card-title">AI Instructions</div>
+                  <textarea className="custom-input textarea" placeholder="Tell the AI how to behave..." />
+                </div>
+              </div>
+            </>}
             {showSettings && <>
               <div className="panel-overlay" onClick={() => setShowSettings(false)} />
               <div className="side-panel">
@@ -446,8 +512,8 @@ const App = () => {
                   </div>
                 </div>
                 <div className="setting-row">
-                  <div className="setting-label">Background Image</div>
-                  <input className="custom-input" type="text" value={customBg} onChange={e => setCustomBg(e.target.value)} placeholder="Paste image URL" />
+                  <div className="setting-label">Background</div>
+                  <input className="custom-input" type="text" value={customBg} onChange={e => setCustomBg(e.target.value)} placeholder="Image URL" />
                   <div className="theme-grid">
                     {Object.entries(BACKGROUND_PRESETS).map(([k, url]) => <button key={k} onClick={() => setCustomBg(url)} className="theme-card" style={{ textTransform: "capitalize" }}>{k}</button>)}
                     <button onClick={() => setCustomBg("")} className="theme-card">Reset</button>
@@ -463,14 +529,21 @@ const App = () => {
                 </div>
                 <div className="setting-row">
                   <div className="setting-label">Button Color</div>
-                  <input type="color" value={customPrimary || primary} onChange={e => setCustomPrimary(e.target.value)} style={{ width: 50, height: 36 }} />
+                  <input type="color" value={customPrimary || primary} onChange={e => setCustomPrimary(e.target.value)} style={{ width: 50, height: 36, borderRadius: 8, border: "none", cursor: "pointer" }} />
                   {customPrimary && <button onClick={() => setCustomPrimary("")} className="theme-card">Reset</button>}
                 </div>
                 <div className="setting-row">
                   <div className="setting-label">AI Model</div>
-                  <select value={model} onChange={e => setModel(e.target.value)} className="model-select">
-                    {["glm-5.2","gemma4:31b","qwen3.5:397b","kimi-k2.5","deepseek-v4-pro","gpt-oss:120b","mistral-large-3:675b"].map(m => <option key={m} value={m}>{getModelDisplayName(m)}</option>)}
-                  </select>
+                  <div className="model-select-wrapper">
+                    <select value={model} onChange={e => setModel(e.target.value)} className="model-select">
+                      <optgroup label="Fast Models">
+                        {MODELS.fast.map(m => <option key={m.key} value={m.key}>{m.name}</option>)}
+                      </optgroup>
+                      <optgroup label="Reasoning Models">
+                        {MODELS.reasoning.map(m => <option key={m.key} value={m.key}>{m.name}</option>)}
+                      </optgroup>
+                    </select>
+                  </div>
                 </div>
                 <div className="setting-row">
                   <div className="setting-label">Creativity: {temperature.toFixed(1)}</div>
@@ -486,10 +559,10 @@ const App = () => {
               </div>
             </>}
             <div className="chat-content">
-              <div className="scroll-wrapper" style={{ fontSize: `${fontSize}px` }}>
+              <div className="scroll-wrapper">
                 {activeMessages.length === 0 && !streamText && <div className="empty-state">
                   <h2 className="empty-title">ALOP-AI</h2>
-                  <p className="empty-subtitle">Upload images, paste screenshots, or type a message.<br />Try <strong>/image</strong> to generate images.</p>
+                  <p className="empty-subtitle">Upload images, take photos, use your voice, or type.<br />Try <strong>/image</strong> to generate images.</p>
                 </div>}
                 {activeMessages.map((msg, idx) => <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
                   <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
@@ -500,18 +573,16 @@ const App = () => {
                       <div className="msg-meta" style={{ textAlign: "left" }}>{msg.imagePrompt}</div>
                     </div>}
                     {msg.attachments?.length > 0 && <div style={{ display: "flex", gap: 6, marginTop: 6 }}>{msg.attachments.map((a, i) => <img key={i} src={a.url} alt={a.name} style={{ width: 60, height: 60, borderRadius: 8, objectFit: "cover" }} />)}</div>}
-                    {msg.role === "assistant" && !msg.imageUrl && <MessageActions content={msg.content} onRegenerate={idx === activeMessages.length - 1 ? () => {} : null} />}
+                    {msg.role === "assistant" && !msg.imageUrl && <MessageActions content={msg.content} onCopy={() => navigator.clipboard.writeText(msg.content)} onRegenerate={idx === activeMessages.length - 1 ? () => {} : null} />}
                     <div className="msg-meta">{msg.ts}</div>
                   </div>
                 </div>)}
                 {streamText && <div className="msg-row assistant">
                   <div className="avatar">AI</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="bubble">{streamText}</div>
-                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}><div className="bubble">{streamText}</div></div>
                 </div>}
               </div>
-              <InputBar text={inputText} setText={setInputText} onSend={handleSend} disabled={status !== "idle"} attachments={attachments} setAttachments={setAttachments} onFileSelect={handleFileSelect} />
+              <InputBar text={inputText} setText={setInputText} onSend={handleSend} disabled={status !== "idle"} attachments={attachments} setAttachments={setAttachments} onFileSelect={handleFileSelect} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} />
             </div>
           </div>
         </div>

@@ -8,7 +8,6 @@ const timeout = require('connect-timeout');
 const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
 const { ClerkExpressRequireAuth } = require('@clerk/clerk-sdk-node');
-const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 3000;

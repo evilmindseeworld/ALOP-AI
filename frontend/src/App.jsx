@@ -119,7 +119,7 @@ const GlobalStyles = () => (
     .admin-btn { background: rgba(251, 191, 36, 0.2); color: #fbbf24; border-color: rgba(251, 191, 36, 0.3); }
     .admin-btn:hover { background: rgba(251, 191, 36, 0.3); }
     .admin-title { font-size: 20px; font-weight: 800; margin-bottom: 20px; color: #fff; }
-    .admin-user-card { padding: 14px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 10px; }
+    .admin-user-card { padding: 14px; borderRadius: 12px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 10px; }
     .admin-user-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
     .admin-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
     .admin-user-name { font-weight: 700; color: #fff; }
@@ -177,7 +177,7 @@ const GlobalStyles = () => (
     .panel-title { font-size: 12px; font-weight: 800; color: rgba(255,255,255,.7); text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 8px; }
     .memory-card { padding: 14px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 12px; }
     .memory-card-title { font-size: 13px; font-weight: 700; color: rgba(255,255,255,.8); margin-bottom: 10px; }
-    .custom-input { width: 100%; padding: 10px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,.04); color: #fff; font-size: 13px; outline: none; }
+    .custom-input { width: 100%; padding: 10px 12px; borderRadius: 8px; border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,.04); color: #fff; font-size: 13px; outline: none; }
     .custom-input:focus { border-color: var(--primary); }
     .textarea { min-height: 80px; resize: vertical; font-family: inherit; line-height: 1.5; }
     .setting-row { margin-bottom: 14px; display: flex; flex-direction: column; gap: 8px; }

@@ -753,7 +753,7 @@ const AuthenticatedApp = () => {
 };
 
 const App = () => {
-  const clerkKey = "pk_test_cmVsYXhpbmctaW1wYWxhLTUuY2xlcmsuYWNjb3VudHMuZGV2JA";
+  const clerkKey = pk_test_cmVsYXhpbmctaW1wYWxhLTUuY2xlcmsuYWNjb3VudHMuZGV2JA;
   return (
     <ClerkProvider publishableKey={clerkKey}>
       <div style={{ width: "100vw", height: "100dvh" }}>

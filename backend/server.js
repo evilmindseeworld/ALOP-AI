@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit');
 const timeout = require('connect-timeout');
 const multer = require('multer');
 const { createClient } = require('@supabase/supabase-js');
-const { ClerkExpressRequireAuth } = require('@clerk/clerk-sdk-node');
+const { ClerkExpressRequireAuth, clerkClient } = require('@clerk/clerk-sdk-node');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,14 +18,21 @@ app.use(helmet({
   contentSecurityPolicy: false
 }));
 app.use(compression());
-app.use(cors({ origin: true, credentials: true }));
+
+const allowedOrigins = process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [];
+if (allowedOrigins.length === 0) {
+  console.warn('FRONTEND_URL not set, allowing all origins for CORS');
+}
+app.use(cors({ origin: allowedOrigins.length > 0 ? allowedOrigins : true, credentials: true }));
+
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(timeout('60s'));
 app.use(haltOnTimedout);
 
 function haltOnTimedout(req, res, next) {
-  if (!req.timedout) next();
+  if (req.timedout) return res.status(503).json({ error: 'Request timeout' });
+  next();
 }
 
 // ===== RATE LIMITING =====
@@ -39,11 +46,7 @@ const generalLimiter = rateLimit({
 const chatLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 30,
-  message: { error: 'Too many messages. Wait a minute.' },
-  skip: (req) => {
-    // Optional: skip rate limit for admins
-    return false;
-  }
+  message: { error: 'Too many messages. Wait a minute.' }
 });
 app.use('/api/', generalLimiter);
 app.use('/chat', chatLimiter);
@@ -65,41 +68,59 @@ const requireAuth = ClerkExpressRequireAuth({
 });
 
 // ===== HELPERS =====
-const ensureUser = async (clerkUser) => {
+const ensureUser = async (userId) => {
+  if (!userId) throw new Error('Missing userId');
+
+  let clerkUser;
+  try {
+    clerkUser = await clerkClient.users.getUser(userId);
+  } catch (err) {
+    throw new Error(`Failed to fetch Clerk user: ${err.message}`);
+  }
+
   const email = clerkUser?.emailAddresses?.[0]?.emailAddress || null;
   const name = clerkUser?.fullName || clerkUser?.username || (email ? email.split('@')[0] : 'User');
   const avatar = clerkUser?.imageUrl || null;
 
-  const { data: existing } = await supabase
+  const { data: existing, error: selectError } = await supabase
     .from('users')
     .select('*')
-    .eq('clerk_id', clerkUser.id)
+    .eq('clerk_id', userId)
     .single();
 
+  if (selectError && selectError.code !== 'PGRST116') throw selectError;
+
   if (existing) {
-    await supabase.from('users').update({
+    const { error: updateError } = await supabase.from('users').update({
       email, name, avatar_url: avatar, last_seen: new Date().toISOString()
-    }).eq('clerk_id', clerkUser.id);
+    }).eq('clerk_id', userId);
+    if (updateError) console.error('Update user failed:', updateError.message);
     return existing;
   }
 
-  const { data: created } = await supabase.from('users').insert({
-    clerk_id: clerkUser.id, email, name, avatar_url: avatar, plan: 'free'
+  const { data: created, error: insertError } = await supabase.from('users').insert({
+    clerk_id: userId, email, name, avatar_url: avatar, plan: 'free'
   }).select().single();
 
+  if (insertError) throw insertError;
+  if (!created) throw new Error('User insert returned no data');
   return created;
 };
 
 const checkSuspended = async (req, res, next) => {
   try {
-    const { data: user } = await supabase
+    if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
+    const { data: user, error } = await supabase
       .from('users')
       .select('suspended')
-      .eq('clerk_id', req.auth.user.id)
+      .eq('clerk_id', req.auth.userId)
       .single();
+    if (error) throw error;
     if (user?.suspended) return res.status(403).json({ error: 'Account suspended' });
     next();
-  } catch (err) { next(); }
+  } catch (err) {
+    return res.status(500).json({ error: 'Failed to verify account status' });
+  }
 };
 
 // ===== FILE UPLOAD =====
@@ -118,8 +139,9 @@ app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISO
 // ===== CHAT ENDPOINT =====
 app.post('/chat', requireAuth, checkSuspended, upload.array('files', 5), async (req, res) => {
   try {
-    const clerkUser = req.auth.user;
-    const user = await ensureUser(clerkUser);
+    if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
+
+    const user = await ensureUser(req.auth.userId);
     const userId = user.id;
 
     const message = req.body.message || '';
@@ -137,7 +159,6 @@ app.post('/chat', requireAuth, checkSuspended, upload.array('files', 5), async (
       });
     } catch (e) { console.error('Usage increment failed', e.message); }
 
-    // Build prompt
     const isImage = message.trim().toLowerCase().startsWith('/image') ||
       /\b(generate|create|make|draw)\s+(an?\s+)?image\b/i.test(message);
 
@@ -180,35 +201,40 @@ app.post('/chat', requireAuth, checkSuspended, upload.array('files', 5), async (
       throw new Error(`AI API error: ${response.status} ${text.slice(0, 200)}`);
     }
 
-    const reader = response.body;
-    reader.on('data', (chunk) => {
-      if (res.writableEnded) return;
-      const text = chunk.toString();
-      const lines = text.split('\n');
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith('data:')) continue;
-        const jsonStr = trimmed.slice(5).trim();
-        if (jsonStr === '[DONE]') {
-          res.write('data: [DONE]\n\n');
-          continue;
+    // Use Web Streams API for built-in fetch
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data:')) continue;
+          const jsonStr = trimmed.slice(5).trim();
+          if (jsonStr === '[DONE]') {
+            res.write('data: [DONE]\n\n');
+            continue;
+          }
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const delta = parsed.choices?.[0]?.delta?.content || '';
+            if (delta) res.write(`data: ${JSON.stringify({ type: 'chunk', text: delta })}\n\n`);
+          } catch {}
         }
-        try {
-          const parsed = JSON.parse(jsonStr);
-          const delta = parsed.choices?.[0]?.delta?.content || '';
-          if (delta) res.write(`data: ${JSON.stringify({ type: 'chunk', text: delta })}\n\n`);
-        } catch {}
       }
-    });
-
-    reader.on('end', () => {
       if (!res.writableEnded) res.end();
-    });
-
-    reader.on('error', (err) => {
-      console.error('Stream error:', err.message);
+    } catch (streamErr) {
+      console.error('Stream error:', streamErr.message);
       if (!res.writableEnded) res.end();
-    });
+    }
 
     req.on('close', () => {
       if (!res.writableEnded) res.end();
@@ -224,7 +250,8 @@ app.post('/chat', requireAuth, checkSuspended, upload.array('files', 5), async (
 // ===== CHAT MANAGEMENT =====
 app.get('/api/chats', requireAuth, async (req, res) => {
   try {
-    const user = await ensureUser(req.auth.user);
+    if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
+    const user = await ensureUser(req.auth.userId);
     const { data, error } = await supabase
       .from('chats')
       .select('*')
@@ -237,7 +264,8 @@ app.get('/api/chats', requireAuth, async (req, res) => {
 
 app.post('/api/chats', requireAuth, async (req, res) => {
   try {
-    const user = await ensureUser(req.auth.user);
+    if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
+    const user = await ensureUser(req.auth.userId);
     const { data, error } = await supabase
       .from('chats')
       .insert({ user_id: user.id, title: req.body.title || 'New Chat', messages: [] })
@@ -249,7 +277,8 @@ app.post('/api/chats', requireAuth, async (req, res) => {
 
 app.put('/api/chats/:id', requireAuth, async (req, res) => {
   try {
-    const user = await ensureUser(req.auth.user);
+    if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
+    const user = await ensureUser(req.auth.userId);
     const { error } = await supabase
       .from('chats')
       .update({ messages: req.body.messages, updated_at: new Date().toISOString() })
@@ -262,7 +291,8 @@ app.put('/api/chats/:id', requireAuth, async (req, res) => {
 
 app.delete('/api/chats/:id', requireAuth, async (req, res) => {
   try {
-    const user = await ensureUser(req.auth.user);
+    if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
+    const user = await ensureUser(req.auth.userId);
     const { error } = await supabase
       .from('chats')
       .delete()
@@ -274,17 +304,18 @@ app.delete('/api/chats/:id', requireAuth, async (req, res) => {
 });
 
 // ===== ADMIN ROUTES =====
-
 const requireAdmin = async (req, res, next) => {
   try {
-    const { data: user } = await supabase
+    if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
+    const { data: user, error } = await supabase
       .from('users')
       .select('is_admin')
-      .eq('clerk_id', req.auth.user.id)
+      .eq('clerk_id', req.auth.userId)
       .single();
+    if (error) throw error;
     if (!user?.is_admin) return res.status(403).json({ error: 'Admin only' });
     next();
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) { res.status(500).json({ error: 'Failed to verify admin status' }); }
 };
 
 app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
@@ -349,7 +380,8 @@ app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) 
 // ===== ERROR HANDLING =====
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
+  const message = process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message;
+  res.status(err.status || 500).json({ error: message });
 });
 
 app.listen(PORT, () => {

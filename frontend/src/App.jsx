@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { ClerkProvider, SignIn, useUser, useAuth } from "@clerk/clerk-react";
+import { ClerkProvider, SignIn, useUser, useAuth } from "@clerk/react";
 
 const uid = () => crypto?.randomUUID?.() || Math.random().toString(36).slice(2, 10);
 const API_BASE = import.meta.env.VITE_API_BASE || "https://alop-ai.onrender.com";
@@ -756,7 +756,7 @@ const App = () => {
   const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
   return (
     <ClerkProvider publishableKey={clerkKey}>
-      <div style={{ width: "100vw", height: "100vh", height: "100dvh" }}>
+      <div style={{ width: "100vw", height: "100dvh" }}>
         <AuthenticatedAppWrapper />
       </div>
     </ClerkProvider>

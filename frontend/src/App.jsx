@@ -730,7 +730,7 @@ const AuthenticatedApp = () => {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {msg.content && <div className="bubble">{msg.content}</div>}
                     {msg.imageUrl && <div style={{ marginTop: 8 }}>
-                      <img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", border-radius: 12, cursor: "pointer" }} onClick={() => window.open(msg.imageUrl, "_blank")} />
+                      <img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: 12, cursor: "pointer" }} onnClick={() => window.open(msg.imageUrl, "_blank")} />
                       <div className="msg-meta" style={{ textAlign: "left" }}>{msg.imagePrompt}</div>
                     </div>}
                     {msg.attachments?.length > 0 && <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>{msg.attachments.map((a, i) => <img key={i} src={a.url} alt={a.name} style={{ width: 60, height: 60, border-radius: 8, objectFit: "cover" }} />)}</div>}

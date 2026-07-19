@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { ClerkProvider, SignIn, useUser, useAuth } from "@clerk/clerk-react";
 
-const uid = () => crypto?.randomUUID
-            {isAdmin && <button className={icon-btn admin-btn } onClick={() => { setShowAdmin(s => !s); setShowSettings(false); setShowMemory(false); }} title="Admin"><Icon name="crown" size={20} /></button>}?.() || Math.random().toString(36).slice(2, 10);
+const uid = () => crypto?.randomUUID?.() || Math.random().toString(36).slice(2, 10);
 const API_BASE = import.meta.env.VITE_API_BASE || "https://alop-ai.onrender.com";
 
 const Storage = {
@@ -72,8 +71,8 @@ const Icon = ({ name, size = 18 }) => {
     star: <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     volume: <path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
     volumeX: <path d="M11 5L6 9H2v6h4l5 4V5zM23 9l-6 6M17 9l6 6" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
-    crown: <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />,
-    image: <g><rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2" fill="none" /><circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>
+    image: <g><rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" strokeWidth="2" fill="none" /><circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="2" fill="none" /><path d="M21 15l-5-5L5 21" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" /></g>,
+    crown: <path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
   };
   return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={{ display: "inline-block", verticalAlign: "middle" }}>{icons[name] || null}</svg>;
 };
@@ -117,6 +116,19 @@ const GlobalStyles = () => (
     .icon-btn { width: 36px; height: 36px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.35); color: rgba(255,255,255,.7); cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; flex-shrink: 0; }
     .icon-btn:hover { background: rgba(0,0,0,0.55); color: #fff; }
     .icon-btn.active { background: var(--primary); color: #000; border-color: transparent; }
+    .admin-btn { background: rgba(251, 191, 36, 0.2); color: #fbbf24; border-color: rgba(251, 191, 36, 0.3); }
+    .admin-btn:hover { background: rgba(251, 191, 36, 0.3); }
+    .admin-title { font-size: 20px; font-weight: 800; margin-bottom: 20px; color: #fff; }
+    .admin-user-card { padding: 14px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 10px; }
+    .admin-user-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .admin-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+    .admin-user-name { font-weight: 700; color: #fff; }
+    .admin-user-email { font-size: 12px; color: rgba(255,255,255,.5); }
+    .admin-badge { padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; margin-left: auto; }
+    .admin-badge.pro { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
+    .admin-badge.free { background: rgba(255,255,255,.1); color: rgba(255,255,255,.6); }
+    .admin-badge.admin { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+    .admin-stats { display: flex; gap: 16px; font-size: 12px; color: rgba(255,255,255,.5); margin-top: 6px; }
     .app-body { flex: 1; display: flex; min-height: 0; overflow: hidden; }
     .chat-sidebar { width: 260px; flex-shrink: 0; border-right: 1px solid var(--border); background: rgba(0,0,0,0.85); display: flex; flex-direction: column; overflow: hidden; }
     .chat-sidebar.collapsed { width: 0; border-right: none; overflow: hidden; }
@@ -219,20 +231,6 @@ const GlobalStyles = () => (
       .bubble { font-size: 12px; padding: 8px 10px; }
       .empty-title { font-size: 20px; }
     }
-    .admin-btn { background: rgba(251, 191, 36, 0.2); color: #fbbf24; border-color: rgba(251, 191, 36, 0.3); }
-    .admin-btn:hover { background: rgba(251, 191, 36, 0.3); }
-    .admin-panel { padding: 20px; }
-    .admin-title { font-size: 20px; font-weight: 800; margin-bottom: 20px; color: #fff; }
-    .admin-user-card { padding: 14px; border-radius: 12px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,0.08); margin-bottom: 10px; }
-    .admin-user-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-    .admin-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
-    .admin-user-name { font-weight: 700; color: #fff; }
-    .admin-user-email { font-size: 12px; color: rgba(255,255,255,.5); }
-    .admin-badge { padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 800; text-transform: uppercase; margin-left: auto; }
-    .admin-badge.pro { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
-    .admin-badge.free { background: rgba(255,255,255,.1); color: rgba(255,255,255,.6); }
-    .admin-badge.admin { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
-    .admin-stats { display: flex; gap: 16px; font-size: 12px; color: rgba(255,255,255,.5); margin-top: 6px; }
     @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   `}</style>
 );
@@ -322,10 +320,10 @@ const AuthenticatedApp = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => Storage.get("pa-sidebar-collapsed") === null ? true : Storage.get("pa-sidebar-collapsed") === "true");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
-  const [showMemory, setShowMemory] = useState(false);  const [showAdmin, setShowAdmin] = useState(false);
+  const [showMemory, setShowMemory] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
   const [adminUsers, setAdminUsers] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
-
   const [toast, setToast] = useState(null);
 
   const [chats, setChats] = useState([]);
@@ -347,6 +345,7 @@ const AuthenticatedApp = () => {
   useEffect(() => Storage.set("pa-theme", themeKey), [themeKey]);
   useEffect(() => Storage.set("pa-custom-bg", customBg), [customBg]);
   useEffect(() => Storage.set("pa-custom-primary", customPrimary), [customPrimary]);
+  useEffect(() => Storage.set("pa-accent-color", accentColor), [accentColor]);
   useEffect(() => Storage.set("pa-bg-opacity", bgOpacity.toString()), [bgOpacity]);
   useEffect(() => Storage.set("pa-sidebar-collapsed", sidebarCollapsed.toString()), [sidebarCollapsed]);
   useEffect(() => Storage.set("pa-model", model), [model]);
@@ -366,6 +365,7 @@ const AuthenticatedApp = () => {
       }
     });
   };
+
   const fetchAdminUsers = async () => {
     try {
       const r = await api('/api/admin/users');
@@ -373,7 +373,6 @@ const AuthenticatedApp = () => {
       setAdminUsers(data || []);
     } catch (err) { setToast('Failed to load admin users'); }
   };
-
 
   const loadChats = useCallback(async () => {
     try {
@@ -387,21 +386,23 @@ const AuthenticatedApp = () => {
   }, [activeChatId]);
 
   useEffect(() => { if (isLoaded && user) loadChats(); }, [isLoaded, user, loadChats]);
+
   useEffect(() => {
     const checkAdmin = async () => {
       if (!user?.emailAddresses?.[0]?.emailAddress) return;
       try {
         const r = await api('/api/admin/users');
-        const users = await r.json();
-        const me = users.find(u => u.email === user.emailAddresses[0].emailAddress);
-        if (me?.is_admin) setIsAdmin(true);
+        if (r.ok) {
+          const users = await r.json();
+          const me = users.find(u => u.email === user.emailAddresses[0].emailAddress);
+          if (me?.is_admin) setIsAdmin(true);
+        }
       } catch {}
     };
     if (isLoaded && user) checkAdmin();
   }, [isLoaded, user]);
 
   useEffect(() => { if (isAdmin) fetchAdminUsers(); }, [isAdmin]);
-
 
   const activeChat = useMemo(() => chats.find(c => c.id === activeChatId), [chats, activeChatId]);
   const activeMessages = activeChat?.messages || [];
@@ -443,6 +444,31 @@ const AuthenticatedApp = () => {
     if (a.favorite !== b.favorite) return a.favorite ? -1 : 1;
     return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at);
   }), [chats]);
+
+  const adminSuspend = async (id) => {
+    try {
+      const r = await api(`/api/admin/users/${id}/suspend`, { method: 'POST' });
+      if (r.ok) { setToast('User suspended'); fetchAdminUsers(); }
+      else setToast('Failed to suspend');
+    } catch { setToast('Failed to suspend'); }
+  };
+
+  const adminUnsuspend = async (id) => {
+    try {
+      const r = await api(`/api/admin/users/${id}/unsuspend`, { method: 'POST' });
+      if (r.ok) { setToast('User unsuspended'); fetchAdminUsers(); }
+      else setToast('Failed to unsuspend');
+    } catch { setToast('Failed to unsuspend'); }
+  };
+
+  const adminDeleteUser = async (id) => {
+    if (!confirm('DELETE this user and all their data? This cannot be undone.')) return;
+    try {
+      const r = await api(`/api/admin/users/${id}`, { method: 'DELETE' });
+      if (r.ok) { setToast('User deleted'); fetchAdminUsers(); }
+      else setToast('Failed to delete');
+    } catch { setToast('Failed to delete'); }
+  };
 
   const handleFileSelect = (e) => { const files = Array.from(e.target.files).filter(f => f.type.startsWith("image/")); if (!files.length) { setToast("Only image files supported"); return; } setAttachments(prev => [...prev, ...files]); e.target.value = ""; };
 
@@ -585,16 +611,48 @@ const AuthenticatedApp = () => {
             <span className="sub-title">{getModelDisplayName(model)}</span>
           </div>
           <div className="header-actions">
-            <button className="icon-btn" onClick={() => { setShowMemory(s => !s); setShowSettings(false); }} title="Memory"><Icon name="brain" size={20} /></button>
-            <button className="icon-btn" onClick={() => { setShowSettings(s => !s); setShowMemory(false); }} title="Settings"><Icon name="settings" size={20} /></button>
+            {isAdmin && <button className={`icon-btn admin-btn ${showAdmin ? "active" : ""}`} onClick={() => { setShowAdmin(s => !s); setShowSettings(false); setShowMemory(false); }} title="Admin"><Icon name="crown" size={20} /></button>}
+            <button className="icon-btn" onClick={() => { setShowMemory(s => !s); setShowSettings(false); setShowAdmin(false); }} title="Memory"><Icon name="brain" size={20} /></button>
+            <button className="icon-btn" onClick={() => { setShowSettings(s => !s); setShowMemory(false); setShowAdmin(false); }} title="Settings"><Icon name="settings" size={20} /></button>
           </div>
         </header>
         <div className="app-body">
           <ChatSidebar chats={sortedChats} activeChatId={activeChatId} onSelect={setActiveChatId} onCreate={createChat} onDelete={deleteChat} onRename={renameChat} onPin={togglePinChat} onFavorite={toggleFavoriteChat} collapsed={sidebarCollapsed} mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />
           <div className="chat-main">
-            
-
-{showMemory && <>
+            {showAdmin && isAdmin && <>
+              <div className="panel-overlay" onClick={() => setShowAdmin(false)} />
+              <div className="side-panel">
+                <div className="panel-header">
+                  <div className="panel-title">Admin Dashboard</div>
+                  <button onClick={() => setShowAdmin(false)} className="icon-btn"><Icon name="close" size={18} /></button>
+                </div>
+                <div className="admin-title">{adminUsers.length} Users</div>
+                {adminUsers.map(u => (
+                  <div key={u.id} className="admin-user-card">
+                    <div className="admin-user-header">
+                      <img src={u.avatar_url || 'https://via.placeholder.com/36'} alt="" className="admin-avatar" />
+                      <div>
+                        <div className="admin-user-name">{u.name || 'Anonymous'}</div>
+                        <div className="admin-user-email">{u.email || 'No email'}</div>
+                      </div>
+                      <span className={`admin-badge ${u.plan === 'pro' ? 'pro' : 'free'}`}>{u.plan || 'free'}</span>
+                      {u.is_admin && <span className="admin-badge admin">Admin</span>}
+                    </div>
+                    <div className="admin-stats">
+                      <span>Joined: {new Date(u.created_at).toLocaleDateString()}</span>
+                      <span>{u.suspended ? 'SUSPENDED' : 'Active'}</span>
+                    </div>
+                    <div className="msg-actions" style={{ justifyContent: 'flex-start', marginTop: 8, opacity: 1 }}>
+                      {u.suspended
+                        ? <button onClick={() => adminUnsuspend(u.id)} className="msg-action-btn">Unsuspend</button>
+                        : <button onClick={() => adminSuspend(u.id)} className="msg-action-btn">Suspend</button>}
+                      <button onClick={() => adminDeleteUser(u.id)} className="msg-action-btn" style={{ color: '#fb7185' }}>Delete User</button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>}
+            {showMemory && <>
               <div className="panel-overlay" onClick={() => setShowMemory(false)} />
               <div className="side-panel">
                 <div className="panel-header">
@@ -672,10 +730,10 @@ const AuthenticatedApp = () => {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {msg.content && <div className="bubble">{msg.content}</div>}
                     {msg.imageUrl && <div style={{ marginTop: 8 }}>
-                      <img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: 12, cursor: "pointer" }} onClick={() => window.open(msg.imageUrl, "_blank")} />
+                      <img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", border-radius: 12, cursor: "pointer" }} onClick={() => window.open(msg.imageUrl, "_blank")} />
                       <div className="msg-meta" style={{ textAlign: "left" }}>{msg.imagePrompt}</div>
                     </div>}
-                    {msg.attachments?.length > 0 && <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>{msg.attachments.map((a, i) => <img key={i} src={a.url} alt={a.name} style={{ width: 60, height: 60, borderRadius: 8, objectFit: "cover" }} />)}</div>}
+                    {msg.attachments?.length > 0 && <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>{msg.attachments.map((a, i) => <img key={i} src={a.url} alt={a.name} style={{ width: 60, height: 60, border-radius: 8, objectFit: "cover" }} />)}</div>}
                     {msg.role === "assistant" && !msg.imageUrl && <MessageActions content={msg.content} onCopy={() => navigator.clipboard.writeText(msg.content)} onRegenerate={idx === activeMessages.length - 1 ? () => {} : null} />}
                     <div className="msg-meta">{msg.ts}</div>
                   </div>
@@ -719,4 +777,3 @@ const AuthenticatedAppWrapper = () => {
 };
 
 export default App;
-

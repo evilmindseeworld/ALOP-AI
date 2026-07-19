@@ -733,7 +733,7 @@ const AuthenticatedApp = () => {
                       <img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: 12, cursor: "pointer" }} onnClick={() => window.open(msg.imageUrl, "_blank")} />
                       <div className="msg-meta" style={{ textAlign: "left" }}>{msg.imagePrompt}</div>
                     </div>}
-                    {msg.attachments?.length > 0 && <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>{msg.attachments.map((a, i) => <img key={i} src={a.url} alt={a.name} style={{ width: 60, height: 60, border-radius: 8, objectFit: "cover" }} />)}</div>}
+                    {msg.attachments?.length > 0 && <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>{msg.attachments.map((a, i) => <img key={i} src={a.url} alt={a.name} style={{ width: 60, height: 60, borderRadius: 8, objectFit: "cover" }} />)}</div>}
                     {msg.role === "assistant" && !msg.imageUrl && <MessageActions content={msg.content} onCopy={() => navigator.clipboard.writeText(msg.content)} onRegenerate={idx === activeMessages.length - 1 ? () => {} : null} />}
                     <div className="msg-meta">{msg.ts}</div>
                   </div>

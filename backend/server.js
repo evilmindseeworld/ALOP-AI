@@ -22,9 +22,12 @@ app.use(compression());
 
 const allowedOrigins = process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [];
 if (allowedOrigins.length === 0) {
-  console.warn('FRONTEND_URL not set, allowing all origins for CORS');
+  console.warn('FRONTEND_URL not set. CORS will deny requests from browsers.');
 }
-app.use(cors({ origin: allowedOrigins.length > 0 ? allowedOrigins : true, credentials: true }));
+app.use(cors({
+  origin: allowedOrigins.length > 0 ? allowedOrigins : false,
+  credentials: true
+}));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -93,8 +96,8 @@ const ensureUser = async (userId) => {
 
   if (existing) {
     const { error: updateError } = await supabase.from('users').update({
-  email, name, avatar_url: avatar
-}).eq('clerk_id', userId);
+      email, name, avatar_url: avatar
+    }).eq('clerk_id', userId);
     if (updateError) console.error('Update user failed:', updateError.message);
     return existing;
   }
@@ -163,7 +166,7 @@ app.post('/chat', requireAuth, checkSuspended, upload.array('files', 5), async (
     const isImage = message.trim().toLowerCase().startsWith('/image') ||
       /\b(generate|create|make|draw)\s+(an?\s+)?image\b/i.test(message);
 
-    const model = isImage ? 'kimi-k2.7-code' : modelType;
+    const model = isImage ? 'gemma4' : modelType;
 
     const systemPrompt = 'You are ALOP-AI, a helpful, fast, and accurate assistant. Keep answers concise unless asked for detail.';
 
@@ -172,6 +175,22 @@ app.post('/chat', requireAuth, checkSuspended, upload.array('files', 5), async (
       ...history.slice(-15),
       { role: 'user', content: message }
     ];
+
+    // Add uploaded images to the last user message if any
+    if (req.files?.length > 0) {
+      const lastUser = messages[messages.length - 1];
+      if (lastUser.role === 'user') {
+        const content = [{ type: 'text', text: lastUser.content }];
+        for (const file of req.files) {
+          const base64 = file.buffer.toString('base64');
+          content.push({
+            type: 'image_url',
+            image_url: { url: `data:${file.mimetype};base64,${base64}` }
+          });
+        }
+        lastUser.content = content;
+      }
+    }
 
     const body = {
       model,
@@ -186,7 +205,15 @@ app.post('/chat', requireAuth, checkSuspended, upload.array('files', 5), async (
     res.setHeader('Connection', 'keep-alive');
 
     const API_URL = process.env.AI_API_URL || process.env.OLLAMA_HOST || 'https://api.openai.com/v1/chat/completions';
-const API_KEY = process.env.AI_API_KEY || process.env.OLLAMA_API_KEY;
+    const API_KEY = process.env.AI_API_KEY || process.env.OLLAMA_API_KEY;
+
+    if (!API_KEY) {
+      throw new Error('AI API key is not configured (AI_API_KEY or OLLAMA_API_KEY)');
+    }
+
+    console.log('AI REQUEST URL:', API_URL);
+    console.log('AI REQUEST MODEL:', model);
+    console.log('AI REQUEST MESSAGES COUNT:', messages.length);
 
     const response = await fetch(API_URL, {
       method: 'POST',
@@ -197,15 +224,22 @@ const API_KEY = process.env.AI_API_KEY || process.env.OLLAMA_API_KEY;
       body: JSON.stringify(body)
     });
 
+    console.log('AI RESPONSE STATUS:', response.status);
+
     if (!response.ok) {
       const text = await response.text();
-      throw new Error(`AI API error: ${response.status} ${text.slice(0, 200)}`);
+      console.error('AI ERROR BODY:', text);
+      throw new Error(`AI API error: ${response.status} ${text.slice(0, 300)}`);
     }
 
-    // Use Web Streams API for built-in fetch
+    if (!response.body) {
+      throw new Error('AI API returned no response body');
+    }
+
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
+    let sentAnything = false;
 
     try {
       while (true) {
@@ -217,20 +251,51 @@ const API_KEY = process.env.AI_API_KEY || process.env.OLLAMA_API_KEY;
         buffer = lines.pop() || '';
 
         for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith('data:')) continue;
-          const jsonStr = trimmed.slice(5).trim();
+          if (!line.trim()) continue;
+
+          // Ollama native NDJSON: plain JSON lines
+          if (line.trim().startsWith('{') && !line.trim().startsWith('data:')) {
+            try {
+              const parsed = JSON.parse(line.trim());
+              const delta = parsed.message?.content || parsed.response || '';
+              if (delta) {
+                sentAnything = true;
+                res.write(`data: ${JSON.stringify({ type: 'chunk', text: delta })}\n\n`);
+              }
+              if (parsed.done) {
+                res.write('data: [DONE]\n\n');
+              }
+            } catch (e) {
+              console.error('Failed to parse Ollama native line:', line.trim(), e.message);
+            }
+            continue;
+          }
+
+          // OpenAI SSE format
+          if (!line.trim().startsWith('data:')) continue;
+          const jsonStr = line.trim().slice(5).trim();
           if (jsonStr === '[DONE]') {
             res.write('data: [DONE]\n\n');
             continue;
           }
           try {
             const parsed = JSON.parse(jsonStr);
-            const delta = parsed.choices?.[0]?.delta?.content || '';
-            if (delta) res.write(`data: ${JSON.stringify({ type: 'chunk', text: delta })}\n\n`);
-          } catch {}
+            const delta = parsed.choices?.[0]?.delta?.content || parsed.choices?.[0]?.text || '';
+            if (delta) {
+              sentAnything = true;
+              res.write(`data: ${JSON.stringify({ type: 'chunk', text: delta })}\n\n`);
+            }
+          } catch (e) {
+            console.error('Failed to parse SSE line:', jsonStr, e.message);
+          }
         }
       }
+
+      if (!sentAnything) {
+        console.warn('AI API returned no content chunks');
+        res.write(`data: ${JSON.stringify({ type: 'chunk', text: 'No response from AI model.' })}\n\n`);
+      }
+
       if (!res.writableEnded) res.end();
     } catch (streamErr) {
       console.error('Stream error:', streamErr.message);

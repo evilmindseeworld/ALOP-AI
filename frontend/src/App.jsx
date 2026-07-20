@@ -244,11 +244,32 @@ const GlobalStyles = () => (
       white-space: pre-wrap; word-break: break-word;
       box-shadow: 0 4px 20px rgba(0,0,0,0.15);
       max-width: 80%;
+      animation: messageIn 0.25s ease-out;
+    }
+    @keyframes messageIn {
+      from { opacity: 0; transform: translateY(8px) scale(0.98); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
     }
     .msg-row.user .bubble {
       background: var(--primary); color: #000; font-weight: 500;
       border-top-left-radius: 18px; border-top-right-radius: 4px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+    .typing-bubble {
+      display: flex; align-items: center; gap: 6px;
+      padding: 18px 16px; min-width: 70px; min-height: 44px;
+    }
+    .typing-bubble span {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: rgba(255,255,255,0.6);
+      animation: typingBounce 1.4s infinite ease-in-out both;
+    }
+    .typing-bubble span:nth-child(1) { animation-delay: -0.32s; }
+    .typing-bubble span:nth-child(2) { animation-delay: -0.16s; }
+    .typing-bubble span:nth-child(3) { animation-delay: 0s; }
+    @keyframes typingBounce {
+      0%, 80%, 100% { transform: scale(0.5); opacity: 0.4; }
+      40% { transform: scale(1); opacity: 1; }
     }
     .msg-meta { font-size: 11px; opacity: 0.45; margin-top: 6px; }
     .msg-row.user .msg-meta { text-align: right; }
@@ -392,7 +413,7 @@ const GlobalStyles = () => (
       border-radius: 12px; padding: 14px; margin-bottom: 12px;
     }
     .admin-user-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-    .admin-avatar { width: 36px; height: 36px; border-radius: 50%; objectFit: "cover"; }
+    .admin-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
     .admin-user-name { font-weight: 600; font-size: 13px; }
     .admin-user-email { font-size: 11px; opacity: 0.6; }
     .admin-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; margin-left: auto; font-weight: 600; }
@@ -808,7 +829,7 @@ const AuthenticatedApp = () => {
     const updated = [...activeMessages, userMsg];
     await updateChatMessages(chatId, updated);
     const assistantId = uid();
-    const assistantMsg = { role: "assistant", content: "", ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: assistantId };
+    const assistantMsg = { role: "assistant", content: "", typing: true, ts: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }), id: assistantId };
     updateChatMessages(chatId, [...updated, assistantMsg], false);
 
     if (abortRef.current) abortRef.current.abort();
@@ -834,6 +855,8 @@ const AuthenticatedApp = () => {
       if (!res.body) throw new Error("Streaming not supported");
 
       setStatus("streaming");
+      updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: "" }], false);
+
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let acc = "", buf = "";
@@ -853,14 +876,14 @@ const AuthenticatedApp = () => {
             else if (d.type === "error") throw new Error(d.text);
           } catch {}
         }
-        updateChatMessages(chatId, [...updated, { ...assistantMsg, content: acc }], false);
+        updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: acc }], false);
       }
-      await updateChatMessages(chatId, [...updated, { ...assistantMsg, content: acc }]);
+      await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: acc }]);
       setStatus("idle");
     } catch (err) {
       if (err.name === "AbortError") return;
       setStatus("error");
-      await updateChatMessages(chatId, [...updated, { ...assistantMsg, content: `⚠️ ${err.message || 'Connection failed'}` }]);
+      await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: `⚠️ ${err.message || 'Connection failed'}` }]);
     }
     setAttachments([]); setInputText("");
   }, [activeChatId, activeMessages, model, temperature, status, attachments, generateImage]);
@@ -1022,13 +1045,14 @@ const AuthenticatedApp = () => {
                   <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
                     <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
                     <div className="msg-content">
-                      {msg.content && <div className="bubble">{msg.content}</div>}
+                      {msg.typing && <div className="bubble typing-bubble"><span></span><span></span><span></span></div>}
+                      {msg.content && !msg.typing && <div className="bubble">{msg.content}</div>}
                       {msg.imageUrl && <div style={{ marginTop: 8 }}>
                         <img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: 12, cursor: "pointer" }} onClick={() => window.open(msg.imageUrl, "_blank")} />
                         <div className="msg-meta" style={{ textAlign: "left" }}>{msg.imagePrompt}</div>
                       </div>}
                       {msg.attachments?.length > 0 && <div style={{ display: "flex", gap: 6, marginTop: 6, flexWrap: "wrap" }}>{msg.attachments.map((a, i) => <img key={i} src={a.url} alt={a.name} style={{ width: 60, height: 60, borderRadius: 8, objectFit: "cover" }} />)}</div>}
-                      {msg.role === "assistant" && !msg.imageUrl && <MessageActions content={msg.content} onCopy={() => navigator.clipboard.writeText(msg.content)} onRegenerate={idx === activeMessages.length - 1 ? () => {} : null} />}
+                      {msg.role === "assistant" && !msg.imageUrl && !msg.typing && <MessageActions content={msg.content} onCopy={() => navigator.clipboard.writeText(msg.content)} onRegenerate={idx === activeMessages.length - 1 ? () => {} : null} />}
                       <div className="msg-meta">{msg.ts}</div>
                     </div>
                   </div>

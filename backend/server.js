@@ -185,8 +185,8 @@ app.post('/chat', requireAuth, checkSuspended, upload.array('files', 5), async (
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const API_URL = process.env.AI_API_URL || 'https://api.openai.com/v1/chat/completions';
-    const API_KEY = process.env.AI_API_KEY;
+    const API_URL = process.env.AI_API_URL || process.env.OLLAMA_HOST || 'https://api.openai.com/v1/chat/completions';
+const API_KEY = process.env.AI_API_KEY || process.env.OLLAMA_API_KEY;
 
     const response = await fetch(API_URL, {
       method: 'POST',

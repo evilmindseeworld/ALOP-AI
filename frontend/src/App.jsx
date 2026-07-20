@@ -397,11 +397,18 @@ const GlobalStyles = () => (
     .theme-card.selected { border-color: var(--primary); background: rgba(255,255,255,0.12); box-shadow: 0 0 15px var(--glow); }
     .slider-container { display: flex; align-items: center; gap: 12px; font-size: 12px; }
     .slider { flex: 1; accent-color: var(--primary); }
-    .model-select {
-      width: 100%; padding: 10px 12px; border-radius: 10px;
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1);
-      color: #fff; font-size: 14px;
-    }
+     .model-select {
+  width: 100%; padding: 10px 12px; border-radius: 10px;
+  background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
+  color: #fff; font-size: 14px;
+}
+.model-select option {
+  background: #1a0b2e; color: #fff;
+}
+.model-select optgroup {
+  background: #0f0518; color: rgba(255,255,255,0.7);
+}
+
     .memory-card {
       background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
       border-radius: 12px; padding: 14px;

@@ -397,18 +397,13 @@ const GlobalStyles = () => (
     .theme-card.selected { border-color: var(--primary); background: rgba(255,255,255,0.12); box-shadow: 0 0 15px var(--glow); }
     .slider-container { display: flex; align-items: center; gap: 12px; font-size: 12px; }
     .slider { flex: 1; accent-color: var(--primary); }
-     .model-select {
-  width: 100%; padding: 10px 12px; border-radius: 10px;
-  background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
-  color: #fff; font-size: 14px;
-}
-.model-select option {
-  background: #1a0b2e; color: #fff;
-}
-.model-select optgroup {
-  background: #0f0518; color: rgba(255,255,255,0.7);
-}
-
+    .model-select {
+      width: 100%; padding: 10px 12px; border-radius: 10px;
+      background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);
+      color: #fff; font-size: 14px;
+    }
+    .model-select option { background: #1a0b2e; color: #fff; }
+    .model-select optgroup { background: #0f0518; color: rgba(255,255,255,0.7); }
     .memory-card {
       background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
       border-radius: 12px; padding: 14px;
@@ -429,9 +424,96 @@ const GlobalStyles = () => (
     .admin-badge.admin { background: var(--primary); color: #000; margin-left: 6px; }
     .admin-stats { display: flex; gap: 12px; font-size: 11px; opacity: 0.6; }
     .sign-in-overlay {
-      width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
-      background: rgba(0,0,0,0.6); backdrop-filter: blur(10px);
+      width: 100%; height: 100%;
+      display: flex;
+      background: #050507;
+      overflow: hidden;
     }
+    .sign-in-left {
+      flex: 1; position: relative; display: flex; flex-direction: column; justify-content: flex-end; padding: 48px;
+      background: radial-gradient(ellipse at 30% 20%, #2e1065 0%, #1a0b2e 40%, #050507 100%);
+    }
+    .sign-in-left::before {
+      content: ""; position: absolute; inset: 0;
+      background: url('https://images.unsplash.com/photo-1465101162946-4377e57745c3?w=1920&q=80') center/cover;
+      opacity: 0.35;
+    }
+    .sign-in-left-content { position: relative; z-index: 1; max-width: 520px; }
+    .sign-in-logo {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
+    }
+    .sign-in-logo-icon {
+      width: 44px; height: 44px; border-radius: 12px;
+      background: linear-gradient(135deg, #c084fc, #818cf8);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; font-weight: 800; color: #000;
+      box-shadow: 0 0 30px rgba(192,132,252,0.4);
+    }
+    .sign-in-logo-text { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+    .sign-in-headline { font-size: 38px; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
+    .sign-in-subheadline { font-size: 16px; opacity: 0.7; line-height: 1.6; margin-bottom: 32px; }
+    .sign-in-features { display: flex; flex-wrap: wrap; gap: 10px; }
+    .sign-in-feature {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 14px; border-radius: 20px;
+      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
+      font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.85);
+    }
+    .sign-in-right {
+      width: 460px; max-width: 100%;
+      display: flex; align-items: center; justify-content: center;
+      padding: 40px;
+      background: #050507;
+      border-left: 1px solid rgba(255,255,255,0.06);
+    }
+    .sign-in-card {
+      width: 100%; max-width: 360px;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px; padding: 32px;
+      backdrop-filter: blur(10px);
+    }
+    .sign-in-card-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
+    .sign-in-card-subtitle { font-size: 13px; opacity: 0.6; margin-bottom: 24px; }
+    .sign-in-card .cl-signIn,
+    .sign-in-card .cl-card {
+      background: transparent !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
+    .sign-in-card .cl-cardBox {
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+    }
+    .sign-in-card .cl-headerTitle { color: #fff !important; }
+    .sign-in-card .cl-headerSubtitle { color: rgba(255,255,255,0.6) !important; }
+    .sign-in-card .cl-dividerLine { background: rgba(255,255,255,0.1) !important; }
+    .sign-in-card .cl-dividerText { color: rgba(255,255,255,0.5) !important; }
+    .sign-in-card .cl-formFieldLabel { color: rgba(255,255,255,0.8) !important; }
+    .sign-in-card .cl-input {
+      background: rgba(255,255,255,0.05) !important;
+      border: 1px solid rgba(255,255,255,0.1) !important;
+      color: #fff !important;
+      border-radius: 10px !important;
+    }
+    .sign-in-card .cl-input:focus { border-color: #c084fc !important; box-shadow: 0 0 0 3px rgba(192,132,252,0.15) !important; }
+    .sign-in-card .cl-formButtonPrimary {
+      background: linear-gradient(135deg, #c084fc, #818cf8) !important;
+      color: #000 !important;
+      font-weight: 600 !important;
+      border-radius: 10px !important;
+    }
+    .sign-in-card .cl-formButtonPrimary:hover { box-shadow: 0 0 20px rgba(192,132,252,0.4) !important; }
+    .sign-in-card .cl-socialButtonsBlockButton {
+      background: rgba(255,255,255,0.05) !important;
+      border: 1px solid rgba(255,255,255,0.1) !important;
+      color: #fff !important;
+      border-radius: 10px !important;
+    }
+    .sign-in-card .cl-socialButtonsBlockButton:hover { background: rgba(255,255,255,0.1) !important; }
+    .sign-in-card .cl-footerActionLink { color: #c084fc !important; }
+    .sign-in-card .cl-identityPreviewText { color: #fff !important; }
+    .sign-in-card .cl-identityPreviewEditButton { color: #c084fc !important; }
     .camera-overlay {
       position: fixed; inset: 0; z-index: 100;
       background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -449,6 +531,10 @@ const GlobalStyles = () => (
     }
     .mobile-only { display: none; }
     .desktop-only { display: flex; }
+    @media (max-width: 900px) {
+      .sign-in-left { display: none; }
+      .sign-in-right { width: 100%; border-left: none; }
+    }
     @media (max-width: 768px) {
       .mobile-only { display: flex; }
       .desktop-only { display: none; }
@@ -1091,7 +1177,32 @@ const AuthenticatedAppWrapper = () => {
   if (!isSignedIn) {
     return (
       <div className="sign-in-overlay">
-        <SignIn />
+        <div className="sign-in-left">
+          <div className="sign-in-left-content">
+            <div className="sign-in-logo">
+              <div className="sign-in-logo-icon">A</div>
+              <div className="sign-in-logo-text">ALOP-AI</div>
+            </div>
+            <h1 className="sign-in-headline">Your all-in-one AI assistant for everything.</h1>
+            <p className="sign-in-subheadline">
+              Chat with frontier models, generate images, analyze photos, speak naturally, and build your own knowledge base — all in one place.
+            </p>
+            <div className="sign-in-features">
+              <div className="sign-in-feature">⚡ 50+ AI Models</div>
+              <div className="sign-in-feature">🖼️ Image Generation</div>
+              <div className="sign-in-feature">👁️ Vision & Files</div>
+              <div className="sign-in-feature">🎙️ Voice Input</div>
+              <div className="sign-in-feature">🔒 Secure by default</div>
+            </div>
+          </div>
+        </div>
+        <div className="sign-in-right">
+          <div className="sign-in-card">
+            <div className="sign-in-card-title">Welcome back</div>
+            <div className="sign-in-card-subtitle">Sign in to continue to ALOP-AI</div>
+            <SignIn />
+          </div>
+        </div>
       </div>
     );
   }

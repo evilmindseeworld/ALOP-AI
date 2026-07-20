@@ -6,7 +6,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '20
 
 // ===== CORS ===== const allowedOrigins = process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : []; const isVercelPreview = (origin) => origin && origin.includes('.vercel.app');
 
-app.use(cors({ origin: function (origin, callback) { if (!origin) return callback(null, true); if (allowedOrigins.includes(origin)) return callback(null, true); if (isVercelPreview(origin)) return callback(null, true); callback(new Error(CORS blocked origin: ${origin})); }, credentials: true }));
+app.use(cors({ origin: function (origin, callback) { if (!origin) return callback(null, true); if (allowedOrigins.includes(origin)) return callback(null, true); if (isVercelPreview(origin)) return callback(null, true); callback(new Error(`CORS blocked origin: ${origin}`)); }, credentials: true }));
 
 // ===== STRIPE WEBHOOK ===== app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => { const sig = req.headers['stripe-signature']; let event; try { event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET || ''); } catch (err) { console.error('Stripe webhook error:', err.message); return res.status(400).send(Webhook Error: ${err.message}); }
 

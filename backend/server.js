@@ -10,6 +10,7 @@ const { createClient } = require('@supabase/supabase-js');
 const { ClerkExpressRequireAuth, clerkClient } = require('@clerk/clerk-sdk-node');
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 // ===== SECURITY & PERFORMANCE MIDDLEWARE =====
@@ -92,8 +93,8 @@ const ensureUser = async (userId) => {
 
   if (existing) {
     const { error: updateError } = await supabase.from('users').update({
-      email, name, avatar_url: avatar, last_seen: new Date().toISOString()
-    }).eq('clerk_id', userId);
+  email, name, avatar_url: avatar
+}).eq('clerk_id', userId);
     if (updateError) console.error('Update user failed:', updateError.message);
     return existing;
   }

@@ -31,12 +31,14 @@ const MODELS = {
 
 const VISION_MODELS = ["gemma4", "kimi-k2.6", "kimi-k2.5", "gemini-3-flash-preview", "minimax-m3"];
 const BACKGROUND_PRESETS = {
-  nebula: "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?w=1920&q=80",
-  aurora: "https://images.unsplash.com/photo-1531366936337-7c912a4589a7?w=1920&q=80",
-  cyberpunk: "https://images.unsplash.com/photo-1555680202-c86f4e2fbbb8?w=1920&q=80",
-  synthwave: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?w=1920&q=80",
-  galaxy: "https://images.unsplash.com/photo-1419242902214-272b3f66ee7a?w=1920&q=80",
-  volcanic: "https://images.unsplash.com/photo-1462332420958-a05bb1ac0865?w=1920&q=80",
+  nebula: "https://images.unsplash.com/photo-1465101162946-4377e57745c3?w=1920&q=80",
+  aurora: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=1920&q=80",
+  citynight: "https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=1920&q=80",
+  synthwave: "https://images.unsplash.com/photo-1563089145-599997674d42?w=1920&q=80",
+  galaxy: "https://images.unsplash.com/photo-1444703686981-a3abbc4d4fe3?w=1920&q=80",
+  japan: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=1920&q=80",
+  forest: "https://images.unsplash.com/photo-1511497584788-876760111969?w=1920&q=80",
+  ocean: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1920&q=80",
 };
 
 const THEMES = {
@@ -184,7 +186,6 @@ const GlobalStyles = () => (
       position: relative; z-index: 1;
       display: flex; flex-direction: column;
       width: 100%; height: 100%;
-      backdrop-filter: blur(0px);
     }
     .app-header {
       display: flex; align-items: center; gap: 12px;
@@ -232,6 +233,9 @@ const GlobalStyles = () => (
       background: linear-gradient(135deg, var(--primary), var(--glow));
       box-shadow: 0 0 15px rgba(0,0,0,0.3);
     }
+    .msg-content { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+    .msg-row.user .msg-content { align-items: flex-end; }
+    .msg-row.assistant .msg-content { align-items: flex-start; }
     .bubble {
       padding: 14px 18px; border-radius: 18px; border-top-left-radius: 4px;
       background: rgba(255,255,255,0.08);
@@ -289,6 +293,7 @@ const GlobalStyles = () => (
     .input-btn.primary { background: var(--primary); color: #000; border-color: var(--primary); }
     .input-btn.primary:hover { box-shadow: 0 0 20px var(--glow); transform: scale(1.05); }
     .input-btn.listening { background: #ef4444; color: #fff; animation: pulse 1s infinite; }
+    .input-btn input[type="file"] { display: none; }
     @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.6} }
     .attachment-pill {
       display: inline-flex; align-items: center; gap: 6px;
@@ -305,7 +310,8 @@ const GlobalStyles = () => (
       transition: width 0.25s ease, transform 0.25s ease;
     }
     .sidebar.collapsed { width: 0; overflow: hidden; border-right: none; }
-    .sidebar.mobile { position: absolute; top: 0; bottom: 0; left: 0; z-index: 50; }
+    .sidebar.mobile { position: absolute; top: 0; bottom: 0; left: 0; z-index: 50; width: 260px; transform: translateX(-100%); }
+    .sidebar.mobileOpen { transform: translateX(0); }
     .sidebar-header {
       display: flex; align-items: center; justify-content: space-between;
       padding: 14px 14px 10px;
@@ -386,7 +392,7 @@ const GlobalStyles = () => (
       border-radius: 12px; padding: 14px; margin-bottom: 12px;
     }
     .admin-user-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-    .admin-avatar { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; }
+    .admin-avatar { width: 36px; height: 36px; border-radius: 50%; objectFit: "cover"; }
     .admin-user-name { font-weight: 600; font-size: 13px; }
     .admin-user-email { font-size: 11px; opacity: 0.6; }
     .admin-badge { font-size: 10px; padding: 2px 8px; border-radius: 10px; margin-left: auto; font-weight: 600; }
@@ -438,7 +444,7 @@ const ChatSidebar = ({ chats, activeChatId, onSelect, onCreate, onDelete, onRena
   const [editTitle, setEditTitle] = useState("");
 
   return (
-    <div className={`sidebar ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobileOpen" : ""} ${window.innerWidth <= 768 ? "mobile" : ""}`}>
+    <div className={`sidebar ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobileOpen" : ""} ${typeof window !== 'undefined' && window.innerWidth <= 768 ? "mobile" : ""}`}>
       <div className="sidebar-header">
         <button className="new-chat-btn" onClick={onCreate}><Icon name="plus" size={16}/> New Chat</button>
         {mobileOpen && <button className="icon-btn" onClick={() => setMobileOpen(false)}><Icon name="close" size={18}/></button>}
@@ -470,7 +476,7 @@ const ChatSidebar = ({ chats, activeChatId, onSelect, onCreate, onDelete, onRena
   );
 };
 
-const InputBar = ({ text, setText, onSend, disabled, attachments, setAttachments, onFileSelect, onStartCamera, isListening, toggleListening, onGenerateImage }) => {
+const InputBar = ({ text, setText, onSend, disabled, attachments, setAttachments, onFileSelect, onStartCamera, isListening, toggleListening }) => {
   const [rows, setRows] = useState(1);
 
   useEffect(() => {
@@ -506,19 +512,18 @@ const InputBar = ({ text, setText, onSend, disabled, attachments, setAttachments
           value={text}
           onChange={e => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Ask anything, upload a photo, take a picture, use voice..."
+          placeholder="Ask anything, upload a photo, take a picture, use voice, or type 'generate image of...'"
           disabled={disabled}
         />
         <div className="input-actions">
-          <label style={{ display: "flex" }}>
-            <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={onFileSelect} disabled={disabled}/>
-            <button className="input-btn" title="Upload image" onClick={() => {}}><Icon name="image" size={16}/></button>
+          <label className="input-btn" title="Upload image" style={{ cursor: "pointer" }}>
+            <input type="file" accept="image/*" multiple onChange={onFileSelect} disabled={disabled}/>
+            <Icon name="image" size={16}/>
           </label>
           <button className={`input-btn ${isListening ? "listening" : ""}`} onClick={toggleListening} title="Voice input">
             <Icon name="mic" size={16}/>
           </button>
           <button className="input-btn" onClick={onStartCamera} title="Camera" disabled={disabled}><Icon name="camera" size={16}/></button>
-          <button className="input-btn" onClick={onGenerateImage} title="Generate image" disabled={disabled}><Icon name="image" size={16}/></button>
           <div style={{ flex: 1 }}></div>
           <button className="input-btn primary" onClick={() => onSend(text)} disabled={disabled || !text.trim()}>
             <Icon name="send" size={16}/>
@@ -1011,12 +1016,12 @@ const AuthenticatedApp = () => {
               <div className="scroll-wrapper" ref={chatRef}>
                 {activeMessages.length === 0 && status === "idle" && <div className="empty-state">
                   <h2 className="empty-title">ALOP-AI</h2>
-                  <p className="empty-subtitle">Ask anything, upload photos, take a picture, use your voice, or generate images. Built for creators who want more.</p>
+                  <p className="empty-subtitle">Ask anything, upload photos, take a picture, use your voice, or type "generate image of..."</p>
                 </div>}
                 {activeMessages.map((msg, idx) => (
                   <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
                     <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="msg-content">
                       {msg.content && <div className="bubble">{msg.content}</div>}
                       {msg.imageUrl && <div style={{ marginTop: 8 }}>
                         <img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: 12, cursor: "pointer" }} onClick={() => window.open(msg.imageUrl, "_blank")} />
@@ -1029,7 +1034,7 @@ const AuthenticatedApp = () => {
                   </div>
                 ))}
               </div>
-              <InputBar text={inputText} setText={setInputText} onSend={handleSend} disabled={status !== "idle"} attachments={attachments} setAttachments={setAttachments} onFileSelect={handleFileSelect} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} onGenerateImage={() => { if (inputText.trim()) generateImage(inputText); else setToast("Type what image to generate"); }} />
+              <InputBar text={inputText} setText={setInputText} onSend={handleSend} disabled={status !== "idle"} attachments={attachments} setAttachments={setAttachments} onFileSelect={handleFileSelect} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} />
             </div>
           </div>
         </div>

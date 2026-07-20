@@ -20,12 +20,16 @@ app.use(helmet({
 }));
 app.use(compression());
 
+// CORS: allow configured frontend or common dev origins
 const allowedOrigins = process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [];
 if (allowedOrigins.length === 0) {
   console.warn('FRONTEND_URL not set. CORS will deny requests from browsers.');
 }
 app.use(cors({
-  origin: allowedOrigins.length > 0 ? allowedOrigins : false,
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    callback(new Error(`CORS blocked origin: ${origin}`));
+  },
   credentials: true
 }));
 
@@ -149,9 +153,13 @@ app.post('/chat', requireAuth, checkSuspended, upload.array('files', 5), async (
     const userId = user.id;
 
     const message = req.body.message || '';
-    const modelType = req.body.modelType || 'glm-5.2';
+    const model = req.body.modelType || 'glm-5.2';
     const temperature = parseFloat(req.body.temperature || '0.7');
-    const history = JSON.parse(req.body.messages || '[]');
+
+    let history = [];
+    try {
+      history = JSON.parse(req.body.messages || '[]');
+    } catch {}
 
     // Increment usage
     try {
@@ -163,11 +171,6 @@ app.post('/chat', requireAuth, checkSuspended, upload.array('files', 5), async (
       });
     } catch (e) { console.error('Usage increment failed', e.message); }
 
-    const isImage = message.trim().toLowerCase().startsWith('/image') ||
-      /\b(generate|create|make|draw)\s+(an?\s+)?image\b/i.test(message);
-
-    const model = isImage ? 'gemma4' : modelType;
-
     const systemPrompt = 'You are ALOP-AI, a helpful, fast, and accurate assistant. Keep answers concise unless asked for detail.';
 
     const messages = [
@@ -176,44 +179,31 @@ app.post('/chat', requireAuth, checkSuspended, upload.array('files', 5), async (
       { role: 'user', content: message }
     ];
 
-    // Add uploaded images to the last user message if any
+    // Add uploaded images for Ollama vision models
     if (req.files?.length > 0) {
       const lastUser = messages[messages.length - 1];
       if (lastUser.role === 'user') {
-        const content = [{ type: 'text', text: lastUser.content }];
-        for (const file of req.files) {
-          const base64 = file.buffer.toString('base64');
-          content.push({
-            type: 'image_url',
-            image_url: { url: `data:${file.mimetype};base64,${base64}` }
-          });
-        }
-        lastUser.content = content;
+        lastUser.images = req.files.map(file => file.buffer.toString('base64'));
       }
+    }
+
+    const API_URL = process.env.OLLAMA_HOST;
+    const API_KEY = process.env.OLLAMA_API_KEY;
+
+    if (!API_URL || !API_KEY) {
+      throw new Error('Ollama not configured. Set OLLAMA_HOST and OLLAMA_API_KEY in Render.');
     }
 
     const body = {
       model,
       messages,
-      temperature,
-      max_tokens: isImage ? 1024 : 4096,
-      stream: true
+      stream: true,
+      options: { temperature }
     };
 
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-
-    const API_URL = process.env.AI_API_URL || process.env.OLLAMA_HOST || 'https://api.openai.com/v1/chat/completions';
-    const API_KEY = process.env.AI_API_KEY || process.env.OLLAMA_API_KEY;
-
-    if (!API_KEY) {
-      throw new Error('AI API key is not configured (AI_API_KEY or OLLAMA_API_KEY)');
-    }
-
-    console.log('AI REQUEST URL:', API_URL);
-    console.log('AI REQUEST MODEL:', model);
-    console.log('AI REQUEST MESSAGES COUNT:', messages.length);
+    console.log('OLLAMA REQUEST URL:', API_URL);
+    console.log('OLLAMA REQUEST MODEL:', model);
+    console.log('OLLAMA REQUEST MESSAGES:', JSON.stringify(messages.map(m => ({ role: m.role, hasImages: !!m.images }))));
 
     const response = await fetch(API_URL, {
       method: 'POST',
@@ -224,17 +214,21 @@ app.post('/chat', requireAuth, checkSuspended, upload.array('files', 5), async (
       body: JSON.stringify(body)
     });
 
-    console.log('AI RESPONSE STATUS:', response.status);
+    console.log('OLLAMA RESPONSE STATUS:', response.status);
 
     if (!response.ok) {
       const text = await response.text();
-      console.error('AI ERROR BODY:', text);
-      throw new Error(`AI API error: ${response.status} ${text.slice(0, 300)}`);
+      console.error('OLLAMA ERROR BODY:', text);
+      throw new Error(`Ollama error: ${response.status} ${text.slice(0, 300)}`);
     }
 
     if (!response.body) {
-      throw new Error('AI API returned no response body');
+      throw new Error('Ollama returned no response body');
     }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
 
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
@@ -252,48 +246,27 @@ app.post('/chat', requireAuth, checkSuspended, upload.array('files', 5), async (
 
         for (const line of lines) {
           if (!line.trim()) continue;
+          console.log('OLLAMA RAW LINE:', line.trim());
 
-          // Ollama native NDJSON: plain JSON lines
-          if (line.trim().startsWith('{') && !line.trim().startsWith('data:')) {
-            try {
-              const parsed = JSON.parse(line.trim());
-              const delta = parsed.message?.content || parsed.response || '';
-              if (delta) {
-                sentAnything = true;
-                res.write(`data: ${JSON.stringify({ type: 'chunk', text: delta })}\n\n`);
-              }
-              if (parsed.done) {
-                res.write('data: [DONE]\n\n');
-              }
-            } catch (e) {
-              console.error('Failed to parse Ollama native line:', line.trim(), e.message);
-            }
-            continue;
-          }
-
-          // OpenAI SSE format
-          if (!line.trim().startsWith('data:')) continue;
-          const jsonStr = line.trim().slice(5).trim();
-          if (jsonStr === '[DONE]') {
-            res.write('data: [DONE]\n\n');
-            continue;
-          }
           try {
-            const parsed = JSON.parse(jsonStr);
-            const delta = parsed.choices?.[0]?.delta?.content || parsed.choices?.[0]?.text || '';
+            const parsed = JSON.parse(line.trim());
+            const delta = parsed.message?.content || parsed.response || '';
             if (delta) {
               sentAnything = true;
               res.write(`data: ${JSON.stringify({ type: 'chunk', text: delta })}\n\n`);
             }
+            if (parsed.done) {
+              res.write('data: [DONE]\n\n');
+            }
           } catch (e) {
-            console.error('Failed to parse SSE line:', jsonStr, e.message);
+            console.error('OLLAMA PARSE ERROR:', line.trim(), e.message);
           }
         }
       }
 
       if (!sentAnything) {
-        console.warn('AI API returned no content chunks');
-        res.write(`data: ${JSON.stringify({ type: 'chunk', text: 'No response from AI model.' })}\n\n`);
+        console.warn('OLLAMA RETURNED NO CONTENT CHUNKS');
+        res.write(`data: ${JSON.stringify({ type: 'chunk', text: 'No response from model.' })}\n\n`);
       }
 
       if (!res.writableEnded) res.end();

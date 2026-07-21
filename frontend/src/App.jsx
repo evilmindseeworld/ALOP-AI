@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import { ClerkProvider, SignIn, useUser, useAuth } from "@clerk/react";
+import { ClerkProvider, SignIn, useUser, useAuth, SignOutButton } from "@clerk/react";
 import "./App.css";
 
 // ========== CONFIG ==========
@@ -132,10 +132,12 @@ const parseImagePrompt = (text) => {
 
 const buildImageUrl = (prompt) => `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true`;
 
-// ========== LOCAL STORAGE ==========
+// ========== STORAGE ==========
 const Storage = {
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
+  getJson: (k) => { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : null; } catch { return null; } },
+  setJson: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
 
 // ========== ICON COMPONENT ==========
@@ -156,6 +158,8 @@ const Icon = ({ name, size = 18 }) => {
     image: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>,
     mic: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>,
     camera: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>,
+    user: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+    upgrade: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2l9 4v6c0 5.55-3.84 10.74-9 12-5.16-1.26-9-6.45-9-12V6l9-4z"/><path d="M9 12l3-3 3 3"/><path d="M12 9v8"/></svg>,
   };
   return icons[name] || null;
 };
@@ -209,6 +213,14 @@ const GlobalStyles = () => (
     .icon-btn:hover { background: rgba(255,255,255,0.12); transform: translateY(-1px); }
     .icon-btn.active { background: var(--primary); color: #000; border-color: var(--primary); box-shadow: 0 0 20px var(--glow); }
     .admin-btn.active { background: #fbbf24; color: #000; border-color: #fbbf24; box-shadow: 0 0 20px rgba(251,191,36,0.5); }
+    .upgrade-btn {
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
+      color: #000 !important; font-weight: 700 !important;
+      border: none !important; width: auto !important;
+      padding: 0 14px !important; font-size: 12px !important;
+    }
+    .upgrade-btn:hover { box-shadow: 0 0 20px rgba(251,191,36,0.4) !important; }
+    .sign-in-btn { width: auto !important; padding: 0 14px !important; font-size: 12px !important; font-weight: 600 !important; }
     .app-body { flex: 1; display: flex; overflow: hidden; position: relative; }
     .chat-main { flex: 1; display: flex; position: relative; min-width: 0; }
     .chat-content { flex: 1; display: flex; flex-direction: column; min-width: 0; }
@@ -426,94 +438,131 @@ const GlobalStyles = () => (
     .sign-in-overlay {
       width: 100%; height: 100%;
       display: flex;
-      background: #050507;
+      background: #020204;
       overflow: hidden;
     }
     .sign-in-left {
-      flex: 1; position: relative; display: flex; flex-direction: column; justify-content: flex-end; padding: 48px;
-      background: radial-gradient(ellipse at 30% 20%, #2e1065 0%, #1a0b2e 40%, #050507 100%);
+      flex: 1.2; position: relative;
+      display: flex; flex-direction: column; justify-content: space-between;
+      padding: 48px;
+      background: radial-gradient(ellipse at 20% 80%, #2e1065 0%, #0a0512 50%, #020204 100%);
+      overflow: hidden;
     }
     .sign-in-left::before {
       content: ""; position: absolute; inset: 0;
-      background: url('https://images.unsplash.com/photo-1465101162946-4377e57745c3?w=1920&q=80') center/cover;
-      opacity: 0.35;
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(192,132,252,0.15) 0%, transparent 40%),
+        radial-gradient(circle at 80% 70%, rgba(129,140,248,0.12) 0%, transparent 40%),
+        url('https://images.unsplash.com/photo-1465101162946-4377e57745c3?w=1920&q=80');
+      background-size: cover;
+      background-position: center;
+      opacity: 0.4;
     }
-    .sign-in-left-content { position: relative; z-index: 1; max-width: 520px; }
+    .sign-in-left::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(180deg, transparent 0%, #020204 100%);
+    }
+    .sign-in-left-content { position: relative; z-index: 1; max-width: 540px; margin-top: auto; }
     .sign-in-logo {
-      display: flex; align-items: center; gap: 12px; margin-bottom: 24px;
+      display: flex; align-items: center; gap: 14px; margin-bottom: 32px;
     }
     .sign-in-logo-icon {
-      width: 44px; height: 44px; border-radius: 12px;
-      background: linear-gradient(135deg, #c084fc, #818cf8);
+      width: 52px; height: 52px; border-radius: 14px;
+      background: linear-gradient(135deg, #c084fc 0%, #818cf8 100%);
       display: flex; align-items: center; justify-content: center;
-      font-size: 20px; font-weight: 800; color: #000;
-      box-shadow: 0 0 30px rgba(192,132,252,0.4);
+      font-size: 26px; font-weight: 900; color: #000;
+      box-shadow: 0 10px 40px rgba(192,132,252,0.35);
     }
-    .sign-in-logo-text { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
-    .sign-in-headline { font-size: 38px; font-weight: 800; line-height: 1.15; margin-bottom: 16px; }
-    .sign-in-subheadline { font-size: 16px; opacity: 0.7; line-height: 1.6; margin-bottom: 32px; }
+    .sign-in-logo-text { font-size: 32px; font-weight: 900; letter-spacing: -1px; }
+    .sign-in-headline {
+      font-size: 52px; font-weight: 900; line-height: 1.05;
+      margin-bottom: 20px;
+      letter-spacing: -1.5px;
+      background: linear-gradient(135deg, #fff 0%, #c084fc 50%, #818cf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .sign-in-subheadline {
+      font-size: 18px; opacity: 0.65; line-height: 1.7; margin-bottom: 36px; max-width: 460px;
+    }
     .sign-in-features { display: flex; flex-wrap: wrap; gap: 10px; }
     .sign-in-feature {
       display: flex; align-items: center; gap: 6px;
-      padding: 8px 14px; border-radius: 20px;
-      background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08);
-      font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.85);
+      padding: 10px 16px; border-radius: 24px;
+      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+      font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.9);
+      backdrop-filter: blur(8px);
     }
+    .sign-in-trust {
+      position: relative; z-index: 1;
+      display: flex; align-items: center; gap: 16px;
+      margin-top: 48px; font-size: 13px; opacity: 0.5;
+    }
+    .sign-in-trust-dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 12px #34d399; }
     .sign-in-right {
-      width: 460px; max-width: 100%;
+      flex: 1;
       display: flex; align-items: center; justify-content: center;
       padding: 40px;
-      background: #050507;
-      border-left: 1px solid rgba(255,255,255,0.06);
+      background: #020204;
     }
     .sign-in-card {
-      width: 100%; max-width: 360px;
-      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 20px; padding: 32px;
-      backdrop-filter: blur(10px);
+      width: 100%; max-width: 400px;
+      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px; padding: 40px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 25px 80px rgba(0,0,0,0.6);
     }
-    .sign-in-card-title { font-size: 22px; font-weight: 700; margin-bottom: 6px; }
-    .sign-in-card-subtitle { font-size: 13px; opacity: 0.6; margin-bottom: 24px; }
+    .sign-in-card-header { margin-bottom: 28px; }
+    .sign-in-card-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
+    .sign-in-card-subtitle { font-size: 14px; opacity: 0.55; line-height: 1.5; }
     .sign-in-card .cl-signIn,
-    .sign-in-card .cl-card {
-      background: transparent !important;
-      box-shadow: none !important;
-      border: none !important;
-    }
+    .sign-in-card .cl-card,
     .sign-in-card .cl-cardBox {
-      background: transparent !important;
-      border: none !important;
-      box-shadow: none !important;
+      background: transparent !important; box-shadow: none !important; border: none !important;
+      padding: 0 !important;
     }
     .sign-in-card .cl-headerTitle { color: #fff !important; }
-    .sign-in-card .cl-headerSubtitle { color: rgba(255,255,255,0.6) !important; }
+    .sign-in-card .cl-headerSubtitle { color: rgba(255,255,255,0.5) !important; }
     .sign-in-card .cl-dividerLine { background: rgba(255,255,255,0.1) !important; }
-    .sign-in-card .cl-dividerText { color: rgba(255,255,255,0.5) !important; }
-    .sign-in-card .cl-formFieldLabel { color: rgba(255,255,255,0.8) !important; }
+    .sign-in-card .cl-dividerText { color: rgba(255,255,255,0.45) !important; }
+    .sign-in-card .cl-formFieldLabel { color: rgba(255,255,255,0.75) !important; font-size: 13px !important; font-weight: 500 !important; }
     .sign-in-card .cl-input {
       background: rgba(255,255,255,0.05) !important;
       border: 1px solid rgba(255,255,255,0.1) !important;
       color: #fff !important;
-      border-radius: 10px !important;
+      border-radius: 12px !important;
+      padding: 12px 14px !important;
+      font-size: 14px !important;
     }
-    .sign-in-card .cl-input:focus { border-color: #c084fc !important; box-shadow: 0 0 0 3px rgba(192,132,252,0.15) !important; }
+    .sign-in-card .cl-input:focus { border-color: #c084fc !important; box-shadow: 0 0 0 4px rgba(192,132,252,0.12) !important; }
     .sign-in-card .cl-formButtonPrimary {
-      background: linear-gradient(135deg, #c084fc, #818cf8) !important;
-      color: #000 !important;
-      font-weight: 600 !important;
-      border-radius: 10px !important;
+      background: linear-gradient(135deg, #c084fc 0%, #818cf8 100%) !important;
+      color: #000 !important; font-weight: 700 !important;
+      border-radius: 12px !important; padding: 12px !important;
+      box-shadow: 0 4px 20px rgba(192,132,252,0.25) !important;
+      transition: all 0.2s !important;
     }
-    .sign-in-card .cl-formButtonPrimary:hover { box-shadow: 0 0 20px rgba(192,132,252,0.4) !important; }
+    .sign-in-card .cl-formButtonPrimary:hover {
+      transform: translateY(-1px) !important;
+      box-shadow: 0 8px 30px rgba(192,132,252,0.4) !important;
+    }
     .sign-in-card .cl-socialButtonsBlockButton {
       background: rgba(255,255,255,0.05) !important;
       border: 1px solid rgba(255,255,255,0.1) !important;
-      color: #fff !important;
-      border-radius: 10px !important;
+      color: #fff !important; font-weight: 500 !important;
+      border-radius: 12px !important; padding: 12px !important;
     }
     .sign-in-card .cl-socialButtonsBlockButton:hover { background: rgba(255,255,255,0.1) !important; }
-    .sign-in-card .cl-footerActionLink { color: #c084fc !important; }
+    .sign-in-card .cl-footerActionLink { color: #c084fc !important; font-weight: 500 !important; }
     .sign-in-card .cl-identityPreviewText { color: #fff !important; }
     .sign-in-card .cl-identityPreviewEditButton { color: #c084fc !important; }
+    .sign-in-card .cl-alternativeMethodsBlockButton,
+    .sign-in-card .cl-verificationLinkButton { color: #c084fc !important; }
+    .sign-in-guarantee {
+      margin-top: 24px; text-align: center;
+      font-size: 12px; opacity: 0.4;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
     .camera-overlay {
       position: fixed; inset: 0; z-index: 100;
       background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -650,7 +699,7 @@ const InputBar = ({ text, setText, onSend, disabled, attachments, setAttachments
 
 const AuthenticatedApp = () => {
   const { user, isLoaded } = useUser();
-  const { getToken } = useAuth();
+  const { getToken, isSignedIn } = useAuth();
 
   const [themeKey, setThemeKey] = useState(() => Storage.get("pa-theme") || "nebula");
   const [customBg, setCustomBg] = useState(() => Storage.get("pa-custom-bg") || "");
@@ -662,12 +711,15 @@ const AuthenticatedApp = () => {
   const [showSettings, setShowSettings] = useState(false);
   const [showMemory, setShowMemory] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
+  const [showPricing, setShowPricing] = useState(false);
+  const [showSignIn, setShowSignIn] = useState(false);
   const [adminUsers, setAdminUsers] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [userPlan, setUserPlan] = useState('free');
   const [toast, setToast] = useState(null);
 
-  const [chats, setChats] = useState([]);
-  const [activeChatId, setActiveChatId] = useState(null);
+  const [chats, setChats] = useState(() => Storage.getJson("pa-guest-chats") || []);
+  const [activeChatId, setActiveChatId] = useState(() => Storage.get("pa-guest-active-chat"));
   const [model, setModel] = useState(() => Storage.get("pa-model") || "glm-5.2");
   const [temperature, setTemperature] = useState(() => parseFloat(Storage.get("pa-temperature") || "0.7"));
   const [status, setStatus] = useState("idle");
@@ -681,6 +733,8 @@ const AuthenticatedApp = () => {
   const chatRef = useRef(null);
   const abortRef = useRef(null);
 
+  const isGuest = !isSignedIn;
+
   useEffect(() => Storage.set("pa-theme", themeKey), [themeKey]);
   useEffect(() => Storage.set("pa-custom-bg", customBg), [customBg]);
   useEffect(() => Storage.set("pa-custom-primary", customPrimary), [customPrimary]);
@@ -689,11 +743,14 @@ const AuthenticatedApp = () => {
   useEffect(() => Storage.set("pa-sidebar-collapsed", sidebarCollapsed.toString()), [sidebarCollapsed]);
   useEffect(() => Storage.set("pa-model", model), [model]);
   useEffect(() => Storage.set("pa-temperature", temperature.toString()), [temperature]);
+  useEffect(() => Storage.setJson("pa-guest-chats", chats), [chats]);
+  useEffect(() => { if (activeChatId) Storage.set("pa-guest-active-chat", activeChatId); }, [activeChatId]);
 
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); }, [toast]);
   useEffect(() => { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [chats, activeChatId]);
 
   const api = async (path, options = {}) => {
+    if (isGuest) throw new Error('Sign in required');
     const token = await getToken();
     return fetch(`${API_BASE}${path}`, {
       ...options,
@@ -714,21 +771,31 @@ const AuthenticatedApp = () => {
   };
 
   const loadChats = useCallback(async () => {
+    if (isGuest) return;
     try {
       const r = await api('/api/chats');
       const data = await r.json();
-      if (Array.isArray(data)) {
+      if (Array.isArray(data) && data.length > 0) {
         setChats(data);
-        if (!activeChatId && data.length) setActiveChatId(data[0].id);
+        if (!activeChatId) setActiveChatId(data[0].id);
       }
     } catch (err) { console.error('Load chats failed', err); }
-  }, [activeChatId]);
+  }, [isGuest, activeChatId]);
 
-  useEffect(() => { if (isLoaded && user) loadChats(); }, [isLoaded, user, loadChats]);
+  const fetchPlan = useCallback(async () => {
+    if (isGuest) return;
+    try {
+      const r = await api('/api/user/plan');
+      const data = await r.json();
+      setUserPlan(data.plan || 'free');
+    } catch (err) { console.error('Fetch plan failed', err); }
+  }, [isGuest]);
+
+  useEffect(() => { if (isLoaded) { loadChats(); fetchPlan(); } }, [isLoaded, loadChats, fetchPlan]);
 
   useEffect(() => {
     const checkAdmin = async () => {
-      if (!user?.emailAddresses?.[0]?.emailAddress) return;
+      if (isGuest || !user?.emailAddresses?.[0]?.emailAddress) return;
       try {
         const r = await api('/api/admin/users');
         if (r.ok) {
@@ -738,8 +805,8 @@ const AuthenticatedApp = () => {
         }
       } catch {}
     };
-    if (isLoaded && user) checkAdmin();
-  }, [isLoaded, user]);
+    if (isLoaded) checkAdmin();
+  }, [isLoaded, user, isGuest]);
 
   useEffect(() => { if (isAdmin) fetchAdminUsers(); }, [isAdmin]);
 
@@ -747,36 +814,42 @@ const AuthenticatedApp = () => {
   const activeMessages = activeChat?.messages || [];
 
   const createChat = async () => {
-    try {
-      const r = await api('/api/chats', { method: 'POST', body: JSON.stringify({ title: 'New Chat' }) });
-      const data = await r.json();
-      setChats(prev => [data, ...prev]);
-      setActiveChatId(data.id);
-      setInputText(""); setAttachments([]);
-    } catch (err) { setToast('Failed to create chat'); }
+    const newChat = { id: uid(), title: 'New Chat', messages: [], updated_at: new Date().toISOString(), created_at: new Date().toISOString() };
+    setChats(prev => [newChat, ...prev]);
+    setActiveChatId(newChat.id);
+    setInputText(""); setAttachments([]);
+    if (!isGuest) {
+      try {
+        const r = await api('/api/chats', { method: 'POST', body: JSON.stringify({ title: 'New Chat' }) });
+        const data = await r.json();
+        setChats(prev => prev.map(c => c.id === newChat.id ? { ...data, messages: [] } : c));
+        setActiveChatId(data.id);
+      } catch {}
+    }
   };
 
   const updateChatMessages = async (chatId, messages, saveToDb = true) => {
     setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages, updated_at: new Date().toISOString() } : c));
-    if (!saveToDb) return;
-    try {
-      await api(`/api/chats/${chatId}`, { method: 'PUT', body: JSON.stringify({ messages }) });
-    } catch (err) { console.error('Save chat failed', err); }
+    if (!isGuest && saveToDb) {
+      try {
+        await api(`/api/chats/${chatId}`, { method: 'PUT', body: JSON.stringify({ messages }) });
+      } catch (err) { console.error('Save chat failed', err); }
+    }
   };
 
   const deleteChat = async (id) => {
-    try {
-      await api(`/api/chats/${id}`, { method: 'DELETE' });
-      setChats(prev => prev.filter(c => c.id !== id));
-      if (activeChatId === id) setActiveChatId(null);
-    } catch (err) { setToast('Failed to delete chat'); }
+    setChats(prev => prev.filter(c => c.id !== id));
+    if (activeChatId === id) setActiveChatId(null);
+    if (!isGuest) {
+      try { await api(`/api/chats/${id}`, { method: 'DELETE' }); } catch {}
+    }
   };
 
   const renameChat = async (id, title) => {
     setChats(prev => prev.map(c => c.id === id ? { ...c, title } : c));
-    try {
-      await api(`/api/chats/${id}`, { method: 'PUT', body: JSON.stringify({ title }) });
-    } catch {}
+    if (!isGuest) {
+      try { await api(`/api/chats/${id}`, { method: 'PUT', body: JSON.stringify({ title }) }); } catch {}
+    }
   };
 
   const togglePinChat = (id) => setChats(prev => prev.map(c => c.id === id ? { ...c, pinned: !c.pinned } : c));
@@ -792,25 +865,22 @@ const AuthenticatedApp = () => {
     try {
       const r = await api(`/api/admin/users/${id}/suspend`, { method: 'POST' });
       if (r.ok) { setToast('User suspended'); fetchAdminUsers(); }
-      else setToast('Failed to suspend');
-    } catch { setToast('Failed to suspend'); }
+    } catch {}
   };
 
   const adminUnsuspend = async (id) => {
     try {
       const r = await api(`/api/admin/users/${id}/unsuspend`, { method: 'POST' });
       if (r.ok) { setToast('User unsuspended'); fetchAdminUsers(); }
-      else setToast('Failed to unsuspend');
-    } catch { setToast('Failed to unsuspend'); }
+    } catch {}
   };
 
   const adminDeleteUser = async (id) => {
-    if (!confirm('DELETE this user and all their data? This cannot be undone.')) return;
+    if (!confirm('DELETE this user and all their data?')) return;
     try {
       const r = await api(`/api/admin/users/${id}`, { method: 'DELETE' });
       if (r.ok) { setToast('User deleted'); fetchAdminUsers(); }
-      else setToast('Failed to delete');
-    } catch { setToast('Failed to delete'); }
+    } catch {}
   };
 
   const handleFileSelect = (e) => {
@@ -850,44 +920,22 @@ const AuthenticatedApp = () => {
 
   const stopListening = useCallback(() => {
     if (listenTimerRef.current) clearTimeout(listenTimerRef.current);
-    if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch {}
-      recognitionRef.current = null;
-    }
+    if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; }
     setIsListening(false);
   }, []);
 
   const startListening = useCallback(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognition) { setToast("Voice input needs Chrome/Edge/Safari"); return; }
-    if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; }
     try {
       const r = new SpeechRecognition();
       r.continuous = false; r.interimResults = false; r.lang = "en-US"; r.maxAlternatives = 1;
-      r.onstart = () => {
-        setIsListening(true);
-        listenTimerRef.current = setTimeout(() => { try { r.stop(); } catch {} }, 10000);
-      };
-      r.onend = () => {
-        setIsListening(false);
-        if (listenTimerRef.current) clearTimeout(listenTimerRef.current);
-        recognitionRef.current = null;
-      };
-      r.onresult = (e) => {
-        let t = "";
-        for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript;
-        if (t.trim()) setInputText(p => p + t + " ");
-      };
-      r.onerror = (e) => {
-        if (e.error === "not-allowed") setToast("Microphone permission denied");
-        else if (e.error === "no-speech") setToast("No speech detected");
-        else if (e.error !== "aborted") setToast("Voice error: " + e.error);
-        setIsListening(false);
-        if (listenTimerRef.current) clearTimeout(listenTimerRef.current);
-        recognitionRef.current = null;
-      };
+      r.onstart = () => { setIsListening(true); listenTimerRef.current = setTimeout(() => { try { r.stop(); } catch {} }, 10000); };
+      r.onend = () => { setIsListening(false); if (listenTimerRef.current) clearTimeout(listenTimerRef.current); recognitionRef.current = null; };
+      r.onresult = (e) => { let t = ""; for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript; if (t.trim()) setInputText(p => p + t + " "); };
+      r.onerror = () => { setIsListening(false); recognitionRef.current = null; };
       r.start(); recognitionRef.current = r;
-    } catch { setToast("Could not start voice input"); setIsListening(false); }
+    } catch {}
   }, []);
 
   const toggleListening = useCallback(() => {
@@ -929,7 +977,7 @@ const AuthenticatedApp = () => {
     abortRef.current = new AbortController();
 
     try {
-      const token = await getToken();
+      const token = isGuest ? '' : await getToken();
       const formData = new FormData();
       formData.append("message", cleanText || "");
       formData.append("modelType", model);
@@ -941,10 +989,14 @@ const AuthenticatedApp = () => {
         method: "POST",
         body: formData,
         signal: abortRef.current.signal,
-        headers: { Authorization: `Bearer ${token}` }
+        headers: isGuest ? {} : { Authorization: `Bearer ${token}` }
       });
 
-      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || `Server error: ${res.status}`); }
+      if (!res.ok) {
+        if (res.status === 401) { setShowSignIn(true); throw new Error('Please sign in to chat'); }
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.error || `Server error: ${res.status}`);
+      }
       if (!res.body) throw new Error("Streaming not supported");
 
       setStatus("streaming");
@@ -979,7 +1031,26 @@ const AuthenticatedApp = () => {
       await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: `⚠️ ${err.message || 'Connection failed'}` }]);
     }
     setAttachments([]); setInputText("");
-  }, [activeChatId, activeMessages, model, temperature, status, attachments, generateImage]);
+  }, [activeChatId, activeMessages, model, temperature, status, attachments, generateImage, isGuest]);
+
+  const upgrade = async (planType) => {
+    if (isGuest) { setShowSignIn(true); return; }
+    try {
+      const r = await api('/api/create-checkout-session', { method: 'POST', body: JSON.stringify({ plan: planType }) });
+      const data = await r.json();
+      if (data.url) window.location.href = data.url;
+      else setToast('Failed to start checkout');
+    } catch { setToast('Please sign in to upgrade'); setShowSignIn(true); }
+  };
+
+  const manageSubscription = async () => {
+    if (isGuest) { setShowSignIn(true); return; }
+    try {
+      const r = await api('/api/create-portal-session', { method: 'POST' });
+      const data = await r.json();
+      if (data.url) window.location.href = data.url;
+    } catch { setToast('No active subscription found'); }
+  };
 
   const theme = THEMES[themeKey] || THEMES.nebula;
   const primary = customPrimary || theme.primary;
@@ -1009,17 +1080,85 @@ const AuthenticatedApp = () => {
           <button className="icon-btn desktop-only" onClick={() => setSidebarCollapsed(c => !c)} title="Chats"><Icon name="menu" size={20} /></button>
           <div className="brand">
             <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
-            <span className="sub-title">{getModelDisplayName(model)}</span>
+            <span className="sub-title">{getModelDisplayName(model)} {isGuest && "• Guest mode"}</span>
           </div>
           <div className="header-actions">
             {isAdmin && <button className={`icon-btn admin-btn ${showAdmin ? "active" : ""}`} onClick={() => { setShowAdmin(s => !s); setShowSettings(false); setShowMemory(false); }} title="Admin"><Icon name="crown" size={20} /></button>}
-            <button className="icon-btn" onClick={() => { setShowMemory(s => !s); setShowSettings(false); setShowAdmin(false); }} title="Memory"><Icon name="brain" size={20} /></button>
+            <button className={`icon-btn ${showMemory ? "active" : ""}`} onClick={() => { setShowMemory(s => !s); setShowSettings(false); setShowAdmin(false); }} title="Memory"><Icon name="brain" size={20} /></button>
+            <button className="icon-btn" onClick={() => setShowPricing(true)} title="Upgrade"><Icon name="upgrade" size={20} /></button>
             <button className="icon-btn" onClick={() => { setShowSettings(s => !s); setShowMemory(false); setShowAdmin(false); }} title="Settings"><Icon name="settings" size={20} /></button>
+            {isGuest ? (
+              <button className="icon-btn sign-in-btn" onClick={() => setShowSignIn(true)} title="Sign in"><Icon name="user" size={20} /></button>
+            ) : (
+              <SignOutButton>
+                <button className="icon-btn" title="Sign out"><Icon name="user" size={20} /></button>
+              </SignOutButton>
+            )}
           </div>
         </header>
         <div className="app-body">
           <ChatSidebar chats={sortedChats} activeChatId={activeChatId} onSelect={setActiveChatId} onCreate={createChat} onDelete={deleteChat} onRename={renameChat} onPin={togglePinChat} onFavorite={toggleFavoriteChat} collapsed={sidebarCollapsed} mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />
           <div className="chat-main">
+            {showPricing && <>
+              <div className="panel-overlay" onClick={() => setShowPricing(false)} />
+              <div className="side-panel">
+                <div className="panel-header">
+                  <div className="panel-title">Upgrade to Pro</div>
+                  <button onClick={() => setShowPricing(false)} className="icon-btn"><Icon name="close" size={18} /></button>
+                </div>
+                <div className="panel-body">
+                  <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                    <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Unlock AI Council</div>
+                    <div style={{ fontSize: 13, opacity: 0.6 }}>Multiple AI models debate and synthesize the best answer.</div>
+                  </div>
+                  <div style={{ display: 'grid', gap: 12 }}>
+                    <div className="memory-card" style={{ borderColor: userPlan === 'pro' ? '#fbbf24' : 'rgba(255,255,255,0.1)' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <div style={{ fontSize: 18, fontWeight: 700 }}>Pro Monthly</div>
+                        <div style={{ fontSize: 24, fontWeight: 800, color: '#fbbf24' }}>$9.99<span style={{ fontSize: 12, opacity: 0.6, color: '#fff' }}>/mo</span></div>
+                      </div>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 16px', fontSize: 13, opacity: 0.8, lineHeight: 1.8 }}>
+                        <li>✅ AI Council (9 models)</li>
+                        <li>✅ Unlimited image generation</li>
+                        <li>✅ File & vision analysis</li>
+                        <li>✅ Voice input</li>
+                        <li>✅ Priority support</li>
+                      </ul>
+                      <button onClick={() => upgrade('monthly')} className="new-chat-btn" style={{ width: '100%' }}>{userPlan === 'pro' ? 'Current Plan' : 'Upgrade Monthly'}</button>
+                    </div>
+                    <div className="memory-card" style={{ borderColor: userPlan === 'pro' ? 'transparent' : 'rgba(255,255,255,0.1)', position: 'relative' }}>
+                      <div style={{ position: 'absolute', top: -10, right: 14, background: '#fbbf24', color: '#000', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 12 }}>SAVE 17%</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                        <div style={{ fontSize: 18, fontWeight: 700 }}>Pro Yearly</div>
+                        <div style={{ fontSize: 24, fontWeight: 800, color: '#fbbf24' }}>$99<span style={{ fontSize: 12, opacity: 0.6, color: '#fff' }}>/yr</span></div>
+                      </div>
+                      <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 16px', fontSize: 13, opacity: 0.8, lineHeight: 1.8 }}>
+                        <li>✅ Everything in Pro Monthly</li>
+                        <li>✅ 2 months free</li>
+                        <li>✅ Early access to new models</li>
+                      </ul>
+                      <button onClick={() => upgrade('yearly')} className="new-chat-btn" style={{ width: '100%', background: userPlan === 'pro' ? 'rgba(255,255,255,0.1)' : '#fbbf24', color: userPlan === 'pro' ? '#fff' : '#000' }}>{userPlan === 'pro' ? 'Current Plan' : 'Upgrade Yearly'}</button>
+                    </div>
+                    {userPlan === 'pro' && (
+                      <button onClick={manageSubscription} className="theme-card">Manage subscription</button>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </>}
+            {showSignIn && <>
+              <div className="panel-overlay" onClick={() => setShowSignIn(false)} />
+              <div className="side-panel">
+                <div className="panel-header">
+                  <div className="panel-title">Sign in</div>
+                  <button onClick={() => setShowSignIn(false)} className="icon-btn"><Icon name="close" size={18} /></button>
+                </div>
+                <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div style={{ fontSize: 16, opacity: 0.7, textAlign: 'center', marginBottom: 20 }}>Sign in to sync your chats across devices and unlock Pro features.</div>
+                  <SignIn />
+                </div>
+              </div>
+            </>}
             {showAdmin && isAdmin && <>
               <div className="panel-overlay" onClick={() => setShowAdmin(false)} />
               <div className="side-panel">
@@ -1132,7 +1271,7 @@ const AuthenticatedApp = () => {
               <div className="scroll-wrapper" ref={chatRef}>
                 {activeMessages.length === 0 && status === "idle" && <div className="empty-state">
                   <h2 className="empty-title">ALOP-AI</h2>
-                  <p className="empty-subtitle">Ask anything, upload photos, take a picture, use your voice, or type "generate image of..."</p>
+                  <p className="empty-subtitle">Ask anything, upload photos, take a picture, use your voice, or type "generate image of..."<br/><br/>{isGuest ? "Sign in anytime to sync your chats across devices." : ""}</p>
                 </div>}
                 {activeMessages.map((msg, idx) => (
                   <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
@@ -1175,36 +1314,7 @@ const AuthenticatedAppWrapper = () => {
   const { isSignedIn, isLoaded } = useUser();
   if (!isLoaded) return null;
   if (!isSignedIn) {
-    return (
-      <div className="sign-in-overlay">
-        <div className="sign-in-left">
-          <div className="sign-in-left-content">
-            <div className="sign-in-logo">
-              <div className="sign-in-logo-icon">A</div>
-              <div className="sign-in-logo-text">ALOP-AI</div>
-            </div>
-            <h1 className="sign-in-headline">Your all-in-one AI assistant for everything.</h1>
-            <p className="sign-in-subheadline">
-              Chat with frontier models, generate images, analyze photos, speak naturally, and build your own knowledge base — all in one place.
-            </p>
-            <div className="sign-in-features">
-              <div className="sign-in-feature">⚡ 50+ AI Models</div>
-              <div className="sign-in-feature">🖼️ Image Generation</div>
-              <div className="sign-in-feature">👁️ Vision & Files</div>
-              <div className="sign-in-feature">🎙️ Voice Input</div>
-              <div className="sign-in-feature">🔒 Secure by default</div>
-            </div>
-          </div>
-        </div>
-        <div className="sign-in-right">
-          <div className="sign-in-card">
-            <div className="sign-in-card-title">Welcome back</div>
-            <div className="sign-in-card-subtitle">Sign in to continue to ALOP-AI</div>
-            <SignIn />
-          </div>
-        </div>
-      </div>
-    );
+    return <AuthenticatedApp />;
   }
   return <AuthenticatedApp />;
 };

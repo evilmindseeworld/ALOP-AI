@@ -1013,8 +1013,8 @@ const AuthenticatedApp = () => {
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {[
-                      { name: "Pro Monthly", price: "$9.99", unit: "/month", day: "$0.33/day", save: null, popular: false },
-                      { name: "Pro Yearly", price: "$99", unit: "/year", day: "$0.27/day", save: "Save 17%", popular: true },
+                      { name: "Pro Monthly", price: "$8", unit: "/month", day: "$0.27/day", save: null, popular: false },
+{ name: "Pro Yearly", price: "$80", unit: "/year", day: "$0.22/day", save: "Save 17%", popular: true },
                     ].map((planOption) => (
                       <div key={planOption.name} className="memory-card" style={{
                         border: `1px solid ${planOption.popular ? '#fbbf24' : 'rgba(255,255,255,0.1)'}`,
@@ -1272,8 +1272,11 @@ const AuthenticatedAppWrapper = () => {
               One account for every frontier AI model. Chat, generate images, analyze files, and build your personal knowledge base.
             </div>
             <div className="sign-in-card">
-              <SignIn />
-            </div>
+  <SignIn
+    fallbackRedirectUrl="/"
+    signUpFallbackRedirectUrl="/"
+  />
+</div>
             <div className="sign-in-trust-badges">
               <span>🔒</span> Secure authentication
               <span>•</span>

@@ -28,11 +28,6 @@ const MODELS = {
   ]
 };
 
-const FREE_COUNCIL_MODELS = ["gemma4", "qwen3.5", "glm-5.2", "kimi-k2.5"];
-const PRO_COUNCIL_MODELS = [
-  ...MODELS.fast.map((m) => m.key),
-  ...MODELS.reasoning.map((m) => m.key),
-];
 const VISION_MODELS = ["gemma4", "kimi-k2.6", "kimi-k2.5", "gemini-3-flash-preview", "minimax-m3"];
 
 const BACKGROUND_PRESETS = {
@@ -254,12 +249,6 @@ const Icon = ({ name, size = 18 }) => {
         <circle cx="12" cy="13" r="4" />
       </svg>
     ),
-    user: (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-        <circle cx="12" cy="7" r="4" />
-      </svg>
-    ),
     upgrade: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M12 2l9 4v6c0 5.55-3.84 10.74-9 12-5.16-1.26-9-6.45-9-12V6l9-4z" />
@@ -271,17 +260,12 @@ const Icon = ({ name, size = 18 }) => {
   return icons[name] || null;
 };
 
-const MessageActions = ({ content, onCopy, onRegenerate }) => {
+const MessageActions = ({ content, onCopy }) => {
   return (
     <div className="msg-actions">
       <button className="msg-action-btn" onClick={onCopy}>
         <Icon name="copy" size={13} /> Copy
       </button>
-      {onRegenerate && (
-        <button className="msg-action-btn" onClick={onRegenerate}>
-          <Icon name="refresh" size={13} /> Retry
-        </button>
-      )}
     </div>
   );
 };
@@ -407,9 +391,6 @@ const InputBar = ({
   onStartCamera,
   isListening,
   toggleListening,
-  councilMode,
-  setCouncilMode,
-  plan,
 }) => {
   const [rows, setRows] = useState(1);
 
@@ -431,26 +412,6 @@ const InputBar = ({
 
   return (
     <div className="input-bar">
-      <div
-        style={{
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 8,
-          paddingRight: 8,
-        }}
-      >
-        <button
-          className={`icon-btn ${councilMode ? "active" : ""}`}
-          onClick={() => setCouncilMode((c) => !c)}
-          title={plan === "pro" ? "AI Council (14 models)" : "AI Council (4 models)"}
-          style={{ width: 44, height: 44, borderRadius: 12 }}
-        >
-          <Icon name="brain" size={20} />
-        </button>
-        <span style={{ fontSize: 10, opacity: 0.6, writingMode: "vertical-rl" }}>COUNCIL</span>
-      </div>
-
       <div className="input-wrapper">
         {attachments.length > 0 && (
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
@@ -469,11 +430,7 @@ const InputBar = ({
           value={text}
           onChange={(e) => setText(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={
-            councilMode
-              ? "Ask the AI Council anything..."
-              : "Ask anything, upload a photo, take a picture, use voice, or type 'generate image of...'"
-          }
+          placeholder="Ask the AI Council anything, upload a photo, take a picture, or use your voice..."
           disabled={disabled}
         />
 
@@ -541,13 +498,10 @@ const AuthenticatedApp = () => {
   const [adminUsers, setAdminUsers] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userPlan, setUserPlan] = useState("free");
-  const [councilMode, setCouncilMode] = useState(() => Storage.get("pa-council") === "true");
   const [toast, setToast] = useState(null);
 
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
-  const [model, setModel] = useState(() => Storage.get("pa-model") || "glm-5.2");
-  const [temperature, setTemperature] = useState(() => parseFloat(Storage.get("pa-temperature") || "0.7"));
   const [status, setStatus] = useState("idle");
 
   const [attachments, setAttachments] = useState([]);
@@ -567,9 +521,6 @@ const AuthenticatedApp = () => {
   useEffect(() => Storage.set("pa-custom-primary", customPrimary), [customPrimary]);
   useEffect(() => Storage.set("pa-bg-opacity", bgOpacity.toString()), [bgOpacity]);
   useEffect(() => Storage.set("pa-sidebar-collapsed", sidebarCollapsed.toString()), [sidebarCollapsed]);
-  useEffect(() => Storage.set("pa-model", model), [model]);
-  useEffect(() => Storage.set("pa-temperature", temperature.toString()), [temperature]);
-  useEffect(() => Storage.set("pa-council", councilMode.toString()), [councilMode]);
 
   useEffect(() => {
     if (!toast) return;
@@ -885,25 +836,16 @@ const AuthenticatedApp = () => {
         generateImage(cleanText);
         return;
       }
-      if (councilMode && attachments.length > 0) {
-        setToast("AI Council does not support file uploads yet");
+      if (attachments.length > 0) {
+        setToast("File upload temporarily disabled in Council mode");
         return;
       }
-      if (!VISION_MODELS.includes(model) && attachments.length > 0 && !councilMode) {
-        setToast(`${getModelDisplayName(model)} cannot see images`);
-        return;
-      }
-      if ((!cleanText && !attachments.length) || status !== "idle") return;
+      if (!cleanText || status !== "idle") return;
 
       setStatus("loading");
       const userMsg = {
         role: "user",
-        content: cleanText || "",
-        attachments: attachments.map((f) => ({
-          name: f.name,
-          url: URL.createObjectURL(f),
-          type: f.type,
-        })),
+        content: cleanText,
         ts: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         id: uid(),
       };
@@ -917,7 +859,6 @@ const AuthenticatedApp = () => {
         typing: true,
         ts: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         id: assistantId,
-        isCouncil: councilMode,
       };
       updateChatMessages(chatId, [...updated, assistantMsg], false);
 
@@ -926,39 +867,18 @@ const AuthenticatedApp = () => {
 
       try {
         const token = await getToken();
-        let res;
-
-        if (councilMode) {
-          res = await fetch(`${API_BASE}/api/council`, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              message: cleanText,
-              history: activeMessages.slice(-6).map((m) => ({ role: m.role, content: m.content })),
-              plan: userPlan,
-            }),
-            signal: abortRef.current.signal,
-          });
-        } else {
-          const formData = new FormData();
-          formData.append("message", cleanText || "");
-          formData.append("modelType", model);
-          formData.append("temperature", temperature.toString());
-          formData.append(
-            "messages",
-            JSON.stringify(activeMessages.slice(-10).map((m) => ({ role: m.role, content: m.content })))
-          );
-          attachments.forEach((f) => formData.append("files", f));
-          res = await fetch(`${API_BASE}/chat`, {
-            method: "POST",
-            body: formData,
-            signal: abortRef.current.signal,
-            headers: { Authorization: `Bearer ${token}` },
-          });
-        }
+        const res = await fetch(`${API_BASE}/api/council`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: cleanText,
+            history: activeMessages.slice(-6).map((m) => ({ role: m.role, content: m.content })),
+          }),
+          signal: abortRef.current.signal,
+        });
 
         if (!res.ok) {
           const d = await res.json().catch(() => ({}));
@@ -1002,10 +922,9 @@ const AuthenticatedApp = () => {
           { ...assistantMsg, typing: false, content: `⚠️ ${err.message || "Connection failed"}` },
         ]);
       }
-      setAttachments([]);
       setInputText("");
     },
-    [activeChatId, activeMessages, model, temperature, status, attachments, generateImage, councilMode, userPlan]
+    [activeChatId, activeMessages, status, generateImage]
   );
 
   const upgrade = async (planType) => {
@@ -1031,7 +950,10 @@ const AuthenticatedApp = () => {
 
   const theme = THEMES[themeKey] || THEMES.nebula;
   const primary = customPrimary || theme.primary;
-  const bgLayerStyle = customBg ? { backgroundImage: `url(${customBg})` } : { backgroundImage: theme.bg };
+
+  const bgLayerStyle = customBg
+    ? { backgroundImage: `url(${customBg})` }
+    : { backgroundImage: theme.bg };
   const overlayStyle = { backgroundColor: `rgba(0,0,0,${1 - bgOpacity})` };
 
   if (!isLoaded) return null;
@@ -1059,18 +981,28 @@ const AuthenticatedApp = () => {
 
       <div className="app-shell">
         <header className="app-header">
-          <button className="icon-btn mobile-only" onClick={() => setMobileSidebarOpen(true)} title="Chats">
+          <button
+            className="icon-btn mobile-only"
+            onClick={() => setMobileSidebarOpen(true)}
+            title="Chats"
+          >
             <Icon name="menu" size={20} />
           </button>
-          <button className="icon-btn desktop-only" onClick={() => setSidebarCollapsed((c) => !c)} title="Chats">
+          <button
+            className="icon-btn desktop-only"
+            onClick={() => setSidebarCollapsed((c) => !c)}
+            title="Chats"
+          >
             <Icon name="menu" size={20} />
           </button>
+
           <div className="brand">
             <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
             <span className="sub-title">
-              {councilMode ? `AI Council • ${userPlan === "pro" ? "14 models" : "4 models"}` : getModelDisplayName(model)}
+              AI Council • {userPlan === "pro" ? "14 models" : "4 models"}
             </span>
           </div>
+
           <div className="header-actions">
             {isAdmin && (
               <button
@@ -1084,7 +1016,11 @@ const AuthenticatedApp = () => {
                 <Icon name="crown" size={20} />
               </button>
             )}
-            <button className="icon-btn" onClick={() => setShowPricing(true)} title="Upgrade">
+            <button
+              className="icon-btn"
+              onClick={() => setShowPricing(true)}
+              title="Upgrade"
+            >
               <Icon name="upgrade" size={20} />
             </button>
             <button
@@ -1097,14 +1033,8 @@ const AuthenticatedApp = () => {
             >
               <Icon name="settings" size={20} />
             </button>
-            <SignOutButton>
-              <button className="icon-btn" title="Sign out">
-                <Icon name="user" size={20} />
-              </button>
-            </SignOutButton>
           </div>
         </header>
-
         <div className="app-body">
           <ChatSidebar
             chats={sortedChats}
@@ -1126,24 +1056,28 @@ const AuthenticatedApp = () => {
                 <div className="panel-overlay" onClick={() => setShowPricing(false)} />
                 <div className="side-panel">
                   <div className="panel-header">
-                    <div className="panel-title">Upgrade 🚀</div>
+                    <div className="panel-title">Upgrade to Pro 🚀</div>
                     <button onClick={() => setShowPricing(false)} className="icon-btn">
                       <Icon name="close" size={18} />
                     </button>
                   </div>
                   <div className="panel-body">
                     <div style={{ textAlign: "center", marginBottom: 24, fontSize: 15, opacity: 0.6 }}>
-                      Unlock AI Council with all 14 models, unlimited images, vision, voice, and priority support.
+                      Unlock the full AI Council with all 14 models, plus unlimited images, vision, voice, and priority support.
                     </div>
+
                     <div className="memory-card" style={{ border: "1px solid rgba(255,255,255,0.1)", padding: 18, borderRadius: 16, marginBottom: 12 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>Pro Monthly</div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <div style={{ fontSize: 16, fontWeight: 700 }}>Pro Monthly</div>
+                          <div style={{ fontSize: 12, opacity: 0.5, marginTop: 4 }}>$0.27/day</div>
+                        </div>
                         <div style={{ fontSize: 22, fontWeight: 800 }}>
                           $8<span style={{ fontSize: 12, opacity: 0.5 }}>/mo</span>
                         </div>
                       </div>
-                      <div style={{ fontSize: 12, opacity: 0.5, textAlign: "right" }}>$0.27/day</div>
                     </div>
+
                     <div className="memory-card" style={{ border: "1px solid #fbbf24", padding: 18, borderRadius: 16, position: "relative" }}>
                       <div
                         style={{
@@ -1175,14 +1109,17 @@ const AuthenticatedApp = () => {
                       >
                         Most Popular
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between" }}>
-                        <div style={{ fontSize: 16, fontWeight: 700 }}>Pro Yearly</div>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <div style={{ fontSize: 16, fontWeight: 700 }}>Pro Yearly</div>
+                          <div style={{ fontSize: 12, opacity: 0.5, marginTop: 4 }}>$0.22/day</div>
+                        </div>
                         <div style={{ fontSize: 22, fontWeight: 800 }}>
                           $80<span style={{ fontSize: 12, opacity: 0.5 }}>/yr</span>
                         </div>
                       </div>
-                      <div style={{ fontSize: 12, opacity: 0.5, textAlign: "right" }}>$0.22/day</div>
                     </div>
+
                     <button
                       onClick={() => upgrade("yearly")}
                       className="new-chat-btn"
@@ -1197,6 +1134,7 @@ const AuthenticatedApp = () => {
                     >
                       Continue
                     </button>
+
                     <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                       <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Pro includes</div>
                       <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: 13, opacity: 0.8, lineHeight: 1.9 }}>
@@ -1207,6 +1145,16 @@ const AuthenticatedApp = () => {
                         <li>✅ Cloud sync & priority support</li>
                       </ul>
                     </div>
+
+                    {userPlan === "pro" && (
+                      <button
+                        onClick={manageSubscription}
+                        className="theme-card"
+                        style={{ width: "100%", marginTop: 16 }}
+                      >
+                        Manage subscription
+                      </button>
+                    )}
                   </div>
                 </div>
               </>
@@ -1217,7 +1165,7 @@ const AuthenticatedApp = () => {
                 <div className="panel-overlay" onClick={() => setShowAdmin(false)} />
                 <div className="side-panel">
                   <div className="panel-header">
-                    <div className="panel-title">Admin</div>
+                    <div className="panel-title">Admin Dashboard</div>
                     <button onClick={() => setShowAdmin(false)} className="icon-btn">
                       <Icon name="close" size={18} />
                     </button>
@@ -1232,7 +1180,9 @@ const AuthenticatedApp = () => {
                             <div style={{ fontWeight: 600, fontSize: 13 }}>{u.name || "Anonymous"}</div>
                             <div style={{ fontSize: 11, opacity: 0.6 }}>{u.email || "No email"}</div>
                           </div>
-                          <span className={`admin-badge ${u.plan === "pro" ? "pro" : "free"}`}>{u.plan || "free"}</span>
+                          <span className={`admin-badge ${u.plan === "pro" ? "pro" : "free"}`}>
+                            {u.plan || "free"}
+                          </span>
                           {u.is_admin && <span className="admin-badge admin">Admin</span>}
                         </div>
                         <div className="msg-actions" style={{ justifyContent: "flex-start", marginTop: 8, opacity: 1 }}>
@@ -1245,7 +1195,11 @@ const AuthenticatedApp = () => {
                               Suspend
                             </button>
                           )}
-                          <button onClick={() => adminDeleteUser(u.id)} className="msg-action-btn" style={{ color: "#fb7185" }}>
+                          <button
+                            onClick={() => adminDeleteUser(u.id)}
+                            className="msg-action-btn"
+                            style={{ color: "#fb7185" }}
+                          >
                             Delete
                           </button>
                         </div>
@@ -1281,6 +1235,7 @@ const AuthenticatedApp = () => {
                         ))}
                       </div>
                     </div>
+
                     <div className="setting-row">
                       <div className="setting-label">Background</div>
                       <input
@@ -1301,8 +1256,9 @@ const AuthenticatedApp = () => {
                         </button>
                       </div>
                     </div>
+
                     <div className="setting-row">
-                      <div className="setting-label">Intensity: {Math.round(bgOpacity * 100)}%</div>
+                      <div className="setting-label">Background Intensity: {Math.round(bgOpacity * 100)}%</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12 }}>
                         <span>Dim</span>
                         <input
@@ -1317,13 +1273,14 @@ const AuthenticatedApp = () => {
                         <span>Bright</span>
                       </div>
                     </div>
+
                     <div className="setting-row">
-                      <div className="setting-label">Button Color</div>
+                      <div className="setting-label">Accent Color</div>
                       <input
                         type="color"
                         value={customPrimary || primary}
                         onChange={(e) => setCustomPrimary(e.target.value)}
-                        style={{ width: 50, height: 36, border: "none" }}
+                        style={{ width: 50, height: 36, border: "none", cursor: "pointer" }}
                       />
                       {customPrimary && (
                         <button onClick={() => setCustomPrimary("")} className="theme-card">
@@ -1331,45 +1288,19 @@ const AuthenticatedApp = () => {
                         </button>
                       )}
                     </div>
-                    <div className="setting-row">
-                      <div className="setting-label">AI Model</div>
-                      <select value={model} onChange={(e) => setModel(e.target.value)} className="model-select">
-                        <optgroup label="Fast Models">
-                          {MODELS.fast.map((m) => (
-                            <option key={m.key} value={m.key}>
-                              {m.name}
-                            </option>
-                          ))}
-                        </optgroup>
-                        <optgroup label="Reasoning Models">
-                          {MODELS.reasoning.map((m) => (
-                            <option key={m.key} value={m.key}>
-                              {m.name}
-                            </option>
-                          ))}
-                        </optgroup>
-                      </select>
-                    </div>
-                    <div className="setting-row">
-                      <div className="setting-label">Creativity: {temperature.toFixed(1)}</div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 12, fontSize: 12 }}>
-                        <span>Precise</span>
-                        <input
-                          type="range"
-                          min="0"
-                          max="1"
-                          step="0.1"
-                          value={temperature}
-                          onChange={(e) => setTemperature(parseFloat(e.target.value))}
-                          className="slider"
-                        />
-                        <span>Creative</span>
-                      </div>
-                    </div>
+
                     <div className="setting-row">
                       <button onClick={() => activeChatId && deleteChat(activeChatId)} className="theme-card">
                         Delete Chat
                       </button>
+                    </div>
+
+                    <div className="setting-row">
+                      <SignOutButton>
+                        <button className="theme-card" style={{ width: "100%", background: "rgba(255,255,255,0.1)" }}>
+                          Sign Out
+                        </button>
+                      </SignOutButton>
                     </div>
                   </div>
                 </div>
@@ -1382,15 +1313,14 @@ const AuthenticatedApp = () => {
                   <div className="empty-state">
                     <h2 className="empty-title">ALOP-AI</h2>
                     <p className="empty-subtitle">
-  {councilMode
-    ? "AI Council mode is ON. Multiple models debate your question and synthesize one expert answer."
-    : "Single model mode. Pick a model in settings, or turn on AI Council to combine multiple models."}
-</p>
-</div>
+                      Ask the AI Council anything. Multiple models work together to give you the most accurate, helpful answer.
+                    </p>
+                  </div>
                 )}
+
                 {activeMessages.map((msg, idx) => (
                   <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
-                    <div className="avatar">{msg.role === "user" ? "YOU" : msg.isCouncil ? "C" : "AI"}</div>
+                    <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
                     <div className="msg-content">
                       {msg.typing && (
                         <div className="bubble typing-bubble">
@@ -1431,14 +1361,12 @@ const AuthenticatedApp = () => {
                           onCopy={() => navigator.clipboard.writeText(msg.content)}
                         />
                       )}
-                      <div className="msg-meta">
-                        {msg.ts}
-                        {msg.isCouncil ? " • AI Council" : ""}
-                      </div>
+                      <div className="msg-meta">{msg.ts}</div>
                     </div>
                   </div>
                 ))}
               </div>
+
               <InputBar
                 text={inputText}
                 setText={setInputText}
@@ -1450,9 +1378,6 @@ const AuthenticatedApp = () => {
                 onStartCamera={startCamera}
                 isListening={isListening}
                 toggleListening={toggleListening}
-                councilMode={councilMode}
-                setCouncilMode={setCouncilMode}
-                plan={userPlan}
               />
             </div>
           </div>
@@ -1541,9 +1466,10 @@ const AuthenticatedAppWrapper = () => {
               ))}
             </div>
             <div style={{ marginTop: "auto", fontSize: 12, opacity: 0.4, paddingTop: 20 }}>
-              Sign in free to sync chats. Upgrade to Pro for full AI Council power.
+              Sign in free to sync chats. Upgrade to Pro for the full AI Council.
             </div>
           </div>
+
           <div className="sign-in-form-side">
             <div className="sign-in-logo">
               <div className="sign-in-logo-icon">A</div>

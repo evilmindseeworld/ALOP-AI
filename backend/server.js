@@ -19,6 +19,23 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
   apiVersion: '2024-06-20'
 });
 
+const OLLAMA_HOST = process.env.OLLAMA_HOST;
+const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
+const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
+
+if (!OLLAMA_HOST || !OLLAMA_API_KEY) {
+  console.error('Missing OLLAMA_HOST or OLLAMA_API_KEY');
+  process.exit(1);
+}
+
+const FREE_COUNCIL_MODELS = ['gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5'];
+const PRO_COUNCIL_MODELS = [
+  'gemma4', 'qwen3.5', 'glm-5.2', 'minimax-m2.5', 'kimi-k2.5',
+  'deepseek-v4-pro', 'deepseek-v4-flash', 'kimi-k2.7-code', 'kimi-k2.6',
+  'glm-5.1', 'minimax-m3', 'minimax-m2.7', 'nemotron-3-super',
+  'nemotron-3-ultra', 'gpt-oss', 'gemini-3-flash-preview', 'mistral-large-3'
+];
+
 // ===== CORS =====
 const allowedOrigins = process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [];
 const isVercelPreview = (origin) => origin && origin.includes('.vercel.app');
@@ -191,23 +208,7 @@ const upload = multer({
   }
 });
 
-// ===== AI COUNCIL CONFIG =====
-const FREE_COUNCIL_MODELS = ['gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5'];
-const PRO_COUNCIL_MODELS = [
-  'gemma4', 'qwen3.5', 'glm-5.2', 'minimax-m2.5', 'kimi-k2.5',
-  'deepseek-v4-pro', 'deepseek-v4-flash', 'kimi-k2.7-code', 'kimi-k2.6',
-  'glm-5.1', 'minimax-m3', 'minimax-m2.7', 'nemotron-3-super',
-  'nemotron-3-ultra', 'gpt-oss', 'gemini-3-flash-preview', 'mistral-large-3'
-];
-
-const OLLAMA_HOST = process.env.OLLAMA_HOST;
-const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
-
-if (!OLLAMA_HOST || !OLLAMA_API_KEY) {
-  console.error('Missing OLLAMA_HOST or OLLAMA_API_KEY');
-  process.exit(1);
-}
-
+// ===== AI HELPERS =====
 const callModel = async (modelName, messages, temperature = 0.7) => {
   const res = await fetch(OLLAMA_HOST, {
     method: 'POST',
@@ -258,7 +259,6 @@ const streamModel = async (res, modelName, messages, temperature = 0.5) => {
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
-
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
     buffer = lines.pop() || '';
@@ -277,6 +277,53 @@ const streamModel = async (res, modelName, messages, temperature = 0.5) => {
         }
       } catch {}
     }
+  }
+};
+
+const needsRealTimeSearch = (text) => {
+  const lower = text.toLowerCase();
+  const searchTriggers = [
+    'today', 'now', 'latest', 'recent', 'news', 'weather', 'score', 'won', 'match',
+    'election', 'stock', 'price', 'current', 'yesterday', 'tomorrow', 'this week',
+    'this month', 'world cup', 'olympics', 'launched', 'released', 'just happened',
+    'who is', 'where is', 'what happened', 'did ', 'has ', 'will ', 'live ', 'update'
+  ];
+  return searchTriggers.some((trigger) => lower.includes(trigger));
+};
+
+const searchBrave = async (query) => {
+  if (!BRAVE_API_KEY) {
+    console.warn('[BRAVE] API key not configured');
+    return [];
+  }
+
+  try {
+    const res = await fetch(
+      `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=4`,
+      {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json',
+          'X-Subscription-Token': BRAVE_API_KEY
+        }
+      }
+    );
+
+    if (!res.ok) {
+      const text = await res.text();
+      console.error('[BRAVE] Error:', res.status, text.slice(0, 200));
+      return [];
+    }
+
+    const data = await res.json();
+    return (data.web?.results || []).map((r) => ({
+      title: r.title,
+      url: r.url,
+      description: r.description
+    }));
+  } catch (err) {
+    console.error('[BRAVE] Failed:', err.message);
+    return [];
   }
 };
 
@@ -310,7 +357,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       modelsToUse.map((model) => callModel(model, councilMessages, 0.7))
     );
 
-    const validResponses = responses
+    let validResponses = responses
       .map((r, i) => ({
         model: modelsToUse[i],
         content: r.status === 'fulfilled' ? r.value : null
@@ -323,14 +370,23 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
 
     console.log(`[COUNCIL] ${validResponses.length} models responded`);
 
+    let webContext = '';
+    if (userPlan === 'pro' && needsRealTimeSearch(message)) {
+      const searchResults = await searchBrave(message);
+      if (searchResults.length > 0) {
+        webContext = `\n\nReal-time web search results:\n${searchResults.map((r, i) => `[Source ${i + 1}] ${r.title}\nURL: ${r.url}\n${r.description}`).join('\n\n')}`;
+        console.log(`[COUNCIL] Brave returned ${searchResults.length} results`);
+      }
+    }
+
     const synthesizerMessages = [
       {
         role: 'system',
-        content: 'You are the ALOP-AI Council Synthesizer. Combine the following individual expert responses into one final, coherent, accurate answer. Resolve contradictions, keep the best insights, and produce a confident, helpful response. Do not list the models separately unless explicitly asked. Be concise unless detail is needed.'
+        content: 'You are the ALOP-AI Council Synthesizer. Combine the expert responses below into one final, coherent, accurate answer. If real-time web search results are included, prioritize them for current facts, dates, sports scores, news, and recent events. Resolve any contradictions using the search results. Cite sources naturally when needed. Be concise unless detail is requested. Do not list individual models unless explicitly asked.'
       },
       {
         role: 'user',
-        content: `User question: ${message}\n\nExpert council responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}\n\nNow synthesize the best final answer as ALOP-AI.`
+        content: `User question: ${message}${webContext}\n\nExpert council responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}\n\nNow synthesize the best final answer as ALOP-AI.`
       }
     ];
 

@@ -213,13 +213,6 @@ const GlobalStyles = () => (
     .icon-btn:hover { background: rgba(255,255,255,0.12); transform: translateY(-1px); }
     .icon-btn.active { background: var(--primary); color: #000; border-color: var(--primary); box-shadow: 0 0 20px var(--glow); }
     .admin-btn.active { background: #fbbf24; color: #000; border-color: #fbbf24; box-shadow: 0 0 20px rgba(251,191,36,0.5); }
-    .upgrade-btn {
-      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
-      color: #000 !important; font-weight: 700 !important;
-      border: none !important; width: auto !important;
-      padding: 0 14px !important; font-size: 12px !important;
-    }
-    .upgrade-btn:hover { box-shadow: 0 0 20px rgba(251,191,36,0.4) !important; }
     .sign-in-btn { width: auto !important; padding: 0 14px !important; font-size: 12px !important; font-weight: 600 !important; }
     .app-body { flex: 1; display: flex; overflow: hidden; position: relative; }
     .chat-main { flex: 1; display: flex; position: relative; min-width: 0; }
@@ -435,134 +428,6 @@ const GlobalStyles = () => (
     .admin-badge.free { background: rgba(255,255,255,0.1); color: #fff; }
     .admin-badge.admin { background: var(--primary); color: #000; margin-left: 6px; }
     .admin-stats { display: flex; gap: 12px; font-size: 11px; opacity: 0.6; }
-    .sign-in-overlay {
-      width: 100%; height: 100%;
-      display: flex;
-      background: #020204;
-      overflow: hidden;
-    }
-    .sign-in-left {
-      flex: 1.2; position: relative;
-      display: flex; flex-direction: column; justify-content: space-between;
-      padding: 48px;
-      background: radial-gradient(ellipse at 20% 80%, #2e1065 0%, #0a0512 50%, #020204 100%);
-      overflow: hidden;
-    }
-    .sign-in-left::before {
-      content: ""; position: absolute; inset: 0;
-      background: 
-        radial-gradient(circle at 20% 30%, rgba(192,132,252,0.15) 0%, transparent 40%),
-        radial-gradient(circle at 80% 70%, rgba(129,140,248,0.12) 0%, transparent 40%),
-        url('https://images.unsplash.com/photo-1465101162946-4377e57745c3?w=1920&q=80');
-      background-size: cover;
-      background-position: center;
-      opacity: 0.4;
-    }
-    .sign-in-left::after {
-      content: ""; position: absolute; inset: 0;
-      background: linear-gradient(180deg, transparent 0%, #020204 100%);
-    }
-    .sign-in-left-content { position: relative; z-index: 1; max-width: 540px; margin-top: auto; }
-    .sign-in-logo {
-      display: flex; align-items: center; gap: 14px; margin-bottom: 32px;
-    }
-    .sign-in-logo-icon {
-      width: 52px; height: 52px; border-radius: 14px;
-      background: linear-gradient(135deg, #c084fc 0%, #818cf8 100%);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 26px; font-weight: 900; color: #000;
-      box-shadow: 0 10px 40px rgba(192,132,252,0.35);
-    }
-    .sign-in-logo-text { font-size: 32px; font-weight: 900; letter-spacing: -1px; }
-    .sign-in-headline {
-      font-size: 52px; font-weight: 900; line-height: 1.05;
-      margin-bottom: 20px;
-      letter-spacing: -1.5px;
-      background: linear-gradient(135deg, #fff 0%, #c084fc 50%, #818cf8 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    .sign-in-subheadline {
-      font-size: 18px; opacity: 0.65; line-height: 1.7; margin-bottom: 36px; max-width: 460px;
-    }
-    .sign-in-features { display: flex; flex-wrap: wrap; gap: 10px; }
-    .sign-in-feature {
-      display: flex; align-items: center; gap: 6px;
-      padding: 10px 16px; border-radius: 24px;
-      background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
-      font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.9);
-      backdrop-filter: blur(8px);
-    }
-    .sign-in-trust {
-      position: relative; z-index: 1;
-      display: flex; align-items: center; gap: 16px;
-      margin-top: 48px; font-size: 13px; opacity: 0.5;
-    }
-    .sign-in-trust-dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; box-shadow: 0 0 12px #34d399; }
-    .sign-in-right {
-      flex: 1;
-      display: flex; align-items: center; justify-content: center;
-      padding: 40px;
-      background: #020204;
-    }
-    .sign-in-card {
-      width: 100%; max-width: 400px;
-      background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 24px; padding: 40px;
-      backdrop-filter: blur(20px);
-      box-shadow: 0 25px 80px rgba(0,0,0,0.6);
-    }
-    .sign-in-card-header { margin-bottom: 28px; }
-    .sign-in-card-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; letter-spacing: -0.5px; }
-    .sign-in-card-subtitle { font-size: 14px; opacity: 0.55; line-height: 1.5; }
-    .sign-in-card .cl-signIn,
-    .sign-in-card .cl-card,
-    .sign-in-card .cl-cardBox {
-      background: transparent !important; box-shadow: none !important; border: none !important;
-      padding: 0 !important;
-    }
-    .sign-in-card .cl-headerTitle { color: #fff !important; }
-    .sign-in-card .cl-headerSubtitle { color: rgba(255,255,255,0.5) !important; }
-    .sign-in-card .cl-dividerLine { background: rgba(255,255,255,0.1) !important; }
-    .sign-in-card .cl-dividerText { color: rgba(255,255,255,0.45) !important; }
-    .sign-in-card .cl-formFieldLabel { color: rgba(255,255,255,0.75) !important; font-size: 13px !important; font-weight: 500 !important; }
-    .sign-in-card .cl-input {
-      background: rgba(255,255,255,0.05) !important;
-      border: 1px solid rgba(255,255,255,0.1) !important;
-      color: #fff !important;
-      border-radius: 12px !important;
-      padding: 12px 14px !important;
-      font-size: 14px !important;
-    }
-    .sign-in-card .cl-input:focus { border-color: #c084fc !important; box-shadow: 0 0 0 4px rgba(192,132,252,0.12) !important; }
-    .sign-in-card .cl-formButtonPrimary {
-      background: linear-gradient(135deg, #c084fc 0%, #818cf8 100%) !important;
-      color: #000 !important; font-weight: 700 !important;
-      border-radius: 12px !important; padding: 12px !important;
-      box-shadow: 0 4px 20px rgba(192,132,252,0.25) !important;
-      transition: all 0.2s !important;
-    }
-    .sign-in-card .cl-formButtonPrimary:hover {
-      transform: translateY(-1px) !important;
-      box-shadow: 0 8px 30px rgba(192,132,252,0.4) !important;
-    }
-    .sign-in-card .cl-socialButtonsBlockButton {
-      background: rgba(255,255,255,0.05) !important;
-      border: 1px solid rgba(255,255,255,0.1) !important;
-      color: #fff !important; font-weight: 500 !important;
-      border-radius: 12px !important; padding: 12px !important;
-    }
-    .sign-in-card .cl-socialButtonsBlockButton:hover { background: rgba(255,255,255,0.1) !important; }
-    .sign-in-card .cl-footerActionLink { color: #c084fc !important; font-weight: 500 !important; }
-    .sign-in-card .cl-identityPreviewText { color: #fff !important; }
-    .sign-in-card .cl-identityPreviewEditButton { color: #c084fc !important; }
-    .sign-in-card .cl-alternativeMethodsBlockButton,
-    .sign-in-card .cl-verificationLinkButton { color: #c084fc !important; }
-    .sign-in-guarantee {
-      margin-top: 24px; text-align: center;
-      font-size: 12px; opacity: 0.4;
-      display: flex; align-items: center; justify-content: center; gap: 6px;
-    }
     .camera-overlay {
       position: fixed; inset: 0; z-index: 100;
       background: rgba(0,0,0,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -580,9 +445,64 @@ const GlobalStyles = () => (
     }
     .mobile-only { display: none; }
     .desktop-only { display: flex; }
-    @media (max-width: 900px) {
-      .sign-in-left { display: none; }
-      .sign-in-right { width: 100%; border-left: none; }
+    .sign-in-overlay {
+      position: fixed; inset: 0; z-index: 300;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(12px);
+      padding: 20px;
+    }
+    .sign-in-modal {
+      width: 100%; max-width: 900px; max-height: 90vh; overflow-y: auto;
+      display: grid; grid-template-columns: 1.1fr 1fr;
+      background: rgba(15,15,20,0.95); border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 24px; box-shadow: 0 40px 100px rgba(0,0,0,0.7);
+    }
+    .sign-in-features-side {
+      padding: 36px; border-right: 1px solid rgba(255,255,255,0.06);
+      display: flex; flex-direction: column;
+    }
+    .sign-in-features-title {
+      font-size: 20px; font-weight: 800; margin-bottom: 24px;
+    }
+    .feature-table { flex: 1; }
+    .feature-row {
+      display: grid; grid-template-columns: 1fr 70px 90px;
+      align-items: center; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-size: 13px; color: rgba(255,255,255,0.75);
+    }
+    .feature-row.header { font-weight: 700; color: rgba(255,255,255,0.4); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255,255,255,0.12); }
+    .feature-name { display: flex; align-items: center; gap: 10px; }
+    .feature-icon { width: 26px; height: 26px; border-radius: 6px; background: rgba(255,255,255,0.06); display: flex; align-items: center; justify-content: center; font-size: 13px; }
+    .feature-check { color: #34d399; font-size: 16px; text-align: center; }
+    .feature-cross { color: rgba(255,255,255,0.25); font-size: 16px; text-align: center; }
+    .feature-tag { font-size: 10px; padding: 3px 8px; border-radius: 10px; font-weight: 700; text-align: center; }
+    .feature-tag.pro { background: #fbbf24; color: #000; }
+    .feature-tag.free { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); }
+    .sign-in-form-side {
+      padding: 36px; display: flex; flex-direction: column;
+    }
+    .sign-in-form-title { font-size: 24px; font-weight: 800; margin-bottom: 8px; }
+    .sign-in-form-subtitle { font-size: 13px; opacity: 0.55; margin-bottom: 24px; line-height: 1.5; }
+    .sign-in-card .cl-formButtonPrimary {
+      width: 100% !important; background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+      color: #fff !important; font-weight: 700 !important; font-size: 15px !important;
+      border-radius: 14px !important; padding: 14px !important; margin-top: 8px !important;
+      box-shadow: 0 8px 30px rgba(59,130,246,0.3) !important;
+    }
+    .sign-in-card .cl-formButtonPrimary:hover { transform: translateY(-1px); box-shadow: 0 12px 40px rgba(59,130,246,0.4) !important; }
+    .sign-in-trust-badges {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      margin-top: 18px; opacity: 0.45; font-size: 12px;
+    }
+    .payment-icons {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-top: 14px; opacity: 0.5;
+    }
+    .payment-icon {
+      width: 34px; height: 22px; border-radius: 4px;
+      background: rgba(255,255,255,0.1); display: flex; align-items: center; justify-content: center;
+      font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.8);
     }
     @media (max-width: 768px) {
       .mobile-only { display: flex; }
@@ -590,6 +510,8 @@ const GlobalStyles = () => (
       .sidebar { position: absolute; top: 0; bottom: 0; left: 0; z-index: 50; width: 260px; transform: translateX(-100%); }
       .sidebar.mobileOpen { transform: translateX(0); }
       .side-panel { width: 100vw; }
+      .sign-in-modal { grid-template-columns: 1fr; max-height: 95vh; }
+      .sign-in-features-side { display: none; }
     }
   `}</style>
 );
@@ -712,14 +634,13 @@ const AuthenticatedApp = () => {
   const [showMemory, setShowMemory] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
   const [showPricing, setShowPricing] = useState(false);
-  const [showSignIn, setShowSignIn] = useState(false);
   const [adminUsers, setAdminUsers] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userPlan, setUserPlan] = useState('free');
   const [toast, setToast] = useState(null);
 
-  const [chats, setChats] = useState(() => Storage.getJson("pa-guest-chats") || []);
-  const [activeChatId, setActiveChatId] = useState(() => Storage.get("pa-guest-active-chat"));
+  const [chats, setChats] = useState([]);
+  const [activeChatId, setActiveChatId] = useState(null);
   const [model, setModel] = useState(() => Storage.get("pa-model") || "glm-5.2");
   const [temperature, setTemperature] = useState(() => parseFloat(Storage.get("pa-temperature") || "0.7"));
   const [status, setStatus] = useState("idle");
@@ -733,8 +654,6 @@ const AuthenticatedApp = () => {
   const chatRef = useRef(null);
   const abortRef = useRef(null);
 
-  const isGuest = !isSignedIn;
-
   useEffect(() => Storage.set("pa-theme", themeKey), [themeKey]);
   useEffect(() => Storage.set("pa-custom-bg", customBg), [customBg]);
   useEffect(() => Storage.set("pa-custom-primary", customPrimary), [customPrimary]);
@@ -743,14 +662,11 @@ const AuthenticatedApp = () => {
   useEffect(() => Storage.set("pa-sidebar-collapsed", sidebarCollapsed.toString()), [sidebarCollapsed]);
   useEffect(() => Storage.set("pa-model", model), [model]);
   useEffect(() => Storage.set("pa-temperature", temperature.toString()), [temperature]);
-  useEffect(() => Storage.setJson("pa-guest-chats", chats), [chats]);
-  useEffect(() => { if (activeChatId) Storage.set("pa-guest-active-chat", activeChatId); }, [activeChatId]);
 
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); }, [toast]);
   useEffect(() => { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [chats, activeChatId]);
 
   const api = async (path, options = {}) => {
-    if (isGuest) throw new Error('Sign in required');
     const token = await getToken();
     return fetch(`${API_BASE}${path}`, {
       ...options,
@@ -771,7 +687,6 @@ const AuthenticatedApp = () => {
   };
 
   const loadChats = useCallback(async () => {
-    if (isGuest) return;
     try {
       const r = await api('/api/chats');
       const data = await r.json();
@@ -780,22 +695,21 @@ const AuthenticatedApp = () => {
         if (!activeChatId) setActiveChatId(data[0].id);
       }
     } catch (err) { console.error('Load chats failed', err); }
-  }, [isGuest, activeChatId]);
+  }, [activeChatId]);
 
   const fetchPlan = useCallback(async () => {
-    if (isGuest) return;
     try {
       const r = await api('/api/user/plan');
       const data = await r.json();
       setUserPlan(data.plan || 'free');
     } catch (err) { console.error('Fetch plan failed', err); }
-  }, [isGuest]);
+  }, []);
 
-  useEffect(() => { if (isLoaded) { loadChats(); fetchPlan(); } }, [isLoaded, loadChats, fetchPlan]);
+  useEffect(() => { if (isLoaded && isSignedIn) { loadChats(); fetchPlan(); } }, [isLoaded, isSignedIn, loadChats, fetchPlan]);
 
   useEffect(() => {
     const checkAdmin = async () => {
-      if (isGuest || !user?.emailAddresses?.[0]?.emailAddress) return;
+      if (!isSignedIn || !user?.emailAddresses?.[0]?.emailAddress) return;
       try {
         const r = await api('/api/admin/users');
         if (r.ok) {
@@ -806,7 +720,7 @@ const AuthenticatedApp = () => {
       } catch {}
     };
     if (isLoaded) checkAdmin();
-  }, [isLoaded, user, isGuest]);
+  }, [isLoaded, user, isSignedIn]);
 
   useEffect(() => { if (isAdmin) fetchAdminUsers(); }, [isAdmin]);
 
@@ -814,23 +728,18 @@ const AuthenticatedApp = () => {
   const activeMessages = activeChat?.messages || [];
 
   const createChat = async () => {
-    const newChat = { id: uid(), title: 'New Chat', messages: [], updated_at: new Date().toISOString(), created_at: new Date().toISOString() };
-    setChats(prev => [newChat, ...prev]);
-    setActiveChatId(newChat.id);
-    setInputText(""); setAttachments([]);
-    if (!isGuest) {
-      try {
-        const r = await api('/api/chats', { method: 'POST', body: JSON.stringify({ title: 'New Chat' }) });
-        const data = await r.json();
-        setChats(prev => prev.map(c => c.id === newChat.id ? { ...data, messages: [] } : c));
-        setActiveChatId(data.id);
-      } catch {}
-    }
+    try {
+      const r = await api('/api/chats', { method: 'POST', body: JSON.stringify({ title: 'New Chat' }) });
+      const data = await r.json();
+      setChats(prev => [data, ...prev]);
+      setActiveChatId(data.id);
+      setInputText(""); setAttachments([]);
+    } catch (err) { setToast('Failed to create chat'); }
   };
 
   const updateChatMessages = async (chatId, messages, saveToDb = true) => {
     setChats(prev => prev.map(c => c.id === chatId ? { ...c, messages, updated_at: new Date().toISOString() } : c));
-    if (!isGuest && saveToDb) {
+    if (saveToDb) {
       try {
         await api(`/api/chats/${chatId}`, { method: 'PUT', body: JSON.stringify({ messages }) });
       } catch (err) { console.error('Save chat failed', err); }
@@ -838,18 +747,18 @@ const AuthenticatedApp = () => {
   };
 
   const deleteChat = async (id) => {
-    setChats(prev => prev.filter(c => c.id !== id));
-    if (activeChatId === id) setActiveChatId(null);
-    if (!isGuest) {
-      try { await api(`/api/chats/${id}`, { method: 'DELETE' }); } catch {}
-    }
+    try {
+      await api(`/api/chats/${id}`, { method: 'DELETE' });
+      setChats(prev => prev.filter(c => c.id !== id));
+      if (activeChatId === id) setActiveChatId(null);
+    } catch (err) { setToast('Failed to delete chat'); }
   };
 
   const renameChat = async (id, title) => {
     setChats(prev => prev.map(c => c.id === id ? { ...c, title } : c));
-    if (!isGuest) {
-      try { await api(`/api/chats/${id}`, { method: 'PUT', body: JSON.stringify({ title }) }); } catch {}
-    }
+    try {
+      await api(`/api/chats/${id}`, { method: 'PUT', body: JSON.stringify({ title }) });
+    } catch {}
   };
 
   const togglePinChat = (id) => setChats(prev => prev.map(c => c.id === id ? { ...c, pinned: !c.pinned } : c));
@@ -977,7 +886,7 @@ const AuthenticatedApp = () => {
     abortRef.current = new AbortController();
 
     try {
-      const token = isGuest ? '' : await getToken();
+      const token = await getToken();
       const formData = new FormData();
       formData.append("message", cleanText || "");
       formData.append("modelType", model);
@@ -989,14 +898,10 @@ const AuthenticatedApp = () => {
         method: "POST",
         body: formData,
         signal: abortRef.current.signal,
-        headers: isGuest ? {} : { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` }
       });
 
-      if (!res.ok) {
-        if (res.status === 401) { setShowSignIn(true); throw new Error('Please sign in to chat'); }
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.error || `Server error: ${res.status}`);
-      }
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || `Server error: ${res.status}`); }
       if (!res.body) throw new Error("Streaming not supported");
 
       setStatus("streaming");
@@ -1031,20 +936,18 @@ const AuthenticatedApp = () => {
       await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: `⚠️ ${err.message || 'Connection failed'}` }]);
     }
     setAttachments([]); setInputText("");
-  }, [activeChatId, activeMessages, model, temperature, status, attachments, generateImage, isGuest]);
+  }, [activeChatId, activeMessages, model, temperature, status, attachments, generateImage]);
 
   const upgrade = async (planType) => {
-    if (isGuest) { setShowSignIn(true); return; }
     try {
       const r = await api('/api/create-checkout-session', { method: 'POST', body: JSON.stringify({ plan: planType }) });
       const data = await r.json();
       if (data.url) window.location.href = data.url;
       else setToast('Failed to start checkout');
-    } catch { setToast('Please sign in to upgrade'); setShowSignIn(true); }
+    } catch { setToast('Please sign in to upgrade'); }
   };
 
   const manageSubscription = async () => {
-    if (isGuest) { setShowSignIn(true); return; }
     try {
       const r = await api('/api/create-portal-session', { method: 'POST' });
       const data = await r.json();
@@ -1080,20 +983,16 @@ const AuthenticatedApp = () => {
           <button className="icon-btn desktop-only" onClick={() => setSidebarCollapsed(c => !c)} title="Chats"><Icon name="menu" size={20} /></button>
           <div className="brand">
             <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
-            <span className="sub-title">{getModelDisplayName(model)} {isGuest && "• Guest mode"}</span>
+            <span className="sub-title">{getModelDisplayName(model)}</span>
           </div>
           <div className="header-actions">
             {isAdmin && <button className={`icon-btn admin-btn ${showAdmin ? "active" : ""}`} onClick={() => { setShowAdmin(s => !s); setShowSettings(false); setShowMemory(false); }} title="Admin"><Icon name="crown" size={20} /></button>}
             <button className={`icon-btn ${showMemory ? "active" : ""}`} onClick={() => { setShowMemory(s => !s); setShowSettings(false); setShowAdmin(false); }} title="Memory"><Icon name="brain" size={20} /></button>
             <button className="icon-btn" onClick={() => setShowPricing(true)} title="Upgrade"><Icon name="upgrade" size={20} /></button>
             <button className="icon-btn" onClick={() => { setShowSettings(s => !s); setShowMemory(false); setShowAdmin(false); }} title="Settings"><Icon name="settings" size={20} /></button>
-            {isGuest ? (
-              <button className="icon-btn sign-in-btn" onClick={() => setShowSignIn(true)} title="Sign in"><Icon name="user" size={20} /></button>
-            ) : (
-              <SignOutButton>
-                <button className="icon-btn" title="Sign out"><Icon name="user" size={20} /></button>
-              </SignOutButton>
-            )}
+            <SignOutButton>
+              <button className="icon-btn" title="Sign out"><Icon name="user" size={20} /></button>
+            </SignOutButton>
           </div>
         </header>
         <div className="app-body">
@@ -1103,59 +1002,73 @@ const AuthenticatedApp = () => {
               <div className="panel-overlay" onClick={() => setShowPricing(false)} />
               <div className="side-panel">
                 <div className="panel-header">
-                  <div className="panel-title">Upgrade to Pro</div>
+                  <div className="panel-title">Upgrade your plan 🚀</div>
                   <button onClick={() => setShowPricing(false)} className="icon-btn"><Icon name="close" size={18} /></button>
                 </div>
                 <div className="panel-body">
                   <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                    <div style={{ fontSize: 28, fontWeight: 800, marginBottom: 8 }}>Unlock AI Council</div>
-                    <div style={{ fontSize: 13, opacity: 0.6 }}>Multiple AI models debate and synthesize the best answer.</div>
-                  </div>
-                  <div style={{ display: 'grid', gap: 12 }}>
-                    <div className="memory-card" style={{ borderColor: userPlan === 'pro' ? '#fbbf24' : 'rgba(255,255,255,0.1)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <div style={{ fontSize: 18, fontWeight: 700 }}>Pro Monthly</div>
-                        <div style={{ fontSize: 24, fontWeight: 800, color: '#fbbf24' }}>$9.99<span style={{ fontSize: 12, opacity: 0.6, color: '#fff' }}>/mo</span></div>
-                      </div>
-                      <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 16px', fontSize: 13, opacity: 0.8, lineHeight: 1.8 }}>
-                        <li>✅ AI Council (9 models)</li>
-                        <li>✅ Unlimited image generation</li>
-                        <li>✅ File & vision analysis</li>
-                        <li>✅ Voice input</li>
-                        <li>✅ Priority support</li>
-                      </ul>
-                      <button onClick={() => upgrade('monthly')} className="new-chat-btn" style={{ width: '100%' }}>{userPlan === 'pro' ? 'Current Plan' : 'Upgrade Monthly'}</button>
+                    <div style={{ fontSize: 15, opacity: 0.6, maxWidth: 280, margin: '0 auto', lineHeight: 1.5 }}>
+                      Get access to flagship AI models — AI chats, image generation, vision, voice, and more.
                     </div>
-                    <div className="memory-card" style={{ borderColor: userPlan === 'pro' ? 'transparent' : 'rgba(255,255,255,0.1)', position: 'relative' }}>
-                      <div style={{ position: 'absolute', top: -10, right: 14, background: '#fbbf24', color: '#000', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 12 }}>SAVE 17%</div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <div style={{ fontSize: 18, fontWeight: 700 }}>Pro Yearly</div>
-                        <div style={{ fontSize: 24, fontWeight: 800, color: '#fbbf24' }}>$99<span style={{ fontSize: 12, opacity: 0.6, color: '#fff' }}>/yr</span></div>
-                      </div>
-                      <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 16px', fontSize: 13, opacity: 0.8, lineHeight: 1.8 }}>
-                        <li>✅ Everything in Pro Monthly</li>
-                        <li>✅ 2 months free</li>
-                        <li>✅ Early access to new models</li>
-                      </ul>
-                      <button onClick={() => upgrade('yearly')} className="new-chat-btn" style={{ width: '100%', background: userPlan === 'pro' ? 'rgba(255,255,255,0.1)' : '#fbbf24', color: userPlan === 'pro' ? '#fff' : '#000' }}>{userPlan === 'pro' ? 'Current Plan' : 'Upgrade Yearly'}</button>
-                    </div>
-                    {userPlan === 'pro' && (
-                      <button onClick={manageSubscription} className="theme-card">Manage subscription</button>
-                    )}
                   </div>
-                </div>
-              </div>
-            </>}
-            {showSignIn && <>
-              <div className="panel-overlay" onClick={() => setShowSignIn(false)} />
-              <div className="side-panel">
-                <div className="panel-header">
-                  <div className="panel-title">Sign in</div>
-                  <button onClick={() => setShowSignIn(false)} className="icon-btn"><Icon name="close" size={18} /></button>
-                </div>
-                <div className="panel-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <div style={{ fontSize: 16, opacity: 0.7, textAlign: 'center', marginBottom: 20 }}>Sign in to sync your chats across devices and unlock Pro features.</div>
-                  <SignIn />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {[
+                      { name: "Pro Monthly", price: "$9.99", unit: "/month", day: "$0.33/day", save: null, popular: false },
+                      { name: "Pro Yearly", price: "$99", unit: "/year", day: "$0.27/day", save: "Save 17%", popular: true },
+                    ].map((planOption) => (
+                      <div key={planOption.name} className="memory-card" style={{
+                        border: `1px solid ${planOption.popular ? '#fbbf24' : 'rgba(255,255,255,0.1)'}`,
+                        position: 'relative', padding: 18, borderRadius: 16, cursor: 'pointer'
+                      }}>
+                        {planOption.save && <div style={{
+                          position: 'absolute', top: -10, right: 14,
+                          background: '#3b82f6', color: '#fff', fontSize: 11, fontWeight: 700,
+                          padding: '4px 10px', borderRadius: 12
+                        }}>{planOption.save}</div>}
+                        {planOption.popular && <div style={{
+                          position: 'absolute', top: -10, left: 14,
+                          background: '#fbbf24', color: '#000', fontSize: 11, fontWeight: 700,
+                          padding: '4px 10px', borderRadius: 12
+                        }}>Most Popular</div>}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{
+                              width: 20, height: 20, borderRadius: '50%',
+                              border: `2px solid ${planOption.popular ? '#fbbf24' : 'rgba(255,255,255,0.3)'}`,
+                              background: planOption.popular ? '#fbbf24' : 'transparent'
+                            }} />
+                            <div style={{ fontSize: 16, fontWeight: 700 }}>{planOption.name}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 22, fontWeight: 800, color: '#fff' }}>{planOption.price}<span style={{ fontSize: 12, opacity: 0.5 }}>{planOption.unit}</span></div>
+                            <div style={{ fontSize: 12, opacity: 0.5, textAlign: 'right' }}>{planOption.day}</div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={() => upgrade('yearly')} className="new-chat-btn" style={{ width: '100%', marginTop: 16, background: 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)', borderRadius: 14, padding: 14, fontSize: 15 }}>
+                    Continue
+                  </button>
+                  <div className="sign-in-trust-badges" style={{ marginTop: 16 }}>
+                    <span>🔒</span> Pay safe & secure
+                  </div>
+                  <div className="payment-icons">
+                    <div className="payment-icon">VISA</div>
+                    <div className="payment-icon">MC</div>
+                    <div className="payment-icon">AMEX</div>
+                    <div className="payment-icon">PP</div>
+                  </div>
+                  <div style={{ marginTop: 24, paddingTop: 20, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Pro includes</div>
+                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, fontSize: 13, opacity: 0.8, lineHeight: 1.9 }}>
+                      <li>✅ AI Council with 9+ models</li>
+                      <li>✅ Unlimited image generation</li>
+                      <li>✅ Vision & file analysis</li>
+                      <li>✅ Voice input</li>
+                      <li>✅ Cloud sync & priority support</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </>}
@@ -1271,7 +1184,7 @@ const AuthenticatedApp = () => {
               <div className="scroll-wrapper" ref={chatRef}>
                 {activeMessages.length === 0 && status === "idle" && <div className="empty-state">
                   <h2 className="empty-title">ALOP-AI</h2>
-                  <p className="empty-subtitle">Ask anything, upload photos, take a picture, use your voice, or type "generate image of..."<br/><br/>{isGuest ? "Sign in anytime to sync your chats across devices." : ""}</p>
+                  <p className="empty-subtitle">Ask anything, upload photos, take a picture, use your voice, or type "generate image of..."</p>
                 </div>}
                 {activeMessages.map((msg, idx) => (
                   <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
@@ -1314,7 +1227,68 @@ const AuthenticatedAppWrapper = () => {
   const { isSignedIn, isLoaded } = useUser();
   if (!isLoaded) return null;
   if (!isSignedIn) {
-    return <AuthenticatedApp />;
+    return (
+      <div className="sign-in-overlay">
+        <div className="sign-in-modal">
+          <div className="sign-in-features-side">
+            <div className="sign-in-features-title">What's included</div>
+            <div className="feature-table">
+              <div className="feature-row header">
+                <div className="feature-name">Feature</div>
+                <div>Free</div>
+                <div>Pro</div>
+              </div>
+              {[
+                { icon: "⚡", name: "14+ AI Models", free: false, pro: true },
+                { icon: "🖼️", name: "Image Generation", free: false, pro: true },
+                { icon: "👁️", name: "Vision & File Uploads", free: false, pro: true },
+                { icon: "🎙️", name: "Voice Input", free: false, pro: true },
+                { icon: "☁️", name: "Cloud Sync Across Devices", free: false, pro: true },
+                { icon: "🧠", name: "AI Council (multi-model)", free: false, pro: true },
+                { icon: "🔒", name: "Encrypted Chats", free: true, pro: true },
+                { icon: "💬", name: "Unlimited Messages", free: false, pro: true },
+              ].map((f, i) => (
+                <div className="feature-row" key={i}>
+                  <div className="feature-name">
+                    <div className="feature-icon">{f.icon}</div>
+                    <div>{f.name}</div>
+                  </div>
+                  <div className={f.free ? "feature-check" : "feature-cross"}>{f.free ? "✓" : "×"}</div>
+                  <div className={f.pro ? "feature-check" : "feature-cross"}>{f.pro ? "✓" : "×"}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: 'auto', fontSize: 12, opacity: 0.4, paddingTop: 20 }}>
+              Sign in free to sync chats. Upgrade to Pro for full power.
+            </div>
+          </div>
+          <div className="sign-in-form-side">
+            <div className="sign-in-logo" style={{ marginBottom: 28 }}>
+              <div className="sign-in-logo-icon">A</div>
+              <div className="sign-in-logo-text">ALOP-AI</div>
+            </div>
+            <div className="sign-in-form-title">Sign in to ALOP-AI</div>
+            <div className="sign-in-form-subtitle">
+              One account for every frontier AI model. Chat, generate images, analyze files, and build your personal knowledge base.
+            </div>
+            <div className="sign-in-card">
+              <SignIn />
+            </div>
+            <div className="sign-in-trust-badges">
+              <span>🔒</span> Secure authentication
+              <span>•</span>
+              <span>No credit card required</span>
+            </div>
+            <div className="payment-icons">
+              <div className="payment-icon">VISA</div>
+              <div className="payment-icon">MC</div>
+              <div className="payment-icon">AMEX</div>
+              <div className="payment-icon">PP</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
   return <AuthenticatedApp />;
 };

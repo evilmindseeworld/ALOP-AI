@@ -1382,11 +1382,11 @@ const AuthenticatedApp = () => {
                   <div className="empty-state">
                     <h2 className="empty-title">ALOP-AI</h2>
                     <p className="empty-subtitle">
-                      {councilMode
-                        ? "The AI Council combines multiple models to give you the best possible answer."
-                        : "Ask anything, upload photos, take a picture, use your voice, or type 'generate image of...'"}
-                    </p>
-                  </div>
+  {councilMode
+    ? "AI Council mode is ON. Multiple models debate your question and synthesize one expert answer."
+    : "Single model mode. Pick a model in settings, or turn on AI Council to combine multiple models."}
+</p>
+</div>
                 )}
                 {activeMessages.map((msg, idx) => (
                   <div key={msg.id || idx} className={`msg-row ${msg.role}`}>

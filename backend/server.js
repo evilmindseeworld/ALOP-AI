@@ -1,4 +1,5 @@
 require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -14,8 +15,11 @@ const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', { apiVersion: '2024-06-20' });
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+  apiVersion: '2024-06-20'
+});
 
+// ===== CORS =====
 const allowedOrigins = process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [];
 const isVercelPreview = (origin) => origin && origin.includes('.vercel.app');
 
@@ -29,6 +33,7 @@ app.use(cors({
   credentials: true
 }));
 
+// ===== STRIPE WEBHOOK =====
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
@@ -67,6 +72,7 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
   res.json({ received: true });
 });
 
+// ===== SECURITY & PERFORMANCE =====
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   contentSecurityPolicy: false
@@ -74,7 +80,7 @@ app.use(helmet({
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(timeout('60s'));
+app.use(timeout('120s'));
 app.use(haltOnTimedout);
 
 function haltOnTimedout(req, res, next) {
@@ -82,6 +88,7 @@ function haltOnTimedout(req, res, next) {
   next();
 }
 
+// ===== RATE LIMITING =====
 const generalLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
   max: 120,
@@ -89,14 +96,17 @@ const generalLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
-const chatLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000,
-  max: 30,
-  message: { error: 'Too many messages. Wait a minute.' }
-});
-app.use('/api/', generalLimiter);
-app.use('/chat', chatLimiter);
 
+const councilLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000,
+  max: 15,
+  message: { error: 'Too many council requests. Wait a minute.' }
+});
+
+app.use('/api/', generalLimiter);
+app.use('/api/council', councilLimiter);
+
+// ===== SUPABASE =====
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 if (!supabaseUrl || !supabaseKey) {
@@ -107,10 +117,12 @@ const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
 
+// ===== CLERK AUTH =====
 const requireAuth = ClerkExpressRequireAuth({
   onError: (error) => ({ error: error.message || 'Authentication required' })
 });
 
+// ===== HELPERS =====
 const ensureUser = async (userId) => {
   if (!userId) throw new Error('Missing userId');
 
@@ -142,7 +154,11 @@ const ensureUser = async (userId) => {
   }
 
   const { data: created, error: insertError } = await supabase.from('users').insert({
-    clerk_id: userId, email, name, avatar_url: avatar, plan: 'free'
+    clerk_id: userId,
+    email,
+    name,
+    avatar_url: avatar,
+    plan: 'free'
   }).select().single();
 
   if (insertError) throw insertError;
@@ -175,144 +191,189 @@ const upload = multer({
   }
 });
 
-app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
-app.post('/chat', requireAuth, checkSuspended, upload.array('files', 5), async (req, res) => {
-  try {
-    if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
+// ===== AI COUNCIL CONFIG =====
+const FREE_COUNCIL_MODELS = ['gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5'];
+const PRO_COUNCIL_MODELS = [
+  'gemma4', 'qwen3.5', 'glm-5.2', 'minimax-m2.5', 'kimi-k2.5',
+  'deepseek-v4-pro', 'deepseek-v4-flash', 'kimi-k2.7-code', 'kimi-k2.6',
+  'glm-5.1', 'minimax-m3', 'minimax-m2.7', 'nemotron-3-super',
+  'nemotron-3-ultra', 'gpt-oss', 'gemini-3-flash-preview', 'mistral-large-3'
+];
 
-    const user = await ensureUser(req.auth.userId);
-    const userId = user.id;
+const OLLAMA_HOST = process.env.OLLAMA_HOST;
+const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 
-    const message = req.body.message || '';
-    const model = req.body.modelType || 'glm-5.2';
-    const temperature = parseFloat(req.body.temperature || '0.7');
+if (!OLLAMA_HOST || !OLLAMA_API_KEY) {
+  console.error('Missing OLLAMA_HOST or OLLAMA_API_KEY');
+  process.exit(1);
+}
 
-    let history = [];
-    try {
-      history = JSON.parse(req.body.messages || '[]');
-    } catch {}
+const callModel = async (modelName, messages, temperature = 0.7) => {
+  const res = await fetch(OLLAMA_HOST, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OLLAMA_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: modelName,
+      messages,
+      stream: false,
+      options: { temperature }
+    })
+  });
 
-    try {
-      await supabase.rpc('increment_usage', {
-        p_user_id: userId,
-        p_date: new Date().toISOString().split('T')[0],
-        p_messages: 1,
-        p_images: 0
-      });
-    } catch (e) { console.error('Usage increment failed', e.message); }
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Model ${modelName} error: ${res.status} ${text.slice(0, 200)}`);
+  }
 
-    const systemPrompt = 'You are ALOP-AI, a helpful, fast, and accurate assistant. Keep answers concise unless asked for detail.';
+  const data = await res.json();
+  return data.message?.content || data.response || '';
+};
 
-    const messages = [
-      { role: 'system', content: systemPrompt },
-      ...history.slice(-15),
-      { role: 'user', content: message }
-    ];
-
-    if (req.files?.length > 0) {
-      const lastUser = messages[messages.length - 1];
-      if (lastUser.role === 'user') {
-        lastUser.images = req.files.map(file => file.buffer.toString('base64'));
-      }
-    }
-
-    const API_URL = process.env.OLLAMA_HOST;
-    const API_KEY = process.env.OLLAMA_API_KEY;
-
-    if (!API_URL || !API_KEY) {
-      throw new Error('Ollama API not configured. Set OLLAMA_HOST and OLLAMA_API_KEY.');
-    }
-
-    const body = {
-      model,
+const streamModel = async (res, modelName, messages, temperature = 0.5) => {
+  const response = await fetch(OLLAMA_HOST, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${OLLAMA_API_KEY}`
+    },
+    body: JSON.stringify({
+      model: modelName,
       messages,
       stream: true,
       options: { temperature }
-    };
+    })
+  });
 
-    console.log('OLLAMA REQUEST:', API_URL, model);
+  if (!response.ok || !response.body) {
+    throw new Error('Synthesizer failed');
+  }
 
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${API_KEY}`
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      const t = line.trim();
+      if (!t) continue;
+      try {
+        const parsed = JSON.parse(t);
+        const delta = parsed.message?.content || parsed.response || '';
+        if (delta) {
+          res.write(`data: ${JSON.stringify({ type: 'chunk', text: delta })}\n\n`);
+        }
+        if (parsed.done) {
+          res.write('data: [DONE]\n\n');
+        }
+      } catch {}
+    }
+  }
+};
+
+app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+// ===== AI COUNCIL CHAT =====
+app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
+  try {
+    const user = await ensureUser(req.auth.userId);
+    const userPlan = user.plan || 'free';
+    const { message, history = [] } = req.body;
+
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+
+    const modelsToUse = userPlan === 'pro' ? PRO_COUNCIL_MODELS : FREE_COUNCIL_MODELS;
+
+    const councilSystemPrompt = userPlan === 'pro'
+      ? 'You are one expert voice in the ALOP-AI Pro Council of 14 advanced AI models. Give your best individual perspective on the user question. Be concise but substantive.'
+      : 'You are one expert voice in the ALOP-AI Council of 4 AI models. Give your best individual perspective. Be concise.';
+
+    const councilMessages = [
+      { role: 'system', content: councilSystemPrompt },
+      ...history.slice(-6),
+      { role: 'user', content: message }
+    ];
+
+    console.log(`[COUNCIL] User: ${user.email} | Plan: ${userPlan} | Models: ${modelsToUse.length}`);
+
+    const responses = await Promise.allSettled(
+      modelsToUse.map((model) => callModel(model, councilMessages, 0.7))
+    );
+
+    const validResponses = responses
+      .map((r, i) => ({
+        model: modelsToUse[i],
+        content: r.status === 'fulfilled' ? r.value : null
+      }))
+      .filter((r) => r.content && r.content.trim().length > 0);
+
+    if (validResponses.length === 0) {
+      return res.status(500).json({ error: 'All council models failed to respond' });
+    }
+
+    console.log(`[COUNCIL] ${validResponses.length} models responded`);
+
+    const synthesizerMessages = [
+      {
+        role: 'system',
+        content: 'You are the ALOP-AI Council Synthesizer. Combine the following individual expert responses into one final, coherent, accurate answer. Resolve contradictions, keep the best insights, and produce a confident, helpful response. Do not list the models separately unless explicitly asked. Be concise unless detail is needed.'
       },
-      body: JSON.stringify(body)
-    });
-
-    console.log('OLLAMA STATUS:', response.status);
-
-    if (!response.ok) {
-      const text = await response.text();
-      console.error('OLLAMA ERROR:', text);
-      throw new Error(`Ollama error: ${response.status} ${text.slice(0, 300)}`);
-    }
-
-    if (!response.body) {
-      throw new Error('Ollama returned no response body');
-    }
+      {
+        role: 'user',
+        content: `User question: ${message}\n\nExpert council responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}\n\nNow synthesize the best final answer as ALOP-AI.`
+      }
+    ];
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let sentAnything = false;
+    await streamModel(res, 'glm-5.2', synthesizerMessages, 0.5);
+
+    if (!res.writableEnded) res.end();
 
     try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          console.log('OLLAMA RAW LINE:', line.trim());
-
-          try {
-            const parsed = JSON.parse(line.trim());
-            const delta = parsed.message?.content || parsed.response || '';
-            if (delta) {
-              sentAnything = true;
-              res.write(`data: ${JSON.stringify({ type: 'chunk', text: delta })}\n\n`);
-            }
-            if (parsed.done) {
-              res.write('data: [DONE]\n\n');
-            }
-          } catch (e) {
-            console.error('OLLAMA PARSE ERROR:', line.trim(), e.message);
-          }
-        }
-      }
-
-      if (!sentAnything) {
-        console.warn('OLLAMA RETURNED NO CONTENT CHUNKS');
-        res.write(`data: ${JSON.stringify({ type: 'chunk', text: 'No response from model.' })}\n\n`);
-      }
-
-      if (!res.writableEnded) res.end();
-    } catch (streamErr) {
-      console.error('Stream error:', streamErr.message);
-      if (!res.writableEnded) res.end();
+      await supabase.rpc('increment_usage', {
+        p_user_id: user.id,
+        p_date: new Date().toISOString().split('T')[0],
+        p_messages: 1,
+        p_images: 0
+      });
+    } catch (e) {
+      console.error('Usage increment failed:', e.message);
     }
 
-    req.on('close', () => {
-      if (!res.writableEnded) res.end();
-    });
-
   } catch (err) {
-    console.error('Chat error:', err.message);
+    console.error('Council error:', err.message);
     if (!res.headersSent) return res.status(500).json({ error: err.message });
-    if (!res.writableEnded) res.write(`data: ${JSON.stringify({ type: 'error', text: err.message })}\n\n`);
+    if (!res.writableEnded) res.end();
   }
 });
 
+// ===== IMAGE GENERATION =====
+app.post('/api/image', requireAuth, checkSuspended, async (req, res) => {
+  try {
+    const { prompt } = req.body;
+    if (!prompt) return res.status(400).json({ error: 'Prompt required' });
+
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true`;
+    res.json({ url: imageUrl });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== CHAT MANAGEMENT =====
 app.get('/api/chats', requireAuth, async (req, res) => {
   try {
     if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
@@ -346,7 +407,11 @@ app.put('/api/chats/:id', requireAuth, async (req, res) => {
     const user = await ensureUser(req.auth.userId);
     const { error } = await supabase
       .from('chats')
-      .update({ messages: req.body.messages, title: req.body.title, updated_at: new Date().toISOString() })
+      .update({
+        messages: req.body.messages,
+        title: req.body.title,
+        updated_at: new Date().toISOString()
+      })
       .eq('id', req.params.id)
       .eq('user_id', user.id);
     if (error) throw error;
@@ -368,6 +433,7 @@ app.delete('/api/chats/:id', requireAuth, async (req, res) => {
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ===== ADMIN ROUTES =====
 const requireAdmin = async (req, res, next) => {
   try {
     if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
@@ -441,6 +507,7 @@ app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) 
   } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ===== STRIPE PAYMENTS =====
 app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
   try {
     const user = await ensureUser(req.auth.userId);
@@ -490,6 +557,7 @@ app.get('/api/user/plan', requireAuth, async (req, res) => {
   }
 });
 
+// ===== ERROR HANDLING =====
 app.use((err, req, res, next) => {
   console.error(err.stack);
   const message = process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message;

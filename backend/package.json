@@ -8,6 +8,8 @@
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^5.1.6",
+    "@sentry/node": "^10.67.0",
+    "@sentry/profiling-node": "^10.67.0",
     "@supabase/supabase-js": "^2.39.7",
     "compression": "^1.8.1",
     "connect-timeout": "^1.9.1",
@@ -21,5 +23,8 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "allowScripts": {
+    "@sentry/node-cpu-profiler@2.4.2": true
   }
 }

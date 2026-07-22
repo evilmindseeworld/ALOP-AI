@@ -1,3 +1,15 @@
+const Sentry = require('@sentry/node');
+const { nodeProfilingIntegration } = require('@sentry/profiling-node');
+
+Sentry.init({
+  dsn: "https://83e051994bba3e7ae40145510653a0b6@o4511779597647872.ingest.de.sentry.io/4511779863330896",
+  integrations: [
+    nodeProfilingIntegration(),
+  ],
+  tracesSampleRate: 1.0,
+  profilesSampleRate: 1.0,
+});
+
 require('dotenv').config();
 
 const express = require('express');
@@ -12,6 +24,8 @@ const { ClerkExpressRequireAuth, clerkClient } = require('@clerk/clerk-sdk-node'
 const Stripe = require('stripe');
 
 const app = express();
+const app = express();
+app.set('trust proxy', 1);
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
@@ -772,6 +786,12 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   const message = process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message;
   res.status(err.status || 500).json({ error: message });
+});
+
+Sentry.setupExpressErrorHandler(app);
+
+app.listen(PORT, () => {
+  console.log(`ALOP-AI backend running on port ${PORT}`);
 });
 
 app.listen(PORT, () => {

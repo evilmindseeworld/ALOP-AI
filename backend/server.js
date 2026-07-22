@@ -282,12 +282,142 @@ const streamModel = async (res, modelName, messages, temperature = 0.5) => {
 
 const needsRealTimeSearch = (text) => {
   const lower = text.toLowerCase();
-  const searchTriggers = [
-    'today', 'now', 'latest', 'recent', 'news', 'weather', 'score', 'won', 'match',
-    'election', 'stock', 'price', 'current', 'yesterday', 'tomorrow', 'this week',
-    'this month', 'world cup', 'olympics', 'launched', 'released', 'just happened',
-    'who is', 'where is', 'what happened', 'did ', 'has ', 'will ', 'live ', 'update'
+  
+  // ===== TIME & CURRENT EVENT TRIGGERS =====
+  const timeTriggers = [
+    'today', 'now', 'right now', 'currently', 'at the moment', 'as of',
+    'yesterday', 'tomorrow', 'tonight', 'this morning', 'this afternoon',
+    'this evening', 'this week', 'this weekend', 'this month', 'this year',
+    'last night', 'last week', 'last month', 'last year',
+    'next week', 'next month', 'next year', 'upcoming', 'recently',
+    'latest', 'most recent', 'just now', 'breaking', 'live', 'update',
+    'news', 'in the news', 'happening', 'ongoing', 'developing',
+    'did something happen', 'what happened', 'is happening', 'happened today'
   ];
+
+  // ===== SPORTS TRIGGERS =====
+  const sportsTriggers = [
+    'football', 'soccer', 'american football', 'basketball', 'baseball',
+    'tennis', 'cricket', 'rugby', 'hockey', 'ice hockey', 'volleyball',
+    'golf', 'boxing', 'mma', 'ufc', 'wrestling', 'formula 1', 'f1', 'nascar',
+    'motogp', 'olympics', 'world cup', 'champions league', 'premier league',
+    'la liga', 'serie a', 'bundesliga', 'ligue 1', 'eredivisie', 'mls',
+    'nba', 'nfl', 'mlb', 'nhl', 'nfl', 'ncaa', 'ipl', 'psl', 'bbl', 'ipl',
+    'match', 'game', 'score', 'scores', 'result', 'results', 'who won',
+    'winning', 'lost', 'beat', 'defeated', 'goal', 'goals', 'point', 'points',
+    'team', 'teams', 'player', 'players', 'transfer', 'signed', 'traded',
+    'draft', 'playoff', 'final', 'finals', 'semifinal', 'quarterfinal',
+    'championship', 'tournament', 'league', 'season', 'standings', 'table',
+    'fixture', 'fixtures', 'schedule', 'kickoff', 'tip off', 'face off',
+    'hat trick', 'red card', 'yellow card', 'penalty', 'overtime',
+    'varsity', 'athlete', 'coach', 'manager', 'owner', 'stadium'
+  ];
+
+  // ===== FINANCE TRIGGERS =====
+  const financeTriggers = [
+    'stock', 'stocks', 'share', 'shares', 'price', 'prices', 'trading',
+    'market', 'markets', 'nasdaq', 'dow jones', 's&p 500', 'sp500', 'ftse',
+    'crypto', 'bitcoin', 'btc', 'ethereum', 'eth', 'solana', 'sol', 'coin',
+    'cryptocurrency', 'forex', 'exchange rate', 'currency', 'dollar', 'euro',
+    'inflation', 'interest rate', 'fed', 'federal reserve', 'recession',
+    'economy', 'economic', 'unemployment', 'gdp', 'earnings', 'ipo',
+    'dividend', 'split', 'valuation', 'market cap', 'bullish', 'bearish'
+  ];
+
+  // ===== WEATHER & NATURAL EVENTS =====
+  const weatherTriggers = [
+    'weather', 'temperature', 'forecast', 'rain', 'snow', 'storm', 'hurricane',
+    'tornado', 'typhoon', 'earthquake', 'flood', 'drought', 'tsunami',
+    'volcano', 'eruption', 'wildfire', 'fire', 'air quality', 'uv index',
+    'wind', 'humidity', 'sunny', 'cloudy', 'thunderstorm', 'blizzard'
+  ];
+
+  // ===== ENTERTAINMENT TRIGGERS =====
+  const entertainmentTriggers = [
+    'movie', 'movies', 'film', 'films', 'box office', 'released', 'release date',
+    'tv show', 'series', 'episode', 'season', 'netflix', 'hbo', 'disney',
+    'spotify', 'album', 'song', 'single', 'concert', 'tour', 'festival',
+    'celebrity', 'actor', 'actress', 'singer', 'rapper', 'musician', 'band',
+    'marriage', 'divorce', 'dating', 'breakup', 'scandal', 'died', 'death',
+    'passed away', 'award', 'awards', 'oscar', 'grammy', 'emmy', 'golden globe',
+    'nominated', 'won an award', 'trailer', 'review', 'rating', 'rotten tomatoes',
+    'trending', 'viral', 'tiktok', 'meme', 'memes'
+  ];
+
+  // ===== POLITICS & GOVERNMENT =====
+  const politicsTriggers = [
+    'election', 'elections', 'vote', 'voting', 'poll', 'polls', 'candidate',
+    'president', 'prime minister', 'minister', 'senator', 'congress', 'parliament',
+    'government', 'political', 'policy', 'law', 'bill', 'passed', 'signed',
+    'court', 'supreme court', 'ruling', 'verdict', 'trial', 'impeached',
+    'resigned', 'appointed', 'cabinet', 'ambassador', 'sanctions', 'war',
+    'conflict', 'treaty', 'summit', 'protest', 'protests', 'strike', 'strikes',
+    'invasion', 'ceasefire', 'negotiation', 'diplomatic', 'embassy', 'refugee'
+  ];
+
+  // ===== TECHNOLOGY TRIGGERS =====
+  const techTriggers = [
+    'launched', 'release', 'released', 'announcement', 'announced', 'unveiled',
+    'new phone', 'new iphone', 'new samsung', 'new android', 'new app',
+    'update', 'updated', 'version', 'patch', 'bug', 'security flaw', 'exploit',
+    'hack', 'hacked', 'data breach', 'cyberattack', 'ai model', 'chatbot',
+    'feature', 'roadmap', 'beta', 'developer conference', 'keynote', 'event',
+    'crashed', 'down', 'outage', 'server', 'website not working', 'is down',
+    'twitter', 'x', 'instagram', 'facebook', 'youtube', 'tiktok', 'snapchat',
+    'reddit', 'linkedin', 'discord', 'threads', 'bluesky', 'mastodon'
+  ];
+
+  // ===== SCIENCE & SPACE =====
+  const scienceTriggers = [
+    'space', 'nasa', 'spacex', 'rocket', 'launch', 'satellite', 'iss',
+    'astronaut', 'mars', 'moon', 'james webb', 'telescope', 'discovery',
+    'study', 'research', 'scientists', 'researchers', 'found', 'published',
+    'pandemic', 'virus', 'covid', 'disease', 'outbreak', 'vaccine', 'mutation',
+    'climate', 'global warming', 'temperature record', 'extinction', 'species'
+  ];
+
+  // ===== TRAVEL & GEOGRAPHY =====
+  const travelTriggers = [
+    'flight', 'flights', 'airport', 'delay', 'cancelled', 'passport', 'visa',
+    'traffic', 'jam', 'road closure', 'highway', 'route', 'bus', 'train',
+    'subway', 'metro', 'ferry', 'taxi', 'uber', 'lyft', 'hotel', 'booking',
+    'restaurant', 'open now', 'hours today', 'closed today', 'near me',
+    'population', 'capital', 'time zone', 'local time', 'currency'
+  ];
+
+  // ===== SHOPPING & PRICES =====
+  const shoppingTriggers = [
+    'cheap', 'cheapest', 'price drop', 'sale', 'discount', 'deal', 'deals',
+    'coupon', 'promo', 'in stock', 'out of stock', 'pre order', 'preorder',
+    'buy', 'where to buy', 'best buy', 'amazon', 'ebay', 'walmart', 'target',
+    'cost', 'how much does', 'worth', 'valued at', 'auction', 'bid'
+  ];
+
+  // ===== QUESTION PATTERNS =====
+  const questionPatterns = [
+    'who won', 'who is winning', 'who lost', 'who is the current', 'who is the new',
+    'what is the current', 'what is the latest', 'what happened to', 'what is happening',
+    'when is the next', 'when did', 'where is', 'where can i watch', 'how much is',
+    'is it going to', 'will it', 'did they', 'has he', 'has she', 'have they',
+    'are they', 'is there', 'was there', 'are we', 'what time is', 'what day is'
+  ];
+
+  const allTriggers = [
+    ...timeTriggers,
+    ...sportsTriggers,
+    ...financeTriggers,
+    ...weatherTriggers,
+    ...entertainmentTriggers,
+    ...politicsTriggers,
+    ...techTriggers,
+    ...scienceTriggers,
+    ...travelTriggers,
+    ...shoppingTriggers,
+    ...questionPatterns
+  ];
+
+  return allTriggers.some((trigger) => lower.includes(trigger));
+};
   return searchTriggers.some((trigger) => lower.includes(trigger));
 };
 
@@ -382,7 +512,12 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const synthesizerMessages = [
       {
         role: 'system',
-        content: 'You are the ALOP-AI Council Synthesizer. Combine the expert responses below into one final, coherent, accurate answer. If real-time web search results are included, prioritize them for current facts, dates, sports scores, news, and recent events. Resolve any contradictions using the search results. Cite sources naturally when needed. Be concise unless detail is requested. Do not list individual models unless explicitly asked.'
+       const synthesizerMessages = [
+  {
+    role: 'system',
+    content: 'You are the ALOP-AI Council Synthesizer. You MUST use real-time web search results when they are provided, especially for sports scores, recent news, current events, and live data. The search results are the most authoritative source. Combine them with the expert model responses to produce one final, accurate, confident answer. If search results provide a clear answer, state it directly. Cite sources naturally when needed. Be concise unless detail is requested. Do not list individual models unless explicitly asked.'
+  },
+
       },
       {
         role: 'user',

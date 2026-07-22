@@ -4,6 +4,8 @@ const { nodeProfilingIntegration } = require('@sentry/profiling-node');
 Sentry.init({
   dsn: "https://83e051994bba3e7ae40145510653a0b6@o4511779597647872.ingest.de.sentry.io/4511779863330896",
   integrations: [
+    Sentry.httpIntegration(),
+    Sentry.expressIntegration(),
     nodeProfilingIntegration(),
   ],
   tracesSampleRate: 1.0,
@@ -25,7 +27,6 @@ const Stripe = require('stripe');
 
 const app = express();
 app.set('trust proxy', 1);
-app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
@@ -35,6 +36,11 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 const OLLAMA_HOST = process.env.OLLAMA_HOST;
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
+
+// ===== THE WHIP: SPEED CONTROLS =====
+const COUNCIL_WHIP_MS = parseInt(process.env.COUNCIL_WHIP_MS, 10) || 8000;
+const COUNCIL_QUORUM = parseInt(process.env.COUNCIL_QUORUM, 10) || 4;
+const COUNCIL_TURBO = process.env.COUNCIL_TURBO === 'true';
 
 if (!OLLAMA_HOST || !OLLAMA_API_KEY) {
   console.error('Missing OLLAMA_HOST or OLLAMA_API_KEY');
@@ -309,9 +315,69 @@ const streamModel = async (res, modelName, messages, temperature = 0.5) => {
   }
 };
 
+// ===== THE WHIP: FAST COUNCIL WITH QUORUM =====
+// We do not wait for all 8 models. As soon as we hit quorum (default 4),
+// OR the whip timeout fires, we synthesize with whoever spoke up.
+// Slow models get left behind. This cuts average response time in half
+// while keeping enough voices for a good synthesis.
+const runCouncilWithWhip = async (models, messages, temperature = 0.6, whipMs = COUNCIL_WHIP_MS, quorum = COUNCIL_QUORUM, tokenLimit = 400) => {
+  const results = [];
+  let settledCount = 0;
+  let validCount = 0;
+  let resolved = false;
+
+  return new Promise((resolve) => {
+    const whipTimer = setTimeout(() => {
+      if (!resolved) {
+        resolved = true;
+        console.log(`[WHIP] Timeout fired after ${whipMs}ms. ${validCount}/${models.length} models responded.`);
+        resolve(results.filter((r) => r.content && r.content.trim().length > 0));
+      }
+    }, whipMs);
+
+    const checkDone = () => {
+      if (resolved) return;
+
+      if (validCount >= quorum) {
+        resolved = true;
+        clearTimeout(whipTimer);
+        console.log(`[WHIP] Quorum reached: ${validCount}/${models.length} models. Laggards skipped.`);
+        resolve(results.filter((r) => r.content && r.content.trim().length > 0));
+        return;
+      }
+
+      if (settledCount >= models.length) {
+        resolved = true;
+        clearTimeout(whipTimer);
+        console.log(`[WHIP] All models settled: ${validCount}/${models.length}.`);
+        resolve(results.filter((r) => r.content && r.content.trim().length > 0));
+      }
+    };
+
+    models.forEach((model) => {
+      callModel(model, messages, temperature, whipMs, tokenLimit)
+        .then((content) => {
+          settledCount++;
+
+          if (content && content.trim().length > 0) {
+            validCount++;
+            results.push({ model, content });
+          }
+
+          checkDone();
+        })
+        .catch((err) => {
+          settledCount++;
+          console.warn(`[WHIP] ${model} failed: ${err.message}`);
+          checkDone();
+        });
+    });
+  });
+};
+
 const needsRealTimeSearch = (text) => {
   const lower = text.toLowerCase();
-  
+
   const timeTriggers = [
     'today', 'now', 'right now', 'currently', 'at the moment', 'as of',
     'yesterday', 'tomorrow', 'tonight', 'this morning', 'this afternoon',
@@ -504,10 +570,14 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const modelsToUse = userPlan === 'pro' ? PRO_COUNCIL_MODELS : FREE_COUNCIL_MODELS;
 
     const isDetailed = wantsDetailedAnswer(message);
-    const modelTokenLimit = isDetailed ? 1200 : 400;
+    const modelTokenLimit = isDetailed ? 900 : 400;
+
+    const councilModels = COUNCIL_TURBO ? modelsToUse.slice(0, 4) : modelsToUse;
+    const whipMs = isDetailed ? Math.max(COUNCIL_WHIP_MS, 10000) : COUNCIL_WHIP_MS;
+    const quorum = Math.min(COUNCIL_QUORUM, councilModels.length);
 
     const councilSystemPrompt = userPlan === 'pro'
-      ? `You are one expert voice in the ALOP-AI Pro Council of ${modelsToUse.length} advanced AI models. Give your best individual perspective on the user question. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}`
+      ? `You are one expert voice in the ALOP-AI Pro Council of ${councilModels.length} advanced AI models. Give your best individual perspective on the user question. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}`
       : `You are one expert voice in the ALOP-AI Council of 4 AI models. Give your best individual perspective. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}`;
 
     const councilMessages = [
@@ -516,18 +586,9 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       { role: 'user', content: message }
     ];
 
-    console.log(`[COUNCIL] User: ${user.email} | Plan: ${userPlan} | Models: ${modelsToUse.length} | Detailed: ${isDetailed} | Tokens: ${modelTokenLimit}`);
+    console.log(`[COUNCIL] User: ${user.email} | Plan: ${userPlan} | Models: ${councilModels.length} | Quorum: ${quorum} | Whip: ${whipMs}ms | Detailed: ${isDetailed} | Tokens: ${modelTokenLimit}`);
 
-    const responses = await Promise.allSettled(
-      modelsToUse.map((model) => callModel(model, councilMessages, 0.6, 12000, modelTokenLimit))
-    );
-
-    let validResponses = responses
-      .map((r, i) => ({
-        model: modelsToUse[i],
-        content: r.status === 'fulfilled' ? r.value : null
-      }))
-      .filter((r) => r.content && r.content.trim().length > 0);
+    const validResponses = await runCouncilWithWhip(councilModels, councilMessages, 0.6, whipMs, quorum, modelTokenLimit);
 
     if (validResponses.length === 0) {
       return res.status(500).json({ error: 'All council models failed to respond' });
@@ -561,7 +622,8 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    await streamModel(res, 'glm-5.2', synthesizerMessages, 0.5);
+    const synthTemp = isDetailed ? 0.5 : 0.35;
+    await streamModel(res, 'glm-5.2', synthesizerMessages, synthTemp);
 
     if (!res.writableEnded) res.end();
 
@@ -608,7 +670,9 @@ app.get('/api/chats', requireAuth, async (req, res) => {
       .order('updated_at', { ascending: false });
     if (error) throw error;
     res.json(data || []);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/chats', requireAuth, async (req, res) => {
@@ -621,7 +685,9 @@ app.post('/api/chats', requireAuth, async (req, res) => {
       .select().single();
     if (error) throw error;
     res.json(data);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.put('/api/chats/:id', requireAuth, async (req, res) => {
@@ -639,7 +705,9 @@ app.put('/api/chats/:id', requireAuth, async (req, res) => {
       .eq('user_id', user.id);
     if (error) throw error;
     res.json({ ok: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.delete('/api/chats/:id', requireAuth, async (req, res) => {
@@ -653,7 +721,9 @@ app.delete('/api/chats/:id', requireAuth, async (req, res) => {
       .eq('user_id', user.id);
     if (error) throw error;
     res.json({ deleted: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ===== ADMIN ROUTES =====
@@ -668,7 +738,9 @@ const requireAdmin = async (req, res, next) => {
     if (error) throw error;
     if (!user?.is_admin) return res.status(403).json({ error: 'Admin only' });
     next();
-  } catch (err) { res.status(500).json({ error: 'Failed to verify admin status' }); }
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to verify admin status' });
+  }
 };
 
 app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
@@ -678,7 +750,9 @@ app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
       .select('id, clerk_id, email, name, avatar_url, plan, is_admin, suspended, created_at, stripe_subscription_id');
     if (error) throw error;
     res.json(users || []);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, async (req, res) => {
@@ -686,7 +760,9 @@ app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, async (req, 
     const { error } = await supabase.from('users').update({ suspended: true }).eq('id', req.params.id);
     if (error) throw error;
     res.json({ suspended: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/admin/users/:id/unsuspend', requireAuth, requireAdmin, async (req, res) => {
@@ -694,7 +770,9 @@ app.post('/api/admin/users/:id/unsuspend', requireAuth, requireAdmin, async (req
     const { error } = await supabase.from('users').update({ suspended: false }).eq('id', req.params.id);
     if (error) throw error;
     res.json({ unsuspended: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.delete('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) => {
@@ -702,7 +780,9 @@ app.delete('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) =
     const { error } = await supabase.from('users').delete().eq('id', req.params.id);
     if (error) throw error;
     res.json({ deleted: true });
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/api/admin/chats/:userId', requireAuth, requireAdmin, async (req, res) => {
@@ -714,7 +794,9 @@ app.get('/api/admin/chats/:userId', requireAuth, requireAdmin, async (req, res) 
       .order('updated_at', { ascending: false });
     if (error) throw error;
     res.json(data || []);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) => {
@@ -727,7 +809,9 @@ app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) 
       .limit(30);
     if (error) throw error;
     res.json(data || []);
-  } catch (err) { res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ===== STRIPE PAYMENTS =====

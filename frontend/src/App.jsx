@@ -530,6 +530,31 @@ const AuthenticatedApp = () => {
   const chatRef = useRef(null);
   const abortRef = useRef(null);
 
+useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const isDesktop = params.get('desktop') === 'true';
+
+  if (isDesktop) {
+    const focusInput = () => {
+      const input = document.querySelector('.input-text');
+      if (input) input.focus();
+    };
+
+    focusInput();
+
+    const handleFocusEvent = () => {
+      focusInput();
+    };
+
+    window.addEventListener('alop-focus', handleFocusEvent);
+
+    return () => {
+      window.removeEventListener('alop-focus', handleFocusEvent);
+    };
+  }
+}, []);
+
+
   useEffect(() => Storage.set("pa-theme", themeKey), [themeKey]);
   useEffect(() => Storage.set("pa-custom-bg", customBg), [customBg]);
   useEffect(() => Storage.set("pa-custom-primary", customPrimary), [customPrimary]);

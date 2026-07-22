@@ -30,14 +30,8 @@ if (!OLLAMA_HOST || !OLLAMA_API_KEY) {
 
 const FREE_COUNCIL_MODELS = ['gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5'];
 const PRO_COUNCIL_MODELS = [
-  'gemma4',
-  'qwen3.5',
-  'glm-5.2',
-  'kimi-k2.7-code',
-  'deepseek-v4-pro',
-  'kimi-k2.6',
-  'minimax-m3',
-  'mistral-large-3'
+  'gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.7-code',
+  'deepseek-v4-pro', 'kimi-k2.6', 'minimax-m3', 'mistral-large-3'
 ];
 
 // ===== CORS =====
@@ -213,28 +207,46 @@ const upload = multer({
 });
 
 // ===== AI HELPERS =====
-const callModel = async (modelName, messages, temperature = 0.7) => {
-  const res = await fetch(OLLAMA_HOST, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OLLAMA_API_KEY}`
-    },
-    body: JSON.stringify({
-      model: modelName,
-      messages,
-      stream: false,
-      options: { temperature }
-    })
-  });
+const callModel = async (modelName, messages, temperature = 0.7, timeoutMs = 12000, maxTokens = 400) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Model ${modelName} error: ${res.status} ${text.slice(0, 200)}`);
+  try {
+    const res = await fetch(OLLAMA_HOST, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${OLLAMA_API_KEY}`
+      },
+      body: JSON.stringify({
+        model: modelName,
+        messages,
+        stream: false,
+        options: {
+          temperature,
+          num_predict: maxTokens
+        }
+      }),
+      signal: controller.signal
+    });
+
+    clearTimeout(timer);
+
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Model ${modelName} error: ${res.status} ${text.slice(0, 200)}`);
+    }
+
+    const data = await res.json();
+    return data.message?.content || data.response || '';
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') {
+      console.warn(`[COUNCIL] ${modelName} timed out after ${timeoutMs}ms`);
+      return '';
+    }
+    throw err;
   }
-
-  const data = await res.json();
-  return data.message?.content || data.response || '';
 };
 
 const streamModel = async (res, modelName, messages, temperature = 0.5) => {
@@ -287,7 +299,6 @@ const streamModel = async (res, modelName, messages, temperature = 0.5) => {
 const needsRealTimeSearch = (text) => {
   const lower = text.toLowerCase();
   
-  // ===== TIME & CURRENT EVENT TRIGGERS =====
   const timeTriggers = [
     'today', 'now', 'right now', 'currently', 'at the moment', 'as of',
     'yesterday', 'tomorrow', 'tonight', 'this morning', 'this afternoon',
@@ -299,14 +310,13 @@ const needsRealTimeSearch = (text) => {
     'did something happen', 'what happened', 'is happening', 'happened today'
   ];
 
-  // ===== SPORTS TRIGGERS =====
   const sportsTriggers = [
     'football', 'soccer', 'american football', 'basketball', 'baseball',
     'tennis', 'cricket', 'rugby', 'hockey', 'ice hockey', 'volleyball',
     'golf', 'boxing', 'mma', 'ufc', 'wrestling', 'formula 1', 'f1', 'nascar',
     'motogp', 'olympics', 'world cup', 'champions league', 'premier league',
     'la liga', 'serie a', 'bundesliga', 'ligue 1', 'eredivisie', 'mls',
-    'nba', 'nfl', 'mlb', 'nhl', 'nfl', 'ncaa', 'ipl', 'psl', 'bbl', 'ipl',
+    'nba', 'nfl', 'mlb', 'nhl', 'ncaa', 'ipl', 'psl', 'bbl',
     'match', 'game', 'score', 'scores', 'result', 'results', 'who won',
     'winning', 'lost', 'beat', 'defeated', 'goal', 'goals', 'point', 'points',
     'team', 'teams', 'player', 'players', 'transfer', 'signed', 'traded',
@@ -317,7 +327,6 @@ const needsRealTimeSearch = (text) => {
     'varsity', 'athlete', 'coach', 'manager', 'owner', 'stadium'
   ];
 
-  // ===== FINANCE TRIGGERS =====
   const financeTriggers = [
     'stock', 'stocks', 'share', 'shares', 'price', 'prices', 'trading',
     'market', 'markets', 'nasdaq', 'dow jones', 's&p 500', 'sp500', 'ftse',
@@ -328,7 +337,6 @@ const needsRealTimeSearch = (text) => {
     'dividend', 'split', 'valuation', 'market cap', 'bullish', 'bearish'
   ];
 
-  // ===== WEATHER & NATURAL EVENTS =====
   const weatherTriggers = [
     'weather', 'temperature', 'forecast', 'rain', 'snow', 'storm', 'hurricane',
     'tornado', 'typhoon', 'earthquake', 'flood', 'drought', 'tsunami',
@@ -336,7 +344,6 @@ const needsRealTimeSearch = (text) => {
     'wind', 'humidity', 'sunny', 'cloudy', 'thunderstorm', 'blizzard'
   ];
 
-  // ===== ENTERTAINMENT TRIGGERS =====
   const entertainmentTriggers = [
     'movie', 'movies', 'film', 'films', 'box office', 'released', 'release date',
     'tv show', 'series', 'episode', 'season', 'netflix', 'hbo', 'disney',
@@ -348,7 +355,6 @@ const needsRealTimeSearch = (text) => {
     'trending', 'viral', 'tiktok', 'meme', 'memes'
   ];
 
-  // ===== POLITICS & GOVERNMENT =====
   const politicsTriggers = [
     'election', 'elections', 'vote', 'voting', 'poll', 'polls', 'candidate',
     'president', 'prime minister', 'minister', 'senator', 'congress', 'parliament',
@@ -359,7 +365,6 @@ const needsRealTimeSearch = (text) => {
     'invasion', 'ceasefire', 'negotiation', 'diplomatic', 'embassy', 'refugee'
   ];
 
-  // ===== TECHNOLOGY TRIGGERS =====
   const techTriggers = [
     'launched', 'release', 'released', 'announcement', 'announced', 'unveiled',
     'new phone', 'new iphone', 'new samsung', 'new android', 'new app',
@@ -371,7 +376,6 @@ const needsRealTimeSearch = (text) => {
     'reddit', 'linkedin', 'discord', 'threads', 'bluesky', 'mastodon'
   ];
 
-  // ===== SCIENCE & SPACE =====
   const scienceTriggers = [
     'space', 'nasa', 'spacex', 'rocket', 'launch', 'satellite', 'iss',
     'astronaut', 'mars', 'moon', 'james webb', 'telescope', 'discovery',
@@ -380,7 +384,6 @@ const needsRealTimeSearch = (text) => {
     'climate', 'global warming', 'temperature record', 'extinction', 'species'
   ];
 
-  // ===== TRAVEL & GEOGRAPHY =====
   const travelTriggers = [
     'flight', 'flights', 'airport', 'delay', 'cancelled', 'passport', 'visa',
     'traffic', 'jam', 'road closure', 'highway', 'route', 'bus', 'train',
@@ -389,7 +392,6 @@ const needsRealTimeSearch = (text) => {
     'population', 'capital', 'time zone', 'local time', 'currency'
   ];
 
-  // ===== SHOPPING & PRICES =====
   const shoppingTriggers = [
     'cheap', 'cheapest', 'price drop', 'sale', 'discount', 'deal', 'deals',
     'coupon', 'promo', 'in stock', 'out of stock', 'pre order', 'preorder',
@@ -397,7 +399,6 @@ const needsRealTimeSearch = (text) => {
     'cost', 'how much does', 'worth', 'valued at', 'auction', 'bid'
   ];
 
-  // ===== QUESTION PATTERNS =====
   const questionPatterns = [
     'who won', 'who is winning', 'who lost', 'who is the current', 'who is the new',
     'what is the current', 'what is the latest', 'what happened to', 'what is happening',
@@ -422,7 +423,21 @@ const needsRealTimeSearch = (text) => {
 
   return allTriggers.some((trigger) => lower.includes(trigger));
 };
-  return searchTriggers.some((trigger) => lower.includes(trigger));
+
+const wantsDetailedAnswer = (text) => {
+  const lower = text.toLowerCase();
+  const detailTriggers = [
+    'explain in detail', 'detailed', 'detailed answer', 'in depth', 'in-depth',
+    'comprehensive', 'thorough', 'long answer', 'long response', 'full answer',
+    'complete answer', 'write an essay', 'write a long', 'step by step',
+    'step-by-step', 'all the details', 'every detail', 'elaborate', 'expand on',
+    'tell me everything', 'full explanation', 'go into detail', 'deep dive',
+    'break it down', 'walk me through', 'comprehensive overview', 'full overview',
+    'as much detail as possible', 'be detailed', 'be thorough', 'dont be brief',
+    "don't be brief", 'not brief', 'not short', 'more detail', 'more details',
+    'explain more', 'explain further', 'expand', 'elaborate more', 'be more detailed'
+  ];
+  return detailTriggers.some((trigger) => lower.includes(trigger));
 };
 
 const searchBrave = async (query) => {
@@ -475,9 +490,12 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
 
     const modelsToUse = userPlan === 'pro' ? PRO_COUNCIL_MODELS : FREE_COUNCIL_MODELS;
 
+    const isDetailed = wantsDetailedAnswer(message);
+    const modelTokenLimit = isDetailed ? 1200 : 400;
+
     const councilSystemPrompt = userPlan === 'pro'
-      ? 'You are one expert voice in the ALOP-AI Pro Council of 14 advanced AI models. Give your best individual perspective on the user question. Be concise but substantive.'
-      : 'You are one expert voice in the ALOP-AI Council of 4 AI models. Give your best individual perspective. Be concise.';
+      ? `You are one expert voice in the ALOP-AI Pro Council of ${modelsToUse.length} advanced AI models. Give your best individual perspective on the user question. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}`
+      : `You are one expert voice in the ALOP-AI Council of 4 AI models. Give your best individual perspective. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}`;
 
     const councilMessages = [
       { role: 'system', content: councilSystemPrompt },
@@ -485,10 +503,10 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       { role: 'user', content: message }
     ];
 
-    console.log(`[COUNCIL] User: ${user.email} | Plan: ${userPlan} | Models: ${modelsToUse.length}`);
+    console.log(`[COUNCIL] User: ${user.email} | Plan: ${userPlan} | Models: ${modelsToUse.length} | Detailed: ${isDetailed} | Tokens: ${modelTokenLimit}`);
 
     const responses = await Promise.allSettled(
-      modelsToUse.map((model) => callModel(model, councilMessages, 0.7))
+      modelsToUse.map((model) => callModel(model, councilMessages, 0.6, 12000, modelTokenLimit))
     );
 
     let validResponses = responses
@@ -516,12 +534,9 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const synthesizerMessages = [
       {
         role: 'system',
-       const synthesizerMessages = [
-  {
-    role: 'system',
-    content: 'You are the ALOP-AI Council Synthesizer. You MUST use real-time web search results when they are provided, especially for sports scores, recent news, current events, and live data. The search results are the most authoritative source. Combine them with the expert model responses to produce one final, accurate, confident answer. If search results provide a clear answer, state it directly. Cite sources naturally when needed. Be concise unless detail is requested. Do not list individual models unless explicitly asked.'
-  },
-
+        content: isDetailed
+          ? 'You are the ALOP-AI Council Synthesizer. The user has explicitly requested a detailed, thorough, or comprehensive answer. Combine the expert responses and any real-time web search results into a full, well-structured, in-depth response. Include examples, nuance, and step-by-step reasoning where helpful. Prioritize web search results for current facts, dates, sports scores, news, and recent events. Cite sources naturally when web search results are provided. Do not list individual models unless explicitly asked.'
+          : 'You are the ALOP-AI Council Synthesizer. Combine the expert responses into one final, concise, accurate answer. If real-time web search results are included, prioritize them for current facts, dates, sports scores, news, and recent events. Resolve contradictions using the search results. Cite sources naturally when needed. Be brief and to the point. Avoid unnecessary detail unless the user asks for it. Do not list individual models unless explicitly asked.'
       },
       {
         role: 'user',

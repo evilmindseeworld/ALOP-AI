@@ -24,7 +24,6 @@ const { ClerkExpressRequireAuth, clerkClient } = require('@clerk/clerk-sdk-node'
 const Stripe = require('stripe');
 
 const app = express();
-const app = express();
 app.set('trust proxy', 1);
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
@@ -782,7 +781,8 @@ app.get('/api/user/plan', requireAuth, async (req, res) => {
 });
 
 // ===== SENTRY ERROR HANDLER MUST COME FIRST =====
-Sentry.setupExpressErrorHandler(app);
+app.use(Sentry.Handlers.errorHandler());
+(app);
 
 // ===== FALLBACK ERROR HANDLER =====
 app.use((err, req, res, next) => {

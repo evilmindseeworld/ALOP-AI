@@ -780,9 +780,8 @@ app.get('/api/user/plan', requireAuth, async (req, res) => {
   }
 });
 
-// ===== SENTRY ERROR HANDLER MUST COME FIRST =====
-app.use(Sentry.Handlers.errorHandler());
-(app);
+// ===== SENTRY ERROR HANDLER =====
+Sentry.setupExpressErrorHandler(app);
 
 // ===== FALLBACK ERROR HANDLER =====
 app.use((err, req, res, next) => {
@@ -791,7 +790,7 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: message });
 });
 
-// ===== START SERVER — ONLY ONE app.listen =====
+// ===== START SERVER =====
 app.listen(PORT, () => {
   console.log(`ALOP-AI backend running on port ${PORT}`);
 });

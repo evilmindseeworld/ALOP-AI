@@ -781,19 +781,17 @@ app.get('/api/user/plan', requireAuth, async (req, res) => {
   }
 });
 
-// ===== ERROR HANDLING =====
+// ===== SENTRY ERROR HANDLER MUST COME FIRST =====
+Sentry.setupExpressErrorHandler(app);
+
+// ===== FALLBACK ERROR HANDLER =====
 app.use((err, req, res, next) => {
   console.error(err.stack);
   const message = process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message;
   res.status(err.status || 500).json({ error: message });
 });
 
-Sentry.setupExpressErrorHandler(app);
-
-app.listen(PORT, () => {
-  console.log(`ALOP-AI backend running on port ${PORT}`);
-});
-
+// ===== START SERVER — ONLY ONE app.listen =====
 app.listen(PORT, () => {
   console.log(`ALOP-AI backend running on port ${PORT}`);
 });

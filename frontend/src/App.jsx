@@ -166,22 +166,8 @@ const Storage = {
       localStorage.setItem(k, v);
     } catch {}
   },
-  getJson: (k) => {
-    try {
-      const v = localStorage.getItem(k);
-      return v ? JSON.parse(v) : null;
-    } catch {
-      return null;
-    }
-  },
-  setJson: (k, v) => {
-    try {
-      localStorage.setItem(k, JSON.stringify(v));
-    } catch {}
-  },
 };
 
-// ===== ICON SYSTEM =====
 const Icon = ({ name, size = 18 }) => {
   const icons = {
     menu: (
@@ -280,7 +266,6 @@ const Icon = ({ name, size = 18 }) => {
   return icons[name] || null;
 };
 
-// ===== MESSAGE ACTIONS =====
 const MessageActions = ({ content, onCopy }) => {
   return (
     <div className="msg-actions">
@@ -291,7 +276,6 @@ const MessageActions = ({ content, onCopy }) => {
   );
 };
 
-// ===== INDIVIDUAL CHAT ITEM IN SIDEBAR =====
 const ChatItem = ({ chat, activeChatId, onSelect, onRename, onDelete, onPin, onFavorite }) => {
   const [editing, setEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(chat.title || "New Chat");
@@ -302,9 +286,7 @@ const ChatItem = ({ chat, activeChatId, onSelect, onRename, onDelete, onPin, onF
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === "Enter") {
-      handleRename();
-    }
+    if (e.key === "Enter") handleRename();
     if (e.key === "Escape") {
       setEditTitle(chat.title || "New Chat");
       setEditing(false);
@@ -357,7 +339,6 @@ const ChatItem = ({ chat, activeChatId, onSelect, onRename, onDelete, onPin, onF
   );
 };
 
-// ===== SIDEBAR =====
 const ChatSidebar = ({
   chats,
   activeChatId,
@@ -413,7 +394,6 @@ const ChatSidebar = ({
   );
 };
 
-// ===== INPUT BAR =====
 const InputBar = ({
   text,
   setText,
@@ -513,12 +493,10 @@ const InputBar = ({
   );
 };
 
-// ===== MAIN AUTHENTICATED APP =====
 const AuthenticatedApp = () => {
   const { user, isLoaded } = useUser();
   const { getToken, isSignedIn } = useAuth();
 
-  // ===== THEME & UI STATE =====
   const [themeKey, setThemeKey] = useState(() => Storage.get("pa-theme") || "nebula");
   const [customBg, setCustomBg] = useState(() => Storage.get("pa-custom-bg") || "");
   const [customPrimary, setCustomPrimary] = useState(() => Storage.get("pa-custom-primary") || "");
@@ -536,12 +514,10 @@ const AuthenticatedApp = () => {
   const [userPlan, setUserPlan] = useState("free");
   const [toast, setToast] = useState(null);
 
-  // ===== CHAT STATE =====
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [status, setStatus] = useState("idle");
 
-  // ===== INPUT STATE =====
   const [attachments, setAttachments] = useState([]);
   const [inputText, setInputText] = useState("");
   const [showCamera, setShowCamera] = useState(false);
@@ -554,26 +530,22 @@ const AuthenticatedApp = () => {
   const chatRef = useRef(null);
   const abortRef = useRef(null);
 
-  // ===== PERSIST SETTINGS =====
   useEffect(() => Storage.set("pa-theme", themeKey), [themeKey]);
   useEffect(() => Storage.set("pa-custom-bg", customBg), [customBg]);
   useEffect(() => Storage.set("pa-custom-primary", customPrimary), [customPrimary]);
   useEffect(() => Storage.set("pa-bg-opacity", bgOpacity.toString()), [bgOpacity]);
   useEffect(() => Storage.set("pa-sidebar-collapsed", sidebarCollapsed.toString()), [sidebarCollapsed]);
 
-  // ===== TOAST TIMER =====
   useEffect(() => {
     if (!toast) return;
     const t = setTimeout(() => setToast(null), 3000);
     return () => clearTimeout(t);
   }, [toast]);
 
-  // ===== AUTO SCROLL =====
   useEffect(() => {
     if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
   }, [chats, activeChatId]);
 
-  // ===== API HELPER =====
   const api = async (path, options = {}) => {
     const token = await getToken();
     return fetch(`${API_BASE}${path}`, {
@@ -586,7 +558,6 @@ const AuthenticatedApp = () => {
     });
   };
 
-  // ===== ADMIN USERS =====
   const fetchAdminUsers = async () => {
     try {
       const r = await api("/api/admin/users");
@@ -597,7 +568,6 @@ const AuthenticatedApp = () => {
     }
   };
 
-  // ===== LOAD CHATS =====
   const loadChats = useCallback(async () => {
     try {
       const r = await api("/api/chats");
@@ -610,7 +580,6 @@ const AuthenticatedApp = () => {
     }
   }, []);
 
-  // ===== FETCH PLAN =====
   const fetchPlan = useCallback(async () => {
     try {
       const r = await api("/api/user/plan");
@@ -621,7 +590,6 @@ const AuthenticatedApp = () => {
     }
   }, []);
 
-  // ===== FRESH CHAT ON APP OPEN =====
   const startFreshChat = useCallback(async () => {
     await loadChats();
     const fresh = await createChat();
@@ -637,7 +605,6 @@ const AuthenticatedApp = () => {
     }
   }, [isLoaded, isSignedIn, fetchPlan, startFreshChat]);
 
-  // ===== ADMIN CHECK =====
   useEffect(() => {
     const checkAdmin = async () => {
       if (!isSignedIn || !user?.emailAddresses?.[0]?.emailAddress) return;
@@ -655,16 +622,13 @@ const AuthenticatedApp = () => {
     if (isLoaded) checkAdmin();
   }, [isLoaded, user, isSignedIn]);
 
-  // ===== FETCH ADMIN USERS WHEN ADMIN PANEL OPENS =====
   useEffect(() => {
     if (isAdmin && showAdmin) fetchAdminUsers();
   }, [isAdmin, showAdmin]);
 
-  // ===== ACTIVE CHAT =====
   const activeChat = useMemo(() => chats.find((c) => c.id === activeChatId), [chats, activeChatId]);
   const activeMessages = activeChat?.messages || [];
 
-  // ===== CREATE CHAT =====
   const createChat = async () => {
     try {
       const r = await api("/api/chats", {
@@ -684,7 +648,6 @@ const AuthenticatedApp = () => {
     }
   };
 
-  // ===== UPDATE CHAT MESSAGES =====
   const updateChatMessages = async (chatId, messages, saveToDb = true) => {
     setChats((prev) =>
       prev.map((c) => (c.id === chatId ? { ...c, messages, updated_at: new Date().toISOString() } : c))
@@ -698,7 +661,6 @@ const AuthenticatedApp = () => {
     }
   };
 
-  // ===== DELETE CHAT =====
   const deleteChat = async (id) => {
     try {
       await api(`/api/chats/${id}`, { method: "DELETE" });
@@ -709,7 +671,6 @@ const AuthenticatedApp = () => {
     }
   };
 
-  // ===== RENAME CHAT =====
   const renameChat = async (id, title) => {
     if (!title || !title.trim()) return;
     setChats((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
@@ -720,7 +681,6 @@ const AuthenticatedApp = () => {
     }
   };
 
-  // ===== PIN / FAVORITE =====
   const togglePinChat = (id) => {
     setChats((prev) => prev.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)));
   };
@@ -729,7 +689,6 @@ const AuthenticatedApp = () => {
     setChats((prev) => prev.map((c) => (c.id === id ? { ...c, favorite: !c.favorite } : c)));
   };
 
-  // ===== SORTED CHATS =====
   const sortedChats = useMemo(() => {
     return [...chats].sort((a, b) => {
       if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
@@ -738,7 +697,6 @@ const AuthenticatedApp = () => {
     });
   }, [chats]);
 
-  // ===== ADMIN ACTIONS =====
   const adminSuspend = async (id) => {
     try {
       if ((await api(`/api/admin/users/${id}/suspend`, { method: "POST" })).ok) {
@@ -773,7 +731,6 @@ const AuthenticatedApp = () => {
     }
   };
 
-  // ===== FILE ATTACHMENTS =====
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files).filter((f) => f.type.startsWith("image/"));
     if (!files.length) {
@@ -784,7 +741,6 @@ const AuthenticatedApp = () => {
     e.target.value = "";
   };
 
-  // ===== CAMERA =====
   const startCamera = async () => {
     try {
       const s = await navigator.mediaDevices.getUserMedia({ video: true });
@@ -822,7 +778,6 @@ const AuthenticatedApp = () => {
     }, "image/png");
   };
 
-  // ===== VOICE INPUT =====
   const stopListening = useCallback(() => {
     if (listenTimerRef.current) clearTimeout(listenTimerRef.current);
     if (recognitionRef.current) {
@@ -881,7 +836,6 @@ const AuthenticatedApp = () => {
     else startListening();
   }, [isListening, stopListening, startListening]);
 
-  // ===== IMAGE GENERATION =====
   const generateImage = useCallback(
     async (promptText) => {
       const imagePrompt = parseImagePrompt(promptText) || promptText;
@@ -906,7 +860,6 @@ const AuthenticatedApp = () => {
       const withUser = [...(activeMessages || []), userMsg];
       await updateChatMessages(chatId, withUser);
 
-      // Auto-name chat on first message
       if ((activeMessages || []).length === 0) {
         const autoTitle = generateChatTitle(imagePrompt);
         if (autoTitle) {
@@ -932,426 +885,6 @@ const AuthenticatedApp = () => {
     [activeChatId, activeMessages]
   );
 
-// ===== MAIN AUTHENTICATED APP =====
-const AuthenticatedApp = () => {
-  const { user, isLoaded } = useUser();
-  const { getToken, isSignedIn } = useAuth();
-
-  // ===== THEME & UI STATE =====
-  const [themeKey, setThemeKey] = useState(() => Storage.get("pa-theme") || "nebula");
-  const [customBg, setCustomBg] = useState(() => Storage.get("pa-custom-bg") || "");
-  const [customPrimary, setCustomPrimary] = useState(() => Storage.get("pa-custom-primary") || "");
-  const [bgOpacity, setBgOpacity] = useState(() => parseFloat(Storage.get("pa-bg-opacity") || "1"));
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    const v = Storage.get("pa-sidebar-collapsed");
-    return v === null ? true : v === "true";
-  });
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
-  const [showPricing, setShowPricing] = useState(false);
-  const [adminUsers, setAdminUsers] = useState([]);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [userPlan, setUserPlan] = useState("free");
-  const [toast, setToast] = useState(null);
-
-  // ===== CHAT STATE =====
-  const [chats, setChats] = useState([]);
-  const [activeChatId, setActiveChatId] = useState(null);
-  const [status, setStatus] = useState("idle");
-
-  // ===== INPUT STATE =====
-  const [attachments, setAttachments] = useState([]);
-  const [inputText, setInputText] = useState("");
-  const [showCamera, setShowCamera] = useState(false);
-  const cameraStreamRef = useRef(null);
-  const videoRef = useRef(null);
-  const canvasRef = useRef(null);
-  const [isListening, setIsListening] = useState(false);
-  const recognitionRef = useRef(null);
-  const listenTimerRef = useRef(null);
-  const chatRef = useRef(null);
-  const abortRef = useRef(null);
-
-  // ===== PERSIST SETTINGS =====
-  useEffect(() => Storage.set("pa-theme", themeKey), [themeKey]);
-  useEffect(() => Storage.set("pa-custom-bg", customBg), [customBg]);
-  useEffect(() => Storage.set("pa-custom-primary", customPrimary), [customPrimary]);
-  useEffect(() => Storage.set("pa-bg-opacity", bgOpacity.toString()), [bgOpacity]);
-  useEffect(() => Storage.set("pa-sidebar-collapsed", sidebarCollapsed.toString()), [sidebarCollapsed]);
-
-  // ===== TOAST TIMER =====
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3000);
-    return () => clearTimeout(t);
-  }, [toast]);
-
-  // ===== AUTO SCROLL =====
-  useEffect(() => {
-    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
-  }, [chats, activeChatId]);
-
-  // ===== API HELPER =====
-  const api = async (path, options = {}) => {
-    const token = await getToken();
-    return fetch(`${API_BASE}${path}`, {
-      ...options,
-      headers: {
-        ...options.headers,
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
-  };
-
-  // ===== ADMIN USERS =====
-  const fetchAdminUsers = async () => {
-    try {
-      const r = await api("/api/admin/users");
-      const data = await r.json();
-      setAdminUsers(data || []);
-    } catch (err) {
-      console.error("Failed to fetch admin users:", err.message);
-    }
-  };
-
-  // ===== LOAD CHATS =====
-  const loadChats = useCallback(async () => {
-    try {
-      const r = await api("/api/chats");
-      const data = await r.json();
-      if (Array.isArray(data)) {
-        setChats(data);
-      }
-    } catch (err) {
-      console.error("Failed to load chats:", err.message);
-    }
-  }, []);
-
-  // ===== FETCH PLAN =====
-  const fetchPlan = useCallback(async () => {
-    try {
-      const r = await api("/api/user/plan");
-      const data = await r.json();
-      setUserPlan(data.plan || "free");
-    } catch (err) {
-      console.error("Failed to fetch plan:", err.message);
-    }
-  }, []);
-
-  // ===== FRESH CHAT ON APP OPEN =====
-  const startFreshChat = useCallback(async () => {
-    await loadChats();
-    const fresh = await createChat();
-    if (fresh) {
-      setActiveChatId(fresh);
-    }
-  }, [loadChats]);
-
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      fetchPlan();
-      startFreshChat();
-    }
-  }, [isLoaded, isSignedIn, fetchPlan, startFreshChat]);
-
-  // ===== ADMIN CHECK =====
-  useEffect(() => {
-    const checkAdmin = async () => {
-      if (!isSignedIn || !user?.emailAddresses?.[0]?.emailAddress) return;
-      try {
-        const r = await api("/api/admin/users");
-        if (r.ok) {
-          const users = await r.json();
-          const me = users.find((u) => u.email === user.emailAddresses[0].emailAddress);
-          if (me?.is_admin) setIsAdmin(true);
-        }
-      } catch (err) {
-        console.error("Admin check failed:", err.message);
-      }
-    };
-    if (isLoaded) checkAdmin();
-  }, [isLoaded, user, isSignedIn]);
-
-  // ===== FETCH ADMIN USERS WHEN ADMIN PANEL OPENS =====
-  useEffect(() => {
-    if (isAdmin && showAdmin) fetchAdminUsers();
-  }, [isAdmin, showAdmin]);
-
-  // ===== ACTIVE CHAT =====
-  const activeChat = useMemo(() => chats.find((c) => c.id === activeChatId), [chats, activeChatId]);
-  const activeMessages = activeChat?.messages || [];
-
-  // ===== CREATE CHAT =====
-  const createChat = async () => {
-    try {
-      const r = await api("/api/chats", {
-        method: "POST",
-        body: JSON.stringify({ title: "New Chat" }),
-      });
-      const data = await r.json();
-      setChats((prev) => [data, ...prev]);
-      setActiveChatId(data.id);
-      setInputText("");
-      setAttachments([]);
-      return data.id;
-    } catch (err) {
-      setToast("Failed to create chat");
-      console.error("Create chat failed:", err.message);
-      return null;
-    }
-  };
-
-  // ===== UPDATE CHAT MESSAGES =====
-  const updateChatMessages = async (chatId, messages, saveToDb = true) => {
-    setChats((prev) =>
-      prev.map((c) => (c.id === chatId ? { ...c, messages, updated_at: new Date().toISOString() } : c))
-    );
-    if (saveToDb) {
-      try {
-        await api(`/api/chats/${chatId}`, { method: "PUT", body: JSON.stringify({ messages }) });
-      } catch (err) {
-        console.error("Failed to save messages:", err.message);
-      }
-    }
-  };
-
-  // ===== DELETE CHAT =====
-  const deleteChat = async (id) => {
-    try {
-      await api(`/api/chats/${id}`, { method: "DELETE" });
-      setChats((prev) => prev.filter((c) => c.id !== id));
-      if (activeChatId === id) setActiveChatId(null);
-    } catch (err) {
-      console.error("Delete chat failed:", err.message);
-    }
-  };
-
-  // ===== RENAME CHAT =====
-  const renameChat = async (id, title) => {
-    if (!title || !title.trim()) return;
-    setChats((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
-    try {
-      await api(`/api/chats/${id}`, { method: "PUT", body: JSON.stringify({ title }) });
-    } catch (err) {
-      console.error("Rename chat failed:", err.message);
-    }
-  };
-
-  // ===== PIN / FAVORITE =====
-  const togglePinChat = (id) => {
-    setChats((prev) => prev.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)));
-  };
-
-  const toggleFavoriteChat = (id) => {
-    setChats((prev) => prev.map((c) => (c.id === id ? { ...c, favorite: !c.favorite } : c)));
-  };
-
-  // ===== SORTED CHATS =====
-  const sortedChats = useMemo(() => {
-    return [...chats].sort((a, b) => {
-      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-      if (a.favorite !== b.favorite) return a.favorite ? -1 : 1;
-      return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at);
-    });
-  }, [chats]);
-
-  // ===== ADMIN ACTIONS =====
-  const adminSuspend = async (id) => {
-    try {
-      if ((await api(`/api/admin/users/${id}/suspend`, { method: "POST" })).ok) {
-        setToast("User suspended");
-        fetchAdminUsers();
-      }
-    } catch (err) {
-      console.error("Suspend failed:", err.message);
-    }
-  };
-
-  const adminUnsuspend = async (id) => {
-    try {
-      if ((await api(`/api/admin/users/${id}/unsuspend`, { method: "POST" })).ok) {
-        setToast("User unsuspended");
-        fetchAdminUsers();
-      }
-    } catch (err) {
-      console.error("Unsuspend failed:", err.message);
-    }
-  };
-
-  const adminDeleteUser = async (id) => {
-    if (!confirm("DELETE this user and all their data?")) return;
-    try {
-      if ((await api(`/api/admin/users/${id}`, { method: "DELETE" })).ok) {
-        setToast("User deleted");
-        fetchAdminUsers();
-      }
-    } catch (err) {
-      console.error("Delete user failed:", err.message);
-    }
-  };
-
-  // ===== FILE ATTACHMENTS =====
-  const handleFileSelect = (e) => {
-    const files = Array.from(e.target.files).filter((f) => f.type.startsWith("image/"));
-    if (!files.length) {
-      setToast("Only image files supported");
-      return;
-    }
-    setAttachments((prev) => [...prev, ...files]);
-    e.target.value = "";
-  };
-
-  // ===== CAMERA =====
-  const startCamera = async () => {
-    try {
-      const s = await navigator.mediaDevices.getUserMedia({ video: true });
-      cameraStreamRef.current = s;
-      setShowCamera(true);
-      setTimeout(() => {
-        if (videoRef.current) videoRef.current.srcObject = s;
-      }, 100);
-    } catch {
-      setToast("Camera access denied");
-    }
-  };
-
-  const stopCamera = () => {
-    if (cameraStreamRef.current) {
-      cameraStreamRef.current.getTracks().forEach((t) => t.stop());
-      cameraStreamRef.current = null;
-    }
-    setShowCamera(false);
-  };
-
-  const capturePhoto = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const v = videoRef.current;
-    const c = canvasRef.current;
-    c.width = v.videoWidth;
-    c.height = v.videoHeight;
-    c.getContext("2d").drawImage(v, 0, 0);
-    c.toBlob((b) => {
-      setAttachments((prev) => [
-        ...prev,
-        new File([b], `camera-${Date.now()}.png`, { type: "image/png" }),
-      ]);
-      stopCamera();
-    }, "image/png");
-  };
-
-  // ===== VOICE INPUT =====
-  const stopListening = useCallback(() => {
-    if (listenTimerRef.current) clearTimeout(listenTimerRef.current);
-    if (recognitionRef.current) {
-      try {
-        recognitionRef.current.stop();
-      } catch {}
-      recognitionRef.current = null;
-    }
-    setIsListening(false);
-  }, []);
-
-  const startListening = useCallback(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      setToast("Voice input needs Chrome/Edge/Safari");
-      return;
-    }
-    const r = new SpeechRecognition();
-    r.continuous = false;
-    r.interimResults = false;
-    r.lang = "en-US";
-    r.maxAlternatives = 1;
-
-    r.onstart = () => {
-      setIsListening(true);
-      listenTimerRef.current = setTimeout(() => {
-        try {
-          r.stop();
-        } catch {}
-      }, 10000);
-    };
-
-    r.onend = () => {
-      setIsListening(false);
-      if (listenTimerRef.current) clearTimeout(listenTimerRef.current);
-      recognitionRef.current = null;
-    };
-
-    r.onresult = (e) => {
-      let t = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript;
-      if (t.trim()) setInputText((p) => p + t + " ");
-    };
-
-    r.onerror = () => {
-      setIsListening(false);
-      recognitionRef.current = null;
-    };
-
-    r.start();
-    recognitionRef.current = r;
-  }, []);
-
-  const toggleListening = useCallback(() => {
-    if (isListening) stopListening();
-    else startListening();
-  }, [isListening, stopListening, startListening]);
-
-  // ===== IMAGE GENERATION =====
-  const generateImage = useCallback(
-    async (promptText) => {
-      const imagePrompt = parseImagePrompt(promptText) || promptText;
-      if (!imagePrompt) {
-        setToast("Describe what image to generate");
-        return;
-      }
-
-      let chatId = activeChatId;
-      if (!chatId) {
-        chatId = await createChat();
-      }
-      if (!chatId) return;
-
-      const userMsg = {
-        role: "user",
-        content: `Generate image: ${imagePrompt}`,
-        ts: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        id: uid(),
-      };
-
-      const withUser = [...(activeMessages || []), userMsg];
-      await updateChatMessages(chatId, withUser);
-
-      // Auto-name chat on first message
-      if ((activeMessages || []).length === 0) {
-        const autoTitle = generateChatTitle(imagePrompt);
-        if (autoTitle) {
-          renameChat(chatId, autoTitle);
-        }
-      }
-
-      await updateChatMessages(chatId, [
-        ...withUser,
-        {
-          role: "assistant",
-          content: "",
-          imageUrl: buildImageUrl(imagePrompt),
-          imagePrompt,
-          ts: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-          id: uid(),
-        },
-      ]);
-
-      setInputText("");
-      setAttachments([]);
-    },
-    [activeChatId, activeMessages]
-  );
-
-  // ===== SEND MESSAGE =====
   const handleSend = useCallback(
     async (text) => {
       let chatId = activeChatId;
@@ -1385,7 +918,6 @@ const AuthenticatedApp = () => {
       const updated = [...activeMessages, userMsg];
       await updateChatMessages(chatId, updated);
 
-      // Auto-name chat on first user message
       if (activeMessages.length === 0 && cleanText) {
         const autoTitle = generateChatTitle(cleanText);
         if (autoTitle) {
@@ -1477,7 +1009,6 @@ const AuthenticatedApp = () => {
     [activeChatId, activeMessages, status, generateImage, attachments]
   );
 
-  // ===== STRIPE PAYMENTS =====
   const upgrade = async (planType) => {
     try {
       const r = await api("/api/create-checkout-session", {
@@ -1501,7 +1032,6 @@ const AuthenticatedApp = () => {
     }
   };
 
-  // ===== DERIVED THEME =====
   const theme = THEMES[themeKey] || THEMES.nebula;
   const primary = customPrimary || theme.primary;
   const bgLayerStyle = customBg ? { backgroundImage: `url(${customBg})` } : { backgroundImage: theme.bg };
@@ -1532,7 +1062,6 @@ const AuthenticatedApp = () => {
       )}
 
       <div className="app-shell">
-        {/* FLOATING HEADER */}
         <header className="app-header">
           <button
             className="icon-btn mobile-only"
@@ -1604,7 +1133,6 @@ const AuthenticatedApp = () => {
           />
 
           <div className="chat-main">
-            {/* PRICING PANEL */}
             {showPricing && (
               <>
                 <div className="panel-overlay" onClick={() => setShowPricing(false)} />
@@ -1687,7 +1215,6 @@ const AuthenticatedApp = () => {
               </>
             )}
 
-            {/* ADMIN PANEL */}
             {showAdmin && isAdmin && (
               <>
                 <div className="panel-overlay" onClick={() => setShowAdmin(false)} />
@@ -1738,7 +1265,6 @@ const AuthenticatedApp = () => {
               </>
             )}
 
-            {/* SETTINGS PANEL */}
             {showSettings && (
               <>
                 <div className="panel-overlay" onClick={() => setShowSettings(false)} />
@@ -1836,7 +1362,6 @@ const AuthenticatedApp = () => {
               </>
             )}
 
-            {/* CHAT CONTENT */}
             <div className="chat-content">
               <div className="scroll-wrapper" ref={chatRef}>
                 {activeMessages.length === 0 && status === "idle" && (
@@ -1922,7 +1447,6 @@ const AuthenticatedApp = () => {
   );
 };
 
-// ===== APP ROOT =====
 const App = () => {
   const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
   return (
@@ -1948,7 +1472,6 @@ const App = () => {
   );
 };
 
-// ===== AUTH WRAPPER =====
 const AuthenticatedAppWrapper = () => {
   const { isSignedIn, isLoaded } = useUser();
 

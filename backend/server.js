@@ -30,10 +30,14 @@ if (!OLLAMA_HOST || !OLLAMA_API_KEY) {
 
 const FREE_COUNCIL_MODELS = ['gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5'];
 const PRO_COUNCIL_MODELS = [
-  'gemma4', 'qwen3.5', 'glm-5.2', 'minimax-m2.5', 'kimi-k2.5',
-  'deepseek-v4-pro', 'deepseek-v4-flash', 'kimi-k2.7-code', 'kimi-k2.6',
-  'glm-5.1', 'minimax-m3', 'minimax-m2.7', 'nemotron-3-super',
-  'nemotron-3-ultra', 'gpt-oss', 'gemini-3-flash-preview', 'mistral-large-3'
+  'gemma4',
+  'qwen3.5',
+  'glm-5.2',
+  'kimi-k2.7-code',
+  'deepseek-v4-pro',
+  'kimi-k2.6',
+  'minimax-m3',
+  'mistral-large-3'
 ];
 
 // ===== CORS =====

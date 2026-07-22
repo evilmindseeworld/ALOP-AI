@@ -999,7 +999,7 @@ const AuthenticatedApp = () => {
           <div className="brand">
             <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
             <span className="sub-title">
-              AI Council • {userPlan === "pro" ? "14 models" : "4 models"}
+              AI Council • {userPlan === "pro" ? "8 models" : "4 models"}
             </span>
           </div>
 
@@ -1063,7 +1063,7 @@ const AuthenticatedApp = () => {
                   </div>
                   <div className="panel-body">
                     <div style={{ textAlign: "center", marginBottom: 24, fontSize: 15, opacity: 0.6 }}>
-                      Unlock the full AI Council with all 14 models, plus unlimited images, vision, voice, and priority support.
+                      Unlock the full AI Council with all 8 models, plus unlimited images, vision, voice, and priority support.
                     </div>
 
                     <div className="memory-card" style={{ border: "1px solid rgba(255,255,255,0.1)", padding: 18, borderRadius: 16, marginBottom: 12 }}>
@@ -1138,7 +1138,7 @@ const AuthenticatedApp = () => {
                     <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
                       <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12 }}>Pro includes</div>
                       <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: 13, opacity: 0.8, lineHeight: 1.9 }}>
-                        <li>✅ AI Council with 14 models</li>
+                        <li>✅ AI Council with 8 models</li>
                         <li>✅ Unlimited image generation</li>
                         <li>✅ Vision & file analysis</li>
                         <li>✅ Voice input</li>
@@ -1428,7 +1428,7 @@ const AuthenticatedAppWrapper = () => {
                 <div>Pro</div>
               </div>
               {[
-                { icon: "🧠", name: "AI Council models", free: "4", pro: "14" },
+                { icon: "🧠", name: "AI Council models", free: "4", pro: "8" },
                 { icon: "🖼️", name: "Image Generation", free: false, pro: true },
                 { icon: "👁️", name: "Vision & Files", free: false, pro: true },
                 { icon: "🎙️", name: "Voice Input", free: false, pro: true },

@@ -1527,33 +1527,39 @@ const AuthenticatedAppWrapper = () => {
           </div>
 
           <div className="sign-in-form-side">
-            <div className="sign-in-logo">
-              <div className="sign-in-logo-icon">A</div>
-              <div className="sign-in-logo-text">ALOP-AI</div>
-            </div>
-            <div className="sign-in-form-title">Sign in to ALOP-AI</div>
-            <div className="sign-in-form-subtitle">
-              One account for every frontier AI model. Chat with a council of models, generate images, analyze files, and build your knowledge base.
-            </div>
-            <div className="sign-in-card">
-              <SignIn fallbackRedirectUrl="/" signUpFallbackRedirectUrl="/" />
-            </div>
-            <div className="sign-in-trust-badges">
-              <span>🔒</span> Secure authentication
-              <span>•</span>
-              <span>No credit card required</span>
-            </div>
-            <div className="payment-icons">
-              <div className="payment-icon">VISA</div>
-              <div className="payment-icon">MC</div>
-              <div className="payment-icon">AMEX</div>
-              <div className="payment-icon">PP</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  <div className="sign-in-logo">
+    <div className="sign-in-logo-icon">A</div>
+    <div className="sign-in-logo-text">ALOP-AI</div>
+  </div>
+  <div className="sign-in-form-title">Sign in to ALOP-AI</div>
+  <div className="sign-in-form-subtitle">
+    One account for every frontier AI model. Chat with a council of models, generate images, analyze files, and build your knowledge base.
+  </div>
+  <div className="sign-in-card">
+    <SignIn fallbackRedirectUrl="/" signUpFallbackRedirectUrl="/" />
+  </div>
+  <div className="sign-in-trust-badges">
+  <span>🔒</span> Secure authentication
+  <span>•</span>
+  <span>No credit card required</span>
+</div>
+<div className="legal-links">
+  <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+  <span>•</span>
+  <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+</div>
+<div className="legal-links">
+    <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+    <span>•</span>
+    <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+  </div>
+  <div className="payment-icons">
+    <div className="payment-icon">VISA</div>
+    <div className="payment-icon">MC</div>
+    <div className="payment-icon">AMEX</div>
+    <div className="payment-icon">PP</div>
+  </div>
+</div>
 
   return <AuthenticatedApp />;
 };

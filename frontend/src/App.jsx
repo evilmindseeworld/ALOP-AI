@@ -1892,11 +1892,14 @@ const OverlayAssistant = () => {
 
 const App = () => {
   const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
   const isOverlay =
-  window.ALOP_OVERLAY === true ||
-  window.location.search.includes('overlay=true') ||
-  window.location.hash.includes('overlay=true') ||
-  window.location.href.includes('overlay=true');
+    typeof window !== 'undefined' &&
+    (
+      window.location.search.includes('overlay=true') ||
+      window.location.hash.includes('overlay') ||
+      window.location.href.includes('overlay=true')
+    );
 
   return (
     <ClerkProvider

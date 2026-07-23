@@ -1893,7 +1893,7 @@ const OverlayAssistant = () => {
 const App = () => {
   const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
   const isOverlay =
-  (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('alop_overlay') === 'true') ||
+  window.ALOP_OVERLAY === true ||
   window.location.search.includes('overlay=true') ||
   window.location.hash.includes('overlay=true') ||
   window.location.href.includes('overlay=true');

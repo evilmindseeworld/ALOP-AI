@@ -36,6 +36,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
 const OLLAMA_HOST = process.env.OLLAMA_HOST;
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
 // ===== THE WHIP: SPEED CONTROLS =====
 const COUNCIL_WHIP_MS = parseInt(process.env.COUNCIL_WHIP_MS, 10) || 8000;
@@ -52,6 +53,9 @@ const PRO_COUNCIL_MODELS = [
   'gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.7-code',
   'deepseek-v4-pro', 'kimi-k2.6', 'minimax-m3', 'mistral-large-3'
 ];
+
+// ===== OVERLAY USES ONLY THE SMARTEST MODELS =====
+const OVERLAY_MODELS = ['deepseek-v4-pro', 'glm-5.2', 'kimi-k2.7-code'];
 
 // ===== CORS =====
 const allowedOrigins = process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [];
@@ -315,29 +319,43 @@ const streamModel = async (res, modelName, messages, temperature = 0.5) => {
   }
 };
 
-// ===== GEMINI VISION =====
-const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'image/png', maxTokens = 2048) => {
-  const apiKey = process.env.GOOGLE_API_KEY;
+const callGemini = async (modelName, prompt, maxTokens = 1024) => {
+  if (!GOOGLE_API_KEY) throw new Error('GOOGLE_API_KEY not configured');
 
-  if (!apiKey) {
-    throw new Error('GOOGLE_API_KEY not configured');
-  }
-
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GOOGLE_API_KEY}`;
 
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.5, maxOutputTokens: maxTokens }
+    })
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Gemini error: ${res.status} ${text.slice(0, 300)}`);
+  }
+
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+};
+
+const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'image/png', maxTokens = 2048) => {
+  if (!GOOGLE_API_KEY) throw new Error('GOOGLE_API_KEY not configured');
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GOOGLE_API_KEY}`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [
         {
           role: 'user',
           parts: [
-            {
-              text: prompt
-            },
+            { text: prompt },
             {
               inline_data: {
                 mime_type: mimeType,
@@ -364,10 +382,6 @@ const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'imag
 };
 
 // ===== THE WHIP: FAST COUNCIL WITH QUORUM =====
-// We do not wait for all 8 models. As soon as we hit quorum (default 4),
-// OR the whip timeout fires, we synthesize with whoever spoke up.
-// Slow models get left behind. This cuts average response time in half
-// while keeping enough voices for a good synthesis.
 const runCouncilWithWhip = async (models, messages, temperature = 0.6, whipMs = COUNCIL_WHIP_MS, quorum = COUNCIL_QUORUM, tokenLimit = 400) => {
   const results = [];
   let settledCount = 0;
@@ -384,9 +398,7 @@ const runCouncilWithWhip = async (models, messages, temperature = 0.6, whipMs = 
     }, whipMs);
 
     const checkDone = () => {
-      if (resolved) {
-        return;
-      }
+      if (resolved) return;
 
       if (validCount >= quorum) {
         resolved = true;
@@ -408,12 +420,10 @@ const runCouncilWithWhip = async (models, messages, temperature = 0.6, whipMs = 
       callModel(model, messages, temperature, whipMs, tokenLimit)
         .then((content) => {
           settledCount++;
-
           if (content && content.trim().length > 0) {
             validCount++;
             results.push({ model, content });
           }
-
           checkDone();
         })
         .catch((err) => {
@@ -724,6 +734,88 @@ app.post('/api/vision', requireAuth, checkSuspended, async (req, res) => {
     res.json({ answer });
   } catch (err) {
     console.error('Vision error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ===== FAST OVERLAY ASSISTANT =====
+// Uses only the 3 smartest models with a short whip.
+// Gemini Vision gives it eyes when a screenshot is provided.
+// GLM 5.2 synthesizes the final answer.
+app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
+  try {
+    const { prompt, image, history = [] } = req.body;
+    if (!prompt || !prompt.trim()) {
+      return res.status(400).json({ error: 'Prompt required' });
+    }
+
+    const user = await ensureUser(req.auth.userId);
+
+    let contextFromImage = '';
+
+    if (image) {
+      const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+      const visionModel = user.plan === 'pro'
+        ? 'gemini-2.5-pro-preview-05-06'
+        : 'gemini-2.5-flash-preview-05-06';
+
+      contextFromImage = await callGeminiVision(
+        visionModel,
+        'Describe what is visible on the screen in concise detail. Include any code, text, UI elements, error messages, or webpage content. Be brief.',
+        base64Data,
+        'image/png',
+        1024
+      );
+
+      console.log('[OVERLAY] Gemini Vision described the screen');
+    }
+
+    const overlaySystemPrompt = `You are ALOP-AI Overlay, a fast, precise desktop assistant. You have access to ${OVERLAY_MODELS.length} expert models. Give a concise, accurate answer. For coding, provide working code. For homework, explain clearly without fluff.`;
+
+    const overlayMessages = [
+      { role: 'system', content: overlaySystemPrompt },
+      ...history.slice(-4),
+      {
+        role: 'user',
+        content: contextFromImage
+          ? `Screen description: ${contextFromImage}\n\nUser question: ${prompt}`
+          : `User question: ${prompt}`
+      }
+    ];
+
+    const responses = await runCouncilWithWhip(
+      OVERLAY_MODELS,
+      overlayMessages,
+      0.5,
+      6000,
+      2,
+      600
+    );
+
+    if (responses.length === 0) {
+      return res.status(500).json({ error: 'Overlay models failed to respond' });
+    }
+
+    const synthesizerMessages = [
+      {
+        role: 'system',
+        content: 'Synthesize the expert answers into one final, concise response. Prioritize accuracy over length. If there is screen context, use it directly.'
+      },
+      {
+        role: 'user',
+        content: `Question: ${prompt}\n\nExpert answers:\n${responses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}\n\nGive the final answer.`
+      }
+    ];
+
+    const answer = await callGemini(
+      'glm-5.2',
+      synthesizerMessages.map((m) => `${m.role}: ${m.content}`).join('\n\n'),
+      1024
+    );
+
+    res.json({ answer });
+  } catch (err) {
+    console.error('Overlay error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });

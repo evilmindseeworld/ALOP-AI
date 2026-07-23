@@ -1604,15 +1604,29 @@ const OverlayAssistant = () => {
   };
 
   const captureScreen = async () => {
-    try {
-      const { invoke } = await import('@tauri-apps/api/tauri');
-      const image = await invoke('capture_screen');
-      return image;
-    } catch (err) {
-      console.error('Native screen capture failed:', err);
+  try {
+    if (typeof window === 'undefined' || !window.__TAURI__) {
+      console.warn('Screen capture only works in the desktop app');
       return null;
     }
-  };
+
+    const tauriModule = await Function('return import("@tauri-apps/api/tauri")')();
+    const image = await tauriModule.invoke('capture_screen');
+    return image;
+  } catch (err) {
+    console.error('Native screen capture failed:', err);
+    return null;
+  }
+};
+
+    const tauriModule = await Function('return import("@tauri-apps/api/tauri")')();
+    const image = await tauriModule.invoke('capture_screen');
+    return image;
+  } catch (err) {
+    console.error('Native screen capture failed:', err);
+    return null;
+  }
+};
 
   const handleSubmit = async (e) => {
     e.preventDefault();

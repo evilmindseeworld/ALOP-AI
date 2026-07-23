@@ -1472,31 +1472,6 @@ useEffect(() => {
   );
 };
 
-const App = () => {
-  const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-  return (
-    <ClerkProvider
-      publishableKey={clerkKey}
-      signInUrl="/"
-      signUpUrl="/"
-      afterSignInUrl="/"
-      afterSignUpUrl="/"
-      appearance={{
-        baseTheme: "dark",
-        variables: {
-          colorPrimary: "#3b82f6",
-          colorBackground: "#0f0f14",
-          colorText: "#ffffff",
-        },
-      }}
-    >
-      <div style={{ width: "100vw", height: "100dvh" }}>
-        <AuthenticatedAppWrapper />
-      </div>
-    </ClerkProvider>
-  );
-};
-
 const AuthenticatedAppWrapper = () => {
   const { isSignedIn, isLoaded } = useUser();
 
@@ -1581,6 +1556,172 @@ const AuthenticatedAppWrapper = () => {
   }
 
   return <AuthenticatedApp />;
+};
+
+const OverlayAssistant = () => {
+  const { getToken } = useAuth();
+  const [query, setQuery] = useState('');
+  const [answer, setAnswer] = useState('');
+  const [status, setStatus] = useState('idle');
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const inputRef = useRef(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+
+    const handleKey = (e) => {
+      if (e.key === 'Escape' && window.alopHideOverlay) {
+        window.alopHideOverlay();
+      }
+    };
+
+    const handleFocus = () => inputRef.current?.focus();
+
+    window.addEventListener('keydown', handleKey);
+    window.addEventListener('alop-focus', handleFocus);
+
+    return () => {
+      window.removeEventListener('keydown', handleKey);
+      window.removeEventListener('alop-focus', handleFocus);
+    };
+  }, []);
+
+  const stopSpeaking = () => {
+    window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+  };
+
+  const speak = (text) => {
+    if (!text) return;
+    stopSpeaking();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.15;
+    utterance.pitch = 1;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    window.speechSynthesis.speak(utterance);
+    setIsSpeaking(true);
+  };
+
+  const captureScreen = async () => {
+    try {
+      const { invoke } = await import('@tauri-apps/api/tauri');
+      const image = await invoke('capture_screen');
+      return image;
+    } catch (err) {
+      console.error('Native screen capture failed:', err);
+      return null;
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!query.trim() || status === 'loading') return;
+
+    setStatus('loading');
+    setAnswer('');
+
+    const image = await captureScreen();
+
+    try {
+      const token = await getToken();
+      const res = await fetch(`${API_BASE}/api/overlay`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          prompt: query,
+          image: image
+        })
+      });
+
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+
+      const data = await res.json();
+      const text = data.answer || 'No answer returned';
+      setAnswer(text);
+      setStatus('done');
+      speak(text);
+    } catch (err) {
+      setStatus('error');
+      setAnswer(`Error: ${err.message}`);
+    }
+  };
+
+  return (
+    <div className="overlay-root">
+      {answer && (
+        <div className="overlay-answer-card">
+          <div className="overlay-answer-text">{answer}</div>
+          <button
+            className="overlay-tts-btn"
+            onClick={() => isSpeaking ? stopSpeaking() : speak(answer)}
+            title={isSpeaking ? 'Stop speaking' : 'Speak answer'}
+          >
+            {isSpeaking ? '■' : '▶'}
+          </button>
+        </div>
+      )}
+
+      <form className="overlay-bar" onSubmit={handleSubmit}>
+        <div className="overlay-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 2a3 3 0 0 0-3 3v14a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
+          </svg>
+        </div>
+
+        <input
+          ref={inputRef}
+          className="overlay-input"
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Ask about your screen or anything..."
+          disabled={status === 'loading'}
+        />
+
+        <button
+          className="overlay-submit"
+          type="submit"
+          disabled={status === 'loading' || !query.trim()}
+        >
+          {status === 'loading' ? '...' : '→'}
+        </button>
+      </form>
+    </div>
+  );
+};
+
+const App = () => {
+  const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+  const isOverlay = window.location.search.includes('overlay=true');
+
+  return (
+    <ClerkProvider
+      publishableKey={clerkKey}
+      signInUrl="/"
+      signUpUrl="/"
+      afterSignInUrl="/"
+      afterSignUpUrl="/"
+      appearance={{
+        baseTheme: "dark",
+        variables: {
+          colorPrimary: "#3b82f6",
+          colorBackground: "#0f0f14",
+          colorText: "#ffffff",
+        },
+      }}
+    >
+      <div style={{ width: "100vw", height: "100dvh" }}>
+        {isOverlay ? <OverlayAssistant /> : <AuthenticatedAppWrapper />}
+      </div>
+    </ClerkProvider>
+  );
 };
 
 export default App;

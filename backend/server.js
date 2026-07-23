@@ -112,8 +112,8 @@ app.use(helmet({
   contentSecurityPolicy: false
 }));
 app.use(compression());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(timeout('120s'));
 app.use(haltOnTimedout);
 
@@ -315,6 +315,54 @@ const streamModel = async (res, modelName, messages, temperature = 0.5) => {
   }
 };
 
+// ===== GEMINI VISION =====
+const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'image/png', maxTokens = 2048) => {
+  const apiKey = process.env.GOOGLE_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('GOOGLE_API_KEY not configured');
+  }
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      contents: [
+        {
+          role: 'user',
+          parts: [
+            {
+              text: prompt
+            },
+            {
+              inline_data: {
+                mime_type: mimeType,
+                data: base64Image
+              }
+            }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.4,
+        maxOutputTokens: maxTokens
+      }
+    })
+  });
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Gemini error: ${res.status} ${text.slice(0, 300)}`);
+  }
+
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+};
+
 // ===== THE WHIP: FAST COUNCIL WITH QUORUM =====
 // We do not wait for all 8 models. As soon as we hit quorum (default 4),
 // OR the whip timeout fires, we synthesize with whoever spoke up.
@@ -336,7 +384,9 @@ const runCouncilWithWhip = async (models, messages, temperature = 0.6, whipMs = 
     }, whipMs);
 
     const checkDone = () => {
-      if (resolved) return;
+      if (resolved) {
+        return;
+      }
 
       if (validCount >= quorum) {
         resolved = true;
@@ -642,6 +692,39 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     console.error('Council error:', err.message);
     if (!res.headersSent) return res.status(500).json({ error: err.message });
     if (!res.writableEnded) res.end();
+  }
+});
+
+// ===== VISION / SCREEN ANALYSIS =====
+app.post('/api/vision', requireAuth, checkSuspended, async (req, res) => {
+  try {
+    const { prompt, image } = req.body;
+
+    if (!prompt || !image) {
+      return res.status(400).json({ error: 'Prompt and image are required' });
+    }
+
+    const user = await ensureUser(req.auth.userId);
+    const model = user.plan === 'pro'
+      ? 'gemini-2.5-pro-preview-05-06'
+      : 'gemini-2.5-flash-preview-05-06';
+
+    const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+
+    const systemPrompt = `You are ALOP-AI, a helpful desktop assistant with vision. The user has shared a screenshot of their screen. Look at it carefully and answer their question or help with their request based on what you see. Be concise but accurate. If they ask for code, provide clean, working code. If you see text in the screenshot, quote or reference it naturally.`;
+
+    const answer = await callGeminiVision(
+      model,
+      `${systemPrompt}\n\nUser request: ${prompt}`,
+      base64Data,
+      'image/png',
+      2048
+    );
+
+    res.json({ answer });
+  } catch (err) {
+    console.error('Vision error:', err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 

@@ -1480,14 +1480,84 @@ const AuthenticatedAppWrapper = () => {
   if (!isSignedIn) {
     return (
       <div className="sign-in-overlay">
-        {/* sign-in UI content */}
-        ...
+        <div className="sign-in-modal">
+          <div className="sign-in-features-side">
+            <div className="sign-in-features-title">What's included</div>
+            <div className="feature-table">
+              <div className="feature-row header">
+                <div className="feature-name">Feature</div>
+                <div>Free</div>
+                <div>Pro</div>
+              </div>
+
+              {[
+                { icon: "🧠", name: "AI Council models", free: "4", pro: "8" },
+                { icon: "🔍", name: "Real-time web search", free: false, pro: true },
+                { icon: "🖼️", name: "Image Generation", free: false, pro: true },
+                { icon: "👁️", name: "Vision & Files", free: false, pro: true },
+                { icon: "🎙️", name: "Voice Input", free: false, pro: true },
+                { icon: "☁️", name: "Cloud Sync", free: true, pro: true },
+                { icon: "💬", name: "Unlimited Messages", free: false, pro: true },
+              ].map((f, i) => (
+                <div className="feature-row" key={i}>
+                  <div className="feature-name">
+                    <div className="feature-icon">{f.icon}</div>
+                    <div>{f.name}</div>
+                  </div>
+                  <div style={{ textAlign: "center", fontSize: 12, opacity: 0.7 }}>
+                    {typeof f.free === "boolean" ? (
+                      f.free ? <span className="feature-check">✓</span> : <span className="feature-cross">×</span>
+                    ) : (
+                      f.free
+                    )}
+                  </div>
+                  <div style={{ textAlign: "center", fontSize: 12, opacity: 0.7 }}>
+                    {typeof f.pro === "boolean" ? (
+                      f.pro ? <span className="feature-check">✓</span> : <span className="feature-cross">×</span>
+                    ) : (
+                      f.pro
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop: "auto", fontSize: 12, opacity: 0.4, paddingTop: 20 }}>
+              Sign in free to sync chats. Upgrade to Pro for the full AI Council.
+            </div>
+          </div>
+
+          <div className="sign-in-form-side">
+            <div className="sign-in-logo">
+              <div className="sign-in-logo-icon">A</div>
+              <div className="sign-in-logo-text">ALOP-AI</div>
+            </div>
+            <div className="sign-in-form-title">Sign in to ALOP-AI</div>
+            <div className="sign-in-form-subtitle">
+              One account for every frontier AI model. Chat with a council of models, generate images, analyze files, and build your knowledge base.
+            </div>
+            <div className="sign-in-card">
+              <SignIn fallbackRedirectUrl="/" signUpFallbackRedirectUrl="/" />
+            </div>
+            <div className="sign-in-trust-badges">
+              <span>🔒</span> Secure authentication
+              <span>•</span>
+              <span>No credit card required</span>
+            </div>
+            <div className="payment-icons">
+              <div className="payment-icon">VISA</div>
+              <div className="payment-icon">MC</div>
+              <div className="payment-icon">AMEX</div>
+              <div className="payment-icon">PP</div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
 
   return <AuthenticatedApp />;
 };
+
 const OverlayAssistant = () => {
   const { getToken } = useAuth();
   const [query, setQuery] = useState('');
@@ -1495,9 +1565,12 @@ const OverlayAssistant = () => {
   const [status, setStatus] = useState('idle');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [liveActive, setLiveActive] = useState(false);
   const [attachment, setAttachment] = useState(null);
   const inputRef = useRef(null);
   const recognitionRef = useRef(null);
+  const videoRef = useRef(null);
+  const streamRef = useRef(null);
 
   useEffect(() => {
     inputRef.current?.focus();
@@ -1518,6 +1591,7 @@ const OverlayAssistant = () => {
       window.removeEventListener('alop-focus', handleFocus);
       stopRecording();
       stopSpeaking();
+      stopLiveStream();
     };
   }, []);
 
@@ -1581,6 +1655,89 @@ const OverlayAssistant = () => {
     recognitionRef.current = recognition;
   };
 
+  const stopLiveStream = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+      videoRef.current = null;
+    }
+    setLiveActive(false);
+  };
+
+  const startLiveStream = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { cursor: 'always' },
+        audio: false
+      });
+
+      stream.getVideoTracks()[0].onended = () => {
+        stopLiveStream();
+      };
+
+      const video = document.createElement('video');
+      video.srcObject = stream;
+      video.play();
+
+      streamRef.current = stream;
+      videoRef.current = video;
+      setLiveActive(true);
+    } catch (err) {
+      console.error('Live stream failed:', err);
+    }
+  };
+
+  const captureFromLiveStream = async () => {
+    if (!videoRef.current || !streamRef.current) return null;
+
+    await new Promise((r) => setTimeout(r, 150));
+
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 1920;
+    canvas.height = video.videoHeight || 1080;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    return canvas.toDataURL('image/png');
+  };
+
+  const captureScreen = async () => {
+    if (liveActive) return await captureFromLiveStream();
+
+    try {
+      const stream = await navigator.mediaDevices.getDisplayMedia({
+        video: { cursor: 'always' },
+        audio: false
+      });
+
+      const video = document.createElement('video');
+      video.srcObject = stream;
+
+      await new Promise((resolve) => {
+        video.onloadedmetadata = () => {
+          video.play();
+          resolve();
+        };
+      });
+
+      await new Promise((r) => setTimeout(r, 300));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0);
+
+      stream.getTracks().forEach((track) => track.stop());
+
+      return canvas.toDataURL('image/png');
+    } catch (err) {
+      console.error('Screen capture failed:', err);
+      return null;
+    }
+  };
+
   const handleFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -1595,19 +1752,6 @@ const OverlayAssistant = () => {
     reader.readAsDataURL(file);
 
     e.target.value = '';
-  };
-
-  const captureScreen = async () => {
-    try {
-      if (typeof window === 'undefined' || !window.__TAURI__ || !window.__TAURI__.invoke) {
-        return null;
-      }
-      const image = await window.__TAURI__.invoke('capture_screen');
-      return image;
-    } catch (err) {
-      console.error('Native screen capture failed:', err);
-      return null;
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -1674,7 +1818,7 @@ const OverlayAssistant = () => {
       )}
 
       <form className="overlay-bar" onSubmit={handleSubmit}>
-        <div className="overlay-icon">
+        <div className={`overlay-icon ${liveActive ? 'live' : ''}`}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M12 2a3 3 0 0 0-3 3v14a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" />
             <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
@@ -1689,9 +1833,19 @@ const OverlayAssistant = () => {
           type="text"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Ask anything..."
+          placeholder={liveActive ? "Live screen connected. Ask anything..." : "Ask about your screen or anything..."}
           disabled={status === 'loading'}
         />
+
+        <button
+          type="button"
+          className={`overlay-action ${liveActive ? 'recording' : ''}`}
+          onClick={liveActive ? stopLiveStream : startLiveStream}
+          title={liveActive ? 'Stop live screen' : 'Start live screen'}
+          disabled={status === 'loading'}
+        >
+          ●
+        </button>
 
         <label className="overlay-action" title="Attach image">
           <input
@@ -1716,22 +1870,6 @@ const OverlayAssistant = () => {
             <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
             <line x1="12" y1="19" x2="12" y2="23" />
             <line x1="8" y1="23" x2="16" y2="23" />
-          </svg>
-        </button>
-
-        <button
-          type="button"
-          className="overlay-action"
-          onClick={async () => {
-            const img = await captureScreen();
-            if (img) setAttachment(img);
-          }}
-          title="Capture screen"
-          disabled={status === 'loading'}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-            <circle cx="12" cy="13" r="4" />
           </svg>
         </button>
 

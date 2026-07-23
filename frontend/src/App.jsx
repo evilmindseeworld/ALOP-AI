@@ -1604,29 +1604,19 @@ const OverlayAssistant = () => {
   };
 
   const captureScreen = async () => {
-  try {
-    if (typeof window === 'undefined' || !window.__TAURI__) {
-      console.warn('Screen capture only works in the desktop app');
+    try {
+      if (typeof window === 'undefined' || !window.__TAURI__ || !window.__TAURI__.invoke) {
+        console.warn('Screen capture only works in the desktop app');
+        return null;
+      }
+
+      const image = await window.__TAURI__.invoke('capture_screen');
+      return image;
+    } catch (err) {
+      console.error('Native screen capture failed:', err);
       return null;
     }
-
-    const tauriModule = await Function('return import("@tauri-apps/api/tauri")')();
-    const image = await tauriModule.invoke('capture_screen');
-    return image;
-  } catch (err) {
-    console.error('Native screen capture failed:', err);
-    return null;
-  }
-};
-
-    const tauriModule = await Function('return import("@tauri-apps/api/tauri")')();
-    const image = await tauriModule.invoke('capture_screen');
-    return image;
-  } catch (err) {
-    console.error('Native screen capture failed:', err);
-    return null;
-  }
-};
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1710,6 +1700,7 @@ const OverlayAssistant = () => {
     </div>
   );
 };
+
 
 const App = () => {
   const clerkKey = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;

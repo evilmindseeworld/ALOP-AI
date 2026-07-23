@@ -220,6 +220,46 @@ const checkSuspended = async (req, res, next) => {
   }
 };
 
+// ===== RESOURCE OWNERSHIP MIDDLEWARE =====
+// Verifies that the authenticated user owns the requested resource.
+// Used as defense-in-depth even when queries already filter by user_id.
+const requireOwnership = (tableName, ownerColumn = 'user_id') => {
+  return async (req, res, next) => {
+    try {
+      if (!req.auth?.userId) {
+        return res.status(401).json({ error: 'Not authenticated' });
+      }
+
+      const user = await ensureUser(req.auth.userId);
+      const resourceId = req.params.id;
+
+      if (!resourceId) {
+        return res.status(400).json({ error: 'Resource ID required' });
+      }
+
+      const { data: resource, error } = await supabase
+        .from(tableName)
+        .select(ownerColumn)
+        .eq('id', resourceId)
+        .single();
+
+      if (error || !resource) {
+        return res.status(404).json({ error: 'Resource not found' });
+      }
+
+      if (resource[ownerColumn] !== user.id) {
+        return res.status(403).json({ error: 'You do not have permission to access this resource' });
+      }
+
+      req.resource = resource;
+      next();
+    } catch (err) {
+      console.error('Ownership check failed:', err.message);
+      return res.status(500).json({ error: 'Failed to verify resource ownership' });
+    }
+  };
+};
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024, files: 5 },
@@ -739,9 +779,6 @@ app.post('/api/vision', requireAuth, checkSuspended, async (req, res) => {
 });
 
 // ===== FAST OVERLAY ASSISTANT =====
-// Uses only the 3 smartest models with a short whip.
-// Gemini Vision gives it eyes when a screenshot is provided.
-// GLM 5.2 synthesizes the final answer.
 app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
   try {
     const { prompt, image, history = [] } = req.body;
@@ -865,7 +902,7 @@ app.post('/api/chats', requireAuth, async (req, res) => {
   }
 });
 
-app.put('/api/chats/:id', requireAuth, async (req, res) => {
+app.put('/api/chats/:id', requireAuth, requireOwnership('chats', 'user_id'), async (req, res) => {
   try {
     if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
     const user = await ensureUser(req.auth.userId);
@@ -885,7 +922,7 @@ app.put('/api/chats/:id', requireAuth, async (req, res) => {
   }
 });
 
-app.delete('/api/chats/:id', requireAuth, async (req, res) => {
+app.delete('/api/chats/:id', requireAuth, requireOwnership('chats', 'user_id'), async (req, res) => {
   try {
     if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
     const user = await ensureUser(req.auth.userId);

@@ -1478,19 +1478,12 @@ const AuthenticatedAppWrapper = () => {
   const { isSignedIn, isLoaded } = useUser();
 
   if (!isLoaded) return null;
+  if (!isSignedIn) return <SignInPage />;
 
-if (!isSignedIn) {
-  return <SignInPage />;}
-      <div className="sign-in-overlay">
-        <div className="sign-in-modal">
-          <div className="sign-in-features-side">
-            <div className="sign-in-features-title">What's included</div>
-            <div className="feature-table">
-              <div className="feature-row header">
-                <div className="feature-name">Feature</div>
-                <div>Free</div>
-                <div>Pro</div>
-              </div>
+  return <AuthenticatedApp />;
+};
+
+const OverlayAssistant = () => {
 
               {[
                 { icon: "🧠", name: "AI Council models", free: "4", pro: "8" },

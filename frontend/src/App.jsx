@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { ClerkProvider, SignIn, useUser, useAuth, SignOutButton } from "@clerk/react";
 import "./App.css";
+import SignInPage from "./SignInPage";
+
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
 
@@ -1477,8 +1479,8 @@ const AuthenticatedAppWrapper = () => {
 
   if (!isLoaded) return null;
 
-  if (!isSignedIn) {
-    return (
+if (!isSignedIn) {
+  return <SignInPage />;}
       <div className="sign-in-overlay">
         <div className="sign-in-modal">
           <div className="sign-in-features-side">

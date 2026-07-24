@@ -1,0 +1,423 @@
+/* ===== INDUSTRIAL SIGN-IN PAGE ===== */
+
+.signin-root {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: #050505;
+  color: #e8e8e8;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Animated noise texture */
+.signin-noise {
+  position: absolute;
+  inset: -50%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.04;
+  animation: noiseShift 20s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes noiseShift {
+  0% { transform: translate(0, 0); }
+  100% { transform: translate(50px, 50px); }
+}
+
+/* Subtle grid lines */
+.signin-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+  background-size: 80px 80px;
+  pointer-events: none;
+  mask-image: radial-gradient(circle at center, black 0%, transparent 75%);
+}
+
+/* Glowing orbs */
+.signin-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  opacity: 0.35;
+}
+
+.signin-orb-1 {
+  width: 600px;
+  height: 600px;
+  background: #00f0ff;
+  top: -200px;
+  right: -150px;
+  animation: orbFloat1 18s ease-in-out infinite;
+}
+
+.signin-orb-2 {
+  width: 500px;
+  height: 500px;
+  background: #ff9500;
+  bottom: -180px;
+  left: -120px;
+  animation: orbFloat2 22s ease-in-out infinite;
+}
+
+@keyframes orbFloat1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-40px, 60px) scale(1.1); }
+}
+
+@keyframes orbFloat2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(50px, -40px) scale(1.05); }
+}
+
+/* Main content wrapper */
+.signin-content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1200px;
+  height: 100%;
+  max-height: 900px;
+  padding: 40px 48px;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+/* Header */
+.signin-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 48px;
+}
+
+.signin-logo-mark {
+  width: 38px;
+  height: 38px;
+  background: #00f0ff;
+  color: #050505;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 900;
+  font-size: 18px;
+}
+
+.signin-logo-text {
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.5px;
+}
+
+.signin-status {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: rgba(232, 232, 232, 0.5);
+  border: 1px solid rgba(0, 240, 255, 0.15);
+  padding: 6px 12px;
+}
+
+.signin-status-dot {
+  width: 6px;
+  height: 6px;
+  background: #00f0ff;
+  border-radius: 50%;
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0, 240, 255, 0.4); }
+  50% { opacity: 0.6; box-shadow: 0 0 0 8px rgba(0, 240, 255, 0); }
+}
+
+/* Hero layout */
+.signin-hero {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 64px;
+  align-items: center;
+}
+
+/* Left copy */
+.signin-copy {
+  display: flex;
+  flex-direction: column;
+}
+
+.signin-label {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  color: #00f0ff;
+  letter-spacing: 2px;
+  margin-bottom: 16px;
+}
+
+.signin-title {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -2px;
+  margin: 0 0 24px 0;
+  color: #ffffff;
+}
+
+.signin-title span {
+  color: #00f0ff;
+}
+
+.signin-description {
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(232, 232, 232, 0.55);
+  max-width: 480px;
+  margin-bottom: 40px;
+}
+
+/* Feature matrix */
+.signin-features {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 24px;
+}
+
+.signin-features-title {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  letter-spacing: 1.5px;
+  color: rgba(232, 232, 232, 0.4);
+  margin-bottom: 16px;
+}
+
+.signin-feature-table {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.signin-feature-row {
+  display: grid;
+  grid-template-columns: 1fr 60px 60px;
+  font-size: 13px;
+  color: rgba(232, 232, 232, 0.75);
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.signin-feature-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.signin-feature-header {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: rgba(232, 232, 232, 0.35);
+  text-transform: uppercase;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+}
+
+.signin-feature-row span {
+  text-align: center;
+}
+
+.signin-feature-row span:first-child {
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.signin-feature-row b {
+  font-weight: 400;
+  width: 24px;
+  text-align: center;
+}
+
+/* Right card */
+.signin-card {
+  position: relative;
+  background: rgba(10, 10, 12, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 28px;
+  backdrop-filter: blur(20px);
+  box-shadow:
+    0 40px 80px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.signin-card-edge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, #00f0ff, transparent, #ff9500);
+  opacity: 0.7;
+}
+
+.signin-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.signin-card-id {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  color: rgba(232, 232, 232, 0.5);
+}
+
+.signin-card-lock {
+  color: #00f0ff;
+  font-size: 18px;
+}
+
+.signin-card-body {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 20px;
+}
+
+.signin-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 20px;
+  font-size: 11px;
+  color: rgba(232, 232, 232, 0.4);
+  font-family: "JetBrains Mono", monospace;
+}
+
+.signin-card-sep {
+  color: rgba(0, 240, 255, 0.4);
+}
+
+/* Footer */
+.signin-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding-top: 24px;
+  font-size: 12px;
+  color: rgba(232, 232, 232, 0.4);
+}
+
+.signin-footer a {
+  color: rgba(232, 232, 232, 0.55);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.signin-footer a:hover {
+  color: #00f0ff;
+}
+
+/* Override Clerk inside card */
+.signin-card-body .cl-formButtonPrimary {
+  width: 100% !important;
+  background: #00f0ff !important;
+  color: #050505 !important;
+  font-family: "JetBrains Mono", monospace !important;
+  font-weight: 800 !important;
+  font-size: 13px !important;
+  border-radius: 0 !important;
+  padding: 14px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  border: none !important;
+  transition: all 0.2s !important;
+}
+
+.signin-card-body .cl-formButtonPrimary:hover {
+  background: #ffffff !important;
+  box-shadow: 0 0 30px rgba(0, 240, 255, 0.3) !important;
+}
+
+.signin-card-body .cl-socialButtonsBlockButton {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 0 !important;
+  color: #e8e8e8 !important;
+}
+
+.signin-card-body .cl-headerTitle {
+  color: #ffffff !important;
+  font-family: "JetBrains Mono", monospace !important;
+}
+
+.signin-card-body .cl-headerSubtitle {
+  color: rgba(232, 232, 232, 0.5) !important;
+}
+
+.signin-card-body .cl-input {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 0 !important;
+  color: #ffffff !important;
+}
+
+.signin-card-body .cl-footerActionLink {
+  color: #00f0ff !important;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .signin-hero {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    overflow-y: auto;
+  }
+  
+  .signin-title {
+    font-size: 40px;
+  }
+  
+  .signin-copy {
+    order: 2;
+  }
+  
+  .signin-card {
+    order: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .signin-content {
+    padding: 24px;
+  }
+  
+  .signin-title {
+    font-size: 32px;
+  }
+  
+  .signin-feature-row {
+    grid-template-columns: 1fr 40px 40px;
+    font-size: 12px;
+  }
+  
+  .signin-status {
+    display: none;
+  }
+}

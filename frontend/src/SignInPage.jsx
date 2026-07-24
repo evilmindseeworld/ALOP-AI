@@ -13,84 +13,77 @@ const FEATURES = [
 
 export default function SignInPage() {
   const { isSignedIn, isLoaded } = useUser();
-
   if (!isLoaded) return null;
   if (isSignedIn) return null;
 
   return (
     <div className="signin-root">
       <div className="signin-noise" />
-      <div className="signin-grid" />
       <div className="signin-orb signin-orb-1" />
       <div className="signin-orb signin-orb-2" />
 
       <div className="signin-content">
-        <header className="signin-header">
-          <div className="signin-logo-mark">A</div>
-          <span className="signin-logo-text">ALOP-AI</span>
+        <div className="signin-top">
+          <div className="signin-logo">
+            <div className="signin-logo-mark">A</div>
+            <span className="signin-logo-text">ALOP-AI</span>
+          </div>
           <div className="signin-status">
             <span className="signin-status-dot" />
-            OPERATIONAL
+            <span>ONLINE</span>
           </div>
-        </header>
+        </div>
 
-        <main className="signin-hero">
-          <div className="signin-copy">
-            <div className="signin-label">COGNITIVE INTERFACE v1.0</div>
+        <div className="signin-hero">
+          <div className="signin-left">
             <h1 className="signin-title">
-              One council.
-              <br />
-              Every frontier model.
+              One council.<br />Every frontier model.
             </h1>
-            <p className="signin-description">
+            <p className="signin-desc">
               Chat with multiple AI models working together. Generate images,
-              analyze your screen, and build a knowledge base — all through a
-              single interface.
+              analyze your screen, and build a knowledge base — all in one place.
             </p>
 
-            <div className="signin-features">
-              <div className="signin-features-title">CAPABILITY MATRIX</div>
-              <div className="signin-feature-table">
-                <div className="signin-feature-row signin-feature-header">
-                  <span>Capability</span>
-                  <span>Free</span>
-                  <span>Pro</span>
-                </div>
-                {FEATURES.map((f, i) => (
-                  <div className="signin-feature-row" key={i}>
-                    <span>
-                      <b>{f.icon}</b> {f.name}
-                    </span>
-                    <span>{typeof f.free === "boolean" ? (f.free ? "✓" : "—") : f.free}</span>
-                    <span>{typeof f.pro === "boolean" ? (f.pro ? "✓" : "—") : f.pro}</span>
+            <div className="signin-table">
+              {FEATURES.map((f, i) => (
+                <div className="signin-row" key={i}>
+                  <div className="signin-row-name">
+                    <span className="signin-row-icon">{f.icon}</span>
+                    <span>{f.name}</span>
                   </div>
-                ))}
+                  <span className="signin-row-val">
+                    {typeof f.free === "boolean"
+                      ? (f.free ? "✓" : "—")
+                      : f.free}
+                  </span>
+                  <span className="signin-row-val pro">
+                    {typeof f.pro === "boolean"
+                      ? (f.pro ? "✓" : "—")
+                      : f.pro}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="signin-right">
+            <div className="signin-card">
+              <div className="signin-card-body">
+                <SignIn fallbackRedirectUrl="/" signUpFallbackRedirectUrl="/" />
+              </div>
+              <div className="signin-trust">
+                <span>🔒 Secure authentication</span>
+                <span className="signin-dot">•</span>
+                <span>No card required</span>
+              </div>
+              <div className="signin-links">
+                <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy</a>
+                <span className="signin-dot">•</span>
+                <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a>
               </div>
             </div>
           </div>
-
-          <div className="signin-card">
-            <div className="signin-card-edge" />
-            <div className="signin-card-header">
-              <div className="signin-card-id">AUTHENTICATE</div>
-              <div className="signin-card-lock">◈</div>
-            </div>
-            <div className="signin-card-body">
-              <SignIn fallbackRedirectUrl="/" signUpFallbackRedirectUrl="/" />
-            </div>
-            <div className="signin-card-footer">
-              <span>🔒</span> Secure authentication via Clerk
-              <span className="signin-card-sep">|</span>
-              No card required
-            </div>
-          </div>
-        </main>
-
-        <footer className="signin-footer">
-          <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>
-          <span>•</span>
-          <a href="/terms.html" target="_blank" rel="noreferrer">Terms of Service</a>
-        </footer>
+        </div>
       </div>
     </div>
   );

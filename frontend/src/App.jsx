@@ -1822,7 +1822,7 @@ const App = () => {
       window.location.href.includes('overlay=true')
     );
 
-  return (
+    return (
     <ClerkProvider
       publishableKey={clerkKey}
       signInUrl="/"
@@ -1840,6 +1840,7 @@ const App = () => {
     >
       <div style={{ width: "100vw", height: "100dvh" }}>
         {isOverlay ? <OverlayAssistant /> : <AuthenticatedAppWrapper />}
+        <div className="scanlines" aria-hidden="true" />
       </div>
     </ClerkProvider>
   );

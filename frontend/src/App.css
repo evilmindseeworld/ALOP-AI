@@ -1,3 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+:root {
+  --bg: #050505;
+  --surface: #0a0a0c;
+  --surface-2: #111114;
+  --border: rgba(255, 255, 255, 0.1);
+  --border-strong: rgba(0, 240, 255, 0.25);
+  --text: #e8e8e8;
+  --text-muted: rgba(232, 232, 232, 0.5);
+  --cyan: #00f0ff;
+  --cyan-dim: rgba(0, 240, 255, 0.15);
+  --amber: #ff9500;
+  --danger: #ff3344;
+  --success: #00ff88;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+.scanlines {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0) 0px,
+    rgba(0, 0, 0, 0) 1px,
+    rgba(0, 240, 255, 0.015) 1px,
+    rgba(0, 0, 0, 0) 2px
+  );
+  opacity: 0.5;
+}
+
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
 * {

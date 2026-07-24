@@ -2,6 +2,9 @@ import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { ClerkProvider, SignIn, useUser, useAuth, SignOutButton } from "@clerk/react";
 import "./App.css";
 import SignInPage from "./SignInPage";
+import MagneticButton from "./components/ui/MagneticButton";
+import BorderTrail from "./components/ui/BorderTrail";
+import TextShimmer from "./components/ui/TextShimmer";
 
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
@@ -1112,37 +1115,41 @@ useEffect(() => {
               AI Council • {userPlan === "pro" ? "8 models" : "4 models"}
             </span>
           </div>
-
           <div className="header-actions">
             {isAdmin && (
-              <button
+              <MagneticButton
                 className={`icon-btn admin-btn ${showAdmin ? "active" : ""}`}
                 onClick={() => {
                   setShowAdmin((s) => !s);
                   setShowSettings(false);
                 }}
-                title="Admin"
+                ariaLabel="Admin"
               >
                 <Icon name="crown" size={20} />
-              </button>
+              </MagneticButton>
             )}
 
-            <button className="icon-btn" onClick={() => setShowPricing(true)} title="Upgrade">
+            <MagneticButton
+              className="icon-btn"
+              onClick={() => setShowPricing(true)}
+              ariaLabel="Upgrade"
+            >
               <Icon name="upgrade" size={20} />
-            </button>
+            </MagneticButton>
 
-            <button
+            <MagneticButton
               className="icon-btn"
               onClick={() => {
                 setShowSettings((s) => !s);
                 setShowAdmin(false);
               }}
-              title="Settings"
+              ariaLabel="Settings"
             >
               <Icon name="settings" size={20} />
-            </button>
+            </MagneticButton>
           </div>
-        </header>
+
+          </header>
 
         <div className="app-body">
           <ChatSidebar
@@ -1394,9 +1401,9 @@ useEffect(() => {
                 {activeMessages.length === 0 && status === "idle" && (
                   <div className="empty-state">
                     <h2 className="empty-title">ALOP-AI</h2>
-                    <p className="empty-subtitle">
-                      Ask the AI Council anything. Multiple models work together to give you the most accurate, helpful answer.
-                    </p>
+                    <TextShimmer className="empty-subtitle">
+                      Ask the AI Council anything. Multiple models work together.
+                    </TextShimmer>
                   </div>
                 )}
 
@@ -1453,27 +1460,24 @@ useEffect(() => {
                   </div>
                 ))}
               </div>
-
-              <InputBar
-                text={inputText}
-                setText={setInputText}
-                onSend={handleSend}
-                disabled={status !== "idle"}
-                attachments={attachments}
-                setAttachments={setAttachments}
-                onFileSelect={handleFileSelect}
-                onStartCamera={startCamera}
-                isListening={isListening}
-                toggleListening={toggleListening}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
+              <BorderTrail
+                className="input-bar-trail"
+                isLoading={status === "loading" || status === "streaming"}
+              >
+                <InputBar
+                  text={inputText}
+                  setText={setInputText}
+                  onSend={handleSend}
+                  disabled={status !== "idle"}
+                  attachments={attachments}
+                  setAttachments={setAttachments}
+                  onFileSelect={handleFileSelect}
+                  onStartCamera={startCamera}
+                  isListening={isListening}
+                  toggleListening={toggleListening}
+                />
+              </BorderTrail>
+              
 const AuthenticatedAppWrapper = () => {
   const { isSignedIn, isLoaded } = useUser();
 

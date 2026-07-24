@@ -1861,3 +1861,24 @@ body {
   background: var(--primary);
   color: #000000;
 }
+
+/* Motion primitive wrappers */
+.input-bar-trail {
+  border-radius: 26px;
+  margin: 0 18px 18px;
+}
+
+.input-bar-trail > .input-bar {
+  margin: 0;
+  border: 1px solid transparent;
+  background: rgba(10, 10, 16, 0.8);
+}
+
+.input-bar-trail > .input-bar:focus-within {
+  border-color: var(--primary);
+}
+
+.empty-subtitle {
+  background-image: linear-gradient(90deg, #444 0%, var(--primary) 50%, #444 100%);
+  background-size: 200% 100%;
+}

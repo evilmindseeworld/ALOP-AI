@@ -1477,7 +1477,14 @@ useEffect(() => {
                   toggleListening={toggleListening}
                 />
               </BorderTrail>
-              
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const AuthenticatedAppWrapper = () => {
   const { isSignedIn, isLoaded } = useUser();
 

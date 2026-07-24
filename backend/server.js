@@ -21,6 +21,7 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const timeout = require('connect-timeout');
 const multer = require('multer');
+const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 const { ClerkExpressRequireAuth, clerkClient } = require('@clerk/clerk-sdk-node');
 const Stripe = require('stripe');
@@ -29,7 +30,26 @@ const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || '', {
+// ===== CRITICAL ENVIRONMENT VALIDATION =====
+const requiredEnv = [
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'CLERK_PUBLISHABLE_KEY',
+  'CLERK_SECRET_KEY',
+  'STRIPE_SECRET_KEY',
+  'STRIPE_WEBHOOK_SECRET',
+  'FRONTEND_URL',
+  'OLLAMA_HOST',
+  'OLLAMA_API_KEY'
+];
+
+const missingEnv = requiredEnv.filter((k) => !process.env[k]);
+if (missingEnv.length > 0) {
+  console.error(`Missing required environment variables: ${missingEnv.join(', ')}`);
+  process.exit(1);
+}
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   apiVersion: '2024-06-20'
 });
 
@@ -38,15 +58,10 @@ const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
-// ===== THE WHIP: SPEED CONTROLS =====
+// ===== MODEL CONFIG =====
 const COUNCIL_WHIP_MS = parseInt(process.env.COUNCIL_WHIP_MS, 10) || 8000;
 const COUNCIL_QUORUM = parseInt(process.env.COUNCIL_QUORUM, 10) || 4;
 const COUNCIL_TURBO = process.env.COUNCIL_TURBO === 'true';
-
-if (!OLLAMA_HOST || !OLLAMA_API_KEY) {
-  console.error('Missing OLLAMA_HOST or OLLAMA_API_KEY');
-  process.exit(1);
-}
 
 const FREE_COUNCIL_MODELS = ['gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5'];
 const PRO_COUNCIL_MODELS = [
@@ -54,70 +69,123 @@ const PRO_COUNCIL_MODELS = [
   'deepseek-v4-pro', 'kimi-k2.6', 'minimax-m3', 'mistral-large-3'
 ];
 
-// ===== OVERLAY USES ONLY THE SMARTEST MODELS =====
 const OVERLAY_MODELS = ['deepseek-v4-pro', 'glm-5.2', 'kimi-k2.7-code'];
 
-// ===== CORS =====
+// ===== CORS - STRICT ORIGIN CONTROL =====
 const allowedOrigins = process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [];
+const allowedOriginsLower = allowedOrigins.map((o) => o.toLowerCase());
 const isVercelPreview = (origin) => origin && origin.includes('.vercel.app');
 
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    if (isVercelPreview(origin)) return callback(null, true);
+    const lower = origin.toLowerCase();
+    if (allowedOriginsLower.includes(lower)) return callback(null, true);
+    if (process.env.NODE_ENV === 'development') return callback(null, true);
+    if (isVercelPreview(lower)) return callback(null, true);
+    console.warn(`[CORS BLOCKED] ${origin}`);
     callback(new Error(`CORS blocked origin: ${origin}`));
   },
-  credentials: true
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  maxAge: 86400
 }));
 
-// ===== STRIPE WEBHOOK =====
+// ===== SECURITY HEADERS =====
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      connectSrc: ["'self'", process.env.FRONTEND_URL, 'https://*.clerk.com', 'https://*.stripe.com', 'https://api.openai.com'],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https://*.clerk.com'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+      imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'https://image.pollinations.ai'],
+      fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+      frameAncestors: ["'none'"],
+      formAction: ["'self'", 'https://*.stripe.com'],
+      upgradeInsecureRequests: [],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
+  xContentTypeOptions: true,
+  xFrameOptions: 'DENY',
+  xPermittedCrossDomainPolicies: 'none'
+}));
+
+// ===== REQUEST FINGERPRINTING & TRUSTED PROXY =====
+app.use((req, res, next) => {
+  req.requestId = crypto.randomUUID();
+  req.clientFingerprint = crypto.createHash('sha256')
+    .update(req.ip + (req.headers['user-agent'] || ''))
+    .digest('hex')
+    .slice(0, 16);
+  next();
+});
+
+// ===== PARSE WEBHOOK BEFORE JSON PARSER =====
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
+
+  if (!sig) {
+    console.warn('[STRIPE] Missing signature');
+    return res.status(400).send('Missing signature');
+  }
+
   try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET || '');
+    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     console.error('Stripe webhook error:', err.message);
+    Sentry.captureException(err);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
   console.log('Stripe event:', event.type);
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object;
-    const email = session.customer_email || session.customer_details?.email;
-    if (email) {
-      await supabase.from('users').update({
-        plan: 'pro',
-        stripe_customer_id: session.customer,
-        stripe_subscription_id: session.subscription
-      }).eq('email', email.toLowerCase());
+  try {
+    if (event.type === 'checkout.session.completed') {
+      const session = event.data.object;
+      const email = session.customer_email || session.customer_details?.email;
+      if (email) {
+        await supabase.from('users').update({
+          plan: 'pro',
+          stripe_customer_id: session.customer,
+          stripe_subscription_id: session.subscription
+        }).eq('email', email.toLowerCase());
+      }
     }
-  }
 
-  if (event.type === 'invoice.paid') {
-    const invoice = event.data.object;
-    await supabase.from('users').update({ plan: 'pro' }).eq('stripe_customer_id', invoice.customer);
-  }
+    if (event.type === 'invoice.paid') {
+      const invoice = event.data.object;
+      await supabase.from('users').update({ plan: 'pro' }).eq('stripe_customer_id', invoice.customer);
+    }
 
-  if (['customer.subscription.deleted', 'customer.subscription.updated'].includes(event.type)) {
-    const subscription = event.data.object;
-    const newPlan = subscription.status === 'active' ? 'pro' : 'free';
-    await supabase.from('users').update({ plan: newPlan }).eq('stripe_subscription_id', subscription.id);
-  }
+    if (['customer.subscription.deleted', 'customer.subscription.updated'].includes(event.type)) {
+      const subscription = event.data.object;
+      const newPlan = subscription.status === 'active' ? 'pro' : 'free';
+      await supabase.from('users').update({ plan: newPlan }).eq('stripe_subscription_id', subscription.id);
+    }
 
-  res.json({ received: true });
+    res.json({ received: true });
+  } catch (err) {
+    console.error('Stripe webhook processing error:', err.message);
+    Sentry.captureException(err);
+    res.status(500).send('Webhook processing failed');
+  }
 });
 
-// ===== SECURITY & PERFORMANCE =====
-app.use(helmet({
-  crossOriginResourcePolicy: { policy: 'cross-origin' },
-  contentSecurityPolicy: false
-}));
+// ===== PERFORMANCE =====
 app.use(compression());
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// ===== TIMEOUT PROTECTION =====
 app.use(timeout('120s'));
 app.use(haltOnTimedout);
 
@@ -127,31 +195,82 @@ function haltOnTimedout(req, res, next) {
 }
 
 // ===== RATE LIMITING =====
-const generalLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000,
-  max: 120,
-  message: { error: 'Too many requests. Please slow down.' },
+const rateLimitKeyGenerator = (req) => {
+  return req.auth?.userId || req.clientFingerprint || req.ip || 'unknown';
+};
+
+const createLimiter = (windowMs, max, message) => rateLimit({
+  windowMs,
+  max,
+  message: { error: message },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: rateLimitKeyGenerator,
+  skip: (req) => req.path === '/health' || req.path === '/api/stripe/webhook',
+  handler: (req, res, next, options) => {
+    console.warn(`[RATE LIMIT] ${req.requestId} | ${req.method} ${req.path} | Key: ${options.keyGenerator(req)}`);
+    Sentry.captureMessage(`Rate limit hit: ${req.method} ${req.path}`);
+    res.status(429).json({ error: message });
+  }
 });
 
-const councilLimiter = rateLimit({
-  windowMs: 1 * 60 * 1000,
-  max: 15,
-  message: { error: 'Too many council requests. Wait a minute.' }
-});
+const generalLimiter = createLimiter(60 * 1000, 120, 'Too many requests. Slow down.');
+const councilLimiter = createLimiter(60 * 1000, 15, 'Too many council requests. Wait a minute.');
+const visionLimiter = createLimiter(60 * 1000, 10, 'Too many vision requests. Wait a minute.');
+const overlayLimiter = createLimiter(60 * 1000, 30, 'Too many overlay requests. Wait a minute.');
+const imageLimiter = createLimiter(60 * 1000, 10, 'Too many image requests. Wait a minute.');
+const stripeLimiter = createLimiter(5 * 60 * 1000, 5, 'Too many billing requests. Wait 5 minutes.');
+const adminLimiter = createLimiter(60 * 1000, 60, 'Too many admin requests. Wait a minute.');
 
 app.use('/api/', generalLimiter);
 app.use('/api/council', councilLimiter);
+app.use('/api/vision', visionLimiter);
+app.use('/api/overlay', overlayLimiter);
+app.use('/api/image', imageLimiter);
+app.use('/api/create-checkout-session', stripeLimiter);
+app.use('/api/create-portal-session', stripeLimiter);
+app.use('/api/admin/', adminLimiter);
+
+// ===== JSON BODY PARSER (after webhook) =====
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// ===== INPUT SANITIZATION HELPERS =====
+const MAX_PROMPT_LENGTH = 8000;
+const MAX_HISTORY_LENGTH = 20;
+const ALLOWED_HISTORY_ROLES = ['user', 'assistant', 'system'];
+
+const sanitizeString = (str, maxLength = 200) => {
+  if (typeof str !== 'string') return '';
+  return str.trim().slice(0, maxLength);
+};
+
+const validatePrompt = (prompt) => {
+  if (!prompt || typeof prompt !== 'string') return { valid: false, error: 'Prompt is required' };
+  const trimmed = prompt.trim();
+  if (trimmed.length === 0) return { valid: false, error: 'Prompt cannot be empty' };
+  if (trimmed.length > MAX_PROMPT_LENGTH) return { valid: false, error: `Prompt exceeds ${MAX_PROMPT_LENGTH} characters` };
+  return { valid: true, value: trimmed };
+};
+
+const validateHistory = (history) => {
+  if (!history) return [];
+  if (!Array.isArray(history)) return { valid: false, error: 'History must be an array' };
+  if (history.length > MAX_HISTORY_LENGTH) return { valid: false, error: `History exceeds ${MAX_HISTORY_LENGTH} messages` };
+
+  const sanitized = history
+    .filter((m) => m && typeof m === 'object')
+    .map((m) => ({
+      role: ALLOWED_HISTORY_ROLES.includes(m.role) ? m.role : 'user',
+      content: typeof m.content === 'string' ? m.content.slice(0, MAX_PROMPT_LENGTH) : ''
+    }))
+    .slice(0, MAX_HISTORY_LENGTH);
+
+  return { valid: true, value: sanitized };
+};
 
 // ===== SUPABASE =====
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
-  process.exit(1);
-}
-const supabase = createClient(supabaseUrl, supabaseKey, {
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { autoRefreshToken: false, persistSession: false }
 });
 
@@ -209,20 +328,21 @@ const checkSuspended = async (req, res, next) => {
     if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
     const { data: user, error } = await supabase
       .from('users')
-      .select('suspended')
+      .select('suspended, plan')
       .eq('clerk_id', req.auth.userId)
       .single();
     if (error) throw error;
     if (user?.suspended) return res.status(403).json({ error: 'Account suspended' });
+    req.userPlan = user?.plan || 'free';
     next();
   } catch (err) {
+    console.error('Suspension check failed:', err.message);
+    Sentry.captureException(err);
     return res.status(500).json({ error: 'Failed to verify account status' });
   }
 };
 
 // ===== RESOURCE OWNERSHIP MIDDLEWARE =====
-// Verifies that the authenticated user owns the requested resource.
-// Used as defense-in-depth even when queries already filter by user_id.
 const requireOwnership = (tableName, ownerColumn = 'user_id') => {
   return async (req, res, next) => {
     try {
@@ -233,8 +353,12 @@ const requireOwnership = (tableName, ownerColumn = 'user_id') => {
       const user = await ensureUser(req.auth.userId);
       const resourceId = req.params.id;
 
-      if (!resourceId) {
+      if (!resourceId || typeof resourceId !== 'string') {
         return res.status(400).json({ error: 'Resource ID required' });
+      }
+
+      if (!/^[0-9a-fA-F-]{36}$/.test(resourceId)) {
+        return res.status(400).json({ error: 'Invalid resource ID format' });
       }
 
       const { data: resource, error } = await supabase
@@ -248,6 +372,7 @@ const requireOwnership = (tableName, ownerColumn = 'user_id') => {
       }
 
       if (resource[ownerColumn] !== user.id) {
+        console.warn(`[OWNERSHIP] User ${user.id} attempted access to ${tableName}:${resourceId}`);
         return res.status(403).json({ error: 'You do not have permission to access this resource' });
       }
 
@@ -255,19 +380,58 @@ const requireOwnership = (tableName, ownerColumn = 'user_id') => {
       next();
     } catch (err) {
       console.error('Ownership check failed:', err.message);
+      Sentry.captureException(err);
       return res.status(500).json({ error: 'Failed to verify resource ownership' });
     }
   };
 };
 
+// ===== ADMIN MIDDLEWARE =====
+const requireAdmin = async (req, res, next) => {
+  try {
+    if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('is_admin')
+      .eq('clerk_id', req.auth.userId)
+      .single();
+    if (error) throw error;
+    if (!user?.is_admin) {
+      console.warn(`[ADMIN] Non-admin access attempt: ${req.auth.userId}`);
+      return res.status(403).json({ error: 'Admin only' });
+    }
+    next();
+  } catch (err) {
+    console.error('Admin check failed:', err.message);
+    Sentry.captureException(err);
+    res.status(500).json({ error: 'Failed to verify admin status' });
+  }
+};
+
+// ===== FILE UPLOAD =====
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024, files: 5 },
+  limits: { fileSize: 10 * 1024 * 1024, files: 1 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) cb(null, true);
     else cb(new Error('Only image files allowed'), false);
   }
 });
+
+// ===== AUDIT LOGGING =====
+const auditLog = async (userId, action, metadata = {}) => {
+  try {
+    await supabase.from('audit_logs').insert({
+      user_id: userId,
+      action,
+      metadata,
+      ip_address: null,
+      created_at: new Date().toISOString()
+    });
+  } catch (err) {
+    console.error('Audit log failed:', err.message);
+  }
+};
 
 // ===== AI HELPERS =====
 const callModel = async (modelName, messages, temperature = 0.7, timeoutMs = 12000, maxTokens = 400) => {
@@ -385,26 +549,26 @@ const callGemini = async (modelName, prompt, maxTokens = 1024) => {
 const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'image/png', maxTokens = 2048) => {
   if (!GOOGLE_API_KEY) throw new Error('GOOGLE_API_KEY not configured');
 
+  // Validate base64 image size
+  const approxBytes = Buffer.byteLength(base64Image, 'base64');
+  const approxMB = approxBytes / (1024 * 1024);
+  if (approxMB > 8) {
+    throw new Error('Image too large. Maximum size is 8MB.');
+  }
+
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GOOGLE_API_KEY}`;
 
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      contents: [
-        {
-          role: 'user',
-          parts: [
-            { text: prompt },
-            {
-              inline_data: {
-                mime_type: mimeType,
-                data: base64Image
-              }
-            }
-          ]
-        }
-      ],
+      contents: [{
+        role: 'user',
+        parts: [
+          { text: prompt },
+          { inline_data: { mime_type: mimeType, data: base64Image } }
+        ]
+      }],
       generationConfig: {
         temperature: 0.4,
         maxOutputTokens: maxTokens
@@ -421,7 +585,7 @@ const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'imag
   return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 };
 
-// ===== THE WHIP: FAST COUNCIL WITH QUORUM =====
+// ===== COUNCIL QUORUM =====
 const runCouncilWithWhip = async (models, messages, temperature = 0.6, whipMs = COUNCIL_WHIP_MS, quorum = COUNCIL_QUORUM, tokenLimit = 400) => {
   const results = [];
   let settledCount = 0;
@@ -433,26 +597,23 @@ const runCouncilWithWhip = async (models, messages, temperature = 0.6, whipMs = 
       if (!resolved) {
         resolved = true;
         console.log(`[WHIP] Timeout fired after ${whipMs}ms. ${validCount}/${models.length} models responded.`);
-        resolve(results.filter((r) => r.content && r.content.trim().length > 0));
+        resolve(results.filter((r) => r.content?.trim().length > 0));
       }
     }, whipMs);
 
     const checkDone = () => {
       if (resolved) return;
-
       if (validCount >= quorum) {
         resolved = true;
         clearTimeout(whipTimer);
-        console.log(`[WHIP] Quorum reached: ${validCount}/${models.length} models. Laggards skipped.`);
-        resolve(results.filter((r) => r.content && r.content.trim().length > 0));
+        console.log(`[WHIP] Quorum reached: ${validCount}/${models.length}`);
+        resolve(results.filter((r) => r.content?.trim().length > 0));
         return;
       }
-
       if (settledCount >= models.length) {
         resolved = true;
         clearTimeout(whipTimer);
-        console.log(`[WHIP] All models settled: ${validCount}/${models.length}.`);
-        resolve(results.filter((r) => r.content && r.content.trim().length > 0));
+        resolve(results.filter((r) => r.content?.trim().length > 0));
       }
     };
 
@@ -460,7 +621,7 @@ const runCouncilWithWhip = async (models, messages, temperature = 0.6, whipMs = 
       callModel(model, messages, temperature, whipMs, tokenLimit)
         .then((content) => {
           settledCount++;
-          if (content && content.trim().length > 0) {
+          if (content?.trim()) {
             validCount++;
             results.push({ model, content });
           }
@@ -475,148 +636,23 @@ const runCouncilWithWhip = async (models, messages, temperature = 0.6, whipMs = 
   });
 };
 
+// ===== QUERY CLASSIFIERS =====
 const needsRealTimeSearch = (text) => {
   const lower = text.toLowerCase();
-
-  const timeTriggers = [
-    'today', 'now', 'right now', 'currently', 'at the moment', 'as of',
-    'yesterday', 'tomorrow', 'tonight', 'this morning', 'this afternoon',
-    'this evening', 'this week', 'this weekend', 'this month', 'this year',
-    'last night', 'last week', 'last month', 'last year',
-    'next week', 'next month', 'next year', 'upcoming', 'recently',
-    'latest', 'most recent', 'just now', 'breaking', 'live', 'update',
-    'news', 'in the news', 'happening', 'ongoing', 'developing',
-    'did something happen', 'what happened', 'is happening', 'happened today'
+  const triggers = [
+    'today', 'now', 'currently', 'latest', 'news', 'score', 'weather', 'stock', 'price',
+    'who won', 'what happened', 'election', 'launched', 'released', 'update', 'breaking'
   ];
-
-  const sportsTriggers = [
-    'football', 'soccer', 'american football', 'basketball', 'baseball',
-    'tennis', 'cricket', 'rugby', 'hockey', 'ice hockey', 'volleyball',
-    'golf', 'boxing', 'mma', 'ufc', 'wrestling', 'formula 1', 'f1', 'nascar',
-    'motogp', 'olympics', 'world cup', 'champions league', 'premier league',
-    'la liga', 'serie a', 'bundesliga', 'ligue 1', 'eredivisie', 'mls',
-    'nba', 'nfl', 'mlb', 'nhl', 'ncaa', 'ipl', 'psl', 'bbl',
-    'match', 'game', 'score', 'scores', 'result', 'results', 'who won',
-    'winning', 'lost', 'beat', 'defeated', 'goal', 'goals', 'point', 'points',
-    'team', 'teams', 'player', 'players', 'transfer', 'signed', 'traded',
-    'draft', 'playoff', 'final', 'finals', 'semifinal', 'quarterfinal',
-    'championship', 'tournament', 'league', 'season', 'standings', 'table',
-    'fixture', 'fixtures', 'schedule', 'kickoff', 'tip off', 'face off',
-    'hat trick', 'red card', 'yellow card', 'penalty', 'overtime',
-    'varsity', 'athlete', 'coach', 'manager', 'owner', 'stadium'
-  ];
-
-  const financeTriggers = [
-    'stock', 'stocks', 'share', 'shares', 'price', 'prices', 'trading',
-    'market', 'markets', 'nasdaq', 'dow jones', 's&p 500', 'sp500', 'ftse',
-    'crypto', 'bitcoin', 'btc', 'ethereum', 'eth', 'solana', 'sol', 'coin',
-    'cryptocurrency', 'forex', 'exchange rate', 'currency', 'dollar', 'euro',
-    'inflation', 'interest rate', 'fed', 'federal reserve', 'recession',
-    'economy', 'economic', 'unemployment', 'gdp', 'earnings', 'ipo',
-    'dividend', 'split', 'valuation', 'market cap', 'bullish', 'bearish'
-  ];
-
-  const weatherTriggers = [
-    'weather', 'temperature', 'forecast', 'rain', 'snow', 'storm', 'hurricane',
-    'tornado', 'typhoon', 'earthquake', 'flood', 'drought', 'tsunami',
-    'volcano', 'eruption', 'wildfire', 'fire', 'air quality', 'uv index',
-    'wind', 'humidity', 'sunny', 'cloudy', 'thunderstorm', 'blizzard'
-  ];
-
-  const entertainmentTriggers = [
-    'movie', 'movies', 'film', 'films', 'box office', 'released', 'release date',
-    'tv show', 'series', 'episode', 'season', 'netflix', 'hbo', 'disney',
-    'spotify', 'album', 'song', 'single', 'concert', 'tour', 'festival',
-    'celebrity', 'actor', 'actress', 'singer', 'rapper', 'musician', 'band',
-    'marriage', 'divorce', 'dating', 'breakup', 'scandal', 'died', 'death',
-    'passed away', 'award', 'awards', 'oscar', 'grammy', 'emmy', 'golden globe',
-    'nominated', 'won an award', 'trailer', 'review', 'rating', 'rotten tomatoes',
-    'trending', 'viral', 'tiktok', 'meme', 'memes'
-  ];
-
-  const politicsTriggers = [
-    'election', 'elections', 'vote', 'voting', 'poll', 'polls', 'candidate',
-    'president', 'prime minister', 'minister', 'senator', 'congress', 'parliament',
-    'government', 'political', 'policy', 'law', 'bill', 'passed', 'signed',
-    'court', 'supreme court', 'ruling', 'verdict', 'trial', 'impeached',
-    'resigned', 'appointed', 'cabinet', 'ambassador', 'sanctions', 'war',
-    'conflict', 'treaty', 'summit', 'protest', 'protests', 'strike', 'strikes',
-    'invasion', 'ceasefire', 'negotiation', 'diplomatic', 'embassy', 'refugee'
-  ];
-
-  const techTriggers = [
-    'launched', 'release', 'released', 'announcement', 'announced', 'unveiled',
-    'new phone', 'new iphone', 'new samsung', 'new android', 'new app',
-    'update', 'updated', 'version', 'patch', 'bug', 'security flaw', 'exploit',
-    'hack', 'hacked', 'data breach', 'cyberattack', 'ai model', 'chatbot',
-    'feature', 'roadmap', 'beta', 'developer conference', 'keynote', 'event',
-    'crashed', 'down', 'outage', 'server', 'website not working', 'is down',
-    'twitter', 'x', 'instagram', 'facebook', 'youtube', 'tiktok', 'snapchat',
-    'reddit', 'linkedin', 'discord', 'threads', 'bluesky', 'mastodon'
-  ];
-
-  const scienceTriggers = [
-    'space', 'nasa', 'spacex', 'rocket', 'launch', 'satellite', 'iss',
-    'astronaut', 'mars', 'moon', 'james webb', 'telescope', 'discovery',
-    'study', 'research', 'scientists', 'researchers', 'found', 'published',
-    'pandemic', 'virus', 'covid', 'disease', 'outbreak', 'vaccine', 'mutation',
-    'climate', 'global warming', 'temperature record', 'extinction', 'species'
-  ];
-
-  const travelTriggers = [
-    'flight', 'flights', 'airport', 'delay', 'cancelled', 'passport', 'visa',
-    'traffic', 'jam', 'road closure', 'highway', 'route', 'bus', 'train',
-    'subway', 'metro', 'ferry', 'taxi', 'uber', 'lyft', 'hotel', 'booking',
-    'restaurant', 'open now', 'hours today', 'closed today', 'near me',
-    'population', 'capital', 'time zone', 'local time', 'currency'
-  ];
-
-  const shoppingTriggers = [
-    'cheap', 'cheapest', 'price drop', 'sale', 'discount', 'deal', 'deals',
-    'coupon', 'promo', 'in stock', 'out of stock', 'pre order', 'preorder',
-    'buy', 'where to buy', 'best buy', 'amazon', 'ebay', 'walmart', 'target',
-    'cost', 'how much does', 'worth', 'valued at', 'auction', 'bid'
-  ];
-
-  const questionPatterns = [
-    'who won', 'who is winning', 'who lost', 'who is the current', 'who is the new',
-    'what is the current', 'what is the latest', 'what happened to', 'what is happening',
-    'when is the next', 'when did', 'where is', 'where can i watch', 'how much is',
-    'is it going to', 'will it', 'did they', 'has he', 'has she', 'have they',
-    'are they', 'is there', 'was there', 'are we', 'what time is', 'what day is'
-  ];
-
-  const allTriggers = [
-    ...timeTriggers,
-    ...sportsTriggers,
-    ...financeTriggers,
-    ...weatherTriggers,
-    ...entertainmentTriggers,
-    ...politicsTriggers,
-    ...techTriggers,
-    ...scienceTriggers,
-    ...travelTriggers,
-    ...shoppingTriggers,
-    ...questionPatterns
-  ];
-
-  return allTriggers.some((trigger) => lower.includes(trigger));
+  return triggers.some((t) => lower.includes(t));
 };
 
 const wantsDetailedAnswer = (text) => {
   const lower = text.toLowerCase();
-  const detailTriggers = [
-    'explain in detail', 'detailed', 'detailed answer', 'in depth', 'in-depth',
-    'comprehensive', 'thorough', 'long answer', 'long response', 'full answer',
-    'complete answer', 'write an essay', 'write a long', 'step by step',
-    'step-by-step', 'all the details', 'every detail', 'elaborate', 'expand on',
-    'tell me everything', 'full explanation', 'go into detail', 'deep dive',
-    'break it down', 'walk me through', 'comprehensive overview', 'full overview',
-    'as much detail as possible', 'be detailed', 'be thorough', 'dont be brief',
-    "don't be brief", 'not brief', 'not short', 'more detail', 'more details',
-    'explain more', 'explain further', 'expand', 'elaborate more', 'be more detailed'
+  const triggers = [
+    'explain in detail', 'detailed', 'in depth', 'comprehensive', 'thorough',
+    'step by step', 'deep dive', 'elaborate', 'full explanation'
   ];
-  return detailTriggers.some((trigger) => lower.includes(trigger));
+  return triggers.some((t) => lower.includes(t));
 };
 
 const searchBrave = async (query) => {
@@ -624,10 +660,9 @@ const searchBrave = async (query) => {
     console.warn('[BRAVE] API key not configured');
     return [];
   }
-
   try {
     const res = await fetch(
-      `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query)}&count=4`,
+      `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query.slice(0, 200))}&count=4`,
       {
         method: 'GET',
         headers: {
@@ -636,18 +671,15 @@ const searchBrave = async (query) => {
         }
       }
     );
-
     if (!res.ok) {
-      const text = await res.text();
-      console.error('[BRAVE] Error:', res.status, text.slice(0, 200));
+      console.error('[BRAVE] Error:', res.status);
       return [];
     }
-
     const data = await res.json();
     return (data.web?.results || []).map((r) => ({
-      title: r.title,
+      title: r.title?.slice(0, 200) || '',
       url: r.url,
-      description: r.description
+      description: r.description?.slice(0, 400) || ''
     }));
   } catch (err) {
     console.error('[BRAVE] Failed:', err.message);
@@ -655,53 +687,53 @@ const searchBrave = async (query) => {
   }
 };
 
+// ===== HEALTH CHECK =====
 app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+
 // ===== AI COUNCIL CHAT =====
 app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
   try {
     const user = await ensureUser(req.auth.userId);
-    const userPlan = user.plan || 'free';
     const { message, history = [] } = req.body;
 
-    if (!message || !message.trim()) {
-      return res.status(400).json({ error: 'Message is required' });
+    const promptValidation = validatePrompt(message);
+    if (!promptValidation.valid) {
+      return res.status(400).json({ error: promptValidation.error });
     }
 
+    const historyValidation = validateHistory(history);
+    if (!historyValidation.valid) {
+      return res.status(400).json({ error: historyValidation.error });
+    }
+
+    const userPlan = user.plan || 'free';
     const modelsToUse = userPlan === 'pro' ? PRO_COUNCIL_MODELS : FREE_COUNCIL_MODELS;
-
-    const isDetailed = wantsDetailedAnswer(message);
-    const modelTokenLimit = isDetailed ? 900 : 400;
-
+    const isDetailed = wantsDetailedAnswer(promptValidation.value);
     const councilModels = COUNCIL_TURBO ? modelsToUse.slice(0, 4) : modelsToUse;
     const whipMs = isDetailed ? Math.max(COUNCIL_WHIP_MS, 10000) : COUNCIL_WHIP_MS;
     const quorum = Math.min(COUNCIL_QUORUM, councilModels.length);
 
-    const councilSystemPrompt = userPlan === 'pro'
-      ? `You are one expert voice in the ALOP-AI Pro Council of ${councilModels.length} advanced AI models. Give your best individual perspective on the user question. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}`
-      : `You are one expert voice in the ALOP-AI Council of 4 AI models. Give your best individual perspective. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}`;
-
     const councilMessages = [
-      { role: 'system', content: councilSystemPrompt },
-      ...history.slice(-6),
-      { role: 'user', content: message }
+      {
+        role: 'system',
+        content: userPlan === 'pro'
+          ? `You are one expert voice in the ALOP-AI Pro Council. ${isDetailed ? 'Be thorough.' : 'Be concise.'}`
+          : `You are one expert voice in the ALOP-AI Council. ${isDetailed ? 'Be thorough.' : 'Be concise.'}`
+      },
+      ...historyValidation.value.slice(-6),
+      { role: 'user', content: promptValidation.value }
     ];
 
-    console.log(`[COUNCIL] User: ${user.email} | Plan: ${userPlan} | Models: ${councilModels.length} | Quorum: ${quorum} | Whip: ${whipMs}ms | Detailed: ${isDetailed} | Tokens: ${modelTokenLimit}`);
-
-    const validResponses = await runCouncilWithWhip(councilModels, councilMessages, 0.6, whipMs, quorum, modelTokenLimit);
-
+    const validResponses = await runCouncilWithWhip(councilModels, councilMessages, 0.6, whipMs, quorum, isDetailed ? 900 : 400);
     if (validResponses.length === 0) {
       return res.status(500).json({ error: 'All council models failed to respond' });
     }
 
-    console.log(`[COUNCIL] ${validResponses.length} models responded`);
-
     let webContext = '';
-    if (userPlan === 'pro' && needsRealTimeSearch(message)) {
-      const searchResults = await searchBrave(message);
+    if (userPlan === 'pro' && needsRealTimeSearch(promptValidation.value)) {
+      const searchResults = await searchBrave(promptValidation.value);
       if (searchResults.length > 0) {
         webContext = `\n\nReal-time web search results:\n${searchResults.map((r, i) => `[Source ${i + 1}] ${r.title}\nURL: ${r.url}\n${r.description}`).join('\n\n')}`;
-        console.log(`[COUNCIL] Brave returned ${searchResults.length} results`);
       }
     }
 
@@ -709,12 +741,12 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       {
         role: 'system',
         content: isDetailed
-          ? 'You are the ALOP-AI Council Synthesizer. The user has explicitly requested a detailed, thorough, or comprehensive answer. Combine the expert responses and any real-time web search results into a full, well-structured, in-depth response. Include examples, nuance, and step-by-step reasoning where helpful. Prioritize web search results for current facts, dates, sports scores, news, and recent events. Cite sources naturally when web search results are provided. Do not list individual models unless explicitly asked.'
-          : 'You are the ALOP-AI Council Synthesizer. Combine the expert responses into one final, concise, accurate answer. If real-time web search results are included, prioritize them for current facts, dates, sports scores, news, and recent events. Resolve contradictions using the search results. Cite sources naturally when needed. Be brief and to the point. Avoid unnecessary detail unless the user asks for it. Do not list individual models unless explicitly asked.'
+          ? 'Synthesize expert responses into a detailed, well-structured answer. Cite sources naturally.'
+          : 'Synthesize expert responses into a concise, accurate final answer.'
       },
       {
         role: 'user',
-        content: `User question: ${message}${webContext}\n\nExpert council responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}\n\nNow synthesize the best final answer as ALOP-AI.`
+        content: `User question: ${promptValidation.value}${webContext}\n\nExpert responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}`
       }
     ];
 
@@ -722,24 +754,13 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    const synthTemp = isDetailed ? 0.5 : 0.35;
-    await streamModel(res, 'glm-5.2', synthesizerMessages, synthTemp);
-
+    await streamModel(res, 'glm-5.2', synthesizerMessages, isDetailed ? 0.5 : 0.35);
     if (!res.writableEnded) res.end();
 
-    try {
-      await supabase.rpc('increment_usage', {
-        p_user_id: user.id,
-        p_date: new Date().toISOString().split('T')[0],
-        p_messages: 1,
-        p_images: 0
-      });
-    } catch (e) {
-      console.error('Usage increment failed:', e.message);
-    }
-
+    await auditLog(user.id, 'council_message', { plan: userPlan });
   } catch (err) {
     console.error('Council error:', err.message);
+    Sentry.captureException(err);
     if (!res.headersSent) return res.status(500).json({ error: err.message });
     if (!res.writableEnded) res.end();
   }
@@ -750,8 +771,13 @@ app.post('/api/vision', requireAuth, checkSuspended, async (req, res) => {
   try {
     const { prompt, image } = req.body;
 
-    if (!prompt || !image) {
-      return res.status(400).json({ error: 'Prompt and image are required' });
+    const promptValidation = validatePrompt(prompt);
+    if (!promptValidation.valid) {
+      return res.status(400).json({ error: promptValidation.error });
+    }
+
+    if (!image || typeof image !== 'string' || !image.startsWith('data:image/')) {
+      return res.status(400).json({ error: 'Valid base64 image is required' });
     }
 
     const user = await ensureUser(req.auth.userId);
@@ -761,36 +787,42 @@ app.post('/api/vision', requireAuth, checkSuspended, async (req, res) => {
 
     const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
 
-    const systemPrompt = `You are ALOP-AI, a helpful desktop assistant with vision. The user has shared a screenshot of their screen. Look at it carefully and answer their question or help with their request based on what you see. Be concise but accurate. If they ask for code, provide clean, working code. If you see text in the screenshot, quote or reference it naturally.`;
-
     const answer = await callGeminiVision(
       model,
-      `${systemPrompt}\n\nUser request: ${prompt}`,
+      `You are ALOP-AI vision assistant. Answer based on the screenshot. Be concise.\n\nUser request: ${promptValidation.value}`,
       base64Data,
       'image/png',
       2048
     );
 
+    await auditLog(user.id, 'vision_request', { plan: user.plan });
     res.json({ answer });
   } catch (err) {
     console.error('Vision error:', err.message);
+    Sentry.captureException(err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// ===== FAST OVERLAY ASSISTANT =====
+// ===== OVERLAY ASSISTANT =====
 app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
   try {
     const { prompt, image, history = [] } = req.body;
-    if (!prompt || !prompt.trim()) {
-      return res.status(400).json({ error: 'Prompt required' });
+
+    const promptValidation = validatePrompt(prompt);
+    if (!promptValidation.valid) {
+      return res.status(400).json({ error: promptValidation.error });
+    }
+
+    const historyValidation = validateHistory(history);
+    if (!historyValidation.valid) {
+      return res.status(400).json({ error: historyValidation.error });
     }
 
     const user = await ensureUser(req.auth.userId);
-
     let contextFromImage = '';
 
-    if (image) {
+    if (image && typeof image === 'string' && image.startsWith('data:image/')) {
       const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
       const visionModel = user.plan === 'pro'
         ? 'gemini-2.5-pro-preview-05-06'
@@ -798,61 +830,43 @@ app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
 
       contextFromImage = await callGeminiVision(
         visionModel,
-        'Describe what is visible on the screen in concise detail. Include any code, text, UI elements, error messages, or webpage content. Be brief.',
+        'Describe what is visible on the screen concisely. Include code, text, UI, errors. Be brief.',
         base64Data,
         'image/png',
         1024
       );
-
-      console.log('[OVERLAY] Gemini Vision described the screen');
     }
 
-    const overlaySystemPrompt = `You are ALOP-AI Overlay, a fast, precise desktop assistant. You have access to ${OVERLAY_MODELS.length} expert models. Give a concise, accurate answer. For coding, provide working code. For homework, explain clearly without fluff.`;
-
     const overlayMessages = [
-      { role: 'system', content: overlaySystemPrompt },
-      ...history.slice(-4),
+      { role: 'system', content: `You are ALOP-AI Overlay. Give concise, accurate answers. For coding, provide working code.` },
+      ...historyValidation.value.slice(-4),
       {
         role: 'user',
         content: contextFromImage
-          ? `Screen description: ${contextFromImage}\n\nUser question: ${prompt}`
-          : `User question: ${prompt}`
+          ? `Screen description: ${contextFromImage}\n\nUser question: ${promptValidation.value}`
+          : `User question: ${promptValidation.value}`
       }
     ];
 
-    const responses = await runCouncilWithWhip(
-      OVERLAY_MODELS,
-      overlayMessages,
-      0.5,
-      6000,
-      2,
-      600
-    );
-
+    const responses = await runCouncilWithWhip(OVERLAY_MODELS, overlayMessages, 0.5, 6000, 2, 600);
     if (responses.length === 0) {
       return res.status(500).json({ error: 'Overlay models failed to respond' });
     }
 
     const synthesizerMessages = [
-      {
-        role: 'system',
-        content: 'Synthesize the expert answers into one final, concise response. Prioritize accuracy over length. If there is screen context, use it directly.'
-      },
+      { role: 'system', content: 'Synthesize expert answers into one final, concise response. Prioritize accuracy.' },
       {
         role: 'user',
-        content: `Question: ${prompt}\n\nExpert answers:\n${responses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}\n\nGive the final answer.`
+        content: `Question: ${promptValidation.value}\n\nExpert answers:\n${responses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}`
       }
     ];
 
-    const answer = await callGemini(
-      'glm-5.2',
-      synthesizerMessages.map((m) => `${m.role}: ${m.content}`).join('\n\n'),
-      1024
-    );
-
+    const answer = await callGemini('glm-5.2', synthesizerMessages.map((m) => `${m.role}: ${m.content}`).join('\n\n'), 1024);
+    await auditLog(user.id, 'overlay_request', { plan: user.plan });
     res.json({ answer });
   } catch (err) {
     console.error('Overlay error:', err.message);
+    Sentry.captureException(err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -860,12 +874,15 @@ app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
 // ===== IMAGE GENERATION =====
 app.post('/api/image', requireAuth, checkSuspended, async (req, res) => {
   try {
-    const { prompt } = req.body;
-    if (!prompt) return res.status(400).json({ error: 'Prompt required' });
+    const promptValidation = validatePrompt(req.body.prompt);
+    if (!promptValidation.valid) {
+      return res.status(400).json({ error: promptValidation.error });
+    }
 
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true`;
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptValidation.value)}?width=1024&height=1024&nologo=true`;
     res.json({ url: imageUrl });
   } catch (err) {
+    Sentry.captureException(err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -873,155 +890,206 @@ app.post('/api/image', requireAuth, checkSuspended, async (req, res) => {
 // ===== CHAT MANAGEMENT =====
 app.get('/api/chats', requireAuth, async (req, res) => {
   try {
-    if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
     const user = await ensureUser(req.auth.userId);
     const { data, error } = await supabase
       .from('chats')
-      .select('*')
+      .select('id, user_id, title, messages, pinned, favorite, created_at, updated_at')
       .eq('user_id', user.id)
       .order('updated_at', { ascending: false });
+
     if (error) throw error;
+    await auditLog(user.id, 'chats_list');
     res.json(data || []);
   } catch (err) {
+    console.error('List chats error:', err.message);
+    Sentry.captureException(err);
     res.status(500).json({ error: err.message });
   }
 });
 
 app.post('/api/chats', requireAuth, async (req, res) => {
   try {
-    if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
     const user = await ensureUser(req.auth.userId);
+    const title = sanitizeString(req.body.title, 120) || 'New Chat';
+
     const { data, error } = await supabase
       .from('chats')
-      .insert({ user_id: user.id, title: req.body.title || 'New Chat', messages: [] })
-      .select().single();
+      .insert({ user_id: user.id, title, messages: [] })
+      .select()
+      .single();
+
     if (error) throw error;
+    await auditLog(user.id, 'chat_create', { chat_id: data.id });
     res.json(data);
   } catch (err) {
+    console.error('Create chat error:', err.message);
+    Sentry.captureException(err);
     res.status(500).json({ error: err.message });
   }
 });
 
 app.put('/api/chats/:id', requireAuth, requireOwnership('chats', 'user_id'), async (req, res) => {
   try {
-    if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
     const user = await ensureUser(req.auth.userId);
+    const { id } = req.params;
+    const { messages, title } = req.body;
+
+    const updatePayload = { updated_at: new Date().toISOString() };
+    if (title !== undefined) updatePayload.title = sanitizeString(title, 120);
+    if (messages !== undefined) {
+      if (!Array.isArray(messages)) {
+        return res.status(400).json({ error: 'Messages must be an array' });
+      }
+      updatePayload.messages = messages.slice(0, 200).map((m) => ({
+        role: m.role,
+        content: typeof m.content === 'string' ? m.content.slice(0, 10000) : '',
+        ts: m.ts,
+        id: m.id
+      }));
+    }
+
     const { error } = await supabase
       .from('chats')
-      .update({
-        messages: req.body.messages,
-        title: req.body.title,
-        updated_at: new Date().toISOString()
-      })
-      .eq('id', req.params.id)
+      .update(updatePayload)
+      .eq('id', id)
       .eq('user_id', user.id);
+
     if (error) throw error;
+    await auditLog(user.id, 'chat_update', { chat_id: id });
     res.json({ ok: true });
   } catch (err) {
+    console.error('Update chat error:', err.message);
+    Sentry.captureException(err);
     res.status(500).json({ error: err.message });
   }
 });
 
 app.delete('/api/chats/:id', requireAuth, requireOwnership('chats', 'user_id'), async (req, res) => {
   try {
-    if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
     const user = await ensureUser(req.auth.userId);
+    const { id } = req.params;
+
     const { error } = await supabase
       .from('chats')
       .delete()
-      .eq('id', req.params.id)
+      .eq('id', id)
       .eq('user_id', user.id);
+
     if (error) throw error;
+    await auditLog(user.id, 'chat_delete', { chat_id: id });
     res.json({ deleted: true });
   } catch (err) {
+    console.error('Delete chat error:', err.message);
+    Sentry.captureException(err);
     res.status(500).json({ error: err.message });
   }
 });
 
 // ===== ADMIN ROUTES =====
-const requireAdmin = async (req, res, next) => {
-  try {
-    if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('is_admin')
-      .eq('clerk_id', req.auth.userId)
-      .single();
-    if (error) throw error;
-    if (!user?.is_admin) return res.status(403).json({ error: 'Admin only' });
-    next();
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to verify admin status' });
-  }
-};
-
 app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { data: users, error } = await supabase
       .from('users')
       .select('id, clerk_id, email, name, avatar_url, plan, is_admin, suspended, created_at, stripe_subscription_id');
     if (error) throw error;
+    await auditLog(req.auth.userId, 'admin_users_list');
     res.json(users || []);
   } catch (err) {
+    console.error('Admin users error:', err.message);
+    Sentry.captureException(err);
     res.status(500).json({ error: err.message });
   }
 });
 
 app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { error } = await supabase.from('users').update({ suspended: true }).eq('id', req.params.id);
+    const { id } = req.params;
+    const { data: targetUser } = await supabase.from('users').select('is_admin').eq('id', id).single();
+    if (targetUser?.is_admin) {
+      return res.status(403).json({ error: 'Cannot suspend another admin' });
+    }
+
+    const { error } = await supabase.from('users').update({ suspended: true }).eq('id', id);
     if (error) throw error;
+    await auditLog(req.auth.userId, 'admin_suspend', { target_user_id: id });
     res.json({ suspended: true });
   } catch (err) {
+    console.error('Suspend error:', err.message);
+    Sentry.captureException(err);
     res.status(500).json({ error: err.message });
   }
 });
 
 app.post('/api/admin/users/:id/unsuspend', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { error } = await supabase.from('users').update({ suspended: false }).eq('id', req.params.id);
+    const { id } = req.params;
+    const { error } = await supabase.from('users').update({ suspended: false }).eq('id', id);
     if (error) throw error;
+    await auditLog(req.auth.userId, 'admin_unsuspend', { target_user_id: id });
     res.json({ unsuspended: true });
   } catch (err) {
+    console.error('Unsuspend error:', err.message);
+    Sentry.captureException(err);
     res.status(500).json({ error: err.message });
   }
 });
 
 app.delete('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
-    const { error } = await supabase.from('users').delete().eq('id', req.params.id);
+    const { id } = req.params;
+    if (req.auth.userId === id) {
+      return res.status(400).json({ error: 'Cannot delete yourself' });
+    }
+
+    const { data: targetUser } = await supabase.from('users').select('is_admin').eq('id', id).single();
+    if (targetUser?.is_admin) {
+      return res.status(403).json({ error: 'Cannot delete another admin' });
+    }
+
+    const { error } = await supabase.from('users').delete().eq('id', id);
     if (error) throw error;
+    await auditLog(req.auth.userId, 'admin_delete_user', { target_user_id: id });
     res.json({ deleted: true });
   } catch (err) {
+    console.error('Delete user error:', err.message);
+    Sentry.captureException(err);
     res.status(500).json({ error: err.message });
   }
 });
 
 app.get('/api/admin/chats/:userId', requireAuth, requireAdmin, async (req, res) => {
   try {
+    const { userId } = req.params;
     const { data, error } = await supabase
       .from('chats')
       .select('*')
-      .eq('user_id', req.params.userId)
+      .eq('user_id', userId)
       .order('updated_at', { ascending: false });
     if (error) throw error;
+    await auditLog(req.auth.userId, 'admin_chats_view', { target_user_id: userId });
     res.json(data || []);
   } catch (err) {
+    console.error('Admin chats error:', err.message);
+    Sentry.captureException(err);
     res.status(500).json({ error: err.message });
   }
 });
 
 app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) => {
   try {
+    const { userId } = req.params;
     const { data, error } = await supabase
       .from('usage')
       .select('*')
-      .eq('user_id', req.params.userId)
+      .eq('user_id', userId)
       .order('date', { ascending: false })
       .limit(30);
     if (error) throw error;
+    await auditLog(req.auth.userId, 'admin_usage_view', { target_user_id: userId });
     res.json(data || []);
   } catch (err) {
+    console.error('Admin usage error:', err.message);
+    Sentry.captureException(err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -1046,9 +1114,11 @@ app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
       metadata: { userId: req.auth.userId }
     });
 
+    await auditLog(user.id, 'checkout_session_create', { plan: req.body.plan });
     res.json({ url: session.url });
   } catch (err) {
     console.error('Checkout error:', err);
+    Sentry.captureException(err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -1061,8 +1131,11 @@ app.post('/api/create-portal-session', requireAuth, async (req, res) => {
       customer: user.stripe_customer_id,
       return_url: `${process.env.FRONTEND_URL}/`
     });
+    await auditLog(user.id, 'portal_session_create');
     res.json({ url: session.url });
   } catch (err) {
+    console.error('Portal error:', err.message);
+    Sentry.captureException(err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -1072,8 +1145,15 @@ app.get('/api/user/plan', requireAuth, async (req, res) => {
     const user = await ensureUser(req.auth.userId);
     res.json({ plan: user.plan || 'free', subscription_id: user.stripe_subscription_id });
   } catch (err) {
+    console.error('Plan fetch error:', err.message);
+    Sentry.captureException(err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// ===== 404 HANDLER =====
+app.use((req, res) => {
+  res.status(404).json({ error: 'Endpoint not found' });
 });
 
 // ===== SENTRY ERROR HANDLER =====
@@ -1081,12 +1161,31 @@ Sentry.setupExpressErrorHandler(app);
 
 // ===== FALLBACK ERROR HANDLER =====
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error(`[ERROR] ${req.requestId} | ${err.message}`);
+  Sentry.captureException(err);
+
+  if (err.message && err.message.includes('CORS blocked')) {
+    return res.status(403).json({ error: err.message });
+  }
+
   const message = process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message;
   res.status(err.status || 500).json({ error: message });
 });
 
 // ===== START SERVER =====
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`ALOP-AI backend running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
+
+// ===== GRACEFUL SHUTDOWN =====
+const gracefulShutdown = (signal) => {
+  console.log(`[SHUTDOWN] Received ${signal}. Closing server...`);
+  server.close(() => {
+    console.log('[SHUTDOWN] Server closed');
+    process.exit(0);
+  });
+};
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

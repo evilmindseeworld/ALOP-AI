@@ -35,8 +35,6 @@
   --glow-primary: 0 0 20px rgba(244, 63, 94, 0.25);
 }
 
-}
-
 .scanlines {
   position: fixed;
   inset: 0;

@@ -1401,9 +1401,9 @@ useEffect(() => {
                 {activeMessages.length === 0 && status === "idle" && (
                   <div className="empty-state">
                     <h2 className="empty-title">ALOP-AI</h2>
-                    <TextShimmer className="empty-subtitle">
+                    <p className="empty-subtitle">
                       Ask the AI Council anything. Multiple models work together.
-                    </TextShimmer>
+                    </p>
                   </div>
                 )}
 

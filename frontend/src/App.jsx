@@ -35,7 +35,11 @@ const VISION_MODELS = ["gemma4", "kimi-k2.6", "kimi-k2.5", "gemini-3-flash-previ
 
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
-const isImageRequest = (text) => /^\/image|generate image|create image|draw image|make image/i.test(text);
+const isImageRequest = (text) => {
+  if (text.length > 100) return false;
+  return /^\/image|^generate image|^create image|^draw image|^make image/i.test(text.trim());
+};
+
 
 const parseImagePrompt = (text) => {
   const m = text.match(/(?:generate|create|draw|make)\s+(?:an?\s+)?image\s*(?:of\s+)?(.+)/i);
@@ -610,13 +614,13 @@ const AuthenticatedApp = () => {
 
             <div className="chat-content">
               <div className="scroll-wrapper" ref={chatRef}>
-                {activeMessages.length === 0 && status === "idle" && (
+                              {activeMessages.length === 0 && status === "idle" && (
                   <div className="empty-state">
-                    <h2 className="empty-title">ALOP-AI</h2>
+                    <img src="/logo.png" alt="ALOP-AI" className="empty-logo" />
                     <p className="empty-subtitle">Ask the AI Council anything. Multiple models work together.</p>
                   </div>
-                )}
-                {activeMessages.map((msg, idx) => (
+                )}  
+{activeMessages.map((msg, idx) => (
                   <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
                     <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
                     <div className="msg-content">

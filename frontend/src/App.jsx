@@ -3,38 +3,9 @@ import { ClerkProvider, SignIn, useUser, useAuth, SignOutButton } from "@clerk/r
 import "./App.css";
 import SignInPage from "./SignInPage";
 import MagneticButton from "./components/ui/MagneticButton";
-import TextShimmer from "./components/ui/TextShimmer";
-import { animate, createScope, spring, createDraggable, stagger } from 'animejs';
-import BorderTrail from "./components/ui/BorderTrail";
 import { animate, createScope, spring, createDraggable } from "animejs";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
-
-const MODELS = {
-  fast: [
-    { key: "gemma4", name: "Gemma 4" },
-    { key: "qwen3.5", name: "Qwen 3.5" },
-    { key: "glm-5.2", name: "GLM 5.2" },
-    { key: "minimax-m2.5", name: "MiniMax M2.5" },
-    { key: "kimi-k2.5", name: "Kimi K2.5" },
-  ],
-  reasoning: [
-    { key: "deepseek-v4-pro", name: "DeepSeek V4 Pro" },
-    { key: "deepseek-v4-flash", name: "DeepSeek V4 Flash" },
-    { key: "kimi-k2.7-code", name: "Kimi K2.7 Code" },
-    { key: "kimi-k2.6", name: "Kimi K2.6" },
-    { key: "glm-5.1", name: "GLM 5.1" },
-    { key: "minimax-m3", name: "MiniMax M3" },
-    { key: "minimax-m2.7", name: "MiniMax M2.7" },
-    { key: "nemotron-3-super", name: "Nemotron 3 Super" },
-    { key: "nemotron-3-ultra", name: "Nemotron 3 Ultra" },
-    { key: "gpt-oss", name: "GPT-OSS" },
-    { key: "gemini-3-flash-preview", name: "Gemini 3 Flash" },
-    { key: "mistral-large-3", name: "Mistral Large 3" },
-  ]
-};
-
-const VISION_MODELS = ["gemma4", "kimi-k2.6", "kimi-k2.5", "gemini-3-flash-preview", "minimax-m3"];
 
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
@@ -42,7 +13,6 @@ const isImageRequest = (text) => {
   if (text.length > 100) return false;
   return /^\/image|^generate image|^create image|^draw image|^make image/i.test(text.trim());
 };
-
 
 const parseImagePrompt = (text) => {
   const m = text.match(/(?:generate|create|draw|make)\s+(?:an?\s+)?image\s*(?:of\s+)?(.+)/i);
@@ -146,13 +116,6 @@ const Icon = ({ name, size = 18 }) => {
         <circle cx="12" cy="13" r="4" />
       </svg>
     ),
-    upgrade: (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 2l9 4v6c0 5.55-3.84 10.74-9 12-5.16-1.26-9-6.45-9-12V6l9-4z" />
-        <path d="M9 12l3-3 3 3" />
-        <path d="M12 9v8" />
-      </svg>
-    ),
     sun: (
       <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <circle cx="12" cy="12" r="5" />
@@ -233,7 +196,7 @@ const ChatSidebar = ({ chats, activeChatId, onSelect, onCreate, onDelete, onRena
 
 const InputBar = ({ text, setText, onSend, disabled, attachments, setAttachments, onFileSelect, onStartCamera, isListening, toggleListening }) => {
   const [rows, setRows] = useState(1);
-  useEffect(() => { setRows(Math.min(Math.max(text.split("\n").length, 1), 10000000)); }, [text]);
+  useEffect(() => { setRows(Math.min(Math.max(text.split("\n").length, 1), 1000)); }, [text]);
   const handleKeyDown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!disabled) onSend(text); } };
   const removeAttachment = (idx) => setAttachments((prev) => prev.filter((_, i) => i !== idx));
 
@@ -272,6 +235,10 @@ const AuthenticatedApp = () => {
     const stored = Storage.get("alop-dark-mode");
     return stored === null ? true : stored === "true";
   });
+  const [creativity, setCreativity] = useState(() => {
+    const stored = Storage.get("alop-creativity");
+    return stored === null ? 0.6 : parseFloat(stored);
+  });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const v = Storage.get("pa-sidebar-collapsed");
     return v === null ? true : v === "true";
@@ -279,7 +246,6 @@ const AuthenticatedApp = () => {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
-  const [showPricing, setShowPricing] = useState(false);
   const [adminUsers, setAdminUsers] = useState([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [userPlan, setUserPlan] = useState("free");
@@ -311,11 +277,15 @@ const AuthenticatedApp = () => {
   }, []);
 
   useEffect(() => Storage.set("alop-dark-mode", darkMode.toString()), [darkMode]);
+  useEffect(() => Storage.set("alop-creativity", creativity.toString()), [creativity]);
   useEffect(() => Storage.set("pa-sidebar-collapsed", sidebarCollapsed.toString()), [sidebarCollapsed]);
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); }, [toast]);
   useEffect(() => { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [chats, activeChatId]);
 
-  // Anime.js: draggable logo + spring messages + elastic buttons
+  const activeChat = useMemo(() => chats.find((c) => c.id === activeChatId), [chats, activeChatId]);
+  const activeMessages = activeChat?.messages || [];
+
+  // Anime.js: Draggable logo + spring messages + elastic buttons
   useEffect(() => {
     if (!chatRef.current) return;
 
@@ -366,74 +336,23 @@ const AuthenticatedApp = () => {
     return () => document.removeEventListener('click', handler);
   }, []);
 
-
-  cons  // Anime.js: draggable logo + spring messages + elastic buttons
-  useEffect(() => {
-    if (!chatRef.current) return;
-
-    if (activeMessages.length === 0) {
-      const scope = createScope({ root: chatRef.current }).add(() => {
-        animate('.empty-logo', {
-          scale: [
-            { to: 1.08, ease: 'inOut(3)', duration: 400 },
-            { to: 1, ease: spring({ bounce: 0.7 }) }
-          ],
-          loop: true,
-          loopDelay: 1200,
-        });
-
-        createDraggable('.empty-logo', {
-          container: [0, 0, 0, 0],
-          releaseEase: spring({ bounce: 0.8 }),
-        });
-      });
-
-      return () => scope.revert();
-    }
-
-    const msgs = chatRef.current.querySelectorAll('.msg-row');
-    if (msgs.length > 0) {
-      animate(msgs[msgs.length - 1], {
-        opacity: [0, 1],
-        translateY: [16, 0],
-        scale: [0.97, 1],
-        ease: spring({ bounce: 0.3, stiffness: 120 }),
-        duration: 700,
-      });
-    }
-  }, [activeMessages]);
-
-  useEffect(() => {
-    const handler = (e) => {
-      const btn = e.target.closest('.input-btn.primary, .new-chat-btn, .overlay-submit');
-      if (!btn) return;
-      animate(btn, {
-        scale: [
-          { to: 0.9, duration: 80 },
-          { to: 1, ease: spring({ bounce: 0.6 }) }
-        ],
-      });
-    };
-    document.addEventListener('click', handler);
-    return () => document.removeEventListener('click', handler);
-  }, []);
-t api = async (path, options = {}) => {
+  const apiCall = async (path, options = {}) => {
     const token = await getToken();
     return fetch(`${API_BASE}${path}`, { ...options, headers: { ...options.headers, Authorization: `Bearer ${token}`, "Content-Type": "application/json" } });
   };
 
   const fetchAdminUsers = async () => {
-    try { const r = await api("/api/admin/users"); const data = await r.json(); setAdminUsers(data || []); }
+    try { const r = await apiCall("/api/admin/users"); const data = await r.json(); setAdminUsers(data || []); }
     catch (err) { console.error("Failed to fetch admin users:", err.message); }
   };
 
   const loadChats = useCallback(async () => {
-    try { const r = await api("/api/chats"); const data = await r.json(); if (Array.isArray(data)) setChats(data); }
+    try { const r = await apiCall("/api/chats"); const data = await r.json(); if (Array.isArray(data)) setChats(data); }
     catch (err) { console.error("Failed to load chats:", err.message); }
   }, []);
 
   const fetchPlan = useCallback(async () => {
-    try { const r = await api("/api/user/plan"); const data = await r.json(); setUserPlan(data.plan || "free"); }
+    try { const r = await apiCall("/api/user/plan"); const data = await r.json(); setUserPlan(data.plan || "free"); }
     catch (err) { console.error("Failed to fetch plan:", err.message); }
   }, []);
 
@@ -448,7 +367,7 @@ t api = async (path, options = {}) => {
   useEffect(() => {
     const checkAdmin = async () => {
       if (!isSignedIn || !user?.emailAddresses?.[0]?.emailAddress) return;
-      try { const r = await api("/api/admin/users"); if (r.ok) { const users = await r.json(); const me = users.find((u) => u.email === user.emailAddresses[0].emailAddress); if (me?.is_admin) setIsAdmin(true); } }
+      try { const r = await apiCall("/api/admin/users"); if (r.ok) { const users = await r.json(); const me = users.find((u) => u.email === user.emailAddresses[0].emailAddress); if (me?.is_admin) setIsAdmin(true); } }
       catch (err) { console.error("Admin check failed:", err.message); }
     };
     if (isLoaded) checkAdmin();
@@ -456,28 +375,25 @@ t api = async (path, options = {}) => {
 
   useEffect(() => { if (isAdmin && showAdmin) fetchAdminUsers(); }, [isAdmin, showAdmin]);
 
-  const activeChat = useMemo(() => chats.find((c) => c.id === activeChatId), [chats, activeChatId]);
-  const activeMessages = activeChat?.messages || [];
-
   const createChat = async () => {
-    try { const r = await api("/api/chats", { method: "POST", body: JSON.stringify({ title: "New Chat" }) }); const data = await r.json(); setChats((prev) => [data, ...prev]); setActiveChatId(data.id); setInputText(""); setAttachments([]); return data.id; }
+    try { const r = await apiCall("/api/chats", { method: "POST", body: JSON.stringify({ title: "New Chat" }) }); const data = await r.json(); setChats((prev) => [data, ...prev]); setActiveChatId(data.id); setInputText(""); setAttachments([]); return data.id; }
     catch (err) { setToast("Failed to create chat"); console.error("Create chat failed:", err.message); return null; }
   };
 
   const updateChatMessages = async (chatId, messages, saveToDb = true) => {
     setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages, updated_at: new Date().toISOString() } : c)));
-    if (saveToDb) { try { await api(`/api/chats/${chatId}`, { method: "PUT", body: JSON.stringify({ messages }) }); } catch (err) { console.error("Failed to save messages:", err.message); } }
+    if (saveToDb) { try { await apiCall(`/api/chats/${chatId}`, { method: "PUT", body: JSON.stringify({ messages }) }); } catch (err) { console.error("Failed to save messages:", err.message); } }
   };
 
   const deleteChat = async (id) => {
-    try { await api(`/api/chats/${id}`, { method: "DELETE" }); setChats((prev) => prev.filter((c) => c.id !== id)); if (activeChatId === id) setActiveChatId(null); }
+    try { await apiCall(`/api/chats/${id}`, { method: "DELETE" }); setChats((prev) => prev.filter((c) => c.id !== id)); if (activeChatId === id) setActiveChatId(null); }
     catch (err) { console.error("Delete chat failed:", err.message); }
   };
 
   const renameChat = async (id, title) => {
     if (!title || !title.trim()) return;
     setChats((prev) => prev.map((c) => (c.id === id ? { ...c, title } : c)));
-    try { await api(`/api/chats/${id}`, { method: "PUT", body: JSON.stringify({ title }) }); } catch (err) { console.error("Rename chat failed:", err.message); }
+    try { await apiCall(`/api/chats/${id}`, { method: "PUT", body: JSON.stringify({ title }) }); } catch (err) { console.error("Rename chat failed:", err.message); }
   };
 
   const togglePinChat = (id) => setChats((prev) => prev.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c)));
@@ -489,9 +405,9 @@ t api = async (path, options = {}) => {
     return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at);
   }), [chats]);
 
-  const adminSuspend = async (id) => { try { if ((await api(`/api/admin/users/${id}/suspend`, { method: "POST" })).ok) { setToast("User suspended"); fetchAdminUsers(); } } catch (err) { console.error("Suspend failed:", err.message); } };
-  const adminUnsuspend = async (id) => { try { if ((await api(`/api/admin/users/${id}/unsuspend`, { method: "POST" })).ok) { setToast("User unsuspended"); fetchAdminUsers(); } } catch (err) { console.error("Unsuspend failed:", err.message); } };
-  const adminDeleteUser = async (id) => { if (!confirm("DELETE this user and all their data?")) return; try { if ((await api(`/api/admin/users/${id}`, { method: "DELETE" })).ok) { setToast("User deleted"); fetchAdminUsers(); } } catch (err) { console.error("Delete user failed:", err.message); } };
+  const adminSuspend = async (id) => { try { if ((await apiCall(`/api/admin/users/${id}/suspend`, { method: "POST" })).ok) { setToast("User suspended"); fetchAdminUsers(); } } catch (err) { console.error("Suspend failed:", err.message); } };
+  const adminUnsuspend = async (id) => { try { if ((await apiCall(`/api/admin/users/${id}/unsuspend`, { method: "POST" })).ok) { setToast("User unsuspended"); fetchAdminUsers(); } } catch (err) { console.error("Unsuspend failed:", err.message); } };
+  const adminDeleteUser = async (id) => { if (!confirm("DELETE this user and all their data?")) return; try { if ((await apiCall(`/api/admin/users/${id}`, { method: "DELETE" })).ok) { setToast("User deleted"); fetchAdminUsers(); } } catch (err) { console.error("Delete user failed:", err.message); } };
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files).filter((f) => f.type.startsWith("image/"));
@@ -546,7 +462,7 @@ t api = async (path, options = {}) => {
     abortRef.current = new AbortController();
     try {
       const token = await getToken();
-      const res = await fetch(`${API_BASE}/api/council`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ message: cleanText, history: activeMessages.slice(-6).map((m) => ({ role: m.role, content: m.content })) }), signal: abortRef.current.signal });
+      const res = await fetch(`${API_BASE}/api/council`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ message: cleanText, history: activeMessages.slice(-6).map((m) => ({ role: m.role, content: m.content })), temperature: creativity }), signal: abortRef.current.signal });
       if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || `Server error: ${res.status}`); }
       if (!res.body) throw new Error("Streaming not supported");
       setStatus("streaming");
@@ -566,13 +482,9 @@ t api = async (path, options = {}) => {
       await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: `⚠️ ${err.message || "Connection failed"}` }]);
     }
     setInputText("");
-  }, [activeChatId, activeMessages, status, generateImage, attachments]);
-
-  const upgrade = async (planType) => { try { const r = await api("/api/create-checkout-session", { method: "POST", body: JSON.stringify({ plan: planType }) }); const data = await r.json(); if (data.url) window.location.href = data.url; } catch (err) { console.error("Checkout error:", err.message); } };
-  const manageSubscription = async () => { try { const r = await api("/api/create-portal-session", { method: "POST" }); const data = await r.json(); if (data.url) window.location.href = data.url; } catch { setToast("No active subscription"); } };
+  }, [activeChatId, activeMessages, status, generateImage, attachments, creativity]);
 
   if (!isLoaded) return null;
-
   return (
     <div className={`app-root ${darkMode ? "dark" : "light"}`}>
       <div className="bg-layer" />
@@ -595,16 +507,14 @@ t api = async (path, options = {}) => {
         <header className="app-header">
           <button className="icon-btn mobile-only" onClick={() => setMobileSidebarOpen(true)} title="Chats"><Icon name="menu" size={20} /></button>
           <button className="icon-btn desktop-only" onClick={() => setSidebarCollapsed((c) => !c)} title="Chats"><Icon name="menu" size={20} /></button>
-                    <div className="brand">
+          <div className="brand">
             <img src="/logo.png" alt="" className="header-logo" />
             <div className="brand-text">
               <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
-              <span className="sub-title">
-                AI Council • {userPlan === "pro" ? "8 models" : "4 models"}
-              </span>
+              <span className="sub-title">AI Council • {userPlan === "pro" ? "15 models" : "4 models"}</span>
             </div>
           </div>
-<div className="header-actions">
+          <div className="header-actions">
             {isAdmin && (
               <MagneticButton className={`icon-btn admin-btn ${showAdmin ? "active" : ""}`} onClick={() => { setShowAdmin((s) => !s); setShowSettings(false); }} ariaLabel="Admin">
                 <Icon name="crown" size={20} />
@@ -612,9 +522,6 @@ t api = async (path, options = {}) => {
             )}
             <MagneticButton className="icon-btn" onClick={() => setDarkMode((d) => !d)} ariaLabel="Toggle theme">
               <Icon name={darkMode ? "sun" : "moon"} size={20} />
-            </MagneticButton>
-            <MagneticButton className="icon-btn" onClick={() => setShowPricing(true)} ariaLabel="Upgrade">
-              <Icon name="upgrade" size={20} />
             </MagneticButton>
             <MagneticButton className="icon-btn" onClick={() => { setShowSettings((s) => !s); setShowAdmin(false); }} ariaLabel="Settings">
               <Icon name="settings" size={20} />
@@ -626,45 +533,6 @@ t api = async (path, options = {}) => {
           <ChatSidebar chats={sortedChats} activeChatId={activeChatId} onSelect={setActiveChatId} onCreate={createChat} onDelete={deleteChat} onRename={renameChat} onPin={togglePinChat} onFavorite={toggleFavoriteChat} collapsed={sidebarCollapsed} mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />
 
           <div className="chat-main">
-            {showPricing && (
-              <>
-                <div className="panel-overlay" onClick={() => setShowPricing(false)} />
-                <div className="side-panel">
-                  <div className="panel-header">
-                    <div className="panel-title">Upgrade to Pro</div>
-                    <button onClick={() => setShowPricing(false)} className="icon-btn"><Icon name="close" size={18} /></button>
-                  </div>
-                  <div className="panel-body">
-                    <div style={{ textAlign: "center", marginBottom: 24, fontSize: 15, color: "var(--text-muted)" }}>
-                      Unlock the full AI Council with all 8 models, plus unlimited images, vision, voice, and priority support.
-                    </div>
-                    <div className="pricing-card">
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div><div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>Pro Monthly</div><div style={{ fontSize: 12, color: "var(--text-subtle)", marginTop: 4 }}>$0.27/day</div></div>
-                        <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text)" }}>$8<span style={{ fontSize: 12, color: "var(--text-subtle)" }}>/mo</span></div>
-                      </div>
-                    </div>
-                    <div className="pricing-card popular">
-                      <div className="popular-badge">Most Popular</div>
-                      <div className="save-badge">Save 17%</div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div><div style={{ fontSize: 16, fontWeight: 700, color: "var(--text)" }}>Pro Yearly</div><div style={{ fontSize: 12, color: "var(--text-subtle)", marginTop: 4 }}>$0.22/day</div></div>
-                        <div style={{ fontSize: 22, fontWeight: 800, color: "var(--text)" }}>$80<span style={{ fontSize: 12, color: "var(--text-subtle)" }}>/yr</span></div>
-                      </div>
-                    </div>
-                    <button onClick={() => upgrade("yearly")} className="new-chat-btn" style={{ width: "100%", marginTop: 16 }}>Continue</button>
-                    <div style={{ marginTop: 24, paddingTop: 20, borderTop: "1px solid var(--border)" }}>
-                      <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 12, color: "var(--text)" }}>Pro includes</div>
-                      <ul style={{ listStyle: "none", padding: 0, margin: 0, fontSize: 13, color: "var(--text-muted)", lineHeight: 1.9 }}>
-                        <li>✅ AI Council with 8 models</li><li>✅ Real-time web search & current news</li><li>✅ Unlimited image generation</li><li>✅ Vision & file analysis</li><li>✅ Voice input</li><li>✅ Cloud sync & priority support</li>
-                      </ul>
-                    </div>
-                    {userPlan === "pro" && <button onClick={manageSubscription} className="theme-card" style={{ width: "100%", marginTop: 16 }}>Manage subscription</button>}
-                  </div>
-                </div>
-              </>
-            )}
-
             {showAdmin && isAdmin && (
               <>
                 <div className="panel-overlay" onClick={() => setShowAdmin(false)} />
@@ -719,17 +587,24 @@ t api = async (path, options = {}) => {
 
             <div className="chat-content">
               <div className="scroll-wrapper" ref={chatRef}>
-                              {activeMessages.length === 0 && status === "idle" && (
+                {activeMessages.length === 0 && status === "idle" && (
                   <div className="empty-state">
                     <img src="/logo.png" alt="ALOP-AI" className="empty-logo" />
                     <p className="empty-subtitle">Ask the AI Council anything. Multiple models work together.</p>
                   </div>
-                )}  
-{activeMessages.map((msg, idx) => (
+                )}
+                {activeMessages.map((msg, idx) => (
                   <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
                     <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
                     <div className="msg-content">
-                      {msg.typing && <div className="bubble typing-bubble"><span></span><span></span><span></span></div>}
+                      {msg.typing && (
+                        <div className="bubble typing-bubble">
+                          <span className="typing-text">Council is thinking</span>
+                          <span className="typing-dot"></span>
+                          <span className="typing-dot"></span>
+                          <span className="typing-dot"></span>
+                        </div>
+                      )}
                       {msg.content && !msg.typing && <div className="bubble">{msg.content}</div>}
                       {msg.imageUrl && (
                         <div style={{ marginTop: 8 }}>
@@ -748,18 +623,23 @@ t api = async (path, options = {}) => {
                   </div>
                 ))}
               </div>
-              <InputBar
-                text={inputText}
-                setText={setInputText}
-                onSend={handleSend}
-                disabled={status !== "idle"}
-                attachments={attachments}
-                setAttachments={setAttachments}
-                onFileSelect={handleFileSelect}
-                onStartCamera={startCamera}
-                isListening={isListening}
-                toggleListening={toggleListening}
-              />
+              
+              <div className="creativity-bar">
+                <span className="creativity-label">Creativity</span>
+                <div
+                  className="creativity-track"
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                    setCreativity(Math.round(pct * 10) / 10);
+                  }}
+                >
+                  <div className="creativity-fill" style={{ width: `${creativity * 100}%` }} />
+                </div>
+                <span className="creativity-value">{Math.round(creativity * 100)}%</span>
+              </div>
+
+              <InputBar text={inputText} setText={setInputText} onSend={handleSend} disabled={status !== "idle"} attachments={attachments} setAttachments={setAttachments} onFileSelect={handleFileSelect} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} />
             </div>
           </div>
         </div>
@@ -885,9 +765,9 @@ const App = () => {
       appearance={{
         baseTheme: "dark",
         variables: {
-          colorPrimary: "#e8869a",
-          colorBackground: "#1a1512",
-          colorText: "#f5ebe0",
+          colorPrimary: "#ec7d96",
+          colorBackground: "#1b120c",
+          colorText: "#faf0e6",
         },
       }}
     >

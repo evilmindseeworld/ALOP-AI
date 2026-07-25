@@ -37,141 +37,45 @@ const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
-// ===== MODEL CONFIG — 15 WORKING MODELS =====
-const COUNCIL_QUORUM = parseInt(process.env.COUNCIL_QUORUM, 10) || 4;
-const COUNCIL_TURBO = process.env.COUNCIL_TURBO === 'true';
-
+// ===== MODEL ROSTER (15 Working Models) =====
 const FREE_COUNCIL_MODELS = ['gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5'];
-
-const PRO_COUNCIL_MODELS = [
-  'gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5',
-  'kimi-k2.7-code', 'deepseek-v4-pro', 'kimi-k2.6', 'minimax-m3',
-  'deepseek-v4-flash', 'glm-5.1', 'minimax-m2.5',
-  'nemotron-3-super', 'nemotron-3-nano'
+const ALL_MODELS = [
+  'gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5', 'minimax-m2.5',
+  'kimi-k2.7-code', 'deepseek-v4-pro', 'kimi-k2.6',
+  'glm-5.1', 'minimax-m3', 'minimax-m2.7',
+  'nemotron-3-super', 'nemotron-3-ultra', 'nemotron-3-nano'
 ];
-
 const OVERLAY_MODELS = ['deepseek-v4-pro', 'glm-5.2', 'kimi-k2.7-code'];
 
-// ===== MODEL POOLS WITH EXTREME TIMEOUTS =====
-const MODEL_POOLS = {
-  // Tier 1 - Lightning: instant
-  greeting: { models: ['nemotron-3-nano'], quorum: 1, whipMs: 3000, tokenLimit: 200 },
-
-  // Tier 2 - Light: fast
-  simple: { models: ['nemotron-3-nano', 'gemma4', 'qwen3.5'], quorum: 2, whipMs: 5000, tokenLimit: 500 },
-  default: { models: ['glm-5.2', 'gemma4', 'qwen3.5', 'deepseek-v4-flash', 'minimax-m2.5'], quorum: 3, whipMs: 8000, tokenLimit: 800 },
-  creative: { models: ['gemma4', 'kimi-k2.5', 'minimax-m2.5', 'glm-5.2', 'qwen3.5', 'minimax-m3'], quorum: 2, whipMs: 15000, tokenLimit: 800 },
-
-  // Tier 3 - Medium: balanced
-  math: { models: ['deepseek-v4-pro', 'deepseek-v4-flash', 'kimi-k2.6', 'nemotron-3-super'], quorum: 2, whipMs: 30000, tokenLimit: 1000 },
-
-  // Tier 4 - Heavy: powerful
-  coding: { models: ['kimi-k2.7-code', 'deepseek-v4-pro', 'kimi-k2.6', 'minimax-m2.7', 'minimax-m3', 'glm-5.1'], quorum: 2, whipMs: 60000, tokenLimit: 2000 },
-  reasoning: { models: ['deepseek-v4-pro', 'deepseek-v4-flash', 'kimi-k2.6', 'glm-5.1', 'minimax-m3', 'nemotron-3-super', 'nemotron-3-ultra'], quorum: 3, whipMs: 45000, tokenLimit: 1500 },
-
-  // Tier 5 - Extreme: heaviest loads, no rush
-  essay: { models: ['deepseek-v4-pro', 'kimi-k2.6', 'minimax-m3', 'glm-5.1', 'nemotron-3-ultra', 'nemotron-3-super', 'gemma4', 'kimi-k2.5', 'qwen3.5'], quorum: 3, whipMs: 90000, tokenLimit: 3000 },
-  research: { models: ['deepseek-v4-pro', 'kimi-k2.6', 'nemotron-3-super', 'nemotron-3-ultra', 'minimax-m3', 'glm-5.1'], quorum: 3, whipMs: 90000, tokenLimit: 2500 },
-  document: { models: ['deepseek-v4-pro', 'kimi-k2.6', 'minimax-m3', 'nemotron-3-ultra', 'nemotron-3-super', 'glm-5.1', 'gemma4', 'kimi-k2.5', 'qwen3.5'], quorum: 3, whipMs: 90000, tokenLimit: 3000 },
-
-  // Tier 6 - MAXIMUM: extreme coding, no timeout pressure
-  project: { models: ['kimi-k2.7-code', 'deepseek-v4-pro', 'kimi-k2.6', 'minimax-m3', 'nemotron-3-super', 'nemotron-3-ultra', 'glm-5.1', 'minimax-m2.7', 'deepseek-v4-flash'], quorum: 4, whipMs: 120000, tokenLimit: 4000 },
-  complex: { models: ['gemma4','qwen3.5','glm-5.2','kimi-k2.5','minimax-m2.5','kimi-k2.7-code','deepseek-v4-pro','deepseek-v4-flash','kimi-k2.6','glm-5.1','minimax-m3','minimax-m2.7','nemotron-3-super','nemotron-3-ultra','nemotron-3-nano'], quorum: 4, whipMs: 120000, tokenLimit: 4000 },
-};
-
-// ===== SMART MODEL SELECTION =====
-const classifyAndSelectModels = (text, userPlan) => {
+// ===== DYNAMIC ROUTER =====
+const classifyRequest = (text, userPlan) => {
   const lower = text.toLowerCase().trim();
   const wordCount = text.split(/\s+/).length;
 
-  const filterByPlan = (pool) => {
-    if (userPlan === 'pro') return pool;
+  const filterByPlan = (models) => {
+    if (userPlan === 'pro') return models;
     const freeSet = new Set(FREE_COUNCIL_MODELS);
-    const filtered = pool.filter(m => freeSet.has(m));
-    return filtered.length > 0 ? filtered : FREE_COUNCIL_MODELS.slice(0, 3);
+    const filtered = models.filter(m => freeSet.has(m));
+    return filtered.length > 0 ? filtered : FREE_COUNCIL_MODELS;
   };
 
-  // TIER 1: GREETING
-  const greetings = ['hi','hello','hey','yo','sup','howdy','gm','good morning','good afternoon','good evening','whats up',"what's up",'how are you','how r u','hey there','greetings'];
-  if (wordCount <= 4 && greetings.some(g => lower === g || lower.startsWith(g + ' ') || lower.startsWith(g + '!'))) {
-    const p = MODEL_POOLS.greeting;
-    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'greeting', tokenLimit: p.tokenLimit };
+  // Tier 1: Greeting (Instant)
+  if (wordCount <= 4 && /hi|hello|hey|yo|sup|howdy|gm|good morning/i.test(lower)) {
+    return { models: filterByPlan(['nemotron-3-nano']), quorum: 1, whipMs: 5000, tokenLimit: 200, category: 'greeting' };
   }
 
-  // TIER 6: PROJECT — extreme coding, 2 min timeout
-  const projectPatterns = ['build','create a','develop','architect','design a system','implement','project','application','platform','software','system design','database schema','api design','tech stack','infrastructure','scale','microservices','system architecture','develop a','build a','create an app','make an app','build me','develop me','startup','saas','full stack application','web app','mobile app','game','engine','compiler','interpreter','operating system','framework','orchestrate','end-to-end','production ready','scalable system','distributed system','concurrent','parallel computing'];
-  if (projectPatterns.some(p => lower.includes(p)) && wordCount > 5) {
-    const p = MODEL_POOLS.project;
-    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'project', tokenLimit: p.tokenLimit };
+  // Tier 2: Simple (Fast)
+  if (wordCount < 15) {
+    return { models: filterByPlan(['nemotron-3-nano', 'gemma4', 'qwen3.5', 'glm-5.2']), quorum: 2, whipMs: 8000, tokenLimit: 500, category: 'simple' };
   }
 
-  // TIER 5: DOCUMENT
-  const documentPatterns = ['document','summarize','report','white paper','specification','technical doc','write documentation','create a document','draft a','proposal','brief','memorandum','contract','policy','guideline','handbook','manual','standard operating','procedure','write a report','executive summary','meeting notes','minutes','spec','requirements document','design doc','architecture document'];
-  if (documentPatterns.some(p => lower.includes(p))) {
-    const p = MODEL_POOLS.document;
-    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'document', tokenLimit: p.tokenLimit };
+  // Tier 3: Complex/Project (All hands on deck, models self-select)
+  if (wordCount > 50 || /detailed|comprehensive|essay|project|build|architecture|design|research/i.test(lower)) {
+    return { models: filterByPlan(ALL_MODELS), quorum: 3, whipMs: 15000, tokenLimit: 2000, category: 'complex' };
   }
 
-  // TIER 4: CODING
-  const codingPatterns = ['code','program','function','script','app','website','bug','error','debug','api','database','sql','python','javascript','react','html','css','java','c++','rust','golang','typescript','node','npm','git','docker','kubernetes','algorithm','leetcode','compile','syntax','stack trace','import ','export ','class ','method','variable','array','object','json','regex','deploy','server','frontend','backend','fullstack','framework','library','package','module','component','hook','endpoint','rest api','graphql','auth','authentication','cors','webpack','vite','tauri','electron','shader','assembly','binary','pointer','memory leak','recursion','big o','design pattern','unit test','integration test','ci/cd','terraform','linux','bash','shell','powershell','command line','thread','async','await','promise','callback','websocket'];
-  if (codingPatterns.some(p => lower.includes(p))) {
-    const p = MODEL_POOLS.coding;
-    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'coding', tokenLimit: p.tokenLimit };
-  }
-
-  // TIER 5: ESSAY
-  const essayPatterns = ['essay','write a','write an','write me','article','blog post','story','poem','report','paper','thesis','dissertation','novel','chapter','summary','review','critique','argumentative','persuasive','narrative','descriptive','expository','speech','presentation','letter','email draft','cover letter','resume','cv','product description','marketing copy','social media post','caption','headline','slogan','tagline','screenplay','dialogue','monologue'];
-  if (essayPatterns.some(p => lower.includes(p))) {
-    const p = MODEL_POOLS.essay;
-    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'essay', tokenLimit: p.tokenLimit };
-  }
-
-  // TIER 3: MATH
-  const mathPatterns = ['calculate','solve','equation','math','algebra','calculus','geometry','trigonometry','physics','chemistry','biology','statistics','probability','matrix','derivative','integral','theorem','proof','formula','logarithm','exponential','binomial','polynomial','factorial','permutation','combination','standard deviation','regression','correlation','hypothesis test','p-value','quantum','thermodynamics','electromagnetism','newton','relativity','organic chemistry','molecule','atom','electron','dna','rna','protein','cell','enzyme','photosynthesis'];
-  if (mathPatterns.some(p => lower.includes(p))) {
-    const p = MODEL_POOLS.math;
-    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'math', tokenLimit: p.tokenLimit };
-  }
-
-  // TIER 2: CREATIVE
-  const creativePatterns = ['create','imagine','invent','design a','brainstorm','ideas for','name for','concept','character','world building','plot','theme','metaphor','simile','haiku','sonnet','lyrics','song','jingle','brand name','startup name','creative'];
-  if (creativePatterns.some(p => lower.includes(p))) {
-    const p = MODEL_POOLS.creative;
-    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'creative', tokenLimit: p.tokenLimit };
-  }
-
-  // TIER 5: RESEARCH
-  const researchPatterns = ['research','analyze','investigate','study','examine','evaluate','assess','compare and contrast','pros and cons','advantages and disadvantages','literature review','case study','systematic review','meta-analysis','data analysis','trends','market research','competitive analysis','swot','feasibility','risk assessment'];
-  if (researchPatterns.some(p => lower.includes(p))) {
-    const p = MODEL_POOLS.research;
-    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'research', tokenLimit: p.tokenLimit };
-  }
-
-  // TIER 6: COMPLEX — all 15 models, 2 min timeout
-  const complexPatterns = ['explain in detail','comprehensive','thorough','in depth','in-depth','step by step','deep dive','breakdown','everything about','all about','complete guide','detailed analysis','multi-faceted','elaborate extensively','walk me through','full explanation'];
-  if (complexPatterns.some(p => lower.includes(p)) || wordCount > 80) {
-    const p = MODEL_POOLS.complex;
-    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'complex', tokenLimit: p.tokenLimit };
-  }
-
-  // TIER 2: SIMPLE
-  const simplePatterns = ['what is','who is','when did','where is','how many','define','translate','convert','spell','capital of','synonym','antonym','meaning of','what does','how to spell','plural of','past tense','abbreviation'];
-  if (wordCount < 15 && simplePatterns.some(p => lower.includes(p))) {
-    const p = MODEL_POOLS.simple;
-    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'simple', tokenLimit: p.tokenLimit };
-  }
-
-  // TIER 4: REASONING
-  const reasoningPatterns = ['why','how come','what happens if','consequences','implications','cause and effect','because','therefore','logical','deductive','inductive','reasoning','justify','rationale','explain why'];
-  if (reasoningPatterns.some(p => lower.includes(p)) || wordCount > 25) {
-    const p = MODEL_POOLS.reasoning;
-    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'reasoning', tokenLimit: p.tokenLimit };
-  }
-
-  // DEFAULT
-  const p = MODEL_POOLS.default;
-  const defaultModels = filterByPlan(p.models);
-  return { models: defaultModels, quorum: p.quorum, whipMs: p.whipMs, category: 'default', tokenLimit: p.tokenLimit };
+  // Default: Medium
+  return { models: filterByPlan(ALL_MODELS.slice(0, 8)), quorum: 3, whipMs: 10000, tokenLimit: 1000, category: 'default' };
 };
 
 // ===== CORS =====
@@ -185,7 +89,6 @@ app.use(cors({
     if (allowedOrigins.map(o => o.toLowerCase()).includes(lower)) return callback(null, true);
     if (process.env.NODE_ENV === 'development') return callback(null, true);
     if (isVercelPreview(lower)) return callback(null, true);
-    console.warn(`[CORS BLOCKED] ${origin}`);
     callback(new Error(`CORS blocked origin: ${origin}`));
   },
   credentials: true,
@@ -233,11 +136,9 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
   try {
     event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
-    console.error('Stripe webhook error:', err.message);
     Sentry.captureException(err);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
-  console.log('Stripe event:', event.type);
   try {
     if (event.type === 'checkout.session.completed') {
       const session = event.data.object;
@@ -251,13 +152,12 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
     }
     res.json({ received: true });
   } catch (err) {
-    console.error('Stripe webhook processing error:', err.message);
     Sentry.captureException(err);
     res.status(500).send('Webhook processing failed');
   }
 });
 
-// ===== PERFORMANCE =====
+// ===== PERFORMANCE & TIMEOUT =====
 app.use(compression());
 app.use(timeout('300s'));
 app.use((req, res, next) => { if (req.timedout) return res.status(503).json({ error: 'Request timeout' }); next(); });
@@ -268,15 +168,14 @@ const createLimiter = (windowMs, max, msg) => rateLimit({
   windowMs, max, message: { error: msg }, standardHeaders: true, legacyHeaders: false,
   keyGenerator: rlKey,
   skip: (req) => req.path === '/health' || req.path === '/api/stripe/webhook',
-  handler: (req, res, next, opts) => {
-    console.warn(`[RATE LIMIT] ${req.requestId} | ${req.method} ${req.path}`);
+  handler: (req, res) => {
     Sentry.captureMessage(`Rate limit: ${req.method} ${req.path}`);
     res.status(429).json({ error: msg });
   }
 });
 
 app.use('/api/', createLimiter(60000, 120, 'Too many requests. Slow down.'));
-app.use('/api/council', createLimiter(60000, 20, 'Too many council requests. Wait a minute.'));
+app.use('/api/council', createLimiter(60000, 30, 'Too many council requests. Wait a minute.'));
 app.use('/api/vision', createLimiter(60000, 10, 'Too many vision requests. Wait a minute.'));
 app.use('/api/overlay', createLimiter(60000, 30, 'Too many overlay requests. Wait a minute.'));
 app.use('/api/image', createLimiter(60000, 10, 'Too many image requests. Wait a minute.'));
@@ -298,9 +197,7 @@ const sanitizeString = (str, max = 200) => typeof str === 'string' ? str.trim().
 const truncatePrompt = (text, maxChars = 90000) => {
   if (text.length <= maxChars) return text;
   const half = Math.floor(maxChars / 2);
-  const truncated = text.slice(0, half) + '\n\n[...content truncated for length...]\n\n' + text.slice(-half);
-  console.log(`[TRUNCATE] Original: ${text.length} chars → Truncated: ${truncated.length} chars`);
-  return truncated;
+  return text.slice(0, half) + '\n\n[...content truncated for length...]\n\n' + text.slice(-half);
 };
 
 const validatePrompt = (p) => {
@@ -318,13 +215,10 @@ const validateHistory = (h) => {
   return { valid: true, value: h.filter(m => m && typeof m === 'object').map(m => ({ role: ALLOWED_ROLES.includes(m.role) ? m.role : 'user', content: typeof m.content === 'string' ? m.content.slice(0, MAX_PROMPT) : '' })).slice(0, MAX_HISTORY) };
 };
 
-// ===== SUPABASE =====
+// ===== SUPABASE & CLERK =====
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
-
-// ===== CLERK =====
 const requireAuth = ClerkExpressRequireAuth({ onError: (e) => ({ error: e.message || 'Authentication required' }) });
 
-// ===== HELPERS =====
 const ensureUser = async (userId) => {
   if (!userId) throw new Error('Missing userId');
   let clerkUser;
@@ -354,7 +248,6 @@ const checkSuspended = async (req, res, next) => {
     req.userPlan = user?.plan || 'free';
     next();
   } catch (err) {
-    console.error('Suspension check failed:', err.message);
     Sentry.captureException(err);
     return res.status(500).json({ error: 'Failed to verify account status' });
   }
@@ -369,14 +262,10 @@ const requireOwnership = (table, col = 'user_id') => async (req, res, next) => {
     if (!/^[0-9a-fA-F-]{36}$/.test(id)) return res.status(400).json({ error: 'Invalid resource ID format' });
     const { data: resource, error } = await supabase.from(table).select(col).eq('id', id).single();
     if (error || !resource) return res.status(404).json({ error: 'Resource not found' });
-    if (resource[col] !== user.id) {
-      console.warn(`[OWNERSHIP] User ${user.id} attempted access to ${table}:${id}`);
-      return res.status(403).json({ error: 'You do not have permission to access this resource' });
-    }
+    if (resource[col] !== user.id) return res.status(403).json({ error: 'You do not have permission to access this resource' });
     req.resource = resource;
     next();
   } catch (err) {
-    console.error('Ownership check failed:', err.message);
     Sentry.captureException(err);
     return res.status(500).json({ error: 'Failed to verify resource ownership' });
   }
@@ -387,9 +276,9 @@ const requireAdmin = async (req, res, next) => {
     if (!req.auth?.userId) return res.status(401).json({ error: 'Not authenticated' });
     const { data: user, error } = await supabase.from('users').select('is_admin').eq('clerk_id', req.auth.userId).single();
     if (error) throw error;
-    if (!user?.is_admin) { console.warn(`[ADMIN] Non-admin attempt: ${req.auth.userId}`); return res.status(403).json({ error: 'Admin only' }); }
+    if (!user?.is_admin) return res.status(403).json({ error: 'Admin only' });
     next();
-  } catch (err) { console.error('Admin check failed:', err.message); Sentry.captureException(err); res.status(500).json({ error: 'Failed to verify admin status' }); }
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: 'Failed to verify admin status' }); }
 };
 
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 1 }, fileFilter: (req, file, cb) => file.mimetype.startsWith('image/') ? cb(null, true) : cb(new Error('Only image files'), false) });
@@ -416,7 +305,7 @@ const callModel = async (modelName, messages, temperature = 0.7, timeoutMs = 120
     return data.message?.content || data.response || '';
   } catch (err) {
     clearTimeout(timer);
-    if (err.name === 'AbortError') { console.warn(`[COUNCIL] ${modelName} timed out after ${timeoutMs}ms`); return ''; }
+    if (err.name === 'AbortError') return '';
     throw err;
   }
 };
@@ -469,22 +358,38 @@ const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'imag
   return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 };
 
-const runCouncilWithWhip = async (models, messages, temperature = 0.6, whipMs = 8000, quorum = 4, tokenLimit = 400) => {
+// ===== DYNAMIC COUNCIL QUORUM =====
+const runCouncilWithWhip = async (models, messages, temperature, whipMs, quorum, tokenLimit) => {
   const results = [];
   let settledCount = 0, validCount = 0, resolved = false;
+  
   return new Promise((resolve) => {
     const whipTimer = setTimeout(() => {
-      if (!resolved) { resolved = true; console.log(`[WHIP] Timeout ${whipMs}ms. ${validCount}/${models.length} responded.`); resolve(results.filter(r => r.content?.trim().length > 0)); }
+      if (!resolved) { resolved = true; resolve(results); }
     }, whipMs);
+    
     const checkDone = () => {
       if (resolved) return;
-      if (validCount >= quorum) { resolved = true; clearTimeout(whipTimer); console.log(`[WHIP] Quorum: ${validCount}/${models.length}`); resolve(results.filter(r => r.content?.trim().length > 0)); return; }
-      if (settledCount >= models.length) { resolved = true; clearTimeout(whipTimer); resolve(results.filter(r => r.content?.trim().length > 0)); }
+      if (validCount >= quorum) { 
+        resolved = true; clearTimeout(whipTimer); resolve(results); return; 
+      }
+      if (settledCount >= models.length) { 
+        resolved = true; clearTimeout(whipTimer); resolve(results); 
+      }
     };
+    
     models.forEach((model) => {
       callModel(model, messages, temperature, whipMs, tokenLimit)
-        .then((content) => { settledCount++; if (content?.trim()) { validCount++; results.push({ model, content }); } checkDone(); })
-        .catch((err) => { settledCount++; console.warn(`[WHIP] ${model} failed: ${err.message}`); checkDone(); });
+        .then((content) => { 
+          settledCount++; 
+          if (content?.trim().toUpperCase() === 'SKIP') {
+            console.log(`[COUNCIL] ${model} opted out (SKIP).`);
+          } else if (content?.trim().length > 3) { 
+            validCount++; results.push({ model, content }); 
+          } 
+          checkDone(); 
+        })
+        .catch(() => { settledCount++; checkDone(); });
     });
   });
 };
@@ -500,7 +405,7 @@ const searchBrave = async (query) => {
     if (!res.ok) return [];
     const data = await res.json();
     return (data.web?.results || []).map(r => ({ title: r.title?.slice(0, 200) || '', url: r.url, description: r.description?.slice(0, 400) || '' }));
-  } catch (err) { console.error('[BRAVE] Failed:', err.message); return []; }
+  } catch { return []; }
 };
 
 // ===== HEALTH =====
@@ -519,27 +424,52 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const userPlan = user.plan || 'free';
     const isDetailed = wantsDetailedAnswer(pv.value);
     const creativity = typeof temperature === 'number' ? Math.max(0, Math.min(1, temperature)) : 0.6;
-
-    const selection = classifyAndSelectModels(pv.value, userPlan);
-    const councilModels = COUNCIL_TURBO ? selection.models.slice(0, 4) : selection.models;
-    const whipMs = selection.whipMs;
-    const quorum = selection.quorum;
-    const tokenLimit = isDetailed ? Math.max(selection.tokenLimit, 1000) : selection.tokenLimit;
-
-    // Truncate long text to fit model context windows
+    const selection = classifyRequest(pv.value, userPlan);
     const truncatedPrompt = truncatePrompt(pv.value);
     const wasTruncated = truncatedPrompt.length < pv.value.length;
 
-    console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | ${councilModels.length} models | Q:${quorum} | ${whipMs}ms | ${tokenLimit}tok | cr:${creativity} | truncated:${wasTruncated}`);
+    console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | ${selection.models.length} models | Q:${selection.quorum} | ${selection.whipMs}ms`);
+
+    // Instant bypass for greetings
+    if (selection.category === 'greeting') {
+      console.log('[COUNCIL] Greeting detected. Bypassing council for instant response.');
+      const greetingMessages = [
+        { role: 'system', content: 'You are ALOP-AI, a friendly AI assistant. Greet the user briefly and ask how you can help.' },
+        { role: 'user', content: pv.value }
+      ];
+      
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      await streamModel(res, 'glm-5.2', greetingMessages, 0.5);
+      if (!res.writableEnded) res.end();
+      await auditLog(user.id, 'council_message', { plan: userPlan, category: 'greeting', models: 1 });
+      return;
+    }
+
+
+    
+${selection.quorum} | ${selection.whipMs}ms`);
 
     const councilMessages = [
-      { role: 'system', content: `You are one expert voice in the ALOP-AI Council of ${councilModels.length} models answering a ${selection.category} question. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}${wasTruncated ? ' The user input was truncated due to length.' : ''}` },
-      ...(Array.isArray(hv) ? hv : hv.value || []).slice(-6),
+      { role: 'system', content: `You are an AI expert in the ALOP-AI Council. Analyze the user's request. If this request is NOT within your core expertise or capabilities, reply ONLY with the word "SKIP". Otherwise, provide a direct, expert response. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}` },
+      ...(Array.isArray(hv) ? hv : hv.value || []).slice(-4),
       { role: 'user', content: truncatedPrompt }
     ];
 
-    const validResponses = await runCouncilWithWhip(councilModels, councilMessages, creativity, whipMs, quorum, tokenLimit);
-    if (validResponses.length === 0) return res.status(500).json({ error: 'All council models failed to respond. Try shorter text.' });
+    let validResponses = await runCouncilWithWhip(selection.models, councilMessages, creativity, selection.whipMs, selection.quorum, selection.tokenLimit);
+    
+    // Fallback if all models skipped or failed
+    if (validResponses.length === 0) {
+      console.log('[COUNCIL] No valid responses. Forcing fallback generalist.');
+      const fb = await callModel('glm-5.2', [
+        { role: 'system', content: 'You are a helpful AI assistant. Answer the user\'s request directly.' },
+        { role: 'user', content: truncatedPrompt }
+      ], creativity, 15000, selection.tokenLimit);
+      if (fb.trim()) validResponses.push({ model: 'Fallback', content: fb });
+    }
+
+    if (validResponses.length === 0) return res.status(500).json({ error: 'All council models failed to respond.' });
 
     let webContext = '';
     if (userPlan === 'pro' && needsRealTimeSearch(pv.value)) {
@@ -548,7 +478,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     }
 
     const synthMessages = [
-      { role: 'system', content: isDetailed ? 'Synthesize expert responses into a detailed, well-structured answer. Cite sources naturally.' : 'Synthesize expert responses into a concise, accurate final answer.' },
+      { role: 'system', content: 'You are the Chief Synthesizer of the ALOP-AI Council. Combine the expert responses into a single, cohesive, and comprehensive answer. Remove redundancies. If experts disagree, present the different perspectives clearly. Do not mention the expert names.' },
       { role: 'user', content: `User question: ${truncatedPrompt}${webContext}\n\nExpert responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}` }
     ];
 
@@ -559,7 +489,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     await streamModel(res, 'glm-5.2', synthMessages, isDetailed ? 0.5 : 0.35);
     if (!res.writableEnded) res.end();
 
-    await auditLog(user.id, 'council_message', { plan: userPlan, category: selection.category, models: councilModels.length, truncated: wasTruncated });
+    await auditLog(user.id, 'council_message', { plan: userPlan, category: selection.category, models: validResponses.length, truncated: wasTruncated });
   } catch (err) {
     console.error('Council error:', err.message);
     Sentry.captureException(err);
@@ -581,7 +511,7 @@ app.post('/api/vision', requireAuth, checkSuspended, async (req, res) => {
     const answer = await callGeminiVision(model, `You are ALOP-AI vision assistant. Answer based on the screenshot. Be concise.\n\nUser request: ${pv.value}`, base64Data, 'image/png', 2048);
     await auditLog(user.id, 'vision_request', { plan: user.plan });
     res.json({ answer });
-  } catch (err) { console.error('Vision error:', err.message); Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
 // ===== OVERLAY =====
@@ -610,7 +540,7 @@ app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
     const answer = await callGemini('glm-5.2', synth.map(m => `${m.role}: ${m.content}`).join('\n\n'), 1024);
     await auditLog(user.id, 'overlay_request', { plan: user.plan });
     res.json({ answer });
-  } catch (err) { console.error('Overlay error:', err.message); Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
 // ===== IMAGE =====
@@ -628,9 +558,8 @@ app.get('/api/chats', requireAuth, async (req, res) => {
     const user = await ensureUser(req.auth.userId);
     const { data, error } = await supabase.from('chats').select('id, user_id, title, messages, pinned, favorite, created_at, updated_at').eq('user_id', user.id).order('updated_at', { ascending: false });
     if (error) throw error;
-    await auditLog(user.id, 'chats_list');
     res.json(data || []);
-  } catch (err) { console.error('List chats:', err.message); Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/chats', requireAuth, async (req, res) => {
@@ -639,9 +568,8 @@ app.post('/api/chats', requireAuth, async (req, res) => {
     const title = sanitizeString(req.body.title, 120) || 'New Chat';
     const { data, error } = await supabase.from('chats').insert({ user_id: user.id, title, messages: [] }).select().single();
     if (error) throw error;
-    await auditLog(user.id, 'chat_create', { chat_id: data.id });
     res.json(data);
-  } catch (err) { console.error('Create chat:', err.message); Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
 app.put('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => {
@@ -656,9 +584,8 @@ app.put('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, re
     }
     const { error } = await supabase.from('chats').update(payload).eq('id', req.params.id).eq('user_id', user.id);
     if (error) throw error;
-    await auditLog(user.id, 'chat_update', { chat_id: req.params.id });
     res.json({ ok: true });
-  } catch (err) { console.error('Update chat:', err.message); Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
 app.delete('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => {
@@ -666,9 +593,8 @@ app.delete('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req,
     const user = await ensureUser(req.auth.userId);
     const { error } = await supabase.from('chats').delete().eq('id', req.params.id).eq('user_id', user.id);
     if (error) throw error;
-    await auditLog(user.id, 'chat_delete', { chat_id: req.params.id });
     res.json({ deleted: true });
-  } catch (err) { console.error('Delete chat:', err.message); Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
 // ===== ADMIN =====
@@ -676,9 +602,8 @@ app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { data, error } = await supabase.from('users').select('id, clerk_id, email, name, avatar_url, plan, is_admin, suspended, created_at, stripe_subscription_id');
     if (error) throw error;
-    await auditLog(req.auth.userId, 'admin_users_list');
     res.json(data || []);
-  } catch (err) { console.error('Admin users:', err.message); Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, async (req, res) => {
@@ -687,18 +612,16 @@ app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, async (req, 
     if (t?.is_admin) return res.status(403).json({ error: 'Cannot suspend another admin' });
     const { error } = await supabase.from('users').update({ suspended: true }).eq('id', req.params.id);
     if (error) throw error;
-    await auditLog(req.auth.userId, 'admin_suspend', { target: req.params.id });
     res.json({ suspended: true });
-  } catch (err) { console.error('Suspend:', err.message); Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/admin/users/:id/unsuspend', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { error } = await supabase.from('users').update({ suspended: false }).eq('id', req.params.id);
     if (error) throw error;
-    await auditLog(req.auth.userId, 'admin_unsuspend', { target: req.params.id });
     res.json({ unsuspended: true });
-  } catch (err) { console.error('Unsuspend:', err.message); Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
 app.delete('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) => {
@@ -708,9 +631,8 @@ app.delete('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) =
     if (t?.is_admin) return res.status(403).json({ error: 'Cannot delete another admin' });
     const { error } = await supabase.from('users').delete().eq('id', req.params.id);
     if (error) throw error;
-    await auditLog(req.auth.userId, 'admin_delete_user', { target: req.params.id });
     res.json({ deleted: true });
-  } catch (err) { console.error('Delete user:', err.message); Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/admin/chats/:userId', requireAuth, requireAdmin, async (req, res) => {
@@ -718,7 +640,7 @@ app.get('/api/admin/chats/:userId', requireAuth, requireAdmin, async (req, res) 
     const { data, error } = await supabase.from('chats').select('*').eq('user_id', req.params.userId).order('updated_at', { ascending: false });
     if (error) throw error;
     res.json(data || []);
-  } catch (err) { console.error('Admin chats:', err.message); Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) => {
@@ -726,7 +648,7 @@ app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) 
     const { data, error } = await supabase.from('usage').select('*').eq('user_id', req.params.userId).order('date', { ascending: false }).limit(30);
     if (error) throw error;
     res.json(data || []);
-  } catch (err) { console.error('Admin usage:', err.message); Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
 // ===== STRIPE =====
@@ -746,9 +668,8 @@ app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
       cancel_url: `${process.env.FRONTEND_URL}/?payment=cancelled`,
       metadata: { userId: req.auth.userId }
     });
-    await auditLog(user.id, 'checkout_create', { plan: req.body.plan });
     res.json({ url: session.url });
-  } catch (err) { console.error('Checkout:', err); Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
 app.post('/api/create-portal-session', requireAuth, async (req, res) => {
@@ -756,27 +677,21 @@ app.post('/api/create-portal-session', requireAuth, async (req, res) => {
     const user = await ensureUser(req.auth.userId);
     if (!user.stripe_customer_id) return res.status(400).json({ error: 'No subscription found' });
     const session = await stripe.billingPortal.sessions.create({ customer: user.stripe_customer_id, return_url: `${process.env.FRONTEND_URL}/` });
-    await auditLog(user.id, 'portal_create');
     res.json({ url: session.url });
-  } catch (err) { console.error('Portal:', err.message); Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
 app.get('/api/user/plan', requireAuth, async (req, res) => {
   try {
     const user = await ensureUser(req.auth.userId);
     res.json({ plan: user.plan || 'free', subscription_id: user.stripe_subscription_id });
-  } catch (err) { console.error('Plan:', err.message); Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
-// ===== 404 =====
+// ===== 404 & ERRORS =====
 app.use((req, res) => res.status(404).json({ error: 'Endpoint not found' }));
-
-// ===== SENTRY =====
 Sentry.setupExpressErrorHandler(app);
-
-// ===== ERROR HANDLER =====
 app.use((err, req, res, next) => {
-  console.error(`[ERROR] ${req.requestId} | ${err.message}`);
   Sentry.captureException(err);
   if (err.message?.includes('CORS blocked')) return res.status(403).json({ error: err.message });
   res.status(err.status || 500).json({ error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message });
@@ -786,8 +701,8 @@ app.use((err, req, res, next) => {
 const server = app.listen(PORT, () => {
   console.log(`ALOP-AI backend running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Models: 15 working | Pools: 12 categories | Max timeout: 120s`);
+  console.log(`Dynamic Council initialized with ${ALL_MODELS.length} models.`);
 });
 
-process.on('SIGTERM', () => { console.log('[SHUTDOWN] SIGTERM'); server.close(() => process.exit(0)); });
-process.on('SIGINT', () => { console.log('[SHUTDOWN] SIGINT'); server.close(() => process.exit(0)); });
+process.on('SIGTERM', () => server.close(() => process.exit(0)));
+process.on('SIGINT', () => server.close(() => process.exit(0)));

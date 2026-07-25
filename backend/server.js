@@ -37,15 +37,14 @@ const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
-// ===== MODEL ROSTER (15 Working Models) =====
+// ===== MODEL ROSTER (14 Working Models) =====
 const FREE_COUNCIL_MODELS = ['gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5'];
 const ALL_MODELS = [
   'gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5', 'minimax-m2.5',
   'kimi-k2.7-code', 'deepseek-v4-pro', 'kimi-k2.6',
   'glm-5.1', 'minimax-m3', 'minimax-m2.7',
-    'nemotron-3-super', 'nemotron-3-ultra'
+  'nemotron-3-super', 'nemotron-3-ultra'
 ];
-
 const OVERLAY_MODELS = ['deepseek-v4-pro', 'glm-5.2', 'kimi-k2.7-code'];
 
 // ===== DYNAMIC ROUTER =====
@@ -67,7 +66,7 @@ const classifyRequest = (text, userPlan) => {
 
   // Tier 2: Simple (Fast)
   if (wordCount < 15) {
-    return { models: filterByPlan(['nemotron-3-nano', 'gemma4', 'qwen3.5', 'glm-5.2']), quorum: 2, whipMs: 8000, tokenLimit: 500, category: 'simple' };
+    return { models: filterByPlan(['gemma4', 'qwen3.5', 'glm-5.2']), quorum: 2, whipMs: 8000, tokenLimit: 500, category: 'simple' };
   }
 
   // Tier 3: Complex/Project (All hands on deck, models self-select)
@@ -425,13 +424,14 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const userPlan = user.plan || 'free';
     const isDetailed = wantsDetailedAnswer(pv.value);
     const creativity = typeof temperature === 'number' ? Math.max(0, Math.min(1, temperature)) : 0.6;
+
     const selection = classifyRequest(pv.value, userPlan);
     const truncatedPrompt = truncatePrompt(pv.value);
     const wasTruncated = truncatedPrompt.length < pv.value.length;
 
     console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | ${selection.models.length} models | Q:${selection.quorum} | ${selection.whipMs}ms`);
 
-    // Instant bypass for greetings
+    // 1. INSTANT BYPASS FOR GREETINGS
     if (selection.category === 'greeting') {
       console.log('[COUNCIL] Greeting detected. Bypassing council for instant response.');
       const greetingMessages = [
@@ -448,10 +448,6 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       return;
     }
 
-
-    
-${selection.quorum} | ${selection.whipMs}ms`);
-
     const councilMessages = [
       { role: 'system', content: `You are an AI expert in the ALOP-AI Council. Analyze the user's request. If this request is NOT within your core expertise or capabilities, reply ONLY with the word "SKIP". Otherwise, provide a direct, expert response. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}` },
       ...(Array.isArray(hv) ? hv : hv.value || []).slice(-4),
@@ -460,7 +456,7 @@ ${selection.quorum} | ${selection.whipMs}ms`);
 
     let validResponses = await runCouncilWithWhip(selection.models, councilMessages, creativity, selection.whipMs, selection.quorum, selection.tokenLimit);
     
-    // Fallback if all models skipped or failed
+    // 2. FALLBACK IF ALL MODELS SKIP OR FAIL
     if (validResponses.length === 0) {
       console.log('[COUNCIL] No valid responses. Forcing fallback generalist.');
       const fb = await callModel('glm-5.2', [

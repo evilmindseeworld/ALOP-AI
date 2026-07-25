@@ -655,15 +655,20 @@ textarea:focus-visible {
   to { opacity: 1; transform: translateY(0); }
 }
 
-.empty-state::before {
-  content: "";
+.empty-logo {
   width: 72px;
   height: 72px;
   border-radius: var(--radius-xl);
-  background: linear-gradient(135deg, var(--primary) 0%, var(--emerald) 100%);
+  object-fit: cover;
+  animation: emptyFloat 4s ease-in-out infinite;
   box-shadow: 0 16px 40px var(--primary-glow), 0 0 60px var(--emerald-glow);
-  animation: emptyPulse 4s ease-in-out infinite;
 }
+
+@keyframes emptyFloat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
 
 @keyframes emptyPulse {
   0%, 100% { transform: scale(1) rotate(0deg); box-shadow: 0 16px 40px var(--primary-glow), 0 0 60px var(--emerald-glow); }
@@ -865,7 +870,7 @@ textarea:focus-visible {
 
 .generated-image-container img {
   max-width: 100%;
-  max-height: 60vh;
+  max-height: 900000000vh;
   display: block;
   cursor: pointer;
 }
@@ -1725,4 +1730,55 @@ textarea:focus-visible {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+}
+
+.header-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+  align-items: center !important;
+}
+
+/* ===== FIX: empty state logo + kill gradient square ===== */
+.empty-state::before { display: none !important; }
+
+.empty-logo {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-xl);
+  object-fit: cover;
+  animation: emptyFloat 4s ease-in-out infinite;
+  box-shadow: 0 16px 40px var(--primary-glow), 0 0 60px var(--emerald-glow);
+}
+
+@keyframes emptyFloat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* ===== FIX: header buttons horizontal ===== */
+.header-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+  align-items: center !important;
+}
+
+/* ===== FIX: settings panel rows horizontal ===== */
+.setting-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+.setting-row .theme-card {
+  width: auto !important;
+}
+
+.setting-row .setting-label {
+  margin-bottom: 0 !important;
 }

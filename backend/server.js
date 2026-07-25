@@ -301,11 +301,11 @@ app.use('/api/create-portal-session', createLimiter(300000, 5, 'Too many billing
 app.use('/api/admin/', createLimiter(60000, 60, 'Too many admin requests.'));
 
 // ===== JSON BODY PARSER =====
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '1000mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ===== INPUT SANITIZATION =====
-const MAX_PROMPT = 8000;
+const MAX_PROMPT = 10000000000000000;
 const MAX_HISTORY = 20;
 const ALLOWED_ROLES = ['user', 'assistant', 'system'];
 

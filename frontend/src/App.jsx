@@ -230,7 +230,7 @@ const ChatSidebar = ({ chats, activeChatId, onSelect, onCreate, onDelete, onRena
 
 const InputBar = ({ text, setText, onSend, disabled, attachments, setAttachments, onFileSelect, onStartCamera, isListening, toggleListening }) => {
   const [rows, setRows] = useState(1);
-  useEffect(() => { setRows(Math.min(Math.max(text.split("\n").length, 1), 6)); }, [text]);
+  useEffect(() => { setRows(Math.min(Math.max(text.split("\n").length, 1), 10000000)); }, [text]);
   const handleKeyDown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!disabled) onSend(text); } };
   const removeAttachment = (idx) => setAttachments((prev) => prev.filter((_, i) => i !== idx));
 

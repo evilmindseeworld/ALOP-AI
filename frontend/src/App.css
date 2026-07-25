@@ -326,33 +326,32 @@ textarea:focus-visible {
   pointer-events: none;
 }
 
+
 .brand {
   flex: 1;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 10px;
   padding-left: 0;
 }
 
-.main-title {
-  margin: 0;
-  font-family: var(--font-heading);
-  font-size: 16px;
-  font-weight: 600;
-  letter-spacing: -0.2px;
-  color: var(--text);
-  user-select: none;
-}
-
-.sub-title {
-  font-size: 11px;
-  color: var(--text-subtle);
-  font-weight: 500;
-  user-select: none;
-}
-
-.header-actions {
+.brand-text {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+}
+
+.header-logo {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  object-fit: contain;
+  flex-shrink: 0;
+  user-select: none;
+  transition: transform 0.25s var(--ease-spring);
+}
+
+.header-logo:hover {
+  transform: scale(1.1) rotate(-3deg);
 }
 
 /* ===== MAGNETIC ICON BUTTONS ===== */

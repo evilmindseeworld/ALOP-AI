@@ -3,7 +3,6 @@ import { ClerkProvider, SignIn, useUser, useAuth, SignOutButton } from "@clerk/r
 import "./App.css";
 import SignInPage from "./SignInPage";
 import MagneticButton from "./components/ui/MagneticButton";
-import BorderTrail from "./components/ui/BorderTrail";
 import TextShimmer from "./components/ui/TextShimmer";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
@@ -487,11 +486,16 @@ const AuthenticatedApp = () => {
         <header className="app-header">
           <button className="icon-btn mobile-only" onClick={() => setMobileSidebarOpen(true)} title="Chats"><Icon name="menu" size={20} /></button>
           <button className="icon-btn desktop-only" onClick={() => setSidebarCollapsed((c) => !c)} title="Chats"><Icon name="menu" size={20} /></button>
-          <div className="brand">
-            <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
-            <span className="sub-title">AI Council • {userPlan === "pro" ? "8 models" : "4 models"}</span>
+                    <div className="brand">
+            <img src="/logo.png" alt="" className="header-logo" />
+            <div className="brand-text">
+              <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
+              <span className="sub-title">
+                AI Council • {userPlan === "pro" ? "8 models" : "4 models"}
+              </span>
+            </div>
           </div>
-          <div className="header-actions">
+<div className="header-actions">
             {isAdmin && (
               <MagneticButton className={`icon-btn admin-btn ${showAdmin ? "active" : ""}`} onClick={() => { setShowAdmin((s) => !s); setShowSettings(false); }} ariaLabel="Admin">
                 <Icon name="crown" size={20} />
@@ -635,9 +639,18 @@ const AuthenticatedApp = () => {
                   </div>
                 ))}
               </div>
-              <BorderTrail className="input-bar-trail" isLoading={status === "loading" || status === "streaming"}>
-                <InputBar text={inputText} setText={setInputText} onSend={handleSend} disabled={status !== "idle"} attachments={attachments} setAttachments={setAttachments} onFileSelect={handleFileSelect} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} />
-              </BorderTrail>
+              <InputBar
+                text={inputText}
+                setText={setInputText}
+                onSend={handleSend}
+                disabled={status !== "idle"}
+                attachments={attachments}
+                setAttachments={setAttachments}
+                onFileSelect={handleFileSelect}
+                onStartCamera={startCamera}
+                isListening={isListening}
+                toggleListening={toggleListening}
+              />
             </div>
           </div>
         </div>

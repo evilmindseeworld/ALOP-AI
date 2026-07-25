@@ -43,8 +43,9 @@ const ALL_MODELS = [
   'gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5', 'minimax-m2.5',
   'kimi-k2.7-code', 'deepseek-v4-pro', 'kimi-k2.6',
   'glm-5.1', 'minimax-m3', 'minimax-m2.7',
-  'nemotron-3-super', 'nemotron-3-ultra', 'nemotron-3-nano'
+    'nemotron-3-super', 'nemotron-3-ultra'
 ];
+
 const OVERLAY_MODELS = ['deepseek-v4-pro', 'glm-5.2', 'kimi-k2.7-code'];
 
 // ===== DYNAMIC ROUTER =====
@@ -61,7 +62,7 @@ const classifyRequest = (text, userPlan) => {
 
   // Tier 1: Greeting (Instant)
   if (wordCount <= 4 && /hi|hello|hey|yo|sup|howdy|gm|good morning/i.test(lower)) {
-    return { models: filterByPlan(['nemotron-3-nano']), quorum: 1, whipMs: 5000, tokenLimit: 200, category: 'greeting' };
+    return { models: filterByPlan(['gemma4']), quorum: 1, whipMs: 5000, tokenLimit: 200, category: 'greeting' };
   }
 
   // Tier 2: Simple (Fast)

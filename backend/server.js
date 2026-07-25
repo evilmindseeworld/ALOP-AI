@@ -37,14 +37,7 @@ const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
-// ===== MODEL TIERS =====
-// Tier 1 - Lightning: instant, 4B params
-// Tier 2 - Light: fast, general purpose
-// Tier 3 - Medium: balanced speed/power
-// Tier 4 - Heavy: powerful reasoning
-// Tier 5 - Extreme: maximum capability
-
-const COUNCIL_WHIP_MS = parseInt(process.env.COUNCIL_WHIP_MS, 10) || 100000000000;
+// ===== MODEL CONFIG — 15 WORKING MODELS =====
 const COUNCIL_QUORUM = parseInt(process.env.COUNCIL_QUORUM, 10) || 4;
 const COUNCIL_TURBO = process.env.COUNCIL_TURBO === 'true';
 
@@ -53,48 +46,37 @@ const FREE_COUNCIL_MODELS = ['gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5'];
 const PRO_COUNCIL_MODELS = [
   'gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5',
   'kimi-k2.7-code', 'deepseek-v4-pro', 'kimi-k2.6', 'minimax-m3',
-  'mistral-large-3', 'deepseek-v4-flash', 'glm-5.1', 'minimax-m2.5',
-  'nemotron-3-super', 'gemini-3-flash-preview'
+  'deepseek-v4-flash', 'glm-5.1', 'minimax-m2.5',
+  'nemotron-3-super', 'nemotron-3-nano'
 ];
 
 const OVERLAY_MODELS = ['deepseek-v4-pro', 'glm-5.2', 'kimi-k2.7-code'];
 
+// ===== MODEL POOLS WITH EXTREME TIMEOUTS =====
 const MODEL_POOLS = {
-  // Tier 1 - Lightning: 1 model, 3s whip, 200 tokens
-  greeting: ['nemotron-3-nano'],
+  // Tier 1 - Lightning: instant
+  greeting: { models: ['nemotron-3-nano'], quorum: 1, whipMs: 3000, tokenLimit: 200 },
 
-  // Tier 2 - Light: 3 models, 5s whip, 400 tokens
-  simple: ['nemotron-3-nano', 'gemma4', 'qwen3.5'],
+  // Tier 2 - Light: fast
+  simple: { models: ['nemotron-3-nano', 'gemma4', 'qwen3.5'], quorum: 2, whipMs: 5000, tokenLimit: 500 },
+  default: { models: ['glm-5.2', 'gemma4', 'qwen3.5', 'deepseek-v4-flash', 'minimax-m2.5'], quorum: 3, whipMs: 8000, tokenLimit: 800 },
+  creative: { models: ['gemma4', 'kimi-k2.5', 'minimax-m2.5', 'glm-5.2', 'qwen3.5', 'minimax-m3'], quorum: 2, whipMs: 15000, tokenLimit: 800 },
 
-  // Tier 3 - Medium: 5 models, 8s whip, 600 tokens
-  default: ['glm-5.2', 'gemma4', 'qwen3.5', 'deepseek-v4-flash', 'minimax-m2.5'],
+  // Tier 3 - Medium: balanced
+  math: { models: ['deepseek-v4-pro', 'deepseek-v4-flash', 'kimi-k2.6', 'nemotron-3-super'], quorum: 2, whipMs: 30000, tokenLimit: 1000 },
 
-  // Tier 3-4 - Coding: 7 models, 10s whip, 800 tokens
-  coding: ['kimi-k2.7-code', 'deepseek-v4-pro', 'gpt-oss', 'gemini-3-flash-preview', 'kimi-k2.6', 'minimax-m2.7', 'minimax-m3'],
+  // Tier 4 - Heavy: powerful
+  coding: { models: ['kimi-k2.7-code', 'deepseek-v4-pro', 'kimi-k2.6', 'minimax-m2.7', 'minimax-m3', 'glm-5.1'], quorum: 2, whipMs: 60000, tokenLimit: 2000 },
+  reasoning: { models: ['deepseek-v4-pro', 'deepseek-v4-flash', 'kimi-k2.6', 'glm-5.1', 'minimax-m3', 'nemotron-3-super', 'nemotron-3-ultra'], quorum: 3, whipMs: 45000, tokenLimit: 1500 },
 
-  // Tier 4 - Math: 6 models, 8s whip, 600 tokens
-  math: ['deepseek-v4-pro', 'deepseek-v4-flash', 'kimi-k2.6', 'mistral-large-3', 'gemini-3-flash-preview', 'nemotron-3-super'],
+  // Tier 5 - Extreme: heaviest loads, no rush
+  essay: { models: ['deepseek-v4-pro', 'kimi-k2.6', 'minimax-m3', 'glm-5.1', 'nemotron-3-ultra', 'nemotron-3-super', 'gemma4', 'kimi-k2.5', 'qwen3.5'], quorum: 3, whipMs: 90000, tokenLimit: 3000 },
+  research: { models: ['deepseek-v4-pro', 'kimi-k2.6', 'nemotron-3-super', 'nemotron-3-ultra', 'minimax-m3', 'glm-5.1'], quorum: 3, whipMs: 90000, tokenLimit: 2500 },
+  document: { models: ['deepseek-v4-pro', 'kimi-k2.6', 'minimax-m3', 'nemotron-3-ultra', 'nemotron-3-super', 'glm-5.1', 'gemma4', 'kimi-k2.5', 'qwen3.5'], quorum: 3, whipMs: 90000, tokenLimit: 3000 },
 
-  // Tier 2-3 - Creative: 6 models, 7s whip, 500 tokens
-  creative: ['gemma4', 'kimi-k2.5', 'minimax-m2.5', 'glm-5.2', 'qwen3.5', 'minimax-m3'],
-
-  // Tier 4 - Reasoning: 9 models, 10s whip, 700 tokens
-  reasoning: ['deepseek-v4-pro', 'deepseek-v4-flash', 'kimi-k2.6', 'glm-5.1', 'minimax-m3', 'nemotron-3-super', 'nemotron-3-ultra', 'mistral-large-3', 'gemini-3-flash-preview'],
-
-  // Tier 4-5 - Essay: 10 models, 12s whip, 1200 tokens
-  essay: ['deepseek-v4-pro', 'kimi-k2.6', 'minimax-m3', 'glm-5.1', 'mistral-large-3', 'nemotron-3-ultra', 'nemotron-3-super', 'gemma4', 'kimi-k2.5', 'qwen3.5'],
-
-  // Tier 4-5 - Research: 8 models, 12s whip, 1000 tokens
-  research: ['deepseek-v4-pro', 'kimi-k2.6', 'mistral-large-3', 'nemotron-3-super', 'nemotron-3-ultra', 'minimax-m3', 'gemini-3-flash-preview', 'glm-5.1'],
-
-  // Tier 4-5 - Project: 12 models, 14s whip, 1500 tokens
-  project: ['kimi-k2.7-code', 'deepseek-v4-pro', 'kimi-k2.6', 'minimax-m3', 'mistral-large-3', 'nemotron-3-super', 'nemotron-3-ultra', 'glm-5.1', 'gemini-3-flash-preview', 'gpt-oss', 'minimax-m2.7', 'deepseek-v4-flash'],
-
-  // Tier 4-5 - Document: 10 models, 12s whip, 1200 tokens
-  document: ['deepseek-v4-pro', 'kimi-k2.6', 'minimax-m3', 'mistral-large-3', 'nemotron-3-ultra', 'nemotron-3-super', 'glm-5.1', 'gemma4', 'kimi-k2.5', 'qwen3.5'],
-
-  // All 18 - Extreme: 15s whip, 1500 tokens
-  all: ['gemma4','qwen3.5','glm-5.2','kimi-k2.5','minimax-m2.5','kimi-k2.7-code','deepseek-v4-pro','deepseek-v4-flash','kimi-k2.6','glm-5.1','minimax-m3','minimax-m2.7','nemotron-3-super','nemotron-3-ultra','nemotron-3-nano','gpt-oss','gemini-3-flash-preview','mistral-large-3'],
+  // Tier 6 - MAXIMUM: extreme coding, no timeout pressure
+  project: { models: ['kimi-k2.7-code', 'deepseek-v4-pro', 'kimi-k2.6', 'minimax-m3', 'nemotron-3-super', 'nemotron-3-ultra', 'glm-5.1', 'minimax-m2.7', 'deepseek-v4-flash'], quorum: 4, whipMs: 120000, tokenLimit: 4000 },
+  complex: { models: ['gemma4','qwen3.5','glm-5.2','kimi-k2.5','minimax-m2.5','kimi-k2.7-code','deepseek-v4-pro','deepseek-v4-flash','kimi-k2.6','glm-5.1','minimax-m3','minimax-m2.7','nemotron-3-super','nemotron-3-ultra','nemotron-3-nano'], quorum: 4, whipMs: 120000, tokenLimit: 4000 },
 };
 
 // ===== SMART MODEL SELECTION =====
@@ -102,92 +84,94 @@ const classifyAndSelectModels = (text, userPlan) => {
   const lower = text.toLowerCase().trim();
   const wordCount = text.split(/\s+/).length;
 
-  const filterByPlan = (models) => {
-    if (userPlan === 'pro') return models;
+  const filterByPlan = (pool) => {
+    if (userPlan === 'pro') return pool;
     const freeSet = new Set(FREE_COUNCIL_MODELS);
-    const filtered = models.filter(m => freeSet.has(m));
+    const filtered = pool.filter(m => freeSet.has(m));
     return filtered.length > 0 ? filtered : FREE_COUNCIL_MODELS.slice(0, 3);
   };
 
-  // === TIER 1: GREETING — 1 lightning model, 3s ===
+  // TIER 1: GREETING
   const greetings = ['hi','hello','hey','yo','sup','howdy','gm','good morning','good afternoon','good evening','whats up',"what's up",'how are you','how r u','hey there','greetings'];
   if (wordCount <= 4 && greetings.some(g => lower === g || lower.startsWith(g + ' ') || lower.startsWith(g + '!'))) {
-    return { models: filterByPlan(MODEL_POOLS.greeting), quorum: 1, whipMs: 3000, category: 'greeting', tokenLimit: 200 };
+    const p = MODEL_POOLS.greeting;
+    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'greeting', tokenLimit: p.tokenLimit };
   }
 
-  // === TIER 4-5: PROJECT — 12 heavy models, 14s ===
+  // TIER 6: PROJECT — extreme coding, 2 min timeout
   const projectPatterns = ['build','create a','develop','architect','design a system','implement','project','application','platform','software','system design','database schema','api design','tech stack','infrastructure','scale','microservices','system architecture','develop a','build a','create an app','make an app','build me','develop me','startup','saas','full stack application','web app','mobile app','game','engine','compiler','interpreter','operating system','framework','orchestrate','end-to-end','production ready','scalable system','distributed system','concurrent','parallel computing'];
   if (projectPatterns.some(p => lower.includes(p)) && wordCount > 5) {
-    const pool = filterByPlan(MODEL_POOLS.project);
-    return { models: pool, quorum: Math.min(4, pool.length), whipMs: 14000, category: 'project', tokenLimit: 1500 };
+    const p = MODEL_POOLS.project;
+    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'project', tokenLimit: p.tokenLimit };
   }
 
-  // === TIER 4-5: DOCUMENT — 10 heavy models, 12s ===
+  // TIER 5: DOCUMENT
   const documentPatterns = ['document','summarize','report','white paper','specification','technical doc','write documentation','create a document','draft a','proposal','brief','memorandum','contract','policy','guideline','handbook','manual','standard operating','procedure','write a report','executive summary','meeting notes','minutes','spec','requirements document','design doc','architecture document'];
   if (documentPatterns.some(p => lower.includes(p))) {
-    const pool = filterByPlan(MODEL_POOLS.document);
-    return { models: pool, quorum: Math.min(3, pool.length), whipMs: 12000, category: 'document', tokenLimit: 1200 };
+    const p = MODEL_POOLS.document;
+    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'document', tokenLimit: p.tokenLimit };
   }
 
-  // === TIER 3-4: CODING — 7 models, 10s ===
+  // TIER 4: CODING
   const codingPatterns = ['code','program','function','script','app','website','bug','error','debug','api','database','sql','python','javascript','react','html','css','java','c++','rust','golang','typescript','node','npm','git','docker','kubernetes','algorithm','leetcode','compile','syntax','stack trace','import ','export ','class ','method','variable','array','object','json','regex','deploy','server','frontend','backend','fullstack','framework','library','package','module','component','hook','endpoint','rest api','graphql','auth','authentication','cors','webpack','vite','tauri','electron','shader','assembly','binary','pointer','memory leak','recursion','big o','design pattern','unit test','integration test','ci/cd','terraform','linux','bash','shell','powershell','command line','thread','async','await','promise','callback','websocket'];
   if (codingPatterns.some(p => lower.includes(p))) {
-    const pool = filterByPlan(MODEL_POOLS.coding);
-    return { models: pool, quorum: Math.min(2, pool.length), whipMs: 10000, category: 'coding', tokenLimit: 800 };
+    const p = MODEL_POOLS.coding;
+    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'coding', tokenLimit: p.tokenLimit };
   }
 
-  // === TIER 4-5: ESSAY — 10 models, 12s ===
+  // TIER 5: ESSAY
   const essayPatterns = ['essay','write a','write an','write me','article','blog post','story','poem','report','paper','thesis','dissertation','novel','chapter','summary','review','critique','argumentative','persuasive','narrative','descriptive','expository','speech','presentation','letter','email draft','cover letter','resume','cv','product description','marketing copy','social media post','caption','headline','slogan','tagline','screenplay','dialogue','monologue'];
   if (essayPatterns.some(p => lower.includes(p))) {
-    const pool = filterByPlan(MODEL_POOLS.essay);
-    return { models: pool, quorum: Math.min(3, pool.length), whipMs: 12000, category: 'essay', tokenLimit: 1200 };
+    const p = MODEL_POOLS.essay;
+    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'essay', tokenLimit: p.tokenLimit };
   }
 
-  // === TIER 4: MATH — 6 models, 8s ===
+  // TIER 3: MATH
   const mathPatterns = ['calculate','solve','equation','math','algebra','calculus','geometry','trigonometry','physics','chemistry','biology','statistics','probability','matrix','derivative','integral','theorem','proof','formula','logarithm','exponential','binomial','polynomial','factorial','permutation','combination','standard deviation','regression','correlation','hypothesis test','p-value','quantum','thermodynamics','electromagnetism','newton','relativity','organic chemistry','molecule','atom','electron','dna','rna','protein','cell','enzyme','photosynthesis'];
   if (mathPatterns.some(p => lower.includes(p))) {
-    const pool = filterByPlan(MODEL_POOLS.math);
-    return { models: pool, quorum: Math.min(2, pool.length), whipMs: 8000, category: 'math', tokenLimit: 600 };
+    const p = MODEL_POOLS.math;
+    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'math', tokenLimit: p.tokenLimit };
   }
 
-  // === TIER 2-3: CREATIVE — 6 models, 7s ===
+  // TIER 2: CREATIVE
   const creativePatterns = ['create','imagine','invent','design a','brainstorm','ideas for','name for','concept','character','world building','plot','theme','metaphor','simile','haiku','sonnet','lyrics','song','jingle','brand name','startup name','creative'];
   if (creativePatterns.some(p => lower.includes(p))) {
-    const pool = filterByPlan(MODEL_POOLS.creative);
-    return { models: pool, quorum: Math.min(2, pool.length), whipMs: 7000, category: 'creative', tokenLimit: 500 };
+    const p = MODEL_POOLS.creative;
+    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'creative', tokenLimit: p.tokenLimit };
   }
 
-  // === TIER 4-5: RESEARCH — 8 models, 12s ===
+  // TIER 5: RESEARCH
   const researchPatterns = ['research','analyze','investigate','study','examine','evaluate','assess','compare and contrast','pros and cons','advantages and disadvantages','literature review','case study','systematic review','meta-analysis','data analysis','trends','market research','competitive analysis','swot','feasibility','risk assessment'];
   if (researchPatterns.some(p => lower.includes(p))) {
-    const pool = filterByPlan(MODEL_POOLS.research);
-    return { models: pool, quorum: Math.min(3, pool.length), whipMs: 12000, category: 'research', tokenLimit: 1000 };
+    const p = MODEL_POOLS.research;
+    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'research', tokenLimit: p.tokenLimit };
   }
 
-  // === ALL 18: COMPLEX — 14s ===
+  // TIER 6: COMPLEX — all 15 models, 2 min timeout
   const complexPatterns = ['explain in detail','comprehensive','thorough','in depth','in-depth','step by step','deep dive','breakdown','everything about','all about','complete guide','detailed analysis','multi-faceted','elaborate extensively','walk me through','full explanation'];
   if (complexPatterns.some(p => lower.includes(p)) || wordCount > 80) {
-    const pool = filterByPlan(MODEL_POOLS.all);
-    return { models: pool, quorum: Math.min(COUNCIL_QUORUM, pool.length), whipMs: 15000, category: 'complex', tokenLimit: 1500 };
+    const p = MODEL_POOLS.complex;
+    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'complex', tokenLimit: p.tokenLimit };
   }
 
-  // === TIER 2: SIMPLE — 3 light models, 5s ===
+  // TIER 2: SIMPLE
   const simplePatterns = ['what is','who is','when did','where is','how many','define','translate','convert','spell','capital of','synonym','antonym','meaning of','what does','how to spell','plural of','past tense','abbreviation'];
   if (wordCount < 15 && simplePatterns.some(p => lower.includes(p))) {
-    const pool = filterByPlan(MODEL_POOLS.simple);
-    return { models: pool, quorum: 2, whipMs: 5000, category: 'simple', tokenLimit: 400 };
+    const p = MODEL_POOLS.simple;
+    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'simple', tokenLimit: p.tokenLimit };
   }
 
-  // === TIER 4: REASONING — 9 models, 10s ===
+  // TIER 4: REASONING
   const reasoningPatterns = ['why','how come','what happens if','consequences','implications','cause and effect','because','therefore','logical','deductive','inductive','reasoning','justify','rationale','explain why'];
   if (reasoningPatterns.some(p => lower.includes(p)) || wordCount > 25) {
-    const pool = filterByPlan(MODEL_POOLS.reasoning);
-    return { models: pool, quorum: Math.min(3, pool.length), whipMs: 10000, category: 'reasoning', tokenLimit: 700 };
+    const p = MODEL_POOLS.reasoning;
+    return { models: filterByPlan(p.models), quorum: p.quorum, whipMs: p.whipMs, category: 'reasoning', tokenLimit: p.tokenLimit };
   }
 
-  // === TIER 3: DEFAULT — 5 medium models, 8s ===
-  const defaultPool = filterByPlan(MODEL_POOLS.default);
-  return { models: defaultPool, quorum: Math.min(3, defaultPool.length), whipMs: COUNCIL_WHIP_MS, category: 'default', tokenLimit: 600 };
+  // DEFAULT
+  const p = MODEL_POOLS.default;
+  const defaultModels = filterByPlan(p.models);
+  return { models: defaultModels, quorum: p.quorum, whipMs: p.whipMs, category: 'default', tokenLimit: p.tokenLimit };
 };
 
 // ===== CORS =====
@@ -215,7 +199,7 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      connectSrc: ["'self'", process.env.FRONTEND_URL, 'https://*.clerk.com', 'https://*.stripe.com', 'https://api.openai.com'],
+      connectSrc: ["'self'", process.env.FRONTEND_URL, 'https://*.clerk.com', 'https://*.stripe.com'],
       scriptSrc: ["'self'", "'unsafe-inline'", 'https://*.clerk.com'],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
       imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'https://image.pollinations.ai'],
@@ -275,7 +259,7 @@ app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async
 
 // ===== PERFORMANCE =====
 app.use(compression());
-app.use(timeout('120s'));
+app.use(timeout('300s'));
 app.use((req, res, next) => { if (req.timedout) return res.status(503).json({ error: 'Request timeout' }); next(); });
 
 // ===== RATE LIMITING =====
@@ -292,7 +276,7 @@ const createLimiter = (windowMs, max, msg) => rateLimit({
 });
 
 app.use('/api/', createLimiter(60000, 120, 'Too many requests. Slow down.'));
-app.use('/api/council', createLimiter(60000, 15, 'Too many council requests. Wait a minute.'));
+app.use('/api/council', createLimiter(60000, 20, 'Too many council requests. Wait a minute.'));
 app.use('/api/vision', createLimiter(60000, 10, 'Too many vision requests. Wait a minute.'));
 app.use('/api/overlay', createLimiter(60000, 30, 'Too many overlay requests. Wait a minute.'));
 app.use('/api/image', createLimiter(60000, 10, 'Too many image requests. Wait a minute.'));
@@ -301,15 +285,23 @@ app.use('/api/create-portal-session', createLimiter(300000, 5, 'Too many billing
 app.use('/api/admin/', createLimiter(60000, 60, 'Too many admin requests.'));
 
 // ===== JSON BODY PARSER =====
-app.use(express.json({ limit: '1000mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // ===== INPUT SANITIZATION =====
-const MAX_PROMPT = 10000000000000000;
+const MAX_PROMPT = 100000;
 const MAX_HISTORY = 20;
 const ALLOWED_ROLES = ['user', 'assistant', 'system'];
 
 const sanitizeString = (str, max = 200) => typeof str === 'string' ? str.trim().slice(0, max) : '';
+
+const truncatePrompt = (text, maxChars = 90000) => {
+  if (text.length <= maxChars) return text;
+  const half = Math.floor(maxChars / 2);
+  const truncated = text.slice(0, half) + '\n\n[...content truncated for length...]\n\n' + text.slice(-half);
+  console.log(`[TRUNCATE] Original: ${text.length} chars → Truncated: ${truncated.length} chars`);
+  return truncated;
+};
 
 const validatePrompt = (p) => {
   if (!p || typeof p !== 'string') return { valid: false, error: 'Prompt is required' };
@@ -477,7 +469,7 @@ const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'imag
   return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 };
 
-const runCouncilWithWhip = async (models, messages, temperature = 0.6, whipMs = COUNCIL_WHIP_MS, quorum = COUNCIL_QUORUM, tokenLimit = 400) => {
+const runCouncilWithWhip = async (models, messages, temperature = 0.6, whipMs = 8000, quorum = 4, tokenLimit = 400) => {
   const results = [];
   let settledCount = 0, validCount = 0, resolved = false;
   return new Promise((resolve) => {
@@ -532,18 +524,22 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const councilModels = COUNCIL_TURBO ? selection.models.slice(0, 4) : selection.models;
     const whipMs = selection.whipMs;
     const quorum = selection.quorum;
-    const tokenLimit = isDetailed ? Math.max(selection.tokenLimit, 900) : selection.tokenLimit;
+    const tokenLimit = isDetailed ? Math.max(selection.tokenLimit, 1000) : selection.tokenLimit;
 
-    console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | ${councilModels.length} models | Q:${quorum} | ${whipMs}ms | ${tokenLimit}tok | cr:${creativity}`);
+    // Truncate long text to fit model context windows
+    const truncatedPrompt = truncatePrompt(pv.value);
+    const wasTruncated = truncatedPrompt.length < pv.value.length;
+
+    console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | ${councilModels.length} models | Q:${quorum} | ${whipMs}ms | ${tokenLimit}tok | cr:${creativity} | truncated:${wasTruncated}`);
 
     const councilMessages = [
-      { role: 'system', content: `You are one expert voice in the ALOP-AI Council of ${councilModels.length} models answering a ${selection.category} question. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}` },
+      { role: 'system', content: `You are one expert voice in the ALOP-AI Council of ${councilModels.length} models answering a ${selection.category} question. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}${wasTruncated ? ' The user input was truncated due to length.' : ''}` },
       ...(Array.isArray(hv) ? hv : hv.value || []).slice(-6),
-      { role: 'user', content: pv.value }
+      { role: 'user', content: truncatedPrompt }
     ];
 
     const validResponses = await runCouncilWithWhip(councilModels, councilMessages, creativity, whipMs, quorum, tokenLimit);
-    if (validResponses.length === 0) return res.status(500).json({ error: 'All council models failed to respond' });
+    if (validResponses.length === 0) return res.status(500).json({ error: 'All council models failed to respond. Try shorter text.' });
 
     let webContext = '';
     if (userPlan === 'pro' && needsRealTimeSearch(pv.value)) {
@@ -553,7 +549,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
 
     const synthMessages = [
       { role: 'system', content: isDetailed ? 'Synthesize expert responses into a detailed, well-structured answer. Cite sources naturally.' : 'Synthesize expert responses into a concise, accurate final answer.' },
-      { role: 'user', content: `User question: ${pv.value}${webContext}\n\nExpert responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}` }
+      { role: 'user', content: `User question: ${truncatedPrompt}${webContext}\n\nExpert responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}` }
     ];
 
     res.setHeader('Content-Type', 'text/event-stream');
@@ -563,7 +559,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     await streamModel(res, 'glm-5.2', synthMessages, isDetailed ? 0.5 : 0.35);
     if (!res.writableEnded) res.end();
 
-    await auditLog(user.id, 'council_message', { plan: userPlan, category: selection.category, models: councilModels.length });
+    await auditLog(user.id, 'council_message', { plan: userPlan, category: selection.category, models: councilModels.length, truncated: wasTruncated });
   } catch (err) {
     console.error('Council error:', err.message);
     Sentry.captureException(err);
@@ -656,7 +652,7 @@ app.put('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, re
     if (title !== undefined) payload.title = sanitizeString(title, 120);
     if (messages !== undefined) {
       if (!Array.isArray(messages)) return res.status(400).json({ error: 'Messages must be an array' });
-      payload.messages = messages.slice(0, 200).map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content.slice(0, 10000) : '', ts: m.ts, id: m.id }));
+      payload.messages = messages.slice(0, 200).map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content.slice(0, 100000) : '', ts: m.ts, id: m.id }));
     }
     const { error } = await supabase.from('chats').update(payload).eq('id', req.params.id).eq('user_id', user.id);
     if (error) throw error;
@@ -790,6 +786,7 @@ app.use((err, req, res, next) => {
 const server = app.listen(PORT, () => {
   console.log(`ALOP-AI backend running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Models: 15 working | Pools: 12 categories | Max timeout: 120s`);
 });
 
 process.on('SIGTERM', () => { console.log('[SHUTDOWN] SIGTERM'); server.close(() => process.exit(0)); });

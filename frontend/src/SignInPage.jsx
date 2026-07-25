@@ -14,10 +14,10 @@ export default function SignInPage() {
 
       <div className="signin-wrap">
         <div className="signin-brand">
-                   <div className="signin-logo-mark">
+          <div className="signin-logo-mark">
             <img src="/logo.png" alt="ALOP-AI" />
-          </div> 
-<span className="signin-logo-text">ALOP-AI</span>
+          </div>
+          <span className="signin-logo-text">ALOP-AI</span>
           <div className="signin-status">
             <span className="signin-status-dot" />
             <span>ONLINE</span>

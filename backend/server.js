@@ -44,7 +44,7 @@ const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 // Tier 4 - Heavy: powerful reasoning
 // Tier 5 - Extreme: maximum capability
 
-const COUNCIL_WHIP_MS = parseInt(process.env.COUNCIL_WHIP_MS, 10) || 8000;
+const COUNCIL_WHIP_MS = parseInt(process.env.COUNCIL_WHIP_MS, 10) || 100000000000;
 const COUNCIL_QUORUM = parseInt(process.env.COUNCIL_QUORUM, 10) || 4;
 const COUNCIL_TURBO = process.env.COUNCIL_TURBO === 'true';
 

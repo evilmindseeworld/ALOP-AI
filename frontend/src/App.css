@@ -1782,3 +1782,245 @@ textarea:focus-visible {
 .setting-row .setting-label {
   margin-bottom: 0 !important;
 }
+
+/* ===== SKEUOMORPHISM ===== */
+
+/* Raised header */
+.app-header {
+  box-shadow:
+    0 1px 0 rgba(255, 235, 224, 0.04) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+    0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  border-top-color: rgba(255, 235, 224, 0.06) !important;
+  border-bottom-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Recessed sidebar */
+.sidebar {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.3),
+    inset 0 -1px 0 rgba(255, 235, 224, 0.03),
+    0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  border-top-color: rgba(255, 235, 224, 0.05) !important;
+}
+
+/* Paper-like chat surface */
+.chat-main {
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.25),
+    0 4px 12px rgba(0, 0, 0, 0.3) !important;
+  border-top-color: rgba(255, 235, 224, 0.05) !important;
+}
+
+/* 3D raised new chat button */
+.new-chat-btn {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.15) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset,
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 4px 8px var(--primary-glow) !important;
+}
+
+.new-chat-btn:active {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3) inset,
+    0 -1px 0 rgba(255, 255, 255, 0.05) inset !important;
+  transform: translateY(1px) !important;
+}
+
+/* Raised icon buttons */
+.icon-btn {
+  box-shadow:
+    0 1px 0 rgba(255, 235, 224, 0.04) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset,
+    0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.icon-btn:active {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3) inset !important;
+  transform: translateY(1px) !important;
+}
+
+/* Recessed input bar */
+.input-bar {
+  box-shadow:
+    inset 0 1px 3px rgba(0, 0, 0, 0.3),
+    inset 0 -1px 0 rgba(255, 235, 224, 0.03),
+    0 2px 8px rgba(0, 0, 0, 0.3) !important;
+  border-top-color: rgba(0, 0, 0, 0.4) !important;
+  border-bottom-color: rgba(255, 235, 224, 0.03) !important;
+}
+
+/* Physical message cards */
+.bubble {
+  box-shadow:
+    0 1px 0 rgba(255, 235, 224, 0.03) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset,
+    0 2px 6px rgba(0, 0, 0, 0.25) !important;
+  border-top: 1px solid rgba(255, 235, 224, 0.04) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Realistic toggle */
+.theme-toggle {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.3),
+    0 1px 0 rgba(255, 235, 224, 0.03) inset !important;
+  border-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+.theme-toggle-switch {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+}
+
+.theme-toggle-switch::after {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Floating side panel */
+.side-panel {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 235, 224, 0.04),
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Raised pricing cards */
+.pricing-card {
+  box-shadow:
+    0 1px 0 rgba(255, 235, 224, 0.03) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset,
+    0 2px 6px rgba(0, 0, 0, 0.25) !important;
+  border-top: 1px solid rgba(255, 235, 224, 0.04) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Raised theme cards */
+.theme-card {
+  box-shadow:
+    0 1px 0 rgba(255, 235, 224, 0.03) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset,
+    0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  border-top: 1px solid rgba(255, 235, 224, 0.03) !important;
+}
+
+.theme-card:active {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  transform: translateY(1px) !important;
+}
+
+/* Raised admin cards */
+.admin-user-card {
+  box-shadow:
+    0 1px 0 rgba(255, 235, 224, 0.03) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset,
+    0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Recessed scrollbar */
+::-webkit-scrollbar-track {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Raised send button */
+.input-btn.primary {
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.15) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset,
+    0 2px 6px var(--primary-glow) !important;
+}
+
+.input-btn.primary:active {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  transform: scale(0.92) !important;
+}
+
+/* Raised input buttons */
+.input-btn {
+  box-shadow:
+    0 1px 0 rgba(255, 235, 224, 0.03) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.15) inset;
+}
+
+.input-btn:active {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Recessed creativity slider */
+.creativity-track {
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.creativity-fill::after {
+  box-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.3),
+    0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Raised avatar */
+.avatar {
+  box-shadow:
+    0 1px 0 rgba(255, 235, 224, 0.04) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset,
+    0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Raised toast */
+.toast {
+  box-shadow:
+    0 1px 0 rgba(255, 235, 224, 0.04) inset,
+    0 -1px 0 rgba(0, 0, 0, 0.2) inset,
+    0 8px 24px rgba(0, 0, 0, 0.4) !important;
+  border-top-color: rgba(255, 235, 224, 0.05) !important;
+}
+
+/* Chat item pressed in */
+.chat-item.active {
+  box-shadow:
+    inset 0 1px 2px rgba(0, 0, 0, 0.2),
+    inset 0 -1px 0 rgba(255, 235, 224, 0.02) !important;
+}
+
+/* ===== ANIME.JS PERFORMANCE ===== */
+.empty-logo { will-change: transform; touch-action: none; }
+.msg-row { will-change: transform, opacity; }
+.new-chat-btn, .input-btn.primary { will-change: transform; }
+
+/* ===== FIX: HEADER HORIZONTAL ===== */
+.header-actions {
+  display: flex !important;
+  flex-direction: row !important;
+  gap: 8px !important;
+  flex-shrink: 0 !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+}
+
+/* ===== FIX: SETTINGS ROWS HORIZONTAL ===== */
+.setting-row {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 12px !important;
+}
+
+.setting-row .setting-label {
+  margin-bottom: 0 !important;
+  white-space: nowrap !important;
+}
+
+.setting-row .theme-card {
+  width: auto !important;
+}
+
+/* ===== REMOVE OLD CSS MSG ANIMATION ===== */
+.msg-row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 22px;
+  animation: none !important;
+}

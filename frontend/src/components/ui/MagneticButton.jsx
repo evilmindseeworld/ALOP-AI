@@ -25,9 +25,10 @@ export default function MagneticButton({ children, className = "", onClick, disa
       disabled={disabled}
       aria-label={ariaLabel}
       className={className}
+      style={{ display: "inline-flex" }}
       animate={{ x: position.x, y: position.y }}
       transition={{ type: "spring", stiffness: 150, damping: 12, mass: 0.1 }}
-      whileTap={{ scale: 0.95 }}
+      whileTap={{ scale: 0.92 }}
     >
       {children}
     </motion.button>

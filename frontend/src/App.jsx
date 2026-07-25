@@ -4,6 +4,9 @@ import "./App.css";
 import SignInPage from "./SignInPage";
 import MagneticButton from "./components/ui/MagneticButton";
 import TextShimmer from "./components/ui/TextShimmer";
+import { animate, createScope, spring, createDraggable, stagger } from 'animejs';
+import BorderTrail from "./components/ui/BorderTrail";
+import { animate, createScope, spring, createDraggable } from "animejs";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
 
@@ -312,7 +315,109 @@ const AuthenticatedApp = () => {
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); }, [toast]);
   useEffect(() => { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [chats, activeChatId]);
 
-  const api = async (path, options = {}) => {
+  // Anime.js: draggable logo + spring messages + elastic buttons
+  useEffect(() => {
+    if (!chatRef.current) return;
+
+    if (activeMessages.length === 0) {
+      const scope = createScope({ root: chatRef.current }).add(() => {
+        animate('.empty-logo', {
+          scale: [
+            { to: 1.08, ease: 'inOut(3)', duration: 400 },
+            { to: 1, ease: spring({ bounce: 0.7 }) }
+          ],
+          loop: true,
+          loopDelay: 1200,
+        });
+
+        createDraggable('.empty-logo', {
+          container: [0, 0, 0, 0],
+          releaseEase: spring({ bounce: 0.8 }),
+        });
+      });
+
+      return () => scope.revert();
+    }
+
+    const msgs = chatRef.current.querySelectorAll('.msg-row');
+    if (msgs.length > 0) {
+      animate(msgs[msgs.length - 1], {
+        opacity: [0, 1],
+        translateY: [16, 0],
+        scale: [0.97, 1],
+        ease: spring({ bounce: 0.3, stiffness: 120 }),
+        duration: 700,
+      });
+    }
+  }, [activeMessages]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      const btn = e.target.closest('.input-btn.primary, .new-chat-btn, .overlay-submit');
+      if (!btn) return;
+      animate(btn, {
+        scale: [
+          { to: 0.9, duration: 80 },
+          { to: 1, ease: spring({ bounce: 0.6 }) }
+        ],
+      });
+    };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, []);
+
+
+  cons  // Anime.js: draggable logo + spring messages + elastic buttons
+  useEffect(() => {
+    if (!chatRef.current) return;
+
+    if (activeMessages.length === 0) {
+      const scope = createScope({ root: chatRef.current }).add(() => {
+        animate('.empty-logo', {
+          scale: [
+            { to: 1.08, ease: 'inOut(3)', duration: 400 },
+            { to: 1, ease: spring({ bounce: 0.7 }) }
+          ],
+          loop: true,
+          loopDelay: 1200,
+        });
+
+        createDraggable('.empty-logo', {
+          container: [0, 0, 0, 0],
+          releaseEase: spring({ bounce: 0.8 }),
+        });
+      });
+
+      return () => scope.revert();
+    }
+
+    const msgs = chatRef.current.querySelectorAll('.msg-row');
+    if (msgs.length > 0) {
+      animate(msgs[msgs.length - 1], {
+        opacity: [0, 1],
+        translateY: [16, 0],
+        scale: [0.97, 1],
+        ease: spring({ bounce: 0.3, stiffness: 120 }),
+        duration: 700,
+      });
+    }
+  }, [activeMessages]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      const btn = e.target.closest('.input-btn.primary, .new-chat-btn, .overlay-submit');
+      if (!btn) return;
+      animate(btn, {
+        scale: [
+          { to: 0.9, duration: 80 },
+          { to: 1, ease: spring({ bounce: 0.6 }) }
+        ],
+      });
+    };
+    document.addEventListener('click', handler);
+    return () => document.removeEventListener('click', handler);
+  }, []);
+t api = async (path, options = {}) => {
     const token = await getToken();
     return fetch(`${API_BASE}${path}`, { ...options, headers: { ...options.headers, Authorization: `Bearer ${token}`, "Content-Type": "application/json" } });
   };

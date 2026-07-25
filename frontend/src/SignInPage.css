@@ -4,29 +4,8 @@
   z-index: 300;
   background: #1b120c;
   background-image:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px, transparent 2px,
-      rgba(200, 160, 110, 0.055) 2px, rgba(200, 160, 110, 0.055) 3px,
-      transparent 3px, transparent 6px,
-      rgba(160, 115, 78, 0.038) 6px, rgba(160, 115, 78, 0.038) 7px,
-      transparent 7px, transparent 11px,
-      rgba(180, 140, 92, 0.028) 11px, rgba(180, 140, 92, 0.028) 13px,
-      transparent 13px, transparent 19px,
-      rgba(140, 100, 65, 0.02) 19px, rgba(140, 100, 65, 0.02) 21px
-    ),
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px, transparent 35px,
-      rgba(115, 80, 50, 0.035) 35px, rgba(115, 80, 50, 0.035) 42px,
-      transparent 42px, transparent 70px,
-      rgba(145, 105, 72, 0.025) 70px, rgba(145, 105, 72, 0.025) 76px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      transparent 0px, transparent 45px,
-      rgba(125, 88, 57, 0.015) 45px, rgba(125, 88, 57, 0.015) 48px
-    );
+    repeating-linear-gradient(90deg, transparent 0px, transparent 2px, rgba(200,160,110,0.055) 2px, rgba(200,160,110,0.055) 3px, transparent 3px, transparent 6px, rgba(160,115,78,0.038) 6px, rgba(160,115,78,0.038) 7px, transparent 7px, transparent 11px, rgba(180,140,92,0.028) 11px, rgba(180,140,92,0.028) 13px, transparent 13px, transparent 19px, rgba(140,100,65,0.02) 19px, rgba(140,100,65,0.02) 21px),
+    repeating-linear-gradient(90deg, transparent 0px, transparent 35px, rgba(115,80,50,0.035) 35px, rgba(115,80,50,0.035) 42px, transparent 42px, transparent 70px, rgba(145,105,72,0.025) 70px, rgba(145,105,72,0.025) 76px);
   overflow-y: auto;
   min-height: 100vh;
   font-family: 'Switzer', -apple-system, sans-serif;
@@ -84,7 +63,7 @@
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 420px;
+  max-width: 440px;
   margin: 0 auto;
   padding: 60px 20px;
   min-height: 100vh;
@@ -92,7 +71,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 20px;
+  gap: 18px;
   animation: signinFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -116,9 +95,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 28px rgba(236, 125, 150, 0.25);
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset, 0 -1px 0 rgba(0,0,0,0.2) inset, 0 8px 28px rgba(236,125,150,0.25);
   overflow: visible;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.signin-logo-mark:hover {
+  transform: scale(1.08) rotate(-3deg);
 }
 
 .signin-logo-mark img {
@@ -126,10 +109,6 @@
   height: 100%;
   object-fit: cover;
   border-radius: 14px;
-}
-
-.signin-logo-mark:hover {
-  transform: scale(1.08) rotate(-3deg);
 }
 
 .signin-logo-text {
@@ -147,14 +126,14 @@
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
   color: #5ec998;
-  background: rgba(37, 25, 18, 0.8);
-  background-image: repeating-linear-gradient(90deg, transparent 0px, transparent 3px, rgba(200, 160, 110, 0.03) 3px, rgba(200, 160, 110, 0.03) 4px);
-  border: 1px solid rgba(250, 240, 230, 0.06);
+  background: rgba(37,25,18,0.8);
+  background-image: repeating-linear-gradient(90deg, transparent 0px, transparent 3px, rgba(200,160,110,0.03) 3px, rgba(200,160,110,0.03) 4px);
+  border: 1px solid rgba(250,240,230,0.06);
+  box-shadow: 0 1px 0 rgba(255,235,224,0.03) inset, 0 -1px 0 rgba(0,0,0,0.2) inset;
   border-radius: 999px;
   padding: 5px 10px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  margin-left: 4px;
 }
 
 .signin-status-dot {
@@ -166,8 +145,8 @@
 }
 
 @keyframes dotPulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(94, 201, 152, 0.5); }
-  50% { opacity: 0.4; box-shadow: 0 0 0 6px rgba(94, 201, 152, 0); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(94,201,152,0.5); }
+  50% { opacity: 0.4; box-shadow: 0 0 0 6px rgba(94,201,152,0); }
 }
 
 .signin-title {
@@ -186,45 +165,62 @@
   line-height: 1.65;
   color: #d4b896;
   text-align: center;
-  margin: 0 0 8px;
-  max-width: 340px;
+  margin: 0;
+  max-width: 360px;
+}
+
+.signin-features {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 360px;
+}
+
+.signin-feature {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  color: #d4b896;
+  background: rgba(37,25,18,0.6);
+  border: 1px solid rgba(250,240,230,0.04);
+  border-radius: 12px;
+  padding: 10px 14px;
+  box-shadow: 0 1px 0 rgba(255,235,224,0.03) inset, 0 -1px 0 rgba(0,0,0,0.15) inset, 0 1px 3px rgba(0,0,0,0.2);
+  backdrop-filter: blur(12px);
+  transition: all 0.2s ease;
+}
+
+.signin-feature:hover {
+  background: rgba(46,33,24,0.7);
+  transform: translateY(-1px);
+  box-shadow: 0 1px 0 rgba(255,235,224,0.04) inset, 0 -1px 0 rgba(0,0,0,0.15) inset, 0 3px 8px rgba(0,0,0,0.25);
+}
+
+.signin-feature span {
+  font-size: 16px;
 }
 
 .signin-card {
   width: 100%;
-  background: rgba(37, 25, 18, 0.9);
-  background-image:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px, transparent 3px,
-      rgba(200, 160, 110, 0.028) 3px, rgba(200, 160, 110, 0.028) 4px,
-      transparent 4px, transparent 8px,
-      rgba(160, 115, 78, 0.018) 8px, rgba(160, 115, 78, 0.018) 10px,
-      transparent 10px, transparent 16px
-    );
-  border: 1px solid rgba(250, 240, 230, 0.06);
+  max-width: 360px;
+  background: rgba(37,25,18,0.9);
+  background-image: repeating-linear-gradient(90deg, transparent 0px, transparent 3px, rgba(200,160,110,0.028) 3px, rgba(200,160,110,0.028) 4px, transparent 4px, transparent 8px, rgba(160,115,78,0.018) 8px, rgba(160,115,78,0.018) 10px, transparent 10px, transparent 16px);
+  border: 1px solid rgba(250,240,230,0.06);
+  border-top-color: rgba(250,240,230,0.08);
+  border-bottom-color: rgba(0,0,0,0.4);
   border-radius: 20px;
   padding: 24px;
   backdrop-filter: blur(24px);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-  position: relative;
-}
-
-.signin-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 30px;
-  right: 30px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(236, 125, 150, 0.3), rgba(94, 201, 152, 0.2), transparent);
-  border-radius: 999px;
-  pointer-events: none;
+  box-shadow: 0 1px 0 rgba(250,240,230,0.04) inset, 0 -1px 0 rgba(0,0,0,0.3) inset, 0 20px 50px rgba(0,0,0,0.5);
 }
 
 .signin-card-inner {
-  background: rgba(27, 18, 12, 0.5);
-  border: 1px solid rgba(250, 240, 230, 0.04);
+  background: rgba(27,18,12,0.5);
+  border: 1px solid rgba(250,240,230,0.04);
+  border-top-color: rgba(0,0,0,0.3);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
   border-radius: 14px;
   padding: 18px;
 }
@@ -239,7 +235,9 @@
   color: #9c8770;
 }
 
-.signin-dot { color: rgba(250, 240, 230, 0.1); }
+.signin-dot {
+  color: rgba(250,240,230,0.1);
+}
 
 .signin-links {
   display: flex;
@@ -257,9 +255,11 @@
   transition: color 0.15s;
 }
 
-.signin-links a:hover { color: #ec7d96; }
+.signin-links a:hover {
+  color: #ec7d96;
+}
 
-/* ===== CLERK FORM OVERRIDES ===== */
+/* Clerk overrides */
 .signin-card-inner .cl-formButtonPrimary {
   width: 100% !important;
   background: linear-gradient(135deg, #ec7d96, #f4a4b5) !important;
@@ -270,29 +270,32 @@
   border-radius: 12px !important;
   padding: 12px !important;
   border: none !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset, 0 -1px 0 rgba(0,0,0,0.2) inset, 0 4px 12px rgba(236,125,150,0.2) !important;
   transition: all 0.2s ease !important;
 }
 
 .signin-card-inner .cl-formButtonPrimary:hover {
   transform: translateY(-1px) !important;
-  box-shadow: 0 8px 24px rgba(236, 125, 150, 0.25) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset, 0 -1px 0 rgba(0,0,0,0.2) inset, 0 8px 24px rgba(236,125,150,0.25) !important;
 }
 
 .signin-card-inner .cl-formButtonPrimary:active {
   transform: scale(0.98) !important;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.3) !important;
 }
 
 .signin-card-inner .cl-socialButtonsBlockButton {
-  background: rgba(46, 33, 24, 0.8) !important;
-  border: 1px solid rgba(250, 240, 230, 0.05) !important;
+  background: rgba(46,33,24,0.8) !important;
+  border: 1px solid rgba(250,240,230,0.05) !important;
   border-radius: 12px !important;
   color: #faf0e6 !important;
+  box-shadow: 0 1px 0 rgba(250,240,230,0.03) inset, 0 -1px 0 rgba(0,0,0,0.15) inset !important;
   transition: all 0.2s ease !important;
 }
 
 .signin-card-inner .cl-socialButtonsBlockButton:hover {
-  background: rgba(58, 43, 31, 0.8) !important;
-  border-color: rgba(250, 240, 230, 0.1) !important;
+  background: rgba(58,43,31,0.8) !important;
+  border-color: rgba(250,240,230,0.1) !important;
   transform: translateY(-1px) !important;
 }
 
@@ -312,18 +315,19 @@
 }
 
 .signin-card-inner .cl-input {
-  background: rgba(46, 33, 24, 0.8) !important;
-  border: 1px solid rgba(250, 240, 230, 0.05) !important;
+  background: rgba(46,33,24,0.8) !important;
+  border: 1px solid rgba(250,240,230,0.05) !important;
   border-radius: 12px !important;
   color: #faf0e6 !important;
   padding: 11px 13px !important;
   font-size: 14px !important;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2) !important;
   transition: all 0.2s ease !important;
 }
 
 .signin-card-inner .cl-input:focus {
-  border-color: rgba(236, 125, 150, 0.3) !important;
-  box-shadow: 0 0 0 3px rgba(236, 125, 150, 0.08) !important;
+  border-color: rgba(236,125,150,0.3) !important;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 0 0 3px rgba(236,125,150,0.08) !important;
 }
 
 .signin-card-inner .cl-footerActionLink {

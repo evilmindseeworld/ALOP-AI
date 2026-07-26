@@ -2024,3 +2024,14 @@ textarea:focus-visible {
   margin-bottom: 22px;
   animation: none !important;
 }
+
+/* ===== FIX: TYPING INDICATOR HORIZONTAL ===== */
+.typing-bubble {
+  flex-direction: row !important;
+  white-space: nowrap !important;
+}
+
+.typing-text {
+  white-space: nowrap !important;
+  display: inline-block;
+}

@@ -61,21 +61,21 @@ const classifyRequest = (text, userPlan) => {
 
   // Tier 1: Greeting (Instant)
   if (wordCount <= 4 && /hi|hello|hey|yo|sup|howdy|gm|good morning/i.test(lower)) {
-    return { models: filterByPlan(['gpt-oss']), quorum: 1, whipMs: 5000, tokenLimit: 200, category: 'greeting' };
+    return { models: filterByPlan(['gpt-oss']), quorum: 1, whipMs: 10000, tokenLimit: 200, category: 'greeting' };
   }
 
   // Tier 2: Simple (Fast)
   if (wordCount < 15) {
-    return { models: filterByPlan(['gemma4', 'qwen3.5', 'glm-5.2']), quorum: 2, whipMs: 8000, tokenLimit: 500, category: 'simple' };
+    return { models: filterByPlan(['gemma4', 'qwen3.5', 'glm-5.2']), quorum: 2, whipMs: 20000, tokenLimit: 500, category: 'simple' };
   }
 
   // Tier 3: Complex/Project (All hands on deck, models self-select)
   if (wordCount > 50 || /detailed|comprehensive|essay|project|build|architecture|design|research/i.test(lower)) {
-    return { models: filterByPlan(ALL_MODELS), quorum: 3, whipMs: 15000, tokenLimit: 2000, category: 'complex' };
+    return { models: filterByPlan(ALL_MODELS), quorum: 3, whipMs: 45000, tokenLimit: 2000, category: 'complex' };
   }
 
   // Default: Medium
-  return { models: filterByPlan(ALL_MODELS.slice(0, 8)), quorum: 3, whipMs: 10000, tokenLimit: 1000, category: 'default' };
+  return { models: filterByPlan(ALL_MODELS.slice(0, 8)), quorum: 3, whipMs: 30000, tokenLimit: 1000, category: 'default' };
 };
 
 // ===== CORS =====
@@ -382,7 +382,7 @@ const runCouncilWithWhip = async (models, messages, temperature, whipMs, quorum,
       callModel(model, messages, temperature, whipMs, tokenLimit)
         .then((content) => { 
           settledCount++; 
-          if (content?.trim().toUpperCase() === 'SKIP') {
+          if (content?.trim().toUpperCase().includes('SKIP')) {
             console.log(`[COUNCIL] ${model} opted out (SKIP).`);
           } else if (content?.trim().length > 3) { 
             validCount++; results.push({ model, content }); 
@@ -449,7 +449,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     }
 
     const councilMessages = [
-      { role: 'system', content: `You are an AI expert in the ALOP-AI Council. Analyze the user's request. If this request is NOT within your core expertise or capabilities, reply ONLY with the word "SKIP". Otherwise, provide a direct, expert response. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}` },
+      { role: 'system', content: `You are an AI expert in the ALOP-AI Council. Evaluate the user's request. If this request is outside your core expertise or you are not the best model to answer it, reply ONLY with the word "SKIP". If you choose to answer, provide a direct, expert response. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}` },
       ...(Array.isArray(hv) ? hv : hv.value || []).slice(-4),
       { role: 'user', content: truncatedPrompt }
     ];
@@ -462,7 +462,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       const fb = await callModel('glm-5.2', [
         { role: 'system', content: 'You are a helpful AI assistant. Answer the user\'s request directly.' },
         { role: 'user', content: truncatedPrompt }
-      ], creativity, 15000, selection.tokenLimit);
+      ], creativity, 45000, selection.tokenLimit);
       if (fb.trim()) validResponses.push({ model: 'Fallback', content: fb });
     }
 

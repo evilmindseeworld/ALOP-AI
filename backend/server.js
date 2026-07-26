@@ -458,16 +458,23 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     
     // 2. FALLBACK IF ALL MODELS SKIP OR FAIL
     if (validResponses.length === 0) {
-      console.log('[COUNCIL] No valid responses. Forcing fallback generalist.');
-      const fb = await callModel('glm-5.2', [
-        { role: 'system', content: 'You are a helpful AI assistant. Answer the user\'s request directly.' },
+      console.log('[COUNCIL] No valid responses. Streaming fallback generalist directly.');
+      const fallbackMessages = [
+        { role: 'system', content: 'You are a helpful AI assistant. Answer the user\'s request directly and concisely.' },
+        ...(Array.isArray(hv) ? hv : hv.value || []).slice(-4),
         { role: 'user', content: truncatedPrompt }
-      ], creativity, 45000, selection.tokenLimit);
-      if (fb.trim()) validResponses.push({ model: 'Fallback', content: fb });
+      ];
+      
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      await streamModel(res, 'glm-5.2', fallbackMessages, creativity);
+      if (!res.writableEnded) res.end();
+      await auditLog(user.id, 'council_message', { plan: userPlan, category: 'fallback', models: 1 });
+      return;
     }
 
-    if (validResponses.length === 0) return res.status(500).json({ error: 'All council models failed to respond.' });
-
+    
     let webContext = '';
     if (userPlan === 'pro' && needsRealTimeSearch(pv.value)) {
       const results = await searchBrave(pv.value);

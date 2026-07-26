@@ -395,7 +395,16 @@ const runCouncilWithWhip = async (models, messages, temperature, whipMs, quorum,
 };
 
 // ===== CLASSIFIERS =====
-const needsRealTimeSearch = (text) => ['today','now','currently','latest','news','score','weather','stock','price','who won','what happened','election','launched','released','update','breaking'].some(t => text.toLowerCase().includes(t));
+const needsRealTimeSearch = (text) => {
+  const lower = text.toLowerCase();
+  const triggers = [
+    'today', 'now', 'currently', 'latest', 'news', 'score', 'weather', 'stock', 'price',
+    'who won', 'what happened', 'election', 'launched', 'released', 'update', 'breaking',
+    'what do you think of', 'review', 'specs', 'vs', 'compare', 'best', 'should i buy', 'monitor', 'laptop', 'phone', 'gpu', 'cpu'
+  ];
+  return triggers.some((t) => lower.includes(t));
+};
+
 const wantsDetailedAnswer = (text) => ['explain in detail','detailed','in depth','comprehensive','thorough','step by step','deep dive','elaborate','full explanation'].some(t => text.toLowerCase().includes(t));
 
 const searchBrave = async (query) => {
@@ -474,9 +483,8 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       return;
     }
 
-    
     let webContext = '';
-    if (userPlan === 'pro' && needsRealTimeSearch(pv.value)) {
+    if (needsRealTimeSearch(pv.value)) {
       const results = await searchBrave(pv.value);
       if (results.length > 0) webContext = `\n\nReal-time web search results:\n${results.map((r, i) => `[Source ${i + 1}] ${r.title}\nURL: ${r.url}\n${r.description}`).join('\n\n')}`;
     }

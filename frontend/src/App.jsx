@@ -590,6 +590,7 @@ const AuthenticatedApp = () => {
                 {activeMessages.length === 0 && status === "idle" && (
                   <div className="empty-state">
                     <img src="/logo.png" alt="ALOP-AI" className="empty-logo" />
+                    <h2 className="empty-title text-shimmer">ALOP-AI</h2>
                     <p className="empty-subtitle">Ask the AI Council anything. Multiple models work together.</p>
                   </div>
                 )}
@@ -597,6 +598,13 @@ const AuthenticatedApp = () => {
                   <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
                     <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
                     <div className="msg-content">
+                      {msg.typing && (
+                        <div className="bubble typing-bubble">
+                          <span className="typing-dot"></span>
+                          <span className="typing-dot"></span>
+                          <span className="typing-dot"></span>
+                        </div>
+                      )}
                       {msg.content && !msg.typing && <div className="bubble">{msg.content}</div>}
                       {msg.imageUrl && (
                         <div style={{ marginTop: 8 }}>

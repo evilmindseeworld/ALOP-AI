@@ -597,14 +597,6 @@ const AuthenticatedApp = () => {
                   <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
                     <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
                     <div className="msg-content">
-                      {msg.typing && (
-                        <div className="bubble typing-bubble">
-                          <span className="typing-text">Council is thinking</span>
-                          <span className="typing-dot"></span>
-                          <span className="typing-dot"></span>
-                          <span className="typing-dot"></span>
-                        </div>
-                      )}
                       {msg.content && !msg.typing && <div className="bubble">{msg.content}</div>}
                       {msg.imageUrl && (
                         <div style={{ marginTop: 8 }}>

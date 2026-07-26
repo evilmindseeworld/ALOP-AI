@@ -61,7 +61,7 @@ const classifyRequest = (text, userPlan) => {
 
   // Tier 1: Greeting (Instant)
   if (wordCount <= 4 && /hi|hello|hey|yo|sup|howdy|gm|good morning/i.test(lower)) {
-    return { models: filterByPlan(['gemma4']), quorum: 1, whipMs: 5000, tokenLimit: 200, category: 'greeting' };
+    return { models: filterByPlan(['gpt-oss']), quorum: 1, whipMs: 5000, tokenLimit: 200, category: 'greeting' };
   }
 
   // Tier 2: Simple (Fast)

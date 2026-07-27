@@ -2062,3 +2062,54 @@ textarea:focus-visible {
   0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; }
   40% { transform: scale(1); opacity: 1; }
 }
+
+/* ===== OVERLAY UI UPDATE (Sakura Night + Skeuomorphic) ===== */
+.overlay-answer-card {
+  background: var(--surface) !important;
+  background-image: var(--woody) !important;
+  border: 1px solid var(--border-strong) !important;
+  color: var(--text) !important;
+  box-shadow: 0 1px 0 rgba(255, 235, 224, 0.04) inset, 0 -1px 0 rgba(0, 0, 0, 0.3) inset, 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+.overlay-bar {
+  background: var(--surface) !important;
+  background-image: var(--woody) !important;
+  border: 1px solid var(--border-strong) !important;
+  box-shadow: 0 1px 0 rgba(255, 235, 224, 0.04) inset, 0 -1px 0 rgba(0, 0, 0, 0.3) inset, 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+}
+
+.overlay-input {
+  color: var(--text) !important;
+}
+
+.overlay-input::placeholder {
+  color: var(--text-subtle) !important;
+}
+
+.overlay-icon {
+  background: var(--gradient-primary) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.15) inset, 0 -1px 0 rgba(0, 0, 0, 0.2) inset, 0 2px 6px var(--primary-glow) !important;
+}
+
+.overlay-action {
+  background: var(--surface-3) !important;
+  color: var(--text-muted) !important;
+  box-shadow: 0 1px 0 rgba(255, 235, 224, 0.03) inset, 0 -1px 0 rgba(0, 0, 0, 0.15) inset !important;
+}
+
+.overlay-action:hover {
+  background: var(--surface-4) !important;
+  color: var(--text) !important;
+}
+
+.overlay-submit {
+  background: var(--gradient-primary) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.15) inset, 0 -1px 0 rgba(0, 0, 0, 0.2) inset, 0 2px 6px var(--primary-glow) !important;
+}
+
+.overlay-thumb-pill {
+  background: var(--surface-3) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text-muted) !important;
+}

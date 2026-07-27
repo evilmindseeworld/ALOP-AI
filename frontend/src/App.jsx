@@ -4,6 +4,8 @@ import "./App.css";
 import SignInPage from "./SignInPage";
 import MagneticButton from "./components/ui/MagneticButton";
 import { animate, createScope, spring, createDraggable } from "animejs";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
 
@@ -605,7 +607,11 @@ const AuthenticatedApp = () => {
                           <span className="typing-dot"></span>
                         </div>
                       )}
-                      {msg.content && !msg.typing && <div className="bubble">{msg.content}</div>}
+                      {msg.content && !msg.typing && (
+  <div className="bubble markdown-body">
+    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+  </div>
+)}
                       {msg.imageUrl && (
                         <div style={{ marginTop: 8 }}>
                           <img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: "var(--radius-lg)", cursor: "pointer" }} onClick={() => window.open(msg.imageUrl, "_blank")} />

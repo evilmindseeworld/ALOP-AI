@@ -490,8 +490,8 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     }
 
     const synthMessages = [
-      { role: 'system', content: 'You are the Chief Synthesizer of the ALOP-AI Council. Combine the expert responses into a single, cohesive, and comprehensive answer. Remove redundancies. If experts disagree, present the different perspectives clearly. Do not mention the expert names.' },
-      { role: 'user', content: `User question: ${truncatedPrompt}${webContext}\n\nExpert responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}` }
+            { role: 'system', content: 'You are the Chief Synthesizer of the ALOP-AI Council. Combine the expert responses into a single, cohesive, and comprehensive answer. Remove redundancies. If experts disagree, present the different perspectives clearly. Do not mention the expert names. If web search results or product links are provided, format them as clickable Markdown links (e.g., [Product Name](https://...)). Use Markdown for formatting, including bold, lists, and links.' },
+{ role: 'user', content: `User question: ${truncatedPrompt}${webContext}\n\nExpert responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}` }
     ];
 
     res.setHeader('Content-Type', 'text/event-stream');

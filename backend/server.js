@@ -477,12 +477,11 @@ app.post('/api/vision', requireAuth, checkSuspended, async (req, res) => {
 });
 
 // ===== OVERLAY (bulletproof — never returns 500) =====
-app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
+app.post('/api/overlay', async (req, res) => {
   try {
     const { prompt, image, history = [] } = req.body;
     const pv = validatePrompt(prompt);
     if (!pv.valid) return res.status(400).json({ error: pv.error });
-    const user = await ensureUser(req.auth.userId);
 
     // Vision: only if API key set AND image provided AND not too large
     let ctx = '';
@@ -512,7 +511,7 @@ app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
       catch (e2) { console.error('[OVERLAY] gemma4 failed:', e2.message); answer = "I couldn't process that. Please try again."; }
     }
 
-    await auditLog(user.id, 'overlay', { vision: !!ctx });
+        console.log('[OVERLAY] Answered. Vision:', !!ctx);
     res.json({ answer: answer || "No response." });
   } catch (err) {
     console.error('Overlay error:', err.message);

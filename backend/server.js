@@ -431,7 +431,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
   try {
     const user = await ensureUser(req.auth.userId);
     const { message, history = [], chatId } = req.body;
-    const convCache = getConversationCache(chatId);
+        const convCache = getConversationCache(user.id);
     const pv = validatePrompt(message);
     if (!pv.valid) return res.status(400).json({ error: pv.error });
     const hv = validateHistory(history);
@@ -469,7 +469,7 @@ ${convCache?.summary ? `\nConversation summary: ${convCache.summary}` : ''}` },
       await streamModel(res, 'glm-5.2', memoryMessages, 0.0);
       if (!res.writableEnded) res.end();
 
-      if (chatId) updateConversationSummary(chatId, pv.value, 'Answered memory/reference question.').catch(() => {});
+      if (chatId) updateConversationSummary(user.id, pv.value, 'Answered memory/reference question.').catch(() => {});
       await auditLog(user.id, 'council_message', { plan: userPlan, category: 'memory_bypass', models: 1 });
       return;
     }
@@ -538,10 +538,7 @@ ABSOLUTE RULES:
       if (!res.writableEnded) res.end();
 
       // Update conversation cache
-      if (chatId) {
-        const lastAssistant = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
-        updateConversationSummary(chatId, pv.value, lastAssistant || 'Responded with search results.').catch(() => {});
-      }
+            updateConversationSummary(user.id, pv.value, histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || 'Responded with search results.').catch(() => {});
       await auditLog(user.id, 'council_message', { plan: userPlan, category: 'search_extraction', models: 1, sources: sources.length, images: images.length });
       return;
     }
@@ -560,7 +557,7 @@ ABSOLUTE RULES:
         res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
         await streamModel(res, 'glm-5.2', wikiMessages, 0.0);
         if (!res.writableEnded) res.end();
-        if (chatId) updateConversationSummary(chatId, pv.value, 'Responded with Wikipedia content.').catch(() => {});
+        if (chatId) updateConversationSummary(user.id, pv.value, 'Responded with Wikipedia content.').catch(() => {});
         await auditLog(user.id, 'council_message', { plan: userPlan, category: 'wiki', models: 1 });
         return;
       }
@@ -588,7 +585,7 @@ ABSOLUTE RULES:
       res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
       await streamModel(res, 'glm-5.2', fallbackMessages, 0.0);
       if (!res.writableEnded) res.end();
-      if (chatId) updateConversationSummary(chatId, pv.value, 'Responded via fallback.').catch(() => {});
+      if (chatId) updateConversationSummary(user.id, pv.value, 'Responded via fallback.').catch(() => {});
       await auditLog(user.id, 'council_message', { plan: userPlan, category: 'fallback', models: 1 });
       return;
     }
@@ -604,9 +601,9 @@ ABSOLUTE RULES:
     if (!res.writableEnded) res.end();
 
     // Update conversation cache
-    if (chatId) {
+    if (true) {
       const lastAssistant = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
-      updateConversationSummary(chatId, pv.value, lastAssistant || validResponses[0]?.content?.slice(0, 800) || 'Responded via council.').catch(() => {});
+      updateConversationSummary(user.id, pv.value, lastAssistant || validResponses[0]?.content?.slice(0, 800) || 'Responded via council.').catch(() => {});
     }
     await auditLog(user.id, 'council_message', { plan: userPlan, category: selection.category, models: validResponses.length, memory: false });
   } catch (err) {

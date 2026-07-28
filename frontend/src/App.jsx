@@ -312,8 +312,16 @@ const AuthenticatedApp = () => {
     <div className={`app-root ${darkMode ? "dark" : "light"}`}>
       <div className="bg-layer" /><div className="bg-overlay" />
              <div className="bg-overlay" />
-            <model-viewer src="/model.glb" orientation="90deg 0 0" class="earring-3d earring-left" style={{ width: '130px', height: '200px' }}></model-viewer>
-      <model-viewer src="/model.glb" orientation="90deg 0 0" class="earring-3d earring-right" style={{ width: '130px', height: '200px' }}></model-viewer>
+                  <div className="earring-wrap earring-wrap-left">
+        <div className="earring-chain"></div>
+        <div className="earring-hook"></div>
+        <model-viewer src="/model.glb" class="earring-3d" style={{ width: '170px', height: '240px' }} interaction-prompt="none"></model-viewer>
+      </div>
+      <div className="earring-wrap earring-wrap-right">
+        <div className="earring-chain"></div>
+        <div className="earring-hook"></div>
+        <model-viewer src="/model.glb" class="earring-3d" style={{ width: '170px', height: '240px' }} interaction-prompt="none"></model-viewer>
+      </div>
       {toast && <div className="toast">{toast}</div>}
       {showCamera && <div className="camera-overlay"><video ref={videoRef} autoPlay className="camera-video" /><canvas ref={canvasRef} style={{ display: "none" }} /><div className="camera-controls"><button onClick={capturePhoto} className="camera-btn primary">Capture</button><button onClick={stopCamera} className="camera-btn secondary">Cancel</button></div></div>}
       <div className="app-shell">

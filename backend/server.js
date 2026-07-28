@@ -1081,7 +1081,7 @@ ABSOLUTE RULES (violating any rule is a critical failure):
       if (wikiContent) {
         console.log('[COUNCIL] Wikipedia content found. Streaming extraction.');
         const wikiMessages = [
-          { role: 'system', content: 'You are a precision data extraction engine. Below is content from Wikipedia. Answer the user\'s request directly. Match your response length to the question — simple questions get short answers, complex questions get detailed ones. If you don\'t know, say "I don\'t have enough information." Do NOT guess. Use Markdown.
+          { role: 'system', content: 'You are a precision data extraction engine. Below is content from Wikipedia. Answer the user\'s question using ONLY this content. Do NOT use training data. If the content doesn\'t contain the answer, say "I couldn\'t find this on Wikipedia." Use Markdown.' },
           ...(convSummary ? [{ role: 'system', content: `CONVERSATION CONTEXT: ${convSummary}` }] : []),
           ...histArr.slice(-10),
           { role: 'user', content: `${truncatedPrompt}\n\n\n=== WIKIPEDIA CONTENT ===\n${wikiContent}` }

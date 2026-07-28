@@ -811,7 +811,7 @@ app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
       { role: 'system', content: 'Synthesize expert answers into one final, concise response. Prioritize accuracy. Do not add information not present in expert responses.' },
       { role: 'user', content: `Question: ${pv.value}\n\nExpert answers:\n${responses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}` }
     ];
-    const answer = await callGemini('glm-5.2', synth.map(m => `${m.role}: ${m.content}`).join('\n\n'), 1024);
+        const answer = await callModel('glm-5.2', synth, 0.0, 10000, 1024);
     await auditLog(user.id, 'overlay_request', { plan: user.plan });
     res.json({ answer });
   } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }

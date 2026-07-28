@@ -1049,7 +1049,7 @@ ABSOLUTE RULES (violating any rule is a critical failure):
 6. When mentioning a product, source, or article, include the URL as a Markdown link: [Title](URL)
 7. Do NOT invent specifications, prices, model numbers, features, or release dates that are not explicitly in the data.
 8. If a spec is mentioned in one source but contradicted in another, note the discrepancy and cite both sources.
-9. Format your response in clean Markdown with headers, bold text, bullet points, and tables where appropriate.
+9. 9. Format in clean Markdown. MATCH your answer length to the question. A simple question gets a 1-3 sentence answer. A complex question gets a detailed answer. An essay request gets a full essay. Do NOT pad answers with unnecessary introductions or conclusions. Get straight to the point.
 10. List your sources at the bottom of your response as clickable Markdown links under a "## Sources" heading.
 11. If images are provided in the data, embed the most relevant ones in your answer using Markdown image syntax: ![Description](image_url). Place images where they are contextually relevant.
 12. CONVERSATION CONTEXT and message history are EXEMPT from rules 1-5. Use them for continuity and referencing previous topics discussed.`
@@ -1081,7 +1081,7 @@ ABSOLUTE RULES (violating any rule is a critical failure):
       if (wikiContent) {
         console.log('[COUNCIL] Wikipedia content found. Streaming extraction.');
         const wikiMessages = [
-          { role: 'system', content: 'You are a precision data extraction engine. Below is content from Wikipedia. Answer the user\'s question using ONLY this content. Do NOT use training data. If the content doesn\'t contain the answer, say "I couldn\'t find this on Wikipedia." Use Markdown.' },
+          { role: 'system', content: 'You are a precision data extraction engine. Below is content from Wikipedia. Answer the user\'s request directly. Match your response length to the question — simple questions get short answers, complex questions get detailed ones. If you don\'t know, say "I don\'t have enough information." Do NOT guess. Use Markdown.
           ...(convSummary ? [{ role: 'system', content: `CONVERSATION CONTEXT: ${convSummary}` }] : []),
           ...histArr.slice(-10),
           { role: 'user', content: `${truncatedPrompt}\n\n\n=== WIKIPEDIA CONTENT ===\n${wikiContent}` }
@@ -1106,8 +1106,8 @@ ABSOLUTE RULES (violating any rule is a critical failure):
     const councilMessages = [
       {
         role: 'system',
-        content: `You are an elite AI expert in the ALOP-AI Council. Analyze the user's request. If this request is completely outside your core expertise or capabilities, reply ONLY with the word "SKIP". If you choose to answer, provide a direct, expert, and comprehensive response. Use Markdown for formatting (bold, lists, code blocks). If CONVERSATION CONTEXT or message history is provided, you MUST use it to maintain continuity and reference previous topics discussed. ${isDetailed ? 'Be extremely thorough and detailed.' : 'Be concise but complete.'}`
-      },
+        content: `You are an elite AI expert in the ALOP-AI Council. Analyze the user's request. If this request is completely outside your core expertise or capabilities, reply ONLY with the word "SKIP". If you choose to answer, be direct and match your response length to the question's complexity. Simple questions get short answers. Complex questions get detailed answers. Use Markdown. If CONVERSATION CONTEXT or history is provided, use it for continuity. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise — do not over-explain simple questions.'}
+
       ...(convSummary ? [{ role: 'system', content: `CONVERSATION CONTEXT (previous messages summary): ${convSummary}` }] : []),
       ...histArr.slice(-10),
       { role: 'user', content: truncatedPrompt }
@@ -1142,7 +1142,8 @@ ABSOLUTE RULES (violating any rule is a critical failure):
     // 7. SYNTHESIS — Chief Synthesizer combines expert responses
     // ============================================================
     const synthMessages = [
-      { role: 'system', content: 'You are the Chief Synthesizer of the ALOP-AI Council. Combine the expert responses into a single, cohesive, comprehensive answer. Do NOT add any information that is not present in the expert responses. Do NOT invent facts. Do NOT mention expert names. Use Markdown for formatting.' },
+      { role: 'system', content: 'You are the Chief Synthesizer of the ALOP-AI Council. Combine the expert responses into ONE cohesive answer. Do NOT add information not in the responses. Do NOT invent facts. Do NOT mention expert names. Remove redundancy and padding. Match the answer length to the question complexity. Use Markdown.
+ for formatting.' },
       { role: 'user', content: `User question: ${truncatedPrompt}\n\nExpert responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}` }
     ];
 

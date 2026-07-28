@@ -443,6 +443,36 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
 
     console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | Cache: ${convCache ? `${convCache.turnCount} turns` : 'none'}`);
 
+    // 0. MEMORY BYPASS (for "do you remember" type questions — instant, no search, no council)
+    if (isMemoryOrReferenceQuestion(pv.value)) {
+      console.log('[COUNCIL] Memory question detected. Using dedicated memory bypass.');
+      const memoryMessages = [
+        { role: 'system', content: `You are ALOP-AI. The user is asking about a previous conversation or something you discussed earlier. Below is the message history from this chat session. The history IS your memory — read it and answer based on what you see.
+
+CRITICAL RULES:
+1. Do NOT say you don't have memory, can't remember, or don't have access to previous conversations.
+2. The message history below IS your conversation memory. Use it.
+3. Reference specific things the user asked and specific answers you gave.
+4. If the user asks "do you remember what I asked?", look at the last user message in the history and tell them what they asked.
+5. If the user asks for details, look at the assistant responses in the history and extract the relevant details.
+6. Be conversational and natural. Use Markdown.
+${convCache?.summary ? `\nConversation summary: ${convCache.summary}` : ''}` },
+        ...histArr.slice(-10),
+        { role: 'user', content: pv.value }
+      ];
+
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      await streamModel(res, 'glm-5.2', memoryMessages, 0.0);
+      if (!res.writableEnded) res.end();
+
+      if (chatId) updateConversationSummary(chatId, pv.value, 'Answered memory/reference question.').catch(() => {});
+      await auditLog(user.id, 'council_message', { plan: userPlan, category: 'memory_bypass', models: 1 });
+      return;
+    }
+
+
     // 1. GREETING BYPASS
     if (selection.category === 'greeting') {
       console.log('[COUNCIL] Greeting. Instant bypass.');
@@ -458,16 +488,9 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       return;
     }
 
-    // 2. MEMORY/REFERENCE DETECTION (skip search, use cache + history)
-    const isMemoryQuestion = isMemoryOrReferenceQuestion(pv.value);
+        // 2. SEARCH DECISION
+    const searchQuery = await getSearchQuery(pv.value);
 
-    // 3. SEARCH DECISION (skip if memory question)
-    let searchQuery = null;
-    if (!isMemoryQuestion) {
-      searchQuery = await getSearchQuery(pv.value);
-    } else {
-      console.log('[COUNCIL] Memory/reference question. Skipping search, using cache + history.');
-    }
 
     const shouldCheckWiki = !isMemoryQuestion && needsWikiCheck(pv.value);
 
@@ -542,7 +565,7 @@ ABSOLUTE RULES:
     }
 
     // 6. COUNCIL MODE (logic, coding, math, creative, OR memory questions)
-    const memoryContext = isMemoryQuestion && convCache?.summary
+        const memoryContext = '';
       ? `\n\nIMPORTANT: The user is asking about a previous conversation. Here is the conversation summary: ${convCache.summary}\n\nThe message history below contains the actual previous messages. Use BOTH the summary and history to answer. Do NOT say you don't have memory. You DO have the conversation context below.`
       : '';
 

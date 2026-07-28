@@ -1,14 +1,18 @@
 /**
- * ALOP-AI ULTIMATE COUNCIL BACKEND
- * 
- * Architecture:
- * 1. Ingress Validation: Strict sanitization, truncation, and auth.
- * 2. Intent Classification: Instant bypass for greetings (zero latency).
- * 3. Autonomous Search Engine: AI determines IF a search is needed, and FORMULATES the optimal query itself.
- * 4. The Self-Selecting Council: All models receive the prompt. Irrelevant models reply "SKIP" instantly.
- * 5. The Chief Synthesizer: Combines elite expert responses into one perfect, Markdown-rich answer.
- * 6. The Failsafe: If all models skip, a generalist streams directly to prevent any failure.
- * 7. Elite Security: ipKeyGenerator, Helmet, Rate Limiting, CORS, Sentry.
+ * ALOP-AI ULTIMATE PRECISION BACKEND — FINAL
+ *
+ * 5 Parallel Data Sources:
+ * 1. Tavily API — AI-optimized search, full content + images
+ * 2. Brave Search API — 10 web results
+ * 3. Google Custom Search API — 10 web results + 5 images
+ * 4. Jina AI Reader — Deep reads top 3 pages
+ * 5. Wikipedia REST API — Full article extracts
+ *
+ * Anti-Hallucination: Temperature 0.0, 10 extraction rules,
+ * refuse if no results, no training data fallback.
+ *
+ * Image Support: Tavily + Google image results passed to AI
+ * as Markdown image links for visual answers.
  */
 
 const Sentry = require('@sentry/node');
@@ -40,15 +44,29 @@ app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 // ===== ENV VALIDATION =====
-const requiredEnv = ['SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','CLERK_PUBLISHABLE_KEY','CLERK_SECRET_KEY','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','FRONTEND_URL','OLLAMA_HOST','OLLAMA_API_KEY'];
+const requiredEnv = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY', 'CLERK_PUBLISHABLE_KEY', 'CLERK_SECRET_KEY', 'STRIPE_SECRET_KEY', 'STRIPE_WEBHOOK_SECRET', 'FRONTEND_URL', 'OLLAMA_HOST', 'OLLAMA_API_KEY'];
 const missingEnv = requiredEnv.filter((k) => !process.env[k]);
-if (missingEnv.length > 0) { console.error(`Missing: ${missingEnv.join(', ')}`); process.exit(1); }
+if (missingEnv.length > 0) {
+  console.error(`Missing required env vars: ${missingEnv.join(', ')}`);
+  process.exit(1);
+}
+
+// Optional env vars
+const TAVILY_API_KEY = process.env.TAVILY_API_KEY || null;
+const JINA_API_KEY = process.env.JINA_API_KEY || null;
+const BRAVE_API_KEY = process.env.BRAVE_API_KEY || null;
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || null;
+const GOOGLE_SEARCH_API_KEY = process.env.GOOGLE_SEARCH_API_KEY || null;
+const GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID || null;
+
+console.log(`[ENV] Tavily: ${TAVILY_API_KEY ? 'ON' : 'OFF'}`);
+console.log(`[ENV] Jina: ${JINA_API_KEY ? 'ON' : 'OFF (free)'}`);
+console.log(`[ENV] Brave: ${BRAVE_API_KEY ? 'ON' : 'OFF'}`);
+console.log(`[ENV] Google Search: ${GOOGLE_SEARCH_API_KEY && GOOGLE_CSE_ID ? 'ON' : 'OFF'}`);
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
 const OLLAMA_HOST = process.env.OLLAMA_HOST;
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
-const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
-const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
 // ===== MODEL ROSTER =====
 const FREE_COUNCIL_MODELS = ['gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5'];
@@ -59,6 +77,135 @@ const ALL_MODELS = [
   'nemotron-3-super', 'nemotron-3-ultra'
 ];
 const OVERLAY_MODELS = ['deepseek-v4-pro', 'glm-5.2', 'kimi-k2.7-code'];
+
+// ===== AI HELPERS =====
+const callModel = async (modelName, messages, temperature = 0.0, timeoutMs = 30000, maxTokens = 1000) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(OLLAMA_HOST, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OLLAMA_API_KEY}` },
+      body: JSON.stringify({ model: modelName, messages, stream: false, options: { temperature, num_predict: maxTokens } }),
+      signal: controller.signal
+    });
+    clearTimeout(timer);
+    if (!res.ok) {
+      const text = await res.text();
+      throw new Error(`Model ${modelName} error: ${res.status} ${text.slice(0, 200)}`);
+    }
+    const data = await res.json();
+    return data.message?.content || data.response || '';
+  } catch (err) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') return '';
+    throw err;
+  }
+};
+
+const streamModel = async (res, modelName, messages, temperature = 0.0) => {
+  const response = await fetch(OLLAMA_HOST, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OLLAMA_API_KEY}` },
+    body: JSON.stringify({ model: modelName, messages, stream: true, options: { temperature } })
+  });
+  if (!response.ok || !response.body) throw new Error('Stream model failed');
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+    for (const line of lines) {
+      const t = line.trim();
+      if (!t) continue;
+      try {
+        const parsed = JSON.parse(t);
+        const delta = parsed.message?.content || parsed.response || '';
+        if (delta) res.write(`data: ${JSON.stringify({ type: 'chunk', text: delta })}\n\n`);
+        if (parsed.done) res.write('data: [DONE]\n\n');
+      } catch {}
+    }
+  }
+};
+
+const callGemini = async (modelName, prompt, maxTokens = 1024) => {
+  if (!GOOGLE_API_KEY) throw new Error('GOOGLE_API_KEY not configured');
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GOOGLE_API_KEY}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.0, maxOutputTokens: maxTokens }
+    })
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Gemini error: ${res.status} ${text.slice(0, 300)}`);
+  }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+};
+
+const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'image/png', maxTokens = 2048) => {
+  if (!GOOGLE_API_KEY) throw new Error('GOOGLE_API_KEY not configured');
+  if (Buffer.byteLength(base64Image, 'base64') / (1024 * 1024) > 8) throw new Error('Image too large. Max 8MB.');
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GOOGLE_API_KEY}`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Image } }] }],
+      generationConfig: { temperature: 0.0, maxOutputTokens: maxTokens }
+    })
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Gemini error: ${res.status} ${text.slice(0, 300)}`);
+  }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+};
+
+// ===== DYNAMIC COUNCIL QUORUM =====
+const runCouncilWithWhip = async (models, messages, temperature, whipMs, quorum, tokenLimit) => {
+  const results = [];
+  let settledCount = 0, validCount = 0, resolved = false;
+
+  return new Promise((resolve) => {
+    const whipTimer = setTimeout(() => {
+      if (!resolved) { resolved = true; resolve(results); }
+    }, whipMs);
+
+    const checkDone = () => {
+      if (resolved) return;
+      if (validCount >= quorum) {
+        resolved = true; clearTimeout(whipTimer); resolve(results); return;
+      }
+      if (settledCount >= models.length) {
+        resolved = true; clearTimeout(whipTimer); resolve(results);
+      }
+    };
+
+    models.forEach((model) => {
+      callModel(model, messages, temperature, whipMs, tokenLimit)
+        .then((content) => {
+          settledCount++;
+          if (content?.trim().toUpperCase().includes('SKIP')) {
+            console.log(`[COUNCIL] ${model} opted out (SKIP).`);
+          } else if (content?.trim().length > 3) {
+            validCount++; results.push({ model, content });
+          }
+          checkDone();
+        })
+        .catch(() => { settledCount++; checkDone(); });
+    });
+  });
+};
 
 // ===== DYNAMIC ROUTER =====
 const classifyRequest = (text, userPlan) => {
@@ -72,25 +219,245 @@ const classifyRequest = (text, userPlan) => {
     return filtered.length > 0 ? filtered : FREE_COUNCIL_MODELS;
   };
 
-  // Tier 1: Greeting (Instant)
   if (wordCount <= 4 && /hi|hello|hey|yo|sup|howdy|gm|good morning/i.test(lower)) {
     return { models: filterByPlan(['gemma4']), quorum: 1, whipMs: 5000, tokenLimit: 200, category: 'greeting' };
   }
 
-  // Everything else: All models self-select
-  return { models: filterByPlan(ALL_MODELS), quorum: 3, whipMs: 30000, tokenLimit: 1500, category: 'council' };
+  return { models: filterByPlan(ALL_MODELS), quorum: 3, whipMs: 45000, tokenLimit: 2000, category: 'council' };
 };
 
-// ===== AUTONOMOUS SEARCH ENGINE =====
-// AI determines IF a search is needed, and FORMULATES the optimal query itself.
+// ===== AUTONOMOUS SEARCH DECISION =====
 const getSearchQuery = async (text) => {
   const response = await callModel('gemma4', [
-        { role: 'system', content: 'Analyze the user prompt. If it requires real-time internet search to answer accurately (e.g., current events, product links, specific facts, reviews), reply ONLY with the optimal search query string to find specific products or answers (e.g., "best wireless vacuum under 400 AED buy site:amazon.ae"). If it does not require search, reply ONLY with "NO".' },
+    { role: 'system', content: 'Analyze the user prompt. If it requires real-time internet search to answer accurately (e.g., current events, product links, specific facts, reviews, specs, prices, images), reply ONLY with the optimal search query string to find specific products or answers (e.g., "ASUS ROG Strix XG27AQWMG review specs price"). If it does not require search, reply ONLY with "NO".' },
     { role: 'user', content: text }
-  ], 0.1, 5000, 50);
-  
-  if (response.trim().toUpperCase() === 'NO' || !response.trim()) return null;
-  return response.trim();
+  ], 0.0, 8000, 50);
+
+  const trimmed = response.trim();
+  if (trimmed.toUpperCase() === 'NO' || !trimmed) return null;
+  return trimmed;
+};
+
+// ===== CLASSIFIERS =====
+const wantsDetailedAnswer = (text) => ['explain in detail', 'detailed', 'in depth', 'comprehensive', 'thorough', 'step by step', 'deep dive', 'elaborate', 'full explanation'].some(t => text.toLowerCase().includes(t));
+const needsWikiCheck = (text) => /what is|who is|history|explain|definition|meaning of|tell me about|biography|born|origin/i.test(text);
+
+// ===== SEARCH 1: BRAVE (10 results) =====
+const searchBrave = async (query) => {
+  if (!BRAVE_API_KEY) return [];
+  try {
+    const res = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query.slice(0, 200))}&count=10`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json', 'X-Subscription-Token': BRAVE_API_KEY },
+      signal: AbortSignal.timeout(8000)
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.web?.results || []).map(r => ({
+      title: r.title?.slice(0, 200) || '',
+      url: r.url,
+      description: r.description?.slice(0, 500) || ''
+    }));
+  } catch { return []; }
+};
+
+// ===== SEARCH 2: TAVILY (full content + images) =====
+const searchTavily = async (query) => {
+  if (!TAVILY_API_KEY) return { answer: '', results: [], images: [] };
+  try {
+    const res = await fetch('https://api.tavily.com/search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        api_key: TAVILY_API_KEY,
+        query: query.slice(0, 400),
+        search_depth: 'advanced',
+        include_answer: true,
+        include_raw_content: false,
+        include_images: true,
+        include_image_descriptions: true,
+        max_results: 5
+      }),
+      signal: AbortSignal.timeout(12000)
+    });
+    if (!res.ok) return { answer: '', results: [], images: [] };
+    const data = await res.json();
+    const results = (data.results || []).map(r => ({
+      title: r.title?.slice(0, 200) || '',
+      url: r.url,
+      content: (r.content || '').slice(0, 3000)
+    }));
+    const images = (data.images || []).map(img => typeof img === 'string' ? img : (img.url || img));
+    return { answer: data.answer || '', results, images };
+  } catch { return { answer: '', results: [], images: [] }; }
+};
+
+// ===== SEARCH 3: GOOGLE CUSTOM SEARCH (web results + image search) =====
+const searchGoogleWeb = async (query) => {
+  if (!GOOGLE_SEARCH_API_KEY || !GOOGLE_CSE_ID) return [];
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_SEARCH_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query.slice(0, 200))}&num=10`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.items || []).map(r => ({
+      title: r.title?.slice(0, 200) || '',
+      url: r.link,
+      description: (r.snippet || '').slice(0, 500)
+    }));
+  } catch { return []; }
+};
+
+const searchGoogleImages = async (query) => {
+  if (!GOOGLE_SEARCH_API_KEY || !GOOGLE_CSE_ID) return [];
+  try {
+    const res = await fetch(
+      `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_SEARCH_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query.slice(0, 200))}&searchType=image&num=5`,
+      { signal: AbortSignal.timeout(8000) }
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.items || []).map(r => ({
+      url: r.link,
+      title: r.title?.slice(0, 200) || '',
+      thumbnail: r.image?.thumbnailLink || r.link,
+      context: r.image?.contextLink || ''
+    }));
+  } catch { return []; }
+};
+
+// ===== SEARCH 4: JINA READER (deep page reading) =====
+const readPageContent = async (url) => {
+  try {
+    const headers = { 'Accept': 'text/markdown' };
+    if (JINA_API_KEY) {
+      headers['Authorization'] = `Bearer ${JINA_API_KEY}`;
+    }
+    const res = await fetch(`https://r.jina.ai/${url}`, {
+      method: 'GET',
+      headers,
+      signal: AbortSignal.timeout(10000)
+    });
+    if (!res.ok) return '';
+    const text = await res.text();
+    return text.slice(0, 5000);
+  } catch { return ''; }
+};
+
+// ===== SEARCH 5: WIKIPEDIA REST API =====
+const searchWikipedia = async (query) => {
+  try {
+    const searchRes = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query.slice(0, 100))}&format=json&origin=*`,
+      { signal: AbortSignal.timeout(6000) }
+    );
+    if (!searchRes.ok) return '';
+    const searchData = await searchRes.json();
+    const titles = (searchData.query?.search || []).slice(0, 2).map(s => s.title);
+    if (titles.length === 0) return '';
+
+    const extractRes = await fetch(
+      `https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=true&explaintext=true&titles=${encodeURIComponent(titles.join('|'))}&format=json&origin=*`,
+      { signal: AbortSignal.timeout(6000) }
+    );
+    if (!extractRes.ok) return '';
+    const extractData = await extractRes.json();
+    const pages = extractData.query?.pages || {};
+    const extracts = Object.values(pages).map(p => p.extract || '').filter(e => e.length > 100);
+    return extracts.join('\n\n').slice(0, 5000);
+  } catch { return ''; }
+};
+
+// ===== COMPREHENSIVE SEARCH ENGINE =====
+const comprehensiveSearch = async (query, needsWiki) => {
+  console.log(`[SEARCH] Comprehensive search: "${query}" | Wiki: ${needsWiki}`);
+
+  const [tavilyResult, braveResults, googleResults, googleImages, wikiContent] = await Promise.all([
+    searchTavily(query),
+    searchBrave(query),
+    searchGoogleWeb(query),
+    searchGoogleImages(query),
+    needsWiki ? searchWikipedia(query) : Promise.resolve('')
+  ]);
+
+  const tavilyData = Array.isArray(tavilyResult) ? { answer: '', results: [], images: [] } : tavilyResult;
+  const sources = [];
+  const allImages = [];
+  let fullContext = '';
+
+  // 1. Tavily AI Answer
+  if (tavilyData.answer) {
+    fullContext += `TAVILY AI ANSWER: ${tavilyData.answer}\n\n---\n\n`;
+  }
+
+  // 2. Tavily Results (full content)
+  if (tavilyData.results && tavilyData.results.length > 0) {
+    fullContext += `TAVILY SEARCH RESULTS:\n${tavilyData.results.map((r, i) =>
+      `SOURCE ${i + 1}:\nTitle: ${r.title}\nURL: ${r.url}\nContent: ${r.content}`
+    ).join('\n\n---\n\n')}\n\n---\n\n`;
+    tavilyData.results.forEach(r => sources.push({ title: r.title, url: r.url }));
+  }
+
+  // 3. Tavily Images
+  if (tavilyData.images && tavilyData.images.length > 0) {
+    allImages.push(...tavilyData.images.filter(u => u && u.startsWith('http')));
+  }
+
+  // 4. Brave Results
+  if (braveResults.length > 0) {
+    fullContext += `BRAVE SEARCH RESULTS:\n${braveResults.map((r, i) =>
+      `SOURCE ${i + 1}:\nTitle: ${r.title}\nURL: ${r.url}\nContent: ${r.description}`
+    ).join('\n\n---\n\n')}\n\n---\n\n`;
+    braveResults.forEach(r => {
+      if (!sources.find(s => s.url === r.url)) sources.push({ title: r.title, url: r.url });
+    });
+  }
+
+  // 5. Google Web Results
+  if (googleResults.length > 0) {
+    fullContext += `GOOGLE SEARCH RESULTS:\n${googleResults.map((r, i) =>
+      `SOURCE ${i + 1}:\nTitle: ${r.title}\nURL: ${r.url}\nContent: ${r.description}`
+    ).join('\n\n---\n\n')}\n\n---\n\n`;
+    googleResults.forEach(r => {
+      if (!sources.find(s => s.url === r.url)) sources.push({ title: r.title, url: r.url });
+    });
+  }
+
+  // 6. Google Image Results
+  if (googleImages.length > 0) {
+    allImages.push(...googleImages.map(img => img.url).filter(u => u && u.startsWith('http')));
+  }
+
+  // 7. Wikipedia Content
+  if (wikiContent) {
+    fullContext += `WIKIPEDIA CONTENT:\n${wikiContent}\n\n---\n\n`;
+  }
+
+  // 8. DEEP READ: Fetch full page content from top 3 URLs via Jina Reader
+  const topUrls = sources.slice(0, 3);
+  if (topUrls.length > 0) {
+    console.log(`[SEARCH] Deep reading ${topUrls.length} pages via Jina Reader...`);
+    const pageContents = await Promise.all(topUrls.map(s => readPageContent(s.url)));
+    const validPages = pageContents.filter(c => c.length > 200);
+    if (validPages.length > 0) {
+      fullContext += `FULL PAGE CONTENT (extracted via Jina Reader):\n${validPages.map((c, i) =>
+        `--- PAGE ${i + 1} (${topUrls[i].url}) ---\n${c}`
+      ).join('\n\n')}\n\n---\n\n`;
+    }
+  }
+
+  // 9. Add image URLs to context for the AI to embed
+  if (allImages.length > 0) {
+    const uniqueImages = [...new Set(allImages)].slice(0, 5);
+    fullContext += `\nAVAILABLE IMAGES (embed relevant ones in your answer using Markdown image syntax):\n${uniqueImages.map((url, i) => `IMAGE ${i + 1}: ${url}`).join('\n')}\n\n---\n\n`;
+  }
+
+  const found = sources.length > 0 || !!wikiContent || !!tavilyData.answer;
+  console.log(`[SEARCH] Found: ${found} | Sources: ${sources.length} | Images: ${allImages.length} | Context: ${fullContext.length} chars`);
+
+  return { context: fullContext.trim(), sources, found, images: allImages };
 };
 
 // ===== CORS =====
@@ -232,11 +599,21 @@ const validateHistory = (h) => {
   if (!h) return [];
   if (!Array.isArray(h)) return { valid: false, error: 'History must be an array' };
   if (h.length > MAX_HISTORY) return { valid: false, error: `History exceeds ${MAX_HISTORY} messages` };
-  return { valid: true, value: h.filter(m => m && typeof m === 'object').map(m => ({ role: ALLOWED_ROLES.includes(m.role) ? m.role : 'user', content: typeof m.content === 'string' ? m.content.slice(0, MAX_PROMPT) : '' })).slice(0, MAX_HISTORY) };
+  return {
+    valid: true,
+    value: h.filter(m => m && typeof m === 'object')
+      .map(m => ({
+        role: ALLOWED_ROLES.includes(m.role) ? m.role : 'user',
+        content: typeof m.content === 'string' ? m.content.slice(0, MAX_PROMPT) : ''
+      }))
+      .slice(0, MAX_HISTORY)
+  };
 };
 
 // ===== SUPABASE & CLERK =====
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
+  auth: { autoRefreshToken: false, persistSession: false }
+});
 const requireAuth = ClerkExpressRequireAuth({ onError: (e) => ({ error: e.message || 'Authentication required' }) });
 
 const ensureUser = async (userId) => {
@@ -298,133 +675,18 @@ const requireAdmin = async (req, res, next) => {
     if (error) throw error;
     if (!user?.is_admin) return res.status(403).json({ error: 'Admin only' });
     next();
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: 'Failed to verify admin status' }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: 'Failed to verify admin status' });
+  }
 };
-
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 1 }, fileFilter: (req, file, cb) => file.mimetype.startsWith('image/') ? cb(null, true) : cb(new Error('Only image files'), false) });
 
 const auditLog = async (userId, action, metadata = {}) => {
-  try { await supabase.from('audit_logs').insert({ user_id: userId, action, metadata, ip_address: null, created_at: new Date().toISOString() }); }
-  catch (err) { console.error('Audit log failed:', err.message); }
-};
-
-// ===== AI HELPERS =====
-const callModel = async (modelName, messages, temperature = 0.7, timeoutMs = 12000, maxTokens = 400) => {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(OLLAMA_HOST, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OLLAMA_API_KEY}` },
-      body: JSON.stringify({ model: modelName, messages, stream: false, options: { temperature, num_predict: maxTokens } }),
-      signal: controller.signal
-    });
-    clearTimeout(timer);
-    if (!res.ok) { const text = await res.text(); throw new Error(`Model ${modelName} error: ${res.status} ${text.slice(0, 200)}`); }
-    const data = await res.json();
-    return data.message?.content || data.response || '';
+    await supabase.from('audit_logs').insert({ user_id: userId, action, metadata, ip_address: null, created_at: new Date().toISOString() });
   } catch (err) {
-    clearTimeout(timer);
-    if (err.name === 'AbortError') return '';
-    throw err;
+    console.error('Audit log failed:', err.message);
   }
-};
-
-const streamModel = async (res, modelName, messages, temperature = 0.5) => {
-  const response = await fetch(OLLAMA_HOST, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OLLAMA_API_KEY}` },
-    body: JSON.stringify({ model: modelName, messages, stream: true, options: { temperature } })
-  });
-  if (!response.ok || !response.body) throw new Error('Synthesizer failed');
-  const reader = response.body.getReader();
-  const decoder = new TextDecoder();
-  let buffer = '';
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buffer += decoder.decode(value, { stream: true });
-    const lines = buffer.split('\n');
-    buffer = lines.pop() || '';
-    for (const line of lines) {
-      const t = line.trim();
-      if (!t) continue;
-      try {
-        const parsed = JSON.parse(t);
-        const delta = parsed.message?.content || parsed.response || '';
-        if (delta) res.write(`data: ${JSON.stringify({ type: 'chunk', text: delta })}\n\n`);
-        if (parsed.done) res.write('data: [DONE]\n\n');
-      } catch {}
-    }
-  }
-};
-
-const callGemini = async (modelName, prompt, maxTokens = 1024) => {
-  if (!GOOGLE_API_KEY) throw new Error('GOOGLE_API_KEY not configured');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GOOGLE_API_KEY}`;
-  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }] }], generationConfig: { temperature: 0.5, maxOutputTokens: maxTokens } }) });
-  if (!res.ok) { const text = await res.text(); throw new Error(`Gemini error: ${res.status} ${text.slice(0, 300)}`); }
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-};
-
-const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'image/png', maxTokens = 2048) => {
-  if (!GOOGLE_API_KEY) throw new Error('GOOGLE_API_KEY not configured');
-  if (Buffer.byteLength(base64Image, 'base64') / (1024 * 1024) > 8) throw new Error('Image too large. Max 8MB.');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GOOGLE_API_KEY}`;
-  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Image } }] }], generationConfig: { temperature: 0.4, maxOutputTokens: maxTokens } }) });
-  if (!res.ok) { const text = await res.text(); throw new Error(`Gemini error: ${res.status} ${text.slice(0, 300)}`); }
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-};
-
-// ===== DYNAMIC COUNCIL QUORUM =====
-const runCouncilWithWhip = async (models, messages, temperature, whipMs, quorum, tokenLimit) => {
-  const results = [];
-  let settledCount = 0, validCount = 0, resolved = false;
-  
-  return new Promise((resolve) => {
-    const whipTimer = setTimeout(() => {
-      if (!resolved) { resolved = true; resolve(results); }
-    }, whipMs);
-    
-    const checkDone = () => {
-      if (resolved) return;
-      if (validCount >= quorum) { 
-        resolved = true; clearTimeout(whipTimer); resolve(results); return; 
-      }
-      if (settledCount >= models.length) { 
-        resolved = true; clearTimeout(whipTimer); resolve(results); 
-      }
-    };
-    
-    models.forEach((model) => {
-      callModel(model, messages, temperature, whipMs, tokenLimit)
-        .then((content) => { 
-          settledCount++; 
-          if (content?.trim().toUpperCase().includes('SKIP')) {
-            console.log(`[COUNCIL] ${model} opted out (SKIP).`);
-          } else if (content?.trim().length > 3) { 
-            validCount++; results.push({ model, content }); 
-          } 
-          checkDone(); 
-        })
-        .catch(() => { settledCount++; checkDone(); });
-    });
-  });
-};
-
-// ===== CLASSIFIERS =====
-const wantsDetailedAnswer = (text) => ['explain in detail','detailed','in depth','comprehensive','thorough','step by step','deep dive','elaborate','full explanation'].some(t => text.toLowerCase().includes(t));
-
-const searchBrave = async (query) => {
-  if (!BRAVE_API_KEY) return [];
-  try {
-    const res = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query.slice(0, 200))}&count=4`, { method: 'GET', headers: { 'Accept': 'application/json', 'X-Subscription-Token': BRAVE_API_KEY } });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.web?.results || []).map(r => ({ title: r.title?.slice(0, 200) || '', url: r.url, description: r.description?.slice(0, 400) || '' }));
-  } catch { return []; }
 };
 
 // ===== HEALTH =====
@@ -434,7 +696,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISO
 app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
   try {
     const user = await ensureUser(req.auth.userId);
-    const { message, history = [], temperature } = req.body;
+    const { message, history = [] } = req.body;
     const pv = validatePrompt(message);
     if (!pv.valid) return res.status(400).json({ error: pv.error });
     const hv = validateHistory(history);
@@ -442,7 +704,6 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
 
     const userPlan = user.plan || 'free';
     const isDetailed = wantsDetailedAnswer(pv.value);
-    const creativity = typeof temperature === 'number' ? Math.max(0, Math.min(1, temperature)) : 0.6;
 
     const selection = classifyRequest(pv.value, userPlan);
     const truncatedPrompt = truncatePrompt(pv.value);
@@ -452,68 +713,136 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
 
     // 1. INSTANT BYPASS FOR GREETINGS
     if (selection.category === 'greeting') {
-      console.log('[COUNCIL] Greeting detected. Bypassing council for instant response.');
+      console.log('[COUNCIL] Greeting detected. Bypassing for instant response.');
       const greetingMessages = [
         { role: 'system', content: 'You are ALOP-AI, a friendly AI assistant. Greet the user briefly and ask how you can help.' },
         { role: 'user', content: pv.value }
       ];
-      
+
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
-      await streamModel(res, 'glm-5.2', greetingMessages, 0.5);
+      await streamModel(res, 'glm-5.2', greetingMessages, 0.0);
       if (!res.writableEnded) res.end();
       await auditLog(user.id, 'council_message', { plan: userPlan, category: 'greeting', models: 1 });
       return;
     }
 
-    // 2. AUTONOMOUS WEB SEARCH
-    let webContext = '';
+    // 2. AUTONOMOUS SEARCH DECISION
     const searchQuery = await getSearchQuery(pv.value);
+    const shouldCheckWiki = needsWikiCheck(pv.value);
+
+    // 3. COMPREHENSIVE SEARCH (5 sources in parallel)
     if (searchQuery) {
-      console.log(`[COUNCIL] AI generated search query: ${searchQuery}`);
-      const results = await searchBrave(searchQuery);
-      if (results.length > 0) {
-        webContext = `\n\nReal-time web search results (use these to inform your answer, format links as Markdown):\n${results.map((r, i) => `[${r.title}](${r.url})\n${r.description}`).join('\n\n')}`;
+      const { context, sources, found, images } = await comprehensiveSearch(searchQuery, shouldCheckWiki);
+
+      if (!found) {
+        console.log('[COUNCIL] All search sources returned no results. Refusing.');
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        res.write(`data: ${JSON.stringify({ type: 'chunk', text: "I searched multiple sources (Tavily, Brave, Google, Wikipedia) but couldn't find any results for that query. Could you rephrase or provide more specific details?" })}\n\n`);
+        res.write('data: [DONE]\n\n');
+        if (!res.writableEnded) res.end();
+        await auditLog(user.id, 'council_message', { plan: userPlan, category: 'no_search_results', models: 0 });
+        return;
       }
-    }
 
-    const councilMessages = [
-      { role: 'system', content: `You are an elite AI expert in the ALOP-AI Council. Your goal is to provide the most accurate, insightful, and helpful response possible. Analyze the user's request. If this request is completely outside your core expertise or capabilities, reply ONLY with the word "SKIP". If you choose to answer, provide a direct, expert, and comprehensive response. Use Markdown for formatting (bold, lists, links). ${isDetailed ? 'Be extremely thorough and detailed.' : 'Be concise but complete.'}` },
-      ...(Array.isArray(hv) ? hv : hv.value || []).slice(-4),
-      { role: 'user', content: `${truncatedPrompt}${webContext}` }
-    ];
+      // STRICT EXTRACTION MODE
+      console.log(`[COUNCIL] ${sources.length} sources found. Strict extraction with ${context.length} chars. Images: ${images.length}.`);
 
-    let validResponses = await runCouncilWithWhip(selection.models, councilMessages, creativity, selection.whipMs, selection.quorum, selection.tokenLimit);
-    
-    // 3. FALLBACK IF ALL MODELS SKIP OR FAIL
-    if (validResponses.length === 0) {
-      console.log('[COUNCIL] No valid responses. Streaming fallback generalist directly.');
-      const fallbackMessages = [
-        { role: 'system', content: 'You are a helpful AI assistant. Answer the user\'s request directly and concisely. Use Markdown for formatting links and lists.' },
+      const extractionMessages = [
+        {
+          role: 'system',
+          content: `You are a precision data extraction engine. Below is comprehensive data from multiple web sources (Tavily, Brave Search, Google Search, Wikipedia, and full page content extracted via Jina Reader). Answer the user's question using ONLY the data provided.
+
+ABSOLUTE RULES (violating any rule is a critical failure):
+1. You may ONLY state facts that appear explicitly in the provided data.
+2. You may NOT use ANY knowledge from your training data.
+3. You may NOT infer, guess, estimate, or extrapolate anything.
+4. You may NOT compare two products unless BOTH appear in the data with their actual specifications.
+5. If the data does not contain the answer to a specific question, say EXACTLY: "I couldn't find specific information about this in the search results."
+6. When mentioning a product, source, or article, include the URL as a Markdown link: [Title](URL)
+7. Do NOT invent specifications, prices, model numbers, features, or release dates that are not explicitly in the data.
+8. If a spec is mentioned in one source but contradicted in another, note the discrepancy and cite both sources.
+9. Format your response in clean Markdown with headers, bold text, bullet points, and tables where appropriate.
+10. List your sources at the bottom of your response as clickable Markdown links under a "## Sources" heading.
+11. If images are provided in the data, embed the most relevant ones in your answer using Markdown image syntax: ![Description](image_url). Place images where they are contextually relevant.`
+        },
         ...(Array.isArray(hv) ? hv : hv.value || []).slice(-4),
-        { role: 'user', content: `${truncatedPrompt}${webContext}` }
+        { role: 'user', content: `${truncatedPrompt}\n\n\n=== COMPREHENSIVE SEARCH DATA ===\n${context}` }
       ];
-      
+
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
-      await streamModel(res, 'glm-5.2', fallbackMessages, creativity);
+      await streamModel(res, 'glm-5.2', extractionMessages, 0.0);
+      if (!res.writableEnded) res.end();
+      await auditLog(user.id, 'council_message', { plan: userPlan, category: 'search_extraction', models: 1, sources: sources.length, images: images.length, context_chars: context.length });
+      return;
+    }
+
+    // 4. WIKIPEDIA-ONLY (factual questions without web search)
+    if (shouldCheckWiki) {
+      const wikiContent = await searchWikipedia(pv.value);
+      if (wikiContent) {
+        console.log('[COUNCIL] Wikipedia content found. Streaming extraction.');
+        const extractionMessages = [
+          { role: 'system', content: 'You are a precision data extraction engine. Below is content from Wikipedia. Answer the user\'s question using ONLY this content. Do NOT use training data. If the content doesn\'t contain the answer, say "I couldn\'t find this on Wikipedia." Use Markdown.' },
+          { role: 'user', content: `${truncatedPrompt}\n\n\n=== WIKIPEDIA CONTENT ===\n${wikiContent}` }
+        ];
+
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        await streamModel(res, 'glm-5.2', extractionMessages, 0.0);
+        if (!res.writableEnded) res.end();
+        await auditLog(user.id, 'council_message', { plan: userPlan, category: 'wiki_extraction', models: 1 });
+        return;
+      }
+    }
+
+    // 5. COUNCIL MODE (pure logic, coding, math, creative)
+    const councilMessages = [
+      {
+        role: 'system',
+        content: `You are an elite AI expert in the ALOP-AI Council. Analyze the user's request. If this request is completely outside your core expertise or capabilities, reply ONLY with the word "SKIP". If you choose to answer, provide a direct, expert, and comprehensive response. Use Markdown for formatting (bold, lists, code blocks). ${isDetailed ? 'Be extremely thorough and detailed.' : 'Be concise but complete.'}`
+      },
+      ...(Array.isArray(hv) ? hv : hv.value || []).slice(-4),
+      { role: 'user', content: truncatedPrompt }
+    ];
+
+    const validResponses = await runCouncilWithWhip(selection.models, councilMessages, 0.0, selection.whipMs, selection.quorum, selection.tokenLimit);
+
+    // 6. FALLBACK
+    if (validResponses.length === 0) {
+      console.log('[COUNCIL] No valid responses. Streaming fallback.');
+      const fallbackMessages = [
+        { role: 'system', content: 'You are a helpful AI assistant. Answer the user\'s request directly. If you do not know the answer, say "I don\'t have enough information to answer that accurately." Do NOT guess or invent information. Use Markdown for formatting.' },
+        ...(Array.isArray(hv) ? hv : hv.value || []).slice(-4),
+        { role: 'user', content: truncatedPrompt }
+      ];
+
+      res.setHeader('Content-Type', 'text/event-stream');
+      res.setHeader('Cache-Control', 'no-cache');
+      res.setHeader('Connection', 'keep-alive');
+      await streamModel(res, 'glm-5.2', fallbackMessages, 0.0);
       if (!res.writableEnded) res.end();
       await auditLog(user.id, 'council_message', { plan: userPlan, category: 'fallback', models: 1 });
       return;
     }
 
+    // 7. SYNTHESIS
     const synthMessages = [
-            { role: 'system', content: 'You are the Chief Synthesizer of the ALOP-AI Council. Combine the expert responses into a single, cohesive answer. CRITICAL RULE: You MUST ONLY recommend products or items that have a direct link provided in the web search results. You MUST use the exact URLs provided in the search results. Do NOT invent products, do NOT invent URLs, and do NOT guess specifications. If the search results do not contain specific product links, you MUST state that you couldn\'t find specific products online. Use Markdown for formatting.' },
-      { role: 'user', content: `User question: ${truncatedPrompt}${webContext}\n\nExpert responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}` }
+      { role: 'system', content: 'You are the Chief Synthesizer of the ALOP-AI Council. Combine the expert responses into a single, cohesive, comprehensive answer. Do NOT add any information that is not present in the expert responses. Do NOT invent facts. Do NOT mention expert names. Use Markdown for formatting.' },
+      { role: 'user', content: `User question: ${truncatedPrompt}\n\nExpert responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}` }
     ];
 
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
 
-    await streamModel(res, 'glm-5.2', synthMessages, isDetailed ? 0.5 : 0.35);
+    await streamModel(res, 'glm-5.2', synthMessages, 0.0);
     if (!res.writableEnded) res.end();
 
     await auditLog(user.id, 'council_message', { plan: userPlan, category: selection.category, models: validResponses.length, truncated: wasTruncated, search: !!searchQuery });
@@ -538,7 +867,10 @@ app.post('/api/vision', requireAuth, checkSuspended, async (req, res) => {
     const answer = await callGeminiVision(model, `You are ALOP-AI vision assistant. Answer based on the screenshot. Be concise.\n\nUser request: ${pv.value}`, base64Data, 'image/png', 2048);
     await auditLog(user.id, 'vision_request', { plan: user.plan });
     res.json({ answer });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ===== OVERLAY =====
@@ -561,22 +893,31 @@ app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
       ...(Array.isArray(hv) ? hv : hv.value || []).slice(-4),
       { role: 'user', content: ctx ? `Screen description: ${ctx}\n\nUser question: ${pv.value}` : `User question: ${pv.value}` }
     ];
-    const responses = await runCouncilWithWhip(OVERLAY_MODELS, overlayMessages, 0.5, 6000, 2, 600);
+    const responses = await runCouncilWithWhip(OVERLAY_MODELS, overlayMessages, 0.0, 10000, 2, 800);
     if (responses.length === 0) return res.status(500).json({ error: 'Overlay models failed to respond' });
-    const synth = [{ role: 'system', content: 'Synthesize expert answers into one final, concise response. Prioritize accuracy.' }, { role: 'user', content: `Question: ${pv.value}\n\nExpert answers:\n${responses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}` }];
+    const synth = [
+      { role: 'system', content: 'Synthesize expert answers into one final, concise response. Prioritize accuracy. Do not add information not present in expert responses.' },
+      { role: 'user', content: `Question: ${pv.value}\n\nExpert answers:\n${responses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}` }
+    ];
     const answer = await callGemini('glm-5.2', synth.map(m => `${m.role}: ${m.content}`).join('\n\n'), 1024);
     await auditLog(user.id, 'overlay_request', { plan: user.plan });
     res.json({ answer });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
-// ===== IMAGE =====
+// ===== IMAGE GENERATION =====
 app.post('/api/image', requireAuth, checkSuspended, async (req, res) => {
   try {
     const pv = validatePrompt(req.body.prompt);
     if (!pv.valid) return res.status(400).json({ error: pv.error });
     res.json({ url: `https://image.pollinations.ai/prompt/${encodeURIComponent(pv.value)}?width=1024&height=1024&nologo=true` });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ===== CHATS =====
@@ -586,7 +927,10 @@ app.get('/api/chats', requireAuth, async (req, res) => {
     const { data, error } = await supabase.from('chats').select('id, user_id, title, messages, pinned, favorite, created_at, updated_at').eq('user_id', user.id).order('updated_at', { ascending: false });
     if (error) throw error;
     res.json(data || []);
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/chats', requireAuth, async (req, res) => {
@@ -596,7 +940,10 @@ app.post('/api/chats', requireAuth, async (req, res) => {
     const { data, error } = await supabase.from('chats').insert({ user_id: user.id, title, messages: [] }).select().single();
     if (error) throw error;
     res.json(data);
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.put('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => {
@@ -607,12 +954,20 @@ app.put('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, re
     if (title !== undefined) payload.title = sanitizeString(title, 120);
     if (messages !== undefined) {
       if (!Array.isArray(messages)) return res.status(400).json({ error: 'Messages must be an array' });
-      payload.messages = messages.slice(0, 200).map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content.slice(0, 100000) : '', ts: m.ts, id: m.id }));
+      payload.messages = messages.slice(0, 200).map(m => ({
+        role: m.role,
+        content: typeof m.content === 'string' ? m.content.slice(0, 100000) : '',
+        ts: m.ts,
+        id: m.id
+      }));
     }
     const { error } = await supabase.from('chats').update(payload).eq('id', req.params.id).eq('user_id', user.id);
     if (error) throw error;
     res.json({ ok: true });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.delete('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => {
@@ -621,7 +976,10 @@ app.delete('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req,
     const { error } = await supabase.from('chats').delete().eq('id', req.params.id).eq('user_id', user.id);
     if (error) throw error;
     res.json({ deleted: true });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ===== ADMIN =====
@@ -630,7 +988,10 @@ app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => {
     const { data, error } = await supabase.from('users').select('id, clerk_id, email, name, avatar_url, plan, is_admin, suspended, created_at, stripe_subscription_id');
     if (error) throw error;
     res.json(data || []);
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, async (req, res) => {
@@ -640,7 +1001,10 @@ app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, async (req, 
     const { error } = await supabase.from('users').update({ suspended: true }).eq('id', req.params.id);
     if (error) throw error;
     res.json({ suspended: true });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/admin/users/:id/unsuspend', requireAuth, requireAdmin, async (req, res) => {
@@ -648,7 +1012,10 @@ app.post('/api/admin/users/:id/unsuspend', requireAuth, requireAdmin, async (req
     const { error } = await supabase.from('users').update({ suspended: false }).eq('id', req.params.id);
     if (error) throw error;
     res.json({ unsuspended: true });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.delete('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) => {
@@ -659,7 +1026,10 @@ app.delete('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) =
     const { error } = await supabase.from('users').delete().eq('id', req.params.id);
     if (error) throw error;
     res.json({ deleted: true });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/api/admin/chats/:userId', requireAuth, requireAdmin, async (req, res) => {
@@ -667,7 +1037,10 @@ app.get('/api/admin/chats/:userId', requireAuth, requireAdmin, async (req, res) 
     const { data, error } = await supabase.from('chats').select('*').eq('user_id', req.params.userId).order('updated_at', { ascending: false });
     if (error) throw error;
     res.json(data || []);
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) => {
@@ -675,7 +1048,10 @@ app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) 
     const { data, error } = await supabase.from('usage').select('*').eq('user_id', req.params.userId).order('date', { ascending: false }).limit(30);
     if (error) throw error;
     res.json(data || []);
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ===== STRIPE =====
@@ -696,7 +1072,10 @@ app.post('/api/create-checkout-session', requireAuth, async (req, res) => {
       metadata: { userId: req.auth.userId }
     });
     res.json({ url: session.url });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.post('/api/create-portal-session', requireAuth, async (req, res) => {
@@ -705,14 +1084,20 @@ app.post('/api/create-portal-session', requireAuth, async (req, res) => {
     if (!user.stripe_customer_id) return res.status(400).json({ error: 'No subscription found' });
     const session = await stripe.billingPortal.sessions.create({ customer: user.stripe_customer_id, return_url: `${process.env.FRONTEND_URL}/` });
     res.json({ url: session.url });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 app.get('/api/user/plan', requireAuth, async (req, res) => {
   try {
     const user = await ensureUser(req.auth.userId);
     res.json({ plan: user.plan || 'free', subscription_id: user.stripe_subscription_id });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ===== 404 & ERRORS =====
@@ -726,9 +1111,14 @@ app.use((err, req, res, next) => {
 
 // ===== START =====
 const server = app.listen(PORT, () => {
-  console.log(`ALOP-AI backend running on port ${PORT}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Dynamic Council initialized with ${ALL_MODELS.length} models.`);
+  console.log(`\n╔══════════════════════════════════════════════════════╗`);
+  console.log(`║   ALOP-AI ULTIMATE PRECISION BACKEND                ║`);
+  console.log(`║   Port: ${PORT}                                        ║`);
+  console.log(`║   Environment: ${process.env.NODE_ENV || 'development'}                   ║`);
+  console.log(`║   Models: ${ALL_MODELS.length} | Temp: 0.0 (Precision)            ║`);
+  console.log(`║   Search: Tavily=${TAVILY_API_KEY ? 'ON' : 'OFF'} Brave=${BRAVE_API_KEY ? 'ON' : 'OFF'} Google=${GOOGLE_SEARCH_API_KEY && GOOGLE_CSE_ID ? 'ON' : 'OFF'}    ║`);
+  console.log(`║   Jina=${JINA_API_KEY ? 'ON' : 'OFF'} Wiki=ON | Images: ENABLED              ║`);
+  console.log(`╚══════════════════════════════════════════════════════╝\n`);
 });
 
 process.on('SIGTERM', () => server.close(() => process.exit(0)));

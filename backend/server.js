@@ -792,30 +792,54 @@ app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
     const pv = validatePrompt(prompt);
     if (!pv.valid) return res.status(400).json({ error: pv.error });
     const hv = validateHistory(history);
-    if (!hv.valid && hv.error) return res.status(400).json({ error: hv.error });
     const user = await ensureUser(req.auth.userId);
+
+    // Vision: only if GOOGLE_API_KEY is set AND image is small enough
     let ctx = '';
-    if (image && typeof image === 'string' && image.startsWith('data:image/')) {
-      const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
-      const vm = user.plan === 'pro' ? 'gemini-2.5-pro-preview-05-06' : 'gemini-2.5-flash-preview-05-06';
-      ctx = await callGeminiVision(vm, 'Describe what is visible on the screen concisely. Include code, text, UI, errors. Be brief.', base64Data, 'image/png', 1024);
+    if (image && typeof image === 'string' && image.startsWith('data:image/') && GOOGLE_API_KEY) {
+      try {
+        const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+        const sizeMB = Buffer.byteLength(base64Data, 'base64') / (1024 * 1024);
+        if (sizeMB < 8) {
+          const vm = user.plan === 'pro' ? 'gemini-2.5-pro-preview-05-06' : 'gemini-2.5-flash-preview-05-06';
+          ctx = await callGeminiVision(vm, 'Describe what is visible on the screen concisely. Include code, text, UI, errors. Be brief.', base64Data, 'image/png', 1024);
+        } else {
+          console.log('[OVERLAY] Image too large, skipping vision.');
+        }
+      } catch (e) {
+        console.error('[OVERLAY] Vision failed:', e.message);
+      }
     }
+
+    // Single model response (fast, reliable, no council needed)
     const overlayMessages = [
-      { role: 'system', content: 'You are ALOP-AI Overlay. Give concise, accurate answers. For coding, provide working code.' },
-      ...(Array.isArray(hv) ? hv : hv.value || []).slice(-4),
+      { role: 'system', content: 'You are ALOP-AI Overlay. Give concise, accurate answers. For coding, provide working code. If screen description is provided, use it to answer.' },
+      ...(Array.isArray(hv) ? hv : (hv.value || [])).slice(-4),
       { role: 'user', content: ctx ? `Screen description: ${ctx}\n\nUser question: ${pv.value}` : `User question: ${pv.value}` }
     ];
-    const responses = await runCouncilWithWhip(OVERLAY_MODELS, overlayMessages, 0.0, 10000, 2, 800);
-    if (responses.length === 0) return res.status(500).json({ error: 'Overlay models failed to respond' });
-    const synth = [
-      { role: 'system', content: 'Synthesize expert answers into one final, concise response. Prioritize accuracy. Do not add information not present in expert responses.' },
-      { role: 'user', content: `Question: ${pv.value}\n\nExpert answers:\n${responses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}` }
-    ];
-        const answer = await callModel('glm-5.2', synth, 0.0, 10000, 1024);
-    await auditLog(user.id, 'overlay_request', { plan: user.plan });
-    res.json({ answer });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+
+    let answer = '';
+    try {
+      answer = await callModel('glm-5.2', overlayMessages, 0.0, 15000, 800);
+    } catch (e) {
+      console.error('[OVERLAY] glm-5.2 failed, trying gemma4:', e.message);
+      try {
+        answer = await callModel('gemma4', overlayMessages, 0.0, 10000, 800);
+      } catch (e2) {
+        console.error('[OVERLAY] gemma4 also failed:', e2.message);
+        answer = "I couldn't process your request right now. Please try again.";
+      }
+    }
+
+    await auditLog(user.id, 'overlay_request', { plan: user.plan, vision: !!ctx });
+    res.json({ answer: answer || "No response generated." });
+  } catch (err) {
+    console.error('Overlay error:', err.message);
+    Sentry.captureException(err);
+    res.json({ answer: "Something went wrong. Please try again." });
+  }
 });
+
 
 // ===== IMAGE GENERATION =====
 app.post('/api/image', requireAuth, checkSuspended, async (req, res) => {

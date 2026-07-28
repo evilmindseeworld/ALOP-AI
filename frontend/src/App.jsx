@@ -393,7 +393,6 @@ const OverlayAssistant = () => {
     const body = { prompt: query, image: image || attachment || undefined };
     try {
  const res = await fetch(`${API_BASE}/api/overlay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-JSON.stringify(body) });
       if (!res.ok) throw new Error(`Error: ${res.status}`);
       const data = await res.json();
       setAnswer(data.answer || 'No answer');

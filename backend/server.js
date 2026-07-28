@@ -1,12 +1,14 @@
 /**
- * ALOP-AI Backend Server
+ * ALOP-AI ULTIMATE COUNCIL BACKEND
  * 
- * A self-selecting, dynamic AI Council architecture.
- * - Models decide for themselves if they want to answer (SKIP logic).
- * - AI-driven web search (decides when to search the web).
- * - Instant greeting bypass for zero-latency responses.
- * - Direct streaming fallback to guarantee no failed responses.
- * - Markdown synthesis for clickable links and rich formatting.
+ * Architecture:
+ * 1. Ingress Validation: Strict sanitization, truncation, and auth.
+ * 2. Intent Classification: Instant bypass for greetings (zero latency).
+ * 3. Autonomous Search Engine: AI determines IF a search is needed, and FORMULATES the optimal query itself.
+ * 4. The Self-Selecting Council: All models receive the prompt. Irrelevant models reply "SKIP" instantly.
+ * 5. The Chief Synthesizer: Combines elite expert responses into one perfect, Markdown-rich answer.
+ * 6. The Failsafe: If all models skip, a generalist streams directly to prevent any failure.
+ * 7. Elite Security: ipKeyGenerator, Helmet, Rate Limiting, CORS, Sentry.
  */
 
 const Sentry = require('@sentry/node');
@@ -72,20 +74,23 @@ const classifyRequest = (text, userPlan) => {
 
   // Tier 1: Greeting (Instant)
   if (wordCount <= 4 && /hi|hello|hey|yo|sup|howdy|gm|good morning/i.test(lower)) {
-    return { models: filterByPlan(['gpt-oss']), quorum: 1, whipMs: 5000, tokenLimit: 200, category: 'greeting' };
+    return { models: filterByPlan(['gemma4']), quorum: 1, whipMs: 5000, tokenLimit: 200, category: 'greeting' };
   }
 
   // Everything else: All models self-select
   return { models: filterByPlan(ALL_MODELS), quorum: 3, whipMs: 30000, tokenLimit: 1500, category: 'council' };
 };
 
-// ===== AI-DRIVEN SEARCH CHECK =====
-const checkIfSearchNeeded = async (text) => {
-  const response = await callModel('gpt-oss', [
-    { role: 'system', content: 'Analyze the user prompt. Does this require real-time internet search results (e.g., current events, product links, specific facts) to answer accurately? Reply ONLY with "YES" or "NO".' },
+// ===== AUTONOMOUS SEARCH ENGINE =====
+// AI determines IF a search is needed, and FORMULATES the optimal query itself.
+const getSearchQuery = async (text) => {
+  const response = await callModel('gemma4', [
+    { role: 'system', content: 'Analyze the user prompt. If it requires real-time internet search to answer accurately (e.g., current events, product links, specific facts), reply ONLY with the optimal search query string (e.g., "best vacuum under 400 AED site:noon.com"). If it does not require search, reply ONLY with "NO".' },
     { role: 'user', content: text }
-  ], 0.1, 5000, 10);
-  return response.trim().toUpperCase().startsWith('YES');
+  ], 0.1, 5000, 50);
+  
+  if (response.trim().toUpperCase() === 'NO' || !response.trim()) return null;
+  return response.trim();
 };
 
 // ===== CORS =====
@@ -173,7 +178,6 @@ app.use(timeout('300s'));
 app.use((req, res, next) => { if (req.timedout) return res.status(503).json({ error: 'Request timeout' }); next(); });
 
 // ===== RATE LIMITING =====
-// FIX: Use ipKeyGenerator to handle IPv6 correctly and prevent crash
 const rlKey = (req, res) => {
   if (req.auth?.userId) return req.auth.userId;
   if (req.clientFingerprint) return req.clientFingerprint;
@@ -463,24 +467,19 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       return;
     }
 
-    // 2. AI-DRIVEN WEB SEARCH
+    // 2. AUTONOMOUS WEB SEARCH
     let webContext = '';
-    const searchNeeded = await checkIfSearchNeeded(pv.value);
-    if (searchNeeded) {
-      console.log('[COUNCIL] AI determined search is needed.');
-      let searchQuery = pv.value;
-      const lower = pv.value.toLowerCase();
-      if (lower.includes('noon')) searchQuery = pv.value + ' site:noon.com';
-      else if (lower.includes('amazon')) searchQuery = pv.value + ' site:amazon.com';
-      
+    const searchQuery = await getSearchQuery(pv.value);
+    if (searchQuery) {
+      console.log(`[COUNCIL] AI generated search query: ${searchQuery}`);
       const results = await searchBrave(searchQuery);
       if (results.length > 0) {
-        webContext = `\n\nReal-time web search results (clickable links):\n${results.map((r, i) => `[${r.title}](${r.url})\n${r.description}`).join('\n\n')}`;
+        webContext = `\n\nReal-time web search results (use these to inform your answer, format links as Markdown):\n${results.map((r, i) => `[${r.title}](${r.url})\n${r.description}`).join('\n\n')}`;
       }
     }
 
     const councilMessages = [
-      { role: 'system', content: `You are an AI expert in the ALOP-AI Council. Evaluate the user's request. If this request is outside your core expertise, reply ONLY with the word "SKIP". If you choose to answer, provide a direct, expert response. Use Markdown for formatting links and lists. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}` },
+      { role: 'system', content: `You are an elite AI expert in the ALOP-AI Council. Your goal is to provide the most accurate, insightful, and helpful response possible. Analyze the user's request. If this request is completely outside your core expertise or capabilities, reply ONLY with the word "SKIP". If you choose to answer, provide a direct, expert, and comprehensive response. Use Markdown for formatting (bold, lists, links). ${isDetailed ? 'Be extremely thorough and detailed.' : 'Be concise but complete.'}` },
       ...(Array.isArray(hv) ? hv : hv.value || []).slice(-4),
       { role: 'user', content: `${truncatedPrompt}${webContext}` }
     ];
@@ -506,7 +505,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     }
 
     const synthMessages = [
-      { role: 'system', content: 'You are the Chief Synthesizer of the ALOP-AI Council. Combine the expert responses into a single, cohesive, and comprehensive answer. Remove redundancies. If experts disagree, present the different perspectives clearly. Do not mention the expert names. Use Markdown for formatting links and lists.' },
+      { role: 'system', content: 'You are the Chief Synthesizer of the ALOP-AI Council. Your task is to combine the responses from multiple elite AI experts into a single, perfect, cohesive, and comprehensive answer. Remove redundancies. Integrate different perspectives seamlessly. If experts disagree, present the consensus and note any important caveats. Do not mention the expert names. Use Markdown for formatting (bold, lists, links). If web search results are provided, ensure you cite them as clickable Markdown links.' },
       { role: 'user', content: `User question: ${truncatedPrompt}${webContext}\n\nExpert responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}` }
     ];
 
@@ -517,7 +516,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     await streamModel(res, 'glm-5.2', synthMessages, isDetailed ? 0.5 : 0.35);
     if (!res.writableEnded) res.end();
 
-    await auditLog(user.id, 'council_message', { plan: userPlan, category: selection.category, models: validResponses.length, truncated: wasTruncated, search: searchNeeded });
+    await auditLog(user.id, 'council_message', { plan: userPlan, category: selection.category, models: validResponses.length, truncated: wasTruncated, search: !!searchQuery });
   } catch (err) {
     console.error('Council error:', err.message);
     Sentry.captureException(err);

@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { ClerkProvider, SignIn, useUser, useAuth, SignOutButton } from "@clerk/react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import "./App.css";
 import SignInPage from "./SignInPage";
 import MagneticButton from "./components/ui/MagneticButton";
 import { animate, createScope, spring, createDraggable } from "animejs";
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
 
@@ -237,10 +237,6 @@ const AuthenticatedApp = () => {
     const stored = Storage.get("alop-dark-mode");
     return stored === null ? true : stored === "true";
   });
-  const [creativity, setCreativity] = useState(() => {
-    const stored = Storage.get("alop-creativity");
-    return stored === null ? 0.6 : parseFloat(stored);
-  });
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     const v = Storage.get("pa-sidebar-collapsed");
     return v === null ? true : v === "true";
@@ -279,7 +275,6 @@ const AuthenticatedApp = () => {
   }, []);
 
   useEffect(() => Storage.set("alop-dark-mode", darkMode.toString()), [darkMode]);
-  useEffect(() => Storage.set("alop-creativity", creativity.toString()), [creativity]);
   useEffect(() => Storage.set("pa-sidebar-collapsed", sidebarCollapsed.toString()), [sidebarCollapsed]);
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); }, [toast]);
   useEffect(() => { if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [chats, activeChatId]);
@@ -287,7 +282,7 @@ const AuthenticatedApp = () => {
   const activeChat = useMemo(() => chats.find((c) => c.id === activeChatId), [chats, activeChatId]);
   const activeMessages = activeChat?.messages || [];
 
-  // Anime.js: Draggable logo + spring messages + elastic buttons
+  // Anime.js animations
   useEffect(() => {
     if (!chatRef.current) return;
 
@@ -358,6 +353,11 @@ const AuthenticatedApp = () => {
     catch (err) { console.error("Failed to fetch plan:", err.message); }
   }, []);
 
+  const createChat = async () => {
+    try { const r = await apiCall("/api/chats", { method: "POST", body: JSON.stringify({ title: "New Chat" }) }); const data = await r.json(); setChats((prev) => [data, ...prev]); setActiveChatId(data.id); setInputText(""); setAttachments([]); return data.id; }
+    catch (err) { setToast("Failed to create chat"); console.error("Create chat failed:", err.message); return null; }
+  };
+
   const startFreshChat = useCallback(async () => {
     await loadChats();
     const fresh = await createChat();
@@ -376,11 +376,6 @@ const AuthenticatedApp = () => {
   }, [isLoaded, user, isSignedIn]);
 
   useEffect(() => { if (isAdmin && showAdmin) fetchAdminUsers(); }, [isAdmin, showAdmin]);
-
-  const createChat = async () => {
-    try { const r = await apiCall("/api/chats", { method: "POST", body: JSON.stringify({ title: "New Chat" }) }); const data = await r.json(); setChats((prev) => [data, ...prev]); setActiveChatId(data.id); setInputText(""); setAttachments([]); return data.id; }
-    catch (err) { setToast("Failed to create chat"); console.error("Create chat failed:", err.message); return null; }
-  };
 
   const updateChatMessages = async (chatId, messages, saveToDb = true) => {
     setChats((prev) => prev.map((c) => (c.id === chatId ? { ...c, messages, updated_at: new Date().toISOString() } : c)));
@@ -460,11 +455,23 @@ const AuthenticatedApp = () => {
     const assistantId = uid();
     const assistantMsg = { role: "assistant", content: "", typing: true, ts: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), id: assistantId };
     updateChatMessages(chatId, [...updated, assistantMsg], false);
+
+    // Clean history: only send real messages with content, no typing indicators
+    const cleanHistory = activeMessages
+      .filter(m => m.content && m.content.trim() && !m.typing)
+      .slice(-6)
+      .map(m => ({ role: m.role, content: m.content }));
+
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
     try {
       const token = await getToken();
-      const res = await fetch(`${API_BASE}/api/council`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ message: cleanText, history: activeMessages.slice(-6).map((m) => ({ role: m.role, content: m.content })), temperature: creativity }), signal: abortRef.current.signal });
+      const res = await fetch(`${API_BASE}/api/council`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ message: cleanText, history: cleanHistory }),
+        signal: abortRef.current.signal
+      });
       if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || `Server error: ${res.status}`); }
       if (!res.body) throw new Error("Streaming not supported");
       setStatus("streaming");
@@ -473,7 +480,10 @@ const AuthenticatedApp = () => {
       while (true) {
         const { done, value } = await reader.read(); if (done) break;
         buf += decoder.decode(value, { stream: true }); const lines = buf.split("\n"); buf = lines.pop() || "";
-        for (const line of lines) { const t = line.trim(); if (!t.startsWith("data: ")) continue; const j = t.slice(6).trim(); if (j === "[DONE]") break; try { const d = JSON.parse(j); if (d.type === "chunk") acc += d.text; else if (d.type === "error") throw new Error(d.text); } catch {} }
+        for (const line of lines) {
+          const t = line.trim(); if (!t.startsWith("data: ")) continue; const j = t.slice(6).trim(); if (j === "[DONE]") break;
+          try { const d = JSON.parse(j); if (d.type === "chunk") acc += d.text; else if (d.type === "error") throw new Error(d.text); } catch {}
+        }
         updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: acc }], false);
       }
       await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: acc }]);
@@ -484,7 +494,7 @@ const AuthenticatedApp = () => {
       await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: `⚠️ ${err.message || "Connection failed"}` }]);
     }
     setInputText("");
-  }, [activeChatId, activeMessages, status, generateImage, attachments, creativity]);
+  }, [activeChatId, activeMessages, status, generateImage, attachments]);
 
   if (!isLoaded) return null;
   return (
@@ -513,7 +523,7 @@ const AuthenticatedApp = () => {
             <img src="/logo.png" alt="" className="header-logo" />
             <div className="brand-text">
               <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
-              <span className="sub-title">AI Council • {userPlan === "pro" ? "15 models" : "4 models"}</span>
+              <span className="sub-title">AI Council • {userPlan === "pro" ? "15 models" : "4 models"} • Precision Mode</span>
             </div>
           </div>
           <div className="header-actions">
@@ -593,25 +603,24 @@ const AuthenticatedApp = () => {
                   <div className="empty-state">
                     <img src="/logo.png" alt="ALOP-AI" className="empty-logo" />
                     <h2 className="empty-title text-shimmer">ALOP-AI</h2>
-                    <p className="empty-subtitle">Ask the AI Council anything. Multiple models work together.</p>
+                    <p className="empty-subtitle">Ask the AI Council anything. Multiple models work together. Precision mode active.</p>
                   </div>
                 )}
                 {activeMessages.map((msg, idx) => (
                   <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
                     <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
                     <div className="msg-content">
-                      {msg.typing && (
+                      {msg.typing ? (
                         <div className="bubble typing-bubble">
                           <span className="typing-dot"></span>
                           <span className="typing-dot"></span>
                           <span className="typing-dot"></span>
                         </div>
-                      )}
-                      {msg.content && !msg.typing && (
-  <div className="bubble markdown-body">
-    <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
-  </div>
-)}
+                      ) : msg.content ? (
+                        <div className="bubble markdown-body">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+                        </div>
+                      ) : null}
                       {msg.imageUrl && (
                         <div style={{ marginTop: 8 }}>
                           <img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: "var(--radius-lg)", cursor: "pointer" }} onClick={() => window.open(msg.imageUrl, "_blank")} />
@@ -623,26 +632,11 @@ const AuthenticatedApp = () => {
                           {msg.attachments.map((a, i) => <img key={i} src={a.url} alt={a.name} style={{ width: 60, height: 60, borderRadius: "var(--radius-sm)", objectFit: "cover" }} />)}
                         </div>
                       )}
-                      {msg.role === "assistant" && !msg.imageUrl && !msg.typing && <MessageActions content={msg.content} onCopy={() => navigator.clipboard.writeText(msg.content)} />}
+                      {msg.role === "assistant" && msg.content && !msg.imageUrl && !msg.typing && <MessageActions content={msg.content} onCopy={() => navigator.clipboard.writeText(msg.content)} />}
                       <div className="msg-meta">{msg.ts}</div>
                     </div>
                   </div>
                 ))}
-              </div>
-              
-              <div className="creativity-bar">
-                <span className="creativity-label">Creativity</span>
-                <div
-                  className="creativity-track"
-                  onClick={(e) => {
-                    const rect = e.currentTarget.getBoundingClientRect();
-                    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-                    setCreativity(Math.round(pct * 10) / 10);
-                  }}
-                >
-                  <div className="creativity-fill" style={{ width: `${creativity * 100}%` }} />
-                </div>
-                <span className="creativity-value">{Math.round(creativity * 100)}%</span>
               </div>
 
               <InputBar text={inputText} setText={setInputText} onSend={handleSend} disabled={status !== "idle"} attachments={attachments} setAttachments={setAttachments} onFileSelect={handleFileSelect} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} />
@@ -735,7 +729,9 @@ const OverlayAssistant = () => {
       <div className="overlay-answer-stack">
         {answer && (
           <div className="overlay-answer-card">
-            <div className="overlay-answer-text">{answer}</div>
+            <div className="overlay-answer-text markdown-body">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{answer}</ReactMarkdown>
+            </div>
             <button className="overlay-tts-btn" onClick={() => isSpeaking ? stopSpeaking() : speak(answer)} title={isSpeaking ? 'Stop speaking' : 'Speak answer'}>{isSpeaking ? '■' : '▶'}</button>
           </div>
         )}

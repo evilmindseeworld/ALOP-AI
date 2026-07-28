@@ -2237,3 +2237,416 @@ textarea:focus-visible {
   margin: 10px 0;
   opacity: 0.8;
 }
+
+/* ===== DARK MODE REWORK: Obsidian Night ===== */
+.dark {
+  --bg: #0a0a0f;
+  --surface: #12121a;
+  --surface-2: #1a1a24;
+  --surface-3: #22222e;
+  --surface-4: #2a2a38;
+  --border: rgba(255, 255, 255, 0.06);
+  --border-strong: rgba(255, 255, 255, 0.1);
+  --text: #f0ebe6;
+  --text-subtle: #8a8590;
+  --text-muted: #5a5560;
+  --primary: #ec7d96;
+  --primary-soft: #f0a5b8;
+  --primary-glow: rgba(236, 125, 150, 0.15);
+  --emerald: #5ec998;
+  --emerald-glow: rgba(94, 201, 152, 0.12);
+  --gradient-primary: linear-gradient(135deg, #ec7d96, #e86580);
+  --gradient-emerald: linear-gradient(135deg, #5ec998, #4ab87f);
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --font-heading: 'Inter', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Consolas', monospace;
+}
+
+/* Remove wood texture, add deep space gradient */
+.dark .bg-layer {
+  background: radial-gradient(ellipse at 20% 0%, rgba(236, 125, 150, 0.06) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 100%, rgba(94, 201, 152, 0.05) 0%, transparent 50%),
+              #0a0a0f !important;
+  background-image: none !important;
+}
+
+.dark .bg-overlay {
+  background: none !important;
+  background-image: none !important;
+}
+
+/* Dark surfaces with subtle glow borders */
+.dark .sidebar {
+  background: #0d0d13 !important;
+  background-image: none !important;
+  border-right: 1px solid rgba(255, 255, 255, 0.04) !important;
+}
+
+.dark .app-header {
+  background: rgba(13, 13, 19, 0.85) !important;
+  background-image: none !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+.dark .bubble {
+  background: #15151e !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .msg-row.user .bubble {
+  background: linear-gradient(135deg, #1e1520, #1a1218) !important;
+  border: 1px solid rgba(236, 125, 150, 0.15) !important;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 4px 20px rgba(236, 125, 150, 0.08) !important;
+}
+
+.dark .msg-row.assistant .bubble {
+  background: #15151e !important;
+}
+
+.dark .input-bar {
+  background: rgba(13, 13, 19, 0.9) !important;
+  background-image: none !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.04) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+}
+
+.dark .input-wrapper {
+  background: #12121a !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .input-wrapper:focus-within {
+  border-color: rgba(236, 125, 150, 0.3) !important;
+  box-shadow: 0 0 0 3px rgba(236, 125, 150, 0.08), 0 2px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+.dark .chat-item {
+  background: transparent !important;
+  background-image: none !important;
+}
+
+.dark .chat-item:hover {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+.dark .chat-item.active {
+  background: rgba(236, 125, 150, 0.08) !important;
+  border: 1px solid rgba(236, 125, 150, 0.15) !important;
+}
+
+.dark .side-panel {
+  background: #0d0d13 !important;
+  background-image: none !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.04) !important;
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.4) !important;
+}
+
+.dark .theme-card {
+  background: #15151e !important;
+  background-image: none !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark .theme-card:hover {
+  background: #1a1a24 !important;
+  border-color: rgba(236, 125, 150, 0.2) !important;
+}
+
+.dark .new-chat-btn {
+  background: linear-gradient(135deg, #ec7d96, #e86580) !important;
+  background-image: none !important;
+  border: none !important;
+  box-shadow: 0 2px 12px rgba(236, 125, 150, 0.25) !important;
+}
+
+.dark .input-btn.primary {
+  background: linear-gradient(135deg, #ec7d96, #e86580) !important;
+  box-shadow: 0 2px 12px rgba(236, 125, 150, 0.25) !important;
+}
+
+.dark .input-btn {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark .input-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .icon-btn {
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+}
+
+.dark .icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .empty-logo {
+  filter: drop-shadow(0 0 30px rgba(236, 125, 150, 0.15)) drop-shadow(0 0 60px rgba(94, 201, 152, 0.08)) !important;
+}
+
+.dark .text-shimmer {
+  background: linear-gradient(90deg, #f0ebe6 20%, #ec7d96 40%, #5ec998 60%, #f0ebe6 80%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 4s linear infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+.dark .avatar {
+  background: linear-gradient(135deg, #1a1a24, #22222e) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .msg-meta {
+  color: rgba(255, 255, 255, 0.2) !important;
+}
+
+.dark .creativity-track {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.dark .admin-badge.pro {
+  background: rgba(236, 125, 150, 0.15) !important;
+  color: #f0a5b8 !important;
+}
+
+.dark .admin-badge.free {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: #8a8590 !important;
+}
+
+.dark .admin-user-card {
+  background: #15151e !important;
+  border: 1px solid rgba(255, 255, 255, 0.04) !important;
+}
+
+/* ===== SCROLL ANIMATIONS ===== */
+
+/* Smooth scroll */
+.scroll-wrapper {
+  scroll-behavior: smooth;
+}
+
+/* Reveal animation for messages */
+.msg-row {
+  animation: msgReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes msgReveal {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.98);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+/* Stagger animation for chat list items */
+.chat-item {
+  animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes slideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Scroll indicator glow at top */
+.scroll-wrapper::before {
+  content: '';
+  position: sticky;
+  top: 0;
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(90deg, transparent, var(--primary), var(--emerald), transparent);
+  background-size: 200% 100%;
+  animation: scrollGlow 3s linear infinite;
+  z-index: 100;
+  pointer-events: none;
+}
+
+@keyframes scrollGlow {
+  0% { background-position: 200% 0; opacity: 0.3; }
+  50% { opacity: 0.8; }
+  100% { background-position: -200% 0; opacity: 0.3; }
+}
+
+/* Empty state float animation */
+.empty-state {
+  animation: floatGentle 4s ease-in-out infinite;
+}
+
+@keyframes floatGentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* Background subtle parallax pulse */
+.bg-layer {
+  animation: bgPulse 12s ease-in-out infinite;
+}
+
+@keyframes bgPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.92; transform: scale(1.02); }
+}
+
+/* Button hover glow */
+.input-btn.primary, .new-chat-btn {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.input-btn.primary:hover, .new-chat-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(236, 125, 150, 0.35) !important;
+}
+
+.input-btn.primary:active, .new-chat-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Scrollbar styling */
+.scroll-wrapper::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scroll-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-wrapper::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
+}
+
+.scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: rgba(236, 125, 150, 0.3);
+}
+
+/* Smooth theme transition */
+.app-root {
+  transition: background 0.4s ease, color 0.4s ease;
+}
+
+.app-root * {
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Markdown images in chat */
+.markdown-body img {
+  border-radius: 12px;
+  max-width: 100%;
+  margin: 8px 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  transition: transform 0.3s ease;
+}
+
+.markdown-body img:hover {
+  transform: scale(1.02);
+}
+
+/* Markdown links */
+.markdown-body a {
+  color: var(--primary);
+  text-decoration: underline;
+  font-weight: 500;
+  transition: opacity 0.2s ease;
+}
+
+.markdown-body a:hover {
+  opacity: 0.8;
+}
+
+/* Markdown tables */
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 13px;
+}
+
+.markdown-body th, .markdown-body td {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.markdown-body th {
+  background: rgba(255, 255, 255, 0.03);
+  font-weight: 600;
+}
+
+/* Markdown code blocks */
+.markdown-body pre {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  padding: 14px;
+  overflow-x: auto;
+  margin: 10px 0;
+}
+
+.markdown-body pre code {
+  background: none;
+  padding: 0;
+  font-size: 13px;
+}
+
+.markdown-body code {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+/* Markdown lists */
+.markdown-body ul, .markdown-body ol {
+  margin-left: 20px;
+  margin-bottom: 10px;
+}
+
+.markdown-body li {
+  margin-bottom: 6px;
+}
+
+/* Markdown headers */
+.markdown-body h1, .markdown-body h2, .markdown-body h3 {
+  margin-top: 16px;
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.markdown-body blockquote {
+  border-left: 3px solid var(--primary);
+  padding-left: 12px;
+  margin: 10px 0;
+  opacity: 0.8;
+}

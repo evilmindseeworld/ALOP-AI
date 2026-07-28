@@ -193,7 +193,7 @@ const QuickAsk = ({ darkMode }) => {
     if (!query.trim() || status === 'loading') return;
     setStatus('loading'); setAnswer('');
     if (abortRef.current) abortRef.current.abort();
-    abortRef = new AbortController();
+        abortRef.current = new AbortController();
     try {
       const token = await getToken();
       const res = await fetch(`${API_BASE}/api/quick`, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ message: query.trim(), history: [] }), signal: abortRef.current.signal });

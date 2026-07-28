@@ -190,11 +190,13 @@ const classifyRequest = (text, userPlan) => {
   return { models: filterByPlan(ALL_MODELS), quorum: 3, whipMs: 30000, tokenLimit: 2000, category: 'council' };
 };
 
-// ===== MEMORY/REFERENCE QUESTION DETECTOR =====
-const isMemoryOrReferenceQuestion = (text) => {
-  const lower = text.toLowerCase();
-  const triggers = ['do you remember', 'remember', 'you said', 'you mentioned', 'earlier', 'previous', 'last conversation', 'last chat', 'what did we', 'what were we', 'continue', 'pick up where', 'as you said', 'like you said', 'what about the', 'how about that', 'what else', 'tell me more about that', 'go deeper on', 'what did you mean', 'i meant', 'i was asking about', 'can you recall', 'we were talking about', 'you told me'];
-  return triggers.some(t => lower.includes(t));
+// ===== AI-DRIVEN MEMORY DETECTION =====
+const isMemoryOrReferenceQuestion = async (text) => {
+  const response = await callModel('gemma4', [
+    { role: 'system', content: 'Is this question asking about a previous conversation, referencing something discussed earlier, or requesting continuity from prior messages? Reply ONLY with "YES" or "NO".' },
+    { role: 'user', content: text.slice(0, 500) }
+  ], 0.0, 3000, 10);
+  return response.trim().toUpperCase().startsWith('YES');
 };
 
 // ===== AUTONOMOUS SEARCH DECISION =====
@@ -444,7 +446,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | Cache: ${convCache ? `${convCache.turnCount} turns` : 'none'}`);
 
     // 0. MEMORY BYPASS (for "do you remember" type questions — instant, no search, no council)
-    if (isMemoryOrReferenceQuestion(pv.value)) {
+    if (await isMemoryOrReferenceQuestion(pv.value)) {
       console.log('[COUNCIL] Memory question detected. Using dedicated memory bypass.');
       const memoryMessages = [
         { role: 'system', content: `You are ALOP-AI. The user is asking about a previous conversation or something you discussed earlier. Below is the message history from this chat session. The history IS your memory — read it and answer based on what you see.

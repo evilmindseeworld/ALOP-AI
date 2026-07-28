@@ -1,3 +1,14 @@
+/**
+ * ALOP-AI Backend Server
+ * 
+ * A self-selecting, dynamic AI Council architecture.
+ * - Models decide for themselves if they want to answer (SKIP logic).
+ * - AI-driven web search (decides when to search the web).
+ * - Instant greeting bypass for zero-latency responses.
+ * - Direct streaming fallback to guarantee no failed responses.
+ * - Markdown synthesis for clickable links and rich formatting.
+ */
+
 const Sentry = require('@sentry/node');
 const { nodeProfilingIntegration } = require('@sentry/profiling-node');
 
@@ -162,10 +173,16 @@ app.use(timeout('300s'));
 app.use((req, res, next) => { if (req.timedout) return res.status(503).json({ error: 'Request timeout' }); next(); });
 
 // ===== RATE LIMITING =====
-const rlKey = (req) => req.auth?.userId || req.clientFingerprint || req.ip || 'unknown';
+// FIX: Use ipKeyGenerator to handle IPv6 correctly and prevent crash
+const rlKey = (req, res) => {
+  if (req.auth?.userId) return req.auth.userId;
+  if (req.clientFingerprint) return req.clientFingerprint;
+  return rateLimit.ipKeyGenerator(req, res);
+};
+
 const createLimiter = (windowMs, max, msg) => rateLimit({
   windowMs, max, message: { error: msg }, standardHeaders: true, legacyHeaders: false,
-  keyGenerator: rlKey,
+  keyGenerator: (req, res) => rlKey(req, res),
   skip: (req) => req.path === '/health' || req.path === '/api/stripe/webhook',
   handler: (req, res) => {
     Sentry.captureMessage(`Rate limit: ${req.method} ${req.path}`);

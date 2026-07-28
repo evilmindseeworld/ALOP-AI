@@ -350,7 +350,6 @@ const AuthenticatedApp = () => {
           </div>
         </div>
       </div>
-      <QuickAsk darkMode={darkMode} />
     </div>
   );
 };

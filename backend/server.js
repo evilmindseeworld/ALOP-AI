@@ -566,11 +566,8 @@ ABSOLUTE RULES:
 
     // 6. COUNCIL MODE (logic, coding, math, creative, OR memory questions)
         const memoryContext = '';
-      ? `\n\nIMPORTANT: The user is asking about a previous conversation. Here is the conversation summary: ${convCache.summary}\n\nThe message history below contains the actual previous messages. Use BOTH the summary and history to answer. Do NOT say you don't have memory. You DO have the conversation context below.`
-      : '';
-
     const councilMessages = [
-      { role: 'system', content: `You are an elite AI expert in the ALOP-AI Council. If this request is outside your expertise, reply ONLY with "SKIP". If you answer, be direct and comprehensive. Use Markdown. If CONVERSATION CONTEXT or history is provided, use it for continuity and reference previous topics.${memoryContext} ${isDetailed ? 'Be thorough.' : 'Be concise.'}` },
+      { role: 'system', content: `You are an elite AI expert in the ALOP-AI Council. If this request is outside your expertise, reply ONLY with "SKIP". If you answer, be direct and comprehensive. Use Markdown. If CONVERSATION CONTEXT or history is provided, use it for continuity and reference previous topics. ${isDetailed ? 'Be thorough.' : 'Be concise.'}`
       ...(convCache?.summary ? [{ role: 'system', content: `CONVERSATION CONTEXT (previous messages summary): ${convCache.summary}` }] : []),
       ...histArr.slice(-10),
       { role: 'user', content: truncatedPrompt }

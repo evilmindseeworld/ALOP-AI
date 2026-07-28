@@ -2741,18 +2741,23 @@ textarea:focus-visible {
   pointer-events: none;
   z-index: 5;
   transform-origin: top center;
-  opacity: 0.9;
 }
 
 .earring-left {
-  top: 60px;
-  left: 16px;
+  top: 50px;
+  left: 20px;
+  width: 130px;
+  height: 200px;
+  clip-path: inset(0 45% 0 5%);
   animation: earringSwing 5s ease-in-out infinite;
 }
 
 .earring-right {
-  top: 60px;
-  right: 16px;
+  top: 50px;
+  right: 20px;
+  width: 130px;
+  height: 200px;
+  clip-path: inset(0 5% 0 45%);
   animation: earringSwing 5s ease-in-out infinite reverse;
 }
 
@@ -2763,15 +2768,11 @@ textarea:focus-visible {
   75% { transform: rotate(-2deg) translateY(-3px); }
 }
 
-/* Smaller on mobile */
 @media (max-width: 768px) {
-  .earring-3d { width: 60px !important; height: 90px !important; }
+  .earring-3d { width: 80px !important; height: 120px !important; }
   .earring-left { left: 8px; }
   .earring-right { right: 8px; }
 }
 
-/* Fade slightly in dark mode */
 .dark .earring-3d { opacity: 0.75; filter: drop-shadow(0 4px 12px rgba(236, 125, 150, 0.15)); }
-
-/* Brighter in light mode */
 .light .earring-3d { opacity: 0.85; filter: drop-shadow(0 4px 12px rgba(201, 30, 94, 0.1)); }

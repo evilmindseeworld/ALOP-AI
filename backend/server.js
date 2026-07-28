@@ -37,7 +37,7 @@ const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
-// ===== MODEL ROSTER (14 Working Models) =====
+// ===== MODEL ROSTER =====
 const FREE_COUNCIL_MODELS = ['gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5'];
 const ALL_MODELS = [
   'gemma4', 'qwen3.5', 'glm-5.2', 'kimi-k2.5', 'minimax-m2.5',
@@ -61,21 +61,20 @@ const classifyRequest = (text, userPlan) => {
 
   // Tier 1: Greeting (Instant)
   if (wordCount <= 4 && /hi|hello|hey|yo|sup|howdy|gm|good morning/i.test(lower)) {
-    return { models: filterByPlan(['gpt-oss']), quorum: 1, whipMs: 10000, tokenLimit: 200, category: 'greeting' };
+    return { models: filterByPlan(['gpt-oss']), quorum: 1, whipMs: 5000, tokenLimit: 200, category: 'greeting' };
   }
 
-  // Tier 2: Simple (Fast)
-  if (wordCount < 15) {
-    return { models: filterByPlan(['gemma4', 'qwen3.5', 'glm-5.2']), quorum: 2, whipMs: 20000, tokenLimit: 500, category: 'simple' };
-  }
+  // Everything else: All models self-select
+  return { models: filterByPlan(ALL_MODELS), quorum: 3, whipMs: 30000, tokenLimit: 1500, category: 'council' };
+};
 
-  // Tier 3: Complex/Project (All hands on deck, models self-select)
-  if (wordCount > 50 || /detailed|comprehensive|essay|project|build|architecture|design|research/i.test(lower)) {
-    return { models: filterByPlan(ALL_MODELS), quorum: 3, whipMs: 45000, tokenLimit: 2000, category: 'complex' };
-  }
-
-  // Default: Medium
-  return { models: filterByPlan(ALL_MODELS.slice(0, 8)), quorum: 3, whipMs: 30000, tokenLimit: 1000, category: 'default' };
+// ===== AI-DRIVEN SEARCH CHECK =====
+const checkIfSearchNeeded = async (text) => {
+  const response = await callModel('gpt-oss', [
+    { role: 'system', content: 'Analyze the user prompt. Does this require real-time internet search results (e.g., current events, product links, specific facts) to answer accurately? Reply ONLY with "YES" or "NO".' },
+    { role: 'user', content: text }
+  ], 0.1, 5000, 10);
+  return response.trim().toUpperCase().startsWith('YES');
 };
 
 // ===== CORS =====
@@ -395,16 +394,6 @@ const runCouncilWithWhip = async (models, messages, temperature, whipMs, quorum,
 };
 
 // ===== CLASSIFIERS =====
-const needsRealTimeSearch = (text) => {
-  const lower = text.toLowerCase();
-  const triggers = [
-    'today', 'now', 'currently', 'latest', 'news', 'score', 'weather', 'stock', 'price',
-    'who won', 'what happened', 'election', 'launched', 'released', 'update', 'breaking',
-    'what do you think of', 'review', 'specs', 'vs', 'compare', 'best', 'should i buy', 'monitor', 'laptop', 'phone', 'gpu', 'cpu'
-  ];
-  return triggers.some((t) => lower.includes(t));
-};
-
 const wantsDetailedAnswer = (text) => ['explain in detail','detailed','in depth','comprehensive','thorough','step by step','deep dive','elaborate','full explanation'].some(t => text.toLowerCase().includes(t));
 
 const searchBrave = async (query) => {
@@ -457,21 +446,37 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       return;
     }
 
+    // 2. AI-DRIVEN WEB SEARCH
+    let webContext = '';
+    const searchNeeded = await checkIfSearchNeeded(pv.value);
+    if (searchNeeded) {
+      console.log('[COUNCIL] AI determined search is needed.');
+      let searchQuery = pv.value;
+      const lower = pv.value.toLowerCase();
+      if (lower.includes('noon')) searchQuery = pv.value + ' site:noon.com';
+      else if (lower.includes('amazon')) searchQuery = pv.value + ' site:amazon.com';
+      
+      const results = await searchBrave(searchQuery);
+      if (results.length > 0) {
+        webContext = `\n\nReal-time web search results (clickable links):\n${results.map((r, i) => `[${r.title}](${r.url})\n${r.description}`).join('\n\n')}`;
+      }
+    }
+
     const councilMessages = [
-      { role: 'system', content: `You are an AI expert in the ALOP-AI Council. Evaluate the user's request. If this request is outside your core expertise or you are not the best model to answer it, reply ONLY with the word "SKIP". If you choose to answer, provide a direct, expert response. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}` },
+      { role: 'system', content: `You are an AI expert in the ALOP-AI Council. Evaluate the user's request. If this request is outside your core expertise, reply ONLY with the word "SKIP". If you choose to answer, provide a direct, expert response. Use Markdown for formatting links and lists. ${isDetailed ? 'Be thorough and detailed.' : 'Be concise.'}` },
       ...(Array.isArray(hv) ? hv : hv.value || []).slice(-4),
-      { role: 'user', content: truncatedPrompt }
+      { role: 'user', content: `${truncatedPrompt}${webContext}` }
     ];
 
     let validResponses = await runCouncilWithWhip(selection.models, councilMessages, creativity, selection.whipMs, selection.quorum, selection.tokenLimit);
     
-    // 2. FALLBACK IF ALL MODELS SKIP OR FAIL
+    // 3. FALLBACK IF ALL MODELS SKIP OR FAIL
     if (validResponses.length === 0) {
       console.log('[COUNCIL] No valid responses. Streaming fallback generalist directly.');
       const fallbackMessages = [
-        { role: 'system', content: 'You are a helpful AI assistant. Answer the user\'s request directly and concisely.' },
+        { role: 'system', content: 'You are a helpful AI assistant. Answer the user\'s request directly and concisely. Use Markdown for formatting links and lists.' },
         ...(Array.isArray(hv) ? hv : hv.value || []).slice(-4),
-        { role: 'user', content: truncatedPrompt }
+        { role: 'user', content: `${truncatedPrompt}${webContext}` }
       ];
       
       res.setHeader('Content-Type', 'text/event-stream');
@@ -483,15 +488,9 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       return;
     }
 
-    let webContext = '';
-    if (needsRealTimeSearch(pv.value)) {
-      const results = await searchBrave(pv.value);
-      if (results.length > 0) webContext = `\n\nReal-time web search results:\n${results.map((r, i) => `[Source ${i + 1}] ${r.title}\nURL: ${r.url}\n${r.description}`).join('\n\n')}`;
-    }
-
     const synthMessages = [
-            { role: 'system', content: 'You are the Chief Synthesizer of the ALOP-AI Council. Combine the expert responses into a single, cohesive, and comprehensive answer. Remove redundancies. If experts disagree, present the different perspectives clearly. Do not mention the expert names. If web search results or product links are provided, format them as clickable Markdown links (e.g., [Product Name](https://...)). Use Markdown for formatting, including bold, lists, and links.' },
-{ role: 'user', content: `User question: ${truncatedPrompt}${webContext}\n\nExpert responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}` }
+      { role: 'system', content: 'You are the Chief Synthesizer of the ALOP-AI Council. Combine the expert responses into a single, cohesive, and comprehensive answer. Remove redundancies. If experts disagree, present the different perspectives clearly. Do not mention the expert names. Use Markdown for formatting links and lists.' },
+      { role: 'user', content: `User question: ${truncatedPrompt}${webContext}\n\nExpert responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}` }
     ];
 
     res.setHeader('Content-Type', 'text/event-stream');
@@ -501,7 +500,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     await streamModel(res, 'glm-5.2', synthMessages, isDetailed ? 0.5 : 0.35);
     if (!res.writableEnded) res.end();
 
-    await auditLog(user.id, 'council_message', { plan: userPlan, category: selection.category, models: validResponses.length, truncated: wasTruncated });
+    await auditLog(user.id, 'council_message', { plan: userPlan, category: selection.category, models: validResponses.length, truncated: wasTruncated, search: searchNeeded });
   } catch (err) {
     console.error('Council error:', err.message);
     Sentry.captureException(err);

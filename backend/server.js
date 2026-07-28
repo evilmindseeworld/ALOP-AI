@@ -492,7 +492,7 @@ ${convCache?.summary ? `\nConversation summary: ${convCache.summary}` : ''}` },
     const searchQuery = await getSearchQuery(pv.value);
 
 
-    const shouldCheckWiki = !isMemoryQuestion && needsWikiCheck(pv.value);
+    const shouldCheckWiki = !false && needsWikiCheck(pv.value);
 
     // 4. SEARCH MODE
     if (searchQuery) {
@@ -606,7 +606,7 @@ ABSOLUTE RULES:
       const lastAssistant = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
       updateConversationSummary(chatId, pv.value, lastAssistant || validResponses[0]?.content?.slice(0, 800) || 'Responded via council.').catch(() => {});
     }
-    await auditLog(user.id, 'council_message', { plan: userPlan, category: selection.category, models: validResponses.length, memory: isMemoryQuestion });
+    await auditLog(user.id, 'council_message', { plan: userPlan, category: selection.category, models: validResponses.length, memory: false });
   } catch (err) {
     console.error('Council error:', err.message);
     Sentry.captureException(err);

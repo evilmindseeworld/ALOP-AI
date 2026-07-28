@@ -5,14 +5,12 @@
  * 1. Tavily API — AI-optimized search, full content + images
  * 2. Brave Search API — 10 web results
  * 3. Google Custom Search API — 10 web results + 5 images
- * 4. Jina AI Reader — Deep reads top 3 pages
+ * 4. Jina AI Reader — Deep reads top 2 pages (reduced for speed)
  * 5. Wikipedia REST API — Full article extracts
  *
- * Anti-Hallucination: Temperature 0.0, 10 extraction rules,
- * refuse if no results, no training data fallback.
- *
- * Image Support: Tavily + Google image results passed to AI
- * as Markdown image links for visual answers.
+ * Memory: Conversation cache (compressed summary per chat)
+ * Speed: Search result cache (5 min TTL), reduced timeouts
+ * Anti-Hallucination: Temperature 0.0, 11 extraction rules
  */
 
 const Sentry = require('@sentry/node');
@@ -51,7 +49,6 @@ if (missingEnv.length > 0) {
   process.exit(1);
 }
 
-// Optional env vars
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY || null;
 const JINA_API_KEY = process.env.JINA_API_KEY || null;
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY || null;
@@ -59,10 +56,7 @@ const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || null;
 const GOOGLE_SEARCH_API_KEY = process.env.GOOGLE_SEARCH_API_KEY || null;
 const GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID || null;
 
-console.log(`[ENV] Tavily: ${TAVILY_API_KEY ? 'ON' : 'OFF'}`);
-console.log(`[ENV] Jina: ${JINA_API_KEY ? 'ON' : 'OFF (free)'}`);
-console.log(`[ENV] Brave: ${BRAVE_API_KEY ? 'ON' : 'OFF'}`);
-console.log(`[ENV] Google Search: ${GOOGLE_SEARCH_API_KEY && GOOGLE_CSE_ID ? 'ON' : 'OFF'}`);
+console.log(`[ENV] Tavily: ${TAVILY_API_KEY ? 'ON' : 'OFF'} | Jina: ${JINA_API_KEY ? 'ON' : 'OFF'} | Brave: ${BRAVE_API_KEY ? 'ON' : 'OFF'} | Google: ${GOOGLE_SEARCH_API_KEY && GOOGLE_CSE_ID ? 'ON' : 'OFF'}`);
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
 const OLLAMA_HOST = process.env.OLLAMA_HOST;
@@ -77,6 +71,72 @@ const ALL_MODELS = [
   'nemotron-3-super', 'nemotron-3-ultra'
 ];
 const OVERLAY_MODELS = ['deepseek-v4-pro', 'glm-5.2', 'kimi-k2.7-code'];
+
+// ===== CONVERSATION CACHE (compressed memory per chat) =====
+const conversationCache = new Map();
+const MAX_CONV_CACHE = 200;
+
+const getConversationCache = (chatId) => {
+  if (!chatId) return null;
+  if (!conversationCache.has(chatId)) {
+    if (conversationCache.size >= MAX_CONV_CACHE) {
+      const firstKey = conversationCache.keys().next().value;
+      conversationCache.delete(firstKey);
+    }
+    conversationCache.set(chatId, { summary: '', turnCount: 0, lastUpdated: Date.now() });
+  }
+  return conversationCache.get(chatId);
+};
+
+const updateConversationSummary = async (chatId, userMsg, assistantMsg) => {
+  const cache = getConversationCache(chatId);
+  if (!cache) return;
+
+  const userExcerpt = userMsg.slice(0, 800);
+  const assistantExcerpt = assistantMsg.slice(0, 800);
+
+  try {
+    if (cache.summary) {
+      const compressed = await callModel('gemma4', [
+        { role: 'system', content: 'Compress the previous summary and new exchange into a concise 2-3 sentence summary. Capture key facts, user preferences, decisions made, and important context. Reply ONLY with the summary, nothing else.' },
+        { role: 'user', content: `Previous summary:\n${cache.summary}\n\nNew exchange:\nUser: ${userExcerpt}\nAssistant: ${assistantExcerpt}` }
+      ], 0.0, 4000, 200);
+      if (compressed.trim()) cache.summary = compressed.trim();
+    } else {
+      const summary = await callModel('gemma4', [
+        { role: 'system', content: 'Summarize this exchange in 1-2 sentences. Capture key context, facts, and user intent. Reply ONLY with the summary.' },
+        { role: 'user', content: `User: ${userExcerpt}\nAssistant: ${assistantExcerpt}` }
+      ], 0.0, 4000, 150);
+      if (summary.trim()) cache.summary = summary.trim();
+    }
+    cache.turnCount++;
+    cache.lastUpdated = Date.now();
+  } catch (err) {
+    console.error('[CACHE] Summary update failed:', err.message);
+  }
+};
+
+// ===== SEARCH RESULT CACHE (5 minute TTL for speed) =====
+const searchCache = new Map();
+const SEARCH_CACHE_TTL = 300000;
+
+const getCachedSearch = (query) => {
+  const cached = searchCache.get(query);
+  if (cached && (Date.now() - cached.timestamp) < SEARCH_CACHE_TTL) {
+    console.log(`[SEARCH CACHE] Hit: "${query}"`);
+    return cached.data;
+  }
+  if (cached) searchCache.delete(query);
+  return null;
+};
+
+const setCachedSearch = (query, data) => {
+  if (searchCache.size >= 50) {
+    const firstKey = searchCache.keys().next().value;
+    searchCache.delete(firstKey);
+  }
+  searchCache.set(query, { data, timestamp: Date.now() });
+};
 
 // ===== AI HELPERS =====
 const callModel = async (modelName, messages, temperature = 0.0, timeoutMs = 30000, maxTokens = 1000) => {
@@ -231,7 +291,7 @@ const getSearchQuery = async (text) => {
   const response = await callModel('gemma4', [
     { role: 'system', content: 'Analyze the user prompt. If it requires real-time internet search to answer accurately (e.g., current events, product links, specific facts, reviews, specs, prices, images), reply ONLY with the optimal search query string to find specific products or answers (e.g., "ASUS ROG Strix XG27AQWMG review specs price"). If it does not require search, reply ONLY with "NO".' },
     { role: 'user', content: text }
-  ], 0.0, 8000, 50);
+  ], 0.0, 4000, 50);
 
   const trimmed = response.trim();
   if (trimmed.toUpperCase() === 'NO' || !trimmed) return null;
@@ -242,7 +302,7 @@ const getSearchQuery = async (text) => {
 const wantsDetailedAnswer = (text) => ['explain in detail', 'detailed', 'in depth', 'comprehensive', 'thorough', 'step by step', 'deep dive', 'elaborate', 'full explanation'].some(t => text.toLowerCase().includes(t));
 const needsWikiCheck = (text) => /what is|who is|history|explain|definition|meaning of|tell me about|biography|born|origin/i.test(text);
 
-// ===== SEARCH 1: BRAVE (10 results) =====
+// ===== SEARCH 1: BRAVE =====
 const searchBrave = async (query) => {
   if (!BRAVE_API_KEY) return [];
   try {
@@ -261,7 +321,7 @@ const searchBrave = async (query) => {
   } catch { return []; }
 };
 
-// ===== SEARCH 2: TAVILY (full content + images) =====
+// ===== SEARCH 2: TAVILY =====
 const searchTavily = async (query) => {
   if (!TAVILY_API_KEY) return { answer: '', results: [], images: [] };
   try {
@@ -278,7 +338,7 @@ const searchTavily = async (query) => {
         include_image_descriptions: true,
         max_results: 5
       }),
-      signal: AbortSignal.timeout(12000)
+      signal: AbortSignal.timeout(10000)
     });
     if (!res.ok) return { answer: '', results: [], images: [] };
     const data = await res.json();
@@ -292,7 +352,7 @@ const searchTavily = async (query) => {
   } catch { return { answer: '', results: [], images: [] }; }
 };
 
-// ===== SEARCH 3: GOOGLE CUSTOM SEARCH (web results + image search) =====
+// ===== SEARCH 3: GOOGLE WEB =====
 const searchGoogleWeb = async (query) => {
   if (!GOOGLE_SEARCH_API_KEY || !GOOGLE_CSE_ID) return [];
   try {
@@ -310,6 +370,7 @@ const searchGoogleWeb = async (query) => {
   } catch { return []; }
 };
 
+// ===== SEARCH 3b: GOOGLE IMAGES =====
 const searchGoogleImages = async (query) => {
   if (!GOOGLE_SEARCH_API_KEY || !GOOGLE_CSE_ID) return [];
   try {
@@ -322,13 +383,12 @@ const searchGoogleImages = async (query) => {
     return (data.items || []).map(r => ({
       url: r.link,
       title: r.title?.slice(0, 200) || '',
-      thumbnail: r.image?.thumbnailLink || r.link,
       context: r.image?.contextLink || ''
     }));
   } catch { return []; }
 };
 
-// ===== SEARCH 4: JINA READER (deep page reading) =====
+// ===== SEARCH 4: JINA READER =====
 const readPageContent = async (url) => {
   try {
     const headers = { 'Accept': 'text/markdown' };
@@ -338,15 +398,15 @@ const readPageContent = async (url) => {
     const res = await fetch(`https://r.jina.ai/${url}`, {
       method: 'GET',
       headers,
-      signal: AbortSignal.timeout(10000)
+      signal: AbortSignal.timeout(6000)
     });
     if (!res.ok) return '';
     const text = await res.text();
-    return text.slice(0, 5000);
+    return text.slice(0, 3000);
   } catch { return ''; }
 };
 
-// ===== SEARCH 5: WIKIPEDIA REST API =====
+// ===== SEARCH 5: WIKIPEDIA =====
 const searchWikipedia = async (query) => {
   try {
     const searchRes = await fetch(
@@ -374,6 +434,9 @@ const searchWikipedia = async (query) => {
 const comprehensiveSearch = async (query, needsWiki) => {
   console.log(`[SEARCH] Comprehensive search: "${query}" | Wiki: ${needsWiki}`);
 
+  const cached = getCachedSearch(query);
+  if (cached) return cached;
+
   const [tavilyResult, braveResults, googleResults, googleImages, wikiContent] = await Promise.all([
     searchTavily(query),
     searchBrave(query),
@@ -387,12 +450,10 @@ const comprehensiveSearch = async (query, needsWiki) => {
   const allImages = [];
   let fullContext = '';
 
-  // 1. Tavily AI Answer
   if (tavilyData.answer) {
     fullContext += `TAVILY AI ANSWER: ${tavilyData.answer}\n\n---\n\n`;
   }
 
-  // 2. Tavily Results (full content)
   if (tavilyData.results && tavilyData.results.length > 0) {
     fullContext += `TAVILY SEARCH RESULTS:\n${tavilyData.results.map((r, i) =>
       `SOURCE ${i + 1}:\nTitle: ${r.title}\nURL: ${r.url}\nContent: ${r.content}`
@@ -400,12 +461,10 @@ const comprehensiveSearch = async (query, needsWiki) => {
     tavilyData.results.forEach(r => sources.push({ title: r.title, url: r.url }));
   }
 
-  // 3. Tavily Images
   if (tavilyData.images && tavilyData.images.length > 0) {
     allImages.push(...tavilyData.images.filter(u => u && u.startsWith('http')));
   }
 
-  // 4. Brave Results
   if (braveResults.length > 0) {
     fullContext += `BRAVE SEARCH RESULTS:\n${braveResults.map((r, i) =>
       `SOURCE ${i + 1}:\nTitle: ${r.title}\nURL: ${r.url}\nContent: ${r.description}`
@@ -415,7 +474,6 @@ const comprehensiveSearch = async (query, needsWiki) => {
     });
   }
 
-  // 5. Google Web Results
   if (googleResults.length > 0) {
     fullContext += `GOOGLE SEARCH RESULTS:\n${googleResults.map((r, i) =>
       `SOURCE ${i + 1}:\nTitle: ${r.title}\nURL: ${r.url}\nContent: ${r.description}`
@@ -425,18 +483,15 @@ const comprehensiveSearch = async (query, needsWiki) => {
     });
   }
 
-  // 6. Google Image Results
   if (googleImages.length > 0) {
     allImages.push(...googleImages.map(img => img.url).filter(u => u && u.startsWith('http')));
   }
 
-  // 7. Wikipedia Content
   if (wikiContent) {
     fullContext += `WIKIPEDIA CONTENT:\n${wikiContent}\n\n---\n\n`;
   }
 
-  // 8. DEEP READ: Fetch full page content from top 3 URLs via Jina Reader
-  const topUrls = sources.slice(0, 3);
+  const topUrls = sources.slice(0, 2);
   if (topUrls.length > 0) {
     console.log(`[SEARCH] Deep reading ${topUrls.length} pages via Jina Reader...`);
     const pageContents = await Promise.all(topUrls.map(s => readPageContent(s.url)));
@@ -448,16 +503,17 @@ const comprehensiveSearch = async (query, needsWiki) => {
     }
   }
 
-  // 9. Add image URLs to context for the AI to embed
   if (allImages.length > 0) {
     const uniqueImages = [...new Set(allImages)].slice(0, 5);
-    fullContext += `\nAVAILABLE IMAGES (embed relevant ones in your answer using Markdown image syntax):\n${uniqueImages.map((url, i) => `IMAGE ${i + 1}: ${url}`).join('\n')}\n\n---\n\n`;
+    fullContext += `\nAVAILABLE IMAGES (embed relevant ones using Markdown image syntax):\n${uniqueImages.map((url, i) => `IMAGE ${i + 1}: ${url}`).join('\n')}\n\n---\n\n`;
   }
 
   const found = sources.length > 0 || !!wikiContent || !!tavilyData.answer;
   console.log(`[SEARCH] Found: ${found} | Sources: ${sources.length} | Images: ${allImages.length} | Context: ${fullContext.length} chars`);
 
-  return { context: fullContext.trim(), sources, found, images: allImages };
+  const result = { context: fullContext.trim(), sources, found, images: allImages };
+  setCachedSearch(query, result);
+  return result;
 };
 
 // ===== CORS =====
@@ -696,7 +752,8 @@ app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISO
 app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
   try {
     const user = await ensureUser(req.auth.userId);
-    const { message, history = [] } = req.body;
+    const { message, history = [], chatId } = req.body;
+    const convCache = getConversationCache(chatId);
     const pv = validatePrompt(message);
     if (!pv.valid) return res.status(400).json({ error: pv.error });
     const hv = validateHistory(history);
@@ -709,13 +766,14 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const truncatedPrompt = truncatePrompt(pv.value);
     const wasTruncated = truncatedPrompt.length < pv.value.length;
 
-    console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | ${selection.models.length} models | Q:${selection.quorum} | ${selection.whipMs}ms`);
+    console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | ${selection.models.length} models | Cache: ${convCache ? `${convCache.turnCount} turns` : 'none'}`);
 
     // 1. INSTANT BYPASS FOR GREETINGS
     if (selection.category === 'greeting') {
       console.log('[COUNCIL] Greeting detected. Bypassing for instant response.');
       const greetingMessages = [
         { role: 'system', content: 'You are ALOP-AI, a friendly AI assistant. Greet the user briefly and ask how you can help.' },
+        ...(convCache?.summary ? [{ role: 'system', content: `CONVERSATION CONTEXT: ${convCache.summary}` }] : []),
         { role: 'user', content: pv.value }
       ];
 
@@ -732,7 +790,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const searchQuery = await getSearchQuery(pv.value);
     const shouldCheckWiki = needsWikiCheck(pv.value);
 
-    // 3. COMPREHENSIVE SEARCH (5 sources in parallel)
+    // 3. COMPREHENSIVE SEARCH (5 sources in parallel, cached)
     if (searchQuery) {
       const { context, sources, found, images } = await comprehensiveSearch(searchQuery, shouldCheckWiki);
 
@@ -769,7 +827,8 @@ ABSOLUTE RULES (violating any rule is a critical failure):
 10. List your sources at the bottom of your response as clickable Markdown links under a "## Sources" heading.
 11. If images are provided in the data, embed the most relevant ones in your answer using Markdown image syntax: ![Description](image_url). Place images where they are contextually relevant.`
         },
-        ...(Array.isArray(hv) ? hv : hv.value || []).slice(-4),
+        ...(convCache?.summary ? [{ role: 'system', content: `CONVERSATION CONTEXT (previous messages summary): ${convCache.summary}` }] : []),
+        ...(Array.isArray(hv) ? hv : hv.value || []).slice(-10),
         { role: 'user', content: `${truncatedPrompt}\n\n\n=== COMPREHENSIVE SEARCH DATA ===\n${context}` }
       ];
 
@@ -778,6 +837,14 @@ ABSOLUTE RULES (violating any rule is a critical failure):
       res.setHeader('Connection', 'keep-alive');
       await streamModel(res, 'glm-5.2', extractionMessages, 0.0);
       if (!res.writableEnded) res.end();
+
+      // Update conversation cache (async, non-blocking)
+      if (chatId) {
+        const histArr = Array.isArray(hv) ? hv : (hv.value || []);
+        const lastAssistant = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
+        updateConversationSummary(chatId, pv.value, lastAssistant || 'Responded with search results.').catch(() => {});
+      }
+
       await auditLog(user.id, 'council_message', { plan: userPlan, category: 'search_extraction', models: 1, sources: sources.length, images: images.length, context_chars: context.length });
       return;
     }
@@ -789,6 +856,7 @@ ABSOLUTE RULES (violating any rule is a critical failure):
         console.log('[COUNCIL] Wikipedia content found. Streaming extraction.');
         const extractionMessages = [
           { role: 'system', content: 'You are a precision data extraction engine. Below is content from Wikipedia. Answer the user\'s question using ONLY this content. Do NOT use training data. If the content doesn\'t contain the answer, say "I couldn\'t find this on Wikipedia." Use Markdown.' },
+          ...(convCache?.summary ? [{ role: 'system', content: `CONVERSATION CONTEXT: ${convCache.summary}` }] : []),
           { role: 'user', content: `${truncatedPrompt}\n\n\n=== WIKIPEDIA CONTENT ===\n${wikiContent}` }
         ];
 
@@ -797,6 +865,11 @@ ABSOLUTE RULES (violating any rule is a critical failure):
         res.setHeader('Connection', 'keep-alive');
         await streamModel(res, 'glm-5.2', extractionMessages, 0.0);
         if (!res.writableEnded) res.end();
+
+        if (chatId) {
+          updateConversationSummary(chatId, pv.value, 'Responded with Wikipedia content.').catch(() => {});
+        }
+
         await auditLog(user.id, 'council_message', { plan: userPlan, category: 'wiki_extraction', models: 1 });
         return;
       }
@@ -808,7 +881,8 @@ ABSOLUTE RULES (violating any rule is a critical failure):
         role: 'system',
         content: `You are an elite AI expert in the ALOP-AI Council. Analyze the user's request. If this request is completely outside your core expertise or capabilities, reply ONLY with the word "SKIP". If you choose to answer, provide a direct, expert, and comprehensive response. Use Markdown for formatting (bold, lists, code blocks). ${isDetailed ? 'Be extremely thorough and detailed.' : 'Be concise but complete.'}`
       },
-      ...(Array.isArray(hv) ? hv : hv.value || []).slice(-4),
+      ...(convCache?.summary ? [{ role: 'system', content: `CONVERSATION CONTEXT (previous messages summary): ${convCache.summary}` }] : []),
+      ...(Array.isArray(hv) ? hv : hv.value || []).slice(-10),
       { role: 'user', content: truncatedPrompt }
     ];
 
@@ -819,7 +893,8 @@ ABSOLUTE RULES (violating any rule is a critical failure):
       console.log('[COUNCIL] No valid responses. Streaming fallback.');
       const fallbackMessages = [
         { role: 'system', content: 'You are a helpful AI assistant. Answer the user\'s request directly. If you do not know the answer, say "I don\'t have enough information to answer that accurately." Do NOT guess or invent information. Use Markdown for formatting.' },
-        ...(Array.isArray(hv) ? hv : hv.value || []).slice(-4),
+        ...(convCache?.summary ? [{ role: 'system', content: `CONVERSATION CONTEXT (previous messages summary): ${convCache.summary}` }] : []),
+        ...(Array.isArray(hv) ? hv : hv.value || []).slice(-10),
         { role: 'user', content: truncatedPrompt }
       ];
 
@@ -828,6 +903,11 @@ ABSOLUTE RULES (violating any rule is a critical failure):
       res.setHeader('Connection', 'keep-alive');
       await streamModel(res, 'glm-5.2', fallbackMessages, 0.0);
       if (!res.writableEnded) res.end();
+
+      if (chatId) {
+        updateConversationSummary(chatId, pv.value, 'Responded via fallback.').catch(() => {});
+      }
+
       await auditLog(user.id, 'council_message', { plan: userPlan, category: 'fallback', models: 1 });
       return;
     }
@@ -844,6 +924,13 @@ ABSOLUTE RULES (violating any rule is a critical failure):
 
     await streamModel(res, 'glm-5.2', synthMessages, 0.0);
     if (!res.writableEnded) res.end();
+
+    // Update conversation cache
+    if (chatId) {
+      const histArr = Array.isArray(hv) ? hv : (hv.value || []);
+      const lastAssistant = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
+      updateConversationSummary(chatId, pv.value, lastAssistant || validResponses[0]?.content?.slice(0, 800) || 'Responded via council.').catch(() => {});
+    }
 
     await auditLog(user.id, 'council_message', { plan: userPlan, category: selection.category, models: validResponses.length, truncated: wasTruncated, search: !!searchQuery });
   } catch (err) {
@@ -975,6 +1062,7 @@ app.delete('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req,
     const user = await ensureUser(req.auth.userId);
     const { error } = await supabase.from('chats').delete().eq('id', req.params.id).eq('user_id', user.id);
     if (error) throw error;
+    if (req.params.id) conversationCache.delete(req.params.id);
     res.json({ deleted: true });
   } catch (err) {
     Sentry.captureException(err);
@@ -1118,6 +1206,7 @@ const server = app.listen(PORT, () => {
   console.log(`║   Models: ${ALL_MODELS.length} | Temp: 0.0 (Precision)            ║`);
   console.log(`║   Search: Tavily=${TAVILY_API_KEY ? 'ON' : 'OFF'} Brave=${BRAVE_API_KEY ? 'ON' : 'OFF'} Google=${GOOGLE_SEARCH_API_KEY && GOOGLE_CSE_ID ? 'ON' : 'OFF'}    ║`);
   console.log(`║   Jina=${JINA_API_KEY ? 'ON' : 'OFF'} Wiki=ON | Images: ENABLED              ║`);
+  console.log(`║   Caches: Conv=200 | Search=50/5min                 ║`);
   console.log(`╚══════════════════════════════════════════════════════╝\n`);
 });
 

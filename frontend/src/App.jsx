@@ -459,7 +459,7 @@ const AuthenticatedApp = () => {
     // Clean history: only send real messages with content, no typing indicators
     const cleanHistory = activeMessages
       .filter(m => m.content && m.content.trim() && !m.typing)
-      .slice(-6)
+      .slice(-10)
       .map(m => ({ role: m.role, content: m.content }));
 
     if (abortRef.current) abortRef.current.abort();
@@ -469,7 +469,7 @@ const AuthenticatedApp = () => {
       const res = await fetch(`${API_BASE}/api/council`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ message: cleanText, history: cleanHistory }),
+                body: JSON.stringify({ message: cleanText, history: cleanHistory, chatId }),
         signal: abortRef.current.signal
       });
       if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || `Server error: ${res.status}`); }

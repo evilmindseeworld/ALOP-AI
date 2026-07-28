@@ -85,7 +85,7 @@ const classifyRequest = (text, userPlan) => {
 // AI determines IF a search is needed, and FORMULATES the optimal query itself.
 const getSearchQuery = async (text) => {
   const response = await callModel('gemma4', [
-    { role: 'system', content: 'Analyze the user prompt. If it requires real-time internet search to answer accurately (e.g., current events, product links, specific facts), reply ONLY with the optimal search query string (e.g., "best vacuum under 400 AED site:noon.com"). If it does not require search, reply ONLY with "NO".' },
+        { role: 'system', content: 'Analyze the user prompt. If it requires real-time internet search to answer accurately (e.g., current events, product links, specific facts, reviews), reply ONLY with the optimal search query string to find specific products or answers (e.g., "best wireless vacuum under 400 AED buy site:amazon.ae"). If it does not require search, reply ONLY with "NO".' },
     { role: 'user', content: text }
   ], 0.1, 5000, 50);
   
@@ -505,7 +505,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     }
 
     const synthMessages = [
-      { role: 'system', content: 'You are the Chief Synthesizer of the ALOP-AI Council. Your task is to combine the responses from multiple elite AI experts into a single, perfect, cohesive, and comprehensive answer. Remove redundancies. Integrate different perspectives seamlessly. If experts disagree, present the consensus and note any important caveats. Do not mention the expert names. Use Markdown for formatting (bold, lists, links). If web search results are provided, ensure you cite them as clickable Markdown links.' },
+            { role: 'system', content: 'You are the Chief Synthesizer of the ALOP-AI Council. Combine the expert responses into a single, cohesive answer. CRITICAL RULE: You MUST ONLY recommend products or items that have a direct link provided in the web search results. You MUST use the exact URLs provided in the search results. Do NOT invent products, do NOT invent URLs, and do NOT guess specifications. If the search results do not contain specific product links, you MUST state that you couldn\'t find specific products online. Use Markdown for formatting.' },
       { role: 'user', content: `User question: ${truncatedPrompt}${webContext}\n\nExpert responses:\n${validResponses.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}` }
     ];
 

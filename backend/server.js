@@ -75,38 +75,34 @@ const getConversationCache = (chatId) => {
   return conversationCache.get(chatId);
 };
 
-const updateConversationSummary = async (chatId, userMsg, assistantMsg) => {
-  const cache = getConversationCache(chatId);
-  if (!cache) return;
-  const u = userMsg.slice(0, 800);
-  const a = assistantMsg.slice(0, 800);
+const updateConversationSummary = async (userId, userMsg, assistantMsg) => {
   try {
-    if (cache.summary) {
-      const c = await callModel('gemma4', [
+    const { data: existing } = await supabase.from('users').select('conversation_summary').eq('id', userId).single();
+    const prevSummary = existing?.conversation_summary || '';
+    const u = userMsg.slice(0, 800);
+    const a = assistantMsg.slice(0, 800);
+
+    let newSummary = '';
+    if (prevSummary) {
+      newSummary = await callModel('gemma4', [
         { role: 'system', content: 'Compress the previous summary and new exchange into a concise 2-3 sentence summary. Capture key facts, user preferences, decisions, and context. Reply ONLY with the summary.' },
-        { role: 'user', content: `Previous summary:\n${cache.summary}\n\nNew exchange:\nUser: ${u}\nAssistant: ${a}` }
+        { role: 'user', content: `Previous summary:\n${prevSummary}\n\nNew exchange:\nUser: ${u}\nAssistant: ${a}` }
       ], 0.0, 4000, 200);
-      if (c.trim()) cache.summary = c.trim();
     } else {
-      const s = await callModel('gemma4', [
+      newSummary = await callModel('gemma4', [
         { role: 'system', content: 'Summarize this exchange in 1-2 sentences. Capture key context, facts, and user intent. Reply ONLY with the summary.' },
         { role: 'user', content: `User: ${u}\nAssistant: ${a}` }
       ], 0.0, 4000, 150);
-      if (s.trim()) cache.summary = s.trim();
     }
-    cache.turnCount++; cache.lastUpdated = Date.now();
-  } catch (e) { console.error('[CACHE] Summary failed:', e.message); }
-};
 
-// ===== SEARCH RESULT CACHE (5 min TTL) =====
-const searchCache = new Map();
-const SEARCH_CACHE_TTL = 300000;
-
-const getCachedSearch = (q) => {
-  const c = searchCache.get(q);
-  if (c && (Date.now() - c.timestamp) < SEARCH_CACHE_TTL) { console.log(`[CACHE] Search hit: "${q}"`); return c.data; }
-  if (c) searchCache.delete(q);
-  return null;
+    if (newSummary.trim()) {
+      await supabase.from('users').update({ conversation_summary: newSummary.trim() }).eq('id', userId);
+      // Also update in-memory cache for this request
+      const cache = getConversationCache(userId);
+      if (cache) { cache.summary = newSummary.trim(); cache.turnCount++; }
+      console.log('[MEMORY] Summary saved to Supabase.');
+    }
+  } catch (e) { console.error('[MEMORY] Save failed:', e.message); }
 };
 
 const setCachedSearch = (q, d) => {
@@ -431,11 +427,17 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
   try {
     const user = await ensureUser(req.auth.userId);
     const { message, history = [], chatId } = req.body;
-        const convCache = getConversationCache(user.id);
-    const pv = validatePrompt(message);
-    if (!pv.valid) return res.status(400).json({ error: pv.error });
-    const hv = validateHistory(history);
-    if (!hv.valid && hv.error) return res.status(400).json({ error: hv.error });
+            // Load conversation summary from Supabase (persistent memory)
+    let convCache = getConversationCache(user.id);
+    if (convCache && !convCache.summary) {
+      try {
+        const { data: userData } = await supabase.from('users').select('conversation_summary').eq('id', user.id).single();
+        if (userData?.conversation_summary) {
+          convCache.summary = userData.conversation_summary;
+          console.log(`[MEMORY] Loaded summary from Supabase: ${convCache.summary.slice(0, 50)}...`);
+        }
+      } catch (e) { console.error('[MEMORY] Load failed:', e.message); }
+    }
 
     const userPlan = user.plan || 'free';
     const isDetailed = wantsDetailedAnswer(pv.value);

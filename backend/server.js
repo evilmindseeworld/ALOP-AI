@@ -825,7 +825,9 @@ ABSOLUTE RULES (violating any rule is a critical failure):
 8. If a spec is mentioned in one source but contradicted in another, note the discrepancy and cite both sources.
 9. Format your response in clean Markdown with headers, bold text, bullet points, and tables where appropriate.
 10. List your sources at the bottom of your response as clickable Markdown links under a "## Sources" heading.
-11. If images are provided in the data, embed the most relevant ones in your answer using Markdown image syntax: ![Description](image_url). Place images where they are contextually relevant.`
+11. If images are provided in the data, embed the most relevant ones in your answer using Markdown image syntax: ![Description](image_url). Place images where they are contextually relevant.
+12. The CONVERSATION CONTEXT and message history (if provided) contain a summary of previous messages in this chat. You MUST use them to maintain continuity, reference previous topics, and answer questions about what was discussed earlier. These are EXEMPT from rules 1-5. When the user asks if you remember something, refer to the CONVERSATION CONTEXT and history.`
+
         },
         ...(convCache?.summary ? [{ role: 'system', content: `CONVERSATION CONTEXT (previous messages summary): ${convCache.summary}` }] : []),
         ...(Array.isArray(hv) ? hv : hv.value || []).slice(-10),
@@ -879,7 +881,7 @@ ABSOLUTE RULES (violating any rule is a critical failure):
     const councilMessages = [
       {
         role: 'system',
-        content: `You are an elite AI expert in the ALOP-AI Council. Analyze the user's request. If this request is completely outside your core expertise or capabilities, reply ONLY with the word "SKIP". If you choose to answer, provide a direct, expert, and comprehensive response. Use Markdown for formatting (bold, lists, code blocks). ${isDetailed ? 'Be extremely thorough and detailed.' : 'Be concise but complete.'}`
+        content: `You are an elite AI expert in the ALOP-AI Council. Analyze the user's request. If this request is completely outside your core expertise or capabilities, reply ONLY with the word "SKIP". If you choose to answer, provide a direct, expert, and comprehensive response. Use Markdown for formatting (bold, lists, code blocks). If CONVERSATION CONTEXT or message history is provided, use it to maintain continuity and reference previous topics discussed. ${isDetailed ? 'Be extremely thorough and detailed.' : 'Be concise but complete.'}`
       },
       ...(convCache?.summary ? [{ role: 'system', content: `CONVERSATION CONTEXT (previous messages summary): ${convCache.summary}` }] : []),
       ...(Array.isArray(hv) ? hv : hv.value || []).slice(-10),
@@ -892,7 +894,7 @@ ABSOLUTE RULES (violating any rule is a critical failure):
     if (validResponses.length === 0) {
       console.log('[COUNCIL] No valid responses. Streaming fallback.');
       const fallbackMessages = [
-        { role: 'system', content: 'You are a helpful AI assistant. Answer the user\'s request directly. If you do not know the answer, say "I don\'t have enough information to answer that accurately." Do NOT guess or invent information. Use Markdown for formatting.' },
+        { role: 'system', content: 'You are a helpful AI assistant. Answer the user\'s request directly. If you do not know the answer, say "I don\'t have enough information to answer that accurately." Do NOT guess or invent information. If CONVERSATION CONTEXT or message history is provided, use it to maintain continuity and reference previous topics. Use Markdown for formatting.' },
         ...(convCache?.summary ? [{ role: 'system', content: `CONVERSATION CONTEXT (previous messages summary): ${convCache.summary}` }] : []),
         ...(Array.isArray(hv) ? hv : hv.value || []).slice(-10),
         { role: 'user', content: truncatedPrompt }

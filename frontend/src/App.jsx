@@ -128,7 +128,7 @@ export const Earring = memo(({ side }) => (
     <div className="earring-pivot">
       <model-viewer 
         src="/model.glb" 
-        orientation="0deg 90deg 0deg"
+        orientation={side === 'left' ? "0deg 90deg 0deg" : "0deg 270deg 0deg"}
         camera-orbit="0deg 90deg 105%" 
         interaction-prompt="none" 
         style={{ width: '140px', height: '200px' }}

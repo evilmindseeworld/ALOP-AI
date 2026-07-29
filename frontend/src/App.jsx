@@ -130,7 +130,7 @@ const Earring = memo(({ side }) => (
         src="/model.glb" 
         camera-orbit="0deg 90deg 105%" 
         interaction-prompt="none" 
-        style={{ width: '140px', height: '200px' }}
+        style={{ width: '140px', height: '200px', transform: 'rotate(90deg)' }}
       ></model-viewer>
     </div>
   </div>

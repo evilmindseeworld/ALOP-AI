@@ -185,7 +185,18 @@ const InputBar = memo(({ onSend, disabled, onFileSelect, onStartCamera, isListen
 });
 
 export const Earring = memo(({ side }) => (
-  <div className={`earring-wrap earring-${side}`}>
+  <div 
+    className={`earring-wrap earring-${side}`} 
+    style={{ 
+      position: 'fixed', 
+      top: '100px', 
+      left: side === 'left' ? '8px' : 'auto', 
+      right: side === 'right' ? '8px' : 'auto', 
+      zIndex: 99999, 
+      pointerEvents: 'none',
+      background: 'blue' // Temp test
+    }}
+  >
     <div className="earring-pivot">
       <model-viewer 
         src="/model.glb" 

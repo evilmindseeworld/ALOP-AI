@@ -288,7 +288,6 @@ textarea:focus-visible {
 
 .app-shell {
   position: relative;
-  z-index: 1;
   display: flex;
   flex-direction: column;
   width: 100%;
@@ -312,19 +311,6 @@ textarea:focus-visible {
   position: relative;
 }
 
-/* Subtle top edge glow on header */
-.app-header::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 24px;
-  right: 24px;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--primary-glow), var(--emerald-glow), transparent);
-  opacity: 0.3;
-  border-radius: 999px;
-  pointer-events: none;
-}
 
 
 .brand {
@@ -2478,20 +2464,6 @@ textarea:focus-visible {
   }
 }
 
-/* Scroll indicator glow at top */
-.scroll-wrapper::before {
-  content: '';
-  position: sticky;
-  top: 0;
-  display: block;
-  height: 2px;
-  width: 100%;
-  background: linear-gradient(90deg, transparent, var(--primary), var(--emerald), transparent);
-  background-size: 200% 100%;
-  animation: scrollGlow 3s linear infinite;
-  z-index: 100;
-  pointer-events: none;
-}
 
 @keyframes scrollGlow {
   0% { background-position: 200% 0; opacity: 0.3; }
@@ -2740,7 +2712,7 @@ textarea:focus-visible {
 .earring-wrap {
   position: fixed;
   top: 100px; /* Lowered so they don't block the header */
-  z-index: 1;
+  z-index: 2;
   pointer-events: none; /* Allows clicks to pass through to the UI behind them */
   display: flex;
   flex-direction: column;

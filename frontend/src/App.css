@@ -2736,12 +2736,17 @@ textarea:focus-visible {
 @keyframes fabPulse { 0%,100% { box-shadow: 0 4px 20px rgba(236,125,150,0.35); } 50% { box-shadow: 0 4px 20px rgba(236,125,150,0.5), 0 0 0 8px rgba(236,125,150,0.05); } }
 
 /* ===== 3D LUXURY EARRINGS — HANGING & SWINGING ===== */
+/* ===== 3D LUXURY EARRINGS — HANGING & SWINGING ===== */
 .earring-wrap {
   position: fixed;
-  top: 0;
-  z-index: 5;
-  pointer-events: auto; /* Changed from none */
+  top: 24px; /* Lowered from 0 */
+  z-index: 50;
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
+
+.earring-left { left: 30px !important; right: auto !important; }
+.earring-right { right: 30px !important; left: auto !important; }
+

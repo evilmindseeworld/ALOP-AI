@@ -121,20 +121,85 @@ const InputBar = memo(({ onSend, disabled, onFileSelect, onStartCamera, isListen
   );
 });
 
-const Earring = memo(({ side }) => (
-  <div className={`earring-wrap earring-${side}`} style={{ pointerEvents: 'auto' }}>
-    <div className="earring-chain"></div>
-    <div className="earring-hook"></div>
-    <div className="earring-pivot">
-      <model-viewer 
-        src="/model.glb" 
-        camera-controls
-        interaction-prompt="none" 
-        style={{ width: '140px', height: '200px' }}
-      ></model-viewer>
+// Replace the existing Earring component with this exported version
+export const Earring = memo(({ side }) => {
+  const ctxRef = useRef(null);
+  const lastPlayRef = useRef(0);
+
+  // Synthesized chime — no external audio file needed
+  useEffect(() => {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    ctxRef.current = ctx;
+    return () => {
+      ctx.close().catch(() => {});
+      ctxRef.current = null;
+    };
+  }, []);
+
+  const playJingle = useCallback(() => {
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+
+    // debounce so rapid mouse passes don't machine-gun
+    const nowMs = Date.now();
+    if (nowMs - lastPlayRef.current < 900) return;
+    lastPlayRef.current = nowMs;
+
+    if (ctx.state === "suspended") ctx.resume();
+
+    const t = ctx.currentTime;
+    const notes = [523.25, 659.25, 783.99, 1046.5]; // C-E-G-C shimmer
+
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = i % 2 === 0 ? "sine" : "triangle";
+      osc.frequency.setValueAtTime(freq, t + i * 0.06);
+
+      gain.gain.setValueAtTime(0, t + i * 0.06);
+      gain.gain.linearRampToValueAtTime(0.05, t + i * 0.06 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.06 + 0.55);
+
+      osc.connect(gain).connect(ctx.destination);
+      osc.start(t + i * 0.06);
+      osc.stop(t + i * 0.06 + 0.6);
+    });
+  }, []);
+
+  return (
+    <div
+      className={`earring-wrap earring-${side}`}
+      onMouseEnter={playJingle}
+      role="img"
+      aria-label={`ALOP ${side} decorative earring`}
+    >
+      <div className="earring-chain" />
+      <div className="earring-hook" />
+      <div className="earring-pivot">
+        <model-viewer
+          src="/model.glb"
+          camera-orbit="0deg 90deg 105%"
+          field-of-view="30deg"
+          exposure="1.2"
+          shadow-intensity="0"
+          interaction-prompt="none"
+          style={{
+            width: "140px",
+            height: "200px",
+            pointerEvents: "none",
+            // If your model is still sideways after this, tweak the CSS
+            // variables below in App.css instead of editing code.
+            transform:
+              "rotateX(var(--earring-rotate-x, 0deg)) rotateY(var(--earring-rotate-y, 0deg)) rotateZ(var(--earring-rotate-z, 90deg))",
+          }}
+        />
+      </div>
     </div>
-  </div>
-));
+  );
+});
 
 const AuthenticatedApp = () => {
   const { user, isLoaded } = useUser();

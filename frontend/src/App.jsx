@@ -126,14 +126,12 @@ const Earring = memo(({ side }) => (
     <div className="earring-chain"></div>
     <div className="earring-hook"></div>
     <div className="earring-pivot">
-      <div className="earring-3d-inner">
-        <model-viewer 
-          src="/model.glb" 
-          camera-orbit="0deg 90deg 105%" 
-          interaction-prompt="none" 
-          style={{ width: '140px', height: '200px' }}
-        ></model-viewer>
-      </div>
+      <model-viewer 
+        src="/model.glb" 
+        camera-orbit="0deg 90deg 105%" 
+        interaction-prompt="none" 
+        style={{ width: '140px', height: '200px' }}
+      ></model-viewer>
     </div>
   </div>
 ));

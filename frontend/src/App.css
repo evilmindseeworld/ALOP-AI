@@ -2735,7 +2735,6 @@ textarea:focus-visible {
 .quick-ask-fab { animation: fabPulse 2s ease-in-out infinite; }
 @keyframes fabPulse { 0%,100% { box-shadow: 0 4px 20px rgba(236,125,150,0.35); } 50% { box-shadow: 0 4px 20px rgba(236,125,150,0.5), 0 0 0 8px rgba(236,125,150,0.05); } }
 
-/* ===== 3D EARRINGS — HANGING FROM CHAIN ===== */
 /* ===== 3D LUXURY EARRINGS — HANGING & SWINGING ===== */
 .earring-wrap {
   position: fixed;
@@ -2774,13 +2773,7 @@ textarea:focus-visible {
 }
 
 .earring-right .earring-pivot {
-  animation-delay: -3s; /* Alternating swing */
-}
-
-/* The inner wrapper fixes the horizontal orientation via standard CSS */
-.earring-3d-inner {
-  transform: rotateZ(90deg) translateY(-30px); 
-  transition: transform 0.5s ease;
+  animation-delay: -3s;
 }
 
 @keyframes earringSwing {
@@ -2799,13 +2792,13 @@ textarea:focus-visible {
 }
 
 @media (max-width: 1024px) {
-  .earring-3d-inner model-viewer { width: 110px !important; height: 160px !important; }
+  .earring-pivot model-viewer { width: 110px !important; height: 160px !important; }
   .earring-left { left: 15px; }
   .earring-right { right: 15px; }
 }
 
 @media (max-width: 768px) {
-  .earring-3d-inner model-viewer { width: 80px !important; height: 120px !important; }
+  .earring-pivot model-viewer { width: 80px !important; height: 120px !important; }
   .earring-chain { height: 30px; }
   .earring-left { left: 10px; }
   .earring-right { right: 10px; }

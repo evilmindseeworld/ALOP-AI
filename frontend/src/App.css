@@ -1483,6 +1483,23 @@ textarea:focus-visible {
   box-sizing: border-box;
 }
 
+.overlay-drag-handle {
+  cursor: grab;
+  padding: 0 8px;
+  color: var(--text-subtle);
+  user-select: none;
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  border-right: 1px solid var(--border);
+  height: 24px;
+}
+
+.overlay-drag-handle:active {
+  cursor: grabbing;
+}
+
+
 .overlay-root > * { pointer-events: auto; }
 
 .overlay-answer-stack {
@@ -2725,7 +2742,7 @@ textarea:focus-visible {
 .earring-wrap {
   position: fixed;
   top: 100px; /* Lowered so they don't block the header */
-  z-index: 2;
+  z-index: 9999;
   pointer-events: none; /* Allows clicks to pass through to the UI behind them */
   display: flex;
   flex-direction: column;

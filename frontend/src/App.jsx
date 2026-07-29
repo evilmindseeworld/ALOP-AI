@@ -265,12 +265,30 @@ const AuthenticatedApp = () => {
     } catch (e) { setToast("Failed to create chat"); return null; } 
   }, [apiCall]);
 
-    const startFreshChat = useCallback(async () => { 
-    await loadChats(); 
-    const f = await createChat(); 
-    if (f) setActiveChatId(f); 
-    setIsInitialLoading(false);
-  }, [loadChats, createChat]);
+      const startFreshChat = useCallback(async () => { 
+    try {
+      // Fire both requests at the exact same millisecond
+      const [chatsRes, newChatRes] = await Promise.all([
+        apiCall("/api/chats"),
+        apiCall("/api/chats", { method: "POST", body: JSON.stringify({ title: "New Chat" }) })
+      ]);
+      
+      const chatData = await chatsRes.json();
+      const newChat = await newChatRes.json();
+      
+      // Populate history and inject the new chat at the top
+      if (Array.isArray(chatData)) setChats(chatData);
+      if (newChat) {
+        setChats((p) => [newChat, ...p]);
+        setActiveChatId(newChat.id);
+      }
+    } catch (e) { 
+      console.error(e.message); 
+    } finally {
+      // Hide skeleton the millisecond both finish
+      setIsInitialLoading(false);
+    }
+  }, [apiCall]);
 
   useEffect(() => { if (isLoaded && isSignedIn) { fetchPlan(); startFreshChat(); } }, [isLoaded, isSignedIn, fetchPlan, startFreshChat]);
 

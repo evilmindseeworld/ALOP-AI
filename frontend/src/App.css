@@ -2430,7 +2430,17 @@ textarea:focus-visible {
 
 /* Smooth scroll */
 .scroll-wrapper {
-  scroll-behavior: smooth;
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* Add this right below it to push text away from the earrings on large screens */
+@media (min-width: 1200px) {
+  .scroll-wrapper {
+    padding-left: 120px;
+    padding-right: 120px;
+  }
 }
 
 /* Reveal animation for messages */

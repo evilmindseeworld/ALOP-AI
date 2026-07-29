@@ -625,6 +625,43 @@ app.get('/api/admin/chats/:userId', requireAuth, requireAdmin, async (req, res) 
 app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) => { try { const { data, error } = await supabase.from('usage').select('*').eq('user_id', req.params.userId).order('date', { ascending: false }).limit(30); if (error) throw error; res.json(data || []); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 
 // ===== STRIPE =====
+
+// Prices are read from Stripe rather than hardcoded in the frontend, so what
+// the paywall advertises can never drift from what the customer is actually
+// charged. Cached because prices change rarely and this sits on the page-load
+// path for every free user.
+let priceCache = null;
+const PRICE_CACHE_MS = 60 * 60 * 1000;
+
+app.get('/api/billing/prices', requireStripe, requireAuth, async (req, res) => {
+  try {
+    if (priceCache && Date.now() - priceCache.at < PRICE_CACHE_MS) return res.json(priceCache.data);
+
+    const ids = { monthly: process.env.STRIPE_PRICE_MONTHLY, yearly: process.env.STRIPE_PRICE_YEARLY };
+    const missing = Object.entries(ids).filter(([, v]) => !v).map(([k]) => k);
+    // 503 rather than 500: the server is healthy, this deployment simply cannot
+    // sell anything. The client hides the upgrade path instead of rendering a
+    // paywall that would fail at checkout.
+    if (missing.length) return res.status(503).json({ error: `Pricing is not configured (missing: ${missing.join(', ')}).` });
+
+    const [monthly, yearly] = await Promise.all([
+      stripe.prices.retrieve(ids.monthly),
+      stripe.prices.retrieve(ids.yearly),
+    ]);
+    const shape = (p) => ({ amount: p.unit_amount, currency: p.currency, interval: p.recurring?.interval || null });
+    const data = { monthly: shape(monthly), yearly: shape(yearly) };
+
+    priceCache = { at: Date.now(), data };
+    res.json(data);
+  } catch (err) {
+    // A rejected price ID is a configuration problem, not a server fault, so it
+    // gets the same 503 treatment and the same graceful hiding on the client.
+    console.error('[BILLING] Price lookup failed:', err.message);
+    Sentry.captureException(err);
+    res.status(503).json({ error: 'Pricing is temporarily unavailable.' });
+  }
+});
+
 app.post('/api/create-checkout-session', requireStripe, requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); const cu = await clerkClient.users.getUser(req.auth.userId); const email = cu?.emailAddresses?.[0]?.emailAddress; const priceId = req.body.plan === 'yearly' ? process.env.STRIPE_PRICE_YEARLY : process.env.STRIPE_PRICE_MONTHLY; if (!priceId) throw new Error('Price ID not configured'); const session = await stripe.checkout.sessions.create({ customer_email: user.stripe_customer_id ? undefined : email, customer: user.stripe_customer_id || undefined, line_items: [{ price: priceId, quantity: 1 }], mode: 'subscription', success_url: `${process.env.FRONTEND_URL}/?payment=success`, cancel_url: `${process.env.FRONTEND_URL}/?payment=cancelled`, metadata: { userId: req.auth.userId } }); res.json({ url: session.url }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 app.post('/api/create-portal-session', requireStripe, requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); if (!user.stripe_customer_id) return res.status(400).json({ error: 'No subscription' }); const session = await stripe.billingPortal.sessions.create({ customer: user.stripe_customer_id, return_url: `${process.env.FRONTEND_URL}/` }); res.json({ url: session.url }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 app.get('/api/user/plan', requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); res.json({ plan: user.plan || 'free', subscription_id: user.stripe_subscription_id }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });

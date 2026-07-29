@@ -2773,8 +2773,6 @@ textarea:focus-visible {
 .earring-3d {
   transform-origin: top center;
   animation: earringSwing 6s ease-in-out infinite;
-  border-radius: 0 0 50% 50%;
-  overflow: hidden;
 }
 
 .earring-wrap-right .earring-3d {
@@ -2782,10 +2780,8 @@ textarea:focus-visible {
 }
 
 @keyframes earringSwing {
-  0%, 100% { transform: rotate(-3deg) translateY(0); }
-  25% { transform: rotate(1.5deg) translateY(-2px); }
-  50% { transform: rotate(3deg) translateY(0); }
-  75% { transform: rotate(-1.5deg) translateY(-2px); }
+  0%, 100% { transform: rotate(87deg); }
+  50% { transform: rotate(93deg); }
 }
 
 /* Dark mode styling */

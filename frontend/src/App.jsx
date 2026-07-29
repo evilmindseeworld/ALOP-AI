@@ -417,25 +417,33 @@ const AuthenticatedApp = () => {
               <div className="scroll-wrapper" ref={chatRef}>
                 {activeMessages.length === 0 && status === "idle" && (<div className="empty-state"><img src="/logo.png" alt="ALOP-AI" className="empty-logo" /><h2 className="empty-title text-shimmer">ALOP-AI</h2><p className="empty-subtitle">Ask the AI Council anything. Multiple models work together. Precision mode active. The AI learns from your feedback.</p></div>)}
                 {activeMessages.map((msg, idx) => (
-                  <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
-                    <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
-                    <div className="msg-content">
-                      {msg.typing ? <div className="bubble typing-bubble"><span className="typing-dot"></span><span className="typing-dot"></span><span className="typing-dot"></span></div> : msg.content ? <div className="bubble markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown> : null}
-                      {msg.imageUrl && <div style={{ marginTop: 8 }}><img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: "var(--radius-lg)", cursor: "pointer" }} onClick={() => window.open(msg.imageUrl, "_blank")} /><div className="msg-meta" style={{ textAlign: "left" }}>{msg.imagePrompt}</div></div>}
-                      {msg.role === "assistant" && msg.content && !msg.imageUrl && !msg.typing && <MessageActions content={msg.content} onCopy={() => navigator.clipboard.writeText(msg.content)} msgId={msg.id} onFeedback={handleFeedback} feedback={feedback[msg.id]} />}
-                      <div className="msg-meta">{msg.ts}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <InputBar onSend={handleSend} disabled={status !== "idle"} onFileSelect={handleFileSelect} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} />
-            </div>
-          </div>
+  <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
+    <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
+    <div className="msg-content">
+      {msg.typing ? (
+        <div className="bubble typing-bubble">
+          <span className="typing-dot"></span>
+          <span className="typing-dot"></span>
+          <span className="typing-dot"></span>
         </div>
-      </div>
+      ) : msg.content ? (
+        <div className="bubble markdown-body">
+          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown>
+        </div>
+      ) : null}
+      {msg.imageUrl && (
+        <div style={{ marginTop: 8 }}>
+          <img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: "var(--radius-lg)", cursor: "pointer" }} onClick={() => window.open(msg.imageUrl, "_blank")} />
+          <div className="msg-meta" style={{ textAlign: "left" }}>{msg.imagePrompt}</div>
+        </div>
+      )}
+      {msg.role === "assistant" && msg.content && !msg.imageUrl && !msg.typing && (
+        <MessageActions content={msg.content} onCopy={() => navigator.clipboard.writeText(msg.content)} msgId={msg.id} onFeedback={handleFeedback} feedback={feedback[msg.id]} />
+      )}
+      <div className="msg-meta">{msg.ts}</div>
     </div>
-  );
-};
+  </div>
+))}
 
 const AuthenticatedAppWrapper = () => { 
   const { isSignedIn, isLoaded } = useUser(); 

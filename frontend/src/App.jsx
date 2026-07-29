@@ -193,8 +193,7 @@ export const Earring = memo(({ side }) => (
       left: side === 'left' ? '8px' : 'auto', 
       right: side === 'right' ? '8px' : 'auto', 
       zIndex: 99999, 
-      pointerEvents: 'none',
-      background: 'blue' // Temp test
+      pointerEvents: 'none'
     }}
   >
     <div className="earring-pivot">
@@ -203,11 +202,12 @@ export const Earring = memo(({ side }) => (
         orientation="0deg 90deg 0deg"
         camera-orbit="0deg 90deg 105%" 
         interaction-prompt="none" 
-        style={{ width: '140px', height: '200px', background: 'red', transform: side === 'right' ? 'scaleX(-1)' : 'none' }}
+        style={{ width: '140px', height: '200px', transform: side === 'right' ? 'scaleX(-1)' : 'none' }}
       ></model-viewer>
     </div>
   </div>
 ));
+
 
 const AuthenticatedApp = () => {
   const { user, isLoaded } = useUser();
@@ -410,7 +410,9 @@ const AuthenticatedApp = () => {
     <div className={`app-root ${darkMode ? "dark" : "light"}`}>
       <div className="bg-layer" />
       <div className="bg-overlay" />
-      
+       <Earring side="left" />
+      <Earring side="right" />
+
       {toast && <div className="toast">{toast}</div>}
       {showCamera && <div className="camera-overlay"><video ref={videoRef} autoPlay className="camera-video" /><canvas ref={canvasRef} style={{ display: "none" }} /><div className="camera-controls"><button onClick={capturePhoto} className="camera-btn primary">Capture</button><button onClick={stopCamera} className="camera-btn secondary">Cancel</button></div></div>}
       
@@ -546,12 +548,6 @@ const App = () => {
   return (
     <ClerkProvider publishableKey={clerkKey} signInUrl="/" signUpUrl="/" afterSignInUrl="/" afterSignUpUrl="/" appearance={{ baseTheme: "dark", variables: { colorPrimary: "#ec7d96", colorBackground: "#1b120c", colorText: "#faf0e6" } }}>
       <div style={{ width: "100vw", height: "100dvh" }}>
-        {!isOverlay && (
-          <>
-            <Earring side="left" />
-            <Earring side="right" />
-          </>
-        )}
         {isOverlay ? <OverlayAssistant /> : <AuthenticatedAppWrapper />}
       </div>
     </ClerkProvider>

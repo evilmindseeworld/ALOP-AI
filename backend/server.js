@@ -254,13 +254,23 @@ const comprehensiveSearch = async (query, needsWiki) => {
 const updateChatSummary = async (chatId, userMsg, assistantMsg) => {
   if (!chatId) return;
   try {
-    const { data: existing } = await supabase.from('chats').select('conversation_summary').eq('id', chatId).single();
+    const { data: existing, error: selErr } = await supabase.from('chats').select('conversation_summary').eq('id', chatId).single();
+    // PGRST116 just means no row. Anything else (typically the column not existing
+    // because 001_per_chat_memory.sql has not been run) means the write cannot land,
+    // so bail before spending a model call on a summary with nowhere to go.
+    if (selErr && selErr.code !== 'PGRST116') { console.error('[MEMORY] Unavailable, skipping:', selErr.message); return; }
     const prev = existing?.conversation_summary || '';
     const u = userMsg.slice(0, 800); const a = assistantMsg.slice(0, 800);
     const newSummary = prev
       ? await callModel(FAST_MODEL, [{ role: 'system', content: 'Compress previous summary and new exchange into 2-3 sentences. Reply ONLY with the summary.' }, { role: 'user', content: `Previous:\n${prev}\n\nNew:\nUser: ${u}\nAssistant: ${a}` }], 0.0, 4000, 200)
       : await callModel(FAST_MODEL, [{ role: 'system', content: 'Summarize in 1-2 sentences. Reply ONLY with the summary.' }, { role: 'user', content: `User: ${u}\nAssistant: ${a}` }], 0.0, 4000, 150);
-    if (newSummary.trim()) { await supabase.from('chats').update({ conversation_summary: newSummary.trim().slice(0, 2000) }).eq('id', chatId); console.log('[MEMORY] Saved.'); }
+    if (newSummary.trim()) {
+      // supabase-js resolves rather than throws on failure, so an unchecked update
+      // logged "Saved." even when nothing was written.
+      const { error: updErr } = await supabase.from('chats').update({ conversation_summary: newSummary.trim().slice(0, 2000) }).eq('id', chatId);
+      if (updErr) console.error('[MEMORY] Save failed:', updErr.message);
+      else console.log('[MEMORY] Saved.');
+    }
   } catch (e) { console.error('[MEMORY] Failed:', e.message); }
 };
 
@@ -646,8 +656,9 @@ app.post('/api/feedback', requireAuth, async (req, res) => {
         { role: 'user', content: `Q: ${question?.slice(0,300)}\nA: ${answer?.slice(0,300)}` }
       ], 0.0, 3000, 100);
       if (note.trim()) {
-        await supabase.from('feedback_notes').insert({ user_id: user.id, kind: feedback, note: note.trim().slice(0, 300) });
-        console.log(`[LEARN] ${feedback} feedback saved.`);
+        const { error: noteErr } = await supabase.from('feedback_notes').insert({ user_id: user.id, kind: feedback, note: note.trim().slice(0, 300) });
+        if (noteErr) console.error(`[LEARN] Save failed (has 001_per_chat_memory.sql been run?):`, noteErr.message);
+        else console.log(`[LEARN] ${feedback} feedback saved.`);
       }
     } catch (e) { console.error('[LEARN] Failed:', e.message); }
     res.json({ ok: true });

@@ -35,9 +35,17 @@ app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 // ===== ENV =====
-const requiredEnv = ['SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','CLERK_PUBLISHABLE_KEY','CLERK_SECRET_KEY','STRIPE_SECRET_KEY','STRIPE_WEBHOOK_SECRET','FRONTEND_URL','OLLAMA_HOST','OLLAMA_API_KEY'];
+// Core config: the server cannot answer a single request without these.
+// CLERK_PUBLISHABLE_KEY is deliberately absent — it is a frontend value and is
+// never read here, so requiring it only blocked startup for no reason.
+const requiredEnv = ['SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','CLERK_SECRET_KEY','FRONTEND_URL','OLLAMA_HOST','OLLAMA_API_KEY'];
 const missingEnv = requiredEnv.filter((k) => !process.env[k]);
-if (missingEnv.length > 0) { console.error(`Missing: ${missingEnv.join(', ')}`); process.exit(1); }
+if (missingEnv.length > 0) { console.error(`Missing required env: ${missingEnv.join(', ')}`); process.exit(1); }
+
+// Billing is optional. Without it the app runs normally and only the Stripe
+// routes refuse, instead of the whole process refusing to boot.
+const STRIPE_ENABLED = Boolean(process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET);
+if (!STRIPE_ENABLED) console.warn('[BOOT] Stripe not configured — billing routes disabled.');
 
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY || null;
 const JINA_API_KEY = process.env.JINA_API_KEY || null;
@@ -46,7 +54,8 @@ const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || null;
 const GOOGLE_SEARCH_API_KEY = process.env.GOOGLE_SEARCH_API_KEY || null;
 const GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID || null;
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' });
+const stripe = STRIPE_ENABLED ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' }) : null;
+const requireStripe = (req, res, next) => STRIPE_ENABLED ? next() : res.status(503).json({ error: 'Billing is not configured on this server.' });
 const OLLAMA_HOST = process.env.OLLAMA_HOST;
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 
@@ -100,7 +109,7 @@ const runCouncilWithWhip = async (models, messages, temperature, whipMs, quorum,
   return new Promise((resolve) => {
     const whipTimer = setTimeout(() => { if (!resolved) { resolved = true; resolve(results); } }, whipMs);
     const checkDone = () => { if (resolved) return; if (validCount >= quorum) { resolved = true; clearTimeout(whipTimer); resolve(results); return; } if (settledCount >= models.length) { resolved = true; clearTimeout(whipTimer); resolve(results); } };
-    models.forEach((model) => { callModel(model, messages, temperature, whipMs, tokenLimit).then((content) => { settledCount++; if (content && content.trim().toUpperCase().includes('SKIP')) { console.log(`[COUNCIL] ${model} SKIP`); } else if (content && content.trim().length > 3) { validCount++; results.push({ model, content }); } checkDone(); }).catch(() => { settledCount++; checkDone(); }); });
+    models.forEach((model) => { callModel(model, messages, temperature, whipMs, tokenLimit).then((content) => { settledCount++; const trimmed = (content || '').trim(); const isSkip = /^skip[.!]?$/i.test(trimmed); if (isSkip) { console.log(`[COUNCIL] ${model} SKIP`); } else if (trimmed.length > 3) { validCount++; results.push({ model, content }); } checkDone(); }).catch(() => { settledCount++; checkDone(); }); });
   });
 };
 
@@ -214,7 +223,7 @@ app.use(cors({ origin: (origin, cb) => { if (!origin) return cb(null, true); con
 app.use(helmet({ contentSecurityPolicy: { directives: { defaultSrc: ["'self'"], connectSrc: ["'self'", process.env.FRONTEND_URL, 'https://*.clerk.com', 'https://*.stripe.com'], scriptSrc: ["'self'", "'unsafe-inline'", 'https://*.clerk.com'], styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'https://image.pollinations.ai'], fontSrc: ["'self'", 'https://fonts.gstatic.com'], frameAncestors: ["'none'"], formAction: ["'self'", 'https://*.stripe.com'], upgradeInsecureRequests: [] } }, crossOriginEmbedderPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' }, hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }, referrerPolicy: { policy: 'strict-origin-when-cross-origin' }, xContentTypeOptions: true, xFrameOptions: 'DENY', xPermittedCrossDomainPolicies: 'none' }));
 app.use((req, res, next) => { req.requestId = crypto.randomUUID(); req.clientFingerprint = crypto.createHash('sha256').update(req.ip + (req.headers['user-agent']||'')).digest('hex').slice(0,16); next(); });
 
-app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+app.post('/api/stripe/webhook', requireStripe, express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature']; if (!sig) return res.status(400).send('Missing sig');
   let event; try { event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET); } catch (err) { Sentry.captureException(err); return res.status(400).send(`Webhook: ${err.message}`); }
   try { if (event.type === 'checkout.session.completed') { const s = event.data.object; const email = s.customer_email || s.customer_details?.email; if (email) await supabase.from('users').update({ plan:'pro', stripe_customer_id: s.customer, stripe_subscription_id: s.subscription }).eq('email', email.toLowerCase()); } if (event.type === 'invoice.paid') await supabase.from('users').update({ plan:'pro' }).eq('stripe_customer_id', event.data.object.customer); if (['customer.subscription.deleted','customer.subscription.updated'].includes(event.type)) { const sub = event.data.object; await supabase.from('users').update({ plan: sub.status === 'active' ? 'pro' : 'free' }).eq('stripe_subscription_id', sub.id); } res.json({ received: true }); } catch (err) { Sentry.captureException(err); res.status(500).send('Webhook failed'); }
@@ -477,8 +486,9 @@ app.post('/api/vision', requireAuth, checkSuspended, async (req, res) => {
 });
 
 // ===== OVERLAY (bulletproof — never returns 500) =====
-app.post('/api/overlay', async (req, res) => {
+app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
   try {
+    const user = await ensureUser(req.auth.userId);
     const { prompt, image, history = [] } = req.body;
     const pv = validatePrompt(prompt);
     if (!pv.valid) return res.status(400).json({ error: pv.error });
@@ -556,7 +566,7 @@ app.post('/api/image', requireAuth, checkSuspended, async (req, res) => {
 // ===== CHATS =====
 app.get('/api/chats', requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); const { data, error } = await supabase.from('chats').select('id,user_id,title,messages,pinned,favorite,created_at,updated_at').eq('user_id', user.id).order('updated_at', { ascending: false }); if (error) throw error; res.json(data || []); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 app.post('/api/chats', requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); const title = sanitizeString(req.body.title, 120) || 'New Chat'; const { data, error } = await supabase.from('chats').insert({ user_id: user.id, title, messages: [] }).select().single(); if (error) throw error; res.json(data); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
-app.put('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => { try { const user = await ensureUser(req.auth.userId); const { messages, title } = req.body; const payload = { updated_at: new Date().toISOString() }; if (title !== undefined) payload.title = sanitizeString(title, 120); if (messages !== undefined) { if (!Array.isArray(messages)) return res.status(400).json({ error: 'Must be array' }); payload.messages = messages.slice(0, 200).map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content.slice(0, 100000) : '', ts: m.ts, id: m.id })); } const { error } = await supabase.from('chats').update(payload).eq('id', req.params.id).eq('user_id', user.id); if (error) throw error; res.json({ ok: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+app.put('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => { try { const user = await ensureUser(req.auth.userId); const { messages, title } = req.body; const payload = { updated_at: new Date().toISOString() }; if (title !== undefined) payload.title = sanitizeString(title, 120); if (messages !== undefined) { if (!Array.isArray(messages)) return res.status(400).json({ error: 'Must be array' }); payload.messages = messages.slice(0, 200).map(m => ({ role: m.role, content: typeof m.content === 'string' ? m.content.slice(0, 100000) : '', ts: m.ts, id: m.id, ...(typeof m.imageUrl === 'string' ? { imageUrl: m.imageUrl.slice(0, 2000) } : {}), ...(typeof m.imagePrompt === 'string' ? { imagePrompt: m.imagePrompt.slice(0, 1000) } : {}) })); } const { error } = await supabase.from('chats').update(payload).eq('id', req.params.id).eq('user_id', user.id); if (error) throw error; res.json({ ok: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 app.delete('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => { try { const user = await ensureUser(req.auth.userId); const { error } = await supabase.from('chats').delete().eq('id', req.params.id).eq('user_id', user.id); if (error) throw error; res.json({ deleted: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 
 // ===== ADMIN =====
@@ -568,8 +578,8 @@ app.get('/api/admin/chats/:userId', requireAuth, requireAdmin, async (req, res) 
 app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) => { try { const { data, error } = await supabase.from('usage').select('*').eq('user_id', req.params.userId).order('date', { ascending: false }).limit(30); if (error) throw error; res.json(data || []); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 
 // ===== STRIPE =====
-app.post('/api/create-checkout-session', requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); const cu = await clerkClient.users.getUser(req.auth.userId); const email = cu?.emailAddresses?.[0]?.emailAddress; const priceId = req.body.plan === 'yearly' ? process.env.STRIPE_PRICE_YEARLY : process.env.STRIPE_PRICE_MONTHLY; if (!priceId) throw new Error('Price ID not configured'); const session = await stripe.checkout.sessions.create({ customer_email: user.stripe_customer_id ? undefined : email, customer: user.stripe_customer_id || undefined, line_items: [{ price: priceId, quantity: 1 }], mode: 'subscription', success_url: `${process.env.FRONTEND_URL}/?payment=success`, cancel_url: `${process.env.FRONTEND_URL}/?payment=cancelled`, metadata: { userId: req.auth.userId } }); res.json({ url: session.url }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
-app.post('/api/create-portal-session', requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); if (!user.stripe_customer_id) return res.status(400).json({ error: 'No subscription' }); const session = await stripe.billingPortal.sessions.create({ customer: user.stripe_customer_id, return_url: `${process.env.FRONTEND_URL}/` }); res.json({ url: session.url }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+app.post('/api/create-checkout-session', requireStripe, requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); const cu = await clerkClient.users.getUser(req.auth.userId); const email = cu?.emailAddresses?.[0]?.emailAddress; const priceId = req.body.plan === 'yearly' ? process.env.STRIPE_PRICE_YEARLY : process.env.STRIPE_PRICE_MONTHLY; if (!priceId) throw new Error('Price ID not configured'); const session = await stripe.checkout.sessions.create({ customer_email: user.stripe_customer_id ? undefined : email, customer: user.stripe_customer_id || undefined, line_items: [{ price: priceId, quantity: 1 }], mode: 'subscription', success_url: `${process.env.FRONTEND_URL}/?payment=success`, cancel_url: `${process.env.FRONTEND_URL}/?payment=cancelled`, metadata: { userId: req.auth.userId } }); res.json({ url: session.url }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+app.post('/api/create-portal-session', requireStripe, requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); if (!user.stripe_customer_id) return res.status(400).json({ error: 'No subscription' }); const session = await stripe.billingPortal.sessions.create({ customer: user.stripe_customer_id, return_url: `${process.env.FRONTEND_URL}/` }); res.json({ url: session.url }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 app.get('/api/user/plan', requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); res.json({ plan: user.plan || 'free', subscription_id: user.stripe_subscription_id }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 
 // ===== ERRORS =====

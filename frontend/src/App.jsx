@@ -283,29 +283,23 @@ const AuthenticatedApp = () => {
     } catch (e) { setToast("Failed to create chat"); return null; } 
   }, [apiCall]);
 
-  const startFreshChat = useCallback(async () => { 
+  // Load existing chats only. The chat row is created lazily on the first
+  // message (see handleSend/generateImage), so opening the app no longer
+  // leaves an empty "New Chat" row behind on every page load.
+  const loadChats = useCallback(async () => {
     try {
-      const [chatsRes, newChatRes] = await Promise.all([
-        apiCall("/api/chats"),
-        apiCall("/api/chats", { method: "POST", body: JSON.stringify({ title: "New Chat" }) })
-      ]);
-      
-      const chatData = await chatsRes.json();
-      const newChat = await newChatRes.json();
-      
+      const res = await apiCall("/api/chats");
+      const chatData = await res.json();
       if (Array.isArray(chatData)) setChats(chatData);
-      if (newChat) {
-        setChats((p) => [newChat, ...p]);
-        setActiveChatId(newChat.id);
-      }
-    } catch (e) { 
-      console.error(e.message); 
+    } catch (e) {
+      console.error(e.message);
+      setToast("Couldn't load your chats.");
     } finally {
       setIsInitialLoading(false);
     }
   }, [apiCall]);
 
-  useEffect(() => { if (isLoaded && isSignedIn) { fetchPlan(); startFreshChat(); } }, [isLoaded, isSignedIn, fetchPlan, startFreshChat]);
+  useEffect(() => { if (isLoaded && isSignedIn) { fetchPlan(); loadChats(); } }, [isLoaded, isSignedIn, fetchPlan, loadChats]);
 
   useEffect(() => { const c = async () => { if (!isSignedIn || !user?.emailAddresses?.[0]?.emailAddress) return; try { const r = await apiCall("/api/admin/users"); if (r.ok) { const u = await r.json(); const me = u.find((x) => x.email === user.emailAddresses[0].emailAddress); if (me?.is_admin) setIsAdmin(true); } } catch (e) { console.error(e.message); } }; if (isLoaded) c(); }, [isLoaded, user, isSignedIn, apiCall]);
   useEffect(() => { if (isAdmin && showAdmin) fetchAdminUsers(); }, [isAdmin, showAdmin, fetchAdminUsers]);
@@ -388,11 +382,21 @@ const AuthenticatedApp = () => {
       setStatus("streaming");
       updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: "" }], false);
       
-      const reader = res.body.getReader(); const decoder = new TextDecoder(); let acc = ""; let buf = "";
-      while (true) {
+      const reader = res.body.getReader(); const decoder = new TextDecoder(); let acc = ""; let buf = ""; let streamDone = false;
+      while (!streamDone) {
         const { done, value } = await reader.read(); if (done) break;
         buf += decoder.decode(value, { stream: true }); const lines = buf.split("\n"); buf = lines.pop() || "";
-        for (const line of lines) { const t = line.trim(); if (!t.startsWith("data: ")) continue; const j = t.slice(6).trim(); if (j === "[DONE]") break; try { const d = JSON.parse(j); if (d.type === 'chunk') acc += d.text; else if (d.type === 'error') throw new Error(d.text); } catch (e) { if (e.message !== 'Unexpected token D in JSON at position 0') throw e; } }
+        for (const line of lines) {
+          const t = line.trim();
+          if (!t.startsWith("data: ")) continue;
+          const j = t.slice(6).trim();
+          if (j === "[DONE]") { streamDone = true; break; }
+          // A frame that isn't valid JSON is a transport artifact, not a failure
+          // worth aborting the whole response for — skip it and keep reading.
+          let d; try { d = JSON.parse(j); } catch { continue; }
+          if (d.type === 'chunk') acc += d.text;
+          else if (d.type === 'error') throw new Error(d.text);
+        }
         setChats((p) => p.map((c) => (c.id === chatId ? { ...c, messages: [...updated, { ...assistantMsg, typing: false, content: acc }] } : c)));
       }
       await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: acc }]);
@@ -563,8 +567,10 @@ const OverlayAssistant = () => {
     if (liveActive) { image = await captureFromLiveStream(); }
     const body = { prompt: query, image: image || attachment || undefined };
     try {
-      const res = await fetch(`${API_BASE}/api/overlay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      if (!res.ok) throw new Error(`Error: ${res.status}`);
+      const token = await getToken();
+      if (!token) throw new Error('Please sign in to use the overlay.');
+      const res = await fetch(`${API_BASE}/api/overlay`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify(body) });
+      if (!res.ok) throw new Error(res.status === 401 ? 'Session expired — please sign in again.' : `Error: ${res.status}`);
       const data = await res.json();
       setAnswer(data.answer || 'No answer');
       setStatus('done'); setAttachment(null); setQuery('');

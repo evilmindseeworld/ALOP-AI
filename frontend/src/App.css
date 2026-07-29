@@ -1129,6 +1129,112 @@ textarea:focus-visible {
   object-fit: cover;
 }
 
+/* ===== UPGRADE / PRICING ===== */
+
+.upgrade-btn {
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: linear-gradient(135deg, var(--surface-3), var(--surface-4));
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, filter 0.15s;
+}
+
+.upgrade-btn:hover {
+  border-color: var(--border-focus);
+  filter: brightness(1.12);
+}
+
+.plan-grid {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.plan-col {
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+
+.plan-col.is-pro {
+  border-color: var(--border-focus);
+  background: var(--surface-3);
+}
+
+.plan-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.plan-badge {
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--border-focus);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.plan-feats {
+  margin: 0;
+  padding-left: 17px;
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--text-muted);
+}
+
+.plan-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.plan-buy {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-focus);
+  background: var(--surface-4);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+
+.plan-buy:hover:not(:disabled) { filter: brightness(1.15); }
+
+.plan-buy:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.plan-buy.is-secondary {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+.plan-note {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--text-subtle);
+}
+
 /* Shown after a reload, when the flag survived but the bytes were never stored. */
 .msg-attachment-placeholder {
   display: inline-flex;

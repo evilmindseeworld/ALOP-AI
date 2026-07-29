@@ -49,6 +49,21 @@ const generateChatTitle = (text) => {
   if (words.length > 6) title += "...";
   return title.charAt(0).toUpperCase() + title.slice(1);
 };
+// Stripe reports minor units (900 = $9.00). Whole amounts drop the decimals so
+// a $9 plan reads "$9" rather than "$9.00".
+export const formatPrice = (p) => {
+  if (!p || p.amount == null) return "";
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: "currency",
+      currency: (p.currency || "usd").toUpperCase(),
+      minimumFractionDigits: p.amount % 100 === 0 ? 0 : 2,
+    }).format(p.amount / 100);
+  } catch {
+    return `${(p.amount / 100).toFixed(2)} ${(p.currency || "").toUpperCase()}`;
+  }
+};
+
 const Storage = {
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
@@ -259,6 +274,12 @@ const AuthenticatedApp = () => {
   const [status, setStatus] = useState("idle");
   const [showCamera, setShowCamera] = useState(false);
   const [attachedImage, setAttachedImage] = useState(null);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+  // null means "no pricing available" — the endpoint 503s when this deployment
+  // has no Stripe price IDs, and the upgrade path stays hidden rather than
+  // offering a checkout that would fail.
+  const [prices, setPrices] = useState(null);
+  const [billingBusy, setBillingBusy] = useState(false);
   const [feedback, setFeedback] = useState({});
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   
@@ -304,6 +325,37 @@ const AuthenticatedApp = () => {
 
   const fetchAdminUsers = useCallback(async () => { try { const r = await apiCall("/api/admin/users"); setAdminUsers(await r.json() || []); } catch (e) { console.error(e.message); } }, [apiCall]);
   const fetchPlan = useCallback(async () => { try { const r = await apiCall("/api/user/plan"); setUserPlan((await r.json()).plan || "free"); } catch (e) { console.error(e.message); } }, [apiCall]);
+
+  // A non-OK response here is not an error worth surfacing: it means billing
+  // isn't configured, and the correct behaviour is to show no upgrade path.
+  const fetchPrices = useCallback(async () => {
+    try {
+      const r = await apiCall("/api/billing/prices");
+      if (!r.ok) return;
+      setPrices(await r.json());
+    } catch (e) { console.error(e.message); }
+  }, [apiCall]);
+
+  const startCheckout = useCallback(async (plan) => {
+    setBillingBusy(true);
+    try {
+      const r = await apiCall("/api/create-checkout-session", { method: "POST", body: JSON.stringify({ plan }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.url) throw new Error(d.error || "Couldn't start checkout.");
+      window.location.href = d.url;
+      // Deliberately leaves billingBusy set — we are navigating away.
+    } catch (e) { setToast(e.message); setBillingBusy(false); }
+  }, [apiCall]);
+
+  const openBillingPortal = useCallback(async () => {
+    setBillingBusy(true);
+    try {
+      const r = await apiCall("/api/create-portal-session", { method: "POST" });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok || !d.url) throw new Error(d.error || "Couldn't open the billing portal.");
+      window.location.href = d.url;
+    } catch (e) { setToast(e.message); setBillingBusy(false); }
+  }, [apiCall]);
   
   const createChat = useCallback(async () => {
     try { 
@@ -331,7 +383,38 @@ const AuthenticatedApp = () => {
     }
   }, [apiCall]);
 
-  useEffect(() => { if (isLoaded && isSignedIn) { fetchPlan(); loadChats(); } }, [isLoaded, isSignedIn, fetchPlan, loadChats]);
+  useEffect(() => { if (isLoaded && isSignedIn) { fetchPlan(); fetchPrices(); loadChats(); } }, [isLoaded, isSignedIn, fetchPlan, fetchPrices, loadChats]);
+
+  // Stripe sends the customer back to `/?payment=success`, which nothing used
+  // to read — a completed payment landed on an unchanged page with no
+  // acknowledgement at all.
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn) return;
+    const payment = new URLSearchParams(window.location.search).get("payment");
+    if (!payment) return;
+    // Strip it straight away so a refresh doesn't replay the toast.
+    window.history.replaceState({}, "", window.location.pathname);
+
+    if (payment === "cancelled") { setToast("Checkout cancelled — you haven't been charged."); return; }
+    if (payment !== "success") return;
+
+    setToast("Payment received. Activating Pro...");
+    // The webhook that flips the plan can land after this redirect, so reading
+    // the plan once would often still say "free" to someone who just paid.
+    let cancelled = false;
+    (async () => {
+      for (let i = 0; i < 6 && !cancelled; i++) {
+        await new Promise((r) => setTimeout(r, 1500));
+        if (cancelled) return;
+        try {
+          const d = await (await apiCall("/api/user/plan")).json();
+          if (d.plan === "pro") { setUserPlan("pro"); setToast("Pro is active — all 7 models unlocked."); return; }
+        } catch (e) { console.error(e.message); }
+      }
+      if (!cancelled) setToast("Payment received. Pro will activate shortly.");
+    })();
+    return () => { cancelled = true; };
+  }, [isLoaded, isSignedIn, apiCall]);
 
   useEffect(() => { const c = async () => { if (!isSignedIn || !user?.emailAddresses?.[0]?.emailAddress) return; try { const r = await apiCall("/api/admin/users"); if (r.ok) { const u = await r.json(); const me = u.find((x) => x.email === user.emailAddresses[0].emailAddress); if (me?.is_admin) setIsAdmin(true); } } catch (e) { console.error(e.message); } }; if (isLoaded) c(); }, [isLoaded, user, isSignedIn, apiCall]);
   useEffect(() => { if (isAdmin && showAdmin) fetchAdminUsers(); }, [isAdmin, showAdmin, fetchAdminUsers]);
@@ -502,9 +585,10 @@ const AuthenticatedApp = () => {
           <button className="icon-btn desktop-only" onClick={() => setSidebarCollapsed((c) => !c)} title="Chats"><Icon name="menu" size={20} /></button>
           <div className="brand"><img src="/logo.png" alt="" className="header-logo" /><div className="brand-text"><h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1><span className="sub-title">AI Council • {userPlan === "pro" ? "7 models" : "4 models"} • Precision • Learning</span></div></div>
           <div className="header-actions">
-            {isAdmin && <MagneticButton className={`icon-btn admin-btn ${showAdmin ? "active" : ""}`} onClick={() => { setShowAdmin((s) => !s); setShowSettings(false); }} ariaLabel="Admin"><Icon name="crown" size={20} /></MagneticButton>}
+            {userPlan !== "pro" && prices && <MagneticButton className="upgrade-btn" onClick={() => { setShowUpgrade(true); setShowSettings(false); setShowAdmin(false); }} ariaLabel="Upgrade to Pro"><Icon name="crown" size={14} /> Upgrade</MagneticButton>}
+            {isAdmin && <MagneticButton className={`icon-btn admin-btn ${showAdmin ? "active" : ""}`} onClick={() => { setShowAdmin((s) => !s); setShowSettings(false); setShowUpgrade(false); }} ariaLabel="Admin"><Icon name="crown" size={20} /></MagneticButton>}
             <MagneticButton className="icon-btn" onClick={() => setDarkMode((d) => !d)} ariaLabel="Theme"><Icon name={darkMode ? "sun" : "moon"} size={20} /></MagneticButton>
-            <MagneticButton className="icon-btn" onClick={() => { setShowSettings((s) => !s); setShowAdmin(false); }} ariaLabel="Settings"><Icon name="settings" size={20} /></MagneticButton>
+            <MagneticButton className="icon-btn" onClick={() => { setShowSettings((s) => !s); setShowAdmin(false); setShowUpgrade(false); }} ariaLabel="Settings"><Icon name="settings" size={20} /></MagneticButton>
           </div>
         </header>
         
@@ -512,7 +596,24 @@ const AuthenticatedApp = () => {
           <ChatSidebar chats={sortedChats} activeChatId={activeChatId} onSelect={setActiveChatId} onCreate={createChat} onDelete={deleteChat} onRename={renameChat} onPin={togglePinChat} onFavorite={toggleFavoriteChat} collapsed={sidebarCollapsed} mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />
           <div className="chat-main">
             {showAdmin && isAdmin && (<><div className="panel-overlay" onClick={() => setShowAdmin(false)} /><div className="side-panel"><div className="panel-header"><div className="panel-title">Admin Dashboard</div><button onClick={() => setShowAdmin(false)} className="icon-btn"><Icon name="close" size={18} /></button></div><div className="panel-body"><div className="admin-title">{adminUsers.length} Users</div>{adminUsers.map((u) => (<div key={u.id} className="admin-user-card"><div className="admin-user-header"><img src={u.avatar_url || "https://via.placeholder.com/36"} alt="" className="admin-avatar" /><div><div style={{ fontWeight: 600, fontSize: 13, color: "var(--text)" }}>{u.name || "Anonymous"}</div><div style={{ fontSize: 11, color: "var(--text-subtle)" }}>{u.email || "No email"}</div></div><span className={`admin-badge ${u.plan === "pro" ? "pro" : "free"}`}>{u.plan || "free"}</span>{u.is_admin && <span className="admin-badge admin">Admin</span>}</div><div className="msg-actions" style={{ justifyContent: "flex-start", marginTop: 8, opacity: 1 }}>{u.suspended ? <button onClick={() => adminUnsuspend(u.id)} className="msg-action-btn">Unsuspend</button> : <button onClick={() => adminSuspend(u.id)} className="msg-action-btn">Suspend</button>}<button onClick={() => adminDeleteUser(u.id)} className="msg-action-btn" style={{ color: "var(--danger)" }}>Delete</button></div></div>))}</div></div></>)}
-            {showSettings && (<><div className="panel-overlay" onClick={() => setShowSettings(false)} /><div className="side-panel"><div className="panel-header"><div className="panel-title">Settings</div><button onClick={() => setShowSettings(false)} className="icon-btn"><Icon name="close" size={18} /></button></div><div className="panel-body"><div className="setting-row"><div className="setting-label">Appearance</div><div className={`theme-toggle ${darkMode ? "active" : ""}`} onClick={() => setDarkMode((d) => !d)}><span className="theme-toggle-label">{darkMode ? "Sakura Night" : "Bamboo Day"}</span><div className="theme-toggle-switch" /></div></div><div className="setting-row"><button onClick={() => activeChatId && deleteChat(activeChatId)} className="theme-card">Delete Chat</button></div><div className="setting-row"><SignOutButton><button className="theme-card" style={{ width: "100%" }}>Sign Out</button></SignOutButton></div></div></div></>)}
+            {showUpgrade && prices && (<><div className="panel-overlay" onClick={() => setShowUpgrade(false)} /><div className="side-panel"><div className="panel-header"><div className="panel-title">Upgrade to Pro</div><button onClick={() => setShowUpgrade(false)} className="icon-btn"><Icon name="close" size={18} /></button></div><div className="panel-body">
+              <div className="plan-grid">
+                <div className="plan-col">
+                  <div className="plan-name">Free</div>
+                  <ul className="plan-feats"><li>4 models in the council</li><li>Image generation</li><li>Voice input</li><li>Vision &amp; screen analysis</li></ul>
+                </div>
+                <div className="plan-col is-pro">
+                  <div className="plan-name">Pro <span className="plan-badge">Recommended</span></div>
+                  <ul className="plan-feats"><li><strong>All 7 models</strong>, including DeepSeek, Nemotron and MiniMax</li><li>Higher-quality vision model</li><li>Everything in Free</li></ul>
+                </div>
+              </div>
+              <div className="plan-buttons">
+                <button className="plan-buy" disabled={billingBusy} onClick={() => startCheckout("monthly")}>{billingBusy ? "Opening checkout..." : `Monthly — ${formatPrice(prices.monthly)}`}</button>
+                <button className="plan-buy is-secondary" disabled={billingBusy} onClick={() => startCheckout("yearly")}>{billingBusy ? "Opening checkout..." : `Yearly — ${formatPrice(prices.yearly)}`}</button>
+              </div>
+              <div className="plan-note">Secure checkout by Stripe. Cancel any time.</div>
+            </div></div></>)}
+            {showSettings && (<><div className="panel-overlay" onClick={() => setShowSettings(false)} /><div className="side-panel"><div className="panel-header"><div className="panel-title">Settings</div><button onClick={() => setShowSettings(false)} className="icon-btn"><Icon name="close" size={18} /></button></div><div className="panel-body"><div className="setting-row"><div className="setting-label">Appearance</div><div className={`theme-toggle ${darkMode ? "active" : ""}`} onClick={() => setDarkMode((d) => !d)}><span className="theme-toggle-label">{darkMode ? "Sakura Night" : "Bamboo Day"}</span><div className="theme-toggle-switch" /></div></div><div className="setting-row"><button onClick={() => activeChatId && deleteChat(activeChatId)} className="theme-card">Delete Chat</button></div>{userPlan === "pro" && <div className="setting-row"><button onClick={openBillingPortal} disabled={billingBusy} className="theme-card" style={{ width: "100%" }}>{billingBusy ? "Opening..." : "Manage subscription"}</button></div>}{userPlan !== "pro" && prices && <div className="setting-row"><button onClick={() => { setShowSettings(false); setShowUpgrade(true); }} className="theme-card" style={{ width: "100%" }}>Upgrade to Pro</button></div>}<div className="setting-row"><SignOutButton><button className="theme-card" style={{ width: "100%" }}>Sign Out</button></SignOutButton></div></div></div></>)}
             
             <div className="chat-content">
               <div className="scroll-wrapper" ref={chatRef}>

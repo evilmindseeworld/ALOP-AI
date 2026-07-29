@@ -65,9 +65,7 @@ const AppSkeleton = () => (
   <div className="app-root dark">
     <div className="bg-layer" />
     <div className="bg-overlay" />
-    <Earring side="left" />
-    <Earring side="right" />
-    <div className="app-shell">
+        <div className="app-shell">
       <header className="app-header">
         <div className="skeleton-block" style={{ width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0 }}></div>
         <div style={{ marginLeft: '10px', gap: '8px', display: 'flex', flexDirection: 'column' }}>
@@ -401,8 +399,6 @@ const AuthenticatedApp = () => {
     <div className={`app-root ${darkMode ? "dark" : "light"}`}>
       <div className="bg-layer" />
       <div className="bg-overlay" />
-      <Earring side="left" />
-      <Earring side="right" />
       
       {toast && <div className="toast">{toast}</div>}
       {showCamera && <div className="camera-overlay"><video ref={videoRef} autoPlay className="camera-video" /><canvas ref={canvasRef} style={{ display: "none" }} /><div className="camera-controls"><button onClick={capturePhoto} className="camera-btn primary">Capture</button><button onClick={stopCamera} className="camera-btn secondary">Cancel</button></div></div>}
@@ -539,10 +535,17 @@ const App = () => {
   return (
     <ClerkProvider publishableKey={clerkKey} signInUrl="/" signUpUrl="/" afterSignInUrl="/" afterSignUpUrl="/" appearance={{ baseTheme: "dark", variables: { colorPrimary: "#ec7d96", colorBackground: "#1b120c", colorText: "#faf0e6" } }}>
       <div style={{ width: "100vw", height: "100dvh" }}>
+        {!isOverlay && (
+          <>
+            <Earring side="left" />
+            <Earring side="right" />
+          </>
+        )}
         {isOverlay ? <OverlayAssistant /> : <AuthenticatedAppWrapper />}
       </div>
     </ClerkProvider>
   );
 };
+
 
 export default App;

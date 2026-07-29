@@ -222,7 +222,7 @@ textarea:focus-visible {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 9999;
+  z-index: 1;
   background: repeating-linear-gradient(
     0deg,
     transparent 0px, transparent 1px,
@@ -2740,7 +2740,7 @@ textarea:focus-visible {
 .earring-wrap {
   position: fixed;
   top: 100px; /* Lowered so they don't block the header */
-  z-index: 5;
+  z-index: 1;
   pointer-events: none; /* Allows clicks to pass through to the UI behind them */
   display: flex;
   flex-direction: column;

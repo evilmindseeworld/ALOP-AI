@@ -123,8 +123,6 @@ const InputBar = memo(({ onSend, disabled, onFileSelect, onStartCamera, isListen
 
 export const Earring = memo(({ side }) => (
   <div className={`earring-wrap earring-${side}`}>
-    <div className="earring-chain"></div>
-    <div className="earring-hook"></div>
     <div className="earring-pivot">
       <model-viewer 
         src="/model.glb" 
@@ -136,6 +134,7 @@ export const Earring = memo(({ side }) => (
     </div>
   </div>
 ));
+
 
 const AuthenticatedApp = () => {
   const { user, isLoaded } = useUser();

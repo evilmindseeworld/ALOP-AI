@@ -4,7 +4,8 @@
   "description": "ALOP-AI backend API",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test \"lib/**/*.test.js\""
   },
   "dependencies": {
     "@clerk/clerk-sdk-node": "^5.1.6",

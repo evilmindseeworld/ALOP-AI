@@ -193,7 +193,7 @@ export const Earring = memo(({ side }) => (
       top: '100px', 
       left: side === 'left' ? '8px' : 'auto', 
       right: side === 'right' ? '8px' : 'auto', 
-      zIndex: 5, 
+      zIndex: 2, 
       pointerEvents: 'none'
     }}
   >

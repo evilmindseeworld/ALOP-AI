@@ -9,7 +9,6 @@ import { animate, createScope, spring, createDraggable } from "animejs";
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
 
-// --- Utilities ---
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
 
 const isImageRequest = (text) => {
@@ -22,7 +21,7 @@ const parseImagePrompt = (text) => {
   return m ? m[1].trim() : text.replace(/^\/image\s*/, "").trim();
 };
 
-const buildImageUrl = (prompt) => `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true`;
+const buildImageUrl = (prompt) => https://image.pollinations.ai/prompt/?width=1024&height=1024&nologo=true;
 
 const generateChatTitle = (text) => {
   const cleaned = text.replace(/^\/image\s*/i, "").replace(/^(generate|create|draw|make)\s+(an?\s+)?image\s*(of\s+)?/i, "").trim();
@@ -38,7 +37,6 @@ const Storage = {
   set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
 };
 
-// --- Memoized Components for Performance ---
 const Icon = memo(({ name, size = 18 }) => {
   const icons = {
     menu: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18" /></svg>,
@@ -65,8 +63,8 @@ const Icon = memo(({ name, size = 18 }) => {
 const MessageActions = memo(({ content, onCopy, msgId, onFeedback, feedback }) => (
   <div className="msg-actions">
     <button className="msg-action-btn" onClick={onCopy}><Icon name="copy" size={13} /> Copy</button>
-    <button className={`msg-action-btn ${feedback === 'up' ? 'active' : ''}`} onClick={() => onFeedback(msgId, 'up')}><Icon name="thumbsUp" size={13} /></button>
-    <button className={`msg-action-btn ${feedback === 'down' ? 'active' : ''}`} onClick={() => onFeedback(msgId, 'down')}><Icon name="thumbsDown" size={13} /></button>
+    <button className={msg-action-btn } onClick={() => onFeedback(msgId, 'up')}><Icon name="thumbsUp" size={13} /></button>
+    <button className={msg-action-btn } onClick={() => onFeedback(msgId, 'down')}><Icon name="thumbsDown" size={13} /></button>
   </div>
 ));
 
@@ -76,7 +74,7 @@ const ChatItem = memo(({ chat, activeChatId, onSelect, onRename, onDelete, onPin
   const handleRename = () => { onRename(chat.id, editTitle); setEditing(false); };
   const handleKeyDown = (e) => { if (e.key === "Enter") handleRename(); if (e.key === "Escape") { setEditTitle(chat.title || "New Chat"); setEditing(false); } };
   return (
-    <div className={`chat-item ${chat.id === activeChatId ? "active" : ""} ${chat.pinned ? "pinned" : ""} ${chat.favorite ? "favorite" : ""}`} onClick={() => onSelect(chat.id)}>
+    <div className={chat-item   } onClick={() => onSelect(chat.id)}>
       <div className="chat-title">{editing ? <input className="custom-input" style={{ padding: "4px 8px", fontSize: 12 }} value={editTitle} autoFocus onChange={(e) => setEditTitle(e.target.value)} onBlur={handleRename} onKeyDown={handleKeyDown} onClick={(e) => e.stopPropagation()} /> : (chat.title || "New Chat")}</div>
       <div className="chat-actions" onClick={(e) => e.stopPropagation()}>
         <button className="chat-action" onClick={() => onPin(chat.id)} title="Pin"><Icon name="pin" size={13} /></button>
@@ -89,10 +87,10 @@ const ChatItem = memo(({ chat, activeChatId, onSelect, onRename, onDelete, onPin
 });
 
 const ChatSidebar = memo(({ chats, activeChatId, onSelect, onCreate, onDelete, onRename, onPin, onFavorite, collapsed, mobileOpen, setMobileOpen }) => (
-  <div className={`sidebar ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobileOpen" : ""} ${typeof window !== "undefined" && window.innerWidth <= 768 ? "mobile" : ""}`}>
+  <div className={sidebar   }>
     <div className="sidebar-header"><button className="new-chat-btn" onClick={onCreate}><Icon name="plus" size={16} /> New Chat</button>{mobileOpen && <button className="icon-btn" onClick={() => setMobileOpen(false)}><Icon name="close" size={18} /></button>}</div>
     <div className="chat-list">{chats.length === 0 && <div style={{ textAlign: "center", opacity: 0.5, padding: 20, fontSize: 13 }}>No chats yet</div>}{chats.map((chat) => <ChatItem key={chat.id} chat={chat} activeChatId={activeChatId} onSelect={onSelect} onRename={onRename} onDelete={onDelete} onPin={onPin} onFavorite={onFavorite} />)}</div>
-    <div className="sidebar-footer">ALOP-AI   Council of Minds   Learning</div>
+    <div className="sidebar-footer">ALOP-AI • Council of Minds • Learning</div>
   </div>
 ));
 
@@ -108,11 +106,11 @@ const InputBar = memo(({ onSend, disabled, onFileSelect, onStartCamera, isListen
   
   return (
     <div className="input-bar"><div className="input-wrapper">
-      {attachments.length > 0 && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{attachments.map((a, i) => <div key={i} className="attachment-pill">{a.name}<button onClick={() => removeAttachment(i)}> </button></div>)}</div>}
+      {attachments.length > 0 && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{attachments.map((a, i) => <div key={i} className="attachment-pill">{a.name}<button onClick={() => removeAttachment(i)}>×</button></div>)}</div>}
       <textarea className="input-text" rows={rows} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={handleKeyDown} placeholder="Ask the AI Council anything..." disabled={disabled} />
       <div className="input-actions">
         <label className="input-btn" title="Upload image" style={{ cursor: "pointer" }}><input type="file" accept="image/*" multiple onChange={onFileSelect} disabled={disabled} style={{ display: "none" }} /><Icon name="image" size={16} /></label>
-        <button className={`input-btn ${isListening ? "listening" : ""}`} onClick={toggleListening} title="Voice input"><Icon name="mic" size={16} /></button>
+        <button className={input-btn } onClick={toggleListening} title="Voice input"><Icon name="mic" size={16} /></button>
         <button className="input-btn" onClick={onStartCamera} title="Camera" disabled={disabled}><Icon name="camera" size={16} /></button>
         <div style={{ flex: 1 }}></div>
         <button className="input-btn primary" onClick={() => { if (!disabled && text.trim()) { onSend(text, attachments); setText(""); setAttachments([]); } }} disabled={disabled || !text.trim()}><Icon name="send" size={16} /></button>
@@ -121,37 +119,11 @@ const InputBar = memo(({ onSend, disabled, onFileSelect, onStartCamera, isListen
   );
 });
 
-// --- Fixed Earring: module-level export, no sound, locked, only swings ---
 export const Earring = memo(({ side }) => (
   <div
-    className={`earring-wrap earring-${side}`}
+    className={earring-wrap earring-}
     role="img"
-    aria-label={`ALOP ${side} decorative earring`}
-  >
-    
-const AuthenticatedApp = () => {
-  const { user, isLoaded } = useUser();
-  const { getToken, isSignedIn } = useAuth();
-
-  const [darkMode, setDarkMode] = useState(() => { const s = Storage.get("alop-dark-mode"); return s === null ? true : s === "true"; });
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => { const v = Storage.get("pa-sidebar-collapsed"); return v === null ? true : v === "true"; });
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showAdmin, setShowAdmin] = useState(false);
-  const [adminUsers, setAdminUsers] = useState([]);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [userPlan, setUserPlan] = useState("free");
-  const [toast, setToast] = useState(null);
-  const [chats, setChats] = useState([]);
-  const [activeChatId, setActiveChatId] = useState(null);
-  const [status, setStatus] = useState("idle");
-  const [showCamera, setShowCamera] = useState(false);
-  const [feedback, setFeedback] = useState({});
-  export const Earring = memo(({ side }) => (
-  <div
-    className={`earring-wrap earring-${side}`}
-    role="img"
-    aria-label={`ALOP ${side} decorative earring`}
+    aria-label={ALOP  decorative earring}
   >
     <div className="earring-chain" />
     <div className="earring-hook" />
@@ -175,6 +147,25 @@ const AuthenticatedApp = () => {
   </div>
 ));
 
+const AuthenticatedApp = () => {
+  const { user, isLoaded } = useUser();
+  const { getToken, isSignedIn } = useAuth();
+
+  const [darkMode, setDarkMode] = useState(() => { const s = Storage.get("alop-dark-mode"); return s === null ? true : s === "true"; });
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => { const v = Storage.get("pa-sidebar-collapsed"); return v === null ? true : v === "true"; });
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const [adminUsers, setAdminUsers] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [userPlan, setUserPlan] = useState("free");
+  const [toast, setToast] = useState(null);
+  const [chats, setChats] = useState([]);
+  const [activeChatId, setActiveChatId] = useState(null);
+  const [status, setStatus] = useState("idle");
+  const [showCamera, setShowCamera] = useState(false);
+  const [feedback, setFeedback] = useState({});
+  
   const cameraStreamRef = useRef(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -189,14 +180,12 @@ const AuthenticatedApp = () => {
   useEffect(() => Storage.set("pa-sidebar-collapsed", sidebarCollapsed.toString()), [sidebarCollapsed]);
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); }, [toast]);
 
-  // Smart scroll
   useEffect(() => { if (!chatRef.current) return; const el = chatRef.current; const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150; if (nearBottom) el.scrollTop = el.scrollHeight; }, [chats, activeChatId]);
   useEffect(() => { if (chatRef.current && status === 'loading') chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [status]);
 
   const activeChat = useMemo(() => chats.find((c) => c.id === activeChatId), [chats, activeChatId]);
   const activeMessages = useMemo(() => activeChat?.messages || [], [activeChat]);
 
-  // Anime.js animations for empty state and new messages
   useEffect(() => {
     if (!chatRef.current) return;
     if (activeMessages.length === 0) { 
@@ -212,12 +201,11 @@ const AuthenticatedApp = () => {
     }
   }, [activeMessages]);
 
-  // Micro-interaction click effect
   useEffect(() => { const h = (e) => { const b = e.target.closest('.input-btn.primary, .new-chat-btn, .overlay-submit'); if (!b) return; animate(b, { scale: [{ to: 0.9, duration: 80 }, { to: 1, ease: spring({ bounce: 0.6 }) }] }); }; document.addEventListener('click', h); return () => document.removeEventListener('click', h); }, []);
 
   const apiCall = useCallback(async (path, options = {}) => {
     const token = await getToken();
-    return fetch(`${API_BASE}${path}`, { ...options, headers: { ...options.headers, Authorization: `Bearer ${token}`, "Content-Type": "application/json" } });
+    return fetch(${API_BASE}, { ...options, headers: { ...options.headers, Authorization: Bearer , "Content-Type": "application/json" } });
   }, [getToken]);
 
   const fetchAdminUsers = useCallback(async () => { try { const r = await apiCall("/api/admin/users"); setAdminUsers(await r.json() || []); } catch (e) { console.error(e.message); } }, [apiCall]);
@@ -258,20 +246,20 @@ const AuthenticatedApp = () => {
 
   const updateChatMessages = useCallback(async (chatId, messages, saveToDb = true) => {
     setChats((p) => p.map((c) => (c.id === chatId ? { ...c, messages, updated_at: new Date().toISOString() } : c)));
-    if (saveToDb) { try { await apiCall(`/api/chats/${chatId}`, { method: "PUT", body: JSON.stringify({ messages }) }); } catch (e) { console.error(e.message); } }
+    if (saveToDb) { try { await apiCall(/api/chats/, { method: "PUT", body: JSON.stringify({ messages }) }); } catch (e) { console.error(e.message); } }
   }, [apiCall]);
 
-  const deleteChat = useCallback(async (id) => { try { await apiCall(`/api/chats/${id}`, { method: "DELETE" }); setChats((p) => p.filter((c) => c.id !== id)); if (activeChatId === id) setActiveChatId(null); } catch (e) { console.error(e.message); } }, [apiCall, activeChatId]);
-  const renameChat = useCallback(async (id, title) => { if (!title?.trim()) return; setChats((p) => p.map((c) => (c.id === id ? { ...c, title } : c))); try { await apiCall(`/api/chats/${id}`, { method: "PUT", body: JSON.stringify({ title }) }); } catch (e) { console.error(e.message); } }, [apiCall]);
+  const deleteChat = useCallback(async (id) => { try { await apiCall(/api/chats/, { method: "DELETE" }); setChats((p) => p.filter((c) => c.id !== id)); if (activeChatId === id) setActiveChatId(null); } catch (e) { console.error(e.message); } }, [apiCall, activeChatId]);
+  const renameChat = useCallback(async (id, title) => { if (!title?.trim()) return; setChats((p) => p.map((c) => (c.id === id ? { ...c, title } : c))); try { await apiCall(/api/chats/, { method: "PUT", body: JSON.stringify({ title }) }); } catch (e) { console.error(e.message); } }, [apiCall]);
   
   const togglePinChat = useCallback((id) => setChats((p) => p.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c))), []);
   const toggleFavoriteChat = useCallback((id) => setChats((p) => p.map((c) => (c.id === id ? { ...c, favorite: !c.favorite } : c))), []);
   
   const sortedChats = useMemo(() => [...chats].sort((a, b) => { if (a.pinned !== b.pinned) return a.pinned ? -1 : 1; if (a.favorite !== b.favorite) return a.favorite ? -1 : 1; return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at); }), [chats]);
   
-  const adminSuspend = useCallback(async (id) => { try { if ((await apiCall(`/api/admin/users/${id}/suspend`, { method: "POST" })).ok) { setToast("Suspended"); fetchAdminUsers(); } } catch (e) {} }, [apiCall, fetchAdminUsers]);
-  const adminUnsuspend = useCallback(async (id) => { try { if ((await apiCall(`/api/admin/users/${id}/unsuspend`, { method: "POST" })).ok) { setToast("Unsuspended"); fetchAdminUsers(); } } catch (e) {} }, [apiCall, fetchAdminUsers]);
-  const adminDeleteUser = useCallback(async (id) => { if (!confirm("DELETE this user?")) return; try { if ((await apiCall(`/api/admin/users/${id}`, { method: "DELETE" })).ok) { setToast("Deleted"); fetchAdminUsers(); } } catch (e) {} }, [apiCall, fetchAdminUsers]);
+  const adminSuspend = useCallback(async (id) => { try { if ((await apiCall(/api/admin/users//suspend, { method: "POST" })).ok) { setToast("Suspended"); fetchAdminUsers(); } } catch (e) {} }, [apiCall, fetchAdminUsers]);
+  const adminUnsuspend = useCallback(async (id) => { try { if ((await apiCall(/api/admin/users//unsuspend, { method: "POST" })).ok) { setToast("Unsuspended"); fetchAdminUsers(); } } catch (e) {} }, [apiCall, fetchAdminUsers]);
+  const adminDeleteUser = useCallback(async (id) => { if (!confirm("DELETE this user?")) return; try { if ((await apiCall(/api/admin/users/, { method: "DELETE" })).ok) { setToast("Deleted"); fetchAdminUsers(); } } catch (e) {} }, [apiCall, fetchAdminUsers]);
 
   const handleFileSelect = useCallback((e) => { const files = Array.from(e.target.files).filter((f) => f.type.startsWith("image/")); if (!files.length) { setToast("Only images"); return; } setToast("File upload disabled in Council mode"); e.target.value = ""; }, [setToast]);
   const startCamera = useCallback(async () => { try { const s = await navigator.mediaDevices.getUserMedia({ video: true }); cameraStreamRef.current = s; setShowCamera(true); setTimeout(() => { if (videoRef.current) videoRef.current.srcObject = s; }, 100); } catch { setToast("Camera denied"); } }, [setToast]);
@@ -285,7 +273,7 @@ const AuthenticatedApp = () => {
   const generateImage = useCallback(async (promptText) => {
     const imagePrompt = parseImagePrompt(promptText) || promptText; if (!imagePrompt) { setToast("Describe image"); return; }
     let chatId = activeChatId; if (!chatId) chatId = await createChat(); if (!chatId) return;
-    const userMsg = { role: "user", content: `Generate image: ${imagePrompt}`, ts: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), id: uid() };
+    const userMsg = { role: "user", content: Generate image: , ts: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), id: uid() };
     const withUser = [...(activeMessages || []), userMsg]; await updateChatMessages(chatId, withUser);
     if ((activeMessages || []).length === 0) { const t = generateChatTitle(imagePrompt); if (t) renameChat(chatId, t); }
     await updateChatMessages(chatId, [...withUser, { role: "assistant", content: "", imageUrl: buildImageUrl(imagePrompt), imagePrompt, ts: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), id: uid() }]);
@@ -315,8 +303,8 @@ const AuthenticatedApp = () => {
     abortRef.current = new AbortController();
     
     try {
-      const res = await fetch(`${API_BASE}/api/council`, { method: "POST", headers: { Authorization: `Bearer ${await getToken()}`, "Content-Type": "application/json" }, body: JSON.stringify({ message: cleanText, history: cleanHistory, chatId }), signal: abortRef.current.signal });
-      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || `Server error: ${res.status}`); }
+      const res = await fetch(${API_BASE}/api/council, { method: "POST", headers: { Authorization: Bearer , "Content-Type": "application/json" }, body: JSON.stringify({ message: cleanText, history: cleanHistory, chatId }), signal: abortRef.current.signal });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || Server error: ); }
       if (!res.body) throw new Error("No stream");
       
       setStatus("streaming");
@@ -334,14 +322,14 @@ const AuthenticatedApp = () => {
     } catch (err) { 
       if (err.name === "AbortError") return; 
       setStatus("error"); 
-      await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: `?? ${err.message || "Connection failed"}` }]); 
+      await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: ??  }]); 
     }
   }, [activeChatId, activeMessages, status, generateImage, createChat, renameChat, updateChatMessages, getToken]);
 
   if (!isLoaded) return null;
   
   return (
-    <div className={`app-root ${darkMode ? "dark" : "light"}`}>
+    <div className={pp-root }>
       <div className="bg-layer" />
       <div className="bg-overlay" />
       <Earring side="left" />
@@ -354,9 +342,9 @@ const AuthenticatedApp = () => {
         <header className="app-header">
           <button className="icon-btn mobile-only" onClick={() => setMobileSidebarOpen(true)} title="Chats"><Icon name="menu" size={20} /></button>
           <button className="icon-btn desktop-only" onClick={() => setSidebarCollapsed((c) => !c)} title="Chats"><Icon name="menu" size={20} /></button>
-          <div className="brand"><img src="/logo.png" alt="" className="header-logo" /><div className="brand-text"><h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1><span className="sub-title">AI Council   {userPlan === "pro" ? "15 models" : "4 models"}   Precision   Learning</span></div></div>
+          <div className="brand"><img src="/logo.png" alt="" className="header-logo" /><div className="brand-text"><h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1><span className="sub-title">AI Council • {userPlan === "pro" ? "15 models" : "4 models"} • Precision • Learning</span></div></div>
           <div className="header-actions">
-            {isAdmin && <MagneticButton className={`icon-btn admin-btn ${showAdmin ? "active" : ""}`} onClick={() => { setShowAdmin((s) => !s); setShowSettings(false); }} ariaLabel="Admin"><Icon name="crown" size={20} /></MagneticButton>}
+            {isAdmin && <MagneticButton className={icon-btn admin-btn } onClick={() => { setShowAdmin((s) => !s); setShowSettings(false); }} ariaLabel="Admin"><Icon name="crown" size={20} /></MagneticButton>}
             <MagneticButton className="icon-btn" onClick={() => setDarkMode((d) => !d)} ariaLabel="Theme"><Icon name={darkMode ? "sun" : "moon"} size={20} /></MagneticButton>
             <MagneticButton className="icon-btn" onClick={() => { setShowSettings((s) => !s); setShowAdmin(false); }} ariaLabel="Settings"><Icon name="settings" size={20} /></MagneticButton>
           </div>
@@ -365,14 +353,14 @@ const AuthenticatedApp = () => {
         <div className="app-body">
           <ChatSidebar chats={sortedChats} activeChatId={activeChatId} onSelect={setActiveChatId} onCreate={createChat} onDelete={deleteChat} onRename={renameChat} onPin={togglePinChat} onFavorite={toggleFavoriteChat} collapsed={sidebarCollapsed} mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />
           <div className="chat-main">
-            {showAdmin && isAdmin && (<><div className="panel-overlay" onClick={() => setShowAdmin(false)} /><div className="side-panel"><div className="panel-header"><div className="panel-title">Admin Dashboard</div><button onClick={() => setShowAdmin(false)} className="icon-btn"><Icon name="close" size={18} /></button></div><div className="panel-body"><div className="admin-title">{adminUsers.length} Users</div>{adminUsers.map((u) => (<div key={u.id} className="admin-user-card"><div className="admin-user-header"><img src={u.avatar_url || "https://via.placeholder.com/36"} alt="" className="admin-avatar" /><div><div style={{ fontWeight: 600, fontSize: 13, color: "var(--text)" }}>{u.name || "Anonymous"}</div><div style={{ fontSize: 11, color: "var(--text-subtle)" }}>{u.email || "No email"}</div></div><span className={`admin-badge ${u.plan === "pro" ? "pro" : "free"}`}>{u.plan || "free"}</span>{u.is_admin && <span className="admin-badge admin">Admin</span>}</div><div className="msg-actions" style={{ justifyContent: "flex-start", marginTop: 8, opacity: 1 }}>{u.suspended ? <button onClick={() => adminUnsuspend(u.id)} className="msg-action-btn">Unsuspend</button> : <button onClick={() => adminSuspend(u.id)} className="msg-action-btn">Suspend</button>}<button onClick={() => adminDeleteUser(u.id)} className="msg-action-btn" style={{ color: "var(--danger)" }}>Delete</button></div></div>))}</div></div></>)}
-            {showSettings && (<><div className="panel-overlay" onClick={() => setShowSettings(false)} /><div className="side-panel"><div className="panel-header"><div className="panel-title">Settings</div><button onClick={() => setShowSettings(false)} className="icon-btn"><Icon name="close" size={18} /></button></div><div className="panel-body"><div className="setting-row"><div className="setting-label">Appearance</div><div className={`theme-toggle ${darkMode ? "active" : ""}`} onClick={() => setDarkMode((d) => !d)}><span className="theme-toggle-label">{darkMode ? "Sakura Night" : "Bamboo Day"}</span><div className="theme-toggle-switch" /></div></div><div className="setting-row"><button onClick={() => activeChatId && deleteChat(activeChatId)} className="theme-card">Delete Chat</button></div><div className="setting-row"><SignOutButton><button className="theme-card" style={{ width: "100%" }}>Sign Out</button></SignOutButton></div></div></div></>)}
+            {showAdmin && isAdmin && (<><div className="panel-overlay" onClick={() => setShowAdmin(false)} /><div className="side-panel"><div className="panel-header"><div className="panel-title">Admin Dashboard</div><button onClick={() => setShowAdmin(false)} className="icon-btn"><Icon name="close" size={18} /></button></div><div className="panel-body"><div className="admin-title">{adminUsers.length} Users</div>{adminUsers.map((u) => (<div key={u.id} className="admin-user-card"><div className="admin-user-header"><img src={u.avatar_url || "https://via.placeholder.com/36"} alt="" className="admin-avatar" /><div><div style={{ fontWeight: 600, fontSize: 13, color: "var(--text)" }}>{u.name || "Anonymous"}</div><div style={{ fontSize: 11, color: "var(--text-subtle)" }}>{u.email || "No email"}</div></div><span className={dmin-badge }>{u.plan || "free"}</span>{u.is_admin && <span className="admin-badge admin">Admin</span>}</div><div className="msg-actions" style={{ justifyContent: "flex-start", marginTop: 8, opacity: 1 }}>{u.suspended ? <button onClick={() => adminUnsuspend(u.id)} className="msg-action-btn">Unsuspend</button> : <button onClick={() => adminSuspend(u.id)} className="msg-action-btn">Suspend</button>}<button onClick={() => adminDeleteUser(u.id)} className="msg-action-btn" style={{ color: "var(--danger)" }}>Delete</button></div></div>))}</div></div></>)}
+            {showSettings && (<><div className="panel-overlay" onClick={() => setShowSettings(false)} /><div className="side-panel"><div className="panel-header"><div className="panel-title">Settings</div><button onClick={() => setShowSettings(false)} className="icon-btn"><Icon name="close" size={18} /></button></div><div className="panel-body"><div className="setting-row"><div className="setting-label">Appearance</div><div className={	heme-toggle } onClick={() => setDarkMode((d) => !d)}><span className="theme-toggle-label">{darkMode ? "Sakura Night" : "Bamboo Day"}</span><div className="theme-toggle-switch" /></div></div><div className="setting-row"><button onClick={() => activeChatId && deleteChat(activeChatId)} className="theme-card">Delete Chat</button></div><div className="setting-row"><SignOutButton><button className="theme-card" style={{ width: "100%" }}>Sign Out</button></SignOutButton></div></div></div></>)}
             
             <div className="chat-content">
               <div className="scroll-wrapper" ref={chatRef}>
                 {activeMessages.length === 0 && status === "idle" && (<div className="empty-state"><img src="/logo.png" alt="ALOP-AI" className="empty-logo" /><h2 className="empty-title text-shimmer">ALOP-AI</h2><p className="empty-subtitle">Ask the AI Council anything. Multiple models work together. Precision mode active. The AI learns from your feedback.</p></div>)}
                 {activeMessages.map((msg, idx) => (
-                  <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
+                  <div key={msg.id || idx} className={msg-row }>
                     <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
                     <div className="msg-content">
                       {msg.typing ? <div className="bubble typing-bubble"><span className="typing-dot"></span><span className="typing-dot"></span><span className="typing-dot"></span></div> : msg.content ? <div className="bubble markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown></div> : null}
@@ -427,27 +415,27 @@ const OverlayAssistant = () => {
     if (liveActive) { image = await captureFromLiveStream(); }
     const body = { prompt: query, image: image || attachment || undefined };
     try {
-      const res = await fetch(`${API_BASE}/api/overlay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      if (!res.ok) throw new Error(`Error: ${res.status}`);
+      const res = await fetch(${API_BASE}/api/overlay, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      if (!res.ok) throw new Error(Error: );
       const data = await res.json();
       setAnswer(data.answer || 'No answer');
       setStatus('done'); setAttachment(null); setQuery('');
       speak(data.answer);
-    } catch (err) { setStatus('error'); setAnswer(`Error: ${err.message}`); }
+    } catch (err) { setStatus('error'); setAnswer(Error: ); }
   };
 
   return (
     <div className="overlay-root">
       <div className="overlay-answer-stack">
-        {answer && (<div className="overlay-answer-card"><div className="overlay-answer-text markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]}>{answer}</ReactMarkdown></div><button className="overlay-tts-btn" onClick={() => isSpeaking ? stopSpeaking() : speak(answer)}>{isSpeaking ? ' ' : '?'}</button></div>)}
+        {answer && (<div className="overlay-answer-card"><div className="overlay-answer-text markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]}>{answer}</ReactMarkdown></div><button className="overlay-tts-btn" onClick={() => isSpeaking ? stopSpeaking() : speak(answer)}>{isSpeaking ? '¦' : '?'}</button></div>)}
       </div>
-      {attachment && <div className="overlay-thumb-pill">Image attached<button onClick={() => setAttachment(null)}> </button></div>}
+      {attachment && <div className="overlay-thumb-pill">Image attached<button onClick={() => setAttachment(null)}>×</button></div>}
       <form className="overlay-bar" onSubmit={handleSubmit}>
-        <div className={`overlay-icon ${liveActive ? 'live' : ''}`}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a3 3 0 0 0-3 3v14a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg></div>
+        <div className={overlay-icon }><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a3 3 0 0 0-3 3v14a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg></div>
         <input ref={inputRef} className="overlay-input" type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={liveActive ? "Live screen active. Ask anything..." : "Ask anything... (click ? for screen)"} disabled={status === 'loading'} />
-        <button type="button" className={`overlay-action ${liveActive ? 'recording' : ''}`} onClick={liveActive ? stopLiveStream : startLiveStream} title={liveActive ? 'Stop live screen' : 'Start live screen'} disabled={status === 'loading'}>?</button>
+        <button type="button" className={overlay-action } onClick={liveActive ? stopLiveStream : startLiveStream} title={liveActive ? 'Stop live screen' : 'Start live screen'} disabled={status === 'loading'}>?</button>
         <label className="overlay-action" title="Attach image"><input type="file" accept="image/*" className="overlay-file-input" onChange={handleFile} disabled={status === 'loading'} />+</label>
-        <button type="button" className={`overlay-action ${isRecording ? 'recording' : ''}`} onClick={toggleRecording} disabled={status === 'loading'}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg></button>
+        <button type="button" className={overlay-action } onClick={toggleRecording} disabled={status === 'loading'}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg></button>
         <button className="overlay-submit" type="submit" disabled={status === 'loading' || (!query.trim() && !attachment)}>{status === 'loading' ? '...' : '?'}</button>
       </form>
     </div>
@@ -468,4 +456,3 @@ const App = () => {
 };
 
 export default App;
-

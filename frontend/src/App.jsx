@@ -1,19 +1,45 @@
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
+import { ClerkProvider, useUser, useAuth, SignOutButton } from "@clerk/react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import "./App.css";
+import SignInPage from "./SignInPage";
+import MagneticButton from "./components/ui/MagneticButton";
+import { animate, createScope, spring, createDraggable } from "animejs";
+
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
+
+// --- Premium Markdown Code Blocks ---
+const markdownComponents = {
+  code({ node, inline, className, children, ...props }) {
+    const match = /language-(\w+)/.exec(className || '');
+    const codeString = String(children).replace(/\n$/, '');
+    
+    if (!inline) {
+      return (
+        <div className="code-block-wrapper">
+          <button className="code-copy-btn" onClick={() => navigator.clipboard.writeText(codeString)}>Copy</button>
+          <SyntaxHighlighter style={oneDark} language={match ? match[1] : 'text'} PreTag="div" {...props}>
+            {codeString}
+          </SyntaxHighlighter>
+        </div>
+      );
+    } else {
+      return <code className={className} {...props}>{children}</code>;
+    }
+  }
+};
 
 // --- Utilities ---
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
-
-const isImageRequest = (text) => {
-  if (text.length > 100) return false;
-  return /^\/image|^generate image|^create image|^draw image|^make image/i.test(text.trim());
-};
-
+const isImageRequest = (text) => text.length <= 100 && /^\/image|^generate image|^create image|^draw image|^make image/i.test(text.trim());
 const parseImagePrompt = (text) => {
   const m = text.match(/(?:generate|create|draw|make)\s+(?:an?\s+)?image\s*(?:of\s+)?(.+)/i);
   return m ? m[1].trim() : text.replace(/^\/image\s*/, "").trim();
 };
-
 const buildImageUrl = (prompt) => `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true`;
-
 const generateChatTitle = (text) => {
   const cleaned = text.replace(/^\/image\s*/i, "").replace(/^(generate|create|draw|make)\s+(an?\s+)?image\s*(?:of\s+)?/i, "").trim();
   if (!cleaned) return "New Chat";
@@ -22,13 +48,62 @@ const generateChatTitle = (text) => {
   if (words.length > 6) title += "...";
   return title.charAt(0).toUpperCase() + title.slice(1);
 };
-
 const Storage = {
   get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
   set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
 };
 
-// --- Memoized Components for Performance ---
+// --- Skeleton Loaders ---
+const InitialLoader = () => (
+  <div className="initial-loader dark">
+    <img src="/logo.png" alt="Loading ALOP-AI" />
+    <div className="skeleton-block" style={{ width: '120px', height: '10px', marginTop: '10px' }}></div>
+  </div>
+);
+
+const AppSkeleton = () => (
+  <div className="app-root dark">
+    <div className="bg-layer" />
+    <div className="bg-overlay" />
+    <Earring side="left" />
+    <Earring side="right" />
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="skeleton-block" style={{ width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0 }}></div>
+        <div style={{ marginLeft: '10px', gap: '8px', display: 'flex', flexDirection: 'column' }}>
+          <div className="skeleton-block" style={{ width: '140px', height: '16px' }}></div>
+          <div className="skeleton-block" style={{ width: '180px', height: '12px' }}></div>
+        </div>
+        <div style={{ flex: 1 }}></div>
+        <div className="skeleton-block" style={{ width: '40px', height: '40px', borderRadius: '12px' }}></div>
+      </header>
+      <div className="app-body">
+        <div className="sidebar">
+          <div className="skeleton-block" style={{ height: '42px', marginBottom: '14px', borderRadius: '12px' }}></div>
+          {[...Array(6)].map((_, i) => <div key={i} className="skeleton-block" style={{ height: '42px', marginBottom: '8px', borderRadius: '12px' }}></div>)}
+        </div>
+        <div className="chat-main">
+          <div className="scroll-wrapper">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className={`msg-row ${i % 2 === 0 ? 'assistant' : 'user'}`}>
+                <div className="skeleton-block" style={{ width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0 }}></div>
+                <div className="msg-content" style={{ gap: '10px', display: 'flex', flexDirection: 'column' }}>
+                  <div className="skeleton-block" style={{ height: '16px', width: '70%' }}></div>
+                  <div className="skeleton-block" style={{ height: '16px', width: '85%' }}></div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="input-bar" style={{ display: 'flex', alignItems: 'center' }}>
+            <div className="skeleton-block" style={{ height: '24px', flex: 1, borderRadius: '8px' }}></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// --- Memoized UI Components ---
 const Icon = memo(({ name, size = 18 }) => {
   const icons = {
     menu: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 12h18M3 6h18M3 18h18" /></svg>,
@@ -125,57 +200,6 @@ export const Earring = memo(({ side }) => (
   </div>
 ));
 
-// --- Skeleton Loaders ---
-const AppSkeleton = () => (
-  <div className="app-root dark">
-    <div className="bg-layer" />
-    <div className="bg-overlay" />
-    <Earring side="left" />
-    <Earring side="right" />
-    <div className="app-shell">
-      <header className="app-header">
-        <div className="skeleton-block" style={{ width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0 }}></div>
-        <div style={{ marginLeft: '10px', gap: '8px', display: 'flex', flexDirection: 'column' }}>
-          <div className="skeleton-block" style={{ width: '140px', height: '16px' }}></div>
-          <div className="skeleton-block" style={{ width: '180px', height: '12px' }}></div>
-        </div>
-        <div style={{ flex: 1 }}></div>
-        <div className="skeleton-block" style={{ width: '40px', height: '40px', borderRadius: '12px' }}></div>
-      </header>
-      <div className="app-body">
-        <div className="sidebar">
-          <div className="skeleton-block" style={{ height: '42px', marginBottom: '14px', borderRadius: '12px' }}></div>
-          {[...Array(6)].map((_, i) => <div key={i} className="skeleton-block" style={{ height: '42px', marginBottom: '8px', borderRadius: '12px' }}></div>)}
-        </div>
-        <div className="chat-main">
-          <div className="scroll-wrapper">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className={`msg-row ${i % 2 === 0 ? 'assistant' : 'user'}`}>
-                <div className="skeleton-block" style={{ width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0 }}></div>
-                <div className="msg-content" style={{ gap: '10px', display: 'flex', flexDirection: 'column' }}>
-                  <div className="skeleton-block" style={{ height: '16px', width: '70%' }}></div>
-                  <div className="skeleton-block" style={{ height: '16px', width: '85%' }}></div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="input-bar" style={{ display: 'flex', alignItems: 'center' }}>
-            <div className="skeleton-block" style={{ height: '24px', flex: 1, borderRadius: '8px' }}></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-const InitialLoader = () => (
-  <div className="initial-loader dark">
-    <img src="/logo.png" alt="Loading ALOP-AI" />
-    <div className="skeleton-block" style={{ width: '120px', height: '10px', marginTop: '10px' }}></div>
-  </div>
-);
-
-
 const AuthenticatedApp = () => {
   const { user, isLoaded } = useUser();
   const { getToken, isSignedIn } = useAuth();
@@ -194,6 +218,7 @@ const AuthenticatedApp = () => {
   const [status, setStatus] = useState("idle");
   const [showCamera, setShowCamera] = useState(false);
   const [feedback, setFeedback] = useState({});
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   
   const cameraStreamRef = useRef(null);
   const videoRef = useRef(null);
@@ -203,21 +228,18 @@ const AuthenticatedApp = () => {
   const listenTimerRef = useRef(null);
   const chatRef = useRef(null);
   const abortRef = useRef(null);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   useEffect(() => { const params = new URLSearchParams(window.location.search); if (params.get('desktop') === 'true') { const f = () => { const i = document.querySelector('.input-text'); if (i) i.focus(); }; f(); window.addEventListener('alop-focus', f); return () => window.removeEventListener('alop-focus', f); } }, []);
   useEffect(() => Storage.set("alop-dark-mode", darkMode.toString()), [darkMode]);
   useEffect(() => Storage.set("pa-sidebar-collapsed", sidebarCollapsed.toString()), [sidebarCollapsed]);
   useEffect(() => { if (!toast) return; const t = setTimeout(() => setToast(null), 3000); return () => clearTimeout(t); }, [toast]);
 
-  // Smart scroll
   useEffect(() => { if (!chatRef.current) return; const el = chatRef.current; const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 150; if (nearBottom) el.scrollTop = el.scrollHeight; }, [chats, activeChatId]);
   useEffect(() => { if (chatRef.current && status === 'loading') chatRef.current.scrollTop = chatRef.current.scrollHeight; }, [status]);
 
   const activeChat = useMemo(() => chats.find((c) => c.id === activeChatId), [chats, activeChatId]);
   const activeMessages = useMemo(() => activeChat?.messages || [], [activeChat]);
 
-  // Anime.js animations for empty state and new messages
   useEffect(() => {
     if (!chatRef.current) return;
     if (activeMessages.length === 0) { 
@@ -228,12 +250,9 @@ const AuthenticatedApp = () => {
       return () => scope.revert(); 
     }
     const msgs = chatRef.current.querySelectorAll('.msg-row');
-    if (msgs.length > 0) { 
-      animate(msgs[msgs.length - 1], { opacity: [0, 1], translateY: [16, 0], scale: [0.97, 1], ease: spring({ bounce: 0.3, stiffness: 120 }), duration: 700 }); 
-    }
+    if (msgs.length > 0) { animate(msgs[msgs.length - 1], { opacity: [0, 1], translateY: [16, 0], scale: [0.97, 1], ease: spring({ bounce: 0.3, stiffness: 120 }), duration: 700 }); }
   }, [activeMessages]);
 
-  // Micro-interaction click effect
   useEffect(() => { const h = (e) => { const b = e.target.closest('.input-btn.primary, .new-chat-btn, .overlay-submit'); if (!b) return; animate(b, { scale: [{ to: 0.9, duration: 80 }, { to: 1, ease: spring({ bounce: 0.6 }) }] }); }; document.addEventListener('click', h); return () => document.removeEventListener('click', h); }, []);
 
   const apiCall = useCallback(async (path, options = {}) => {
@@ -242,7 +261,6 @@ const AuthenticatedApp = () => {
   }, [getToken]);
 
   const fetchAdminUsers = useCallback(async () => { try { const r = await apiCall("/api/admin/users"); setAdminUsers(await r.json() || []); } catch (e) { console.error(e.message); } }, [apiCall]);
-  const loadChats = useCallback(async () => { try { const r = await apiCall("/api/chats"); const d = await r.json(); if (Array.isArray(d)) setChats(d); } catch (e) { console.error(e.message); } }, [apiCall]);
   const fetchPlan = useCallback(async () => { try { const r = await apiCall("/api/user/plan"); setUserPlan((await r.json()).plan || "free"); } catch (e) { console.error(e.message); } }, [apiCall]);
   
   const createChat = useCallback(async () => {
@@ -255,9 +273,8 @@ const AuthenticatedApp = () => {
     } catch (e) { setToast("Failed to create chat"); return null; } 
   }, [apiCall]);
 
-      const startFreshChat = useCallback(async () => { 
+  const startFreshChat = useCallback(async () => { 
     try {
-      // Fire both requests at the exact same millisecond
       const [chatsRes, newChatRes] = await Promise.all([
         apiCall("/api/chats"),
         apiCall("/api/chats", { method: "POST", body: JSON.stringify({ title: "New Chat" }) })
@@ -266,7 +283,6 @@ const AuthenticatedApp = () => {
       const chatData = await chatsRes.json();
       const newChat = await newChatRes.json();
       
-      // Populate history and inject the new chat at the top
       if (Array.isArray(chatData)) setChats(chatData);
       if (newChat) {
         setChats((p) => [newChat, ...p]);
@@ -275,7 +291,6 @@ const AuthenticatedApp = () => {
     } catch (e) { 
       console.error(e.message); 
     } finally {
-      // Hide skeleton the millisecond both finish
       setIsInitialLoading(false);
     }
   }, [apiCall]);
@@ -349,7 +364,6 @@ const AuthenticatedApp = () => {
     const assistantMsg = { role: "assistant", content: "", typing: true, ts: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), id: assistantId };
     updateChatMessages(chatId, [...updated, assistantMsg], false);
     
-    // Smarter, compact history
     const cleanHistory = activeMessages.filter(m => m.content && m.content.trim() && !m.typing).slice(-8).map(m => ({ role: m.role, content: m.content.slice(0, 4000) }));
     
     if (abortRef.current) abortRef.current.abort();
@@ -369,10 +383,8 @@ const AuthenticatedApp = () => {
         const { done, value } = await reader.read(); if (done) break;
         buf += decoder.decode(value, { stream: true }); const lines = buf.split("\n"); buf = lines.pop() || "";
         for (const line of lines) { const t = line.trim(); if (!t.startsWith("data: ")) continue; const j = t.slice(6).trim(); if (j === "[DONE]") break; try { const d = JSON.parse(j); if (d.type === 'chunk') acc += d.text; else if (d.type === 'error') throw new Error(d.text); } catch (e) { if (e.message !== 'Unexpected token D in JSON at position 0') throw e; } }
-        // Targeted update without recreating entire array unnecessarily
         setChats((p) => p.map((c) => (c.id === chatId ? { ...c, messages: [...updated, { ...assistantMsg, typing: false, content: acc }] } : c)));
       }
-      // Final DB save
       await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: acc }]);
       setStatus("idle");
     } catch (err) { 
@@ -382,7 +394,7 @@ const AuthenticatedApp = () => {
     }
   }, [activeChatId, activeMessages, status, generateImage, createChat, renameChat, updateChatMessages, getToken]);
 
-    if (!isLoaded) return null;
+  if (!isLoaded) return null;
   if (isInitialLoading) return <AppSkeleton />;
   
   return (
@@ -417,35 +429,42 @@ const AuthenticatedApp = () => {
               <div className="scroll-wrapper" ref={chatRef}>
                 {activeMessages.length === 0 && status === "idle" && (<div className="empty-state"><img src="/logo.png" alt="ALOP-AI" className="empty-logo" /><h2 className="empty-title text-shimmer">ALOP-AI</h2><p className="empty-subtitle">Ask the AI Council anything. Multiple models work together. Precision mode active. The AI learns from your feedback.</p></div>)}
                 {activeMessages.map((msg, idx) => (
-  <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
-    <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
-    <div className="msg-content">
-      {msg.typing ? (
-        <div className="bubble typing-bubble">
-          <span className="typing-dot"></span>
-          <span className="typing-dot"></span>
-          <span className="typing-dot"></span>
+                  <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
+                    <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
+                    <div className="msg-content">
+                      {msg.typing ? (
+                        <div className="bubble typing-bubble">
+                          <span className="typing-dot"></span>
+                          <span className="typing-dot"></span>
+                          <span className="typing-dot"></span>
+                        </div>
+                      ) : msg.content ? (
+                        <div className="bubble markdown-body">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown>
+                        </div>
+                      ) : null}
+                      {msg.imageUrl && (
+                        <div style={{ marginTop: 8 }}>
+                          <img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: "var(--radius-lg)", cursor: "pointer" }} onClick={() => window.open(msg.imageUrl, "_blank")} />
+                          <div className="msg-meta" style={{ textAlign: "left" }}>{msg.imagePrompt}</div>
+                        </div>
+                      )}
+                      {msg.role === "assistant" && msg.content && !msg.imageUrl && !msg.typing && (
+                        <MessageActions content={msg.content} onCopy={() => navigator.clipboard.writeText(msg.content)} msgId={msg.id} onFeedback={handleFeedback} feedback={feedback[msg.id]} />
+                      )}
+                      <div className="msg-meta">{msg.ts}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <InputBar onSend={handleSend} disabled={status !== "idle"} onFileSelect={handleFileSelect} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} />
+            </div>
+          </div>
         </div>
-      ) : msg.content ? (
-        <div className="bubble markdown-body">
-          <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown>
-        </div>
-      ) : null}
-      {msg.imageUrl && (
-        <div style={{ marginTop: 8 }}>
-          <img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: "var(--radius-lg)", cursor: "pointer" }} onClick={() => window.open(msg.imageUrl, "_blank")} />
-          <div className="msg-meta" style={{ textAlign: "left" }}>{msg.imagePrompt}</div>
-        </div>
-      )}
-      {msg.role === "assistant" && msg.content && !msg.imageUrl && !msg.typing && (
-        <MessageActions content={msg.content} onCopy={() => navigator.clipboard.writeText(msg.content)} msgId={msg.id} onFeedback={handleFeedback} feedback={feedback[msg.id]} />
-      )}
-      <div className="msg-meta">{msg.ts}</div>
-     </div>
+      </div>
     </div>
   );
 };
-
 
 const AuthenticatedAppWrapper = () => { 
   const { isSignedIn, isLoaded } = useUser(); 
@@ -487,7 +506,6 @@ const OverlayAssistant = () => {
     if (liveActive) { image = await captureFromLiveStream(); }
     const body = { prompt: query, image: image || attachment || undefined };
     try {
-      // Overlay doesn't require auth token for speed, backend handles it
       const res = await fetch(`${API_BASE}/api/overlay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       if (!res.ok) throw new Error(`Error: ${res.status}`);
       const data = await res.json();
@@ -500,8 +518,7 @@ const OverlayAssistant = () => {
   return (
     <div className="overlay-root">
       <div className="overlay-answer-stack">
-        {answer && (<div className="overlay-answer-card"><div className="overlay-answer-text markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{answer}</ReactMarkdown>
-</div><button className="overlay-tts-btn" onClick={() => isSpeaking ? stopSpeaking() : speak(answer)}>{isSpeaking ? '■' : '▶'}</button></div>)}
+        {answer && (<div className="overlay-answer-card"><div className="overlay-answer-text markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{answer}</ReactMarkdown></div><button className="overlay-tts-btn" onClick={() => isSpeaking ? stopSpeaking() : speak(answer)}>{isSpeaking ? '■' : '▶'}</button></div>)}
       </div>
       {attachment && <div className="overlay-thumb-pill">Image attached<button onClick={() => setAttachment(null)}>×</button></div>}
       <form className="overlay-bar" onSubmit={handleSubmit}>

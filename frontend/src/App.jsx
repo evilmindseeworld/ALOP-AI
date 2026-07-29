@@ -315,12 +315,12 @@ const AuthenticatedApp = () => {
                   <div className="earring-wrap earring-wrap-left">
         <div className="earring-chain"></div>
         <div className="earring-hook"></div>
-              <model-viewer src="/model.glb" orientation="0deg 270deg 270deg" class="earring-3d" style={{ width: '170px', height: '240px' }} interaction-prompt="none"></model-viewer>
+              <model-viewer src="/model.glb" orientation="0deg 0deg 270deg" class="earring-3d" style={{ width: '170px', height: '240px' }} interaction-prompt="none"></model-viewer>
       </div>
       <div className="earring-wrap earring-wrap-right">
         <div className="earring-chain"></div>
         <div className="earring-hook"></div>
-              <model-viewer src="/model.glb" orientation="0deg 270deg 270deg"
+              <model-viewer src="/model.glb" orientation="0deg 0deg 270deg"
  class="earring-3d" style={{ width: '170px', height: '240px' }} interaction-prompt="none"></model-viewer>
       </div>
       {toast && <div className="toast">{toast}</div>}

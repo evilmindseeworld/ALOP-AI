@@ -322,8 +322,24 @@ const AuthenticatedApp = () => {
   const deleteChat = useCallback(async (id) => { try { await apiCall(`/api/chats/${id}`, { method: "DELETE" }); setChats((p) => p.filter((c) => c.id !== id)); if (activeChatId === id) setActiveChatId(null); } catch (e) { console.error(e.message); } }, [apiCall, activeChatId]);
   const renameChat = useCallback(async (id, title) => { if (!title?.trim()) return; setChats((p) => p.map((c) => (c.id === id ? { ...c, title } : c))); try { await apiCall(`/api/chats/${id}`, { method: "PUT", body: JSON.stringify({ title }) }); } catch (e) { console.error(e.message); } }, [apiCall]);
   
-  const togglePinChat = useCallback((id) => setChats((p) => p.map((c) => (c.id === id ? { ...c, pinned: !c.pinned } : c))), []);
-  const toggleFavoriteChat = useCallback((id) => setChats((p) => p.map((c) => (c.id === id ? { ...c, favorite: !c.favorite } : c))), []);
+  // Optimistic: flip locally so the sidebar responds instantly, then persist.
+  // These used to be local-only, which is why pins silently vanished on reload.
+  const toggleChatFlag = useCallback(async (id, field) => {
+    const current = chats.find((c) => c.id === id);
+    if (!current) return;
+    const next = !current[field];
+    setChats((p) => p.map((c) => (c.id === id ? { ...c, [field]: next } : c)));
+    try {
+      const res = await apiCall(`/api/chats/${id}`, { method: "PUT", body: JSON.stringify({ [field]: next }) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (e) {
+      setChats((p) => p.map((c) => (c.id === id ? { ...c, [field]: !next } : c)));
+      setToast(`Couldn't save ${field === "pinned" ? "pin" : "favorite"}.`);
+    }
+  }, [chats, apiCall]);
+
+  const togglePinChat = useCallback((id) => toggleChatFlag(id, "pinned"), [toggleChatFlag]);
+  const toggleFavoriteChat = useCallback((id) => toggleChatFlag(id, "favorite"), [toggleChatFlag]);
   
   const sortedChats = useMemo(() => [...chats].sort((a, b) => { if (a.pinned !== b.pinned) return a.pinned ? -1 : 1; if (a.favorite !== b.favorite) return a.favorite ? -1 : 1; return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at); }), [chats]);
   

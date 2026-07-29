@@ -4,7 +4,7 @@
  * Features: AI memory detection, persistent Supabase memory, 5 search sources,
  * search cache, response cache, language detection, self-selecting council,
  * streaming fallback, image support, 12 anti-hallucination rules, feedback learning,
- * quick mode endpoint, bulletproof overlay.
+ * bulletproof overlay.
  */
 
 // dotenv must load before Sentry.init so SENTRY_DSN is readable, and Sentry must
@@ -508,93 +508,6 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
   }
 });
 
-// ===== QUICK MODE =====
-app.post('/api/quick', requireAuth, checkSuspended, async (req, res) => {
-  try {
-    const user = await ensureUser(req.auth.userId);
-    const { message, history = [], chatId } = req.body;
-    const pv = validatePrompt(message);
-    if (!pv.valid) return res.status(400).json({ error: pv.error });
-    const hv = validateHistory(history);
-    const histArr = Array.isArray(hv) ? hv : (hv.value || []);
-    const QUICK_MEMBERS = FREE_COUNCIL;
-    const lang = detectLanguage(pv.value);
-    const truncatedPrompt = truncatePrompt(pv.value);
-
-    const [convSummary, feedbackGuidance] = await Promise.all([readChatSummary(chatId, user.id), getFeedbackGuidance(user.id)]);
-    // Injected into every prompt path below, so memory and learned preferences
-    // stay in lockstep instead of each call site assembling its own context.
-    const contextMsgs = [
-      ...(convSummary ? [{ role: 'system', content: `CONVERSATION CONTEXT: ${convSummary}` }] : []),
-      ...(feedbackGuidance ? [{ role: 'system', content: `USER PREFERENCES, learned from their past ratings. Honour these unless they conflict with accuracy:\n${feedbackGuidance}` }] : []),
-    ];
-
-    console.log(`[QUICK] ${user.email} | Lang: ${lang} | Mem: ${convSummary ? 'Y' : 'N'}`);
-
-    if (await isMemoryOrReferenceQuestion(pv.value)) {
-      const memSys = `You are ALOP-AI Quick. User asks about previous conversation. History IS your memory. Don't say you can't remember. Be very concise — 1-3 sentences.${convSummary ? `\nSummary: ${convSummary}` : ''}`;
-      const memMsgs = [{ role: 'system', content: memSys }, ...histArr.slice(-6), { role: 'user', content: pv.value }];
-      res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
-      await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0);
-      if (!res.writableEnded) res.end();
-      updateChatSummary(chatId,pv.value, 'Quick memory.').catch(() => {});
-      return;
-    }
-
-    const searchQuery = await getSearchQuery(pv.value, convSummary);
-    if (searchQuery) {
-      const { context, sources, found } = await comprehensiveSearch(searchQuery, false);
-      if (!found) {
-        res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
-        res.write(`data: ${JSON.stringify({ type: 'chunk', text: "I couldn't find results. Could you rephrase?" })}\n\n`);
-        res.write('data: [DONE]\n\n');
-        if (!res.writableEnded) res.end();
-        return;
-      }
-      const extSys = `You are ALOP-AI Quick. Use ONLY the search data. No hallucination. Be concise. Include source links.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
-      const extMsgs = [{ role: 'system', content: extSys }, ...contextMsgs, ...histArr.slice(-6), { role: 'user', content: `${truncatedPrompt}\n=== DATA ===\n${context}` }];
-      const responses = await runCouncilWithWhip([{ model: FAST_MODEL, temperature: 0.0 }, { model: PRIMARY_MODEL, temperature: 0.0 }], extMsgs, 15000, 1, 1000);
-      res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
-      if (responses.length > 0) { res.write(`data: ${JSON.stringify({ type: 'chunk', text: responses[0].content })}\n\n`); res.write('data: [DONE]\n\n'); if (!res.writableEnded) res.end(); }
-      else { await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0); if (!res.writableEnded) res.end(); }
-      updateChatSummary(chatId,pv.value, 'Quick search.').catch(() => {});
-      await auditLog(user.id, 'quick', { category: 'search', sources: sources.length });
-      return;
-    }
-
-    const councilSys = `You are ALOP-AI Quick. Be concise. Match length to question.${convSummary ? ' Use context for continuity.' : ''}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
-    const councilMsgs = [{ role: 'system', content: councilSys }, ...contextMsgs, ...histArr.slice(-6), { role: 'user', content: truncatedPrompt }];
-    const responses = await runCouncilWithWhip(QUICK_MEMBERS, councilMsgs, 15000, 1, 1000);
-    res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
-    if (responses.length > 0) { res.write(`data: ${JSON.stringify({ type: 'chunk', text: responses[0].content })}\n\n`); res.write('data: [DONE]\n\n'); if (!res.writableEnded) res.end(); }
-    else { await streamModel(res, PRIMARY_MODEL, councilMsgs, 0.0); if (!res.writableEnded) res.end(); }
-    updateChatSummary(chatId,pv.value, 'Quick council.').catch(() => {});
-    await auditLog(user.id, 'quick', { category: 'council' });
-  } catch (err) {
-    console.error('Quick error:', err.message);
-    Sentry.captureException(err);
-    if (!res.headersSent) return res.status(500).json({ error: err.message });
-    if (!res.writableEnded) res.end();
-  }
-});
-
-// ===== VISION =====
-app.post('/api/vision', requireAuth, checkSuspended, async (req, res) => {
-  try {
-    const { prompt, image } = req.body;
-    const pv = validatePrompt(prompt);
-    if (!pv.valid) return res.status(400).json({ error: pv.error });
-    if (!image || typeof image !== 'string' || !image.startsWith('data:image/')) return res.status(400).json({ error: 'Image required' });
-    const user = await ensureUser(req.auth.userId);
-    if (!GOOGLE_API_KEY) return res.status(400).json({ error: 'Vision not configured' });
-    const model = user.plan === 'pro' ? 'gemini-2.5-pro-preview-05-06' : 'gemini-2.5-flash-preview-05-06';
-    const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
-    const answer = await callGeminiVision(model, `Answer based on screenshot. Be concise.\nRequest: ${pv.value}`, base64Data, 'image/png', 2048);
-    await auditLog(user.id, 'vision');
-    res.json({ answer });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
-});
-
 // ===== OVERLAY (bulletproof — never returns 500) =====
 app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
   try {
@@ -663,12 +576,6 @@ app.post('/api/feedback', requireAuth, async (req, res) => {
     } catch (e) { console.error('[LEARN] Failed:', e.message); }
     res.json({ ok: true });
   } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
-});
-
-// ===== IMAGE =====
-app.post('/api/image', requireAuth, checkSuspended, async (req, res) => {
-  try { const pv = validatePrompt(req.body.prompt); if (!pv.valid) return res.status(400).json({ error: pv.error }); res.json({ url: `https://image.pollinations.ai/prompt/${encodeURIComponent(pv.value)}?width=1024&height=1024&nologo=true` }); }
-  catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
 // ===== CHATS =====

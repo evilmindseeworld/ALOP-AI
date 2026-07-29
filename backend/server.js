@@ -7,17 +7,26 @@
  * quick mode endpoint, bulletproof overlay.
  */
 
+// dotenv must load before Sentry.init so SENTRY_DSN is readable, and Sentry must
+// init before the app modules it instruments are required.
+require('dotenv').config();
+
 const Sentry = require('@sentry/node');
 const { nodeProfilingIntegration } = require('@sentry/profiling-node');
 
+const IS_PROD = process.env.NODE_ENV === 'production';
+if (!process.env.SENTRY_DSN) {
+  console.warn('[BOOT] SENTRY_DSN not set — error reporting disabled.');
+}
 Sentry.init({
-  dsn: "https://83e051994bba3e7ae40145510653a0b6@o4511779597647872.ingest.de.sentry.io/4511779863330896",
+  // A DSN is write-only, but hardcoding one lets anyone burn the project's event quota.
+  dsn: process.env.SENTRY_DSN || undefined,
+  environment: process.env.NODE_ENV || 'development',
   integrations: [Sentry.httpIntegration(), Sentry.expressIntegration(), nodeProfilingIntegration()],
-  tracesSampleRate: 1.0,
-  profilesSampleRate: 1.0,
+  // Full sampling is fine locally; in production it is pure cost for no extra signal.
+  tracesSampleRate: IS_PROD ? 0.1 : 1.0,
+  profilesSampleRate: IS_PROD ? 0.1 : 1.0,
 });
-
-require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
@@ -41,6 +50,13 @@ const PORT = process.env.PORT || 3000;
 const requiredEnv = ['SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','CLERK_SECRET_KEY','FRONTEND_URL','OLLAMA_HOST','OLLAMA_API_KEY'];
 const missingEnv = requiredEnv.filter((k) => !process.env[k]);
 if (missingEnv.length > 0) { console.error(`Missing required env: ${missingEnv.join(', ')}`); process.exit(1); }
+
+// clerk-sdk-node reads this at import time and throws on every authenticated request
+// without it. Not fatal here on purpose: refusing to boot would turn a misconfigured
+// deploy into a full outage, and this warning names the cause in the very first log line.
+if (!process.env.CLERK_PUBLISHABLE_KEY) {
+  console.warn('[BOOT] CLERK_PUBLISHABLE_KEY not set — every authenticated route will fail with 500.');
+}
 
 // Billing is optional. Without it the app runs normally and only the Stripe
 // routes refuse, instead of the whole process refusing to boot.
@@ -313,7 +329,17 @@ const validateHistory = (h) => { if (!h) return []; if (!Array.isArray(h)) retur
 
 // ===== SUPABASE & CLERK =====
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
-const requireAuth = ClerkExpressRequireAuth({ onError: (e) => ({ error: e.message || 'Auth required' }) });
+// clerk-sdk-node@5 ignores its own `onError` option: it calls next() with a bare Error
+// that carries no status, so every rejected request used to surface as a 500 and the
+// client could not tell an expired session from a server fault. Map the status here.
+const clerkRequireAuth = ClerkExpressRequireAuth();
+const requireAuth = (req, res, next) =>
+  clerkRequireAuth(req, res, (err) => {
+    if (!err) return next();
+    // A missing/!invalid key is our misconfiguration, not the caller's problem — keep it a 500.
+    if (/publishable key|secret key/i.test(err.message || '')) return next(err);
+    return next(Object.assign(new Error('Authentication required'), { status: 401 }));
+  });
 
 const ensureUser = async (userId) => {
   if (!userId) throw new Error('Missing userId');
@@ -656,7 +682,15 @@ app.get('/api/user/plan', requireAuth, async (req, res) => { try { const user = 
 // ===== ERRORS =====
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
 Sentry.setupExpressErrorHandler(app);
-app.use((err, req, res, next) => { Sentry.captureException(err); if (err.message && err.message.includes('CORS')) return res.status(403).json({ error: err.message }); res.status(err.status || 500).json({ error: process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message }); });
+app.use((err, req, res, next) => {
+  const isCors = Boolean(err.message && err.message.includes('CORS'));
+  const status = isCors ? 403 : (err.status || err.statusCode || 500);
+  // 4xx is expected traffic (expired tokens, bad input) — paging on it buries real faults.
+  if (status >= 500) Sentry.captureException(err);
+  // Only mask 5xx: a 4xx reason is the client's own and is safe to return.
+  const masked = status >= 500 && process.env.NODE_ENV === 'production';
+  res.status(status).json({ error: masked ? 'Internal server error' : err.message });
+});
 
 // ===== START =====
 const server = app.listen(PORT, () => {

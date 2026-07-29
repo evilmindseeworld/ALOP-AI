@@ -81,7 +81,7 @@ const ChatItem = memo(({ chat, activeChatId, onSelect, onRename, onDelete, onPin
       <div className="chat-actions" onClick={(e) => e.stopPropagation()}>
         <button className="chat-action" onClick={() => onPin(chat.id)} title="Pin"><Icon name="pin" size={13} /></button>
         <button className="chat-action" onClick={() => onFavorite(chat.id)} title="Favorite"><Icon name="heart" size={13} /></button>
-        <button className="chat-action" onClick={() => { setEditing(true); setEditTitle(chat.title || "New Chat"); }} title="Rename">✎</button>
+        <button className="chat-action" onClick={() => { setEditing(true); setEditTitle(chat.title || "New Chat"); }} title="Rename">?</button>
         <button className="chat-action" onClick={() => onDelete(chat.id)} title="Delete"><Icon name="trash" size={13} /></button>
       </div>
     </div>
@@ -92,7 +92,7 @@ const ChatSidebar = memo(({ chats, activeChatId, onSelect, onCreate, onDelete, o
   <div className={`sidebar ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobileOpen" : ""} ${typeof window !== "undefined" && window.innerWidth <= 768 ? "mobile" : ""}`}>
     <div className="sidebar-header"><button className="new-chat-btn" onClick={onCreate}><Icon name="plus" size={16} /> New Chat</button>{mobileOpen && <button className="icon-btn" onClick={() => setMobileOpen(false)}><Icon name="close" size={18} /></button>}</div>
     <div className="chat-list">{chats.length === 0 && <div style={{ textAlign: "center", opacity: 0.5, padding: 20, fontSize: 13 }}>No chats yet</div>}{chats.map((chat) => <ChatItem key={chat.id} chat={chat} activeChatId={activeChatId} onSelect={onSelect} onRename={onRename} onDelete={onDelete} onPin={onPin} onFavorite={onFavorite} />)}</div>
-    <div className="sidebar-footer">ALOP-AI • Council of Minds • Learning</div>
+    <div className="sidebar-footer">ALOP-AI � Council of Minds � Learning</div>
   </div>
 ));
 
@@ -108,7 +108,7 @@ const InputBar = memo(({ onSend, disabled, onFileSelect, onStartCamera, isListen
   
   return (
     <div className="input-bar"><div className="input-wrapper">
-      {attachments.length > 0 && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{attachments.map((a, i) => <div key={i} className="attachment-pill">{a.name}<button onClick={() => removeAttachment(i)}>×</button></div>)}</div>}
+      {attachments.length > 0 && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{attachments.map((a, i) => <div key={i} className="attachment-pill">{a.name}<button onClick={() => removeAttachment(i)}>�</button></div>)}</div>}
       <textarea className="input-text" rows={rows} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={handleKeyDown} placeholder="Ask the AI Council anything..." disabled={disabled} />
       <div className="input-actions">
         <label className="input-btn" title="Upload image" style={{ cursor: "pointer" }}><input type="file" accept="image/*" multiple onChange={onFileSelect} disabled={disabled} style={{ display: "none" }} /><Icon name="image" size={16} /></label>
@@ -121,54 +121,7 @@ const InputBar = memo(({ onSend, disabled, onFileSelect, onStartCamera, isListen
   );
 });
 
-// Replace the existing Earring component with this exported version
-export const Earring = memo(({ side }) => {
-  const ctxRef = useRef(null);
-  const lastPlayRef = useRef(0);
-
-  // Synthesized chime — no external audio file needed
-  useEffect(() => {
-    const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (!AudioContext) return;
-    const ctx = new AudioContext();
-    ctxRef.current = ctx;
-    return () => {
-      ctx.close().catch(() => {});
-      ctxRef.current = null;
-    };
-  }, []);
-
-  const playJingle = useCallback(() => {
-    const ctx = ctxRef.current;
-    if (!ctx) return;
-
-    // debounce so rapid mouse passes don't machine-gun
-    const nowMs = Date.now();
-    if (nowMs - lastPlayRef.current < 900) return;
-    lastPlayRef.current = nowMs;
-
-    if (ctx.state === "suspended") ctx.resume();
-
-    const t = ctx.currentTime;
-    const notes = [523.25, 659.25, 783.99, 1046.5]; // C-E-G-C shimmer
-
-    notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-
-      osc.type = i % 2 === 0 ? "sine" : "triangle";
-      osc.frequency.setValueAtTime(freq, t + i * 0.06);
-
-      gain.gain.setValueAtTime(0, t + i * 0.06);
-      gain.gain.linearRampToValueAtTime(0.05, t + i * 0.06 + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + i * 0.06 + 0.55);
-
-      osc.connect(gain).connect(ctx.destination);
-      osc.start(t + i * 0.06);
-      osc.stop(t + i * 0.06 + 0.6);
-    });
-  }, []);
-
+// --- Fixed Earring: module-level export, no sound, locked, only swings ---
 export const Earring = memo(({ side }) => (
   <div
     className={`earring-wrap earring-${side}`}
@@ -196,7 +149,6 @@ export const Earring = memo(({ side }) => (
     </div>
   </div>
 ));
-
 
 const AuthenticatedApp = () => {
   const { user, isLoaded } = useUser();
@@ -351,7 +303,6 @@ const AuthenticatedApp = () => {
     const assistantMsg = { role: "assistant", content: "", typing: true, ts: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), id: assistantId };
     updateChatMessages(chatId, [...updated, assistantMsg], false);
     
-    // Smarter, compact history
     const cleanHistory = activeMessages.filter(m => m.content && m.content.trim() && !m.typing).slice(-8).map(m => ({ role: m.role, content: m.content.slice(0, 4000) }));
     
     if (abortRef.current) abortRef.current.abort();
@@ -370,16 +321,14 @@ const AuthenticatedApp = () => {
         const { done, value } = await reader.read(); if (done) break;
         buf += decoder.decode(value, { stream: true }); const lines = buf.split("\n"); buf = lines.pop() || "";
         for (const line of lines) { const t = line.trim(); if (!t.startsWith("data: ")) continue; const j = t.slice(6).trim(); if (j === "[DONE]") break; try { const d = JSON.parse(j); if (d.type === 'chunk') acc += d.text; else if (d.type === 'error') throw new Error(d.text); } catch (e) { if (e.message !== 'Unexpected token D in JSON at position 0') throw e; } }
-        // Targeted update without recreating entire array unnecessarily
         setChats((p) => p.map((c) => (c.id === chatId ? { ...c, messages: [...updated, { ...assistantMsg, typing: false, content: acc }] } : c)));
       }
-      // Final DB save
       await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: acc }]);
       setStatus("idle");
     } catch (err) { 
       if (err.name === "AbortError") return; 
       setStatus("error"); 
-      await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: `⚠️ ${err.message || "Connection failed"}` }]); 
+      await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: `?? ${err.message || "Connection failed"}` }]); 
     }
   }, [activeChatId, activeMessages, status, generateImage, createChat, renameChat, updateChatMessages, getToken]);
 
@@ -399,7 +348,7 @@ const AuthenticatedApp = () => {
         <header className="app-header">
           <button className="icon-btn mobile-only" onClick={() => setMobileSidebarOpen(true)} title="Chats"><Icon name="menu" size={20} /></button>
           <button className="icon-btn desktop-only" onClick={() => setSidebarCollapsed((c) => !c)} title="Chats"><Icon name="menu" size={20} /></button>
-          <div className="brand"><img src="/logo.png" alt="" className="header-logo" /><div className="brand-text"><h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1><span className="sub-title">AI Council • {userPlan === "pro" ? "15 models" : "4 models"} • Precision • Learning</span></div></div>
+          <div className="brand"><img src="/logo.png" alt="" className="header-logo" /><div className="brand-text"><h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1><span className="sub-title">AI Council � {userPlan === "pro" ? "15 models" : "4 models"} � Precision � Learning</span></div></div>
           <div className="header-actions">
             {isAdmin && <MagneticButton className={`icon-btn admin-btn ${showAdmin ? "active" : ""}`} onClick={() => { setShowAdmin((s) => !s); setShowSettings(false); }} ariaLabel="Admin"><Icon name="crown" size={20} /></MagneticButton>}
             <MagneticButton className="icon-btn" onClick={() => setDarkMode((d) => !d)} ariaLabel="Theme"><Icon name={darkMode ? "sun" : "moon"} size={20} /></MagneticButton>
@@ -472,7 +421,6 @@ const OverlayAssistant = () => {
     if (liveActive) { image = await captureFromLiveStream(); }
     const body = { prompt: query, image: image || attachment || undefined };
     try {
-      // Overlay doesn't require auth token for speed, backend handles it
       const res = await fetch(`${API_BASE}/api/overlay`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
       if (!res.ok) throw new Error(`Error: ${res.status}`);
       const data = await res.json();
@@ -485,16 +433,16 @@ const OverlayAssistant = () => {
   return (
     <div className="overlay-root">
       <div className="overlay-answer-stack">
-        {answer && (<div className="overlay-answer-card"><div className="overlay-answer-text markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]}>{answer}</ReactMarkdown></div><button className="overlay-tts-btn" onClick={() => isSpeaking ? stopSpeaking() : speak(answer)}>{isSpeaking ? '■' : '▶'}</button></div>)}
+        {answer && (<div className="overlay-answer-card"><div className="overlay-answer-text markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]}>{answer}</ReactMarkdown></div><button className="overlay-tts-btn" onClick={() => isSpeaking ? stopSpeaking() : speak(answer)}>{isSpeaking ? '�' : '?'}</button></div>)}
       </div>
-      {attachment && <div className="overlay-thumb-pill">Image attached<button onClick={() => setAttachment(null)}>×</button></div>}
+      {attachment && <div className="overlay-thumb-pill">Image attached<button onClick={() => setAttachment(null)}>�</button></div>}
       <form className="overlay-bar" onSubmit={handleSubmit}>
         <div className={`overlay-icon ${liveActive ? 'live' : ''}`}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2a3 3 0 0 0-3 3v14a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg></div>
-        <input ref={inputRef} className="overlay-input" type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={liveActive ? "Live screen active. Ask anything..." : "Ask anything... (click ● for screen)"} disabled={status === 'loading'} />
-        <button type="button" className={`overlay-action ${liveActive ? 'recording' : ''}`} onClick={liveActive ? stopLiveStream : startLiveStream} title={liveActive ? 'Stop live screen' : 'Start live screen'} disabled={status === 'loading'}>●</button>
+        <input ref={inputRef} className="overlay-input" type="text" value={query} onChange={(e) => setQuery(e.target.value)} placeholder={liveActive ? "Live screen active. Ask anything..." : "Ask anything... (click ? for screen)"} disabled={status === 'loading'} />
+        <button type="button" className={`overlay-action ${liveActive ? 'recording' : ''}`} onClick={liveActive ? stopLiveStream : startLiveStream} title={liveActive ? 'Stop live screen' : 'Start live screen'} disabled={status === 'loading'}>?</button>
         <label className="overlay-action" title="Attach image"><input type="file" accept="image/*" className="overlay-file-input" onChange={handleFile} disabled={status === 'loading'} />+</label>
         <button type="button" className={`overlay-action ${isRecording ? 'recording' : ''}`} onClick={toggleRecording} disabled={status === 'loading'}><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" /><path d="M19 10v2a7 7 0 0 1-14 0v-2" /><line x1="12" y1="19" x2="12" y2="23" /><line x1="8" y1="23" x2="16" y2="23" /></svg></button>
-        <button className="overlay-submit" type="submit" disabled={status === 'loading' || (!query.trim() && !attachment)}>{status === 'loading' ? '...' : '→'}</button>
+        <button className="overlay-submit" type="submit" disabled={status === 'loading' || (!query.trim() && !attachment)}>{status === 'loading' ? '...' : '?'}</button>
       </form>
     </div>
   );

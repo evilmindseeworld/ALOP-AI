@@ -130,15 +130,12 @@ export const Earring = memo(({ side }) => (
         src="/model.glb" 
         orientation="0deg 90deg 0deg"
         camera-orbit="0deg 90deg 105%" 
-        auto-rotate
-        rotation-per-second="15deg"
         interaction-prompt="none" 
         style={{ width: '140px', height: '200px' }}
       ></model-viewer>
     </div>
   </div>
 ));
-
 
 const AuthenticatedApp = () => {
   const { user, isLoaded } = useUser();

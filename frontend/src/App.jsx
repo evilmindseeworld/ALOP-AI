@@ -192,7 +192,7 @@ export const Earring = memo(({ side }) => (
         orientation="0deg 90deg 0deg"
         camera-orbit="0deg 90deg 105%" 
         interaction-prompt="none" 
-        style={{ width: '140px', height: '200px', transform: side === 'right' ? 'scaleX(-1)' : 'none' }}
+        style={{ width: '140px', height: '200px', background: 'red', transform: side === 'right' ? 'scaleX(-1)' : 'none' }}
       ></model-viewer>
     </div>
   </div>

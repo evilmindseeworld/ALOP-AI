@@ -2736,34 +2736,23 @@ textarea:focus-visible {
 @keyframes fabPulse { 0%,100% { box-shadow: 0 4px 20px rgba(236,125,150,0.35); } 50% { box-shadow: 0 4px 20px rgba(236,125,150,0.5), 0 0 0 8px rgba(236,125,150,0.05); } }
 
 /* ===== 3D LUXURY EARRINGS — HANGING & SWINGING ===== */
-/* ===== 3D LUXURY EARRINGS — HANGING & SWINGING ===== */
-/* ===== 3D LUXURY EARRINGS — LOCKED, SWINGING, SOUND ON HOVER ===== */
-
 .earring-wrap {
   position: fixed;
-  top: 36px;                    /* lowered from the very top */
+  top: 24px;
   z-index: 50;
-  pointer-events: auto;         /* needed so hover sound fires */
-  user-select: none;
-  -webkit-user-drag: none;
+  pointer-events: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
 }
 
-/* Force opposite corners — no stacking/collision */
 .earring-left { left: 30px !important; right: auto !important; }
 .earring-right { right: 30px !important; left: auto !important; }
 
 .earring-chain {
   width: 1px;
   height: 50px;
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    var(--primary-soft) 30%,
-    var(--primary) 100%
-  );
+  background: linear-gradient(to bottom, transparent 0%, var(--primary-soft) 30%, var(--primary) 100%);
   opacity: 0.4;
 }
 
@@ -2781,28 +2770,10 @@ textarea:focus-visible {
   transform-origin: top center;
   animation: earringSwing 6s ease-in-out infinite;
   filter: drop-shadow(0 10px 25px rgba(236, 125, 150, 0.2));
-  pointer-events: none;         /* model itself cannot be dragged */
 }
 
-/* stagger the two swings so they feel physical */
 .earring-right .earring-pivot {
   animation-delay: -3s;
-}
-
-/* The model-viewer canvas is locked — no manual orbit */
-.earring-pivot model-viewer {
-  pointer-events: none !important;
-  touch-action: none !important;
-  user-select: none !important;
-}
-
-/* Orientation tuning knobs.
-   If the earring looks sideways in production, change these in DevTools
-   until it is a perfect "!", then paste the values back here. */
-:root {
-  --earring-rotate-x: 0deg;
-  --earring-rotate-y: 90deg;
-  --earring-rotate-z: 0deg;
 }
 
 @keyframes earringSwing {
@@ -2812,8 +2783,7 @@ textarea:focus-visible {
 
 .dark .earring-pivot {
   opacity: 0.8;
-  filter: drop-shadow(0 10px 25px rgba(236, 125, 150, 0.25))
-          drop-shadow(0 0 15px rgba(94, 201, 152, 0.1));
+  filter: drop-shadow(0 10px 25px rgba(236, 125, 150, 0.25)) drop-shadow(0 0 15px rgba(94, 201, 152, 0.1));
 }
 
 .light .earring-pivot {
@@ -2821,26 +2791,14 @@ textarea:focus-visible {
   filter: drop-shadow(0 10px 25px rgba(201, 30, 94, 0.15));
 }
 
-/* Make sure the app header stays clickable above the earrings */
-.app-header {
-  position: relative;
-  z-index: 60;
-}
-
 @media (max-width: 1024px) {
-  .earring-pivot model-viewer {
-    width: 110px !important;
-    height: 160px !important;
-  }
+  .earring-pivot model-viewer { width: 110px !important; height: 160px !important; }
   .earring-left { left: 15px !important; }
   .earring-right { right: 15px !important; }
 }
 
 @media (max-width: 768px) {
-  .earring-pivot model-viewer {
-    width: 80px !important;
-    height: 120px !important;
-  }
+  .earring-pivot model-viewer { width: 80px !important; height: 120px !important; }
   .earring-chain { height: 30px; }
   .earring-left { left: 10px !important; }
   .earring-right { right: 10px !important; }

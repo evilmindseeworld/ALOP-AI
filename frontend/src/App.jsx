@@ -135,6 +135,56 @@ export const Earring = memo(({ side }) => (
   </div>
 ));
 
+// --- Skeleton Loaders ---
+const AppSkeleton = () => (
+  <div className="app-root dark">
+    <div className="bg-layer" />
+    <div className="bg-overlay" />
+    <Earring side="left" />
+    <Earring side="right" />
+    <div className="app-shell">
+      <header className="app-header">
+        <div className="skeleton-block" style={{ width: '40px', height: '40px', borderRadius: '12px', flexShrink: 0 }}></div>
+        <div style={{ marginLeft: '10px', gap: '8px', display: 'flex', flexDirection: 'column' }}>
+          <div className="skeleton-block" style={{ width: '140px', height: '16px' }}></div>
+          <div className="skeleton-block" style={{ width: '180px', height: '12px' }}></div>
+        </div>
+        <div style={{ flex: 1 }}></div>
+        <div className="skeleton-block" style={{ width: '40px', height: '40px', borderRadius: '12px' }}></div>
+      </header>
+      <div className="app-body">
+        <div className="sidebar">
+          <div className="skeleton-block" style={{ height: '42px', marginBottom: '14px', borderRadius: '12px' }}></div>
+          {[...Array(6)].map((_, i) => <div key={i} className="skeleton-block" style={{ height: '42px', marginBottom: '8px', borderRadius: '12px' }}></div>)}
+        </div>
+        <div className="chat-main">
+          <div className="scroll-wrapper">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className={`msg-row ${i % 2 === 0 ? 'assistant' : 'user'}`}>
+                <div className="skeleton-block" style={{ width: '36px', height: '36px', borderRadius: '10px', flexShrink: 0 }}></div>
+                <div className="msg-content" style={{ gap: '10px', display: 'flex', flexDirection: 'column' }}>
+                  <div className="skeleton-block" style={{ height: '16px', width: '70%' }}></div>
+                  <div className="skeleton-block" style={{ height: '16px', width: '85%' }}></div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="input-bar" style={{ display: 'flex', alignItems: 'center' }}>
+            <div className="skeleton-block" style={{ height: '24px', flex: 1, borderRadius: '8px' }}></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const InitialLoader = () => (
+  <div className="initial-loader dark">
+    <img src="/logo.png" alt="Loading ALOP-AI" />
+    <div className="skeleton-block" style={{ width: '120px', height: '10px', marginTop: '10px' }}></div>
+  </div>
+);
+
 
 const AuthenticatedApp = () => {
   const { user, isLoaded } = useUser();
@@ -163,6 +213,7 @@ const AuthenticatedApp = () => {
   const listenTimerRef = useRef(null);
   const chatRef = useRef(null);
   const abortRef = useRef(null);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
   useEffect(() => { const params = new URLSearchParams(window.location.search); if (params.get('desktop') === 'true') { const f = () => { const i = document.querySelector('.input-text'); if (i) i.focus(); }; f(); window.addEventListener('alop-focus', f); return () => window.removeEventListener('alop-focus', f); } }, []);
   useEffect(() => Storage.set("alop-dark-mode", darkMode.toString()), [darkMode]);
@@ -214,10 +265,11 @@ const AuthenticatedApp = () => {
     } catch (e) { setToast("Failed to create chat"); return null; } 
   }, [apiCall]);
 
-  const startFreshChat = useCallback(async () => { 
+    const startFreshChat = useCallback(async () => { 
     await loadChats(); 
     const f = await createChat(); 
     if (f) setActiveChatId(f); 
+    setIsInitialLoading(false);
   }, [loadChats, createChat]);
 
   useEffect(() => { if (isLoaded && isSignedIn) { fetchPlan(); startFreshChat(); } }, [isLoaded, isSignedIn, fetchPlan, startFreshChat]);
@@ -322,7 +374,8 @@ const AuthenticatedApp = () => {
     }
   }, [activeChatId, activeMessages, status, generateImage, createChat, renameChat, updateChatMessages, getToken]);
 
-  if (!isLoaded) return null;
+    if (!isLoaded) return null;
+  if (isInitialLoading) return <AppSkeleton />;
   
   return (
     <div className={`app-root ${darkMode ? "dark" : "light"}`}>
@@ -376,7 +429,12 @@ const AuthenticatedApp = () => {
   );
 };
 
-const AuthenticatedAppWrapper = () => { const { isSignedIn, isLoaded } = useUser(); if (!isLoaded) return null; if (!isSignedIn) return <SignInPage />; return <AuthenticatedApp />; };
+const AuthenticatedAppWrapper = () => { 
+  const { isSignedIn, isLoaded } = useUser(); 
+  if (!isLoaded) return <InitialLoader />; 
+  if (!isSignedIn) return <SignInPage />; 
+  return <AuthenticatedApp />; 
+};
 
 const OverlayAssistant = () => {
   const { getToken } = useAuth();

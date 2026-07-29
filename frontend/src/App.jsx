@@ -120,32 +120,20 @@ const InputBar = memo(({ onSend, disabled, onFileSelect, onStartCamera, isListen
 });
 
 export const Earring = memo(({ side }) => (
-  <div
-    className={earring-wrap earring-}
-    role="img"
-    aria-label={ALOP  decorative earring}
-  >
-    <div className="earring-chain" />
-    <div className="earring-hook" />
+  <div className={`earring-wrap earring-${side}`} style={{ pointerEvents: 'auto' }}>
+    <div className="earring-chain"></div>
+    <div className="earring-hook"></div>
     <div className="earring-pivot">
-      <model-viewer
-        src="/model.glb"
-        camera-orbit="0deg 0deg 105%"
-        field-of-view="30deg"
-        exposure="1.2"
-        shadow-intensity="0"
-        interaction-prompt="none"
-        style={{
-          width: "140px",
-          height: "200px",
-          pointerEvents: "none",
-          transform:
-            "rotateX(var(--earring-rotate-x, 0deg)) rotateY(var(--earring-rotate-y, 90deg)) rotateZ(var(--earring-rotate-z, 0deg))",
-        }}
-      />
+      <model-viewer 
+        src="/model.glb" 
+        camera-controls
+        interaction-prompt="none" 
+        style={{ width: '140px', height: '200px' }}
+      ></model-viewer>
     </div>
   </div>
 ));
+
 
 const AuthenticatedApp = () => {
   const { user, isLoaded } = useUser();

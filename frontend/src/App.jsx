@@ -185,25 +185,24 @@ const InputBar = memo(({ onSend, disabled, onFileSelect, onStartCamera, isListen
   );
 });
 
+// Purely decorative. Positioning and stacking live in App.css (.earring-wrap /
+// .earring-left / .earring-right) — deliberately NOT inline, because inline
+// styles silently outrank the stylesheet and that mismatch is what caused the
+// long run of duelling z-index commits.
+//
+// aria-hidden: a 3D ornament carries no information, so announcing it to a
+// screen reader is noise. pointer-events:none is set on the <model-viewer>
+// itself as well as the wrapper, because model-viewer is a custom element that
+// otherwise captures drag gestures aimed at the UI behind it.
 export const Earring = memo(({ side }) => (
-  <div 
-    className={`earring-wrap earring-${side}`} 
-    style={{ 
-      position: 'fixed', 
-      top: '100px', 
-      left: side === 'left' ? '8px' : 'auto', 
-      right: side === 'right' ? '8px' : 'auto', 
-      zIndex: 5, 
-      pointerEvents: 'none'
-    }}
-  >
+  <div className={`earring-wrap earring-${side}`} aria-hidden="true" data-testid={`earring-${side}`}>
     <div className="earring-pivot">
-      <model-viewer 
-        src="/model.glb" 
+      <model-viewer
+        src="/model.glb"
         orientation="0deg 90deg 0deg"
-        camera-orbit="0deg 90deg 105%" 
-        interaction-prompt="none" 
-        style={{ width: '140px', height: '200px', transform: side === 'right' ? 'scaleX(-1)' : 'none' }}
+        camera-orbit="0deg 90deg 105%"
+        interaction-prompt="none"
+        style={{ width: '140px', height: '200px', pointerEvents: 'none', transform: side === 'right' ? 'scaleX(-1)' : 'none' }}
       ></model-viewer>
     </div>
   </div>

@@ -2914,7 +2914,7 @@ textarea:focus-visible {
 .earring-wrap {
   position: fixed;
   top: 100px; /* Lowered so they don't block the header */
-  z-index: 2;
+  z-index: 4;
   pointer-events: none; /* Allows clicks to pass through to the UI behind them */
   display: flex;
   flex-direction: column;

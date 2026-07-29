@@ -52,6 +52,40 @@
   --radius-xl: 24px;
   --radius-full: 999px;
 
+  /* ===== STACKING ORDER — THE SINGLE SOURCE OF TRUTH =====
+   *
+   * Nine commits have been spent guessing earring z-index values
+   * (302b5aa, 1c48887, 611a39e, 76b9d7f, bf0647b, c00a0ce and others). The
+   * values were never the problem: nothing recorded the intended order, so
+   * every change was a guess against an invisible spec.
+   *
+   * Rules, in order of importance:
+   *   1. Never write a bare z-index number. Use a token from this scale.
+   *   2. To insert a new layer, add a token here first. The list below IS the
+   *      design; the stylesheet is only its application.
+   *   3. `zIndexOrder.test.js` asserts this ordering. If you reorder these
+   *      tokens the test fails and tells you exactly which pair inverted.
+   *
+   * IMPORTANT — stacking contexts. `.chat-main` sits at --z-chat and is
+   * positioned, so it creates a stacking context. Everything inside it
+   * (including .code-copy-btn at --z-in-chat-control, which looks alarmingly
+   * high) is trapped below --z-earring no matter how large its number is.
+   * That containment is why a copy button at 80 does not cover a panel at 70.
+   */
+  --z-behind: 0;        /* .app-root::after — background wash            */
+  --z-backdrop: 1;      /* .scanlines — background texture               */
+  --z-chat: 3;          /* .chat-main — creates a stacking context       */
+  --z-in-chat-control: 80; /* .code-copy-btn — scoped INSIDE --z-chat    */
+  --z-earring: 4;       /* decoration: above the chat, below all menus   */
+  --z-sidebar: 10;      /* .sidebar (desktop)                            */
+  --z-sidebar-mobile: 50; /* .sidebar.mobile — overlays content          */
+  --z-panel-overlay: 60;  /* .panel-overlay — click-away scrim           */
+  --z-panel: 70;          /* .side-panel — settings / admin / upgrade    */
+  --z-camera: 100;        /* .camera-overlay — fullscreen capture        */
+  --z-toast: 200;         /* .toast — must clear every panel             */
+  --z-fab: 9999;          /* .quick-ask-fab                              */
+  --z-quick-ask: 10000;   /* .quick-ask-overlay — the true top layer     */
+
   --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.5);
   --shadow-sm: 0 3px 10px rgba(0, 0, 0, 0.5);
   --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.55);
@@ -222,7 +256,7 @@ textarea:focus-visible {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  z-index: 1;
+  z-index: var(--z-backdrop);
   background: repeating-linear-gradient(
     0deg,
     transparent 0px, transparent 1px,
@@ -274,7 +308,7 @@ textarea:focus-visible {
   inset: 0;
   background: var(--gradient-warm);
   pointer-events: none;
-  z-index: 0;
+  z-index: var(--z-behind);
   animation: bgBreath 20s ease-in-out infinite alternate;
 }
 
@@ -422,7 +456,7 @@ textarea:focus-visible {
   padding: 14px;
   overflow: hidden;
   transition: background 0.3s ease, border-color 0.3s ease;
- z-index: 10;
+ z-index: var(--z-sidebar);
 }
 
 .sidebar.collapsed {
@@ -437,7 +471,7 @@ textarea:focus-visible {
   top: 0;
   bottom: 0;
   left: 0;
-  z-index: 50;
+  z-index: var(--z-sidebar-mobile);
   width: 270px;
   transform: translateX(-110%);
   border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
@@ -611,7 +645,7 @@ textarea:focus-visible {
   box-shadow: var(--shadow-md);
   overflow: hidden;
   transition: background 0.3s ease, border-color 0.3s ease;
- z-index: 3;
+ z-index: var(--z-chat);
 }
 
 .chat-content {
@@ -1271,7 +1305,7 @@ textarea:focus-visible {
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
-  z-index: 60;
+  z-index: var(--z-panel-overlay);
   cursor: pointer;
   animation: fadeIn 0.2s ease;
   backdrop-filter: blur(2px);
@@ -1296,7 +1330,7 @@ textarea:focus-visible {
   border-left: 1px solid var(--border-strong);
   border-radius: var(--radius-xl) 0 0 var(--radius-xl);
   box-shadow: var(--shadow-lg);
-  z-index: 70;
+  z-index: var(--z-panel);
   display: flex;
   flex-direction: column;
   animation: slideIn 0.25s var(--ease-out);
@@ -1558,7 +1592,7 @@ textarea:focus-visible {
 .camera-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: var(--z-camera);
   background: rgba(0, 0, 0, 0.88);
   display: flex;
   flex-direction: column;
@@ -1625,7 +1659,7 @@ textarea:focus-visible {
   color: var(--text);
   padding: 12px 22px;
   box-shadow: var(--shadow-lg);
-  z-index: 200;
+  z-index: var(--z-toast);
   font-size: 13px;
   font-weight: 500;
   animation: toastIn 0.3s var(--ease-spring);
@@ -2827,7 +2861,7 @@ textarea:focus-visible {
   width: 56px; height: 56px; border-radius: 50%;
   border: none; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  z-index: 9999;
+  z-index: var(--z-fab);
   background: linear-gradient(135deg, #ec7d96, #e86580);
   color: white;
   box-shadow: 0 4px 20px rgba(236, 125, 150, 0.35), 0 1px 0 rgba(255,255,255,0.15) inset;
@@ -2836,7 +2870,7 @@ textarea:focus-visible {
 .quick-ask-fab:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(236, 125, 150, 0.45), 0 1px 0 rgba(255,255,255,0.2) inset; }
 .quick-ask-fab:active { transform: scale(0.95); }
 
-.quick-ask-overlay { position: fixed; bottom: 0; right: 0; width: 480px; max-width: 100vw; z-index: 10000; pointer-events: none; }
+.quick-ask-overlay { position: fixed; bottom: 0; right: 0; width: 480px; max-width: 100vw; z-index: var(--z-quick-ask); pointer-events: none; }
 .quick-ask-overlay.dark { --qa-bg: #0a0a0f; --qa-surface: #12121a; --qa-border: rgba(255,255,255,0.06); --qa-text: #f0ebe6; --qa-text-subtle: #8a8590; }
 .quick-ask-overlay.light { --qa-bg: #ffffff; --qa-surface: #f8f7f5; --qa-border: #e5e4e7; --qa-text: #2d1f1a; --qa-text-subtle: #8a7a6c; }
 
@@ -2914,7 +2948,7 @@ textarea:focus-visible {
 .earring-wrap {
   position: fixed;
   top: 100px; /* Lowered so they don't block the header */
-  z-index: 4;
+  z-index: var(--z-earring);
   pointer-events: none; /* Allows clicks to pass through to the UI behind them */
   display: flex;
   flex-direction: column;
@@ -3048,7 +3082,7 @@ textarea:focus-visible {
   cursor: pointer;
   opacity: 0;
   transition: opacity 0.2s ease, background 0.2s ease;
-  z-index: 80;
+  z-index: var(--z-in-chat-control);
   backdrop-filter: blur(4px);
 }
 

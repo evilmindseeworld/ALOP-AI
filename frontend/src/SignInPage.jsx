@@ -26,12 +26,12 @@ export default function SignInPage() {
 
         <h1 className="signin-title">One council. Every frontier model.</h1>
         <p className="signin-tagline">
-          15 AI models working together. Generate images, analyze your screen,
-          and build a knowledge base — all through a single interface.
+          A council of AI models that debate before they answer. Generate images,
+          analyze your screen, and build a knowledge base — all in one interface.
         </p>
 
         <div className="signin-features">
-          <div className="signin-feature"><span>🧠</span> 15 AI models in council</div>
+          <div className="signin-feature"><span>🧠</span> Models debate, then agree</div>
           <div className="signin-feature"><span>👁️</span> Vision & screen analysis</div>
           <div className="signin-feature"><span>🖼️</span> Image generation</div>
           <div className="signin-feature"><span>🎙️</span> Voice input</div>

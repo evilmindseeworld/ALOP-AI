@@ -60,8 +60,30 @@ const OLLAMA_HOST = process.env.OLLAMA_HOST;
 const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 
 // ===== MODELS =====
-const FREE_COUNCIL_MODELS = ['gemma4','qwen3.5','glm-5.2','kimi-k2.5'];
-const ALL_MODELS = ['gemma4','qwen3.5','glm-5.2','kimi-k2.5','minimax-m2.5','kimi-k2.7-code','deepseek-v4-pro','kimi-k2.6','glm-5.1','minimax-m3','minimax-m2.7','nemotron-3-super','nemotron-3-ultra'];
+// One seat per model family. The previous roster ran three Kimi variants,
+// three MiniMax variants, two GLM and two Nemotron — thirteen calls that
+// largely restated each other. A council is only worth its cost if the members
+// can actually disagree, so near-siblings were dropped rather than kept.
+//
+// Temperature is per-seat and deliberately spread. Every model previously ran
+// at 0.0, which made them converge on the same answer and left the synthesis
+// step with nothing to reconcile. The determinism that matters — extracting
+// facts from search results — is unaffected; those paths still run at 0.0.
+const COUNCIL = [
+  { model: 'glm-5.2',          temperature: 0.2, free: true  },
+  { model: 'kimi-k2.7-code',   temperature: 0.3, free: true  },
+  { model: 'qwen3.5',          temperature: 0.5, free: true  },
+  { model: 'gemma4',           temperature: 0.7, free: true  },
+  { model: 'deepseek-v4-pro',  temperature: 0.4, free: false },
+  { model: 'nemotron-3-ultra', temperature: 0.5, free: false },
+  { model: 'minimax-m3',       temperature: 0.8, free: false },
+];
+
+const FREE_COUNCIL = COUNCIL.filter((m) => m.free);
+// The single model used for streaming: synthesis, greetings, fallback and
+// search extraction all speak with one voice, so it stays deterministic.
+const PRIMARY_MODEL = 'glm-5.2';
+const FAST_MODEL = 'gemma4';
 
 // ===== AI HELPERS =====
 const callModel = async (modelName, messages, temperature = 0.0, timeoutMs = 30000, maxTokens = 1000) => {
@@ -103,35 +125,41 @@ const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'imag
 };
 
 // ===== COUNCIL =====
-const runCouncilWithWhip = async (models, messages, temperature, whipMs, quorum, tokenLimit) => {
+// `members` is a list of { model, temperature } seats — each speaks at its own
+// temperature so the council produces genuinely different takes to synthesise.
+const runCouncilWithWhip = async (members, messages, whipMs, quorum, tokenLimit) => {
   const results = [];
   let settledCount = 0, validCount = 0, resolved = false;
   return new Promise((resolve) => {
     const whipTimer = setTimeout(() => { if (!resolved) { resolved = true; resolve(results); } }, whipMs);
-    const checkDone = () => { if (resolved) return; if (validCount >= quorum) { resolved = true; clearTimeout(whipTimer); resolve(results); return; } if (settledCount >= models.length) { resolved = true; clearTimeout(whipTimer); resolve(results); } };
-    models.forEach((model) => { callModel(model, messages, temperature, whipMs, tokenLimit).then((content) => { settledCount++; const trimmed = (content || '').trim(); const isSkip = /^skip[.!]?$/i.test(trimmed); if (isSkip) { console.log(`[COUNCIL] ${model} SKIP`); } else if (trimmed.length > 3) { validCount++; results.push({ model, content }); } checkDone(); }).catch(() => { settledCount++; checkDone(); }); });
+    const checkDone = () => { if (resolved) return; if (validCount >= quorum) { resolved = true; clearTimeout(whipTimer); resolve(results); return; } if (settledCount >= members.length) { resolved = true; clearTimeout(whipTimer); resolve(results); } };
+    members.forEach(({ model, temperature }) => { callModel(model, messages, temperature, whipMs, tokenLimit).then((content) => { settledCount++; const trimmed = (content || '').trim(); const isSkip = /^skip[.!]?$/i.test(trimmed); if (isSkip) { console.log(`[COUNCIL] ${model} SKIP`); } else if (trimmed.length > 3) { validCount++; results.push({ model, content }); } checkDone(); }).catch((e) => { console.error(`[COUNCIL] ${model} failed: ${e.message}`); settledCount++; checkDone(); }); });
   });
 };
 
 // ===== ROUTER =====
+// Anchored, and matching the whole message. The previous pattern was an
+// unanchored alternation, so any short message merely *containing* one of these
+// fragments was routed to the greeting path — "which one?" matches "hi",
+// "you sure?" matches "yo", "summary?" matches "sup".
+const GREETING_RE = /^(hi|hello|hey|yo|sup|howdy|gm|good (morning|afternoon|evening))\b[\s!.,?]*$/i;
+
 const classifyRequest = (text, userPlan) => {
-  const lower = text.toLowerCase().trim();
-  const wordCount = text.split(/\s+/).length;
-  const filterByPlan = (models) => { if (userPlan === 'pro') return models; const s = new Set(FREE_COUNCIL_MODELS); const f = models.filter(m => s.has(m)); return f.length > 0 ? f : FREE_COUNCIL_MODELS; };
-  if (wordCount <= 4 && /hi|hello|hey|yo|sup|howdy|gm|good morning/i.test(lower)) return { models: filterByPlan(['gemma4']), quorum: 1, whipMs: 5000, tokenLimit: 200, category: 'greeting' };
-  return { models: filterByPlan(ALL_MODELS), quorum: 3, whipMs: 30000, tokenLimit: 2000, category: 'council' };
+  const members = userPlan === 'pro' ? COUNCIL : FREE_COUNCIL;
+  if (GREETING_RE.test(text.trim())) return { members: [], quorum: 0, whipMs: 5000, tokenLimit: 200, category: 'greeting' };
+  return { members, quorum: Math.min(3, members.length), whipMs: 30000, tokenLimit: 2000, category: 'council' };
 };
 
 // ===== MEMORY DETECTION =====
 const isMemoryOrReferenceQuestion = async (text) => {
-  const response = await callModel('gemma4', [{ role: 'system', content: 'Is this question asking about a previous conversation or referencing something discussed earlier? Reply ONLY "YES" or "NO".' }, { role: 'user', content: text.slice(0, 500) }], 0.0, 3000, 10);
+  const response = await callModel(FAST_MODEL, [{ role: 'system', content: 'Is this question asking about a previous conversation or referencing something discussed earlier? Reply ONLY "YES" or "NO".' }, { role: 'user', content: text.slice(0, 500) }], 0.0, 3000, 10);
   return response.trim().toUpperCase().startsWith('YES');
 };
 
 // ===== SEARCH DECISION =====
 const getSearchQuery = async (text, convSummary) => {
   const userContent = convSummary ? `Context: ${convSummary}\n\nQuestion: ${text}` : text;
-  const response = await callModel('gemma4', [{ role: 'system', content: 'Analyze the prompt. If it needs real-time web search (products, facts, reviews, specs, prices), reply ONLY with the optimal search query. If not, reply ONLY "NO". Memory/reference questions do NOT need search.' }, { role: 'user', content: userContent }], 0.0, 4000, 50);
+  const response = await callModel(FAST_MODEL, [{ role: 'system', content: 'Analyze the prompt. If it needs real-time web search (products, facts, reviews, specs, prices), reply ONLY with the optimal search query. If not, reply ONLY "NO". Memory/reference questions do NOT need search.' }, { role: 'user', content: userContent }], 0.0, 4000, 50);
   const trimmed = response.trim();
   if (trimmed.toUpperCase() === 'NO' || !trimmed) return null;
   return trimmed;
@@ -202,19 +230,46 @@ const comprehensiveSearch = async (query, needsWiki) => {
 };
 
 // ===== MEMORY =====
-const updateConversationSummary = async (userId, userMsg, assistantMsg) => {
+// Scoped to one chat. This used to live on the users table, so a single summary
+// was shared by every conversation a user had and context leaked between
+// unrelated chats. Requires migrations/001_per_chat_memory.sql; if that has not
+// been run the select fails, the catch logs it, and the app simply runs without
+// memory rather than erroring.
+const updateChatSummary = async (chatId, userMsg, assistantMsg) => {
+  if (!chatId) return;
   try {
-    const { data: existing } = await supabase.from('users').select('conversation_summary').eq('id', userId).single();
+    const { data: existing } = await supabase.from('chats').select('conversation_summary').eq('id', chatId).single();
     const prev = existing?.conversation_summary || '';
     const u = userMsg.slice(0, 800); const a = assistantMsg.slice(0, 800);
-    let newSummary = '';
-    if (prev) {
-      newSummary = await callModel('gemma4', [{ role: 'system', content: 'Compress previous summary and new exchange into 2-3 sentences. Reply ONLY with the summary.' }, { role: 'user', content: `Previous:\n${prev}\n\nNew:\nUser: ${u}\nAssistant: ${a}` }], 0.0, 4000, 200);
-    } else {
-      newSummary = await callModel('gemma4', [{ role: 'system', content: 'Summarize in 1-2 sentences. Reply ONLY with the summary.' }, { role: 'user', content: `User: ${u}\nAssistant: ${a}` }], 0.0, 4000, 150);
-    }
-    if (newSummary.trim()) { await supabase.from('users').update({ conversation_summary: newSummary.trim() }).eq('id', userId); console.log('[MEMORY] Saved.'); }
+    const newSummary = prev
+      ? await callModel(FAST_MODEL, [{ role: 'system', content: 'Compress previous summary and new exchange into 2-3 sentences. Reply ONLY with the summary.' }, { role: 'user', content: `Previous:\n${prev}\n\nNew:\nUser: ${u}\nAssistant: ${a}` }], 0.0, 4000, 200)
+      : await callModel(FAST_MODEL, [{ role: 'system', content: 'Summarize in 1-2 sentences. Reply ONLY with the summary.' }, { role: 'user', content: `User: ${u}\nAssistant: ${a}` }], 0.0, 4000, 150);
+    if (newSummary.trim()) { await supabase.from('chats').update({ conversation_summary: newSummary.trim().slice(0, 2000) }).eq('id', chatId); console.log('[MEMORY] Saved.'); }
   } catch (e) { console.error('[MEMORY] Failed:', e.message); }
+};
+
+const readChatSummary = async (chatId, userId) => {
+  if (!chatId) return '';
+  try {
+    const { data } = await supabase.from('chats').select('conversation_summary').eq('id', chatId).eq('user_id', userId).single();
+    return data?.conversation_summary || '';
+  } catch { return ''; }
+};
+
+// Feedback lives in its own table and is read back as explicit guidance. It was
+// previously appended onto conversation_summary, where coaching notes and
+// conversation facts fought over the same 2000 characters and corrupted both.
+const getFeedbackGuidance = async (userId) => {
+  try {
+    const { data } = await supabase.from('feedback_notes').select('kind,note').eq('user_id', userId).order('created_at', { ascending: false }).limit(6);
+    if (!data || data.length === 0) return '';
+    const good = data.filter(n => n.kind === 'up').map(n => `- ${n.note}`);
+    const avoid = data.filter(n => n.kind === 'down').map(n => `- ${n.note}`);
+    let out = '';
+    if (good.length) out += `This user has responded well to:\n${good.join('\n')}\n`;
+    if (avoid.length) out += `This user has reacted badly to:\n${avoid.join('\n')}`;
+    return out.trim();
+  } catch { return ''; }
 };
 
 // ===== MIDDLEWARE =====
@@ -285,7 +340,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISO
 app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
   try {
     const user = await ensureUser(req.auth.userId);
-    const { message, history = [] } = req.body;
+    const { message, history = [], chatId } = req.body;
     const pv = validatePrompt(message);
     if (!pv.valid) return res.status(400).json({ error: pv.error });
     const hv = validateHistory(history);
@@ -298,8 +353,13 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const truncatedPrompt = truncatePrompt(pv.value);
     const histArr = Array.isArray(hv) ? hv : (hv.value || []);
 
-    let convSummary = '';
-    try { const { data: ud } = await supabase.from('users').select('conversation_summary').eq('id', user.id).single(); convSummary = ud?.conversation_summary || ''; } catch (e) {}
+    const [convSummary, feedbackGuidance] = await Promise.all([readChatSummary(chatId, user.id), getFeedbackGuidance(user.id)]);
+    // Injected into every prompt path below, so memory and learned preferences
+    // stay in lockstep instead of each call site assembling its own context.
+    const contextMsgs = [
+      ...(convSummary ? [{ role: 'system', content: `CONVERSATION CONTEXT: ${convSummary}` }] : []),
+      ...(feedbackGuidance ? [{ role: 'system', content: `USER PREFERENCES, learned from their past ratings. Honour these unless they conflict with accuracy:\n${feedbackGuidance}` }] : []),
+    ];
 
     console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | Mem: ${convSummary ? 'Y' : 'N'} | Lang: ${lang}`);
 
@@ -309,9 +369,9 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       const memSys = `You are ALOP-AI. The user is asking about a previous conversation. The history below IS your memory. Do NOT say you can't remember. Reference what was discussed. Be concise.${convSummary ? `\n\nSummary: ${convSummary}` : ''}`;
       const memMsgs = [{ role: 'system', content: memSys }, ...histArr.slice(-10), { role: 'user', content: pv.value }];
       res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
-      await streamModel(res, 'glm-5.2', memMsgs, 0.0);
+      await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0);
       if (!res.writableEnded) res.end();
-      updateConversationSummary(user.id, pv.value, 'Answered memory question.').catch(() => {});
+      updateChatSummary(chatId,pv.value, 'Answered memory question.').catch(() => {});
       await auditLog(user.id, 'council', { category: 'memory' });
       return;
     }
@@ -321,7 +381,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       console.log('[COUNCIL] Greeting.');
       const greetMsgs = [{ role: 'system', content: `You are ALOP-AI. Greet briefly.${convSummary ? ` Context: ${convSummary}` : ''}` }, { role: 'user', content: pv.value }];
       res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
-      await streamModel(res, 'glm-5.2', greetMsgs, 0.0);
+      await streamModel(res, PRIMARY_MODEL, greetMsgs, 0.0);
       if (!res.writableEnded) res.end();
       await auditLog(user.id, 'council', { category: 'greeting' });
       return;
@@ -343,12 +403,12 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       }
       console.log(`[COUNCIL] ${sources.length} sources, ${context.length} chars.`);
       const extSys = `You are a precision data extraction engine. Use ONLY the provided data.\n\nRULES:\n1. Only state facts from the data.\n2. No training data.\n3. No inferring/guessing.\n4. No comparing unless both products are in data.\n5. If not in data, say "I couldn't find this in the search results."\n6. Include URLs as Markdown: [Title](URL)\n7. No inventing specs/prices.\n8. Note contradictions between sources.\n9. Format in Markdown. Match answer length to question. Be concise for simple questions.\n10. List sources at bottom under "## Sources".\n11. Embed images if provided: ![Description](url)\n12. CONVERSATION CONTEXT and history are EXEMPT from rules 1-5.${lang !== 'English' ? `\n13. Respond in ${lang}.` : ''}`;
-      const extMsgs = [{ role: 'system', content: extSys }, ...(convSummary ? [{ role: 'system', content: `CONVERSATION CONTEXT: ${convSummary}` }] : []), ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n\n=== SEARCH DATA ===\n${context}` }];
+      const extMsgs = [{ role: 'system', content: extSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n\n=== SEARCH DATA ===\n${context}` }];
       res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
-      await streamModel(res, 'glm-5.2', extMsgs, 0.0);
+      await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0);
       if (!res.writableEnded) res.end();
       const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
-      updateConversationSummary(user.id, pv.value, lastA || 'Search response.').catch(() => {});
+      updateChatSummary(chatId,pv.value, lastA || 'Search response.').catch(() => {});
       await auditLog(user.id, 'council', { category: 'search', sources: sources.length });
       return;
     }
@@ -358,11 +418,11 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       const wiki = await searchWikipedia(pv.value);
       if (wiki) {
         const wikiSys = `You are a data extraction engine. Use ONLY the Wikipedia content. No training data. If not found, say "I couldn't find this on Wikipedia." Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
-        const wikiMsgs = [{ role: 'system', content: wikiSys }, ...(convSummary ? [{ role: 'system', content: `CONTEXT: ${convSummary}` }] : []), ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n=== WIKIPEDIA ===\n${wiki}` }];
+        const wikiMsgs = [{ role: 'system', content: wikiSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n=== WIKIPEDIA ===\n${wiki}` }];
         res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
-        await streamModel(res, 'glm-5.2', wikiMsgs, 0.0);
+        await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0);
         if (!res.writableEnded) res.end();
-        updateConversationSummary(user.id, pv.value, 'Wikipedia response.').catch(() => {});
+        updateChatSummary(chatId,pv.value, 'Wikipedia response.').catch(() => {});
         await auditLog(user.id, 'council', { category: 'wiki' });
         return;
       }
@@ -370,30 +430,39 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
 
     // 4. COUNCIL
     const councilSys = `You are an elite AI expert in the ALOP-AI Council. If outside your expertise, reply ONLY "SKIP". If you answer, be direct. Match response length to question complexity. Use Markdown. If context/history provided, use for continuity. ${isDetailed ? 'Be thorough.' : 'Be concise.'}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
-    const councilMsgs = [{ role: 'system', content: councilSys }, ...(convSummary ? [{ role: 'system', content: `CONVERSATION CONTEXT: ${convSummary}` }] : []), ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
-    const validResponses = await runCouncilWithWhip(selection.models, councilMsgs, 0.0, selection.whipMs, selection.quorum, selection.tokenLimit);
+    const councilMsgs = [{ role: 'system', content: councilSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
+    const validResponses = await runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit);
 
     // 5. FALLBACK
     if (validResponses.length === 0) {
       console.log('[COUNCIL] Fallback.');
       const fbSys = `You are a helpful AI assistant. Answer directly. Match length to question. If you don't know, say "I don't have enough information." Don't guess. Use context if provided. Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
-      const fbMsgs = [{ role: 'system', content: fbSys }, ...(convSummary ? [{ role: 'system', content: `CONTEXT: ${convSummary}` }] : []), ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
+      const fbMsgs = [{ role: 'system', content: fbSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
       res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
-      await streamModel(res, 'glm-5.2', fbMsgs, 0.0);
+      await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0);
       if (!res.writableEnded) res.end();
-      updateConversationSummary(user.id, pv.value, 'Fallback response.').catch(() => {});
+      updateChatSummary(chatId,pv.value, 'Fallback response.').catch(() => {});
       await auditLog(user.id, 'council', { category: 'fallback' });
       return;
     }
 
     // 6. SYNTHESIS
-    const synthSys = `You are the Chief Synthesizer. Combine into ONE answer. No new info. No invented facts. No expert names. Remove redundancy. Match length to question. Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+    const synthSys = `You are the Chief Synthesiser for a panel of independent experts who answered the same question separately. Reconcile them — do not average them.
+
+1. Where they agree, state it once, plainly.
+2. Where they disagree on a FACT, say so and give the competing claims. Do not silently pick one.
+3. Where they disagree on JUDGEMENT or approach, give the strongest version of each and say what would decide between them.
+4. Prefer the more specific, better-supported answer — but never invent a justification for preferring it.
+5. Introduce no fact that appears in none of the responses.
+6. Never mention the panel, the experts, how many there were, or that synthesis happened. Write as a single voice.
+7. Match length to the question's complexity. Do not pad.
+8. Use Markdown.${lang !== 'English' ? `\n9. Respond in ${lang}.` : ''}`;
     const synthMsgs = [{ role: 'system', content: synthSys }, { role: 'user', content: `Question: ${truncatedPrompt}\n\nResponses:\n${validResponses.map((r,i) => `[Expert ${i+1}]: ${r.content}`).join('\n\n')}` }];
     res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
-    await streamModel(res, 'glm-5.2', synthMsgs, 0.0);
+    await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0);
     if (!res.writableEnded) res.end();
     const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
-    updateConversationSummary(user.id, pv.value, lastA || validResponses[0]?.content?.slice(0,800) || 'Council response.').catch(() => {});
+    updateChatSummary(chatId,pv.value, lastA || validResponses[0]?.content?.slice(0,800) || 'Council response.').catch(() => {});
     await auditLog(user.id, 'council', { category: 'council', models: validResponses.length });
   } catch (err) {
     console.error('Council error:', err.message);
@@ -407,17 +476,22 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
 app.post('/api/quick', requireAuth, checkSuspended, async (req, res) => {
   try {
     const user = await ensureUser(req.auth.userId);
-    const { message, history = [] } = req.body;
+    const { message, history = [], chatId } = req.body;
     const pv = validatePrompt(message);
     if (!pv.valid) return res.status(400).json({ error: pv.error });
     const hv = validateHistory(history);
     const histArr = Array.isArray(hv) ? hv : (hv.value || []);
-    const QUICK_MODELS = ['gemma4','qwen3.5','glm-5.2','kimi-k2.5'];
+    const QUICK_MEMBERS = FREE_COUNCIL;
     const lang = detectLanguage(pv.value);
     const truncatedPrompt = truncatePrompt(pv.value);
 
-    let convSummary = '';
-    try { const { data: ud } = await supabase.from('users').select('conversation_summary').eq('id', user.id).single(); convSummary = ud?.conversation_summary || ''; } catch (e) {}
+    const [convSummary, feedbackGuidance] = await Promise.all([readChatSummary(chatId, user.id), getFeedbackGuidance(user.id)]);
+    // Injected into every prompt path below, so memory and learned preferences
+    // stay in lockstep instead of each call site assembling its own context.
+    const contextMsgs = [
+      ...(convSummary ? [{ role: 'system', content: `CONVERSATION CONTEXT: ${convSummary}` }] : []),
+      ...(feedbackGuidance ? [{ role: 'system', content: `USER PREFERENCES, learned from their past ratings. Honour these unless they conflict with accuracy:\n${feedbackGuidance}` }] : []),
+    ];
 
     console.log(`[QUICK] ${user.email} | Lang: ${lang} | Mem: ${convSummary ? 'Y' : 'N'}`);
 
@@ -425,9 +499,9 @@ app.post('/api/quick', requireAuth, checkSuspended, async (req, res) => {
       const memSys = `You are ALOP-AI Quick. User asks about previous conversation. History IS your memory. Don't say you can't remember. Be very concise — 1-3 sentences.${convSummary ? `\nSummary: ${convSummary}` : ''}`;
       const memMsgs = [{ role: 'system', content: memSys }, ...histArr.slice(-6), { role: 'user', content: pv.value }];
       res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
-      await streamModel(res, 'glm-5.2', memMsgs, 0.0);
+      await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0);
       if (!res.writableEnded) res.end();
-      updateConversationSummary(user.id, pv.value, 'Quick memory.').catch(() => {});
+      updateChatSummary(chatId,pv.value, 'Quick memory.').catch(() => {});
       return;
     }
 
@@ -442,23 +516,23 @@ app.post('/api/quick', requireAuth, checkSuspended, async (req, res) => {
         return;
       }
       const extSys = `You are ALOP-AI Quick. Use ONLY the search data. No hallucination. Be concise. Include source links.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
-      const extMsgs = [{ role: 'system', content: extSys }, ...(convSummary ? [{ role: 'system', content: `CONTEXT: ${convSummary}` }] : []), ...histArr.slice(-6), { role: 'user', content: `${truncatedPrompt}\n=== DATA ===\n${context}` }];
-      const responses = await runCouncilWithWhip(['gemma4','glm-5.2'], extMsgs, 0.0, 15000, 1, 1000);
+      const extMsgs = [{ role: 'system', content: extSys }, ...contextMsgs, ...histArr.slice(-6), { role: 'user', content: `${truncatedPrompt}\n=== DATA ===\n${context}` }];
+      const responses = await runCouncilWithWhip([{ model: FAST_MODEL, temperature: 0.0 }, { model: PRIMARY_MODEL, temperature: 0.0 }], extMsgs, 15000, 1, 1000);
       res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
       if (responses.length > 0) { res.write(`data: ${JSON.stringify({ type: 'chunk', text: responses[0].content })}\n\n`); res.write('data: [DONE]\n\n'); if (!res.writableEnded) res.end(); }
-      else { await streamModel(res, 'glm-5.2', extMsgs, 0.0); if (!res.writableEnded) res.end(); }
-      updateConversationSummary(user.id, pv.value, 'Quick search.').catch(() => {});
+      else { await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0); if (!res.writableEnded) res.end(); }
+      updateChatSummary(chatId,pv.value, 'Quick search.').catch(() => {});
       await auditLog(user.id, 'quick', { category: 'search', sources: sources.length });
       return;
     }
 
     const councilSys = `You are ALOP-AI Quick. Be concise. Match length to question.${convSummary ? ' Use context for continuity.' : ''}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
-    const councilMsgs = [{ role: 'system', content: councilSys }, ...(convSummary ? [{ role: 'system', content: `CONTEXT: ${convSummary}` }] : []), ...histArr.slice(-6), { role: 'user', content: truncatedPrompt }];
-    const responses = await runCouncilWithWhip(QUICK_MODELS, councilMsgs, 0.0, 15000, 1, 1000);
+    const councilMsgs = [{ role: 'system', content: councilSys }, ...contextMsgs, ...histArr.slice(-6), { role: 'user', content: truncatedPrompt }];
+    const responses = await runCouncilWithWhip(QUICK_MEMBERS, councilMsgs, 15000, 1, 1000);
     res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
     if (responses.length > 0) { res.write(`data: ${JSON.stringify({ type: 'chunk', text: responses[0].content })}\n\n`); res.write('data: [DONE]\n\n'); if (!res.writableEnded) res.end(); }
-    else { await streamModel(res, 'glm-5.2', councilMsgs, 0.0); if (!res.writableEnded) res.end(); }
-    updateConversationSummary(user.id, pv.value, 'Quick council.').catch(() => {});
+    else { await streamModel(res, PRIMARY_MODEL, councilMsgs, 0.0); if (!res.writableEnded) res.end(); }
+    updateChatSummary(chatId,pv.value, 'Quick council.').catch(() => {});
     await auditLog(user.id, 'quick', { category: 'council' });
   } catch (err) {
     console.error('Quick error:', err.message);
@@ -514,10 +588,10 @@ app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
     ];
 
     let answer = '';
-    try { answer = await callModel('glm-5.2', overlayMsgs, 0.0, 15000, 800); }
+    try { answer = await callModel(PRIMARY_MODEL, overlayMsgs, 0.0, 15000, 800); }
     catch (e1) {
       console.error('[OVERLAY] glm-5.2 failed:', e1.message);
-      try { answer = await callModel('gemma4', overlayMsgs, 0.0, 10000, 800); }
+      try { answer = await callModel(FAST_MODEL, overlayMsgs, 0.0, 10000, 800); }
       catch (e2) { console.error('[OVERLAY] gemma4 failed:', e2.message); answer = "I couldn't process that. Please try again."; }
     }
 
@@ -537,22 +611,19 @@ app.post('/api/feedback', requireAuth, async (req, res) => {
     const { feedback, question, answer } = req.body;
     if (!feedback || !['up','down'].includes(feedback)) return res.status(400).json({ error: 'Invalid feedback' });
     await auditLog(user.id, 'feedback', { feedback, question: question?.slice(0,500), answer: answer?.slice(0,500) });
-    if (feedback === 'down' || feedback === 'up') {
-      try {
-        const note = await callModel('gemma4', [
-          { role: 'system', content: feedback === 'down' ? 'User disliked this answer. Create a 1-sentence note about what to avoid. Reply ONLY with the note.' : 'User liked this answer. Create a 1-sentence note about what worked. Reply ONLY with the note.' },
-          { role: 'user', content: `Q: ${question?.slice(0,300)}\nA: ${answer?.slice(0,300)}` }
-        ], 0.0, 3000, 100);
-        if (note.trim()) {
-          const { data: ud } = await supabase.from('users').select('conversation_summary').eq('id', user.id).single();
-          const prev = ud?.conversation_summary || '';
-          const tag = feedback === 'down' ? '[Avoid:' : '[Good:';
-          const newSummary = prev ? `${prev}\n\n${tag} ${note.trim()}]` : `${tag} ${note.trim()}]`;
-          await supabase.from('users').update({ conversation_summary: newSummary.slice(0,2000) }).eq('id', user.id);
-          console.log(`[LEARN] ${feedback} feedback saved.`);
-        }
-      } catch (e) { console.error('[LEARN] Failed:', e.message); }
-    }
+    // One row per rating in its own table. These notes used to be appended onto
+    // users.conversation_summary, so every thumbs-up ate into the same 2000
+    // characters the conversation memory needed and eventually destroyed both.
+    try {
+      const note = await callModel(FAST_MODEL, [
+        { role: 'system', content: feedback === 'down' ? 'User disliked this answer. Create a 1-sentence note about what to avoid. Reply ONLY with the note.' : 'User liked this answer. Create a 1-sentence note about what worked. Reply ONLY with the note.' },
+        { role: 'user', content: `Q: ${question?.slice(0,300)}\nA: ${answer?.slice(0,300)}` }
+      ], 0.0, 3000, 100);
+      if (note.trim()) {
+        await supabase.from('feedback_notes').insert({ user_id: user.id, kind: feedback, note: note.trim().slice(0, 300) });
+        console.log(`[LEARN] ${feedback} feedback saved.`);
+      }
+    } catch (e) { console.error('[LEARN] Failed:', e.message); }
     res.json({ ok: true });
   } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
@@ -591,7 +662,7 @@ app.use((err, req, res, next) => { Sentry.captureException(err); if (err.message
 const server = app.listen(PORT, () => {
   console.log(`\n╔════════════════════════════════════════════╗`);
   console.log(`║  ALOP-AI PRECISION BACKEND                  ║`);
-  console.log(`║  Port: ${PORT} | Temp: 0.0 | ${ALL_MODELS.length} models      ║`);
+  console.log(`║  Port: ${PORT} | Council: ${COUNCIL.length} pro / ${FREE_COUNCIL.length} free      ║`);
   console.log(`║  T=${TAVILY_API_KEY?'ON':'OFF'} B=${BRAVE_API_KEY?'ON':'OFF'} G=${GOOGLE_SEARCH_API_KEY&&GOOGLE_CSE_ID?'ON':'OFF'} J=${JINA_API_KEY?'ON':'OFF'} Wiki=ON  ║`);
   console.log(`║  Memory: Supabase | Quick + Feedback        ║`);
   console.log(`╚════════════════════════════════════════════╝\n`);

@@ -1080,6 +1080,69 @@ textarea:focus-visible {
 
 .attachment-pill button:hover { color: var(--text); }
 
+/* Thumbnail of the pending attachment, shown above the composer. */
+.attachment-preview {
+  position: relative;
+  align-self: flex-start;
+  line-height: 0;
+}
+
+.attachment-preview img {
+  max-height: 84px;
+  max-width: 160px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  object-fit: cover;
+}
+
+.attachment-preview button {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--border-strong);
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: color 0.15s, background 0.15s;
+}
+
+.attachment-preview button:hover {
+  color: var(--text);
+  background: var(--surface-4);
+}
+
+/* The image as it appears in a sent message. */
+.msg-attachment {
+  display: block;
+  max-width: min(320px, 100%);
+  max-height: 240px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  object-fit: cover;
+}
+
+/* Shown after a reload, when the flag survived but the bytes were never stored. */
+.msg-attachment-placeholder {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface-3);
+  font-size: 12px;
+  color: var(--text-subtle);
+}
+
 @keyframes pulse {
   0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(196, 101, 112, 0.4); }
   50% { opacity: 0.85; box-shadow: 0 0 0 7px rgba(196, 101, 112, 0); }

@@ -54,6 +54,32 @@ const Storage = {
   set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
 };
 
+// The backend rejects anything over 8MB, and a phone photo clears that easily.
+// Downscaling here means the ceiling is never reached rather than reached and
+// reported. 1568px is about where vision models stop gaining detail.
+const MAX_IMAGE_EDGE = 1568;
+const fileToDataUrl = (file) => new Promise((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onerror = () => reject(new Error("Couldn't read that file."));
+  reader.onload = () => {
+    const img = new Image();
+    img.onerror = () => reject(new Error("That file isn't a readable image."));
+    img.onload = () => {
+      const scale = Math.min(1, MAX_IMAGE_EDGE / Math.max(img.width, img.height));
+      // Small enough already — keep the original bytes and its format, so a
+      // PNG screenshot doesn't get needlessly re-encoded into a lossy JPEG.
+      if (scale === 1 && reader.result.length < 4_000_000) return resolve(reader.result);
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(img.width * scale);
+      canvas.height = Math.round(img.height * scale);
+      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+      resolve(canvas.toDataURL("image/jpeg", 0.85));
+    };
+    img.src = reader.result;
+  };
+  reader.readAsDataURL(file);
+});
+
 // --- Skeleton Loaders ---
 const InitialLoader = () => (
   <div className="initial-loader dark">
@@ -160,26 +186,32 @@ const ChatSidebar = memo(({ chats, activeChatId, onSelect, onCreate, onDelete, o
   </div>
 ));
 
-const InputBar = memo(({ onSend, disabled, onFileSelect, onStartCamera, isListening, toggleListening }) => {
+// The attachment lives in the parent rather than here, because the camera
+// capture flow sets it from outside this component.
+export const InputBar = memo(({ onSend, disabled, onFileSelect, onStartCamera, isListening, toggleListening, attachedImage, onClearAttachment }) => {
   const [text, setText] = useState("");
-  const [attachments, setAttachments] = useState([]);
   const [rows, setRows] = useState(1);
 
   useEffect(() => { setRows(Math.min(Math.max(text.split("\n").length, 1), 1000)); }, [text]);
 
-  const handleKeyDown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!disabled && text.trim()) { onSend(text, attachments); setText(""); setAttachments([]); } } };
-  const removeAttachment = (idx) => setAttachments((prev) => prev.filter((_, i) => i !== idx));
-  
+  const submit = () => { if (disabled || !text.trim()) return; onSend(text); setText(""); };
+  const handleKeyDown = (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); } };
+
   return (
     <div className="input-bar"><div className="input-wrapper">
-      {attachments.length > 0 && <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>{attachments.map((a, i) => <div key={i} className="attachment-pill">{a.name}<button onClick={() => removeAttachment(i)}>×</button></div>)}</div>}
-      <textarea className="input-text" rows={rows} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={handleKeyDown} placeholder="Ask the AI Council anything..." disabled={disabled} />
+      {attachedImage && (
+        <div className="attachment-preview">
+          <img src={attachedImage} alt="Attached" />
+          <button onClick={onClearAttachment} title="Remove image" aria-label="Remove attached image">×</button>
+        </div>
+      )}
+      <textarea className="input-text" rows={rows} value={text} onChange={(e) => setText(e.target.value)} onKeyDown={handleKeyDown} placeholder={attachedImage ? "Ask about this image..." : "Ask the AI Council anything..."} disabled={disabled} />
       <div className="input-actions">
-        <label className="input-btn" title="Upload image" style={{ cursor: "pointer" }}><input type="file" accept="image/*" multiple onChange={onFileSelect} disabled={disabled} style={{ display: "none" }} /><Icon name="image" size={16} /></label>
+        <label className="input-btn" title="Upload image" style={{ cursor: "pointer" }}><input type="file" accept="image/*" onChange={onFileSelect} disabled={disabled} style={{ display: "none" }} /><Icon name="image" size={16} /></label>
         <button className={`input-btn ${isListening ? "listening" : ""}`} onClick={toggleListening} title="Voice input"><Icon name="mic" size={16} /></button>
         <button className="input-btn" onClick={onStartCamera} title="Camera" disabled={disabled}><Icon name="camera" size={16} /></button>
         <div style={{ flex: 1 }}></div>
-        <button className="input-btn primary" onClick={() => { if (!disabled && text.trim()) { onSend(text, attachments); setText(""); setAttachments([]); } }} disabled={disabled || !text.trim()}><Icon name="send" size={16} /></button>
+        <button className="input-btn primary" onClick={submit} disabled={disabled || !text.trim()}><Icon name="send" size={16} /></button>
       </div>
     </div></div>
   );
@@ -226,6 +258,7 @@ const AuthenticatedApp = () => {
   const [activeChatId, setActiveChatId] = useState(null);
   const [status, setStatus] = useState("idle");
   const [showCamera, setShowCamera] = useState(false);
+  const [attachedImage, setAttachedImage] = useState(null);
   const [feedback, setFeedback] = useState({});
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   
@@ -347,10 +380,33 @@ const AuthenticatedApp = () => {
   const adminUnsuspend = useCallback(async (id) => { try { if ((await apiCall(`/api/admin/users/${id}/unsuspend`, { method: "POST" })).ok) { setToast("Unsuspended"); fetchAdminUsers(); } } catch (e) {} }, [apiCall, fetchAdminUsers]);
   const adminDeleteUser = useCallback(async (id) => { if (!confirm("DELETE this user?")) return; try { if ((await apiCall(`/api/admin/users/${id}`, { method: "DELETE" })).ok) { setToast("Deleted"); fetchAdminUsers(); } } catch (e) {} }, [apiCall, fetchAdminUsers]);
 
-  const handleFileSelect = useCallback((e) => { const files = Array.from(e.target.files).filter((f) => f.type.startsWith("image/")); if (!files.length) { setToast("Only images"); return; } setToast("File upload disabled in Council mode"); e.target.value = ""; }, [setToast]);
+  const handleFileSelect = useCallback(async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) { setToast("Only images can be attached."); return; }
+    try {
+      setAttachedImage(await fileToDataUrl(file));
+    } catch (err) {
+      setToast(err.message);
+    }
+  }, []);
   const startCamera = useCallback(async () => { try { const s = await navigator.mediaDevices.getUserMedia({ video: true }); cameraStreamRef.current = s; setShowCamera(true); setTimeout(() => { if (videoRef.current) videoRef.current.srcObject = s; }, 100); } catch { setToast("Camera denied"); } }, [setToast]);
   const stopCamera = useCallback(() => { if (cameraStreamRef.current) { cameraStreamRef.current.getTracks().forEach((t) => t.stop()); cameraStreamRef.current = null; } setShowCamera(false); }, []);
-  const capturePhoto = useCallback(() => { if (!videoRef.current || !canvasRef.current) return; const v = videoRef.current; const c = canvasRef.current; c.width = v.videoWidth; c.height = v.videoHeight; c.getContext("2d").drawImage(v, 0, 0); c.toBlob((b) => { stopCamera(); }, "image/png"); }, [stopCamera]);
+  // This used to end in `c.toBlob((b) => { stopCamera(); })` — the frame was
+  // drawn, handed to a callback, and thrown away. The whole capture UI did
+  // nothing. toDataURL is what the overlay's screen capture already uses.
+  const capturePhoto = useCallback(() => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const v = videoRef.current, c = canvasRef.current;
+    if (!v.videoWidth) { setToast("Camera isn't ready yet."); return; }
+    const scale = Math.min(1, MAX_IMAGE_EDGE / Math.max(v.videoWidth, v.videoHeight));
+    c.width = Math.round(v.videoWidth * scale);
+    c.height = Math.round(v.videoHeight * scale);
+    c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+    setAttachedImage(c.toDataURL("image/jpeg", 0.85));
+    stopCamera();
+  }, [stopCamera]);
   
   const stopListening = useCallback(() => { if (listenTimerRef.current) clearTimeout(listenTimerRef.current); if (recognitionRef.current) { try { recognitionRef.current.stop(); } catch {} recognitionRef.current = null; } setIsListening(false); }, []);
   const startListening = useCallback(() => { const SR = window.SpeechRecognition || window.webkitSpeechRecognition; if (!SR) { setToast("Needs Chrome/Edge/Safari"); return; } const r = new SR(); r.continuous = false; r.interimResults = false; r.lang = "en-US"; r.onstart = () => { setIsListening(true); listenTimerRef.current = setTimeout(() => { try { r.stop(); } catch {} }, 10000); }; r.onend = () => { setIsListening(false); if (listenTimerRef.current) clearTimeout(listenTimerRef.current); recognitionRef.current = null; }; r.onresult = (e) => { let t = ""; for (let i = e.resultIndex; i < e.results.length; i++) t += e.results[i][0].transcript; if (t.trim()) { const i = document.querySelector('.input-text'); if (i) { i.value += t + " "; i.dispatchEvent(new Event('input', { bubbles: true })); } } }; r.onerror = () => setIsListening(false); r.start(); recognitionRef.current = r; }, [setToast]);
@@ -365,15 +421,19 @@ const AuthenticatedApp = () => {
     await updateChatMessages(chatId, [...withUser, { role: "assistant", content: "", imageUrl: buildImageUrl(imagePrompt), imagePrompt, ts: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), id: uid() }]);
   }, [activeChatId, activeMessages, createChat, renameChat, updateChatMessages]);
 
-  const handleSend = useCallback(async (text, attachments = []) => {
-    let chatId = activeChatId; if (!chatId) chatId = await createChat(); if (!chatId) return;
+  const handleSend = useCallback(async (text) => {
     const cleanText = text.trim();
-    if (isImageRequest(cleanText)) { generateImage(cleanText); return; }
-    if (attachments.length > 0) { setToast("File upload disabled in Council mode"); return; }
+    // An attached image means "look at this", never "draw me one".
+    if (!attachedImage && isImageRequest(cleanText)) { generateImage(cleanText); return; }
     if (!cleanText || status !== "idle") return;
-    
+    let chatId = activeChatId; if (!chatId) chatId = await createChat(); if (!chatId) return;
+
+    const image = attachedImage;
+    setAttachedImage(null);
     setStatus("loading");
-    const userMsg = { role: "user", content: cleanText, ts: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), id: uid() };
+    // imagePreview is local-only: the server whitelist keeps hasImage and drops
+    // it, so a reloaded chat shows the marker without storing megabytes per row.
+    const userMsg = { role: "user", content: cleanText, ts: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), id: uid(), ...(image ? { hasImage: true, imagePreview: image } : {}) };
     const updated = [...activeMessages, userMsg]; 
     await updateChatMessages(chatId, updated);
     
@@ -390,7 +450,7 @@ const AuthenticatedApp = () => {
     
     try {
       const token = await getToken();
-      const res = await fetch(`${API_BASE}/api/council`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ message: cleanText, history: cleanHistory, chatId }), signal: abortRef.current.signal });
+      const res = await fetch(`${API_BASE}/api/council`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ message: cleanText, history: cleanHistory, chatId, ...(image ? { image } : {}) }), signal: abortRef.current.signal });
       if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.error || `Server error: ${res.status}`); }
       if (!res.body) throw new Error("No stream");
       
@@ -421,7 +481,7 @@ const AuthenticatedApp = () => {
       setStatus("error"); 
       await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: `⚠️ ${err.message || "Connection failed"}` }]); 
     }
-  }, [activeChatId, activeMessages, status, generateImage, createChat, renameChat, updateChatMessages, getToken]);
+  }, [activeChatId, activeMessages, status, generateImage, createChat, renameChat, updateChatMessages, getToken, attachedImage]);
 
   if (!isLoaded) return null;
   if (isInitialLoading) return <AppSkeleton />;
@@ -461,6 +521,11 @@ const AuthenticatedApp = () => {
                   <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
                     <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
                     <div className="msg-content">
+                      {/* imagePreview only exists in this session; after a reload
+                          the hasImage flag survives but the bytes deliberately do not. */}
+                      {msg.hasImage && (msg.imagePreview
+                        ? <img className="msg-attachment" src={msg.imagePreview} alt="Attached" />
+                        : <div className="msg-attachment-placeholder"><Icon name="image" size={13} /> Image attached</div>)}
                       {msg.typing ? (
                         <div className="bubble typing-bubble">
                           <span className="typing-dot"></span>
@@ -486,7 +551,7 @@ const AuthenticatedApp = () => {
                   </div>
                 ))}
               </div>
-              <InputBar onSend={handleSend} disabled={status !== "idle"} onFileSelect={handleFileSelect} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} />
+              <InputBar onSend={handleSend} disabled={status !== "idle"} onFileSelect={handleFileSelect} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} attachedImage={attachedImage} onClearAttachment={() => setAttachedImage(null)} />
             </div>
           </div>
         </div>

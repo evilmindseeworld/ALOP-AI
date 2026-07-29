@@ -446,7 +446,6 @@ const App = () => {
     <ClerkProvider publishableKey={clerkKey} signInUrl="/" signUpUrl="/" afterSignInUrl="/" afterSignUpUrl="/" appearance={{ baseTheme: "dark", variables: { colorPrimary: "#ec7d96", colorBackground: "#1b120c", colorText: "#faf0e6" } }}>
       <div style={{ width: "100vw", height: "100dvh" }}>
         {isOverlay ? <OverlayAssistant /> : <AuthenticatedAppWrapper />}
-        <div className="scanlines" aria-hidden="true" />
       </div>
     </ClerkProvider>
   );

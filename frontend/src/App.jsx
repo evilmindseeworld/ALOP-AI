@@ -1,13 +1,3 @@
-import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
-import { ClerkProvider, useUser, useAuth, SignOutButton } from "@clerk/react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import "./App.css";
-import SignInPage from "./SignInPage";
-import MagneticButton from "./components/ui/MagneticButton";
-import { animate, createScope, spring, createDraggable } from "animejs";
-
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
 
 // --- Utilities ---
 const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
@@ -430,7 +420,7 @@ const AuthenticatedApp = () => {
                   <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
                     <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
                     <div className="msg-content">
-                      {msg.typing ? <div className="bubble typing-bubble"><span className="typing-dot"></span><span className="typing-dot"></span><span className="typing-dot"></span></div> : msg.content ? <div className="bubble markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown></div> : null}
+                      {msg.typing ? <div className="bubble typing-bubble"><span className="typing-dot"></span><span className="typing-dot"></span><span className="typing-dot"></span></div> : msg.content ? <div className="bubble markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{msg.content}</ReactMarkdown> : null}
                       {msg.imageUrl && <div style={{ marginTop: 8 }}><img src={msg.imageUrl} alt="Generated" style={{ maxWidth: "100%", maxHeight: "60vh", borderRadius: "var(--radius-lg)", cursor: "pointer" }} onClick={() => window.open(msg.imageUrl, "_blank")} /><div className="msg-meta" style={{ textAlign: "left" }}>{msg.imagePrompt}</div></div>}
                       {msg.role === "assistant" && msg.content && !msg.imageUrl && !msg.typing && <MessageActions content={msg.content} onCopy={() => navigator.clipboard.writeText(msg.content)} msgId={msg.id} onFeedback={handleFeedback} feedback={feedback[msg.id]} />}
                       <div className="msg-meta">{msg.ts}</div>
@@ -500,7 +490,8 @@ const OverlayAssistant = () => {
   return (
     <div className="overlay-root">
       <div className="overlay-answer-stack">
-        {answer && (<div className="overlay-answer-card"><div className="overlay-answer-text markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]}>{answer}</ReactMarkdown></div><button className="overlay-tts-btn" onClick={() => isSpeaking ? stopSpeaking() : speak(answer)}>{isSpeaking ? '■' : '▶'}</button></div>)}
+        {answer && (<div className="overlay-answer-card"><div className="overlay-answer-text markdown-body"><ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{answer}</ReactMarkdown>
+</div><button className="overlay-tts-btn" onClick={() => isSpeaking ? stopSpeaking() : speak(answer)}>{isSpeaking ? '■' : '▶'}</button></div>)}
       </div>
       {attachment && <div className="overlay-thumb-pill">Image attached<button onClick={() => setAttachment(null)}>×</button></div>}
       <form className="overlay-bar" onSubmit={handleSubmit}>

@@ -2801,8 +2801,8 @@ textarea:focus-visible {
    until it is a perfect "!", then paste the values back here. */
 :root {
   --earring-rotate-x: 0deg;
-  --earring-rotate-y: 0deg;
-  --earring-rotate-z: 90deg;
+  --earring-rotate-y: 90deg;
+  --earring-rotate-z: 0deg;
 }
 
 @keyframes earringSwing {

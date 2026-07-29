@@ -333,6 +333,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // ===== SANITIZATION =====
 const MAX_PROMPT = 100000, MAX_HISTORY = 20, ALLOWED_ROLES = ['user','assistant','system'];
 const { buildChatUpdate, sanitizeString } = require('./lib/chat-update');
+const { parseDataUrl } = require('./lib/data-url');
 const truncatePrompt = (text, maxChars = 90000) => { if (text.length <= maxChars) return text; const h = Math.floor(maxChars/2); return text.slice(0,h) + '\n\n[...truncated...]\n\n' + text.slice(-h); };
 const validatePrompt = (p) => { if (!p || typeof p !== 'string') return { valid: false, error: 'Prompt required' }; const t = p.trim(); if (!t) return { valid: false, error: 'Prompt empty' }; if (t.length > MAX_PROMPT) return { valid: false, error: `Exceeds ${MAX_PROMPT}` }; return { valid: true, value: t }; };
 const validateHistory = (h) => { if (!h) return []; if (!Array.isArray(h)) return { valid: false, error: 'History must be array' }; if (h.length > MAX_HISTORY) return { valid: false, error: `Exceeds ${MAX_HISTORY}` }; return { valid: true, value: h.filter(m => m && typeof m === 'object').map(m => ({ role: ALLOWED_ROLES.includes(m.role) ? m.role : 'user', content: typeof m.content === 'string' ? m.content.slice(0, MAX_PROMPT) : '' })).slice(0, MAX_HISTORY) }; };
@@ -376,7 +377,7 @@ app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISO
 app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
   try {
     const user = await ensureUser(req.auth.userId);
-    const { message, history = [], chatId } = req.body;
+    const { message, history = [], chatId, image } = req.body;
     const pv = validatePrompt(message);
     if (!pv.valid) return res.status(400).json({ error: pv.error });
     const hv = validateHistory(history);
@@ -390,17 +391,48 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const histArr = Array.isArray(hv) ? hv : (hv.value || []);
 
     const [convSummary, feedbackGuidance] = await Promise.all([readChatSummary(chatId, user.id), getFeedbackGuidance(user.id)]);
+
+    // VISION. The council speaks to a text model, so an attached image is
+    // described first and the description travels as context — the same shape
+    // /api/overlay uses.
+    //
+    // Every failure below is returned to the caller rather than swallowed. The
+    // overlay skips vision silently on error, which means it answers as though
+    // no image were attached; that is a worse lie than showing an error, because
+    // the user cannot tell the difference between "didn't look" and "looked and
+    // saw nothing".
+    let imageContext = '';
+    if (image) {
+      const parsed = parseDataUrl(image);
+      if (!parsed) return res.status(400).json({ error: 'Attached image must be a base64-encoded PNG, JPEG, WebP or GIF under 8 MB.' });
+      if (!GOOGLE_API_KEY) return res.status(503).json({ error: 'Image analysis is not configured on this server.' });
+      try {
+        const visionModel = userPlan === 'pro' ? 'gemini-2.5-pro-preview-05-06' : 'gemini-2.5-flash-preview-05-06';
+        imageContext = await callGeminiVision(visionModel, 'Describe this image thoroughly. Include any text, code, UI elements, data and errors visible in it.', parsed.base64, parsed.mime, 1024);
+      } catch (e) {
+        console.error('[COUNCIL] Vision failed:', e.message);
+        return res.status(502).json({ error: "Couldn't analyse the attached image. Try again, or send the message without it." });
+      }
+      if (!imageContext.trim()) return res.status(502).json({ error: "Couldn't read anything from the attached image." });
+      console.log(`[COUNCIL] Vision: ${parsed.mime}, ${Math.round(parsed.bytes / 1024)}KB`);
+    }
+
     // Injected into every prompt path below, so memory and learned preferences
     // stay in lockstep instead of each call site assembling its own context.
     const contextMsgs = [
       ...(convSummary ? [{ role: 'system', content: `CONVERSATION CONTEXT: ${convSummary}` }] : []),
       ...(feedbackGuidance ? [{ role: 'system', content: `USER PREFERENCES, learned from their past ratings. Honour these unless they conflict with accuracy:\n${feedbackGuidance}` }] : []),
+      ...(imageContext ? [{ role: 'system', content: `THE USER ATTACHED AN IMAGE. This is what it shows — treat it as something you can see, and answer with reference to it:\n${imageContext}` }] : []),
     ];
 
     console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | Mem: ${convSummary ? 'Y' : 'N'} | Lang: ${lang}`);
 
     // 0. MEMORY BYPASS
-    if (await isMemoryOrReferenceQuestion(pv.value)) {
+    // Skipped when an image is attached: this branch and the greeting one below
+    // build their own message arrays and never read contextMsgs, so routing here
+    // would drop the image description on the floor. An attached image also means
+    // the user wants that image looked at, not a recap.
+    if (!imageContext && await isMemoryOrReferenceQuestion(pv.value)) {
       console.log('[COUNCIL] Memory question.');
       const memSys = `You are ALOP-AI. The user is asking about a previous conversation. The history below IS your memory. Do NOT say you can't remember. Reference what was discussed. Be concise.${convSummary ? `\n\nSummary: ${convSummary}` : ''}`;
       const memMsgs = [{ role: 'system', content: memSys }, ...histArr.slice(-10), { role: 'user', content: pv.value }];
@@ -412,8 +444,8 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       return;
     }
 
-    // 1. GREETING
-    if (selection.category === 'greeting') {
+    // 1. GREETING (see the note above on why an image skips this)
+    if (!imageContext && selection.category === 'greeting') {
       console.log('[COUNCIL] Greeting.');
       const greetMsgs = [{ role: 'system', content: `You are ALOP-AI. Greet briefly.${convSummary ? ` Context: ${convSummary}` : ''}` }, { role: 'user', content: pv.value }];
       res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');

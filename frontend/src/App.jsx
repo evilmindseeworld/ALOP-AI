@@ -441,9 +441,11 @@ const AuthenticatedApp = () => {
         <MessageActions content={msg.content} onCopy={() => navigator.clipboard.writeText(msg.content)} msgId={msg.id} onFeedback={handleFeedback} feedback={feedback[msg.id]} />
       )}
       <div className="msg-meta">{msg.ts}</div>
+     </div>
     </div>
-  </div>
-))}
+  );
+};
+
 
 const AuthenticatedAppWrapper = () => { 
   const { isSignedIn, isLoaded } = useUser(); 

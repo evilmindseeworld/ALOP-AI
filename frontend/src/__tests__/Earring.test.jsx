@@ -47,7 +47,7 @@ describe("Earring", () => {
     expect(screen.getByLabelText(/ALOP right decorative earring/)).toBeInTheDocument();
   });
 
-  it("locks the model — no camera-controls and pointer-events none", () => {
+  it("locks the model   no camera-controls and pointer-events none", () => {
     render(<Earring side="left" />);
     const viewer = document.querySelector("model-viewer");
 
@@ -55,15 +55,3 @@ describe("Earring", () => {
     expect(viewer).not.toHaveAttribute("camera-controls");
     expect(viewer).toHaveStyle({ pointerEvents: "none" });
   });
-
-  it("jingles once on hover and debounces rapid passes", () => {
-    render(<Earring side="left" />);
-    const earring = screen.getByLabelText(/ALOP left decorative earring/);
-
-    fireEvent.mouseEnter(earring);
-    expect(audioMocks.resume).toHaveBeenCalled();
-
-    fireEvent.mouseEnter(earring);
-    expect(audioMocks.resume).toHaveBeenCalledTimes(1);
-  });
-});

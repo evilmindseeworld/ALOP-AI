@@ -169,37 +169,34 @@ export const Earring = memo(({ side }) => {
     });
   }, []);
 
-  return (
-    <div
-      className={`earring-wrap earring-${side}`}
-      onMouseEnter={playJingle}
-      role="img"
-      aria-label={`ALOP ${side} decorative earring`}
-    >
-      <div className="earring-chain" />
-      <div className="earring-hook" />
-      <div className="earring-pivot">
-        <model-viewer
-          src="/model.glb"
-          camera-orbit="0deg 90deg 105%"
-          field-of-view="30deg"
-          exposure="1.2"
-          shadow-intensity="0"
-          interaction-prompt="none"
-          style={{
-            width: "140px",
-            height: "200px",
-            pointerEvents: "none",
-            // If your model is still sideways after this, tweak the CSS
-            // variables below in App.css instead of editing code.
-            transform:
-              "rotateX(var(--earring-rotate-x, 0deg)) rotateY(var(--earring-rotate-y, 0deg)) rotateZ(var(--earring-rotate-z, 90deg))",
-          }}
-        />
-      </div>
+export const Earring = memo(({ side }) => (
+  <div
+    className={`earring-wrap earring-${side}`}
+    role="img"
+    aria-label={`ALOP ${side} decorative earring`}
+  >
+    <div className="earring-chain" />
+    <div className="earring-hook" />
+    <div className="earring-pivot">
+      <model-viewer
+        src="/model.glb"
+        camera-orbit="0deg 90deg 105%"
+        field-of-view="30deg"
+        exposure="1.2"
+        shadow-intensity="0"
+        interaction-prompt="none"
+        style={{
+          width: "140px",
+          height: "200px",
+          pointerEvents: "none",
+          transform:
+            "rotateX(var(--earring-rotate-x, 0deg)) rotateY(var(--earring-rotate-y, 0deg)) rotateZ(var(--earring-rotate-z, 90deg))",
+        }}
+      />
     </div>
-  );
-});
+  </div>
+));
+
 
 const AuthenticatedApp = () => {
   const { user, isLoaded } = useUser();

@@ -122,15 +122,15 @@ const InputBar = memo(({ onSend, disabled, onFileSelect, onStartCamera, isListen
 });
 
 const Earring = memo(({ side }) => (
-  <div className={`earring-wrap earring-${side}`}>
+  <div className={`earring-wrap earring-${side}`} style={{ pointerEvents: 'auto' }}>
     <div className="earring-chain"></div>
     <div className="earring-hook"></div>
     <div className="earring-pivot">
       <model-viewer 
         src="/model.glb" 
-        camera-orbit="0deg 90deg 105%" 
+        camera-controls
         interaction-prompt="none" 
-        style={{ width: '140px', height: '200px', transform: 'rotate(90deg)' }}
+        style={{ width: '140px', height: '200px' }}
       ></model-viewer>
     </div>
   </div>

@@ -2740,66 +2740,8 @@ textarea:focus-visible {
   position: fixed;
   top: 0;
   z-index: 5;
-  pointer-events: none;
+  pointer-events: auto; /* Changed from none */
   display: flex;
   flex-direction: column;
   align-items: center;
-}
-
-.earring-left { left: 30px; }
-.earring-right { right: 30px; }
-
-.earring-chain {
-  width: 1px;
-  height: 50px;
-  background: linear-gradient(to bottom, transparent 0%, var(--primary-soft) 30%, var(--primary) 100%);
-  opacity: 0.4;
-}
-
-.earring-hook {
-  width: 8px;
-  height: 14px;
-  border: 1.5px solid var(--primary);
-  border-bottom: none;
-  border-radius: 8px 8px 0 0;
-  opacity: 0.5;
-  margin-top: -1px;
-}
-
-.earring-pivot {
-  transform-origin: top center;
-  animation: earringSwing 6s ease-in-out infinite;
-  filter: drop-shadow(0 10px 25px rgba(236, 125, 150, 0.2));
-}
-
-.earring-right .earring-pivot {
-  animation-delay: -3s;
-}
-
-@keyframes earringSwing {
-  0%, 100% { transform: rotate(-4deg); }
-  50% { transform: rotate(4deg); }
-}
-
-.dark .earring-pivot {
-  opacity: 0.8;
-  filter: drop-shadow(0 10px 25px rgba(236, 125, 150, 0.25)) drop-shadow(0 0 15px rgba(94, 201, 152, 0.1));
-}
-
-.light .earring-pivot {
-  opacity: 0.9;
-  filter: drop-shadow(0 10px 25px rgba(201, 30, 94, 0.15));
-}
-
-@media (max-width: 1024px) {
-  .earring-pivot model-viewer { width: 110px !important; height: 160px !important; }
-  .earring-left { left: 15px; }
-  .earring-right { right: 15px; }
-}
-
-@media (max-width: 768px) {
-  .earring-pivot model-viewer { width: 80px !important; height: 120px !important; }
-  .earring-chain { height: 30px; }
-  .earring-left { left: 10px; }
-  .earring-right { right: 10px; }
 }

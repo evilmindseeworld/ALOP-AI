@@ -151,13 +151,16 @@ describe("panels escape the chat stacking context", () => {
     expect(ALL).toMatch(/<SidePanel\b/);
   });
 
-  it("portals SidePanel to document.body, into the root stacking context", () => {
-    const panel = readFileSync(
-      join(dirname(fileURLToPath(import.meta.url)), "..", "components", "SidePanel.jsx"),
-      "utf8"
-    );
-    expect(panel).toMatch(/createPortal\(/);
-    expect(panel).toMatch(/document\.body/);
+  it("portals SidePanel out of the chat stacking context", () => {
+    // SidePanel delegates to the Radix-backed Sheet, which portals to
+    // document.body. Asserted here at the source level so a refactor back to
+    // an inline div is caught; SidePanel.test.jsx asserts the same property by
+    // rendering, which is what actually proves it.
+    const panel = readFileSync(join(componentsDir, "SidePanel.jsx"), "utf8");
+    expect(panel).toMatch(/<SheetContent/);
+
+    const sheet = readFileSync(join(componentsDir, "ui", "sheet.jsx"), "utf8");
+    expect(sheet).toMatch(/DialogPrimitive\.Portal/);
   });
 
   it("keeps every panel on the portal path", () => {

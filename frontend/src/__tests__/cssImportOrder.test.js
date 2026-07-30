@@ -45,11 +45,23 @@ describe("stylesheet manifest", () => {
   });
 
   it("imports every file that exists in src/styles, and no file that does not", () => {
+    // ui-reset.css is deliberately excluded: it belongs to the Tailwind layer
+    // stack, not to this cascade. tailwind.css imports it into layer(base) so
+    // that unlayered App.css still outranks it — see uiResetScope.test.js.
+    const NOT_IN_MANIFEST = new Set(["ui-reset"]);
+
     const onDisk = readdirSync(STYLES)
       .filter((f) => f.endsWith(".css"))
       .map((f) => f.replace(/\.css$/, ""))
+      .filter((f) => !NOT_IN_MANIFEST.has(f))
       .sort();
     expect(onDisk).toEqual([...EXPECTED].sort());
+  });
+
+  it("keeps ui-reset.css out of the App.css cascade", () => {
+    // Importing it here instead would make it unlayered, and it would then beat
+    // the component styles it is meant to sit beneath.
+    expect(MANIFEST).not.toContain("ui-reset");
   });
 
   it("keeps tokens first and the two design passes in order", () => {

@@ -1,0 +1,117 @@
+/* A scoped reset for shadcn/Radix components — NOT Tailwind Preflight.
+ *
+ * WHY NOT PREFLIGHT
+ *
+ * shadcn's documented install replaces the stylesheet with
+ * `@import "tailwindcss"`, which pulls in Preflight. Preflight resets margins,
+ * heading sizes and weights, list styles, border colours and form control
+ * appearance GLOBALLY. Every one of those is load-bearing for the 2,600 lines
+ * of hand-written CSS this app renders with, so importing it does not "add
+ * shadcn" — it visually destroys the app in a way that reads as "the CSS
+ * broke", not "a reset ran". tailwindSetup.test.js exists to keep it out.
+ *
+ * WHAT THIS IS INSTEAD
+ *
+ * The subset Radix primitives actually need, scoped to [data-ui-scope] and its
+ * descendants. A shadcn component mounts inside that scope and gets the reset
+ * it expects; everything else in the app is untouched.
+ *
+ * EVERY SELECTOR HERE MUST BE SCOPED. An unscoped rule reintroduces the
+ * Preflight problem in miniature, so uiResetScope.test.js asserts it rather
+ * than trusting review.
+ */
+
+[data-ui-scope],
+[data-ui-scope] *,
+[data-ui-scope] *::before,
+[data-ui-scope] *::after {
+  box-sizing: border-box;
+  /* Tailwind's border utilities assume a zero-width solid default; without
+   * this, `border` renders nothing because the width is still 0. */
+  border-width: 0;
+  border-style: solid;
+  border-color: var(--border, currentColor);
+}
+
+/* Form controls do not inherit typography from their ancestors by default,
+ * which is why an unstyled Radix button renders in the browser's UI font. */
+[data-ui-scope] button,
+[data-ui-scope] input,
+[data-ui-scope] optgroup,
+[data-ui-scope] select,
+[data-ui-scope] textarea {
+  font-family: inherit;
+  font-size: 100%;
+  font-weight: inherit;
+  line-height: inherit;
+  color: inherit;
+  margin: 0;
+  padding: 0;
+}
+
+[data-ui-scope] button,
+[data-ui-scope] [type="button"],
+[data-ui-scope] [type="submit"] {
+  appearance: button;
+  background-color: transparent;
+  background-image: none;
+  cursor: pointer;
+}
+
+[data-ui-scope] button:disabled {
+  cursor: default;
+}
+
+/* Inline SVGs sit on the text baseline otherwise, which leaves a few pixels of
+ * descender space under every icon in a flex row. */
+[data-ui-scope] svg {
+  display: block;
+  vertical-align: middle;
+}
+
+[data-ui-scope] h1,
+[data-ui-scope] h2,
+[data-ui-scope] h3,
+[data-ui-scope] h4,
+[data-ui-scope] h5,
+[data-ui-scope] h6 {
+  font-size: inherit;
+  font-weight: inherit;
+  margin: 0;
+}
+
+[data-ui-scope] ol,
+[data-ui-scope] ul,
+[data-ui-scope] menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+[data-ui-scope] p,
+[data-ui-scope] figure,
+[data-ui-scope] blockquote,
+[data-ui-scope] dl,
+[data-ui-scope] dd {
+  margin: 0;
+}
+
+[data-ui-scope] img,
+[data-ui-scope] video,
+[data-ui-scope] canvas,
+[data-ui-scope] svg {
+  max-width: 100%;
+  height: auto;
+}
+
+[data-ui-scope] hr {
+  height: 0;
+  color: inherit;
+  border-top-width: 1px;
+}
+
+/* Radix sets aria-hidden and inert on the rest of the page while a modal is
+ * open; this keeps the scrollbar from vanishing and shifting the layout. */
+[data-ui-scope] [data-radix-scroll-area-viewport] {
+  scrollbar-width: none;
+}

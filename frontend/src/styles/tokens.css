@@ -24,6 +24,10 @@
   --text-subtle: #9c8770;
 
   --primary: #ec7d96;
+  /* Text and icons sitting ON a primary or destructive fill. A real token
+   * rather than a literal in the Tailwind bridge, so both systems read the
+   * same value and the bridge stays free of hardcoded colours. */
+  --text-on-fill: #ffffff;
   --primary-soft: #f4a4b5;
   --primary-dim: rgba(236, 125, 150, 0.12);
   --primary-glow: rgba(236, 125, 150, 0.28);

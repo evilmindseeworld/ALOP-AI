@@ -1,5 +1,6 @@
 // frontend/vite.config.js
 import { defineConfig } from 'vitest/config';
+import { fileURLToPath, URL } from 'node:url';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 
@@ -8,6 +9,13 @@ export default defineConfig({
   // Tailwind is additive here — see src/tailwind.css for why Preflight is
   // deliberately not imported. App.css remains the styling source of truth.
   plugins: [react(), tailwindcss()],
+  // shadcn components are generated with `@/` imports. The alias is declared
+  // once here and picked up by the Vitest config below, because a test that
+  // cannot resolve `@/components/ui/button` fails in a way that looks like a
+  // missing file rather than a missing alias.
+  resolve: {
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
   server: {
     port: 5173,
     host: true,
@@ -67,6 +75,9 @@ export default defineConfig({
 
           if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) return 'vendor';
           if (id.includes('@clerk')) return 'auth';
+          // Radix and the shadcn helpers change on their own release cadence,
+          // not with app code, so they get their own cached chunk.
+          if (/@radix-ui|class-variance-authority|tailwind-merge|clsx|cmdk|lucide-react/.test(id)) return 'ui';
           if (/framer-motion|motion-dom|motion-utils|animejs/.test(id)) return 'motion';
           if (/react-markdown|remark|micromark|mdast|unist|hast|vfile|unified|property-information|character-entities|decode-named-character|space-separated|comma-separated|markdown-table|longest-streak|zwitch|trough|bail|devlop|estree|html-url-attributes/.test(id)) return 'markdown';
         }

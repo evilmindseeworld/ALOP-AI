@@ -32,7 +32,7 @@ const DECLARATIONS = CSS.replace(/\/\*[\s\S]*?\*\//g, "");
 // keeps its !important because overriding an author's animation for a user with
 // a vestibular disorder is the one thing the keyword is actually for.
 const IMPORTANT_BUDGET = 3;
-const DUPLICATE_BUDGET = 63;
+const DUPLICATE_BUDGET = 16;
 const FIX_SECTION_BUDGET = 0;
 
 /** Rule blocks at top level, with at-rule context tracked by brace depth. */

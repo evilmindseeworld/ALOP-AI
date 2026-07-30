@@ -481,6 +481,32 @@ const expandShorthands = (rules) => {
   }
 };
 
+/**
+ * `@keyframes` bodies, keyed by name, last definition winning.
+ *
+ * Animations are invisible to the cascade resolver — a keyframes block declares
+ * nothing on any element. But this stylesheet defines `floatGentle`,
+ * `typingBounce` and `emptyFloat` twice each with different values, and the
+ * cleanup deletes duplicates. Deleting the wrong copy changes every animation
+ * using that name, and nothing else here would notice.
+ *
+ * Last wins, which is what a browser does.
+ */
+export function collectKeyframes(css) {
+  const src = stripComments(css);
+  const out = new Map();
+  const pattern = /@(?:-webkit-)?keyframes\s+([\w-]+)\s*\{/g;
+
+  let match;
+  while ((match = pattern.exec(src))) {
+    const open = match.index + match[0].length - 1;
+    const close = matchPair(src, open, "{", "}");
+    out.set(match[1], src.slice(open + 1, close).trim().replace(/\s+/g, " "));
+    pattern.lastIndex = close + 1;
+  }
+  return out;
+}
+
 /** Parse a stylesheet into an ordered, flat list of rules. */
 export function parseStylesheet(css) {
   const src = stripComments(css);

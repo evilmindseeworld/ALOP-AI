@@ -73,6 +73,18 @@ describe("the cascade snapshot notices", () => {
     expect(mutate(".app-root.light .panel-overlay", ".panel-overlay")).not.toBe(BASELINE);
   });
 
+  it("the wrong duplicate @keyframes being deleted", () => {
+    // floatGentle, typingBounce and emptyFloat are each defined twice with
+    // different values. The later definition is the one a browser uses, so
+    // deleting it and keeping the earlier one silently changes the animation.
+    const both = [...CSS.matchAll(/@keyframes\s+floatGentle\s*\{/g)];
+    expect(both.length, "floatGentle should still be defined twice").toBe(2);
+
+    const at = both[1].index;
+    const end = CSS.indexOf("}", CSS.indexOf("}", at) + 1) + 1;
+    expect(buildSnapshot(CSS.slice(0, at) + CSS.slice(end))).not.toBe(BASELINE);
+  });
+
   it("a changed z-index token", () => {
     expect(mutate("--z-panel:", "--z-panel-renamed:")).not.toBe(BASELINE);
   });

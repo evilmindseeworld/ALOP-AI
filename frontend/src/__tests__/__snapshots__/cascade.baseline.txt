@@ -35498,6 +35498,37 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1)>
 
+=== keyframes (last definition wins) ===
+
+bgBreath: 0% { opacity: 0.6; transform: scale(1); } 100% { opacity: 1; transform: scale(1.08); }
+bgPulse: 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.92; transform: scale(1.02); }
+btnShimmer: 0% { left: -100%; } 60% { left: 100%; } 100% { left: 100%; }
+cmdk-in: from { opacity: 0; transform: translateY(-8px) scale(0.985); } to { opacity: 1; transform: none; }
+earringSwing: 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); }
+emptyFloat: 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); }
+emptyPulse: 0%, 100% { transform: scale(1) rotate(0deg); box-shadow: 0 16px 40px var(--primary-glow), 0 0 60px var(--emerald-glow); } 50% { transform: scale(1.06) rotate(2deg); box-shadow: 0 20px 50px var(--primary-glow), 0 0 80px var(--emerald-glow); }
+fabPulse: 0%,100% { box-shadow: 0 4px 20px rgba(236,125,150,0.35); } 50% { box-shadow: 0 4px 20px rgba(236,125,150,0.5), 0 0 0 8px rgba(236,125,150,0.05); }
+fadeIn: from { opacity: 0; } to { opacity: 1; }
+fadeInUp: from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); }
+floatGentle: 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); }
+gradientShift: 0% { background-position: 0% 0; } 50% { background-position: 100% 0; } 100% { background-position: 0% 0; }
+logoPulse: 0%, 100% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 20px rgba(236,125,150,0.2); } 50% { transform: scale(1.1); opacity: 1; box-shadow: 0 0 40px rgba(236,125,150,0.4); }
+messageIn: from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); }
+msgReveal: 0% { opacity: 0; transform: translateY(20px) scale(0.98); filter: blur(4px); } 100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+overlayUp: from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); }
+pulse: 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(196, 101, 112, 0.4); } 50% { opacity: 0.85; box-shadow: 0 0 0 7px rgba(196, 101, 112, 0); }
+pulse-red: 0% { box-shadow: 0 0 0 0 rgba(196, 101, 112, 0.45); } 70% { box-shadow: 0 0 0 8px rgba(196, 101, 112, 0); } 100% { box-shadow: 0 0 0 0 rgba(196, 101, 112, 0); }
+quickUp: from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); }
+scrollGlow: 0% { background-position: 200% 0; opacity: 0.3; } 50% { opacity: 0.8; } 100% { background-position: -200% 0; opacity: 0.3; }
+shimmer: 0% { background-position: 200% center; } 100% { background-position: -200% center; }
+shimmerMove: 0% { background-position: 200% 0; } 100% { background-position: -200% 0; }
+skeletonShimmer: 0% { background-position: 200% 0; } 100% { background-position: -200% 0; }
+slideIn: 0% { opacity: 0; transform: translateX(-20px); } 100% { opacity: 1; transform: translateX(0); }
+spin: to { transform: rotate(360deg); }
+stop-pulse: 0%, 100% { box-shadow: 0 0 0 0 rgba(196, 101, 112, 0.45); } 50% { box-shadow: 0 0 0 6px rgba(196, 101, 112, 0); }
+toastIn: from { opacity: 0; transform: translateX(-50%) translateY(-16px) scale(0.95); } to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { transform: scale(1); opacity: 1; }
+
 === effective tokens per theme root ===
 
 [3] div.app-root.dark

@@ -12,7 +12,7 @@ import { readFileSync } from "node:fs";
 import { dirname, resolve as resolvePath } from "node:path";
 // Extensions are explicit: scripts/strip-redundant-important.mjs imports this
 // module through bare Node, which does not resolve extensionless specifiers.
-import { parseStylesheet, applyRules, substituteVars } from "./cssCascade.js";
+import { parseStylesheet, applyRules, substituteVars, collectKeyframes } from "./cssCascade.js";
 import { APP_MARKUP } from "./fixtures/appMarkup.js";
 
 /**
@@ -229,6 +229,14 @@ export function buildSnapshot(css, html = APP_MARKUP) {
 
     if (section.length) out.push(header, "", ...section);
   }
+
+  // Animations. Invisible to the cascade — a keyframes block declares nothing
+  // on any element — but floatGentle, typingBounce and emptyFloat are each
+  // defined twice with different values, and the cleanup deletes duplicates.
+  const keyframes = collectKeyframes(css);
+  out.push("=== keyframes (last definition wins) ===", "");
+  for (const name of [...keyframes.keys()].sort()) out.push(`${name}: ${keyframes.get(name)}`);
+  out.push("");
 
   // Tokens as they actually resolve on each theme root, fully substituted.
   //

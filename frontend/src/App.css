@@ -1164,6 +1164,22 @@ textarea:focus-visible {
   object-fit: cover;
 }
 
+/* Shown for the moment before the lazy syntax highlighter arrives. Matches the
+ * highlighter's own metrics so the block does not reflow when colour lands. */
+.code-block-plain {
+  margin: 0;
+  padding: 14px;
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  background: #282c34; /* oneDark's background, so the swap is invisible */
+  color: #abb2bf;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.code-copy-btn.is-copied { color: var(--success); }
+
 /* ===== COMMAND PALETTE ===== */
 
 .cmdk-trigger {

@@ -1,9 +1,7 @@
-import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, memo, lazy, Suspense } from "react";
 import { ClerkProvider, useUser, useAuth, SignOutButton } from "@clerk/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import "./App.css";
 import SignInPage from "./SignInPage";
 import MagneticButton from "./components/ui/MagneticButton";
@@ -13,20 +11,31 @@ import Draggable from 'react-draggable';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
 
+// react-syntax-highlighter is ~4.9MB installed and carries a grammar for every
+// language it supports. Loading it lazily keeps it off the critical path for
+// users whose conversation never contains a fenced code block.
+const CodeBlock = lazy(() => import("./components/CodeBlock"));
+
+// The fallback is the same markup the highlighter renders into, so the block
+// appears instantly as plain monospace and gains colour a moment later rather
+// than popping in from nothing.
+const CodeBlockFallback = ({ code }) => (
+  <div className="code-block-wrapper">
+    <pre className="code-block-plain"><code>{code}</code></pre>
+  </div>
+);
+
 // --- Premium Markdown Code Blocks ---
 const markdownComponents = {
   code({ node, inline, className, children, ...props }) {
     const match = /language-(\w+)/.exec(className || '');
     const codeString = String(children).replace(/\n$/, '');
-    
+
     if (!inline) {
       return (
-        <div className="code-block-wrapper">
-          <button className="code-copy-btn" onClick={() => navigator.clipboard.writeText(codeString)}>Copy</button>
-          <SyntaxHighlighter style={oneDark} language={match ? match[1] : 'text'} PreTag="div" {...props}>
-            {codeString}
-          </SyntaxHighlighter>
-        </div>
+        <Suspense fallback={<CodeBlockFallback code={codeString} />}>
+          <CodeBlock language={match ? match[1] : 'text'} code={codeString} {...props} />
+        </Suspense>
       );
     } else {
       return <code className={className} {...props}>{children}</code>;

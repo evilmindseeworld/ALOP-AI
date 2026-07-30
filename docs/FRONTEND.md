@@ -1,14 +1,14 @@
 # ALOP-AI Frontend — Architecture & Conventions
 
-Read this before changing styling. Most of it exists because something went
-wrong repeatedly, and the rule is what stopped it.
+Read this before changing styling or adding a component. Almost everything here
+exists because something went wrong repeatedly, and the rule is what stopped it.
 
 ---
 
 ## 1. The stacking scale — read this before touching any z-index
 
 **Never write a bare `z-index` number.** Use a token from the `--z-*` scale in
-`App.css`.
+`src/styles/tokens.css`.
 
 Nine commits were spent guessing earring z-index values (`302b5aa`, `1c48887`,
 `611a39e`, `76b9d7f`, `bf0647b`, `c00a0ce`, …). The values were never the
@@ -20,7 +20,6 @@ The scale, lowest to highest:
 | Token | Value | Owner |
 |---|---|---|
 | `--z-behind` | 0 | `.app-root::after` background wash |
-| `--z-backdrop` | 1 | `.scanlines` texture |
 | `--z-chat` | 3 | `.chat-main` — **creates a stacking context** |
 | `--z-earring` | 4 | decoration: above chat, below every menu |
 | `--z-sidebar` | 10 | `.sidebar` (desktop) |
@@ -31,8 +30,11 @@ The scale, lowest to highest:
 | `--z-camera` | 100 | fullscreen capture |
 | `--z-toast` | 200 | must clear every panel |
 | `--z-cmdk` | 300 | command palette |
-| `--z-fab` | 9999 | `.quick-ask-fab` |
-| `--z-quick-ask` | 10000 | true top layer |
+
+`--z-backdrop`, `--z-fab` and `--z-quick-ask` were removed: every element they
+named had already been deleted. A scale that lists layers which do not exist is
+worse than a long one — it invites someone to slot a new element "between" two
+phantoms.
 
 ### The trap that keeps catching people
 
@@ -42,82 +44,238 @@ like a bug and has been "fixed" before. It is not one.
 `.chat-main` is positioned and sits at `--z-chat`, which creates a **stacking
 context**. Every descendant is composited within that context, so a child at 80
 is still painted below anything at `--z-earring` (4) or above in the root
-context. A copy button cannot cover the settings panel no matter how large its
-number is.
+context. A copy button cannot cover the settings panel however large its number.
 
 If you remove `position: relative` from `.chat-main`, that containment
 disappears and in-chat controls will punch through every panel.
-`zIndexOrder.test.js` asserts the positioning for exactly this reason.
 
-### The guard
+### Why panels are portalled
 
-`src/__tests__/zIndexOrder.test.js` parses `App.css` and asserts every adjacent
-pair in the scale. It has been verified against two deliberate regressions —
-raising `--z-earring` above the sidebar, and swapping a token for a bare
-number. Both were caught, and the failure names the inverted pair.
+Panels used to render inside `.chat-main` and were therefore trapped in its
+stacking context: `--z-panel` (70) became effectively "3.70" in the root
+context, below the earring's 4. Comparing 70 > 4 and concluding the panel wins
+is exactly the mistake that kept that bug alive — **z-index values in different
+stacking contexts are not comparable**.
 
-To add a layer: add the token to `:root`, then add it to the `ascending` array
-in the test. The test is the spec.
+`SidePanel` renders through a Radix portal to `document.body`. Do not
+"simplify" that away.
+
+### The guards
+
+- `zIndexOrder.test.js` parses the stylesheet, asserts every adjacent pair in
+  the scale, and requires every file in `components/panels/` to route through
+  `SidePanel`. Verified against two deliberate regressions.
+- `SidePanel.test.jsx` renders a panel inside a `.chat-main` and asserts the
+  dialog is **not** a descendant of it. That is the check that actually proves
+  the property; the source-level one only catches an obvious refactor.
+
+To add a layer: add the token to `tokens.css`, then add it to the `ascending`
+array in the test. The test is the spec.
 
 ---
 
-## 2. Tailwind is additive, not a migration
+## 2. The stylesheet is fifteen files, and the import order is the cascade
 
-`App.css` is ~3,100 hand-written lines on a mature token system. Tailwind is
-installed so shadcn/ui and 21st.dev components can be dropped in and new UI can
-be written without growing that file. It is **not** replacing it.
+`src/App.css` is a 31-line **import manifest**. It contains no rules.
 
-### Preflight is deliberately excluded
+```
+tokens → base → layout → sidebar → chat → composer → palette →
+chat-controls → panels → overlay → utilities → skeuomorphism →
+obsidian → decoration → code-blocks
+```
 
-`src/tailwind.css` imports `theme.css` and `utilities.css` separately rather
-than `@import "tailwindcss"`. The bundle import pulls in **Preflight**, which
-globally resets margins, heading sizes and weights, list styles and border
-colours — all of which `App.css` depends on. Importing it wholesale visually
-destroys the app in a way that reads as "the CSS broke", not "a reset ran".
+`skeuomorphism` and `obsidian` are two whole-app design passes — physical
+surfaces, then a darker palette — and they win by being imported late. Moving a
+line in the manifest changes what renders. `cssImportOrder.test.js` asserts the
+list, that every file on disk is imported and no phantom is, and that App.css
+contains nothing but imports.
 
-Verified absent from build output: `font-size:inherit;font-weight:inherit`,
-`list-style:none`, `border-style:solid`, `-moz-tab-size`,
-`text-decoration:inherit`.
+### Why the split exists
 
-If you ever do want Preflight, that is a migration with a visual audit, not a
-one-line change.
+`App.css` was one 3,375-line file with 195 `!important` declarations, seven
+sections named `FIX:`, and `.header-actions` declared three times. All of it
+came from one property: **the file had a bottom**. Appending to a 3,000-line
+stylesheet is easier than finding the rule that already exists, and the cascade
+rewards whoever appends.
+
+Fifteen files named for what they style removes the bottom. Add a rule by
+finding its file. If none fits, the rule probably wants a new file — say so in
+the manifest rather than pasting at the end.
+
+### `!important` is capped at three
+
+Only the `prefers-reduced-motion` block keeps it, because overriding an
+author's animation for a user with a vestibular disorder is the one thing the
+keyword is for. `cssHygiene.test.js` holds the ceiling, counting declarations
+rather than prose so a comment explaining the history does not consume budget.
+
+---
+
+## 3. Cascade snapshots — how CSS changes are proven safe
+
+`src/test/cssCascade.js` parses the stylesheet, computes real specificity,
+walks a fixture DOM with `element.matches()`, and records the winning
+declaration for every property on every element. `cssSnapshot.test.js` compares
+that against a committed baseline.
+
+It exists because neither available alternative works: jsdom's
+`getComputedStyle` does not resolve a cascade across stylesheets — it reports
+*a* value, not *the winner* — and screenshot diffing cannot tell an
+antialiasing delta from a broken layout.
+
+Covered: three widths, a reduced-motion pass, six interaction states, both
+pseudo-elements, both themes, `@keyframes` bodies, and the effective token set
+at each theme root.
+
+### Reading a diff
+
+A diff means **rendering changed**. During a refactor that is a bug, not an
+update — do not regenerate the baseline to make it pass. To regenerate
+deliberately:
+
+```bash
+UPDATE_CASCADE_BASELINE=1 npx vitest run src/__tests__/cssSnapshot.test.js
+```
+
+### Four decisions in the harness that are not obvious
+
+1. **`var()` is resolved before recording.** Moving a token declaration between
+   `:root` and `.app-root` changes where it is declared without changing what
+   anything renders. Recording raw values made that read as a diff.
+2. **Custom-property declarations are not emitted per element**, for the same
+   reason. Effective tokens are reported once per theme root instead, which is
+   move-invariant.
+3. **Shorthands expand into longhands.** Without this, `animation: none` and
+   `animation-duration` never compete — and a browser very much makes them.
+   This gap is what let an audit classify the `prefers-reduced-motion`
+   overrides as redundant and delete them.
+4. **The rule count is not in the header, and `!important` is not printed.**
+   Folding removes rules and force without changing rendering; recording either
+   would false-fail every correct commit.
+
+`cssSnapshotGuard.test.js` is the guard on the guard: mutations of the real
+stylesheet that must be detected (changed token, deleted rule, moved
+breakpoint, wrong duplicate `@keyframes` deleted, dropped load-bearing
+`!important`) and mutations that must **not** be (a rule split in place,
+reformatting, a redundant `!important` added). A harness that has never failed
+is indistinguishable from one that cannot.
+
+### Tooling built on it
+
+| Script | What it does |
+|---|---|
+| `scripts/strip-redundant-important.mjs` | Deletes each `!important` whose removal leaves the snapshot identical |
+| `scripts/explain-important.mjs` | Names the declaration each surviving `!important` suppresses |
+| `scripts/remove-dead-css.mjs` | Deletes rules matching nothing the app renders |
+| `scripts/merge-duplicate-rules.mjs` | Merges duplicate selectors, per group, keeping only invisible merges |
+| `AUDIT_IMPORTANT=1 vitest run src/__tests__/importantAudit.test.js` | Reports which `!important` are load-bearing |
+
+Each verifies in memory and refuses to write if a rendered value moves.
+
+---
+
+## 4. Tailwind and shadcn/ui — additive, and the two traps
+
+Tailwind is here so shadcn components can be dropped in and new UI written
+without growing the hand-written stylesheet. It is **not** replacing it.
+
+### Trap 1: Preflight would destroy the app
+
+shadcn's documented install replaces the stylesheet with
+`@import "tailwindcss"`, which pulls in Preflight. Preflight globally resets
+margins, heading sizes and weights, list styles, border colours and form
+control appearance — all load-bearing here. Importing it does not "add shadcn";
+it breaks the app in a way that reads as "the CSS died".
+
+Instead, `src/styles/ui-reset.css` carries only the subset Radix needs, scoped
+to `[data-ui-scope]`, which every shadcn surface sets. `uiResetScope.test.js`
+asserts every selector is scoped, none is a bare element or universal selector,
+and every rule carries zero specificity via `:where()`.
+
+It also declares **no property a utility sets** — no padding, no margin. Vite
+flattens `@import … layer(base)` into an *anonymous* layer, anonymous layers
+sort after every named one, and layer precedence is resolved before specificity
+is consulted, so even `:where()` did not save it. Not fighting is more robust
+than winning.
+
+### Trap 2: layered utilities are silently dead
+
+`tailwindcss/utilities.css` is imported **unlayered**, and must stay that way.
+
+Unlayered CSS beats layered CSS regardless of specificity. `styles/base.css`
+opens with `* { box-sizing: border-box; margin: 0; padding: 0 }`, so while
+utilities were layered that `*` outranked `.px-4` and every other spacing
+utility. Colour and sizing utilities worked — nothing sets those globally — so
+`bg-primary` and `h-9` applied while `px-4` did nothing, which is invisible
+until you measure it. Every shadcn button rendered with its label clipped.
+
+Unlayered, `.px-4` (0,1,0) beats `*` (0,0,0). App.css still wins against
+existing components because it is imported after `tailwind.css` in `main.jsx`
+and its component rules are also (0,1,0), so source order decides in its
+favour. Both properties hold at once.
+
+`tailwindSetup.test.js` asserts the invariant, not the text: if the stylesheet
+has an unlayered global reset touching a property, utilities must be unlayered.
 
 ### The token bridge
 
-The `@theme inline` block maps Tailwind's palette to the **same CSS variables**
-`App.css` uses, rather than restating literals:
-
-```css
---color-surface-2: var(--surface-2);
-```
-
-So `bg-surface-2` compiles to `background-color: var(--surface-2)` — the same
-value a hand-written rule produces, and both follow the light/dark toggle
-because they dereference the same variable at runtime. A literal here is how
-the two systems would drift: the utility and the rule would render different
-colours and the theme switch would only move one.
-
-The stacking scale is bridged too, so `z-panel` resolves to `var(--z-panel)`
-and `zIndexOrder.test.js` governs Tailwind utilities as well.
-
-`tailwindSetup.test.js` asserts every bridged colour is a `var(...)` reference,
-that only tokens `App.css` actually defines are bridged, and that Preflight
-never sneaks back in.
-
-### Why App.css always wins
-
-Tailwind utilities live in `@layer utilities`. **Unlayered CSS outranks layered
-CSS regardless of source order**, so `App.css` beats any Tailwind utility on
-conflict, by construction. That is intentional: Tailwind is available for new
-components without being able to disturb existing ones.
-
-The consequence: a Tailwind class on an element `App.css` already styles will
-appear to do nothing. That is the safety property working, not a bug. Style new
-components with Tailwind, existing ones with `App.css`.
+shadcn's semantic names map onto the same variables the stylesheet uses, so a
+component and a hand-written rule resolve to identical colours and both follow
+the theme toggle. A literal in the bridge is how the two systems drift; the
+test rejects one, which is why `--text-on-fill` exists as a real token rather
+than `#ffffff` inline.
 
 ---
 
-## 3. Testing
+## 5. Component map
+
+```
+App.jsx                    composition only, ~520 lines
+  components/              Icon, Earring, InputBar, ChatSidebar, MessageList,
+                           CameraOverlay, Skeletons, CommandPalette, SidePanel,
+                           CodeBlock, Crescent
+  components/panels/       SettingsPanel, AdminPanel, UpgradePanel
+  components/ui/           shadcn primitives (button, sheet, dialog, switch,
+                           tabs, tooltip, scroll-area, dropdown-menu, command,
+                           badge, separator, skeleton)
+  hooks/                   useChats, useBilling, useCamera, useSpeechRecognition
+  lib/                     api, format, image, storage, utils
+  overlay/                 OverlayAssistant
+  constants/               starters
+```
+
+`useChats` holds the council streaming loop and is the only genuinely intricate
+piece. Read the comments on its abort path before changing it: it used to
+return without resetting `status`, which disabled the composer permanently the
+first time anyone pressed Stop.
+
+**`InitialLoader` and `OverlayAssistant` render outside `.app-root`.** Any
+token they consume must be reachable from `:root`. The overlay also carries no
+theme class — that window is always dark.
+
+---
+
+## 6. The style gallery
+
+`gallery.html` renders every primitive in every variant plus both themes of the
+app chrome. It is served by the dev server only:
+
+```bash
+npm run dev   # then open /gallery.html
+```
+
+It is deliberately **not** a build input — adding it split the app's CSS across
+chunks, dropping the main stylesheet from 77 kB to 7.77 kB.
+
+The chrome markup is the same fixture the cascade snapshot walks, so the two
+cannot drift: a component missing from the gallery is missing from the guard.
+
+The gallery is how the dead Tailwind utilities were found. The snapshot proves
+which declaration wins; it cannot show you that a button's label is clipped.
+
+---
+
+## 7. Testing
 
 ```bash
 cd frontend && npm test     # Vitest + Testing Library + jsdom
@@ -126,52 +284,63 @@ cd backend  && npm test     # node:test, zero dependencies
 
 ### jsdom gaps stubbed in `src/test/setup.js`
 
-- `<model-viewer>` is registered by a script tag that never runs under jsdom.
-- `Element.prototype.scrollIntoView` / `scrollTo` **do not exist** in jsdom —
-  calling them throws rather than no-opping. Stubbed in setup so the guard
-  stays out of production code, where the methods genuinely exist.
+- `Element.prototype.scrollIntoView` / `scrollTo` do not exist — calling them
+  throws rather than no-opping.
+- **`localStorage` does not exist at all.** Not empty — undefined, so
+  `localStorage.getItem` throws `TypeError`. `lib/storage.js` swallows that,
+  which is exactly why nobody noticed, and it meant every persistence test
+  would silently assert the failure path. An in-memory implementation is
+  installed instead.
+- `<model-viewer>` is registered by a script tag that never runs.
+
+`SpeechRecognition`, `getUserMedia` and `getDisplayMedia` are absent too, and
+are faked per-test rather than globally — the lifecycle around them is the part
+worth asserting.
 
 ### Backend tests live in `backend/lib/`, not next to `server.js`
 
-`server.js` calls `process.exit(1)` at import time when required env vars are
-missing, which makes it untestable by construction — importing it kills the
-test runner. Logic worth asserting on is extracted to `backend/lib/` as pure,
-side-effect-free modules.
-
-Run with a **quoted glob** so Node globs rather than the shell:
-`node --test "lib/**/*.test.js"`. The directory form (`node --test lib/`) fails
-on Node 26 with `MODULE_NOT_FOUND`.
+`server.js` calls `process.exit(1)` at import time when env vars are missing,
+which makes it untestable by construction. Run with a **quoted glob** so Node
+globs rather than the shell: `node --test "lib/**/*.test.js"`. The directory
+form fails on Node 26 with `MODULE_NOT_FOUND`.
 
 ---
 
-## 4. Conventions worth knowing
+## 8. Conventions worth knowing
 
 **Attachment bytes are never persisted.** `buildChatUpdate` whitelists message
-fields and keeps only a `hasImage` flag. A data URL runs to megabytes and a row
-holds up to 200 messages. In-session previews live in `imagePreview`, which the
-server strips; after a reload the flag renders an "Image attached" marker.
+fields and keeps only a `hasImage` flag — a data URL runs to megabytes and a
+row holds up to 200 messages. In-session previews live in `imagePreview`, which
+the server strips.
 
 **`updated_at` bumps only when `messages` change.** The sidebar sorts on it, so
-bumping it on a pin or rename would yank a chat to the top as though it had
-just been posted in.
+bumping on a pin or rename would yank a chat to the top as though it had just
+been posted in.
 
-**Vision failures are surfaced, never swallowed.** `/api/overlay` skips vision
-silently on error and answers as if nothing were attached — indistinguishable
-to the user from having looked and seen nothing. `/api/council` returns
-400/502/503 before the stream opens instead.
+**Vision failures are surfaced, never swallowed.** `/api/council` returns
+400/502/503 before the stream opens rather than answering as if nothing were
+attached.
 
 **MIME is parsed, not assumed.** `parseDataUrl` reads the real type from the
-payload. `/api/overlay` hardcodes `image/png`; screenshots are PNG so it never
-noticed, but an uploaded JPEG went to Gemini under the wrong type.
+payload.
+
+**Only one panel is open at a time.** Settings, Admin and Upgrade occupy the
+same space; two mounted at once renders as one panel with the wrong contents
+behind it.
 
 ---
 
-## 5. Known gaps
+## 9. Known gaps
 
-- **Bundle is ~1.12 MB** (373 kB gzipped) and Vite warns on every build. No
-  code splitting yet; `react-syntax-highlighter` and `animejs` are the obvious
-  candidates for a dynamic import.
-- **`App.css` still carries ~202 `!important` declarations.** The z-index war
-  is over, but the specificity war is not. These are the next target.
-- **`App.jsx` is ~800 lines.** `CommandPalette` was extracted; the settings,
-  admin and upgrade panels are the next candidates.
+- **`.app-root *` sets a transition on every element in the app**, at the same
+  specificity as each component's own rule, so it wins on source order alone.
+  It is why nine duplicate-rule groups could not be merged — consolidating them
+  to a position after it flips the winner. Worth removing, but that is a
+  behaviour change.
+- **16 duplicate top-level selectors remain**, all blocked by the above.
+- **`CommandPalette` is still hand-rolled**, not `components/ui/command`. It
+  carries a regression test for a dropped-first-keystroke bug that took a
+  session to find; a swap has to keep that test passing unmodified.
+- **The overlay assistant has no tests.** It is 144 lines over
+  `getDisplayMedia`, `SpeechRecognition` and `speechSynthesis`, none of which
+  exist in jsdom.

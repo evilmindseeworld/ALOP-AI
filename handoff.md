@@ -151,11 +151,18 @@ A ready-to-paste PR body is committed at `docs/superpowers/PR-slice-a.md`.
 
 ### Blocked on the user — cannot be done from here
 
-1. **Run the Supabase migration.** `backend/migrations/001_per_chat_memory.sql` has **never run**.
-   `feedback_notes` returns `PGRST205`; `chats.conversation_summary` returns `42703`. Until then
-   per-chat memory and feedback-learning are inert (they now fail honestly rather than silently).
-   The local `.env` has no DB connection string or Management API token, so DDL is impossible from
-   here. Editor: `https://supabase.com/dashboard/project/tbjvnqwgnkiynqypswmb/sql/new`
+1. ~~**Run the Supabase migration.**~~ **DONE — 2026-07-30.** Applied and verified via
+   `backend/scripts/run-migration.mjs` using a Management API token. All three checks pass:
+   `chats.conversation_summary`, the `feedback_notes` table, and its index. PostgREST picked them
+   up with no cache reload — the two runtime failures (`42703`, `PGRST205`) both return HTTP 200
+   now. End-to-end write verified through the backend's own supabase-js client: insert, CHECK
+   constraint rejecting a bad `kind` (23514), indexed read, cleanup.
+
+   **The consuming code was already on `main` and deployed** (`e98b682`, `384ec72`), so per-chat
+   memory and feedback-learning went live the moment the schema landed. No deploy required.
+
+   An earlier claim in this file — that DDL was impossible from here — was wrong. The service-role
+   key cannot do it, but the Management API can. See the runner script.
 2. **Set a rotated `SENTRY_DSN` in Render.** Error reporting is off until then. The old DSN is in
    this public repo's git history — rotate, don't reuse.
 3. **Confirm two Render env vars** that could not be probed without a valid token:

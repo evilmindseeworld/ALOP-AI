@@ -107,6 +107,55 @@ describe("parseStylesheet", () => {
   });
 });
 
+describe("shorthand expansion", () => {
+  // Without this the resolver misses the single most important interaction in
+  // the file: `animation: none` on a class beating the prefers-reduced-motion
+  // block's `animation-duration`. It reported that !important as redundant.
+  it("makes a shorthand compete with a longhand another rule declares", () => {
+    const rules = parseStylesheet(
+      "@media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms } }" +
+        ".dot { animation: bounce 1.4s infinite }"
+    );
+    document.body.innerHTML = `<span class="dot"></span>`;
+    const el = document.querySelector(".dot");
+    const out = resolve(el, rules, { reducedMotion: true }, []);
+    // .dot is more specific than *, so without !important the shorthand wins.
+    expect(out.get("animation-duration").value).toContain("bounce 1.4s infinite");
+  });
+
+  it("lets !important on the longhand win it back", () => {
+    const rules = parseStylesheet(
+      "@media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important } }" +
+        ".dot { animation: bounce 1.4s infinite }"
+    );
+    document.body.innerHTML = `<span class="dot"></span>`;
+    const out = resolve(document.querySelector(".dot"), rules, { reducedMotion: true }, []);
+    expect(out.get("animation-duration").value).toBe("0.01ms");
+  });
+
+  it("only materialises longhands the stylesheet actually declares", () => {
+    // Nothing here declares background-clip, so expanding into it would add
+    // noise no rule could ever contest.
+    const [rule] = parseStylesheet(".a { background: red }");
+    expect(rule.declarations.has("background-clip")).toBe(false);
+  });
+
+  it("expands nested shorthands", () => {
+    const rules = parseStylesheet(".a { border: 1px solid red } .b { border-top-color: blue }");
+    expect(rules[0].declarations.has("border-top-color")).toBe(true);
+  });
+
+  it("lets an explicit longhand written after the shorthand win", () => {
+    const rules = parseStylesheet(".a { border: 1px solid red; border-top-color: blue }");
+    expect(rules[0].declarations.get("border-top-color").value).toBe("blue");
+  });
+
+  it("lets a shorthand written after an explicit longhand win", () => {
+    const rules = parseStylesheet(".a { border-top-color: blue; border: 1px solid red }");
+    expect(rules[0].declarations.get("border-top-color").value).toContain("1px solid red");
+  });
+});
+
 describe("mediaMatches", () => {
   it("evaluates width bounds", () => {
     expect(mediaMatches("(max-width: 768px)", { width: 400 })).toBe(true);

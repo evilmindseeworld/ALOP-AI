@@ -42,9 +42,12 @@ describe("the cascade snapshot notices", () => {
   });
 
   it("a load-bearing !important being dropped", () => {
-    // .dark .sidebar's background is overridden late in the file and only wins
-    // on force; without it the earlier .sidebar rule takes over.
-    expect(mutate("background: #0d0d13 !important;", "background: #0d0d13;")).not.toBe(BASELINE);
+    // Only 36 of the original 195 decided anything — see importantAudit. This
+    // is one of them: .dark .sidebar's shadow is set again by a later rule, so
+    // without the force the later value takes over.
+    expect(
+      mutate("-10px 0 40px rgba(0, 0, 0, 0.4) !important;", "-10px 0 40px rgba(0, 0, 0, 0.4);")
+    ).not.toBe(BASELINE);
   });
 
   it("a changed breakpoint", () => {
@@ -68,6 +71,15 @@ describe("the cascade snapshot notices", () => {
     const split = CSS.replace(".sidebar-footer {", ".sidebar-footer { padding: 12px; }\n.sidebar-footer {");
     expect(split).not.toBe(CSS);
     expect(buildSnapshot(split)).toBe(BASELINE);
+  });
+
+  it("but NOT a REDUNDANT !important being dropped", () => {
+    // This is what most of the refactor is. .header-actions is declared three
+    // times with every property forced; the last copy wins on source order
+    // alone, so the force on the first was never doing anything.
+    const relaxed = CSS.replace(/(\.header-actions \{[^}]*?display: flex) !important/s, "$1");
+    expect(relaxed).not.toBe(CSS);
+    expect(buildSnapshot(relaxed)).toBe(BASELINE);
   });
 
   it("but NOT a comment or whitespace change", () => {

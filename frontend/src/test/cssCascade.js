@@ -392,11 +392,101 @@ const parseInto = (src, start, end, media, rules, counter) => {
   }
 };
 
+// --- shorthand expansion --------------------------------------------------
+
+/**
+ * Shorthands, and the longhands they set.
+ *
+ * Without this the resolver treats `animation: none` and `animation-duration:
+ * 0.01ms` as unrelated properties that never compete — and a browser very much
+ * does have them compete. That gap caused a real miss: the audit reported the
+ * prefers-reduced-motion block's !important as redundant and it was deleted,
+ * which would have shipped an accessibility regression. `.typing-dot`'s
+ * `animation` shorthand has higher specificity than the reduced-motion `*`
+ * rule, so the force is exactly what makes the accessibility override win.
+ *
+ * Nested entries (border -> border-width -> border-top-width) expand
+ * recursively.
+ */
+const SHORTHANDS = {
+  animation: ["animation-name", "animation-duration", "animation-timing-function", "animation-delay",
+    "animation-iteration-count", "animation-direction", "animation-fill-mode", "animation-play-state"],
+  transition: ["transition-property", "transition-duration", "transition-timing-function", "transition-delay"],
+  background: ["background-image", "background-position", "background-size", "background-repeat",
+    "background-attachment", "background-origin", "background-clip", "background-color"],
+  font: ["font-style", "font-variant", "font-weight", "font-stretch", "font-size", "line-height", "font-family"],
+  margin: ["margin-top", "margin-right", "margin-bottom", "margin-left"],
+  padding: ["padding-top", "padding-right", "padding-bottom", "padding-left"],
+  inset: ["top", "right", "bottom", "left"],
+  flex: ["flex-grow", "flex-shrink", "flex-basis"],
+  "flex-flow": ["flex-direction", "flex-wrap"],
+  overflow: ["overflow-x", "overflow-y"],
+  gap: ["row-gap", "column-gap"],
+  "place-items": ["align-items", "justify-items"],
+  "place-content": ["align-content", "justify-content"],
+  "place-self": ["align-self", "justify-self"],
+  "grid-template": ["grid-template-rows", "grid-template-columns", "grid-template-areas"],
+  "border-radius": ["border-top-left-radius", "border-top-right-radius",
+    "border-bottom-right-radius", "border-bottom-left-radius"],
+  "border-width": ["border-top-width", "border-right-width", "border-bottom-width", "border-left-width"],
+  "border-style": ["border-top-style", "border-right-style", "border-bottom-style", "border-left-style"],
+  "border-color": ["border-top-color", "border-right-color", "border-bottom-color", "border-left-color"],
+  border: ["border-width", "border-style", "border-color"],
+  "border-top": ["border-top-width", "border-top-style", "border-top-color"],
+  "border-right": ["border-right-width", "border-right-style", "border-right-color"],
+  "border-bottom": ["border-bottom-width", "border-bottom-style", "border-bottom-color"],
+  "border-left": ["border-left-width", "border-left-style", "border-left-color"],
+};
+
+const expandShorthand = (prop, out = new Set()) => {
+  for (const longhand of SHORTHANDS[prop] || []) {
+    out.add(longhand);
+    expandShorthand(longhand, out);
+  }
+  return out;
+};
+
+/**
+ * Give every shorthand declaration a synthetic entry for each longhand it sets.
+ *
+ * Only longhands the stylesheet declares somewhere are materialised. A longhand
+ * no rule ever sets cannot be contested, so expanding into it would triple the
+ * snapshot for no detection value.
+ *
+ * The synthetic value carries the shorthand's full text, so editing the
+ * shorthand still registers as a change on every longhand it controls.
+ */
+const expandShorthands = (rules) => {
+  const declared = new Set();
+  for (const rule of rules) for (const prop of rule.declarations.keys()) declared.add(prop);
+
+  const done = new WeakSet(); // declaration maps are shared across a selector list
+  for (const rule of rules) {
+    if (done.has(rule.declarations)) continue;
+    done.add(rule.declarations);
+
+    // Within one rule, later declarations win — so an explicit longhand only
+    // beats a shorthand if it is written after it.
+    const positionOf = new Map([...rule.declarations.keys()].map((key, i) => [key, i]));
+
+    for (const [prop, decl] of [...rule.declarations]) {
+      if (!SHORTHANDS[prop]) continue;
+      for (const longhand of expandShorthand(prop)) {
+        if (!declared.has(longhand)) continue;
+        const explicitAt = positionOf.get(longhand);
+        if (explicitAt !== undefined && explicitAt > positionOf.get(prop)) continue;
+        rule.declarations.set(longhand, { value: `<${prop}: ${decl.value}>`, important: decl.important });
+      }
+    }
+  }
+};
+
 /** Parse a stylesheet into an ordered, flat list of rules. */
 export function parseStylesheet(css) {
   const src = stripComments(css);
   const rules = [];
   parseInto(src, 0, src.length, null, rules, { n: 0 });
+  expandShorthands(rules);
   return rules;
 }
 

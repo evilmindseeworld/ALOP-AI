@@ -10,8 +10,10 @@
 
 import { readFileSync } from "node:fs";
 import { dirname, resolve as resolvePath } from "node:path";
-import { parseStylesheet, applyRules, substituteVars } from "./cssCascade";
-import { APP_MARKUP } from "./fixtures/appMarkup";
+// Extensions are explicit: scripts/strip-redundant-important.mjs imports this
+// module through bare Node, which does not resolve extensionless specifiers.
+import { parseStylesheet, applyRules, substituteVars } from "./cssCascade.js";
+import { APP_MARKUP } from "./fixtures/appMarkup.js";
 
 /**
  * Read a stylesheet with its local `@import`s inlined, in order.
@@ -109,8 +111,12 @@ const renderDeclarations = (winners, vars) => {
     // Effective tokens are reported separately, per theme, further down.
     if (key.startsWith("--")) continue;
     const decl = winners.get(key);
-    const value = substituteVars(decl.value, vars);
-    lines.push(`${key}: ${value}${decl.important ? " !important" : ""}`);
+    // The !important flag is deliberately NOT printed. It decides which
+    // declaration wins, and the winner's value is what gets recorded — but
+    // removing a redundant !important changes nothing on screen, and that is
+    // most of what this refactor does. Printing the flag would diff on all of
+    // them and make the guard useless for its actual job.
+    lines.push(`${key}: ${substituteVars(decl.value, vars)}`);
   }
   return lines;
 };

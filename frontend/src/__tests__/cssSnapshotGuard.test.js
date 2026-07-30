@@ -41,13 +41,28 @@ describe("the cascade snapshot notices", () => {
     expect(mutate(".sidebar-footer {", ".sidebar-footer-deleted {")).not.toBe(BASELINE);
   });
 
-  it("a load-bearing !important being dropped", () => {
-    // Only 36 of the original 195 decided anything — see importantAudit. This
-    // is one of them: .dark .sidebar's shadow is set again by a later rule, so
-    // without the force the later value takes over.
-    expect(
-      mutate("-10px 0 40px rgba(0, 0, 0, 0.4) !important;", "-10px 0 40px rgba(0, 0, 0, 0.4);")
-    ).not.toBe(BASELINE);
+  it("!important winning from an earlier rule, and not winning without it", () => {
+    // Both directions in one case, and constructed rather than borrowed from
+    // the file. The first version of this test anchored on a real declaration
+    // that the cleanup then deleted, so it started passing for the wrong
+    // reason. A guard that depends on the thing it guards being unchanged is
+    // not a guard.
+    const rule = ".sidebar-footer { padding: 99px";
+
+    // Prepended, so it loses on source order and can only win by force.
+    expect(buildSnapshot(`${rule} !important; }\n${CSS}`)).not.toBe(BASELINE);
+    expect(buildSnapshot(`${rule}; }\n${CSS}`)).toBe(BASELINE);
+  });
+
+  it("keeps the prefers-reduced-motion overrides forced", () => {
+    // Not a mutation — a standing invariant. The audit that drove the bulk
+    // removal originally classified these three as redundant, because the
+    // resolver did not yet model `animation` shorthand against
+    // `animation-duration`. Deleting them ships an app that ignores the user's
+    // reduced-motion setting.
+    expect(CSS).toMatch(/animation-duration:\s*0\.01ms\s*!important/);
+    expect(CSS).toMatch(/animation-iteration-count:\s*1\s*!important/);
+    expect(CSS).toMatch(/transition-duration:\s*0\.01ms\s*!important/);
   });
 
   it("a changed breakpoint", () => {
@@ -73,13 +88,14 @@ describe("the cascade snapshot notices", () => {
     expect(buildSnapshot(split)).toBe(BASELINE);
   });
 
-  it("but NOT a REDUNDANT !important being dropped", () => {
-    // This is what most of the refactor is. .header-actions is declared three
-    // times with every property forced; the last copy wins on source order
-    // alone, so the force on the first was never doing anything.
-    const relaxed = CSS.replace(/(\.header-actions \{[^}]*?display: flex) !important/s, "$1");
-    expect(relaxed).not.toBe(CSS);
-    expect(buildSnapshot(relaxed)).toBe(BASELINE);
+  it("but NOT a REDUNDANT !important being added", () => {
+    // Force on a declaration nothing contests changes no rendered value. This
+    // is stated as an addition rather than a removal because the cleanup left
+    // no redundant !important in the file to remove — all 52 survivors decide
+    // something.
+    const forced = CSS.replace(/(\.sidebar-footer \{\s*padding: 12px);/, "$1 !important;");
+    expect(forced).not.toBe(CSS);
+    expect(buildSnapshot(forced)).toBe(BASELINE);
   });
 
   it("but NOT a comment or whitespace change", () => {

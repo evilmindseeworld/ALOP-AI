@@ -35,18 +35,15 @@ describe("z-index token scale", () => {
   it("defines every layer in the scale", () => {
     expect(Object.keys(tokens).sort()).toEqual(
       [
-        "--z-backdrop",
-        "--z-behind",
+"--z-behind",
         "--z-camera",
         "--z-chat",
         "--z-cmdk",
         "--z-earring",
-        "--z-fab",
-        "--z-in-chat-control",
+"--z-in-chat-control",
         "--z-panel",
         "--z-panel-overlay",
-        "--z-quick-ask",
-        "--z-sidebar",
+"--z-sidebar",
         "--z-sidebar-mobile",
         "--z-toast",
       ].sort()
@@ -56,7 +53,7 @@ describe("z-index token scale", () => {
   it("finds the z-index declarations it expects to govern", () => {
     // A guard on the parser itself: if this drops to zero the other tests
     // would vacuously pass and the scale would be unprotected.
-    expect(declarations.length).toBeGreaterThanOrEqual(13);
+    expect(declarations.length).toBeGreaterThanOrEqual(11);
   });
 
   // The rule that keeps the scale honest. A bare number is how every previous
@@ -80,7 +77,6 @@ describe("stacking order invariants", () => {
   // failure names the two layers that inverted rather than dumping the array.
   const ascending = [
     "--z-behind",
-    "--z-backdrop",
     "--z-chat",
     "--z-earring",
     "--z-sidebar",
@@ -90,8 +86,6 @@ describe("stacking order invariants", () => {
     "--z-camera",
     "--z-toast",
     "--z-cmdk",
-    "--z-fab",
-    "--z-quick-ask",
   ];
 
   for (let i = 0; i < ascending.length - 1; i++) {

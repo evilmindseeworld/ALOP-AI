@@ -35583,8 +35583,6 @@ btnShimmer: 0% { left: -100%; } 60% { left: 100%; } 100% { left: 100%; }
 cmdk-in: from { opacity: 0; transform: translateY(-8px) scale(0.985); } to { opacity: 1; transform: none; }
 earringSwing: 0%, 100% { transform: rotate(-4deg); } 50% { transform: rotate(4deg); }
 emptyFloat: 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); }
-emptyPulse: 0%, 100% { transform: scale(1) rotate(0deg); box-shadow: 0 16px 40px var(--primary-glow), 0 0 60px var(--emerald-glow); } 50% { transform: scale(1.06) rotate(2deg); box-shadow: 0 20px 50px var(--primary-glow), 0 0 80px var(--emerald-glow); }
-fabPulse: 0%,100% { box-shadow: 0 4px 20px rgba(236,125,150,0.35); } 50% { box-shadow: 0 4px 20px rgba(236,125,150,0.5), 0 0 0 8px rgba(236,125,150,0.05); }
 fadeIn: from { opacity: 0; } to { opacity: 1; }
 fadeInUp: from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); }
 floatGentle: 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); }
@@ -35594,13 +35592,10 @@ msgReveal: 0% { opacity: 0; transform: translateY(20px) scale(0.98); filter: blu
 overlayUp: from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); }
 pulse: 0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(196, 101, 112, 0.4); } 50% { opacity: 0.85; box-shadow: 0 0 0 7px rgba(196, 101, 112, 0); }
 pulse-red: 0% { box-shadow: 0 0 0 0 rgba(196, 101, 112, 0.45); } 70% { box-shadow: 0 0 0 8px rgba(196, 101, 112, 0); } 100% { box-shadow: 0 0 0 0 rgba(196, 101, 112, 0); }
-quickUp: from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); }
-scrollGlow: 0% { background-position: 200% 0; opacity: 0.3; } 50% { opacity: 0.8; } 100% { background-position: -200% 0; opacity: 0.3; }
 shimmer: 0% { background-position: 200% center; } 100% { background-position: -200% center; }
 shimmerMove: 0% { background-position: 200% 0; } 100% { background-position: -200% 0; }
 skeletonShimmer: 0% { background-position: 200% 0; } 100% { background-position: -200% 0; }
 slideIn: 0% { opacity: 0; transform: translateX(-20px); } 100% { opacity: 1; transform: translateX(0); }
-spin: to { transform: rotate(360deg); }
 stop-pulse: 0%, 100% { box-shadow: 0 0 0 0 rgba(196, 101, 112, 0.45); } 50% { box-shadow: 0 0 0 6px rgba(196, 101, 112, 0); }
 toastIn: from { opacity: 0; transform: translateX(-50%) translateY(-16px) scale(0.95); } to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
 typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { transform: scale(1); opacity: 1; }
@@ -35654,17 +35649,14 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --text-subtle: #8a8590
   --warning: #c4956a
   --woody: repeating-linear-gradient( 90deg, transparent 0px, transparent 2px, rgba(190, 150, 105, 0.045) 2px, rgba(190, 150, 105, 0.045) 3px, transparent 3px, transparent 6px, rgba(150, 110, 75, 0.03) 6px, rgba(150, 110, 75, 0.03) 7px, transparent 7px, transparent 11px, rgba(170, 130, 85, 0.022) 11px, rgba(170, 130, 85, 0.022) 13px, transparent 13px, transparent 19px, rgba(130, 95, 60, 0.015) 19px, rgba(130, 95, 60, 0.015) 21px, transparent 21px, transparent 28px, rgba(180, 140, 95, 0.01) 28px, rgba(180, 140, 95, 0.01) 31px ), repeating-linear-gradient( 90deg, transparent 0px, transparent 35px, rgba(110, 75, 48, 0.025) 35px, rgba(110, 75, 48, 0.025) 42px, transparent 42px, transparent 70px, rgba(140, 100, 68, 0.018) 70px, rgba(140, 100, 68, 0.018) 76px ), repeating-linear-gradient( 0deg, transparent 0px, transparent 45px, rgba(120, 85, 55, 0.01) 45px, rgba(120, 85, 55, 0.01) 48px )
-  --z-backdrop: 1
   --z-behind: 0
   --z-camera: 100
   --z-chat: 3
   --z-cmdk: 300
   --z-earring: 4
-  --z-fab: 9999
   --z-in-chat-control: 80
   --z-panel: 70
   --z-panel-overlay: 60
-  --z-quick-ask: 10000
   --z-sidebar: 10
   --z-sidebar-mobile: 50
   --z-toast: 200
@@ -35716,17 +35708,14 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --text-subtle: #8a7a6c
   --warning: #9a7040
   --woody: repeating-linear-gradient( 90deg, transparent 0px, transparent 2px, rgba(122, 98, 68, 0.02) 2px, rgba(122, 98, 68, 0.02) 3px, transparent 3px, transparent 7px, rgba(100, 80, 55, 0.014) 7px, rgba(100, 80, 55, 0.014) 9px, transparent 9px, transparent 15px, rgba(110, 88, 60, 0.008) 15px, rgba(110, 88, 60, 0.008) 18px ), repeating-linear-gradient( 90deg, transparent 0px, transparent 40px, rgba(90, 70, 45, 0.012) 40px, rgba(90, 70, 45, 0.012) 48px )
-  --z-backdrop: 1
   --z-behind: 0
   --z-camera: 100
   --z-chat: 3
   --z-cmdk: 300
   --z-earring: 4
-  --z-fab: 9999
   --z-in-chat-control: 80
   --z-panel: 70
   --z-panel-overlay: 60
-  --z-quick-ask: 10000
   --z-sidebar: 10
   --z-sidebar-mobile: 50
   --z-toast: 200
@@ -35736,63 +35725,7 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
 # Either the fixture is missing markup, or the rule is dead. Both are worth
 # knowing, and a change to this list is a change to the stylesheet's reach.
 
-.app-root.light .scanlines
-.attachment-pill
-.attachment-pill button
-.attachment-pill button:hover
-.centered
 .creativity-bar
-.creativity-fill
-.creativity-fill::after
-.creativity-label
 .creativity-track
-.creativity-track:hover
-.creativity-track:hover .creativity-fill::after
-.creativity-value
-.dark .creativity-track
-.divider
-.earring-hook
-.generated-image-container
-.generated-image-container img
-.generated-image-container:hover
-.loading-spinner
-.message-attachment-thumb
-.message-attachments
-.popular-badge
-.pricing-card
-.pricing-card.popular
-.pricing-card:hover
-.quick-ask-answer
-.quick-ask-answer a
-.quick-ask-answer code
-.quick-ask-answer img
-.quick-ask-answer ol
-.quick-ask-answer pre
-.quick-ask-answer ul
-.quick-ask-close
-.quick-ask-close:hover
-.quick-ask-copy
-.quick-ask-copy:hover
-.quick-ask-fab
-.quick-ask-fab:active
-.quick-ask-fab:hover
-.quick-ask-form
-.quick-ask-header
-.quick-ask-input
-.quick-ask-input::placeholder
-.quick-ask-input:focus
-.quick-ask-loading
-.quick-ask-loading .typing-dot
-.quick-ask-loading .typing-dot:nth-child(2)
-.quick-ask-loading .typing-dot:nth-child(3)
 .quick-ask-overlay
-.quick-ask-overlay.dark
-.quick-ask-overlay.light
 .quick-ask-panel
-.quick-ask-send
-.quick-ask-send:disabled
-.quick-ask-send:hover:not(:disabled)
-.quick-ask-title
-.save-badge
-.scanlines
-.theme-card.selected

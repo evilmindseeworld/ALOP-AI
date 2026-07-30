@@ -96,8 +96,12 @@ export function stripComments(css) {
       i = end + 1;
     } else if (ch === "/" && css[i + 1] === "*") {
       const end = css.indexOf("*/", i + 2);
-      i = end === -1 ? css.length : end + 2;
-      out += " ";
+      const stop = end === -1 ? css.length : end + 2;
+      // Blank the comment out rather than dropping it, preserving both length
+      // and newlines. That keeps every rule's recorded offset aligned with the
+      // ORIGINAL source, which is what lets tooling edit the real file.
+      for (let k = i; k < stop; k++) out += css[k] === "\n" ? "\n" : " ";
+      i = stop;
     } else {
       out += ch;
       i++;
@@ -337,16 +341,22 @@ const parseDeclarations = (body) => {
   return decls;
 };
 
-const makeRule = (selector, declarations, media, order) => ({
+const makeRule = (selector, declarations, media, order, start, end, depth) => ({
   selector,
   declarations,
   media,
   order,
+  // Offsets into the ORIGINAL source (stripComments preserves length), so
+  // tooling can delete or rewrite the exact block. `depth` is how many at-rules
+  // enclose it; 0 means top level.
+  start,
+  end,
+  depth,
   specificity: specificity(selector),
   match: analyzeSelector(selector),
 });
 
-const parseInto = (src, start, end, media, rules, counter) => {
+const parseInto = (src, start, end, media, rules, counter, depth = 0) => {
   let i = start;
   while (i < end) {
     // Find the end of this construct's prelude.
@@ -371,11 +381,11 @@ const parseInto = (src, start, end, media, rules, counter) => {
       const name = prelude.slice(1).split(/[\s({]/)[0].toLowerCase();
       if (name === "media") {
         const condition = prelude.slice(prelude.indexOf(" ") + 1).trim();
-        parseInto(src, bodyStart, bodyEnd, media ? `${media} and ${condition}` : condition, rules, counter);
+        parseInto(src, bodyStart, bodyEnd, media ? `${media} and ${condition}` : condition, rules, counter, depth + 1);
       } else if (name === "supports" || name === "layer" || name === "scope") {
         // Assume support; the point is which declarations exist, not whether
         // this particular engine honours them.
-        parseInto(src, bodyStart, bodyEnd, media, rules, counter);
+        parseInto(src, bodyStart, bodyEnd, media, rules, counter, depth + 1);
       }
       // @keyframes, @font-face, @property, @theme: no cascading rules inside.
     } else {
@@ -383,7 +393,7 @@ const parseInto = (src, start, end, media, rules, counter) => {
       if (declarations.size) {
         for (const raw of splitTopLevel(prelude, ",")) {
           const selector = raw.trim().replace(/\s+/g, " ");
-          if (selector) rules.push(makeRule(selector, declarations, media, counter.n++));
+          if (selector) rules.push(makeRule(selector, declarations, media, counter.n++, i, bodyEnd + 1, depth));
         }
       }
     }

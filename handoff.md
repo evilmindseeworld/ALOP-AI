@@ -191,10 +191,20 @@ Committed on `slice-a-phantom-features`: `9189b6c`, `3c21236`, `5fad287`, `7db1a
   Fixed a dropped-first-keystroke bug from deferring focus through rAF.
 - `docs/FRONTEND.md` written.
 
-**Tests: 4 → 110** (29 backend, 81 frontend).
+- **Bundle: 422 kB → 200 kB gzipped on the critical path (-53%).** The
+  syntax highlighter moved behind `React.lazy` and switched to `PrismLight`
+  with 28 registered languages (627 kB → 112 kB, -82%). `manualChunks` moved to
+  the function form after the array form was found emitting a 0.03 kB `vendor`
+  stub with React bundled inside the Clerk chunk. The >500 kB warning no longer
+  fires at all.
+- **Supabase migration runner** at `backend/scripts/run-migration.mjs` —
+  verifies its own work and exits on verification, not on whether the write
+  threw. Ready to fire the moment a credential exists.
 
-Still open in slice C: ~202 `!important` in `App.css`, the 1.13 MB bundle with
-no code splitting, and `App.jsx` at ~800 lines.
+**Tests: 4 → 118** (29 backend, 89 frontend).
+
+Still open in slice C: ~202 `!important` in `App.css`, and `App.jsx` at ~800
+lines (settings/admin/upgrade panels are the next extraction).
 
 ### Plugin installs — results
 

@@ -1,0 +1,40 @@
+/* Display helpers and every media query. */
+
+/* ===== UTILITIES ===== */
+.mobile-only { display: none; }
+.desktop-only { display: flex; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 900px) {
+  .side-panel { width: 340px; }
+}
+
+@media (max-width: 768px) {
+  .mobile-only { display: flex; }
+  .desktop-only { display: none; }
+  .app-shell { padding: 12px; gap: 12px; }
+  .app-header { padding: 10px 14px; border-radius: var(--radius-lg); }
+  .main-title { font-size: 15px; }
+  .app-body { gap: 12px; }
+  .sidebar { width: 260px; }
+  .chat-main { border-radius: var(--radius-lg); }
+  .creativity-bar { padding: 0 14px 4px; margin: 0 12px 2px; }
+  .input-bar { margin: 0 12px 12px; border-radius: var(--radius-lg); }
+  .bubble { max-width: 88%; padding: 12px 16px; }
+  .side-panel { width: 100vw; border-radius: 0; }
+}
+
+@media (max-width: 480px) {
+  .empty-title { font-size: 34px; }
+  .empty-subtitle { font-size: 13px; }
+  .bubble { max-width: 92%; }
+  .creativity-track { max-width: 120px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

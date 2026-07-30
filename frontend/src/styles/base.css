@@ -1,0 +1,98 @@
+/* Reset, scrollbars, and the shimmer used by headings. */
+
+/* ===== RESET & BASE ===== */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  font-family: var(--font-body), -apple-system, BlinkMacSystemFont, sans-serif;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+::selection {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ===== SCROLLBARS ===== */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(94, 201, 152, 0.15);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(94, 201, 152, 0.30);
+}
+
+/* ===== TEXT SHIMMER ===== */
+.text-shimmer {
+  background: linear-gradient(90deg, var(--text-subtle) 0%, var(--primary-soft) 50%, var(--text-subtle) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: shimmerMove 2.5s linear infinite;
+}
+
+@keyframes shimmerMove {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Breathing background gradient */
+.app-root::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--gradient-warm);
+  pointer-events: none;
+  z-index: var(--z-behind);
+  animation: bgBreath 20s ease-in-out infinite alternate;
+}
+
+@keyframes bgBreath {
+  0% { opacity: 0.6; transform: scale(1); }
+  100% { opacity: 1; transform: scale(1.08); }
+}
+.bg-overlay { display: none; }
+
+.app-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding: 18px;
+  gap: 18px;
+}

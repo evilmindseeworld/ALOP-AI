@@ -1,0 +1,198 @@
+/* Design tokens: both themes, the stacking scale, shadows, easings.
+ * Imported first because everything below dereferences these. */
+
+/* ===== FONTS ===== */
+@import url('https://api.fontshare.com/v2/css?f[]=clash-grotesk@400,500,600,700&f[]=switzer@400,500,600,700,800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+
+/* ===== DESIGN TOKENS — DARK (SAKURA NIGHT) ===== */
+:root {
+  color-scheme: dark;
+
+  --bg: #1b120c;
+  --surface: #251912;
+  --surface-2: #2e2118;
+  --surface-3: #3a2b1f;
+  --surface-4: #4a3829;
+
+  --border: rgba(250, 240, 230, 0.08);
+  --border-strong: rgba(250, 240, 230, 0.14);
+  --border-focus: rgba(236, 125, 150, 0.4);
+
+  --text: #faf0e6;
+  --text-muted: #d4b896;
+  --text-subtle: #9c8770;
+
+  --primary: #ec7d96;
+  --primary-soft: #f4a4b5;
+  --primary-dim: rgba(236, 125, 150, 0.12);
+  --primary-glow: rgba(236, 125, 150, 0.28);
+  --glow: rgba(236, 125, 150, 0.28);
+
+  --secondary: #f8b4c8;
+  --secondary-dim: rgba(248, 180, 200, 0.12);
+
+  --emerald: #5ec998;
+  --emerald-soft: #80d8ad;
+  --emerald-dim: rgba(94, 201, 152, 0.12);
+  --emerald-glow: rgba(94, 201, 152, 0.22);
+
+  --accent: #b8946d;
+  --accent-dim: rgba(184, 148, 109, 0.12);
+
+  --success: #5ec998;
+  --warning: #c4956a;
+  --danger: #c46570;
+  --info: #7eb8c4;
+
+  --font-heading: 'Clash Grotesk', sans-serif;
+  --font-body: 'Switzer', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-full: 999px;
+
+  /* ===== STACKING ORDER — THE SINGLE SOURCE OF TRUTH =====
+   *
+   * Nine commits have been spent guessing earring z-index values
+   * (302b5aa, 1c48887, 611a39e, 76b9d7f, bf0647b, c00a0ce and others). The
+   * values were never the problem: nothing recorded the intended order, so
+   * every change was a guess against an invisible spec.
+   *
+   * Rules, in order of importance:
+   *   1. Never write a bare z-index number. Use a token from this scale.
+   *   2. To insert a new layer, add a token here first. The list below IS the
+   *      design; the stylesheet is only its application.
+   *   3. `zIndexOrder.test.js` asserts this ordering. If you reorder these
+   *      tokens the test fails and tells you exactly which pair inverted.
+   *
+   * IMPORTANT — stacking contexts. `.chat-main` sits at --z-chat and is
+   * positioned, so it creates a stacking context. Everything inside it
+   * (including .code-copy-btn at --z-in-chat-control, which looks alarmingly
+   * high) is trapped below --z-earring no matter how large its number is.
+   * That containment is why a copy button at 80 does not cover a panel at 70.
+   */
+  --z-behind: 0;        /* .app-root::after — background wash            */
+  --z-chat: 3;          /* .chat-main — creates a stacking context       */
+  --z-in-chat-control: 80; /* .code-copy-btn — scoped INSIDE --z-chat    */
+  --z-earring: 4;       /* decoration: above the chat, below all menus   */
+  --z-sidebar: 10;      /* .sidebar (desktop)                            */
+  --z-sidebar-mobile: 50; /* .sidebar.mobile — overlays content          */
+  --z-panel-overlay: 60;  /* .panel-overlay — click-away scrim           */
+  --z-panel: 70;          /* .side-panel — settings / admin / upgrade    */
+  --z-camera: 100;        /* .camera-overlay — fullscreen capture        */
+  --z-toast: 200;         /* .toast — must clear every panel             */
+  --z-cmdk: 300;          /* command palette — the top layer             */
+
+  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.5);
+  --shadow-sm: 0 3px 10px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.6);
+
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --gradient-warm: radial-gradient(ellipse at 20% 0%, rgba(236, 125, 150, 0.08) 0%, transparent 50%),
+                   radial-gradient(ellipse at 85% 95%, rgba(94, 201, 152, 0.06) 0%, transparent 45%);
+
+  --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-soft) 100%);
+  --gradient-emerald: linear-gradient(135deg, var(--emerald) 0%, var(--emerald-soft) 100%);
+
+  --woody:
+    /* Fine grain lines */
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 2px,
+      rgba(190, 150, 105, 0.045) 2px, rgba(190, 150, 105, 0.045) 3px,
+      transparent 3px, transparent 6px,
+      rgba(150, 110, 75, 0.03) 6px, rgba(150, 110, 75, 0.03) 7px,
+      transparent 7px, transparent 11px,
+      rgba(170, 130, 85, 0.022) 11px, rgba(170, 130, 85, 0.022) 13px,
+      transparent 13px, transparent 19px,
+      rgba(130, 95, 60, 0.015) 19px, rgba(130, 95, 60, 0.015) 21px,
+      transparent 21px, transparent 28px,
+      rgba(180, 140, 95, 0.01) 28px, rgba(180, 140, 95, 0.01) 31px
+    ),
+    /* Coarse grain bands */
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 35px,
+      rgba(110, 75, 48, 0.025) 35px, rgba(110, 75, 48, 0.025) 42px,
+      transparent 42px, transparent 70px,
+      rgba(140, 100, 68, 0.018) 70px, rgba(140, 100, 68, 0.018) 76px
+    ),
+    /* Cross grain */
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px, transparent 45px,
+      rgba(120, 85, 55, 0.01) 45px, rgba(120, 85, 55, 0.01) 48px
+    );
+}
+
+/* ===== LIGHT MODE (BAMBOO DAY) ===== */
+.app-root.light {
+  color-scheme: light;
+
+  --bg: #e0d6c8;
+  --surface: #ede5d8;
+  --surface-2: #e2d8c8;
+  --surface-3: #d4c9b6;
+  --surface-4: #c4b8a2;
+
+  --border: rgba(61, 40, 32, 0.10);
+  --border-strong: rgba(61, 40, 32, 0.18);
+  --border-focus: rgba(201, 30, 94, 0.4);
+
+  --text: #2d1f1a;
+  --text-muted: #5d4e42;
+  --text-subtle: #8a7a6c;
+
+  --primary: #c91e5e;
+  --primary-soft: #e0607a;
+  --primary-dim: rgba(201, 30, 94, 0.10);
+  --primary-glow: rgba(201, 30, 94, 0.20);
+  --glow: rgba(201, 30, 94, 0.20);
+
+  --secondary: #d63384;
+  --secondary-dim: rgba(214, 51, 132, 0.10);
+
+  --emerald: #3d8b5e;
+  --emerald-soft: #5ba478;
+  --emerald-dim: rgba(61, 139, 94, 0.10);
+  --emerald-glow: rgba(61, 139, 94, 0.15);
+
+  --accent: #7a6244;
+  --accent-dim: rgba(122, 98, 68, 0.10);
+
+  --success: #3d8b5e;
+  --warning: #9a7040;
+  --danger: #a82828;
+  --info: #3d8090;
+
+  --shadow-xs: 0 1px 3px rgba(61, 40, 32, 0.10);
+  --shadow-sm: 0 3px 10px rgba(61, 40, 32, 0.08);
+  --shadow-md: 0 8px 28px rgba(61, 40, 32, 0.10);
+  --shadow-lg: 0 20px 50px rgba(61, 40, 32, 0.15);
+
+  --gradient-warm: radial-gradient(ellipse at 20% 0%, rgba(201, 30, 94, 0.05) 0%, transparent 50%),
+                   radial-gradient(ellipse at 85% 95%, rgba(61, 139, 94, 0.05) 0%, transparent 45%);
+
+  --woody:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 2px,
+      rgba(122, 98, 68, 0.02) 2px, rgba(122, 98, 68, 0.02) 3px,
+      transparent 3px, transparent 7px,
+      rgba(100, 80, 55, 0.014) 7px, rgba(100, 80, 55, 0.014) 9px,
+      transparent 9px, transparent 15px,
+      rgba(110, 88, 60, 0.008) 15px, rgba(110, 88, 60, 0.008) 18px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0px, transparent 40px,
+      rgba(90, 70, 45, 0.012) 40px, rgba(90, 70, 45, 0.012) 48px
+    );
+}

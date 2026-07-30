@@ -1,12 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { readStylesheet } from "../test/cssSnapshot";
 
-const CSS = readFileSync(
-  join(dirname(fileURLToPath(import.meta.url)), "..", "App.css"),
-  "utf8"
-);
+// App.css is an import manifest now, so read it with its imports inlined —
+// in manifest order, which is the cascade.
+const CSS = readStylesheet(join(dirname(fileURLToPath(import.meta.url)), "..", "App.css"));
 
 // Declarations, not prose. A comment explaining why a rule once needed
 // !important contains the word, and counting it would push the budget up for

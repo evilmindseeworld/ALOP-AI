@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { readStylesheet } from "../test/cssSnapshot";
 
 const src = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (f) => readFileSync(join(src, f), "utf8");
@@ -11,7 +12,10 @@ const TAILWIND_CSS = read("tailwind.css");
 // check for the word itself has to look at real declarations only.
 const TAILWIND_CODE = TAILWIND_CSS.replace(/\/\*[\s\S]*?\*\//g, "");
 const MAIN = read("main.jsx");
-const APP_CSS = read("App.css");
+// App.css is an import manifest now; the tokens live in src/styles/tokens.css.
+// Read the whole stylesheet so the bridge is checked against every token the
+// app actually defines, wherever it was split to.
+const APP_CSS = readStylesheet(join(src, "App.css"));
 
 /**
  * Tailwind is additive here. App.css is 2,892 hand-written lines whose base

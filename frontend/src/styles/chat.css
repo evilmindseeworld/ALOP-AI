@@ -1,0 +1,239 @@
+/* The transcript: chat surface, empty state, and messages. */
+
+/* ===== CHAT MAIN ===== */
+.chat-main {
+  flex: 1;
+  display: flex;
+  position: relative;
+  min-width: 0;
+  background: var(--surface);
+  background-image: var(--woody);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  overflow: hidden;
+  transition: background 0.3s ease, border-color 0.3s ease;
+ z-index: var(--z-chat);
+}
+
+.chat-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+/* ===== EMPTY STATE ===== */
+
+/* Suppresses a decorative gradient square an earlier revision generated here.
+ * Was filed under "FIX: empty state logo + kill gradient square" 1,500 lines
+ * further down, where nothing connected it to the element it belongs to. */
+.empty-state::before { display: none; }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.empty-logo {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--radius-xl);
+  object-fit: cover;
+  animation: emptyFloat 4s ease-in-out infinite;
+  box-shadow: 0 16px 40px var(--primary-glow), 0 0 60px var(--emerald-glow);
+  /* anime.js scales and drags this element; touch-action keeps the drag from
+   * being stolen by the browser's own panning on touch devices. */
+  will-change: transform;
+  touch-action: none;
+}
+
+@keyframes emptyFloat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+
+
+
+.empty-title {
+  font-family: var(--font-heading);
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: -1px;
+  color: var(--text);
+  margin: 0;
+  background: none;
+  -webkit-text-fill-color: var(--text);
+  user-select: none;
+}
+
+.empty-subtitle {
+  max-width: 360px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  text-align: center;
+  background: none;
+  -webkit-text-fill-color: var(--text-muted);
+  animation: none;
+}
+
+/* ===== MESSAGES ===== */
+
+/* animation: none is deliberate and load-bearing. Rows are animated by anime.js
+ * from App.jsx, and a CSS animation on the same element fights it — the row
+ * would replay its entrance every time React re-rendered mid-stream. Two later
+ * rules used to re-declare `animation` here (messageIn, then msgReveal) and
+ * this had to be forced to win; both are gone, so it wins on order now. */
+.msg-row {
+  display: flex;
+  gap: 14px;
+  margin-bottom: 22px;
+  animation: none;
+  will-change: transform, opacity;
+}
+
+.msg-row.user { flex-direction: row-reverse; }
+
+.msg-row.user .avatar {
+  background: var(--primary-dim);
+  color: var(--primary);
+  border-color: rgba(236, 125, 150, 0.2);
+}
+
+.msg-row.assistant .avatar {
+  background: var(--emerald-dim);
+  color: var(--emerald);
+  border-color: rgba(94, 201, 152, 0.15);
+}
+
+.msg-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.msg-row.user .msg-content { align-items: flex-end; }
+.msg-row.assistant .msg-content { align-items: flex-start; }
+
+.bubble {
+  padding: 14px 18px;
+  border-radius: var(--radius-lg);
+  border-bottom-left-radius: 5px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  line-height: 1.65;
+  font-size: 14px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-width: 80%;
+  color: var(--text);
+  box-shadow: var(--shadow-xs);
+  transition: background 0.3s ease, border-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+}
+
+.bubble:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+  border-color: var(--border-strong);
+}
+
+.msg-row.user .bubble {
+  background: var(--gradient-primary);
+  color: #ffffff;
+  border-color: transparent;
+  border-bottom-right-radius: 5px;
+  border-bottom-left-radius: var(--radius-lg);
+  box-shadow: 0 4px 16px var(--primary-glow);
+}
+
+.msg-row.user .bubble:hover {
+  box-shadow: 0 8px 24px var(--primary-glow);
+}
+
+/* `.bubble.typing-bubble`, not `.typing-bubble`.
+ *
+ * App.jsx renders this element as `class="bubble typing-bubble"`, so single-
+ * class rules for both match at equal specificity and source order decides.
+ * A later `.bubble` rule in the skeuomorphism pass sets padding: 12px 16px —
+ * which is why the typing rule used to live at the very bottom of the file.
+ * Two classes put it above every `.bubble` rule regardless of position, so
+ * this can sit with the component it belongs to. */
+.bubble.typing-bubble {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 18px;
+  white-space: nowrap;
+}
+
+/* Styled by class, not by `.typing-bubble span`.
+ *
+ * Both selectors matched the same three elements, but the descendant form is
+ * more specific — so the class rule below could only win its size by force,
+ * which is why width and height were !important. The element rule was the
+ * older of the two and is gone; the class is what App.jsx actually renders. */
+.typing-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--emerald);
+  display: inline-block;
+  animation: typingBounce 1.4s infinite ease-in-out both;
+}
+
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+.typing-dot:nth-child(3) { animation-delay: 0s; }
+
+/* These are the values from the SECOND definition of typingBounce, which used
+ * to sit 1,700 lines below the first and therefore won. Keeping the earlier
+ * body while deleting the later one would have quietly changed the animation —
+ * scale(0.5)/opacity 0.4 rather than scale(0.4)/opacity 0.3. */
+@keyframes typingBounce {
+  0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+.msg-meta {
+  font-size: 11px;
+  color: var(--text-subtle);
+  margin-top: 6px;
+  user-select: none;
+}
+
+.msg-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.msg-row:hover .msg-actions { opacity: 1; }
+
+.msg-action-btn {
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.msg-action-btn:hover {
+  background: var(--surface-2);
+  color: var(--text);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}

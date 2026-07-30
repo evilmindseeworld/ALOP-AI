@@ -9,9 +9,18 @@ import CommandPalette from "./components/CommandPalette";
 import Crescent from "./components/Crescent";
 import SidePanel from "./components/SidePanel";
 import { animate, createScope, spring, createDraggable } from "animejs";
+import { uid, isImageRequest, parseImagePrompt, buildImageUrl, generateChatTitle, formatPrice } from "./lib/format";
+import { Storage } from "./lib/storage";
+import { fileToDataUrl, captureVideoFrame } from "./lib/image";
+import { STARTERS } from "./constants/starters";
 import Draggable from 'react-draggable';
 
 const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
+
+// Re-exported for the tests that still import them from here. Both have real
+// homes now (lib/format.js, constants/starters.js) and the tests move with the
+// component extraction in the next commit.
+export { formatPrice, STARTERS };
 
 // react-syntax-highlighter is ~4.9MB installed and carries a grammar for every
 // language it supports. Loading it lazily keeps it off the critical path for
@@ -44,78 +53,6 @@ const markdownComponents = {
     }
   }
 };
-
-// --- Utilities ---
-const uid = () => Math.random().toString(36).slice(2) + Date.now().toString(36);
-const isImageRequest = (text) => text.length <= 100 && /^\/image|^generate image|^create image|^draw image|^make image/i.test(text.trim());
-const parseImagePrompt = (text) => {
-  const m = text.match(/(?:generate|create|draw|make)\s+(?:an?\s+)?image\s*(?:of\s+)?(.+)/i);
-  return m ? m[1].trim() : text.replace(/^\/image\s*/, "").trim();
-};
-const buildImageUrl = (prompt) => `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1024&height=1024&nologo=true`;
-const generateChatTitle = (text) => {
-  const cleaned = text.replace(/^\/image\s*/i, "").replace(/^(generate|create|draw|make)\s+(an?\s+)?image\s*(?:of\s+)?/i, "").trim();
-  if (!cleaned) return "New Chat";
-  const words = cleaned.split(/\s+/);
-  let title = words.slice(0, 6).join(" ");
-  if (words.length > 6) title += "...";
-  return title.charAt(0).toUpperCase() + title.slice(1);
-};
-// Stripe reports minor units (900 = $9.00). Whole amounts drop the decimals so
-// a $9 plan reads "$9" rather than "$9.00".
-export const formatPrice = (p) => {
-  if (!p || p.amount == null) return "";
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: "currency",
-      currency: (p.currency || "usd").toUpperCase(),
-      minimumFractionDigits: p.amount % 100 === 0 ? 0 : 2,
-    }).format(p.amount / 100);
-  } catch {
-    return `${(p.amount / 100).toFixed(2)} ${(p.currency || "").toUpperCase()}`;
-  }
-};
-
-const Storage = {
-  get: (k) => { try { return localStorage.getItem(k); } catch { return null; } },
-  set: (k, v) => { try { localStorage.setItem(k, v); } catch {} },
-};
-
-// The backend rejects anything over 8MB, and a phone photo clears that easily.
-// Downscaling here means the ceiling is never reached rather than reached and
-// reported. 1568px is about where vision models stop gaining detail.
-const MAX_IMAGE_EDGE = 1568;
-const fileToDataUrl = (file) => new Promise((resolve, reject) => {
-  const reader = new FileReader();
-  reader.onerror = () => reject(new Error("Couldn't read that file."));
-  reader.onload = () => {
-    const img = new Image();
-    img.onerror = () => reject(new Error("That file isn't a readable image."));
-    img.onload = () => {
-      const scale = Math.min(1, MAX_IMAGE_EDGE / Math.max(img.width, img.height));
-      // Small enough already — keep the original bytes and its format, so a
-      // PNG screenshot doesn't get needlessly re-encoded into a lossy JPEG.
-      if (scale === 1 && reader.result.length < 4_000_000) return resolve(reader.result);
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL("image/jpeg", 0.85));
-    };
-    img.src = reader.result;
-  };
-  reader.readAsDataURL(file);
-});
-
-// Each starter exercises a different path through the backend — deliberation,
-// live web search, code reasoning, and image generation — so a first-time user
-// sees what the council actually does rather than guessing at it.
-export const STARTERS = [
-  { icon: "⚖️", label: "Weigh a decision", prompt: "Should I use PostgreSQL or MongoDB for a social app with heavy relational queries? Argue both sides, then commit to one." },
-  { icon: "\u{1F50D}", label: "Search the live web", prompt: "What changed in the most recent React release, and should I upgrade?" },
-  { icon: "\u{1F41B}", label: "Debug some code", prompt: "Why would a React useEffect run twice on mount, and when is that actually a bug?" },
-  { icon: "\u{1F3A8}", label: "Generate an image", prompt: "/image a bioluminescent jellyfish drifting through a neon city skyline at night" },
-];
 
 // --- Skeleton Loaders ---
 const InitialLoader = () => (
@@ -508,13 +445,9 @@ const AuthenticatedApp = () => {
   // nothing. toDataURL is what the overlay's screen capture already uses.
   const capturePhoto = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return;
-    const v = videoRef.current, c = canvasRef.current;
-    if (!v.videoWidth) { setToast("Camera isn't ready yet."); return; }
-    const scale = Math.min(1, MAX_IMAGE_EDGE / Math.max(v.videoWidth, v.videoHeight));
-    c.width = Math.round(v.videoWidth * scale);
-    c.height = Math.round(v.videoHeight * scale);
-    c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
-    setAttachedImage(c.toDataURL("image/jpeg", 0.85));
+    const frame = captureVideoFrame(videoRef.current, canvasRef.current);
+    if (!frame) { setToast("Camera isn't ready yet."); return; }
+    setAttachedImage(frame);
     stopCamera();
   }, [stopCamera]);
   

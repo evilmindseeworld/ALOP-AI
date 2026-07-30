@@ -34,10 +34,20 @@ describe("the scoped UI reset", () => {
     expect(bare, `unscoped global selectors: ${bare.join(", ")}`).toEqual([]);
   });
 
-  it("is imported into the base layer, so App.css still outranks it", () => {
-    // Unlayered CSS beats layered CSS regardless of order, so App.css wins any
-    // conflict with this by construction — the same property that makes
-    // Tailwind utilities safe here.
+  it("carries ZERO specificity, so everything beats it", () => {
+    // The reason this matters, found by screenshotting the gallery: the first
+    // version relied on @layer(base) ordering to lose to Tailwind, and did not.
+    // Its `padding: 0` beat `px-4` and every shadcn button rendered with the
+    // label clipped. :where() removes the fight instead of betting on how an
+    // import pipeline preserves layers.
+    const specific = rules
+      .filter((r) => r.specificity.some((n) => n > 0))
+      .map((r) => `${r.selector} = [${r.specificity}]`);
+
+    expect(specific, `these reset rules can beat real styles: ${specific.join(", ")}`).toEqual([]);
+  });
+
+  it("is imported into the base layer as well, for belt and braces", () => {
     expect(TAILWIND).toMatch(/@import\s+"\.\/styles\/ui-reset\.css"\s+layer\(base\)/);
   });
 

@@ -17,7 +17,28 @@
 @layer theme, base, components, utilities;
 
 @import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/utilities.css" layer(utilities);
+
+/* UTILITIES ARE DELIBERATELY UNLAYERED. Read this before "fixing" it.
+ *
+ * They used to be imported with layer(utilities), which looks tidier and was
+ * silently broken: unlayered CSS beats layered CSS regardless of specificity,
+ * and styles/base.css opens with the classic
+ *
+ *     * { box-sizing: border-box; margin: 0; padding: 0; }
+ *
+ * so EVERY padding and margin utility did nothing at all. `bg-primary` and
+ * `h-9` worked, `px-4` did not, and the difference is invisible until you
+ * measure it — every shadcn button rendered with its label clipped.
+ *
+ * Unlayered, `.px-4` (0,1,0) beats `*` (0,0,0) and the utility works. App.css
+ * keeps winning against existing components anyway, because it is imported
+ * AFTER this file in main.jsx and its component rules are also (0,1,0), so
+ * source order decides in its favour. Both properties hold at once.
+ *
+ * tailwindSetup.test.js now renders an element and asserts a utility actually
+ * takes effect, rather than only checking that the text is present.
+ */
+@import "tailwindcss/utilities.css";
 
 /* The subset of Preflight that Radix and shadcn components actually need,
  * scoped to [data-ui-scope]. Preflight itself stays out — see the note above

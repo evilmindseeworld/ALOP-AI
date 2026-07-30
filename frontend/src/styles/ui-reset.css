@@ -16,15 +16,23 @@
  * descendants. A shadcn component mounts inside that scope and gets the reset
  * it expects; everything else in the app is untouched.
  *
- * EVERY SELECTOR HERE MUST BE SCOPED. An unscoped rule reintroduces the
- * Preflight problem in miniature, so uiResetScope.test.js asserts it rather
- * than trusting review.
+ * TWO PROPERTIES EVERY RULE HERE MUST HAVE, both asserted by
+ * uiResetScope.test.js rather than trusted to review:
+ *
+ *   1. SCOPED to [data-ui-scope]. An unscoped rule reintroduces the Preflight
+ *      problem in miniature.
+ *   2. ZERO SPECIFICITY, via :where(). A reset must lose to everything —
+ *      Tailwind utilities, App.css component rules, all of it. The first
+ *      version relied on @layer(base) ordering instead and lost that bet: the
+ *      reset's `padding: 0` beat Tailwind's `px-4`, so every shadcn button
+ *      rendered with its label clipped. :where() removes the fight entirely
+ *      rather than depending on how an import pipeline preserves layers.
  */
 
-[data-ui-scope],
-[data-ui-scope] *,
-[data-ui-scope] *::before,
-[data-ui-scope] *::after {
+:where([data-ui-scope]),
+:where([data-ui-scope]) :where(*),
+:where([data-ui-scope]) :where(*::before),
+:where([data-ui-scope]) :where(*::after) {
   box-sizing: border-box;
   /* Tailwind's border utilities assume a zero-width solid default; without
    * this, `border` renders nothing because the width is still 0. */
@@ -33,78 +41,78 @@
   border-color: var(--border, currentColor);
 }
 
-/* Form controls do not inherit typography from their ancestors by default,
- * which is why an unstyled Radix button renders in the browser's UI font. */
-[data-ui-scope] button,
-[data-ui-scope] input,
-[data-ui-scope] optgroup,
-[data-ui-scope] select,
-[data-ui-scope] textarea {
+/* Typography inheritance only. NOT margin or padding.
+ *
+ * Form controls do not inherit typography from their ancestors, which is why an
+ * unstyled Radix button renders in the browser's UI font.
+ *
+ * Preflight zeroes both here, and copying that broke every shadcn button: the
+ * reset's `padding: 0` beat Tailwind's `px-4` and labels rendered clipped.
+ * Zeroing specificity with :where() did not help, because Vite's CSS pipeline
+ * flattens `@import ... layer(base)` into an ANONYMOUS layer, and an anonymous
+ * layer sorts after every named one — layer precedence is resolved before
+ * specificity is even consulted.
+ *
+ * Rather than fight that, this no longer declares the properties utilities set.
+ * Every shadcn component states its own padding; nothing needs it zeroed first.
+ */
+:where([data-ui-scope]) :where(button),
+:where([data-ui-scope]) :where(input),
+:where([data-ui-scope]) :where(optgroup),
+:where([data-ui-scope]) :where(select),
+:where([data-ui-scope]) :where(textarea) {
   font-family: inherit;
   font-size: 100%;
   font-weight: inherit;
   line-height: inherit;
   color: inherit;
-  margin: 0;
-  padding: 0;
 }
 
-[data-ui-scope] button,
-[data-ui-scope] [type="button"],
-[data-ui-scope] [type="submit"] {
+:where([data-ui-scope]) :where(button),
+:where([data-ui-scope]) :where([type="button"]),
+:where([data-ui-scope]) :where([type="submit"]) {
   appearance: button;
   background-color: transparent;
   background-image: none;
   cursor: pointer;
 }
 
-[data-ui-scope] button:disabled {
+:where([data-ui-scope]) :where(button:disabled) {
   cursor: default;
 }
 
 /* Inline SVGs sit on the text baseline otherwise, which leaves a few pixels of
  * descender space under every icon in a flex row. */
-[data-ui-scope] svg {
+:where([data-ui-scope]) :where(svg) {
   display: block;
   vertical-align: middle;
 }
 
-[data-ui-scope] h1,
-[data-ui-scope] h2,
-[data-ui-scope] h3,
-[data-ui-scope] h4,
-[data-ui-scope] h5,
-[data-ui-scope] h6 {
+:where([data-ui-scope]) :where(h1),
+:where([data-ui-scope]) :where(h2),
+:where([data-ui-scope]) :where(h3),
+:where([data-ui-scope]) :where(h4),
+:where([data-ui-scope]) :where(h5),
+:where([data-ui-scope]) :where(h6) {
   font-size: inherit;
   font-weight: inherit;
-  margin: 0;
 }
 
-[data-ui-scope] ol,
-[data-ui-scope] ul,
-[data-ui-scope] menu {
+:where([data-ui-scope]) :where(ol),
+:where([data-ui-scope]) :where(ul),
+:where([data-ui-scope]) :where(menu) {
   list-style: none;
-  margin: 0;
-  padding: 0;
 }
 
-[data-ui-scope] p,
-[data-ui-scope] figure,
-[data-ui-scope] blockquote,
-[data-ui-scope] dl,
-[data-ui-scope] dd {
-  margin: 0;
-}
-
-[data-ui-scope] img,
-[data-ui-scope] video,
-[data-ui-scope] canvas,
-[data-ui-scope] svg {
+:where([data-ui-scope]) :where(img),
+:where([data-ui-scope]) :where(video),
+:where([data-ui-scope]) :where(canvas),
+:where([data-ui-scope]) :where(svg) {
   max-width: 100%;
   height: auto;
 }
 
-[data-ui-scope] hr {
+:where([data-ui-scope]) :where(hr) {
   height: 0;
   color: inherit;
   border-top-width: 1px;
@@ -112,6 +120,6 @@
 
 /* Radix sets aria-hidden and inert on the rest of the page while a modal is
  * open; this keeps the scrollbar from vanishing and shifting the layout. */
-[data-ui-scope] [data-radix-scroll-area-viewport] {
+:where([data-ui-scope]) :where([data-radix-scroll-area-viewport]) {
   scrollbar-width: none;
 }

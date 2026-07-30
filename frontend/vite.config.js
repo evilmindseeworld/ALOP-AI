@@ -51,6 +51,13 @@ export default defineConfig({
     outDir: 'dist',
     assetsDir: 'assets',
     rollupOptions: {
+      // gallery.html is deliberately NOT a build input.
+      //
+      // Adding it made Vite split CSS across the two entries: the app's
+      // stylesheet dropped from 77 kB to 7.77 kB with the remaining 69 kB moved
+      // into a chunk shared with the gallery. The gallery is a development
+      // tool — the dev server serves /gallery.html directly, which is all the
+      // screenshots need — so it stays out of the production build entirely.
       output: {
         // 'crypto' was listed here as a chunk. It is a Node builtin with no
         // browser equivalent, so Rollup externalised it and emitted an empty

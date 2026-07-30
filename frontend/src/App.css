@@ -375,6 +375,18 @@ textarea:focus-visible {
   transform: scale(1.1) rotate(-3deg);
 }
 
+/* Was declared three times, 250 lines apart, every property forced — under the
+ * headings "FIX: header buttons horizontal" and "FIX: HEADER HORIZONTAL". Same
+ * fix, written twice by someone who could not see the first one. */
+.header-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 /* ===== MAGNETIC ICON BUTTONS ===== */
 .icon-btn {
   width: 38px;
@@ -494,6 +506,8 @@ textarea:focus-visible {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  /* anime.js runs a press-scale on click; see the delegated handler in App.jsx. */
+  will-change: transform;
   padding: 11px;
   border-radius: var(--radius-md);
   background: var(--gradient-primary);
@@ -663,6 +677,12 @@ textarea:focus-visible {
 }
 
 /* ===== EMPTY STATE ===== */
+
+/* Suppresses a decorative gradient square an earlier revision generated here.
+ * Was filed under "FIX: empty state logo + kill gradient square" 1,500 lines
+ * further down, where nothing connected it to the element it belongs to. */
+.empty-state::before { display: none; }
+
 .empty-state {
   display: flex;
   flex-direction: column;
@@ -685,6 +705,10 @@ textarea:focus-visible {
   object-fit: cover;
   animation: emptyFloat 4s ease-in-out infinite;
   box-shadow: 0 16px 40px var(--primary-glow), 0 0 60px var(--emerald-glow);
+  /* anime.js scales and drags this element; touch-action keeps the drag from
+   * being stolen by the browser's own panning on touch devices. */
+  will-change: transform;
+  touch-action: none;
 }
 
 @keyframes emptyFloat {
@@ -722,16 +746,18 @@ textarea:focus-visible {
 }
 
 /* ===== MESSAGES ===== */
+
+/* animation: none is deliberate and load-bearing. Rows are animated by anime.js
+ * from App.jsx, and a CSS animation on the same element fights it — the row
+ * would replay its entrance every time React re-rendered mid-stream. Two later
+ * rules used to re-declare `animation` here (messageIn, then msgReveal) and
+ * this had to be forced to win; both are gone, so it wins on order now. */
 .msg-row {
   display: flex;
   gap: 14px;
   margin-bottom: 22px;
-  animation: messageIn 0.35s var(--ease-out);
-}
-
-@keyframes messageIn {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  animation: none;
+  will-change: transform, opacity;
 }
 
 .msg-row.user { flex-direction: row-reverse; }
@@ -812,27 +838,48 @@ textarea:focus-visible {
   box-shadow: 0 8px 24px var(--primary-glow);
 }
 
-.typing-bubble {
+/* `.bubble.typing-bubble`, not `.typing-bubble`.
+ *
+ * App.jsx renders this element as `class="bubble typing-bubble"`, so single-
+ * class rules for both match at equal specificity and source order decides.
+ * A later `.bubble` rule in the skeuomorphism pass sets padding: 12px 16px —
+ * which is why the typing rule used to live at the very bottom of the file.
+ * Two classes put it above every `.bubble` rule regardless of position, so
+ * this can sit with the component it belongs to. */
+.bubble.typing-bubble {
   display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   padding: 16px 18px;
+  white-space: nowrap;
 }
 
-.typing-bubble span {
-  width: 7px;
-  height: 7px;
+/* Styled by class, not by `.typing-bubble span`.
+ *
+ * Both selectors matched the same three elements, but the descendant form is
+ * more specific — so the class rule below could only win its size by force,
+ * which is why width and height were !important. The element rule was the
+ * older of the two and is gone; the class is what App.jsx actually renders. */
+.typing-dot {
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--emerald);
+  display: inline-block;
   animation: typingBounce 1.4s infinite ease-in-out both;
 }
 
-.typing-bubble span:nth-child(1) { animation-delay: -0.32s; }
-.typing-bubble span:nth-child(2) { animation-delay: -0.16s; }
-.typing-bubble span:nth-child(3) { animation-delay: 0s; }
+.typing-dot:nth-child(1) { animation-delay: -0.32s; }
+.typing-dot:nth-child(2) { animation-delay: -0.16s; }
+.typing-dot:nth-child(3) { animation-delay: 0s; }
 
+/* These are the values from the SECOND definition of typingBounce, which used
+ * to sit 1,700 lines below the first and therefore won. Keeping the earlier
+ * body while deleting the later one would have quietly changed the animation —
+ * scale(0.5)/opacity 0.4 rather than scale(0.4)/opacity 0.3. */
 @keyframes typingBounce {
-  0%, 80%, 100% { transform: scale(0.5); opacity: 0.4; }
+  0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; }
   40% { transform: scale(1); opacity: 1; }
 }
 
@@ -1064,6 +1111,8 @@ textarea:focus-visible {
   background: var(--gradient-primary);
   color: #ffffff;
   border-color: transparent;
+  /* anime.js runs a press-scale on click; see the delegated handler in App.jsx. */
+  will-change: transform;
   border-radius: var(--radius-full);
   box-shadow: 0 4px 14px var(--primary-glow);
 }
@@ -1629,7 +1678,16 @@ textarea:focus-visible {
   padding: 20px;
 }
 
-.setting-row { margin-bottom: 24px; }
+/* Also declared twice at the bottom of the file, under "FIX: settings panel
+ * rows horizontal" and "FIX: SETTINGS ROWS HORIZONTAL". */
+.setting-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 24px;
+}
 
 .setting-label {
   font-size: 11px;
@@ -1639,6 +1697,17 @@ textarea:focus-visible {
   color: var(--text-subtle);
   margin-bottom: 10px;
   user-select: none;
+}
+
+/* The row is horizontal, so the label's stacked-layout margin and wrapping
+ * both have to go. */
+.setting-row .setting-label {
+  margin-bottom: 0;
+  white-space: nowrap;
+}
+
+.setting-row .theme-card {
+  width: auto;
 }
 
 .custom-input {
@@ -2205,57 +2274,6 @@ textarea:focus-visible {
   }
 }
 
-.header-actions {
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-  flex-shrink: 0;
-  align-items: center;
-}
-
-/* ===== FIX: empty state logo + kill gradient square ===== */
-.empty-state::before { display: none; }
-
-.empty-logo {
-  width: 72px;
-  height: 72px;
-  border-radius: var(--radius-xl);
-  object-fit: cover;
-  animation: emptyFloat 4s ease-in-out infinite;
-  box-shadow: 0 16px 40px var(--primary-glow), 0 0 60px var(--emerald-glow);
-}
-
-@keyframes emptyFloat {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-}
-
-/* ===== FIX: header buttons horizontal ===== */
-.header-actions {
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-  flex-shrink: 0;
-  align-items: center;
-}
-
-/* ===== FIX: settings panel rows horizontal ===== */
-.setting-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.setting-row .theme-card {
-  width: auto;
-}
-
-.setting-row .setting-label {
-  margin-bottom: 0;
-}
-
 /* ===== SKEUOMORPHISM ===== */
 
 /* Raised header */
@@ -2457,84 +2475,8 @@ textarea:focus-visible {
     inset 0 -1px 0 rgba(255, 235, 224, 0.02);
 }
 
-/* ===== ANIME.JS PERFORMANCE ===== */
-.empty-logo { will-change: transform; touch-action: none; }
-.msg-row { will-change: transform, opacity; }
-.new-chat-btn, .input-btn.primary { will-change: transform; }
-
-/* ===== FIX: HEADER HORIZONTAL ===== */
-.header-actions {
-  display: flex;
-  flex-direction: row;
-  gap: 8px;
-  flex-shrink: 0;
-  align-items: center;
-  flex-wrap: nowrap;
-}
-
-/* ===== FIX: SETTINGS ROWS HORIZONTAL ===== */
-.setting-row {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.setting-row .setting-label {
-  margin-bottom: 0;
-  white-space: nowrap;
-}
-
-.setting-row .theme-card {
-  width: auto;
-}
-
-/* ===== REMOVE OLD CSS MSG ANIMATION ===== */
-.msg-row {
-  display: flex;
-  gap: 14px;
-  margin-bottom: 22px;
-  animation: none !important;
-}
-
-/* ===== FIX: TYPING INDICATOR HORIZONTAL ===== */
-.typing-bubble {
-  flex-direction: row;
-  white-space: nowrap;
-}
-
-.typing-text {
-  white-space: nowrap;
-  display: inline-block;
-}
-
-/* ===== FIX: TYPING DOTS ANIMATION ===== */
-.typing-bubble {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
-  padding: 16px 18px;
-}
-
-.typing-dot {
-  width: 8px !important;
-  height: 8px !important;
-  border-radius: 50%;
-  background: var(--emerald);
-  display: inline-block;
-  animation: typingBounce 1.4s infinite ease-in-out both !important;
-}
-
-.typing-dot:nth-child(1) { animation-delay: -0.32s; }
-.typing-dot:nth-child(2) { animation-delay: -0.16s; }
-.typing-dot:nth-child(3) { animation-delay: 0s; }
-
-@keyframes typingBounce {
-  0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; }
-  40% { transform: scale(1); opacity: 1; }
-}
+/* The dead `.typing-text` rule that used to sit here matched nothing; it goes
+ * with the rest of the dead selectors in a separate commit. */
 
 /* ===== OVERLAY UI UPDATE (Sakura Night + Skeuomorphic) ===== */
 .overlay-answer-card {
@@ -2927,10 +2869,11 @@ textarea:focus-visible {
   }
 }
 
-/* Reveal animation for messages */
-.msg-row {
-  animation: msgReveal 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
+/* The `.msg-row { animation: msgReveal }` rule that used to sit here never
+ * rendered: `animation: none` in the MESSAGES section beat it by force,
+ * because anime.js owns row entrance from App.jsx. Removing it is what let
+ * that force go. @keyframes msgReveal is now unused and goes with the rest of
+ * the dead CSS. */
 
 @keyframes msgReveal {
   0% {

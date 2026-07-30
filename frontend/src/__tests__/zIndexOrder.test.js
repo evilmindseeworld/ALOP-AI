@@ -124,6 +124,56 @@ describe("stacking order invariants", () => {
   });
 });
 
+/**
+ * The hole this suite originally had.
+ *
+ * It asserted --z-earring (4) < --z-panel (70) and called the ordering safe.
+ * But .side-panel was rendered INSIDE .chat-main, which is positioned at
+ * --z-chat (3) and therefore creates a stacking context. The panel's 70 was
+ * scoped inside that context — effectively "3.70" in the root context — while
+ * the earring's 4 sat in the root context directly. The earrings visibly
+ * covered the settings menu, and every number in the scale said they shouldn't.
+ *
+ * z-index values in DIFFERENT stacking contexts are not comparable. A numeric
+ * assertion alone cannot catch this, so these tests check the DOM instead.
+ */
+describe("panels escape the chat stacking context", () => {
+  const APP = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "..", "App.jsx"),
+    "utf8"
+  );
+
+  it("renders panels through SidePanel rather than inline in .chat-main", () => {
+    // Inline `<div className="side-panel">` inside App.jsx is the shape that
+    // trapped them inside .chat-main's stacking context.
+    expect(APP).not.toMatch(/className="side-panel"/);
+    expect(APP).toMatch(/<SidePanel\b/);
+  });
+
+  it("portals SidePanel to document.body, into the root stacking context", () => {
+    const panel = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "..", "components", "SidePanel.jsx"),
+      "utf8"
+    );
+    expect(panel).toMatch(/createPortal\(/);
+    expect(panel).toMatch(/document\.body/);
+  });
+
+  it("keeps every panel on the portal path", () => {
+    // Admin, Settings and Upgrade. If a fourth panel is added inline it will
+    // inherit the original bug, so the count is asserted rather than assumed.
+    const uses = APP.match(/<SidePanel\b/g) || [];
+    expect(uses.length).toBeGreaterThanOrEqual(3);
+  });
+
+  // Now that panels are siblings of the earring in the root context, the
+  // numeric comparison finally means what it claims to.
+  it("panel outranks the earring once both are in the same context", () => {
+    expect(tokens["--z-panel"]).toBeGreaterThan(tokens["--z-earring"]);
+    expect(tokens["--z-panel-overlay"]).toBeGreaterThan(tokens["--z-earring"]);
+  });
+});
+
 describe("in-chat controls are contained by a stacking context", () => {
   // --z-in-chat-control (80) is numerically higher than --z-panel (70), which
   // looks like a bug and has been "fixed" before. It is not one: .chat-main is

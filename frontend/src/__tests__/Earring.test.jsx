@@ -2,9 +2,13 @@ import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { Earring } from "../App";
 
-// The earrings are decoration. Everything worth asserting here is about them
-// staying out of the way: out of the accessibility tree, out of the way of
-// pointer input, and out of the way of the UI's stacking order.
+// The earrings are decoration. Everything worth asserting is about them staying
+// out of the way: out of the accessibility tree, out of the way of pointer
+// input, and out of the way of the UI's stacking order.
+//
+// They were a <model-viewer> rendering a 9.4MB model.glb — roughly 47x the
+// gzipped JS bundle — served alongside a runtime pulled from an unpinned unpkg
+// URL. They are now an inline SVG of about a kilobyte.
 describe("Earring", () => {
   it("renders one earring per side", () => {
     render(
@@ -20,24 +24,58 @@ describe("Earring", () => {
 
   it("is hidden from assistive technology", () => {
     render(<Earring side="left" />);
-
     expect(screen.getByTestId("earring-left")).toHaveAttribute("aria-hidden", "true");
-  });
-
-  it("never intercepts pointer input or exposes camera controls", () => {
-    render(<Earring side="left" />);
-    const viewer = document.querySelector("model-viewer");
-
-    expect(viewer).toBeInTheDocument();
-    expect(viewer).not.toHaveAttribute("camera-controls");
-    expect(viewer).toHaveStyle({ pointerEvents: "none" });
   });
 
   it("does not set an inline z-index, so App.css stays the source of truth", () => {
     render(<Earring side="left" />);
-
     // A regression here means the stylesheet has been silently overridden
-    // again, which is what caused the earlier run of duelling z-index commits.
+    // again, which caused the earlier run of duelling z-index commits.
     expect(screen.getByTestId("earring-left").style.zIndex).toBe("");
+  });
+
+  it("renders an inline SVG rather than a 3D model", () => {
+    render(<Earring side="left" />);
+    const wrap = screen.getByTestId("earring-left");
+
+    expect(wrap.querySelector("svg.crescent")).toBeInTheDocument();
+    expect(wrap.querySelector("model-viewer")).not.toBeInTheDocument();
+  });
+
+  it("loads no external asset", () => {
+    render(<Earring side="left" />);
+    const wrap = screen.getByTestId("earring-left");
+
+    // The whole point of the swap: no .glb, no CDN runtime, no network at all.
+    expect(wrap.querySelector("img, [src]")).toBeNull();
+    expect(wrap.innerHTML).not.toMatch(/\.glb|unpkg|http/);
+  });
+
+  // Two earrings render at once. Duplicate gradient/mask ids would make the
+  // second instance dereference the first's defs, and in some browsers the
+  // right-hand crescent would silently render as a plain disc.
+  it("gives each side unique SVG def ids", () => {
+    render(
+      <>
+        <Earring side="left" />
+        <Earring side="right" />
+      </>
+    );
+
+    const ids = [...document.querySelectorAll("svg.crescent [id]")].map((n) => n.id);
+    expect(ids.length).toBeGreaterThan(0);
+    expect(new Set(ids).size, `duplicate ids: ${ids.join(", ")}`).toBe(ids.length);
+  });
+
+  it("resolves its own mask and gradient references", () => {
+    render(<Earring side="left" />);
+    const svg = document.querySelector("svg.crescent");
+
+    for (const attr of ["mask", "fill"]) {
+      for (const node of svg.querySelectorAll(`[${attr}^="url("]`)) {
+        const id = node.getAttribute(attr).match(/url\(#(.+?)\)/)?.[1];
+        expect(svg.querySelector(`#${id}`), `${attr} points at missing #${id}`).toBeTruthy();
+      }
+    }
   });
 });

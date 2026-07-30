@@ -3220,8 +3220,14 @@ textarea:focus-visible {
   align-items: center;
 }
 
-.earring-left { left: 8px !important; right: auto !important; }
-.earring-right { right: 8px !important; left: auto !important; }
+.earring-left { left: 8px; right: auto; }
+.earring-right { right: 8px; left: auto; }
+
+/* Mirrored so the pair reads as a matching set rather than two identical
+ * ornaments. Was previously done with an inline transform on <model-viewer>,
+ * which is precisely the inline-vs-stylesheet mismatch that made the earlier
+ * z-index commits so hard to reason about. */
+.earring-right .crescent { transform: scaleX(-1); }
 
 .earring-chain {
   width: 1px;
@@ -3265,17 +3271,26 @@ textarea:focus-visible {
   filter: drop-shadow(0 10px 25px rgba(201, 30, 94, 0.15));
 }
 
+/* No !important here any more. Those existed solely to beat the inline
+ * width/height <model-viewer> set on itself; the SVG carries no inline styles,
+ * so equal-specificity source order is enough and these rules simply win by
+ * appearing later. */
 @media (max-width: 1024px) {
-  .earring-pivot model-viewer { width: 110px !important; height: 160px !important; }
-  .earring-left { left: 15px !important; }
-  .earring-right { right: 15px !important; }
+  .earring-pivot .crescent { width: 86px; height: 118px; }
+  .earring-left { left: 15px; }
+  .earring-right { right: 15px; }
 }
 
 @media (max-width: 768px) {
-  .earring-pivot model-viewer { width: 80px !important; height: 120px !important; }
+  .earring-pivot .crescent { width: 62px; height: 85px; }
   .earring-chain { height: 30px; }
-  .earring-left { left: 10px !important; }
-  .earring-right { right: 10px !important; }
+  .earring-left { left: 10px; }
+  .earring-right { right: 10px; }
+}
+
+/* Below this the ornament competes with the composer for horizontal room. */
+@media (max-width: 560px) {
+  .earring-wrap { display: none; }
 }
 
 /* ===== SKELETON SHIMMER ===== */

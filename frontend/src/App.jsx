@@ -6,6 +6,8 @@ import "./App.css";
 import SignInPage from "./SignInPage";
 import MagneticButton from "./components/ui/MagneticButton";
 import CommandPalette from "./components/CommandPalette";
+import Crescent from "./components/Crescent";
+import SidePanel from "./components/SidePanel";
 import { animate, createScope, spring, createDraggable } from "animejs";
 import Draggable from 'react-draggable';
 
@@ -264,20 +266,13 @@ export const InputBar = memo(({ onSend, disabled, onFileSelect, onStartCamera, i
 // styles silently outrank the stylesheet and that mismatch is what caused the
 // long run of duelling z-index commits.
 //
-// aria-hidden: a 3D ornament carries no information, so announcing it to a
-// screen reader is noise. pointer-events:none is set on the <model-viewer>
-// itself as well as the wrapper, because model-viewer is a custom element that
-// otherwise captures drag gestures aimed at the UI behind it.
+// The ornament used to be a <model-viewer> rendering a 9.4MB model.glb. See
+// components/Crescent.jsx for why that went.
 export const Earring = memo(({ side }) => (
   <div className={`earring-wrap earring-${side}`} aria-hidden="true" data-testid={`earring-${side}`}>
+    <div className="earring-chain" />
     <div className="earring-pivot">
-      <model-viewer
-        src="/model.glb"
-        orientation="0deg 90deg 0deg"
-        camera-orbit="0deg 90deg 105%"
-        interaction-prompt="none"
-        style={{ width: '140px', height: '200px', pointerEvents: 'none', transform: side === 'right' ? 'scaleX(-1)' : 'none' }}
-      ></model-viewer>
+      <Crescent side={side} />
     </div>
   </div>
 ));
@@ -714,8 +709,11 @@ const AuthenticatedApp = () => {
         <div className="app-body">
           <ChatSidebar chats={sortedChats} activeChatId={activeChatId} onSelect={setActiveChatId} onCreate={createChat} onDelete={deleteChat} onRename={renameChat} onPin={togglePinChat} onFavorite={toggleFavoriteChat} collapsed={sidebarCollapsed} mobileOpen={mobileSidebarOpen} setMobileOpen={setMobileSidebarOpen} />
           <div className="chat-main">
-            {showAdmin && isAdmin && (<><div className="panel-overlay" onClick={() => setShowAdmin(false)} /><div className="side-panel"><div className="panel-header"><div className="panel-title">Admin Dashboard</div><button onClick={() => setShowAdmin(false)} className="icon-btn"><Icon name="close" size={18} /></button></div><div className="panel-body"><div className="admin-title">{adminUsers.length} Users</div>{adminUsers.map((u) => (<div key={u.id} className="admin-user-card"><div className="admin-user-header"><img src={u.avatar_url || "https://via.placeholder.com/36"} alt="" className="admin-avatar" /><div><div style={{ fontWeight: 600, fontSize: 13, color: "var(--text)" }}>{u.name || "Anonymous"}</div><div style={{ fontSize: 11, color: "var(--text-subtle)" }}>{u.email || "No email"}</div></div><span className={`admin-badge ${u.plan === "pro" ? "pro" : "free"}`}>{u.plan || "free"}</span>{u.is_admin && <span className="admin-badge admin">Admin</span>}</div><div className="msg-actions" style={{ justifyContent: "flex-start", marginTop: 8, opacity: 1 }}>{u.suspended ? <button onClick={() => adminUnsuspend(u.id)} className="msg-action-btn">Unsuspend</button> : <button onClick={() => adminSuspend(u.id)} className="msg-action-btn">Suspend</button>}<button onClick={() => adminDeleteUser(u.id)} className="msg-action-btn" style={{ color: "var(--danger)" }}>Delete</button></div></div>))}</div></div></>)}
-            {showUpgrade && prices && (<><div className="panel-overlay" onClick={() => setShowUpgrade(false)} /><div className="side-panel"><div className="panel-header"><div className="panel-title">Upgrade to Pro</div><button onClick={() => setShowUpgrade(false)} className="icon-btn"><Icon name="close" size={18} /></button></div><div className="panel-body">
+            <SidePanel open={showAdmin && isAdmin} title="Admin Dashboard" onClose={() => setShowAdmin(false)}>
+              <div className="admin-title">{adminUsers.length} Users</div>
+              {adminUsers.map((u) => (<div key={u.id} className="admin-user-card"><div className="admin-user-header"><img src={u.avatar_url || "https://via.placeholder.com/36"} alt="" className="admin-avatar" /><div><div style={{ fontWeight: 600, fontSize: 13, color: "var(--text)" }}>{u.name || "Anonymous"}</div><div style={{ fontSize: 11, color: "var(--text-subtle)" }}>{u.email || "No email"}</div></div><span className={`admin-badge ${u.plan === "pro" ? "pro" : "free"}`}>{u.plan || "free"}</span>{u.is_admin && <span className="admin-badge admin">Admin</span>}</div><div className="msg-actions" style={{ justifyContent: "flex-start", marginTop: 8, opacity: 1 }}>{u.suspended ? <button onClick={() => adminUnsuspend(u.id)} className="msg-action-btn">Unsuspend</button> : <button onClick={() => adminSuspend(u.id)} className="msg-action-btn">Suspend</button>}<button onClick={() => adminDeleteUser(u.id)} className="msg-action-btn" style={{ color: "var(--danger)" }}>Delete</button></div></div>))}
+            </SidePanel>
+            <SidePanel open={showUpgrade && Boolean(prices)} title="Upgrade to Pro" onClose={() => setShowUpgrade(false)}>
               <div className="plan-grid">
                 <div className="plan-col">
                   <div className="plan-name">Free</div>
@@ -727,12 +725,19 @@ const AuthenticatedApp = () => {
                 </div>
               </div>
               <div className="plan-buttons">
-                <button className="plan-buy" disabled={billingBusy} onClick={() => startCheckout("monthly")}>{billingBusy ? "Opening checkout..." : `Monthly — ${formatPrice(prices.monthly)}`}</button>
-                <button className="plan-buy is-secondary" disabled={billingBusy} onClick={() => startCheckout("yearly")}>{billingBusy ? "Opening checkout..." : `Yearly — ${formatPrice(prices.yearly)}`}</button>
+                <button className="plan-buy" disabled={billingBusy} onClick={() => startCheckout("monthly")}>{billingBusy ? "Opening checkout..." : `Monthly — ${formatPrice(prices?.monthly)}`}</button>
+                <button className="plan-buy is-secondary" disabled={billingBusy} onClick={() => startCheckout("yearly")}>{billingBusy ? "Opening checkout..." : `Yearly — ${formatPrice(prices?.yearly)}`}</button>
               </div>
               <div className="plan-note">Secure checkout by Stripe. Cancel any time.</div>
-            </div></div></>)}
-            {showSettings && (<><div className="panel-overlay" onClick={() => setShowSettings(false)} /><div className="side-panel"><div className="panel-header"><div className="panel-title">Settings</div><button onClick={() => setShowSettings(false)} className="icon-btn"><Icon name="close" size={18} /></button></div><div className="panel-body"><div className="setting-row"><div className="setting-label">Appearance</div><div className={`theme-toggle ${darkMode ? "active" : ""}`} onClick={() => setDarkMode((d) => !d)}><span className="theme-toggle-label">{darkMode ? "Sakura Night" : "Bamboo Day"}</span><div className="theme-toggle-switch" /></div></div><div className="setting-row"><button onClick={() => activeChatId && deleteChat(activeChatId)} className="theme-card">Delete Chat</button></div>{userPlan === "pro" && <div className="setting-row"><button onClick={openBillingPortal} disabled={billingBusy} className="theme-card" style={{ width: "100%" }}>{billingBusy ? "Opening..." : "Manage subscription"}</button></div>}{userPlan !== "pro" && prices && <div className="setting-row"><button onClick={() => { setShowSettings(false); setShowUpgrade(true); }} className="theme-card" style={{ width: "100%" }}>Upgrade to Pro</button></div>}<div className="setting-row"><SignOutButton><button className="theme-card" style={{ width: "100%" }}>Sign Out</button></SignOutButton></div></div></div></>)}
+            </SidePanel>
+            <SidePanel open={showSettings} title="Settings" onClose={() => setShowSettings(false)}>
+              <div className="setting-row"><div className="setting-label">Appearance</div><div className={`theme-toggle ${darkMode ? "active" : ""}`} onClick={() => setDarkMode((d) => !d)}><span className="theme-toggle-label">{darkMode ? "Sakura Night" : "Bamboo Day"}</span><div className="theme-toggle-switch" /></div></div>
+              <div className="setting-row"><button onClick={exportChat} className="theme-card" style={{ width: "100%" }}>Export chat as Markdown</button></div>
+              <div className="setting-row"><button onClick={() => activeChatId && deleteChat(activeChatId)} className="theme-card">Delete Chat</button></div>
+              {userPlan === "pro" && <div className="setting-row"><button onClick={openBillingPortal} disabled={billingBusy} className="theme-card" style={{ width: "100%" }}>{billingBusy ? "Opening..." : "Manage subscription"}</button></div>}
+              {userPlan !== "pro" && prices && <div className="setting-row"><button onClick={() => { setShowSettings(false); setShowUpgrade(true); }} className="theme-card" style={{ width: "100%" }}>Upgrade to Pro</button></div>}
+              <div className="setting-row"><SignOutButton><button className="theme-card" style={{ width: "100%" }}>Sign Out</button></SignOutButton></div>
+            </SidePanel>
             
             <div className="chat-content">
               <div

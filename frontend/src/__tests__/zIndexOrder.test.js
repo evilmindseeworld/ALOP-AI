@@ -39,6 +39,7 @@ describe("z-index token scale", () => {
         "--z-behind",
         "--z-camera",
         "--z-chat",
+        "--z-cmdk",
         "--z-earring",
         "--z-fab",
         "--z-in-chat-control",
@@ -88,6 +89,7 @@ describe("stacking order invariants", () => {
     "--z-panel",
     "--z-camera",
     "--z-toast",
+    "--z-cmdk",
     "--z-fab",
     "--z-quick-ask",
   ];

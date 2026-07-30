@@ -7,6 +7,7 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import "./App.css";
 import SignInPage from "./SignInPage";
 import MagneticButton from "./components/ui/MagneticButton";
+import CommandPalette from "./components/CommandPalette";
 import { animate, createScope, spring, createDraggable } from "animejs";
 import Draggable from 'react-draggable';
 
@@ -296,6 +297,7 @@ const AuthenticatedApp = () => {
   // The existing auto-scroll already stops following once you scroll up, which
   // previously left you stranded with no way back.
   const [showScrollDown, setShowScrollDown] = useState(false);
+  const [showPalette, setShowPalette] = useState(false);
   // null means "no pricing available" — the endpoint 503s when this deployment
   // has no Stripe price IDs, and the upgrade path stays hidden rather than
   // offering a checkout that would fail.
@@ -640,6 +642,29 @@ const AuthenticatedApp = () => {
     setToast("Chat exported.");
   }, [activeMessages, activeChat]);
 
+  const paletteActions = useMemo(() => [
+    { id: "new", label: "New chat", hint: "Ctrl N", icon: "✚", run: () => createChat() },
+    { id: "regen", label: "Regenerate last answer", hint: "Chat", icon: "↻", run: regenerateLast },
+    { id: "export", label: "Export chat as Markdown", hint: "Chat", icon: "⭳", run: exportChat },
+    { id: "theme", label: darkMode ? "Switch to Bamboo Day" : "Switch to Sakura Night", hint: "Appearance", icon: darkMode ? "☀" : "☾", run: () => setDarkMode((d) => !d) },
+    { id: "settings", label: "Open settings", hint: "App", icon: "⚙", run: () => { setShowSettings(true); setShowAdmin(false); setShowUpgrade(false); } },
+    ...(userPlan !== "pro" && prices ? [{ id: "upgrade", label: "Upgrade to Pro", hint: "Billing", icon: "♛", run: () => { setShowUpgrade(true); setShowSettings(false); } }] : []),
+  ], [createChat, regenerateLast, exportChat, darkMode, userPlan, prices]);
+
+  // Ctrl/Cmd-K from anywhere. Capture phase so it still fires while focus is
+  // in the composer, where keydown is otherwise handled locally.
+  useEffect(() => {
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setShowPalette((p) => !p);
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "n") { e.preventDefault(); createChat(); }
+    };
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [createChat]);
+
   if (!isLoaded) return null;
   if (isInitialLoading) return <AppSkeleton />;
   
@@ -650,6 +675,14 @@ const AuthenticatedApp = () => {
        <Earring side="left" />
       <Earring side="right" />
 
+      <CommandPalette
+        open={showPalette}
+        onClose={() => setShowPalette(false)}
+        chats={sortedChats}
+        actions={paletteActions}
+        onSelectChat={setActiveChatId}
+      />
+
       {toast && <div className="toast">{toast}</div>}
       {showCamera && <div className="camera-overlay"><video ref={videoRef} autoPlay className="camera-video" /><canvas ref={canvasRef} style={{ display: "none" }} /><div className="camera-controls"><button onClick={capturePhoto} className="camera-btn primary">Capture</button><button onClick={stopCamera} className="camera-btn secondary">Cancel</button></div></div>}
       
@@ -659,6 +692,9 @@ const AuthenticatedApp = () => {
           <button className="icon-btn desktop-only" onClick={() => setSidebarCollapsed((c) => !c)} title="Chats"><Icon name="menu" size={20} /></button>
           <div className="brand"><img src="/logo.png" alt="" className="header-logo" /><div className="brand-text"><h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1><span className="sub-title">AI Council • {userPlan === "pro" ? "7 models" : "4 models"} • Precision • Learning</span></div></div>
           <div className="header-actions">
+            <button className="cmdk-trigger desktop-only" onClick={() => setShowPalette(true)} title="Search chats and commands (Ctrl+K)" aria-label="Search chats and commands">
+              <Icon name="search" size={14} /> <span>Search</span> <kbd>Ctrl K</kbd>
+            </button>
             {userPlan !== "pro" && prices && <MagneticButton className="upgrade-btn" onClick={() => { setShowUpgrade(true); setShowSettings(false); setShowAdmin(false); }} ariaLabel="Upgrade to Pro"><Icon name="crown" size={14} /> Upgrade</MagneticButton>}
             {isAdmin && <MagneticButton className={`icon-btn admin-btn ${showAdmin ? "active" : ""}`} onClick={() => { setShowAdmin((s) => !s); setShowSettings(false); setShowUpgrade(false); }} ariaLabel="Admin"><Icon name="crown" size={20} /></MagneticButton>}
             <MagneticButton className="icon-btn" onClick={() => setDarkMode((d) => !d)} ariaLabel="Theme"><Icon name={darkMode ? "sun" : "moon"} size={20} /></MagneticButton>

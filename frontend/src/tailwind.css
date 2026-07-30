@@ -1,0 +1,73 @@
+/* ===== TAILWIND — ADDITIVE, NOT A MIGRATION =====
+ *
+ * App.css is 2,892 hand-written lines built on a mature token system. Tailwind
+ * is here so shadcn/ui and 21st.dev components can be dropped in, and so new
+ * UI can be written without growing that file — NOT to replace it.
+ *
+ * PREFLIGHT IS DELIBERATELY OMITTED. The default `@import "tailwindcss"` pulls
+ * in Preflight, which resets margins, font sizes, heading weights, list styles
+ * and border colours globally. Every one of those is load-bearing for App.css,
+ * so importing it wholesale would visually destroy the app in a way that is
+ * tedious to diagnose (it looks like "the CSS broke", not "a reset ran").
+ *
+ * Importing theme + utilities only gives the utility classes with no global
+ * side effects. If you ever DO want Preflight, that is a migration with a
+ * visual audit, not a one-line change.
+ */
+@layer theme, base, components, utilities;
+
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* Bridge Tailwind's palette to the existing design tokens so a utility and a
+ * hand-written rule cannot drift apart. `bg-surface-2` and
+ * `background: var(--surface-2)` now resolve to the same colour by
+ * construction, and both follow the light/dark theme switch automatically
+ * because they dereference the same variable at runtime.
+ */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-4: var(--surface-4);
+
+  --color-border-subtle: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-border-focus: var(--border-focus);
+
+  --color-text: var(--text);
+  --color-text-muted: var(--text-muted);
+  --color-text-subtle: var(--text-subtle);
+
+  --color-primary: var(--primary);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-emerald: var(--emerald);
+  --color-accent: var(--accent);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+
+  /* The stacking scale is shared too, so a Tailwind `z-panel` cannot silently
+   * disagree with App.css. zIndexOrder.test.js governs both.
+   */
+  --z-index-chat: var(--z-chat);
+  --z-index-earring: var(--z-earring);
+  --z-index-sidebar: var(--z-sidebar);
+  --z-index-panel-overlay: var(--z-panel-overlay);
+  --z-index-panel: var(--z-panel);
+  --z-index-camera: var(--z-camera);
+  --z-index-toast: var(--z-toast);
+}

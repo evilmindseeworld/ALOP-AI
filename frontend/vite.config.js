@@ -1,10 +1,13 @@
 // frontend/vite.config.js
 import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import tailwindcss from '@tailwindcss/vite';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react()],
+  // Tailwind is additive here — see src/tailwind.css for why Preflight is
+  // deliberately not imported. App.css remains the styling source of truth.
+  plugins: [react(), tailwindcss()],
   server: {
     port: 5173,
     host: true,

@@ -26,7 +26,7 @@ const CSS = readFileSync(
 // The floor for IMPORTANT_BUDGET is 3, not 0. The prefers-reduced-motion block
 // keeps its !important because overriding an author's animation for a user with
 // a vestibular disorder is the one thing the keyword is actually for.
-const IMPORTANT_BUDGET = 195;
+const IMPORTANT_BUDGET = 52;
 const DUPLICATE_BUDGET = 63;
 const FIX_SECTION_BUDGET = 7;
 

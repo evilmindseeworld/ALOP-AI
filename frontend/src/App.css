@@ -2157,8 +2157,8 @@ textarea:focus-visible {
 .overlay-thumb-pill button:hover { color: var(--text); }
 
 /* ===== UTILITIES ===== */
-.mobile-only { display: none !important; }
-.desktop-only { display: flex !important; }
+.mobile-only { display: none; }
+.desktop-only { display: flex; }
 .centered {
   display: flex;
   align-items: center;
@@ -2206,15 +2206,15 @@ textarea:focus-visible {
 }
 
 .header-actions {
-  display: flex !important;
-  flex-direction: row !important;
-  gap: 8px !important;
-  flex-shrink: 0 !important;
-  align-items: center !important;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  flex-shrink: 0;
+  align-items: center;
 }
 
 /* ===== FIX: empty state logo + kill gradient square ===== */
-.empty-state::before { display: none !important; }
+.empty-state::before { display: none; }
 
 .empty-logo {
   width: 72px;
@@ -2232,28 +2232,28 @@ textarea:focus-visible {
 
 /* ===== FIX: header buttons horizontal ===== */
 .header-actions {
-  display: flex !important;
-  flex-direction: row !important;
-  gap: 8px !important;
-  flex-shrink: 0 !important;
-  align-items: center !important;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  flex-shrink: 0;
+  align-items: center;
 }
 
 /* ===== FIX: settings panel rows horizontal ===== */
 .setting-row {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 12px !important;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .setting-row .theme-card {
-  width: auto !important;
+  width: auto;
 }
 
 .setting-row .setting-label {
-  margin-bottom: 0 !important;
+  margin-bottom: 0;
 }
 
 /* ===== SKEUOMORPHISM ===== */
@@ -2263,9 +2263,9 @@ textarea:focus-visible {
   box-shadow:
     0 1px 0 rgba(255, 235, 224, 0.04) inset,
     0 -1px 0 rgba(0, 0, 0, 0.3) inset,
-    0 4px 12px rgba(0, 0, 0, 0.4) !important;
-  border-top-color: rgba(255, 235, 224, 0.06) !important;
-  border-bottom-color: rgba(0, 0, 0, 0.5) !important;
+    0 4px 12px rgba(0, 0, 0, 0.4);
+  border-top-color: rgba(255, 235, 224, 0.06);
+  border-bottom-color: rgba(0, 0, 0, 0.5);
 }
 
 /* Recessed sidebar */
@@ -2273,7 +2273,7 @@ textarea:focus-visible {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.3),
     inset 0 -1px 0 rgba(255, 235, 224, 0.03),
-    0 4px 12px rgba(0, 0, 0, 0.3) !important;
+    0 4px 12px rgba(0, 0, 0, 0.3);
   border-top-color: rgba(255, 235, 224, 0.05) !important;
 }
 
@@ -2281,8 +2281,8 @@ textarea:focus-visible {
 .chat-main {
   box-shadow:
     inset 0 1px 3px rgba(0, 0, 0, 0.25),
-    0 4px 12px rgba(0, 0, 0, 0.3) !important;
-  border-top-color: rgba(255, 235, 224, 0.05) !important;
+    0 4px 12px rgba(0, 0, 0, 0.3);
+  border-top-color: rgba(255, 235, 224, 0.05);
 }
 
 /* 3D raised new chat button */
@@ -2291,7 +2291,7 @@ textarea:focus-visible {
     0 1px 0 rgba(255, 255, 255, 0.15) inset,
     0 -1px 0 rgba(0, 0, 0, 0.2) inset,
     0 2px 4px rgba(0, 0, 0, 0.3),
-    0 4px 8px var(--primary-glow) !important;
+    0 4px 8px var(--primary-glow);
 }
 
 .new-chat-btn:active {
@@ -2311,8 +2311,8 @@ textarea:focus-visible {
 
 .icon-btn:active {
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.3) inset !important;
-  transform: translateY(1px) !important;
+    0 1px 2px rgba(0, 0, 0, 0.3) inset;
+  transform: translateY(1px);
 }
 
 /* Recessed input bar */
@@ -2320,9 +2320,9 @@ textarea:focus-visible {
   box-shadow:
     inset 0 1px 3px rgba(0, 0, 0, 0.3),
     inset 0 -1px 0 rgba(255, 235, 224, 0.03),
-    0 2px 8px rgba(0, 0, 0, 0.3) !important;
-  border-top-color: rgba(0, 0, 0, 0.4) !important;
-  border-bottom-color: rgba(255, 235, 224, 0.03) !important;
+    0 2px 8px rgba(0, 0, 0, 0.3);
+  border-top-color: rgba(0, 0, 0, 0.4);
+  border-bottom-color: rgba(255, 235, 224, 0.03);
 }
 
 /* Physical message cards */
@@ -2339,12 +2339,12 @@ textarea:focus-visible {
 .theme-toggle {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.3),
-    0 1px 0 rgba(255, 235, 224, 0.03) inset !important;
+    0 1px 0 rgba(255, 235, 224, 0.03) inset;
   border-color: rgba(0, 0, 0, 0.3) !important;
 }
 
 .theme-toggle-switch {
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
 }
 
 .theme-toggle-switch::after {
@@ -2358,7 +2358,7 @@ textarea:focus-visible {
   box-shadow:
     inset 0 1px 0 rgba(255, 235, 224, 0.04),
     0 8px 32px rgba(0, 0, 0, 0.5),
-    0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 /* Raised pricing cards */
@@ -2366,9 +2366,9 @@ textarea:focus-visible {
   box-shadow:
     0 1px 0 rgba(255, 235, 224, 0.03) inset,
     0 -1px 0 rgba(0, 0, 0, 0.15) inset,
-    0 2px 6px rgba(0, 0, 0, 0.25) !important;
-  border-top: 1px solid rgba(255, 235, 224, 0.04) !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2) !important;
+    0 2px 6px rgba(0, 0, 0, 0.25);
+  border-top: 1px solid rgba(255, 235, 224, 0.04);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 /* Raised theme cards */
@@ -2376,13 +2376,13 @@ textarea:focus-visible {
   box-shadow:
     0 1px 0 rgba(255, 235, 224, 0.03) inset,
     0 -1px 0 rgba(0, 0, 0, 0.15) inset,
-    0 1px 3px rgba(0, 0, 0, 0.2) !important;
+    0 1px 3px rgba(0, 0, 0, 0.2);
   border-top: 1px solid rgba(255, 235, 224, 0.03) !important;
 }
 
 .theme-card:active {
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3) !important;
-  transform: translateY(1px) !important;
+  transform: translateY(1px);
 }
 
 /* Raised admin cards */
@@ -2419,18 +2419,18 @@ textarea:focus-visible {
 }
 
 .input-btn:active {
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Recessed creativity slider */
 .creativity-track {
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 .creativity-fill::after {
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+    0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 /* Raised avatar */
@@ -2438,7 +2438,7 @@ textarea:focus-visible {
   box-shadow:
     0 1px 0 rgba(255, 235, 224, 0.04) inset,
     0 -1px 0 rgba(0, 0, 0, 0.2) inset,
-    0 1px 3px rgba(0, 0, 0, 0.2) !important;
+    0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* Raised toast */
@@ -2446,15 +2446,15 @@ textarea:focus-visible {
   box-shadow:
     0 1px 0 rgba(255, 235, 224, 0.04) inset,
     0 -1px 0 rgba(0, 0, 0, 0.2) inset,
-    0 8px 24px rgba(0, 0, 0, 0.4) !important;
-  border-top-color: rgba(255, 235, 224, 0.05) !important;
+    0 8px 24px rgba(0, 0, 0, 0.4);
+  border-top-color: rgba(255, 235, 224, 0.05);
 }
 
 /* Chat item pressed in */
 .chat-item.active {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.2),
-    inset 0 -1px 0 rgba(255, 235, 224, 0.02) !important;
+    inset 0 -1px 0 rgba(255, 235, 224, 0.02);
 }
 
 /* ===== ANIME.JS PERFORMANCE ===== */
@@ -2464,30 +2464,30 @@ textarea:focus-visible {
 
 /* ===== FIX: HEADER HORIZONTAL ===== */
 .header-actions {
-  display: flex !important;
-  flex-direction: row !important;
-  gap: 8px !important;
-  flex-shrink: 0 !important;
-  align-items: center !important;
-  flex-wrap: nowrap !important;
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+  flex-shrink: 0;
+  align-items: center;
+  flex-wrap: nowrap;
 }
 
 /* ===== FIX: SETTINGS ROWS HORIZONTAL ===== */
 .setting-row {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  justify-content: space-between !important;
-  gap: 12px !important;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .setting-row .setting-label {
-  margin-bottom: 0 !important;
-  white-space: nowrap !important;
+  margin-bottom: 0;
+  white-space: nowrap;
 }
 
 .setting-row .theme-card {
-  width: auto !important;
+  width: auto;
 }
 
 /* ===== REMOVE OLD CSS MSG ANIMATION ===== */
@@ -2500,30 +2500,30 @@ textarea:focus-visible {
 
 /* ===== FIX: TYPING INDICATOR HORIZONTAL ===== */
 .typing-bubble {
-  flex-direction: row !important;
-  white-space: nowrap !important;
+  flex-direction: row;
+  white-space: nowrap;
 }
 
 .typing-text {
-  white-space: nowrap !important;
+  white-space: nowrap;
   display: inline-block;
 }
 
 /* ===== FIX: TYPING DOTS ANIMATION ===== */
 .typing-bubble {
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-  gap: 6px !important;
-  padding: 16px 18px !important;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 6px;
+  padding: 16px 18px;
 }
 
 .typing-dot {
   width: 8px !important;
   height: 8px !important;
-  border-radius: 50% !important;
-  background: var(--emerald) !important;
-  display: inline-block !important;
+  border-radius: 50%;
+  background: var(--emerald);
+  display: inline-block;
   animation: typingBounce 1.4s infinite ease-in-out both !important;
 }
 
@@ -2538,26 +2538,26 @@ textarea:focus-visible {
 
 /* ===== OVERLAY UI UPDATE (Sakura Night + Skeuomorphic) ===== */
 .overlay-answer-card {
-  background: var(--surface) !important;
-  background-image: var(--woody) !important;
-  border: 1px solid var(--border-strong) !important;
-  color: var(--text) !important;
-  box-shadow: 0 1px 0 rgba(255, 235, 224, 0.04) inset, 0 -1px 0 rgba(0, 0, 0, 0.3) inset, 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+  background: var(--surface);
+  background-image: var(--woody);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  box-shadow: 0 1px 0 rgba(255, 235, 224, 0.04) inset, 0 -1px 0 rgba(0, 0, 0, 0.3) inset, 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .overlay-bar {
-  background: var(--surface) !important;
-  background-image: var(--woody) !important;
-  border: 1px solid var(--border-strong) !important;
-  box-shadow: 0 1px 0 rgba(255, 235, 224, 0.04) inset, 0 -1px 0 rgba(0, 0, 0, 0.3) inset, 0 8px 24px rgba(0, 0, 0, 0.4) !important;
+  background: var(--surface);
+  background-image: var(--woody);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 1px 0 rgba(255, 235, 224, 0.04) inset, 0 -1px 0 rgba(0, 0, 0, 0.3) inset, 0 8px 24px rgba(0, 0, 0, 0.4);
 }
 
 .overlay-input {
-  color: var(--text) !important;
+  color: var(--text);
 }
 
 .overlay-input::placeholder {
-  color: var(--text-subtle) !important;
+  color: var(--text-subtle);
 }
 
 .overlay-icon {
@@ -2568,7 +2568,7 @@ textarea:focus-visible {
 .overlay-action {
   background: var(--surface-3) !important;
   color: var(--text-muted) !important;
-  box-shadow: 0 1px 0 rgba(255, 235, 224, 0.03) inset, 0 -1px 0 rgba(0, 0, 0, 0.15) inset !important;
+  box-shadow: 0 1px 0 rgba(255, 235, 224, 0.03) inset, 0 -1px 0 rgba(0, 0, 0, 0.15) inset;
 }
 
 .overlay-action:hover {
@@ -2577,14 +2577,14 @@ textarea:focus-visible {
 }
 
 .overlay-submit {
-  background: var(--gradient-primary) !important;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.15) inset, 0 -1px 0 rgba(0, 0, 0, 0.2) inset, 0 2px 6px var(--primary-glow) !important;
+  background: var(--gradient-primary);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.15) inset, 0 -1px 0 rgba(0, 0, 0, 0.2) inset, 0 2px 6px var(--primary-glow);
 }
 
 .overlay-thumb-pill {
-  background: var(--surface-3) !important;
-  border: 1px solid var(--border) !important;
-  color: var(--text-muted) !important;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
 }
 
 /* ===== MARKDOWN STYLES ===== */
@@ -2741,33 +2741,33 @@ textarea:focus-visible {
 .dark .bg-layer {
   background: radial-gradient(ellipse at 20% 0%, rgba(236, 125, 150, 0.06) 0%, transparent 50%),
               radial-gradient(ellipse at 80% 100%, rgba(94, 201, 152, 0.05) 0%, transparent 50%),
-              #0a0a0f !important;
-  background-image: none !important;
+              #0a0a0f;
+  background-image: none;
 }
 
 .dark .bg-overlay {
-  background: none !important;
-  background-image: none !important;
+  background: none;
+  background-image: none;
 }
 
 /* Dark surfaces with subtle glow borders */
 .dark .sidebar {
-  background: #0d0d13 !important;
-  background-image: none !important;
-  border-right: 1px solid rgba(255, 255, 255, 0.04) !important;
+  background: #0d0d13;
+  background-image: none;
+  border-right: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 .dark .app-header {
-  background: rgba(13, 13, 19, 0.85) !important;
-  background-image: none !important;
+  background: rgba(13, 13, 19, 0.85);
+  background-image: none;
   border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .dark .bubble {
-  background: #15151e !important;
-  background-image: none !important;
+  background: #15151e;
+  background-image: none;
   border: 1px solid rgba(255, 255, 255, 0.05) !important;
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 4px 20px rgba(0, 0, 0, 0.3) !important;
 }
@@ -2783,28 +2783,28 @@ textarea:focus-visible {
 }
 
 .dark .input-bar {
-  background: rgba(13, 13, 19, 0.9) !important;
-  background-image: none !important;
+  background: rgba(13, 13, 19, 0.9);
+  background-image: none;
   border-top: 1px solid rgba(255, 255, 255, 0.04) !important;
-  backdrop-filter: blur(20px) !important;
-  -webkit-backdrop-filter: blur(20px) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
 }
 
 .dark .input-wrapper {
-  background: #12121a !important;
-  background-image: none !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3) !important;
+  background: #12121a;
+  background-image: none;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
 .dark .input-wrapper:focus-within {
-  border-color: rgba(236, 125, 150, 0.3) !important;
-  box-shadow: 0 0 0 3px rgba(236, 125, 150, 0.08), 0 2px 12px rgba(0, 0, 0, 0.3) !important;
+  border-color: rgba(236, 125, 150, 0.3);
+  box-shadow: 0 0 0 3px rgba(236, 125, 150, 0.08), 0 2px 12px rgba(0, 0, 0, 0.3);
 }
 
 .dark .chat-item {
-  background: transparent !important;
-  background-image: none !important;
+  background: transparent;
+  background-image: none;
 }
 
 .dark .chat-item:hover {
@@ -2813,19 +2813,19 @@ textarea:focus-visible {
 
 .dark .chat-item.active {
   background: rgba(236, 125, 150, 0.08) !important;
-  border: 1px solid rgba(236, 125, 150, 0.15) !important;
+  border: 1px solid rgba(236, 125, 150, 0.15);
 }
 
 .dark .side-panel {
-  background: #0d0d13 !important;
-  background-image: none !important;
-  border-left: 1px solid rgba(255, 255, 255, 0.04) !important;
+  background: #0d0d13;
+  background-image: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.04);
   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.4) !important;
 }
 
 .dark .theme-card {
-  background: #15151e !important;
-  background-image: none !important;
+  background: #15151e;
+  background-image: none;
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 
@@ -2835,19 +2835,19 @@ textarea:focus-visible {
 }
 
 .dark .new-chat-btn {
-  background: linear-gradient(135deg, #ec7d96, #e86580) !important;
-  background-image: none !important;
-  border: none !important;
+  background: linear-gradient(135deg, #ec7d96, #e86580);
+  background-image: none;
+  border: none;
   box-shadow: 0 2px 12px rgba(236, 125, 150, 0.25) !important;
 }
 
 .dark .input-btn.primary {
-  background: linear-gradient(135deg, #ec7d96, #e86580) !important;
+  background: linear-gradient(135deg, #ec7d96, #e86580);
   box-shadow: 0 2px 12px rgba(236, 125, 150, 0.25) !important;
 }
 
 .dark .input-btn {
-  background: rgba(255, 255, 255, 0.04) !important;
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.06) !important;
 }
 
@@ -2856,8 +2856,8 @@ textarea:focus-visible {
 }
 
 .dark .icon-btn {
-  background: rgba(255, 255, 255, 0.04) !important;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .dark .icon-btn:hover {
@@ -2865,7 +2865,7 @@ textarea:focus-visible {
 }
 
 .dark .empty-logo {
-  filter: drop-shadow(0 0 30px rgba(236, 125, 150, 0.15)) drop-shadow(0 0 60px rgba(94, 201, 152, 0.08)) !important;
+  filter: drop-shadow(0 0 30px rgba(236, 125, 150, 0.15)) drop-shadow(0 0 60px rgba(94, 201, 152, 0.08));
 }
 
 .dark .text-shimmer {
@@ -2888,26 +2888,26 @@ textarea:focus-visible {
 }
 
 .dark .msg-meta {
-  color: rgba(255, 255, 255, 0.2) !important;
+  color: rgba(255, 255, 255, 0.2);
 }
 
 .dark .creativity-track {
-  background: rgba(255, 255, 255, 0.04) !important;
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .dark .admin-badge.pro {
-  background: rgba(236, 125, 150, 0.15) !important;
-  color: #f0a5b8 !important;
+  background: rgba(236, 125, 150, 0.15);
+  color: #f0a5b8;
 }
 
 .dark .admin-badge.free {
-  background: rgba(255, 255, 255, 0.06) !important;
-  color: #8a8590 !important;
+  background: rgba(255, 255, 255, 0.06);
+  color: #8a8590;
 }
 
 .dark .admin-user-card {
-  background: #15151e !important;
-  border: 1px solid rgba(255, 255, 255, 0.04) !important;
+  background: #15151e;
+  border: 1px solid rgba(255, 255, 255, 0.04);
 }
 
 /* ===== SCROLL ANIMATIONS ===== */
@@ -3198,7 +3198,7 @@ textarea:focus-visible {
 .bubble:hover { transform: translateY(-2px); }
 
 /* Glow ring on focus */
-.input-bar:focus-within { box-shadow: var(--shadow-md), 0 0 0 4px rgba(236,125,150,0.1), 0 0 20px rgba(236,125,150,0.08) !important; }
+.input-bar:focus-within { box-shadow: var(--shadow-md), 0 0 0 4px rgba(236,125,150,0.1), 0 0 20px rgba(236,125,150,0.08); }
 
 /* Pulse on FAB */
 .quick-ask-fab { animation: fabPulse 2s ease-in-out infinite; }
@@ -3271,7 +3271,7 @@ textarea:focus-visible {
   filter: drop-shadow(0 10px 25px rgba(201, 30, 94, 0.15));
 }
 
-/* No !important here any more. Those existed solely to beat the inline
+/* No here any more. Those existed solely to beat the inline
  * width/height <model-viewer> set on itself; the SVG carries no inline styles,
  * so equal-specificity source order is enough and these rules simply win by
  * appearing later. */
@@ -3342,11 +3342,11 @@ textarea:focus-visible {
 }
 
 .code-block-wrapper pre {
-  margin: 0 !important;
-  padding: 16px !important;
-  background: #1a1a24 !important;
-  font-size: 13px !important;
-  font-family: 'JetBrains Mono', 'Consolas', monospace !important;
+  margin: 0;
+  padding: 16px;
+  background: #1a1a24;
+  font-size: 13px;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
 }
 
 .code-copy-btn {

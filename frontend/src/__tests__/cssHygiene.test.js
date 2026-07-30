@@ -8,6 +8,11 @@ const CSS = readFileSync(
   "utf8"
 );
 
+// Declarations, not prose. A comment explaining why a rule once needed
+// !important contains the word, and counting it would push the budget up for
+// documenting the very thing the budget exists to discourage.
+const DECLARATIONS = CSS.replace(/\/\*[\s\S]*?\*\//g, "");
+
 /**
  * App.css grew append-only: every fix was pasted at the bottom rather than
  * edited in place, then given !important when the duplicate above it didn't
@@ -26,7 +31,7 @@ const CSS = readFileSync(
 // The floor for IMPORTANT_BUDGET is 3, not 0. The prefers-reduced-motion block
 // keeps its !important because overriding an author's animation for a user with
 // a vestibular disorder is the one thing the keyword is actually for.
-const IMPORTANT_BUDGET = 49;
+const IMPORTANT_BUDGET = 3;
 const DUPLICATE_BUDGET = 63;
 const FIX_SECTION_BUDGET = 0;
 
@@ -74,7 +79,7 @@ const topLevelBlocks = () => {
 
 describe("App.css hygiene", () => {
   it(`uses no more than ${IMPORTANT_BUDGET} !important declarations`, () => {
-    const count = (CSS.match(/!important/g) || []).length;
+    const count = (DECLARATIONS.match(/!important/g) || []).length;
     expect(
       count,
       `!important went up to ${count}. Reach for specificity or the cascade instead — ` +

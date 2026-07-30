@@ -3978,7 +3978,7 @@
     outline: 2px solid #ec7d96
     outline-offset: 2px
   :active
-    transform: translateY(1px)
+    transform: translateY(0) scale(0.98)
 
 [81] svg
   ::-webkit-scrollbar-thumb/background: rgba(94, 201, 152, 0.15)
@@ -5210,7 +5210,7 @@
   border-color: <border: none>
   border-radius: 24px
   border-right: 1px solid rgba(255, 255, 255, 0.04)
-  border-top-color: rgba(255, 235, 224, 0.05)
+  border-top-color: <border: none>
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 -1px 0 rgba(255, 235, 224, 0.03), 0 4px 12px rgba(0, 0, 0, 0.3)
   box-sizing: border-box
   display: flex
@@ -6012,6 +6012,9 @@
     background-clip: <background: #22222e>
     background-image: <background: #22222e>
     background-size: <background: #22222e>
+    border-bottom-color: <border-color: rgba(255, 255, 255, 0.1)>
+    border-color: rgba(255, 255, 255, 0.1)
+    border-top-color: <border-color: rgba(255, 255, 255, 0.1)>
     transform: translateY(-1px)
   :focus-visible
     outline: 2px solid #ec7d96
@@ -6081,7 +6084,7 @@
   ::after/border-bottom-left-radius: <border-radius: 50%>
   ::after/border-bottom-right-radius: <border-radius: 50%>
   ::after/border-radius: 50%
-  ::after/box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05)
+  ::after/box-shadow: 0 0 12px rgba(236, 125, 150, 0.15)
   ::after/content: ""
   ::after/height: 18px
   ::after/left: 23px
@@ -6451,6 +6454,7 @@
     ::-webkit-scrollbar-thumb/background-clip: <background: rgba(94, 201, 152, 0.30)>
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(94, 201, 152, 0.30)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(94, 201, 152, 0.30)>
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5)
     transform: translateY(-1px)
   :focus-visible
     outline: 2px solid #ec7d96
@@ -6996,6 +7000,7 @@
     ::-webkit-scrollbar-thumb/background-clip: <background: rgba(94, 201, 152, 0.30)>
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(94, 201, 152, 0.30)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(94, 201, 152, 0.30)>
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5)
     transform: translateY(-1px)
   :focus-visible
     outline: 2px solid #ec7d96
@@ -8588,17 +8593,17 @@
   ::selection/background-size: <background: #ec7d96>
   ::selection/color: #ffffff
   align-items: center
-  background: linear-gradient(135deg, #1a1a24, #22222e)
-  background-clip: <background: linear-gradient(135deg, #1a1a24, #22222e)>
-  background-image: <background: linear-gradient(135deg, #1a1a24, #22222e)>
-  background-size: <background: linear-gradient(135deg, #1a1a24, #22222e)>
+  background: rgba(236, 125, 150, 0.12)
+  background-clip: <background: rgba(236, 125, 150, 0.12)>
+  background-image: <background: rgba(236, 125, 150, 0.12)>
+  background-size: <background: rgba(236, 125, 150, 0.12)>
   border: 1px solid rgba(255, 255, 255, 0.08)
-  border-bottom-color: <border: 1px solid rgba(255, 255, 255, 0.08)>
+  border-bottom-color: <border-color: rgba(236, 125, 150, 0.2)>
   border-bottom-left-radius: <border-radius: 12px>
   border-bottom-right-radius: <border-radius: 12px>
-  border-color: <border: 1px solid rgba(255, 255, 255, 0.08)>
+  border-color: rgba(236, 125, 150, 0.2)
   border-radius: 12px
-  border-top-color: <border: 1px solid rgba(255, 255, 255, 0.08)>
+  border-top-color: <border-color: rgba(236, 125, 150, 0.2)>
   box-shadow: 0 1px 0 rgba(255, 235, 224, 0.04) inset, 0 -1px 0 rgba(0, 0, 0, 0.2) inset, 0 1px 3px rgba(0, 0, 0, 0.2)
   box-sizing: border-box
   color: #ec7d96
@@ -8933,17 +8938,17 @@
   ::selection/background-size: <background: #ec7d96>
   ::selection/color: #ffffff
   align-items: center
-  background: linear-gradient(135deg, #1a1a24, #22222e)
-  background-clip: <background: linear-gradient(135deg, #1a1a24, #22222e)>
-  background-image: <background: linear-gradient(135deg, #1a1a24, #22222e)>
-  background-size: <background: linear-gradient(135deg, #1a1a24, #22222e)>
+  background: rgba(94, 201, 152, 0.12)
+  background-clip: <background: rgba(94, 201, 152, 0.12)>
+  background-image: <background: rgba(94, 201, 152, 0.12)>
+  background-size: <background: rgba(94, 201, 152, 0.12)>
   border: 1px solid rgba(255, 255, 255, 0.08)
-  border-bottom-color: <border: 1px solid rgba(255, 255, 255, 0.08)>
+  border-bottom-color: <border-color: rgba(94, 201, 152, 0.15)>
   border-bottom-left-radius: <border-radius: 12px>
   border-bottom-right-radius: <border-radius: 12px>
-  border-color: <border: 1px solid rgba(255, 255, 255, 0.08)>
+  border-color: rgba(94, 201, 152, 0.15)
   border-radius: 12px
-  border-top-color: <border: 1px solid rgba(255, 255, 255, 0.08)>
+  border-top-color: <border-color: rgba(94, 201, 152, 0.15)>
   box-shadow: 0 1px 0 rgba(255, 235, 224, 0.04) inset, 0 -1px 0 rgba(0, 0, 0, 0.2) inset, 0 1px 3px rgba(0, 0, 0, 0.2)
   box-sizing: border-box
   color: #5ec998
@@ -11440,17 +11445,17 @@
   ::selection/background-size: <background: #ec7d96>
   ::selection/color: #ffffff
   align-items: center
-  background: linear-gradient(135deg, #1a1a24, #22222e)
-  background-clip: <background: linear-gradient(135deg, #1a1a24, #22222e)>
-  background-image: <background: linear-gradient(135deg, #1a1a24, #22222e)>
-  background-size: <background: linear-gradient(135deg, #1a1a24, #22222e)>
+  background: rgba(94, 201, 152, 0.12)
+  background-clip: <background: rgba(94, 201, 152, 0.12)>
+  background-image: <background: rgba(94, 201, 152, 0.12)>
+  background-size: <background: rgba(94, 201, 152, 0.12)>
   border: 1px solid rgba(255, 255, 255, 0.08)
-  border-bottom-color: <border: 1px solid rgba(255, 255, 255, 0.08)>
+  border-bottom-color: <border-color: rgba(94, 201, 152, 0.15)>
   border-bottom-left-radius: <border-radius: 12px>
   border-bottom-right-radius: <border-radius: 12px>
-  border-color: <border: 1px solid rgba(255, 255, 255, 0.08)>
+  border-color: rgba(94, 201, 152, 0.15)
   border-radius: 12px
-  border-top-color: <border: 1px solid rgba(255, 255, 255, 0.08)>
+  border-top-color: <border-color: rgba(94, 201, 152, 0.15)>
   box-shadow: 0 1px 0 rgba(255, 235, 224, 0.04) inset, 0 -1px 0 rgba(0, 0, 0, 0.2) inset, 0 1px 3px rgba(0, 0, 0, 0.2)
   box-sizing: border-box
   color: #5ec998
@@ -11817,17 +11822,17 @@
   ::selection/background-size: <background: #ec7d96>
   ::selection/color: #ffffff
   align-items: center
-  background: linear-gradient(135deg, #1a1a24, #22222e)
-  background-clip: <background: linear-gradient(135deg, #1a1a24, #22222e)>
-  background-image: <background: linear-gradient(135deg, #1a1a24, #22222e)>
-  background-size: <background: linear-gradient(135deg, #1a1a24, #22222e)>
+  background: rgba(94, 201, 152, 0.12)
+  background-clip: <background: rgba(94, 201, 152, 0.12)>
+  background-image: <background: rgba(94, 201, 152, 0.12)>
+  background-size: <background: rgba(94, 201, 152, 0.12)>
   border: 1px solid rgba(255, 255, 255, 0.08)
-  border-bottom-color: <border: 1px solid rgba(255, 255, 255, 0.08)>
+  border-bottom-color: <border-color: rgba(94, 201, 152, 0.15)>
   border-bottom-left-radius: <border-radius: 12px>
   border-bottom-right-radius: <border-radius: 12px>
-  border-color: <border: 1px solid rgba(255, 255, 255, 0.08)>
+  border-color: rgba(94, 201, 152, 0.15)
   border-radius: 12px
-  border-top-color: <border: 1px solid rgba(255, 255, 255, 0.08)>
+  border-top-color: <border-color: rgba(94, 201, 152, 0.15)>
   box-shadow: 0 1px 0 rgba(255, 235, 224, 0.04) inset, 0 -1px 0 rgba(0, 0, 0, 0.2) inset, 0 1px 3px rgba(0, 0, 0, 0.2)
   box-sizing: border-box
   color: #5ec998
@@ -13392,7 +13397,7 @@
     outline: 2px solid #ec7d96
     outline-offset: 2px
   :active
-    transform: scale(0.92)
+    transform: translateY(0) scale(0.98)
   :disabled
     cursor: not-allowed
     opacity: 0.4
@@ -13506,12 +13511,12 @@
   background-image: <background: linear-gradient(135deg, #ec7d96, #e86580)>
   background-size: <background: linear-gradient(135deg, #ec7d96, #e86580)>
   border: 1px solid rgba(255, 255, 255, 0.06)
-  border-bottom-color: <border: 1px solid rgba(255, 255, 255, 0.06)>
+  border-bottom-color: <border-color: #c46570>
   border-bottom-left-radius: <border-radius: 999px>
   border-bottom-right-radius: <border-radius: 999px>
-  border-color: <border: 1px solid rgba(255, 255, 255, 0.06)>
+  border-color: #c46570
   border-radius: 999px
-  border-top-color: <border: 1px solid rgba(255, 255, 255, 0.06)>
+  border-top-color: <border-color: #c46570>
   box-shadow: 0 2px 12px rgba(236, 125, 150, 0.25)
   box-sizing: border-box
   color: #fff
@@ -13552,7 +13557,7 @@
     outline: 2px solid #ec7d96
     outline-offset: 2px
   :active
-    transform: scale(0.92)
+    transform: translateY(0) scale(0.98)
   :disabled
     cursor: not-allowed
     opacity: 0.4
@@ -17472,7 +17477,7 @@
     outline-offset: 2px
   :active
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) inset, 0 -1px 0 rgba(255, 255, 255, 0.05) inset
-    transform: translateY(1px)
+    transform: translateY(0) scale(0.98)
 
 [354] svg
   ::-webkit-scrollbar-thumb/background: rgba(94, 201, 152, 0.15)
@@ -18698,7 +18703,7 @@
   border-bottom-right-radius: <border-radius: 24px>
   border-color: <border: none>
   border-radius: 24px
-  border-top-color: rgba(255, 235, 224, 0.05)
+  border-top-color: <border: none>
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3), inset 0 -1px 0 rgba(255, 235, 224, 0.03), 0 4px 12px rgba(0, 0, 0, 0.3)
   box-sizing: border-box
   display: flex
@@ -19502,6 +19507,9 @@
     background-clip: <background: #d4c9b6>
     background-image: <background: #d4c9b6>
     background-size: <background: #d4c9b6>
+    border-bottom-color: <border-color: rgba(61, 40, 32, 0.18)>
+    border-color: rgba(61, 40, 32, 0.18)
+    border-top-color: <border-color: rgba(61, 40, 32, 0.18)>
     transform: translateY(-1px)
   :focus-visible
     outline: 2px solid #c91e5e
@@ -19571,7 +19579,7 @@
   ::after/border-bottom-left-radius: <border-radius: 50%>
   ::after/border-bottom-right-radius: <border-radius: 50%>
   ::after/border-radius: 50%
-  ::after/box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.05)
+  ::after/box-shadow: 0 0 12px rgba(201, 30, 94, 0.20)
   ::after/content: ""
   ::after/height: 18px
   ::after/left: 23px
@@ -19720,6 +19728,7 @@
     background-size: <background: #d4c9b6>
     border-bottom-color: <border-color: rgba(61, 40, 32, 0.18)>
     border-color: rgba(61, 40, 32, 0.18)
+    border-top-color: <border-color: rgba(61, 40, 32, 0.18)>
     transform: translateY(-1px)
   :focus-visible
     border-bottom-left-radius: <border-radius: 4px>
@@ -19836,6 +19845,7 @@
     background-size: <background: #d4c9b6>
     border-bottom-color: <border-color: rgba(61, 40, 32, 0.18)>
     border-color: rgba(61, 40, 32, 0.18)
+    border-top-color: <border-color: rgba(61, 40, 32, 0.18)>
     transform: translateY(-1px)
   :focus-visible
     border-bottom-left-radius: <border-radius: 4px>
@@ -19942,6 +19952,7 @@
     border-bottom-color: <border-color: rgba(61, 40, 32, 0.18)>
     border-color: rgba(61, 40, 32, 0.18)
     border-top-color: <border-color: rgba(61, 40, 32, 0.18)>
+    box-shadow: 0 1px 3px rgba(61, 40, 32, 0.10)
     transform: translateY(-1px)
   :focus-visible
     outline: 2px solid #c91e5e
@@ -20490,6 +20501,7 @@
     border-bottom-color: <border-color: rgba(61, 40, 32, 0.18)>
     border-color: rgba(61, 40, 32, 0.18)
     border-top-color: <border-color: rgba(61, 40, 32, 0.18)>
+    box-shadow: 0 1px 3px rgba(61, 40, 32, 0.10)
     transform: translateY(-1px)
   :focus-visible
     outline: 2px solid #c91e5e
@@ -22243,14 +22255,14 @@
   background-size: <background: linear-gradient(135deg, #c91e5e 0%, #e0607a 100%)>
   border: 1px solid rgba(61, 40, 32, 0.10)
   border-bottom: 1px solid rgba(0, 0, 0, 0.2)
-  border-bottom-color: <border-bottom: 1px solid rgba(0, 0, 0, 0.2)>
+  border-bottom-color: <border-color: transparent>
   border-bottom-left-radius: 18px
   border-bottom-right-radius: 5px
   border-color: transparent
   border-radius: 18px
   border-top: 1px solid rgba(255, 235, 224, 0.04)
-  border-top-color: <border-top: 1px solid rgba(255, 235, 224, 0.04)>
-  box-shadow: 0 1px 0 rgba(255, 235, 224, 0.03) inset, 0 -1px 0 rgba(0, 0, 0, 0.15) inset, 0 2px 6px rgba(0, 0, 0, 0.25)
+  border-top-color: <border-color: transparent>
+  box-shadow: 0 4px 16px rgba(201, 30, 94, 0.20)
   box-sizing: border-box
   color: #ffffff
   font-size: 14px
@@ -22273,6 +22285,7 @@
     ::-webkit-scrollbar-thumb/background-clip: <background: rgba(94, 201, 152, 0.30)>
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(94, 201, 152, 0.30)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(94, 201, 152, 0.30)>
+    box-shadow: 0 8px 24px rgba(201, 30, 94, 0.20)
     transform: translateY(-2px)
   :focus-visible
     outline: 2px solid #c91e5e
@@ -22701,7 +22714,10 @@
     ::-webkit-scrollbar-thumb/background-clip: <background: rgba(94, 201, 152, 0.30)>
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(94, 201, 152, 0.30)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(94, 201, 152, 0.30)>
+    border-bottom-color: <border-color: rgba(61, 40, 32, 0.18)>
     border-color: rgba(61, 40, 32, 0.18)
+    border-top-color: <border-color: rgba(61, 40, 32, 0.18)>
+    box-shadow: 0 3px 10px rgba(61, 40, 32, 0.08)
     transform: translateY(-2px)
   :focus-visible
     outline: 2px solid #c91e5e
@@ -25080,7 +25096,10 @@
     ::-webkit-scrollbar-thumb/background-clip: <background: rgba(94, 201, 152, 0.30)>
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(94, 201, 152, 0.30)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(94, 201, 152, 0.30)>
+    border-bottom-color: <border-color: rgba(61, 40, 32, 0.18)>
     border-color: rgba(61, 40, 32, 0.18)
+    border-top-color: <border-color: rgba(61, 40, 32, 0.18)>
+    box-shadow: 0 3px 10px rgba(61, 40, 32, 0.08)
     transform: translateY(-2px)
   :focus-visible
     outline: 2px solid #c91e5e
@@ -26874,8 +26893,9 @@
     outline-offset: 2px
   :active
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3)
-    transform: scale(0.92)
+    transform: translateY(0) scale(0.98)
   :disabled
+    box-shadow: none
     cursor: not-allowed
     opacity: 0.4
     transform: none
@@ -27031,8 +27051,9 @@
     outline-offset: 2px
   :active
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3)
-    transform: scale(0.92)
+    transform: translateY(0) scale(0.98)
   :disabled
+    box-shadow: none
     cursor: not-allowed
     opacity: 0.4
     transform: none
@@ -27800,14 +27821,14 @@
   animation-delay: <animation: pulse-red 1.5s infinite>
   animation-duration: <animation: pulse-red 1.5s infinite>
   animation-iteration-count: <animation: pulse-red 1.5s infinite>
-  background: linear-gradient(135deg, #ec7d96 0%, #f4a4b5 100%)
-  background-clip: <background: linear-gradient(135deg, #ec7d96 0%, #f4a4b5 100%)>
-  background-image: <background: linear-gradient(135deg, #ec7d96 0%, #f4a4b5 100%)>
-  background-size: <background: linear-gradient(135deg, #ec7d96 0%, #f4a4b5 100%)>
+  background: #c46570
+  background-clip: <background: #c46570>
+  background-image: <background: #c46570>
+  background-size: <background: #c46570>
   border-bottom-left-radius: <border-radius: 50%>
   border-bottom-right-radius: <border-radius: 50%>
   border-radius: 50%
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.15) inset, 0 -1px 0 rgba(0, 0, 0, 0.2) inset, 0 2px 6px rgba(236, 125, 150, 0.28)
+  box-shadow: 0 0 0 0 rgba(196, 101, 112, 0.4)
   box-sizing: border-box
   color: #ffffff
   display: flex
@@ -27986,10 +28007,10 @@
   animation-delay: <animation: pulse 1.2s infinite>
   animation-duration: <animation: pulse 1.2s infinite>
   animation-iteration-count: <animation: pulse 1.2s infinite>
-  background: #3a2b1f
-  background-clip: <background: #3a2b1f>
-  background-image: <background: #3a2b1f>
-  background-size: <background: #3a2b1f>
+  background: #c46570
+  background-clip: <background: #c46570>
+  background-image: <background: #c46570>
+  background-size: <background: #c46570>
   border: none
   border-bottom-color: <border: none>
   border-bottom-left-radius: <border-radius: 50%>
@@ -27999,7 +28020,7 @@
   border-top-color: <border: none>
   box-shadow: 0 1px 0 rgba(255, 235, 224, 0.03) inset, 0 -1px 0 rgba(0, 0, 0, 0.15) inset
   box-sizing: border-box
-  color: #d4b896
+  color: #ffffff
   cursor: pointer
   display: flex
   flex-shrink: 0

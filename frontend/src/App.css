@@ -2245,8 +2245,8 @@ textarea:focus-visible {
 }
 
 @media (max-width: 768px) {
-  .mobile-only { display: flex !important; }
-  .desktop-only { display: none !important; }
+  .mobile-only { display: flex; }
+  .desktop-only { display: none; }
   .app-shell { padding: 12px; gap: 12px; }
   .app-header { padding: 10px 14px; border-radius: var(--radius-lg); }
   .main-title { font-size: 15px; }
@@ -2292,7 +2292,7 @@ textarea:focus-visible {
     inset 0 1px 2px rgba(0, 0, 0, 0.3),
     inset 0 -1px 0 rgba(255, 235, 224, 0.03),
     0 4px 12px rgba(0, 0, 0, 0.3);
-  border-top-color: rgba(255, 235, 224, 0.05) !important;
+  border-top-color: rgba(255, 235, 224, 0.05);
 }
 
 /* Paper-like chat surface */
@@ -2315,8 +2315,8 @@ textarea:focus-visible {
 .new-chat-btn:active {
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.3) inset,
-    0 -1px 0 rgba(255, 255, 255, 0.05) inset !important;
-  transform: translateY(1px) !important;
+    0 -1px 0 rgba(255, 255, 255, 0.05) inset;
+  transform: translateY(1px);
 }
 
 /* Raised icon buttons */
@@ -2348,9 +2348,9 @@ textarea:focus-visible {
   box-shadow:
     0 1px 0 rgba(255, 235, 224, 0.03) inset,
     0 -1px 0 rgba(0, 0, 0, 0.15) inset,
-    0 2px 6px rgba(0, 0, 0, 0.25) !important;
-  border-top: 1px solid rgba(255, 235, 224, 0.04) !important;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2) !important;
+    0 2px 6px rgba(0, 0, 0, 0.25);
+  border-top: 1px solid rgba(255, 235, 224, 0.04);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
 }
 
 /* Realistic toggle */
@@ -2358,7 +2358,7 @@ textarea:focus-visible {
   box-shadow:
     inset 0 1px 2px rgba(0, 0, 0, 0.3),
     0 1px 0 rgba(255, 235, 224, 0.03) inset;
-  border-color: rgba(0, 0, 0, 0.3) !important;
+  border-color: rgba(0, 0, 0, 0.3);
 }
 
 .theme-toggle-switch {
@@ -2368,7 +2368,7 @@ textarea:focus-visible {
 .theme-toggle-switch::after {
   box-shadow:
     0 1px 2px rgba(0, 0, 0, 0.3),
-    0 0 0 1px rgba(255, 255, 255, 0.05) !important;
+    0 0 0 1px rgba(255, 255, 255, 0.05);
 }
 
 /* Floating side panel */
@@ -2395,11 +2395,11 @@ textarea:focus-visible {
     0 1px 0 rgba(255, 235, 224, 0.03) inset,
     0 -1px 0 rgba(0, 0, 0, 0.15) inset,
     0 1px 3px rgba(0, 0, 0, 0.2);
-  border-top: 1px solid rgba(255, 235, 224, 0.03) !important;
+  border-top: 1px solid rgba(255, 235, 224, 0.03);
 }
 
 .theme-card:active {
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
   transform: translateY(1px);
 }
 
@@ -2408,7 +2408,7 @@ textarea:focus-visible {
   box-shadow:
     0 1px 0 rgba(255, 235, 224, 0.03) inset,
     0 -1px 0 rgba(0, 0, 0, 0.15) inset,
-    0 2px 4px rgba(0, 0, 0, 0.2) !important;
+    0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* Recessed scrollbar */
@@ -2421,12 +2421,12 @@ textarea:focus-visible {
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.15) inset,
     0 -1px 0 rgba(0, 0, 0, 0.2) inset,
-    0 2px 6px var(--primary-glow) !important;
+    0 2px 6px var(--primary-glow);
 }
 
 .input-btn.primary:active {
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3) !important;
-  transform: scale(0.92) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  transform: scale(0.92);
 }
 
 /* Raised input buttons */
@@ -2503,19 +2503,19 @@ textarea:focus-visible {
 }
 
 .overlay-icon {
-  background: var(--gradient-primary) !important;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.15) inset, 0 -1px 0 rgba(0, 0, 0, 0.2) inset, 0 2px 6px var(--primary-glow) !important;
+  background: var(--gradient-primary);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.15) inset, 0 -1px 0 rgba(0, 0, 0, 0.2) inset, 0 2px 6px var(--primary-glow);
 }
 
 .overlay-action {
-  background: var(--surface-3) !important;
-  color: var(--text-muted) !important;
+  background: var(--surface-3);
+  color: var(--text-muted);
   box-shadow: 0 1px 0 rgba(255, 235, 224, 0.03) inset, 0 -1px 0 rgba(0, 0, 0, 0.15) inset;
 }
 
 .overlay-action:hover {
-  background: var(--surface-4) !important;
-  color: var(--text) !important;
+  background: var(--surface-4);
+  color: var(--text);
 }
 
 .overlay-submit {
@@ -2702,7 +2702,7 @@ textarea:focus-visible {
 .dark .app-header {
   background: rgba(13, 13, 19, 0.85);
   background-image: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
@@ -2710,24 +2710,24 @@ textarea:focus-visible {
 .dark .bubble {
   background: #15151e;
   background-image: none;
-  border: 1px solid rgba(255, 255, 255, 0.05) !important;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 4px 20px rgba(0, 0, 0, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
 .dark .msg-row.user .bubble {
-  background: linear-gradient(135deg, #1e1520, #1a1218) !important;
-  border: 1px solid rgba(236, 125, 150, 0.15) !important;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 4px 20px rgba(236, 125, 150, 0.08) !important;
+  background: linear-gradient(135deg, #1e1520, #1a1218);
+  border: 1px solid rgba(236, 125, 150, 0.15);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 4px 20px rgba(236, 125, 150, 0.08);
 }
 
 .dark .msg-row.assistant .bubble {
-  background: #15151e !important;
+  background: #15151e;
 }
 
 .dark .input-bar {
   background: rgba(13, 13, 19, 0.9);
   background-image: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.04) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
@@ -2750,11 +2750,11 @@ textarea:focus-visible {
 }
 
 .dark .chat-item:hover {
-  background: rgba(255, 255, 255, 0.03) !important;
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .dark .chat-item.active {
-  background: rgba(236, 125, 150, 0.08) !important;
+  background: rgba(236, 125, 150, 0.08);
   border: 1px solid rgba(236, 125, 150, 0.15);
 }
 
@@ -2762,39 +2762,39 @@ textarea:focus-visible {
   background: #0d0d13;
   background-image: none;
   border-left: 1px solid rgba(255, 255, 255, 0.04);
-  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.4);
 }
 
 .dark .theme-card {
   background: #15151e;
   background-image: none;
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .dark .theme-card:hover {
-  background: #1a1a24 !important;
-  border-color: rgba(236, 125, 150, 0.2) !important;
+  background: #1a1a24;
+  border-color: rgba(236, 125, 150, 0.2);
 }
 
 .dark .new-chat-btn {
   background: linear-gradient(135deg, #ec7d96, #e86580);
   background-image: none;
   border: none;
-  box-shadow: 0 2px 12px rgba(236, 125, 150, 0.25) !important;
+  box-shadow: 0 2px 12px rgba(236, 125, 150, 0.25);
 }
 
 .dark .input-btn.primary {
   background: linear-gradient(135deg, #ec7d96, #e86580);
-  box-shadow: 0 2px 12px rgba(236, 125, 150, 0.25) !important;
+  box-shadow: 0 2px 12px rgba(236, 125, 150, 0.25);
 }
 
 .dark .input-btn {
   background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .dark .input-btn:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .dark .icon-btn {
@@ -2803,7 +2803,7 @@ textarea:focus-visible {
 }
 
 .dark .icon-btn:hover {
-  background: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .dark .empty-logo {
@@ -2825,8 +2825,8 @@ textarea:focus-visible {
 }
 
 .dark .avatar {
-  background: linear-gradient(135deg, #1a1a24, #22222e) !important;
-  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: linear-gradient(135deg, #1a1a24, #22222e);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .dark .msg-meta {
@@ -2938,7 +2938,7 @@ textarea:focus-visible {
 
 .input-btn.primary:hover, .new-chat-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(236, 125, 150, 0.35) !important;
+  box-shadow: 0 4px 20px rgba(236, 125, 150, 0.35);
 }
 
 .input-btn.primary:active, .new-chat-btn:active {
@@ -3126,7 +3126,7 @@ textarea:focus-visible {
 .app-header { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 
 /* Glow on active chat item */
-.chat-item.active { box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 0 12px rgba(236,125,150,0.08) !important; }
+.chat-item.active { box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 0 12px rgba(236,125,150,0.08); }
 
 /* Smooth gradient border on send button */
 .input-btn.primary { background: linear-gradient(135deg, #ec7d96, #e86580, #ec7d96); background-size: 200% 100%; animation: gradientShift 3s ease infinite; }

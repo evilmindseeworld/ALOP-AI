@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { readStylesheet } from "../test/cssSnapshot";
@@ -132,16 +132,23 @@ describe("stacking order invariants", () => {
  * assertion alone cannot catch this, so these tests check the DOM instead.
  */
 describe("panels escape the chat stacking context", () => {
-  const APP = readFileSync(
-    join(dirname(fileURLToPath(import.meta.url)), "..", "App.jsx"),
-    "utf8"
-  );
+  const componentsDir = join(dirname(fileURLToPath(import.meta.url)), "..", "components");
+  const panelsDir = join(componentsDir, "panels");
+
+  // The panels live in components/panels/ now, one file each. Reading the
+  // directory rather than naming them means a fourth panel added inline is
+  // caught, which is the whole point of the count assertion below.
+  const PANEL_FILES = readdirSync(panelsDir).filter((f) => f.endsWith(".jsx"));
+  const PANEL_SOURCE = PANEL_FILES.map((f) => readFileSync(join(panelsDir, f), "utf8"));
+  const APP = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "App.jsx"), "utf8");
+  const ALL = [APP, ...PANEL_SOURCE].join("\n");
 
   it("renders panels through SidePanel rather than inline in .chat-main", () => {
-    // Inline `<div className="side-panel">` inside App.jsx is the shape that
-    // trapped them inside .chat-main's stacking context.
+    // A literal `<div className="side-panel">` is the shape that trapped them
+    // inside .chat-main's stacking context. Only SidePanel itself may write it.
     expect(APP).not.toMatch(/className="side-panel"/);
-    expect(APP).toMatch(/<SidePanel\b/);
+    for (const source of PANEL_SOURCE) expect(source).not.toMatch(/className="side-panel"/);
+    expect(ALL).toMatch(/<SidePanel\b/);
   });
 
   it("portals SidePanel to document.body, into the root stacking context", () => {
@@ -154,10 +161,12 @@ describe("panels escape the chat stacking context", () => {
   });
 
   it("keeps every panel on the portal path", () => {
-    // Admin, Settings and Upgrade. If a fourth panel is added inline it will
-    // inherit the original bug, so the count is asserted rather than assumed.
-    const uses = APP.match(/<SidePanel\b/g) || [];
-    expect(uses.length).toBeGreaterThanOrEqual(3);
+    // Admin, Settings and Upgrade. Every file in components/panels must route
+    // through SidePanel; one that does not inherits the original bug.
+    expect(PANEL_FILES.length).toBeGreaterThanOrEqual(3);
+    for (const [i, source] of PANEL_SOURCE.entries()) {
+      expect(source, `${PANEL_FILES[i]} does not render through SidePanel`).toMatch(/<SidePanel\b/);
+    }
   });
 
   // Now that panels are siblings of the earring in the root context, the

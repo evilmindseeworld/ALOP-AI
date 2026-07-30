@@ -1,0 +1,384 @@
+import { useState, useRef, useCallback, useMemo, useEffect } from "react";
+import { API_BASE } from "../lib/api";
+import { uid, generateChatTitle, parseImagePrompt, buildImageUrl } from "../lib/format";
+
+const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+/** How much history the council is given. Older turns are summarised server-side. */
+const HISTORY_TURNS = 8;
+const HISTORY_CHARS = 4000;
+
+/**
+ * Chat state: CRUD, ordering, and the council streaming loop.
+ *
+ * This is the one piece of the app with genuinely intricate behaviour, and it
+ * is where three separate bugs lived. Each has a note at the point that fixes
+ * it — read those before changing the abort path in particular.
+ */
+export function useChats({ apiCall, getToken, isReady, setToast }) {
+  const [chats, setChats] = useState([]);
+  const [activeChatId, setActiveChatId] = useState(null);
+  const [status, setStatus] = useState("idle");
+  const [feedback, setFeedback] = useState({});
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const abortRef = useRef(null);
+
+  const activeChat = useMemo(() => chats.find((c) => c.id === activeChatId), [chats, activeChatId]);
+  const activeMessages = useMemo(() => activeChat?.messages || [], [activeChat]);
+
+  /** Pinned first, then favourites, then most recently posted in. */
+  const sortedChats = useMemo(
+    () =>
+      [...chats].sort((a, b) => {
+        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+        if (a.favorite !== b.favorite) return a.favorite ? -1 : 1;
+        return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at);
+      }),
+    [chats]
+  );
+
+  const createChat = useCallback(async () => {
+    try {
+      const r = await apiCall("/api/chats", { method: "POST", body: JSON.stringify({ title: "New Chat" }) });
+      const d = await r.json();
+      setChats((p) => [d, ...p]);
+      setActiveChatId(d.id);
+      return d.id;
+    } catch {
+      setToast("Failed to create chat");
+      return null;
+    }
+  }, [apiCall, setToast]);
+
+  /**
+   * Load existing chats only.
+   *
+   * The row is created lazily on the first message, so opening the app no
+   * longer leaves an empty "New Chat" behind on every page load.
+   */
+  const loadChats = useCallback(async () => {
+    try {
+      const res = await apiCall("/api/chats");
+      const data = await res.json();
+      if (Array.isArray(data)) setChats(data);
+    } catch (e) {
+      console.error(e.message);
+      setToast("Couldn't load your chats.");
+    } finally {
+      setIsInitialLoading(false);
+    }
+  }, [apiCall, setToast]);
+
+  useEffect(() => {
+    if (isReady) loadChats();
+  }, [isReady, loadChats]);
+
+  const updateChatMessages = useCallback(
+    async (chatId, messages, saveToDb = true) => {
+      setChats((p) =>
+        p.map((c) => (c.id === chatId ? { ...c, messages, updated_at: new Date().toISOString() } : c))
+      );
+      if (!saveToDb) return;
+      try {
+        await apiCall(`/api/chats/${chatId}`, { method: "PUT", body: JSON.stringify({ messages }) });
+      } catch (e) {
+        console.error(e.message);
+      }
+    },
+    [apiCall]
+  );
+
+  const deleteChat = useCallback(
+    async (id) => {
+      try {
+        await apiCall(`/api/chats/${id}`, { method: "DELETE" });
+        setChats((p) => p.filter((c) => c.id !== id));
+        setActiveChatId((current) => (current === id ? null : current));
+      } catch (e) {
+        console.error(e.message);
+      }
+    },
+    [apiCall]
+  );
+
+  const renameChat = useCallback(
+    async (id, title) => {
+      if (!title?.trim()) return;
+      setChats((p) => p.map((c) => (c.id === id ? { ...c, title } : c)));
+      try {
+        await apiCall(`/api/chats/${id}`, { method: "PUT", body: JSON.stringify({ title }) });
+      } catch (e) {
+        console.error(e.message);
+      }
+    },
+    [apiCall]
+  );
+
+  /**
+   * Optimistic: flip locally so the sidebar responds instantly, then persist
+   * and roll back if the write fails. These used to be local-only, which is
+   * why pins silently vanished on reload.
+   */
+  const toggleChatFlag = useCallback(
+    async (id, field) => {
+      const current = chats.find((c) => c.id === id);
+      if (!current) return;
+
+      const next = !current[field];
+      setChats((p) => p.map((c) => (c.id === id ? { ...c, [field]: next } : c)));
+
+      try {
+        const res = await apiCall(`/api/chats/${id}`, { method: "PUT", body: JSON.stringify({ [field]: next }) });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      } catch {
+        setChats((p) => p.map((c) => (c.id === id ? { ...c, [field]: !next } : c)));
+        setToast(`Couldn't save ${field === "pinned" ? "pin" : "favorite"}.`);
+      }
+    },
+    [chats, apiCall, setToast]
+  );
+
+  const togglePinChat = useCallback((id) => toggleChatFlag(id, "pinned"), [toggleChatFlag]);
+  const toggleFavoriteChat = useCallback((id) => toggleChatFlag(id, "favorite"), [toggleChatFlag]);
+
+  const submitFeedback = useCallback(
+    async (msgId, type) => {
+      setFeedback((p) => ({ ...p, [msgId]: type }));
+      try {
+        const idx = activeMessages.findIndex((m) => m.id === msgId);
+        if (idx === -1) return;
+        const msg = activeMessages[idx];
+        // The question that produced this answer, for the learning store.
+        const question = idx > 0 ? activeMessages[idx - 1]?.content : "";
+        await apiCall("/api/feedback", {
+          method: "POST",
+          body: JSON.stringify({ messageId: msgId, feedback: type, question, answer: msg.content }),
+        });
+        setToast(type === "up" ? "AI will learn from this good answer." : "Noted. AI will avoid this pattern.");
+      } catch (e) {
+        console.error(e.message);
+      }
+    },
+    [activeMessages, apiCall, setToast]
+  );
+
+  const generateImage = useCallback(
+    async (promptText) => {
+      const imagePrompt = parseImagePrompt(promptText) || promptText;
+      if (!imagePrompt) {
+        setToast("Describe image");
+        return;
+      }
+
+      // The chat row is created here rather than earlier. An earlier revision
+      // called createChat() BEFORE the image-request check, and generateImage
+      // called it again from a closure holding a stale activeChatId — which
+      // produced two rows for one image.
+      let chatId = activeChatId;
+      if (!chatId) chatId = await createChat();
+      if (!chatId) return;
+
+      const userMsg = { role: "user", content: `Generate image: ${imagePrompt}`, ts: now(), id: uid() };
+      const withUser = [...activeMessages, userMsg];
+      await updateChatMessages(chatId, withUser);
+
+      if (activeMessages.length === 0) {
+        const title = generateChatTitle(imagePrompt);
+        if (title) renameChat(chatId, title);
+      }
+
+      await updateChatMessages(chatId, [
+        ...withUser,
+        { role: "assistant", content: "", imageUrl: buildImageUrl(imagePrompt), imagePrompt, ts: now(), id: uid() },
+      ]);
+    },
+    [activeChatId, activeMessages, createChat, renameChat, updateChatMessages, setToast]
+  );
+
+  /**
+   * There was no way to stop a running generation. abortRef existed, but only
+   * to cancel the previous request when a new one started — a long or wrong
+   * answer had to be waited out in full.
+   */
+  const stopGeneration = useCallback(() => {
+    abortRef.current?.abort();
+  }, []);
+
+  const send = useCallback(
+    async (text, attachedImage, onAttachmentConsumed) => {
+      const cleanText = text.trim();
+      if (!cleanText || status !== "idle") return;
+
+      let chatId = activeChatId;
+      if (!chatId) chatId = await createChat();
+      if (!chatId) return;
+
+      const image = attachedImage;
+      onAttachmentConsumed?.();
+      setStatus("loading");
+
+      // imagePreview is local-only: the server whitelist keeps hasImage and
+      // drops it, so a reloaded chat shows the marker without storing
+      // megabytes per row.
+      const userMsg = {
+        role: "user",
+        content: cleanText,
+        ts: now(),
+        id: uid(),
+        ...(image ? { hasImage: true, imagePreview: image } : {}),
+      };
+      const updated = [...activeMessages, userMsg];
+      await updateChatMessages(chatId, updated);
+
+      if (activeMessages.length === 0) {
+        const title = generateChatTitle(cleanText);
+        if (title) renameChat(chatId, title);
+      }
+
+      const assistantId = uid();
+      const assistantMsg = { role: "assistant", content: "", typing: true, ts: now(), id: assistantId };
+      updateChatMessages(chatId, [...updated, assistantMsg], false);
+
+      const history = activeMessages
+        .filter((m) => m.content && m.content.trim() && !m.typing)
+        .slice(-HISTORY_TURNS)
+        .map((m) => ({ role: m.role, content: m.content.slice(0, HISTORY_CHARS) }));
+
+      abortRef.current?.abort();
+      abortRef.current = new AbortController();
+
+      // Hoisted so the catch can persist whatever streamed before an abort.
+      // Discarding it would throw away text the user already watched arrive.
+      let acc = "";
+
+      try {
+        const token = await getToken();
+        const res = await fetch(`${API_BASE}/api/council`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ message: cleanText, history, chatId, ...(image ? { image } : {}) }),
+          signal: abortRef.current.signal,
+        });
+
+        if (!res.ok) {
+          const d = await res.json().catch(() => ({}));
+          throw new Error(d.error || `Server error: ${res.status}`);
+        }
+        if (!res.body) throw new Error("No stream");
+
+        setStatus("streaming");
+        updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: "" }], false);
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = "";
+        let done = false;
+
+        while (!done) {
+          const chunk = await reader.read();
+          if (chunk.done) break;
+
+          buf += decoder.decode(chunk.value, { stream: true });
+          const lines = buf.split("\n");
+          buf = lines.pop() || "";
+
+          for (const line of lines) {
+            const t = line.trim();
+            if (!t.startsWith("data: ")) continue;
+            const payload = t.slice(6).trim();
+            if (payload === "[DONE]") {
+              done = true;
+              break;
+            }
+            // A frame that is not valid JSON is a transport artifact, not a
+            // failure worth aborting the whole response for.
+            let frame;
+            try {
+              frame = JSON.parse(payload);
+            } catch {
+              continue;
+            }
+            if (frame.type === "chunk") acc += frame.text;
+            else if (frame.type === "error") throw new Error(frame.text);
+          }
+
+          setChats((p) =>
+            p.map((c) =>
+              c.id === chatId
+                ? { ...c, messages: [...updated, { ...assistantMsg, typing: false, content: acc }] }
+                : c
+            )
+          );
+        }
+
+        await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: acc }]);
+        setStatus("idle");
+      } catch (err) {
+        if (err.name === "AbortError") {
+          // Two things this used to get wrong. It returned without resetting
+          // status, which left the composer disabled forever once a user-facing
+          // Stop existed; and it dropped `acc`, discarding text already on
+          // screen.
+          if (acc.trim()) {
+            await updateChatMessages(chatId, [
+              ...updated,
+              { ...assistantMsg, typing: false, content: acc, stopped: true },
+            ]);
+          } else {
+            await updateChatMessages(chatId, updated);
+          }
+          setStatus("idle");
+          return;
+        }
+
+        setStatus("error");
+        await updateChatMessages(chatId, [
+          ...updated,
+          { ...assistantMsg, typing: false, content: `⚠️ ${err.message || "Connection failed"}` },
+        ]);
+      }
+    },
+    [activeChatId, activeMessages, status, createChat, renameChat, updateChatMessages, getToken]
+  );
+
+  /**
+   * Re-run the last exchange: drop the previous answer and everything after
+   * it, then replay the user's message — so a bad answer can be retried
+   * without retyping, and without leaving the stale reply in the transcript.
+   */
+  const regenerateLast = useCallback(async () => {
+    if (status !== "idle") return;
+    const lastUserIdx = activeMessages.map((m) => m.role).lastIndexOf("user");
+    if (lastUserIdx === -1) return;
+
+    const prompt = activeMessages[lastUserIdx].content;
+    if (!prompt?.trim()) return;
+
+    await updateChatMessages(activeChatId, activeMessages.slice(0, lastUserIdx));
+    send(prompt, null);
+  }, [status, activeMessages, activeChatId, updateChatMessages, send]);
+
+  return {
+    chats,
+    sortedChats,
+    activeChat,
+    activeChatId,
+    activeMessages,
+    setActiveChatId,
+    status,
+    feedback,
+    isInitialLoading,
+    createChat,
+    deleteChat,
+    renameChat,
+    togglePinChat,
+    toggleFavoriteChat,
+    submitFeedback,
+    generateImage,
+    send,
+    stopGeneration,
+    regenerateLast,
+  };
+}
+
+export default useChats;

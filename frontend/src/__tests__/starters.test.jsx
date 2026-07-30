@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { STARTERS } from "../App";
+import { STARTERS } from "../constants/starters";
 
 // A blank page is the hardest prompt to answer. Each starter is one click to a
 // real reply, and between them they exercise deliberation, live web search,

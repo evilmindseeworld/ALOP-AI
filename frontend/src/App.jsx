@@ -95,6 +95,16 @@ const fileToDataUrl = (file) => new Promise((resolve, reject) => {
   reader.readAsDataURL(file);
 });
 
+// Each starter exercises a different path through the backend — deliberation,
+// live web search, code reasoning, and image generation — so a first-time user
+// sees what the council actually does rather than guessing at it.
+export const STARTERS = [
+  { icon: "⚖️", label: "Weigh a decision", prompt: "Should I use PostgreSQL or MongoDB for a social app with heavy relational queries? Argue both sides, then commit to one." },
+  { icon: "\u{1F50D}", label: "Search the live web", prompt: "What changed in the most recent React release, and should I upgrade?" },
+  { icon: "\u{1F41B}", label: "Debug some code", prompt: "Why would a React useEffect run twice on mount, and when is that actually a bug?" },
+  { icon: "\u{1F3A8}", label: "Generate an image", prompt: "/image a bioluminescent jellyfish drifting through a neon city skyline at night" },
+];
+
 // --- Skeleton Loaders ---
 const InitialLoader = () => (
   <div className="initial-loader dark">
@@ -163,6 +173,11 @@ const Icon = memo(({ name, size = 18 }) => {
     moon: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>,
     thumbsUp: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" /></svg>,
     thumbsDown: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3" /></svg>,
+    stop: <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2" /></svg>,
+    refresh: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 4v6h-6M1 20v-6h6" /><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" /></svg>,
+    download: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" /></svg>,
+    search: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.35-4.35" /></svg>,
+    arrowDown: <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 5v14M19 12l-7 7-7-7" /></svg>,
   };
   return icons[name] || null;
 });
@@ -203,7 +218,7 @@ const ChatSidebar = memo(({ chats, activeChatId, onSelect, onCreate, onDelete, o
 
 // The attachment lives in the parent rather than here, because the camera
 // capture flow sets it from outside this component.
-export const InputBar = memo(({ onSend, disabled, onFileSelect, onStartCamera, isListening, toggleListening, attachedImage, onClearAttachment }) => {
+export const InputBar = memo(({ onSend, disabled, onFileSelect, onStartCamera, isListening, toggleListening, attachedImage, onClearAttachment, isGenerating, onStop }) => {
   const [text, setText] = useState("");
   const [rows, setRows] = useState(1);
 
@@ -226,7 +241,9 @@ export const InputBar = memo(({ onSend, disabled, onFileSelect, onStartCamera, i
         <button className={`input-btn ${isListening ? "listening" : ""}`} onClick={toggleListening} title="Voice input"><Icon name="mic" size={16} /></button>
         <button className="input-btn" onClick={onStartCamera} title="Camera" disabled={disabled}><Icon name="camera" size={16} /></button>
         <div style={{ flex: 1 }}></div>
-        <button className="input-btn primary" onClick={submit} disabled={disabled || !text.trim()}><Icon name="send" size={16} /></button>
+        {isGenerating
+          ? <button className="input-btn primary is-stop" onClick={onStop} title="Stop generating" aria-label="Stop generating"><Icon name="stop" size={15} /></button>
+          : <button className="input-btn primary" onClick={submit} disabled={disabled || !text.trim()} title="Send" aria-label="Send"><Icon name="send" size={16} /></button>}
       </div>
     </div></div>
   );
@@ -275,6 +292,10 @@ const AuthenticatedApp = () => {
   const [showCamera, setShowCamera] = useState(false);
   const [attachedImage, setAttachedImage] = useState(null);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  // Only true when the user has scrolled meaningfully away from the bottom.
+  // The existing auto-scroll already stops following once you scroll up, which
+  // previously left you stranded with no way back.
+  const [showScrollDown, setShowScrollDown] = useState(false);
   // null means "no pricing available" — the endpoint 503s when this deployment
   // has no Stripe price IDs, and the upgrade path stays hidden rather than
   // offering a checkout that would fail.
@@ -504,6 +525,13 @@ const AuthenticatedApp = () => {
     await updateChatMessages(chatId, [...withUser, { role: "assistant", content: "", imageUrl: buildImageUrl(imagePrompt), imagePrompt, ts: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }), id: uid() }]);
   }, [activeChatId, activeMessages, createChat, renameChat, updateChatMessages]);
 
+  // There was no way to stop a running generation. abortRef existed but was
+  // only ever used to cancel the previous request when a new one started, so a
+  // long or wrong answer had to be waited out in full.
+  const stopGeneration = useCallback(() => {
+    if (abortRef.current) abortRef.current.abort();
+  }, []);
+
   const handleSend = useCallback(async (text) => {
     const cleanText = text.trim();
     // An attached image means "look at this", never "draw me one".
@@ -530,7 +558,11 @@ const AuthenticatedApp = () => {
     
     if (abortRef.current) abortRef.current.abort();
     abortRef.current = new AbortController();
-    
+
+    // Hoisted so the catch can persist whatever streamed before an abort.
+    // Discarding it would throw away text the user already watched arrive.
+    let acc = "";
+
     try {
       const token = await getToken();
       const res = await fetch(`${API_BASE}/api/council`, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: JSON.stringify({ message: cleanText, history: cleanHistory, chatId, ...(image ? { image } : {}) }), signal: abortRef.current.signal });
@@ -540,7 +572,7 @@ const AuthenticatedApp = () => {
       setStatus("streaming");
       updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: "" }], false);
       
-      const reader = res.body.getReader(); const decoder = new TextDecoder(); let acc = ""; let buf = ""; let streamDone = false;
+      const reader = res.body.getReader(); const decoder = new TextDecoder(); let buf = ""; let streamDone = false;
       while (!streamDone) {
         const { done, value } = await reader.read(); if (done) break;
         buf += decoder.decode(value, { stream: true }); const lines = buf.split("\n"); buf = lines.pop() || "";
@@ -559,12 +591,54 @@ const AuthenticatedApp = () => {
       }
       await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: acc }]);
       setStatus("idle");
-    } catch (err) { 
-      if (err.name === "AbortError") return; 
-      setStatus("error"); 
+    } catch (err) {
+      if (err.name === "AbortError") {
+        // Two things this used to get wrong. It returned without resetting
+        // status, which left the composer disabled forever once a user-facing
+        // Stop existed; and it dropped `acc`, discarding text already on screen.
+        if (acc.trim()) {
+          await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: acc, stopped: true }]);
+        } else {
+          await updateChatMessages(chatId, updated);
+        }
+        setStatus("idle");
+        return;
+      }
+      setStatus("error");
       await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: `⚠️ ${err.message || "Connection failed"}` }]); 
     }
   }, [activeChatId, activeMessages, status, generateImage, createChat, renameChat, updateChatMessages, getToken, attachedImage]);
+
+  // Re-run the last exchange. Drops the previous answer and everything after
+  // it, then replays the user's message — so a bad answer can be retried
+  // without retyping, and without leaving the stale reply in the transcript.
+  const regenerateLast = useCallback(async () => {
+    if (status !== "idle") return;
+    const lastUserIdx = [...activeMessages].map((m) => m.role).lastIndexOf("user");
+    if (lastUserIdx === -1) return;
+    const prompt = activeMessages[lastUserIdx].content;
+    if (!prompt?.trim()) return;
+    await updateChatMessages(activeChatId, activeMessages.slice(0, lastUserIdx));
+    handleSend(prompt);
+  }, [status, activeMessages, activeChatId, updateChatMessages, handleSend]);
+
+  const exportChat = useCallback(() => {
+    if (!activeMessages.length) { setToast("Nothing to export yet."); return; }
+    const title = activeChat?.title || "ALOP-AI chat";
+    const body = activeMessages
+      .filter((m) => m.content?.trim())
+      .map((m) => `### ${m.role === "user" ? "You" : "ALOP-AI"}${m.ts ? ` · ${m.ts}` : ""}\n\n${m.content}`)
+      .join("\n\n---\n\n");
+    const md = `# ${title}\n\n_Exported ${new Date().toLocaleString()}_\n\n${body}\n`;
+    const url = URL.createObjectURL(new Blob([md], { type: "text/markdown" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${title.replace(/[^\w\s-]/g, "").trim().slice(0, 60) || "chat"}.md`;
+    a.click();
+    // Revoking synchronously can cancel the download in some browsers.
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    setToast("Chat exported.");
+  }, [activeMessages, activeChat]);
 
   if (!isLoaded) return null;
   if (isInitialLoading) return <AppSkeleton />;
@@ -616,8 +690,35 @@ const AuthenticatedApp = () => {
             {showSettings && (<><div className="panel-overlay" onClick={() => setShowSettings(false)} /><div className="side-panel"><div className="panel-header"><div className="panel-title">Settings</div><button onClick={() => setShowSettings(false)} className="icon-btn"><Icon name="close" size={18} /></button></div><div className="panel-body"><div className="setting-row"><div className="setting-label">Appearance</div><div className={`theme-toggle ${darkMode ? "active" : ""}`} onClick={() => setDarkMode((d) => !d)}><span className="theme-toggle-label">{darkMode ? "Sakura Night" : "Bamboo Day"}</span><div className="theme-toggle-switch" /></div></div><div className="setting-row"><button onClick={() => activeChatId && deleteChat(activeChatId)} className="theme-card">Delete Chat</button></div>{userPlan === "pro" && <div className="setting-row"><button onClick={openBillingPortal} disabled={billingBusy} className="theme-card" style={{ width: "100%" }}>{billingBusy ? "Opening..." : "Manage subscription"}</button></div>}{userPlan !== "pro" && prices && <div className="setting-row"><button onClick={() => { setShowSettings(false); setShowUpgrade(true); }} className="theme-card" style={{ width: "100%" }}>Upgrade to Pro</button></div>}<div className="setting-row"><SignOutButton><button className="theme-card" style={{ width: "100%" }}>Sign Out</button></SignOutButton></div></div></div></>)}
             
             <div className="chat-content">
-              <div className="scroll-wrapper" ref={chatRef}>
-                {activeMessages.length === 0 && status === "idle" && (<div className="empty-state"><img src="/logo.png" alt="ALOP-AI" className="empty-logo" /><h2 className="empty-title text-shimmer">ALOP-AI</h2><p className="empty-subtitle">Ask the AI Council anything. Multiple models work together. Precision mode active. The AI learns from your feedback.</p></div>)}
+              <div
+                className="scroll-wrapper"
+                ref={chatRef}
+                onScroll={(e) => {
+                  const el = e.currentTarget;
+                  // Same 150px threshold the auto-scroll uses, so the button
+                  // appears exactly when following stops.
+                  setShowScrollDown(el.scrollHeight - el.scrollTop - el.clientHeight > 150);
+                }}
+              >
+                {activeMessages.length === 0 && status === "idle" && (
+                  <div className="empty-state">
+                    <img src="/logo.png" alt="ALOP-AI" className="empty-logo" />
+                    <h2 className="empty-title text-shimmer">ALOP-AI</h2>
+                    <p className="empty-subtitle">Ask the AI Council anything. Multiple models work together, debate, then answer. It learns from your feedback.</p>
+                    {/* A blank page is the hardest prompt to answer. These are
+                        one click to a real reply, and each one exercises a
+                        different capability so the council gets shown off. */}
+                    <div className="starter-grid">
+                      {STARTERS.map((s) => (
+                        <button key={s.prompt} className="starter-card" onClick={() => handleSend(s.prompt)}>
+                          <span className="starter-icon" aria-hidden="true">{s.icon}</span>
+                          <span className="starter-label">{s.label}</span>
+                          <span className="starter-prompt">{s.prompt}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {activeMessages.map((msg, idx) => (
                   <div key={msg.id || idx} className={`msg-row ${msg.role}`}>
                     <div className="avatar">{msg.role === "user" ? "YOU" : "AI"}</div>
@@ -652,7 +753,23 @@ const AuthenticatedApp = () => {
                   </div>
                 ))}
               </div>
-              <InputBar onSend={handleSend} disabled={status !== "idle"} onFileSelect={handleFileSelect} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} attachedImage={attachedImage} onClearAttachment={() => setAttachedImage(null)} />
+              {showScrollDown && (
+                <button
+                  className="scroll-down-btn"
+                  onClick={() => { if (chatRef.current) chatRef.current.scrollTo({ top: chatRef.current.scrollHeight, behavior: "smooth" }); }}
+                  title="Jump to latest"
+                  aria-label="Jump to latest message"
+                >
+                  <Icon name="arrowDown" size={16} />
+                </button>
+              )}
+              {activeMessages.length > 0 && status === "idle" && (
+                <div className="chat-toolbar">
+                  <button className="chat-toolbar-btn" onClick={regenerateLast} title="Regenerate the last answer"><Icon name="refresh" size={13} /> Regenerate</button>
+                  <button className="chat-toolbar-btn" onClick={exportChat} title="Download this chat as Markdown"><Icon name="download" size={13} /> Export</button>
+                </div>
+              )}
+              <InputBar onSend={handleSend} disabled={status !== "idle"} onFileSelect={handleFileSelect} onStartCamera={startCamera} isListening={isListening} toggleListening={toggleListening} attachedImage={attachedImage} onClearAttachment={() => setAttachedImage(null)} isGenerating={status === "loading" || status === "streaming"} onStop={stopGeneration} />
             </div>
           </div>
         </div>

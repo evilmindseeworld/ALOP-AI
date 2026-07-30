@@ -9,6 +9,7 @@ import { InputBar } from "../App";
 const setup = (props = {}) => {
   const onSend = vi.fn();
   const onClearAttachment = vi.fn();
+  const onStop = vi.fn();
   render(
     <InputBar
       onSend={onSend}
@@ -19,10 +20,12 @@ const setup = (props = {}) => {
       toggleListening={vi.fn()}
       attachedImage={null}
       onClearAttachment={onClearAttachment}
+      isGenerating={false}
+      onStop={onStop}
       {...props}
     />
   );
-  return { onSend, onClearAttachment };
+  return { onSend, onClearAttachment, onStop };
 };
 
 const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==";
@@ -88,6 +91,35 @@ describe("InputBar", () => {
     await userEvent.keyboard("{Enter}");
 
     expect(onSend).not.toHaveBeenCalled();
+  });
+
+  // Before this, abortRef was only ever used to cancel the previous request
+  // when a new one started — a long or wrong answer had to be waited out.
+  it("shows Send, not Stop, when idle", () => {
+    setup();
+    expect(screen.getByLabelText("Send")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Stop generating")).not.toBeInTheDocument();
+  });
+
+  it("swaps Send for Stop while generating", () => {
+    setup({ isGenerating: true, disabled: true });
+    expect(screen.getByLabelText("Stop generating")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Send")).not.toBeInTheDocument();
+  });
+
+  it("calls onStop when Stop is clicked", async () => {
+    const { onStop } = setup({ isGenerating: true, disabled: true });
+
+    await userEvent.click(screen.getByLabelText("Stop generating"));
+
+    expect(onStop).toHaveBeenCalledOnce();
+  });
+
+  // The composer is disabled while streaming, so a Stop that inherited that
+  // disabled state would be unclickable — exactly when it is needed most.
+  it("keeps Stop clickable even though the composer is disabled", () => {
+    setup({ isGenerating: true, disabled: true });
+    expect(screen.getByLabelText("Stop generating")).not.toBeDisabled();
   });
 
   it("accepts a single image, not a multiple selection", () => {

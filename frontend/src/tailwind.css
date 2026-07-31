@@ -17,7 +17,33 @@
 @layer theme, base, components, utilities;
 
 @import "tailwindcss/theme.css" layer(theme);
-@import "tailwindcss/utilities.css" layer(utilities);
+
+/* UTILITIES ARE DELIBERATELY UNLAYERED. Read this before "fixing" it.
+ *
+ * They used to be imported with layer(utilities), which looks tidier and was
+ * silently broken: unlayered CSS beats layered CSS regardless of specificity,
+ * and styles/base.css opens with the classic
+ *
+ *     * { box-sizing: border-box; margin: 0; padding: 0; }
+ *
+ * so EVERY padding and margin utility did nothing at all. `bg-primary` and
+ * `h-9` worked, `px-4` did not, and the difference is invisible until you
+ * measure it — every shadcn button rendered with its label clipped.
+ *
+ * Unlayered, `.px-4` (0,1,0) beats `*` (0,0,0) and the utility works. App.css
+ * keeps winning against existing components anyway, because it is imported
+ * AFTER this file in main.jsx and its component rules are also (0,1,0), so
+ * source order decides in its favour. Both properties hold at once.
+ *
+ * tailwindSetup.test.js now renders an element and asserts a utility actually
+ * takes effect, rather than only checking that the text is present.
+ */
+@import "tailwindcss/utilities.css";
+
+/* The subset of Preflight that Radix and shadcn components actually need,
+ * scoped to [data-ui-scope]. Preflight itself stays out — see the note above
+ * and styles/ui-reset.css for the full reasoning. */
+@import "./styles/ui-reset.css" layer(base);
 
 /* Bridge Tailwind's palette to the existing design tokens so a utility and a
  * hand-written rule cannot drift apart. `bg-surface-2` and
@@ -59,6 +85,29 @@
   --radius-md: var(--radius-md);
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
+
+  /* shadcn's semantic token names, mapped onto the SAME variables. A shadcn
+   * component and a hand-written rule therefore resolve to identical colours,
+   * and both follow the light/dark switch, because they dereference one
+   * variable at runtime. A literal here is exactly how the two systems would
+   * drift: the component and the rule would render different colours and the
+   * theme toggle would move only one of them. */
+  --color-background: var(--bg);
+  --color-foreground: var(--text);
+  --color-card: var(--surface-2);
+  --color-card-foreground: var(--text);
+  --color-popover: var(--surface-3);
+  --color-popover-foreground: var(--text);
+  --color-primary-foreground: var(--text-on-fill);
+  --color-secondary-foreground: var(--text);
+  --color-muted: var(--surface-2);
+  --color-muted-foreground: var(--text-muted);
+  --color-accent-foreground: var(--text);
+  --color-destructive: var(--danger);
+  --color-destructive-foreground: var(--text-on-fill);
+  --color-border: var(--border);
+  --color-input: var(--border-strong);
+  --color-ring: var(--border-focus);
 
   /* The stacking scale is shared too, so a Tailwind `z-panel` cannot silently
    * disagree with App.css. zIndexOrder.test.js governs both.

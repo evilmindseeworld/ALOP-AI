@@ -1,0 +1,43 @@
+/* Syntax-highlighted code blocks inside messages. */
+
+/* ===== PREMIUM CODE BLOCKS ===== */
+.code-block-wrapper {
+  position: relative;
+  margin: 12px 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.code-block-wrapper pre {
+  margin: 0;
+  padding: 16px;
+  background: #1a1a24;
+  font-size: 13px;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+}
+
+.code-copy-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease;
+  z-index: var(--z-in-chat-control);
+  backdrop-filter: blur(4px);
+}
+
+.code-block-wrapper:hover .code-copy-btn {
+  opacity: 1;
+}
+
+.code-copy-btn:hover {
+  background: var(--primary);
+}

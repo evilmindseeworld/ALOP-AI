@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { readStylesheet } from "../test/cssSnapshot";
 
 const src = join(dirname(fileURLToPath(import.meta.url)), "..");
 const read = (f) => readFileSync(join(src, f), "utf8");
@@ -11,7 +12,10 @@ const TAILWIND_CSS = read("tailwind.css");
 // check for the word itself has to look at real declarations only.
 const TAILWIND_CODE = TAILWIND_CSS.replace(/\/\*[\s\S]*?\*\//g, "");
 const MAIN = read("main.jsx");
-const APP_CSS = read("App.css");
+// App.css is an import manifest now; the tokens live in src/styles/tokens.css.
+// Read the whole stylesheet so the bridge is checked against every token the
+// app actually defines, wherever it was split to.
+const APP_CSS = readStylesheet(join(src, "App.css"));
 
 /**
  * Tailwind is additive here. App.css is 2,892 hand-written lines whose base
@@ -37,7 +41,10 @@ describe("Tailwind is additive, not a takeover", () => {
 
   it("does import theme and utilities, so the utilities still exist", () => {
     expect(TAILWIND_CSS).toMatch(/@import\s+["']tailwindcss\/theme\.css["']\s+layer\(theme\)/);
-    expect(TAILWIND_CSS).toMatch(/@import\s+["']tailwindcss\/utilities\.css["']\s+layer\(utilities\)/);
+    // Utilities are imported UNLAYERED on purpose. See the block at the bottom
+    // of this file: layering them made every padding and margin utility a
+    // no-op against base.css's `* { margin: 0; padding: 0 }`.
+    expect(TAILWIND_CSS).toMatch(/@import\s+["']tailwindcss\/utilities\.css["']\s*;/);
   });
 
   it("declares the layer order explicitly", () => {
@@ -88,5 +95,50 @@ describe("import order", () => {
 
   it("no longer references the deleted index.css", () => {
     expect(MAIN).not.toMatch(/index\.css/);
+  });
+});
+
+/**
+ * The bug this suite did not catch, and now does.
+ *
+ * Utilities were imported with `layer(utilities)`. Unlayered CSS beats layered
+ * CSS regardless of specificity, and styles/base.css opens with
+ * `* { margin: 0; padding: 0 }` — so every padding and margin utility silently
+ * did nothing. `bg-primary` and `h-9` worked and `px-4` did not, which is
+ * invisible until you measure it: shadcn buttons rendered with clipped labels.
+ *
+ * The invariant is checkable statically: if the hand-written stylesheet has an
+ * unlayered global reset touching a property, utilities must be unlayered too,
+ * or they cannot win.
+ */
+describe("utilities can actually beat the global reset", () => {
+  const RESET = readStylesheet(join(src, "App.css"));
+
+  const globalResetProperties = () => {
+    // The `* { ... }` rule at the top of base.css, if it still exists.
+    const match = RESET.match(/[\r\n]\s*\*\s*\{([^}]*)\}/);
+    if (!match) return [];
+    return [...match[1].matchAll(/([a-z-]+)\s*:/g)].map((m) => m[1]);
+  };
+
+  it("still has the global reset this depends on", () => {
+    // If someone removes it, this suite should be revisited rather than
+    // quietly passing for a new reason.
+    expect(globalResetProperties()).toContain("padding");
+  });
+
+  it("imports utilities WITHOUT a layer, so they outrank that reset", () => {
+    const code = TAILWIND_CSS.replace(/\/\*[\s\S]*?\*\//g, "");
+    const utilities = code.match(/@import\s+"tailwindcss\/utilities\.css"([^;]*);/);
+
+    expect(utilities, "utilities.css is not imported at all").toBeTruthy();
+    expect(
+      utilities[1].trim(),
+      "utilities are layered again — every padding and margin utility will silently stop working"
+    ).toBe("");
+  });
+
+  it("keeps the theme layered, since nothing competes with custom properties", () => {
+    expect(TAILWIND_CODE).toMatch(/@import\s+"tailwindcss\/theme\.css"\s+layer\(theme\)/);
   });
 });

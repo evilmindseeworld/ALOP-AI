@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatPrice } from "../App";
+import { formatPrice } from "../lib/format";
 
 // Prices come from the Stripe API in minor units so the paywall can never
 // advertise a figure that differs from what the customer is charged.

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { InputBar } from "../App";
+import InputBar from "../components/InputBar";
 
 // The composer used to hold its own attachment array and answer every upload
 // with "File upload disabled in Council mode". The attachment now lives in the

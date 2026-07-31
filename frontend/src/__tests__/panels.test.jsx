@@ -1,0 +1,90 @@
+import { describe, it, expect, vi } from "vitest";
+import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import UpgradePanel from "../components/panels/UpgradePanel";
+import AdminPanel from "../components/panels/AdminPanel";
+
+const noop = () => {};
+
+describe("UpgradePanel", () => {
+  const prices = { monthly: { amount: 900, currency: "usd" }, yearly: { amount: 9000, currency: "usd" } };
+
+  it("renders nothing when closed", () => {
+    const { container } = render(
+      <UpgradePanel open={false} onClose={noop} prices={prices} billingBusy={false} onCheckout={noop} />
+    );
+    expect(container).toBeEmptyDOMElement();
+  });
+
+  it("shows both formatted prices", () => {
+    render(<UpgradePanel open onClose={noop} prices={prices} billingBusy={false} onCheckout={noop} />);
+    expect(screen.getByText(/Monthly — \$9$/)).toBeInTheDocument();
+    expect(screen.getByText(/Yearly — \$90$/)).toBeInTheDocument();
+  });
+
+  it("passes the chosen plan to checkout", async () => {
+    const onCheckout = vi.fn();
+    render(<UpgradePanel open onClose={noop} prices={prices} billingBusy={false} onCheckout={onCheckout} />);
+
+    await userEvent.click(screen.getByText(/Monthly/));
+    expect(onCheckout).toHaveBeenCalledWith("monthly");
+
+    await userEvent.click(screen.getByText(/Yearly/));
+    expect(onCheckout).toHaveBeenCalledWith("yearly");
+  });
+
+  it("disables both buttons while a checkout is opening", () => {
+    // Otherwise a second click opens a second Stripe session for one purchase.
+    render(<UpgradePanel open onClose={noop} prices={prices} billingBusy onCheckout={noop} />);
+    for (const button of screen.getAllByText(/Opening checkout/)) expect(button).toBeDisabled();
+  });
+
+  it("does not print NaN when a price is missing", () => {
+    const { container } = render(
+      <UpgradePanel open onClose={noop} prices={{}} billingBusy={false} onCheckout={noop} />
+    );
+    expect(container.textContent).not.toContain("NaN");
+    expect(container.textContent).not.toContain("undefined");
+  });
+});
+
+describe("AdminPanel", () => {
+  const users = [
+    { id: "1", name: "Ada", email: "ada@example.com", plan: "pro", is_admin: true },
+    { id: "2", name: "Bob", email: "bob@example.com", suspended: true },
+  ];
+
+  it("counts the users it was given", () => {
+    render(<AdminPanel open onClose={noop} users={users} onSuspend={noop} onUnsuspend={noop} onDelete={noop} />);
+    expect(screen.getByText("2 Users")).toBeInTheDocument();
+  });
+
+  it("offers Unsuspend for a suspended user and Suspend for an active one", () => {
+    render(<AdminPanel open onClose={noop} users={users} onSuspend={noop} onUnsuspend={noop} onDelete={noop} />);
+    expect(screen.getByText("Suspend")).toBeInTheDocument();
+    expect(screen.getByText("Unsuspend")).toBeInTheDocument();
+  });
+
+  it("passes the right id to each action", async () => {
+    const onSuspend = vi.fn();
+    const onUnsuspend = vi.fn();
+    render(
+      <AdminPanel open onClose={noop} users={users} onSuspend={onSuspend} onUnsuspend={onUnsuspend} onDelete={noop} />
+    );
+
+    await userEvent.click(screen.getByText("Suspend"));
+    expect(onSuspend).toHaveBeenCalledWith("1");
+
+    await userEvent.click(screen.getByText("Unsuspend"));
+    expect(onUnsuspend).toHaveBeenCalledWith("2");
+  });
+
+  it("falls back for a user with no name or email", () => {
+    render(
+      <AdminPanel open onClose={noop} users={[{ id: "3" }]} onSuspend={noop} onUnsuspend={noop} onDelete={noop} />
+    );
+    expect(screen.getByText("Anonymous")).toBeInTheDocument();
+    expect(screen.getByText("No email")).toBeInTheDocument();
+    expect(screen.getByText("free")).toBeInTheDocument();
+  });
+});

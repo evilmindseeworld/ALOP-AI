@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
-import { Earring } from "../App";
+import Earring from "../components/Earring";
 
 // The earrings are decoration. Everything worth asserting is about them staying
 // out of the way: out of the accessibility tree, out of the way of pointer

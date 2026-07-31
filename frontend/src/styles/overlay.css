@@ -1,0 +1,109 @@
+/* The always-on-top overlay assistant, which renders outside .app-root. */
+
+/* ===== OVERLAY ASSISTANT ===== */
+.overlay-root {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 0 20px 36px 20px;
+  background: transparent;
+  pointer-events: none;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.overlay-drag-handle {
+  cursor: grab;
+  padding: 0 8px;
+  color: var(--text-subtle);
+  user-select: none;
+  display: flex;
+  align-items: center;
+  font-size: 18px;
+  border-right: 1px solid var(--border);
+  height: 24px;
+}
+
+.overlay-drag-handle:active {
+  cursor: grabbing;
+}
+
+
+.overlay-root > * { pointer-events: auto; }
+
+.overlay-answer-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 720px;
+  margin-bottom: 12px;
+  align-items: flex-end;
+}
+
+.overlay-answer-text { flex: 1; }
+
+.overlay-tts-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: var(--surface-3);
+  color: #faf0e6;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 11px;
+  transition: all 0.15s;
+}
+
+.overlay-tts-btn:hover {
+  background: var(--surface-4);
+  transform: scale(1.1);
+}
+
+@keyframes overlayUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.overlay-icon.live {
+  background: var(--danger);
+  box-shadow: 0 0 0 0 rgba(196, 101, 112, 0.4);
+  animation: pulse-red 1.5s infinite;
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(196, 101, 112, 0.45); }
+  70% { box-shadow: 0 0 0 8px rgba(196, 101, 112, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(196, 101, 112, 0); }
+}
+
+.overlay-action:active { transform: scale(0.92); }
+
+.overlay-action.recording {
+  background: var(--danger);
+  color: #ffffff;
+  animation: pulse 1.2s infinite;
+}
+
+.overlay-submit:hover:not(:disabled) { transform: scale(1.08); }
+.overlay-submit:active:not(:disabled) { transform: scale(0.95); }
+.overlay-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.overlay-file-input { display: none; }
+
+.overlay-thumb-pill button {
+  background: none;
+  border: none;
+  color: var(--text-subtle);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.overlay-thumb-pill button:hover { color: var(--text); }

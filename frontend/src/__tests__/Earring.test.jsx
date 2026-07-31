@@ -79,3 +79,28 @@ describe("Earring", () => {
     }
   });
 });
+
+/**
+ * The ornament is the app's one piece of motion that carries information
+ * rather than decorating: it swings wider while the council is working, so
+ * the periphery reports activity without another spinner mid-page.
+ */
+describe("Earring — the working state", () => {
+  it("is idle by default", () => {
+    const { container } = render(<Earring side="left" />);
+    expect(container.querySelector(".earring-wrap").className).not.toContain("is-active");
+  });
+
+  it("marks itself active while an answer is arriving", () => {
+    const { container } = render(<Earring side="left" active />);
+    expect(container.querySelector(".earring-wrap").className).toContain("is-active");
+  });
+
+  it("stays decorative to a screen reader in both states", () => {
+    // Motion that reports status must NOT become an announcement: the live
+    // region in MessageList already says an answer is in progress, and a
+    // second voice saying it is redundant noise.
+    const { container } = render(<Earring side="right" active />);
+    expect(container.querySelector(".earring-wrap")).toHaveAttribute("aria-hidden", "true");
+  });
+});

@@ -74,6 +74,39 @@
   50% { transform: rotate(3.5deg); }
 }
 
+/* THE ONE DELIBERATE FLOURISH.
+ *
+ * The ornament is the only thing on this screen that could not be mistaken for
+ * any other chat client, so under "spend your boldness in one place" it gets
+ * the moment and everything else stays quiet.
+ *
+ * It also carries information rather than decorating: the swing widens and
+ * quickens while the council is working, so the periphery reports that
+ * something is happening without a second spinner in the middle of the page.
+ * The chain brightens with it, because a chain that stays dim while the
+ * ornament swings reads as the drawing coming apart. */
+/* The full shorthand, not `animation-name` plus `animation-duration`. The
+ * cascade snapshot expands shorthands into longhands and only tracks a
+ * longhand once something declares it, so introducing animation-name here made
+ * it start recording animation-name for every animated element in the app —
+ * the same bookkeeping blow-up border-style caused in composer.css. It also
+ * resets animation-delay to 0, which is what we want: both ornaments swing in
+ * step while the council works, and a synchronised pair reads as one system
+ * doing something where an offset pair reads as two decorations. */
+.earring-wrap.is-active .earring-pivot {
+  animation: earringSwingActive 1.9s ease-in-out infinite;
+}
+
+.earring-wrap.is-active .earring-chain {
+  opacity: 0.85;
+  transition: opacity var(--dur-slow) ease;
+}
+
+@keyframes earringSwingActive {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
+}
+
 /* The intrinsic drawing is 96x132; every rendered size is set here so the
  * viewBox does the scaling and the edges stay crisp. */
 .earring-pivot .crescent {
@@ -98,7 +131,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .earring-pivot { animation: none; }
+  /* Both the idle swing and the working swing. The active one is the more
+   * important of the two to silence: it is faster, wider, and it starts
+   * without warning. */
+  .earring-pivot,
+  .earring-wrap.is-active .earring-pivot { animation: none; }
 }
 
 /* ===== SKELETON SHIMMER ===== */

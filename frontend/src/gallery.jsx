@@ -123,8 +123,8 @@ const Primitives = () => (
 
     <Section title="Ornament" note="The real Crescent and chain — the pair, mirrored, as they hang in the app.">
       <div style={{ position: "relative", height: 190, width: 280 }}>
-        <Earring side="left" />
-        <Earring side="right" />
+        <Earring side="left" active />
+        <Earring side="right" active />
       </div>
     </Section>
 

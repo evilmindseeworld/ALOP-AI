@@ -12,6 +12,8 @@
 
 export const appTree = (theme) => `
 <div class="app-root ${theme}">
+  <a class="skip-link" href="#transcript">Skip to the conversation</a>
+
   <div class="bg-layer"></div>
   <div class="bg-overlay"></div>
 
@@ -142,7 +144,7 @@ export const appTree = (theme) => `
           <div class="earring-chain"></div>
           <div class="earring-pivot"><svg class="crescent" width="96" height="132" viewBox="0 0 96 132"><defs><linearGradient><stop/></linearGradient></defs><path d="M0 0"/></svg></div>
         </div>
-        <div class="earring-wrap earring-right" aria-hidden="true">
+        <div class="earring-wrap earring-right is-active" aria-hidden="true">
           <div class="earring-chain"></div>
           <div class="earring-pivot"><svg class="crescent" width="96" height="132" viewBox="0 0 96 132"><path d="M0 0"/></svg></div>
         </div>

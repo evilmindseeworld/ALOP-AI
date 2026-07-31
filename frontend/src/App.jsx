@@ -319,6 +319,13 @@ const AuthenticatedApp = () => {
 
   return (
     <div className={`app-root ${darkMode ? "dark" : "light"}`}>
+      {/* The first tab stop. Without it, reaching the transcript from the
+          keyboard means tabbing past the sidebar toggle, the search field, New
+          Chat, and then every chat with its four action buttons. */}
+      <a className="skip-link" href="#transcript">
+        Skip to the conversation
+      </a>
+
       <div className="bg-layer" />
       <div className="bg-overlay" />
 
@@ -443,8 +450,8 @@ const AuthenticatedApp = () => {
             {/* Inside the transcript panel, not the window: fixed positioning
                 hung these over the sidebar and the header, which is the app's
                 own chrome. They live in the margin the centred column makes. */}
-            <Earring side="left" />
-            <Earring side="right" />
+            <Earring side="left" active={status !== "idle"} />
+            <Earring side="right" active={status !== "idle"} />
 
             <AdminPanel
               open={showAdmin && isAdmin}
@@ -483,6 +490,12 @@ const AuthenticatedApp = () => {
             <div className="chat-content">
               <div
                 className="scroll-wrapper"
+                id="transcript"
+                // Focusable only as a skip-link target: without tabIndex the
+                // jump moves the viewport but not focus, so the next Tab
+                // continues from the sidebar as though nothing happened.
+                tabIndex={-1}
+                aria-label="Conversation"
                 ref={chatRef}
                 onScroll={(e) => {
                   const el = e.currentTarget;

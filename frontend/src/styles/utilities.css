@@ -7,6 +7,37 @@
 .mobile-only { display: none; }
 .desktop-only { display: flex; }
 
+/* ===== SKIP LINK =====
+ *
+ * The first tab stop on the page, and invisible until it is focused.
+ *
+ * Without it a keyboard user reaches the transcript by tabbing through the
+ * sidebar toggle, the search field, New Chat, and then every chat in the list
+ * with its four action buttons — which on a busy account is over a hundred
+ * stops before the thing they came for. It is positioned rather than
+ * clip-path'd like .sr-only, because it has to become visible on focus and a
+ * clipped element cannot. */
+.skip-link {
+  position: absolute;
+  top: var(--space-2);
+  left: var(--space-2);
+  z-index: var(--z-cmdk);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-focus);
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: none;
+  /* Off-screen rather than display:none — a hidden link is not focusable, and
+   * a link that cannot be focused cannot be skipped to. */
+  transform: translateY(-200%);
+  transition: transform var(--dur) var(--ease-out);
+}
+
+.skip-link:focus { transform: translateY(0); }
+
 /* Visually hidden, still announced. Used for the live region that tells a
  * screen reader an answer has finished streaming — the old UI signalled that
  * with animation alone, which is to say not at all. */

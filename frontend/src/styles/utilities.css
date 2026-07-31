@@ -40,13 +40,22 @@
   .mobile-only { display: flex; }
   .desktop-only { display: none; }
 
-  .app-shell { padding: var(--space-2); gap: var(--space-2); }
-  .app-header { padding: var(--space-2) var(--space-3); border-radius: var(--radius-lg); }
-  .app-body { gap: var(--space-2); }
-  .chat-main { border-radius: var(--radius-lg); }
+  /* The frame goes nearly flush on a phone: 10px of visible wash is a luxury a
+   * 390px viewport cannot afford, and the radius has to come down with it or
+   * the corner eats the first character of the title. */
+  .app-shell { padding: var(--space-1); }
+  .app-frame { border-radius: var(--radius-lg); }
 
-  .main-title { font-size: var(--text-base); }
-  .sub-title { font-size: 11px; }
+  /* The bar grows rather than shrinking, and its buttons go back to 40px.
+   * These are the app's primary controls and on a touch device they are thumb
+   * targets: 34px is below the 44px floor, which is a defensible trade for a
+   * pointer and not for a finger. Declared here rather than as a second token
+   * because utilities.css is where every media query lives, and it beats the
+   * component default on source order without needing force. */
+  .app-header { height: 56px; padding: 0 var(--space-2); }
+  .app-header .icon-btn { width: 40px; height: 40px; }
+
+  .main-title { font-size: var(--text-sm); }
 
   .scroll-wrapper { padding: var(--space-4) var(--space-3) var(--space-2); }
   .msg-row { padding: var(--space-3) 0; gap: var(--space-2); }
@@ -78,7 +87,12 @@
     left: 0;
     width: min(300px, 86vw);
     transform: translateX(-110%);
-    border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
+    /* Opaque, unlike the desktop column: the drawer covers the transcript
+     * rather than dividing it, and the frame's own background is behind the
+     * text it has to hide. */
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
     box-shadow: var(--shadow-lg);
     z-index: var(--z-sidebar-mobile);
   }
@@ -87,8 +101,8 @@
    * a zero-width drawer cannot be opened again. */
   .sidebar.collapsed {
     width: min(300px, 86vw);
-    padding: var(--space-3);
-    border: 1px solid var(--border);
+    padding: var(--space-3) var(--space-2);
+    border-right: 1px solid var(--border);
     opacity: 1;
   }
 

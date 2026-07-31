@@ -82,14 +82,51 @@ body {
 .bg-layer,
 .bg-overlay { display: none; }
 
+/* ===== THE FRAME =====
+ *
+ * `.app-shell` is now nothing but the inset. Everything visible belongs to
+ * `.app-frame`, and that is the point: the app used to be three separate glass
+ * cards — header, sidebar, chat — floating on the wash with 16px gaps between
+ * them. Three borders, three radii, three shadows, three backdrop-filters.
+ *
+ * That shape reads as a dashboard. The register this is aiming at (Linear,
+ * Raycast, Claude) is one surface divided by hairlines, and a hairline is a
+ * cheaper, quieter separator than a gap plus two borders.
+ *
+ * The blur is also now a single pass instead of three overlapping ones. Blur
+ * composited over blur was washing the pink out — each layer resamples what the
+ * one beneath it already blurred — and it cost three full-viewport composites
+ * per frame where one will do.
+ *
+ * The inset stays at 10px rather than going to zero. Flush to the viewport the
+ * ambient bloom is invisible and the result reads flat; the visible strip of
+ * lit background around the frame is the difference between "dark app" and
+ * "dark room with a screen in it".
+ */
 .app-shell {
   position: relative;
   display: flex;
-  flex-direction: column;
   width: 100%;
   height: 100%;
-  padding: var(--space-4);
-  gap: var(--space-4);
+  padding: var(--frame-inset);
+}
+
+.app-frame {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: color-mix(in srgb, var(--surface) 68%, transparent);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--rim), var(--shadow-lg);
+  backdrop-filter: blur(24px) saturate(1.25);
+  -webkit-backdrop-filter: blur(24px) saturate(1.25);
+  /* Clips the sidebar drawer and the transcript to the frame's radius, so
+   * nothing has to repeat the corner rounding to stay inside it. */
+  overflow: hidden;
+  transition: background var(--dur) ease, border-color var(--dur) ease;
 }
 
 /* ===== SCROLLBARS ===== */

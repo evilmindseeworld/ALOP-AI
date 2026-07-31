@@ -51,15 +51,13 @@ export const appTree = (theme) => `
   </div>
 
   <div class="app-shell">
+   <div class="app-frame">
     <header class="app-header">
       <button class="icon-btn mobile-only"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
       <button class="icon-btn desktop-only"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
       <div class="brand">
         <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="header-logo" alt=""/>
-        <div class="brand-text">
-          <h1 class="main-title">ALOP-AI</h1>
-          <span class="sub-title">AI Council</span>
-        </div>
+        <h1 class="main-title">ALOP-AI</h1>
       </div>
       <div class="header-actions">
         <button class="cmdk-trigger desktop-only"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg><span>Search</span><kbd>Ctrl K</kbd></button>
@@ -305,6 +303,7 @@ export const appTree = (theme) => `
         </div>
       </div>
     </div>
+   </div>
   </div>
 </div>
 `;

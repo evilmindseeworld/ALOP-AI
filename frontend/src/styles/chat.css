@@ -1,19 +1,17 @@
 /* The transcript: chat surface, empty state, and messages. */
 
 /* ===== CHAT MAIN ===== */
+/* The transcript is the frame's largest region, and now carries no chrome of
+ * its own: no border, no radius, no shadow, no blur. All four moved to
+ * .app-frame in styles/base.css. What separates it from the sidebar is that
+ * sidebar's right hairline, and nothing else needs to say so twice. */
 .chat-main {
   flex: 1;
   display: flex;
   position: relative;
   min-width: 0;
-  background: color-mix(in srgb, var(--surface) 60%, transparent);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--rim), var(--shadow-sm);
-  backdrop-filter: blur(20px) saturate(1.2);
-  -webkit-backdrop-filter: blur(20px) saturate(1.2);
   overflow: hidden;
-  transition: background var(--dur) ease, border-color var(--dur) ease;
+  transition: background var(--dur) ease;
   /* Positioned, so this is a stacking context — see docs/FRONTEND.md §1.
    * Removing it lets in-chat controls punch through every panel. */
   z-index: var(--z-chat);

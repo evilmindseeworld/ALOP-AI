@@ -304,15 +304,16 @@ const LiveChrome = ({ theme, empty = false }) => (
       }}
     >
       <div className="app-shell">
+       <div className="app-frame">
         <header className="app-header">
           <button className="icon-btn" aria-label="Chats">
-            <Icon name="menu" size={20} />
+            <Icon name="menu" size={18} />
           </button>
           <div className="brand">
-            <div className="brand-text">
-              <h1 className="main-title">{empty ? "ALOP-AI" : "Monitor buying advice"}</h1>
-              <span className="sub-title">AI Council • 7 models • Precision • Learning</span>
-            </div>
+            <h1 className="main-title">{empty ? "ALOP-AI" : "Monitor buying advice"}</h1>
+            <Badge variant="secondary" data-ui-scope="" className="shrink-0">
+              7 models
+            </Badge>
           </div>
           <div className="header-actions">
             <button className="cmdk-trigger">
@@ -322,10 +323,10 @@ const LiveChrome = ({ theme, empty = false }) => (
               <Icon name="crown" size={14} /> Upgrade
             </button>
             <button className="icon-btn" aria-label="Theme">
-              <Icon name={theme === "dark" ? "sun" : "moon"} size={20} />
+              <Icon name={theme === "dark" ? "sun" : "moon"} size={17} />
             </button>
             <button className="icon-btn" aria-label="Settings">
-              <Icon name="settings" size={20} />
+              <Icon name="settings" size={17} />
             </button>
           </div>
         </header>
@@ -387,6 +388,7 @@ const LiveChrome = ({ theme, empty = false }) => (
             </div>
           </div>
         </div>
+       </div>
       </div>
     </div>
   </figure>

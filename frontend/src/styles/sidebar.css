@@ -3,17 +3,15 @@
 
 /* ===== SIDEBAR ===== */
 .sidebar {
-  width: 264px;
+  width: var(--sidebar-w);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: color-mix(in srgb, var(--surface) 72%, transparent);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--rim), var(--shadow-sm);
-  backdrop-filter: blur(20px) saturate(1.3);
-  -webkit-backdrop-filter: blur(20px) saturate(1.3);
-  padding: var(--space-3);
+  /* A hairline, not a card. The border, radius, shadow and blur this used to
+   * carry all belong to .app-frame now — see styles/base.css. A sidebar that
+   * is part of the surface it divides needs one line to divide it. */
+  border-right: 1px solid var(--border);
+  padding: var(--space-3) var(--space-2);
   overflow: hidden;
   z-index: var(--z-sidebar);
   transition:
@@ -23,13 +21,19 @@
     background var(--dur) ease;
 }
 
+/* Collapsed still hides outright. It becomes a --rail-w icon rail in §2, which
+ * is where the rail's markup arrives; a rail width with no rail contents is a
+ * column of clipped buttons, so the two ship together or not at all. */
 .sidebar.collapsed {
   width: 0;
   padding: 0;
-  border: none;
+  border-right: none;
   opacity: 0;
 }
 
+/* The drawer overlays the transcript rather than dividing it, so unlike the
+ * desktop column it needs a surface of its own — the frame's background is
+ * behind the text it has to cover. */
 .sidebar.mobile {
   position: absolute;
   top: 0;
@@ -38,6 +42,8 @@
   z-index: var(--z-sidebar-mobile);
   width: min(300px, 86vw);
   transform: translateX(-110%);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
   border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
   box-shadow: var(--shadow-lg);
 }

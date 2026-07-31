@@ -5,6 +5,7 @@ import "./App.css";
 
 import SignInPage from "./SignInPage";
 import MagneticButton from "./components/ui/MagneticButton";
+import { Badge } from "./components/ui/badge";
 import CommandPalette from "./components/CommandPalette";
 import Icon from "./components/Icon";
 import Earring from "./components/Earring";
@@ -332,22 +333,33 @@ const AuthenticatedApp = () => {
       )}
 
       <div className="app-shell">
+       <div className="app-frame">
         <header className="app-header">
           <button className="icon-btn mobile-only" onClick={() => setMobileSidebarOpen(true)} title="Chats">
-            <Icon name="menu" size={20} />
+            <Icon name="menu" size={18} />
           </button>
           <button className="icon-btn desktop-only" onClick={() => setSidebarCollapsed((c) => !c)} title="Chats">
-            <Icon name="menu" size={20} />
+            <Icon name="menu" size={18} />
           </button>
 
           <div className="brand">
             <img src="/logo.png" alt="" className="header-logo" />
-            <div className="brand-text">
-              <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
-              <span className="sub-title">
-                AI Council • {billing.userPlan === "pro" ? "7 models" : "4 models"} • Precision • Learning
-              </span>
-            </div>
+            <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
+            {/* The council's size is the one fact the old subtitle carried that
+                a reader could act on — it changes with the plan. The other
+                three claims it sat beside ("AI Council", "Precision",
+                "Learning") were a value proposition in the corner where the
+                eye lands first, and they are gone.
+
+                shadcn's Badge, not a hand-rolled pill: `secondary` already
+                resolves to --surface-2 on --text-muted through the token
+                bridge, so it cannot drift from the stylesheet. It needs
+                data-ui-scope because Tailwind's `border` utility assumes a
+                solid zero-width default that only ui-reset.css supplies here —
+                without it the badge renders with no border at all. */}
+            <Badge variant="secondary" data-ui-scope="" className="hidden shrink-0 sm:inline-flex">
+              {billing.userPlan === "pro" ? "7 models" : "4 models"}
+            </Badge>
           </div>
 
           <div className="header-actions">
@@ -372,12 +384,12 @@ const AuthenticatedApp = () => {
                 onClick={() => openOnly(showAdmin ? null : "admin")}
                 ariaLabel="Admin"
               >
-                <Icon name="crown" size={20} />
+                <Icon name="crown" size={17} />
               </MagneticButton>
             )}
 
             <MagneticButton className="icon-btn" onClick={() => setDarkMode((d) => !d)} ariaLabel="Theme">
-              <Icon name={darkMode ? "sun" : "moon"} size={20} />
+              <Icon name={darkMode ? "sun" : "moon"} size={17} />
             </MagneticButton>
 
             <MagneticButton
@@ -385,7 +397,7 @@ const AuthenticatedApp = () => {
               onClick={() => openOnly(showSettings ? null : "settings")}
               ariaLabel="Settings"
             >
-              <Icon name="settings" size={20} />
+              <Icon name="settings" size={17} />
             </MagneticButton>
           </div>
         </header>
@@ -504,6 +516,7 @@ const AuthenticatedApp = () => {
             </div>
           </div>
         </div>
+       </div>
       </div>
     </div>
   );

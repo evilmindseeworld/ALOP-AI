@@ -204,8 +204,15 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
     abortRef.current?.abort();
   }, []);
 
+  /**
+   * `baseMessages` is what the new exchange is appended to. It defaults to the
+   * live transcript, and only regenerate passes anything else: it has just
+   * truncated the transcript, and this closure still holds the pre-truncation
+   * copy — sending against that put the discarded answer back and duplicated
+   * the question.
+   */
   const send = useCallback(
-    async (text, attachedImage, onAttachmentConsumed) => {
+    async (text, attachedImage, onAttachmentConsumed, baseMessages = activeMessages) => {
       const cleanText = text.trim();
       if (!cleanText || status !== "idle") return;
 
@@ -227,10 +234,10 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
         id: uid(),
         ...(image ? { hasImage: true, imagePreview: image } : {}),
       };
-      const updated = [...activeMessages, userMsg];
+      const updated = [...baseMessages, userMsg];
       await updateChatMessages(chatId, updated);
 
-      if (activeMessages.length === 0) {
+      if (baseMessages.length === 0) {
         const title = generateChatTitle(cleanText);
         if (title) renameChat(chatId, title);
       }
@@ -239,7 +246,7 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
       const assistantMsg = { role: "assistant", content: "", typing: true, ts: now(), id: assistantId };
       updateChatMessages(chatId, [...updated, assistantMsg], false);
 
-      const history = activeMessages
+      const history = baseMessages
         .filter((m) => m.content && m.content.trim() && !m.typing)
         .slice(-HISTORY_TURNS)
         .map((m) => ({ role: m.role, content: m.content.slice(0, HISTORY_CHARS) }));
@@ -354,8 +361,9 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
     const prompt = activeMessages[lastUserIdx].content;
     if (!prompt?.trim()) return;
 
-    await updateChatMessages(activeChatId, activeMessages.slice(0, lastUserIdx));
-    send(prompt, null);
+    const kept = activeMessages.slice(0, lastUserIdx);
+    await updateChatMessages(activeChatId, kept);
+    await send(prompt, null, undefined, kept);
   }, [status, activeMessages, activeChatId, updateChatMessages, send]);
 
   return {

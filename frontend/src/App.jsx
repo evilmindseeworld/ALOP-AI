@@ -20,6 +20,7 @@ import OverlayAssistant from "./overlay/OverlayAssistant";
 import { useApi } from "./lib/api";
 import { Storage } from "./lib/storage";
 import { fileToDataUrl } from "./lib/image";
+import { appendToControlledInput } from "./lib/dom";
 import { isImageRequest } from "./lib/format";
 import { useChats } from "./hooks/useChats";
 import { useBilling } from "./hooks/useBilling";
@@ -60,14 +61,9 @@ const AuthenticatedApp = () => {
   const camera = useCamera({ onCapture: setAttachedImage, onError: setToast });
   const speech = useSpeechRecognition({
     onUnsupported: () => setToast("Needs Chrome/Edge/Safari"),
-    onTranscript: (text) => {
-      // The composer owns its own text state, so dictation is appended through
-      // the DOM and an input event rather than lifted into this component.
-      const input = document.querySelector(".input-text");
-      if (!input) return;
-      input.value += text;
-      input.dispatchEvent(new Event("input", { bubbles: true }));
-    },
+    // The composer owns its own text state, so dictation is appended through
+    // the DOM. It has to go through the native setter — see lib/dom.js.
+    onTranscript: (text) => appendToControlledInput(document.querySelector(".input-text"), text),
   });
 
   const { activeChat, activeMessages, status } = chat;

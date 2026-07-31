@@ -187,6 +187,35 @@ describe("useChats", () => {
     expect(JSON.parse(fetchImpl.mock.calls[1][1].body).image).toBe("data:image/jpeg;base64,AAAA");
   });
 
+  it("replaces the last answer on regenerate instead of appending a second exchange", async () => {
+    // The point of regenerate is that the transcript ends up the same length it
+    // started: one question, one answer. Re-sending against a stale copy of the
+    // messages puts the discarded answer back and duplicates the question.
+    const replies = ["first", "second"];
+    let call = 0;
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      body: sseStream([`data: {"type":"chunk","text":"${replies[call++]}"}\n`, "data: [DONE]\n"]),
+    }));
+
+    const { result } = setup({ fetchImpl });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.send("hi");
+    });
+    await waitFor(() => expect(result.current.status).toBe("idle"));
+
+    await act(async () => {
+      await result.current.regenerateLast();
+    });
+    await waitFor(() => expect(result.current.chats[0].messages.at(-1)?.content).toBe("second"));
+
+    const messages = result.current.chats[0].messages;
+    expect(messages.map((m) => m.role)).toEqual(["user", "assistant"]);
+    expect(messages[0].content).toBe("hi");
+  });
+
   it("clears the attachment through the callback, not by reaching into the parent", async () => {
     const fetchImpl = vi.fn(async () => ({ ok: true, body: sseStream(["data: [DONE]\n"]) }));
     const { result } = setup({ fetchImpl });

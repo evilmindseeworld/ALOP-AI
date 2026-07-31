@@ -1,4 +1,4 @@
-import { memo, lazy, Suspense } from "react";
+import { memo, lazy, Suspense, useState, useRef, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Icon from "./Icon";
@@ -41,12 +41,37 @@ export const markdownComponents = {
   },
 };
 
-export const MessageActions = memo(({ content, onCopy, msgId, onFeedback, feedback }) => (
+/** How long the copy button stays confirmed. */
+const COPIED_MS = 1600;
+
+export const MessageActions = memo(({ content, onCopy, msgId, onFeedback, feedback }) => {
+  /**
+   * Copy said nothing at all.
+   *
+   * It called navigator.clipboard.writeText and that was the whole
+   * interaction — no toast, no icon change, no state. The only way to find out
+   * whether it had worked was to paste somewhere else and look.
+   */
+  const [copied, setCopied] = useState(false);
+  const timer = useRef(null);
+
+  // The transcript unmounts rows constantly — switching chats does it — and a
+  // timer that outlives its component calls setState on nothing.
+  useEffect(() => () => clearTimeout(timer.current), []);
+
+  const copy = () => {
+    onCopy();
+    setCopied(true);
+    clearTimeout(timer.current);
+    timer.current = setTimeout(() => setCopied(false), COPIED_MS);
+  };
+
+  return (
   // `is-voted` keeps the row's actions visible once a vote is cast, so the
   // answer you marked stays marked when the pointer moves away.
   <div className={`msg-actions ${feedback ? "is-voted" : ""}`}>
-    <button className="msg-action-btn" onClick={onCopy}>
-      <Icon name="copy" size={13} /> Copy
+    <button className={`msg-action-btn ${copied ? "is-copied" : ""}`} onClick={copy}>
+      <Icon name={copied ? "check" : "copy"} size={13} /> {copied ? "Copied" : "Copy"}
     </button>
     <button
       className={`msg-action-btn ${feedback === "up" ? "active" : ""}`}
@@ -65,7 +90,8 @@ export const MessageActions = memo(({ content, onCopy, msgId, onFeedback, feedba
       <Icon name="thumbsDown" size={13} />
     </button>
   </div>
-));
+  );
+});
 
 MessageActions.displayName = "MessageActions";
 

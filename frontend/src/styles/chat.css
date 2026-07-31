@@ -30,11 +30,14 @@
  * above 1200px, to keep text off the ornaments, which left the 1024–1199px
  * range with prose running under a crescent. The ornaments now live in the
  * shell gutter and this no longer has to compensate for them. */
+/* The bottom padding is not decorative. Without it the last line of an answer
+ * sits flush against the toolbar below, and the transcript reads as though it
+ * has been cut off rather than as though it has ended. */
 .scroll-wrapper {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: var(--space-6) var(--space-6) var(--space-2);
+  padding: var(--space-6) var(--space-6) var(--space-4);
   scroll-behavior: smooth;
 }
 
@@ -109,17 +112,29 @@
  *
  * Everything used to be an 80%-wide bevelled bubble, which is the shape that
  * makes a 900-word research answer hardest to read. */
+/* The horizontal padding and the matching negative margin cancel out, so the
+ * text sits exactly where it did — but the hover wash now has somewhere to be.
+ * Without it the highlight is a full-bleed band flush against the column edges,
+ * which reads as a selection rather than as a pointer target. */
 .msg-row {
   display: flex;
   min-width: 0;
   gap: var(--space-3);
-  padding: var(--space-4) 0;
+  padding: var(--space-4) var(--space-3);
+  margin: 0 calc(var(--space-3) * -1);
+  border-radius: var(--radius-lg);
   /* Load-bearing: rows are animated by anime.js from App.jsx, and a CSS
    * animation on the same element fights it — the row would replay its
    * entrance on every re-render mid-stream. */
   animation: none;
   will-change: transform, opacity;
+  transition: background var(--dur-fast) ease;
 }
+
+/* Something for the hover actions to appear ON. They used to fade in over the
+ * page itself, so three buttons materialised out of the background with no
+ * indication of which message they belonged to. */
+.msg-row:hover { background: color-mix(in srgb, var(--surface) 55%, transparent); }
 
 /* Consecutive messages from the same role are one block, not two cards. */
 .msg-row + .msg-row.assistant,
@@ -139,8 +154,8 @@
 
 /* ===== AVATAR ===== */
 .avatar {
-  width: 30px;
-  height: 30px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--radius-full);
   flex-shrink: 0;
   display: flex;
@@ -157,16 +172,15 @@
   transition: border-color var(--dur) ease;
 }
 
-/* These two rules were written, and then never once rendered: `.dark .avatar`
- * forced a grey gradient over both of them. Restored in the !important
- * cleanup, kept here because they are what tells the two roles apart at a
- * glance when the transcript is scrolled fast. */
-.msg-row.user .avatar {
-  background: var(--primary-dim);
-  color: var(--primary);
-  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
-}
-
+/* `.msg-row.user .avatar` used to sit here and has been deleted.
+ *
+ * It was written, never rendered — `.dark .avatar` forced a grey gradient over
+ * it — then "restored" during the !important cleanup, which fixed the cascade
+ * but not the fact that MessageList has never given a user message an avatar.
+ * The fixture rendered one, so the rule looked live to every guard; removing it
+ * from the fixture is what surfaced the rule as matching nothing.
+ *
+ * A right-aligned pill with a pink rail is already unmistakably yours. */
 .msg-row.assistant .avatar {
   background: var(--emerald-dim);
   color: var(--emerald);
@@ -176,6 +190,10 @@
 /* ===== BUBBLES ===== */
 .bubble {
   max-width: 100%;
+  /* Avoids the orphan — a last line carrying one word — by letting the browser
+   * rebalance the final lines. It costs nothing and it is the difference
+   * between prose that looks set and prose that looks poured. */
+  text-wrap: pretty;
   /* A flex item's min-width defaults to auto, i.e. its min-content width. A
    * table with unwrappable headers, or a long code line, therefore pushed the
    * bubble — and the whole transcript column — wider than the viewport, and the
@@ -205,18 +223,42 @@
   max-width: min(var(--measure), 100%);
 }
 
-/* The question: a filled pill. Ink on pink, which is 8.4:1 — the white this
- * used to use was 2.6:1 and failed AA on the app's most-repeated element. */
+/* The question: a QUIET raised pill with a pink rail, not a filled pink block.
+ *
+ * It was a saturated gradient fill, which is the shape ChatGPT and Claude both
+ * moved away from and for the reason you can see in any screenshot of this app:
+ * in a transcript the answer is the content and the question is the context,
+ * and a block of brand colour wins the eye every single time. Sixty words of
+ * pink above a nine-hundred-word answer inverts the reading order of the page.
+ *
+ * The rail keeps it unmistakably yours at a tenth of the volume. Pink stays the
+ * accent everywhere it means an action — send, active row, focus ring.
+ *
+ * overflow: hidden so the rail follows the pill's radius instead of poking
+ * square corners out of it. */
 .msg-row.user .bubble {
+  position: relative;
+  overflow: hidden;
   max-width: min(78%, 60ch);
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-lg);
   border-bottom-right-radius: var(--radius-sm);
-  background: var(--gradient-primary);
-  color: var(--text-on-fill);
-  font-weight: 500;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-weight: 450;
   white-space: pre-wrap;
-  box-shadow: 0 4px 18px var(--primary-glow);
+  box-shadow: var(--rim), var(--shadow-xs);
+}
+
+.msg-row.user .bubble::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--primary);
 }
 
 /* Text that arrives token by token gets a caret, so a slow first token reads
@@ -284,12 +326,15 @@
 }
 
 /* ===== META & ACTIONS ===== */
+/* tabular-nums so a column of timestamps down the transcript lines up instead
+ * of jittering as the digits change width. */
 .msg-meta {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   margin-top: var(--space-2);
   font-size: var(--text-2xs);
+  font-variant-numeric: tabular-nums;
   color: var(--text-subtle);
   user-select: none;
 }
@@ -344,6 +389,14 @@
 }
 
 .msg-action-btn.active {
+  color: var(--emerald);
+  background: var(--emerald-dim);
+  border-color: color-mix(in srgb, var(--emerald) 30%, transparent);
+}
+
+/* Copy, confirmed. Emerald rather than pink: it reports that something
+ * succeeded, which is what every other green in this app means. */
+.msg-action-btn.is-copied {
   color: var(--emerald);
   background: var(--emerald-dim);
   border-color: color-mix(in srgb, var(--emerald) 30%, transparent);

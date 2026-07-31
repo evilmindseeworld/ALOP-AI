@@ -9585,9 +9585,9 @@
   margin-top: <margin: 0>
   overflow-x: hidden
   overflow-y: auto
-  padding: 24px 24px 8px
-  padding-bottom: <padding: 24px 24px 8px>
-  padding-left: <padding: 24px 24px 8px>
+  padding: 24px 24px 16px
+  padding-bottom: <padding: 24px 24px 16px>
+  padding-left: <padding: 24px 24px 16px>
   scroll-behavior: smooth
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
@@ -10477,92 +10477,38 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  border-bottom-right-radius: <border-radius: 16px>
+  border-radius: 16px
   box-sizing: border-box
   display: flex
   flex-direction: row-reverse
   gap: 12px
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin: 0 calc(12px * -1)
+  margin-bottom: <margin: 0 calc(12px * -1)>
+  margin-left: <margin: 0 calc(12px * -1)>
+  margin-top: <margin: 0 calc(12px * -1)>
   min-width: 0
-  padding: 16px 0
-  padding-bottom: <padding: 16px 0>
-  padding-left: <padding: 16px 0>
+  padding: 16px 12px
+  padding-bottom: <padding: 16px 12px>
+  padding-left: <padding: 16px 12px>
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
+  transition: background 120ms ease
+  transition-duration: <transition: background 120ms ease>
   will-change: transform, opacity
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
-  :focus-visible
-    border-bottom-right-radius: <border-radius: 8px>
-    border-radius: 8px
-    outline: 2px solid #f08aa3
-    outline-offset: 2px
-
-[217] div.avatar
-  ::-webkit-scrollbar-thumb/background: #2a2a36
-  ::-webkit-scrollbar-thumb/background-clip: padding-box
-  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
-  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
-  ::-webkit-scrollbar-thumb/border: 3px solid transparent
-  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
-  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
-  ::-webkit-scrollbar-thumb/border-radius: 999px
-  ::-webkit-scrollbar-track/background: transparent
-  ::-webkit-scrollbar-track/background-clip: <background: transparent>
-  ::-webkit-scrollbar-track/background-image: <background: transparent>
-  ::-webkit-scrollbar-track/background-size: <background: transparent>
-  ::-webkit-scrollbar/height: 10px
-  ::-webkit-scrollbar/width: 10px
-  ::selection/background: #f08aa3
-  ::selection/background-clip: <background: #f08aa3>
-  ::selection/background-image: <background: #f08aa3>
-  ::selection/background-size: <background: #f08aa3>
-  ::selection/color: #1a0e13
-  align-items: center
-  background: rgba(240, 138, 163, 0.12)
-  background-clip: <background: rgba(240, 138, 163, 0.12)>
-  background-image: <background: rgba(240, 138, 163, 0.12)>
-  background-size: <background: rgba(240, 138, 163, 0.12)>
-  border: 1px solid rgba(244, 238, 255, 0.07)
-  border-bottom-right-radius: <border-radius: 999px>
-  border-color: color-mix(in srgb, #f08aa3 30%, transparent)
-  border-radius: 999px
-  box-sizing: border-box
-  color: #f08aa3
-  display: flex
-  flex-shrink: 0
-  font-family: 'JetBrains Mono', ui-monospace, monospace
-  font-size: 9px
-  font-weight: 700
-  height: 30px
-  justify-content: center
-  letter-spacing: 0.02em
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
-  padding: 0
-  padding-bottom: <padding: 0>
-  padding-left: <padding: 0>
-  scrollbar-color: #2a2a36 transparent
-  scrollbar-width: thin
-  transition: border-color 200ms ease
-  transition-duration: <transition: border-color 200ms ease>
-  user-select: none
-  width: 30px
-  :hover
-    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
-    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
-    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+    background: color-mix(in srgb, #111119 55%, transparent)
+    background-clip: <background: color-mix(in srgb, #111119 55%, transparent)>
+    background-image: <background: color-mix(in srgb, #111119 55%, transparent)>
+    background-size: <background: color-mix(in srgb, #111119 55%, transparent)>
   :focus-visible
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[218] div.msg-content
+[217] div.msg-content
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -10608,7 +10554,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[219] img.msg-attachment
+[218] img.msg-attachment
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -10654,7 +10600,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[220] div.bubble.markdown-body
+[219] div.bubble.markdown-body
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -10669,22 +10615,34 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::before/background: #f08aa3
+  ::before/background-clip: <background: #f08aa3>
+  ::before/background-image: <background: #f08aa3>
+  ::before/background-size: <background: #f08aa3>
+  ::before/bottom: 0
+  ::before/content: ""
+  ::before/left: 0
+  ::before/position: absolute
+  ::before/top: 0
+  ::before/width: 2px
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  background: linear-gradient(135deg, #f08aa3 0%, #e0637f 100%)
-  background-clip: <background: linear-gradient(135deg, #f08aa3 0%, #e0637f 100%)>
-  background-image: <background: linear-gradient(135deg, #f08aa3 0%, #e0637f 100%)>
-  background-size: <background: linear-gradient(135deg, #f08aa3 0%, #e0637f 100%)>
+  background: #17171f
+  background-clip: <background: #17171f>
+  background-image: <background: #17171f>
+  background-size: <background: #17171f>
+  border: 1px solid rgba(244, 238, 255, 0.07)
   border-bottom-right-radius: 8px
+  border-color: <border: 1px solid rgba(244, 238, 255, 0.07)>
   border-radius: 16px
-  box-shadow: 0 4px 18px rgba(240, 138, 163, 0.22)
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.4)
   box-sizing: border-box
-  color: #1a0e13
+  color: #f5f1ee
   font-size: 15px
-  font-weight: 500
+  font-weight: 450
   line-height: 1.7
   margin: 0
   margin-bottom: <margin: 0>
@@ -10692,13 +10650,17 @@
   margin-top: <margin: 0>
   max-width: min(78%, 60ch)
   min-width: 0
+  overflow: hidden
   overflow-wrap: anywhere
+  overflow-x: <overflow: hidden>
+  overflow-y: <overflow: hidden>
   padding: 12px 16px
   padding-bottom: <padding: 12px 16px>
   padding-left: <padding: 12px 16px>
   position: relative
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
+  text-wrap: pretty
   white-space: pre-wrap
   word-break: break-word
   :hover
@@ -10709,7 +10671,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[221] p
+[220] p
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -10749,7 +10711,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[222] div.msg-meta
+[221] div.msg-meta
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -10774,6 +10736,7 @@
   color: #918a9d
   display: flex
   font-size: 11px
+  font-variant-numeric: tabular-nums
   gap: 8px
   margin: 0
   margin-bottom: <margin: 0>
@@ -10795,7 +10758,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[223] span.msg-role
+[222] span.msg-role
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -10839,7 +10802,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[224] span
+[223] span
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -10879,7 +10842,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[225] div.msg-row.assistant
+[224] div.msg-row.assistant
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -10903,32 +10866,38 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  border-bottom-right-radius: <border-radius: 16px>
+  border-radius: 16px
   border-top: 1px solid transparent
   box-sizing: border-box
   display: flex
   gap: 12px
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin: 0 calc(12px * -1)
+  margin-bottom: <margin: 0 calc(12px * -1)>
+  margin-left: <margin: 0 calc(12px * -1)>
+  margin-top: <margin: 0 calc(12px * -1)>
   min-width: 0
-  padding: 16px 0
-  padding-bottom: <padding: 16px 0>
-  padding-left: <padding: 16px 0>
+  padding: 16px 12px
+  padding-bottom: <padding: 16px 12px>
+  padding-left: <padding: 16px 12px>
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
+  transition: background 120ms ease
+  transition-duration: <transition: background 120ms ease>
   will-change: transform, opacity
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+    background: color-mix(in srgb, #111119 55%, transparent)
+    background-clip: <background: color-mix(in srgb, #111119 55%, transparent)>
+    background-image: <background: color-mix(in srgb, #111119 55%, transparent)>
+    background-size: <background: color-mix(in srgb, #111119 55%, transparent)>
   :focus-visible
-    border-bottom-right-radius: <border-radius: 8px>
-    border-radius: 8px
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[226] div.avatar
+[225] div.avatar
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -10964,7 +10933,7 @@
   font-family: 'JetBrains Mono', ui-monospace, monospace
   font-size: 9px
   font-weight: 700
-  height: 30px
+  height: 26px
   justify-content: center
   letter-spacing: 0.02em
   margin: 0
@@ -10979,7 +10948,7 @@
   transition: border-color 200ms ease
   transition-duration: <transition: border-color 200ms ease>
   user-select: none
-  width: 30px
+  width: 26px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -10988,7 +10957,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[227] div.msg-content
+[226] div.msg-content
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11034,7 +11003,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[228] div.msg-attachment-placeholder
+[227] div.msg-attachment-placeholder
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11085,7 +11054,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[229] svg
+[228] svg
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11125,7 +11094,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[230] path
+[229] path
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11165,7 +11134,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[231] div.bubble.markdown-body
+[230] div.bubble.markdown-body
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11209,6 +11178,7 @@
   position: relative
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
+  text-wrap: pretty
   word-break: break-word
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
@@ -11220,7 +11190,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[232] h1
+[231] h1
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11256,6 +11226,7 @@
   padding-left: <padding: 0>
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
+  text-wrap: balance
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -11266,7 +11237,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[233] h2
+[232] h2
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11302,6 +11273,7 @@
   padding-left: <padding: 0>
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
+  text-wrap: balance
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -11312,7 +11284,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[234] h3
+[233] h3
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11348,6 +11320,7 @@
   padding-left: <padding: 0>
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
+  text-wrap: balance
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -11358,7 +11331,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[235] p
+[234] p
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11398,7 +11371,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[236] a
+[235] a
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11449,7 +11422,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[237] code
+[236] code
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11499,7 +11472,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[238] strong
+[237] strong
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11541,7 +11514,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[239] ul
+[238] ul
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11572,6 +11545,47 @@
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: 20px
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[239] li
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::marker/color: #918a9d
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: 4px
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
   :hover
@@ -11625,48 +11639,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[241] li
-  ::-webkit-scrollbar-thumb/background: #2a2a36
-  ::-webkit-scrollbar-thumb/background-clip: padding-box
-  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
-  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
-  ::-webkit-scrollbar-thumb/border: 3px solid transparent
-  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
-  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
-  ::-webkit-scrollbar-thumb/border-radius: 999px
-  ::-webkit-scrollbar-track/background: transparent
-  ::-webkit-scrollbar-track/background-clip: <background: transparent>
-  ::-webkit-scrollbar-track/background-image: <background: transparent>
-  ::-webkit-scrollbar-track/background-size: <background: transparent>
-  ::-webkit-scrollbar/height: 10px
-  ::-webkit-scrollbar/width: 10px
-  ::marker/color: #918a9d
-  ::selection/background: #f08aa3
-  ::selection/background-clip: <background: #f08aa3>
-  ::selection/background-image: <background: #f08aa3>
-  ::selection/background-size: <background: #f08aa3>
-  ::selection/color: #1a0e13
-  box-sizing: border-box
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
-  padding: 0
-  padding-bottom: <padding: 0>
-  padding-left: 4px
-  scrollbar-color: #2a2a36 transparent
-  scrollbar-width: thin
-  :hover
-    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
-    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
-    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
-  :focus-visible
-    border-bottom-right-radius: <border-radius: 8px>
-    border-radius: 8px
-    outline: 2px solid #f08aa3
-    outline-offset: 2px
-
-[242] ol
+[241] ol
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11709,7 +11682,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[243] li
+[242] li
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11750,7 +11723,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[244] blockquote
+[243] blockquote
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11793,7 +11766,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[245] p
+[244] p
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11833,7 +11806,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[246] pre
+[245] pre
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11881,7 +11854,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[247] code
+[246] code
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11932,7 +11905,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[248] table
+[247] table
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11978,7 +11951,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[249] thead
+[248] thead
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12018,7 +11991,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[250] tr
+[249] tr
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12058,7 +12031,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[251] th
+[250] th
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12109,7 +12082,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[252] tbody
+[251] tbody
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12149,7 +12122,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[253] tr
+[252] tr
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12189,7 +12162,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[254] td
+[253] td
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12233,7 +12206,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[255] img
+[254] img
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12277,7 +12250,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[256] hr
+[255] hr
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12320,7 +12293,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[257] div.code-block-wrapper
+[256] div.code-block-wrapper
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12370,7 +12343,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[258] button.code-copy-btn
+[257] button.code-copy-btn
   -webkit-backdrop-filter: blur(6px)
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -12439,7 +12412,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[259] div
+[258] div
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12479,7 +12452,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[260] pre
+[259] pre
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12530,7 +12503,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[261] code
+[260] code
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12581,7 +12554,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[262] div.code-block-wrapper
+[261] div.code-block-wrapper
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12631,7 +12604,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[263] button.code-copy-btn.is-copied
+[262] button.code-copy-btn.is-copied
   -webkit-backdrop-filter: blur(6px)
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -12697,7 +12670,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[264] div
+[263] div
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12737,7 +12710,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[265] pre
+[264] pre
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12788,7 +12761,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[266] code
+[265] code
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12839,7 +12812,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[267] div.code-block-wrapper
+[266] div.code-block-wrapper
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12889,7 +12862,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[268] pre.code-block-plain
+[267] pre.code-block-plain
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12941,7 +12914,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[269] code
+[268] code
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -12992,7 +12965,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[270] div.msg-actions.is-voted
+[269] div.msg-actions.is-voted
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -13037,7 +13010,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[271] button.msg-action-btn
+[270] button.msg-action-btn
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -13096,6 +13069,63 @@
     background-size: <background: #17171f>
     border-color: rgba(244, 238, 255, 0.07)
     color: #f5f1ee
+  :focus-visible
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[271] button.msg-action-btn.is-copied
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  align-items: center
+  background: rgba(111, 211, 166, 0.12)
+  background-clip: <background: rgba(111, 211, 166, 0.12)>
+  background-image: <background: rgba(111, 211, 166, 0.12)>
+  background-size: <background: rgba(111, 211, 166, 0.12)>
+  border: 1px solid transparent
+  border-bottom-right-radius: <border-radius: 8px>
+  border-color: color-mix(in srgb, #6fd3a6 30%, transparent)
+  border-radius: 8px
+  box-sizing: border-box
+  color: #6fd3a6
+  cursor: pointer
+  display: inline-flex
+  font-family: 'Switzer', system-ui, sans-serif
+  font-size: 12px
+  gap: 4px
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  min-height: 28px
+  padding: 0 8px
+  padding-bottom: <padding: 0 8px>
+  padding-left: <padding: 0 8px>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease
+  transition-duration: <transition: color 120ms ease, background 120ms ease, border-color 120ms ease>
+  user-select: none
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
   :focus-visible
     outline: 2px solid #f08aa3
     outline-offset: 2px
@@ -13399,6 +13429,7 @@
   color: #918a9d
   display: flex
   font-size: 11px
+  font-variant-numeric: tabular-nums
   gap: 8px
   margin: 0
   margin-bottom: <margin: 0>
@@ -13528,28 +13559,34 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  border-bottom-right-radius: <border-radius: 16px>
+  border-radius: 16px
   border-top: 1px solid transparent
   box-sizing: border-box
   display: flex
   gap: 12px
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin: 0 calc(12px * -1)
+  margin-bottom: <margin: 0 calc(12px * -1)>
+  margin-left: <margin: 0 calc(12px * -1)>
+  margin-top: <margin: 0 calc(12px * -1)>
   min-width: 0
-  padding: 16px 0
-  padding-bottom: <padding: 16px 0>
-  padding-left: <padding: 16px 0>
+  padding: 16px 12px
+  padding-bottom: <padding: 16px 12px>
+  padding-left: <padding: 16px 12px>
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
+  transition: background 120ms ease
+  transition-duration: <transition: background 120ms ease>
   will-change: transform, opacity
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+    background: color-mix(in srgb, #111119 55%, transparent)
+    background-clip: <background: color-mix(in srgb, #111119 55%, transparent)>
+    background-image: <background: color-mix(in srgb, #111119 55%, transparent)>
+    background-size: <background: color-mix(in srgb, #111119 55%, transparent)>
   :focus-visible
-    border-bottom-right-radius: <border-radius: 8px>
-    border-radius: 8px
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
@@ -13589,7 +13626,7 @@
   font-family: 'JetBrains Mono', ui-monospace, monospace
   font-size: 9px
   font-weight: 700
-  height: 30px
+  height: 26px
   justify-content: center
   letter-spacing: 0.02em
   margin: 0
@@ -13604,7 +13641,7 @@
   transition: border-color 200ms ease
   transition-duration: <transition: border-color 200ms ease>
   user-select: none
-  width: 30px
+  width: 26px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -13719,6 +13756,7 @@
   position: relative
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
+  text-wrap: pretty
   word-break: break-word
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
@@ -13841,28 +13879,34 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  border-bottom-right-radius: <border-radius: 16px>
+  border-radius: 16px
   border-top: 1px solid transparent
   box-sizing: border-box
   display: flex
   gap: 12px
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin: 0 calc(12px * -1)
+  margin-bottom: <margin: 0 calc(12px * -1)>
+  margin-left: <margin: 0 calc(12px * -1)>
+  margin-top: <margin: 0 calc(12px * -1)>
   min-width: 0
-  padding: 16px 0
-  padding-bottom: <padding: 16px 0>
-  padding-left: <padding: 16px 0>
+  padding: 16px 12px
+  padding-bottom: <padding: 16px 12px>
+  padding-left: <padding: 16px 12px>
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
+  transition: background 120ms ease
+  transition-duration: <transition: background 120ms ease>
   will-change: transform, opacity
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+    background: color-mix(in srgb, #111119 55%, transparent)
+    background-clip: <background: color-mix(in srgb, #111119 55%, transparent)>
+    background-image: <background: color-mix(in srgb, #111119 55%, transparent)>
+    background-size: <background: color-mix(in srgb, #111119 55%, transparent)>
   :focus-visible
-    border-bottom-right-radius: <border-radius: 8px>
-    border-radius: 8px
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
@@ -13902,7 +13946,7 @@
   font-family: 'JetBrains Mono', ui-monospace, monospace
   font-size: 9px
   font-weight: 700
-  height: 30px
+  height: 26px
   justify-content: center
   letter-spacing: 0.02em
   margin: 0
@@ -13917,7 +13961,7 @@
   transition: border-color 200ms ease
   transition-duration: <transition: border-color 200ms ease>
   user-select: none
-  width: 30px
+  width: 26px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -14017,6 +14061,7 @@
   position: relative
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
+  text-wrap: pretty
   word-break: break-word
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
@@ -14217,28 +14262,34 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  border-bottom-right-radius: <border-radius: 16px>
+  border-radius: 16px
   border-top: 1px solid transparent
   box-sizing: border-box
   display: flex
   gap: 12px
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin: 0 calc(12px * -1)
+  margin-bottom: <margin: 0 calc(12px * -1)>
+  margin-left: <margin: 0 calc(12px * -1)>
+  margin-top: <margin: 0 calc(12px * -1)>
   min-width: 0
-  padding: 16px 0
-  padding-bottom: <padding: 16px 0>
-  padding-left: <padding: 16px 0>
+  padding: 16px 12px
+  padding-bottom: <padding: 16px 12px>
+  padding-left: <padding: 16px 12px>
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
+  transition: background 120ms ease
+  transition-duration: <transition: background 120ms ease>
   will-change: transform, opacity
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+    background: color-mix(in srgb, #111119 55%, transparent)
+    background-clip: <background: color-mix(in srgb, #111119 55%, transparent)>
+    background-image: <background: color-mix(in srgb, #111119 55%, transparent)>
+    background-size: <background: color-mix(in srgb, #111119 55%, transparent)>
   :focus-visible
-    border-bottom-right-radius: <border-radius: 8px>
-    border-radius: 8px
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
@@ -14278,7 +14329,7 @@
   font-family: 'JetBrains Mono', ui-monospace, monospace
   font-size: 9px
   font-weight: 700
-  height: 30px
+  height: 26px
   justify-content: center
   letter-spacing: 0.02em
   margin: 0
@@ -14293,7 +14344,7 @@
   transition: border-color 200ms ease
   transition-duration: <transition: border-color 200ms ease>
   user-select: none
-  width: 30px
+  width: 26px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -14397,6 +14448,7 @@
   position: relative
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
+  text-wrap: pretty
   white-space: nowrap
   word-break: break-word
   :hover
@@ -14584,28 +14636,34 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  border-bottom-right-radius: <border-radius: 16px>
+  border-radius: 16px
   border-top: 1px solid transparent
   box-sizing: border-box
   display: flex
   gap: 12px
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin: 0 calc(12px * -1)
+  margin-bottom: <margin: 0 calc(12px * -1)>
+  margin-left: <margin: 0 calc(12px * -1)>
+  margin-top: <margin: 0 calc(12px * -1)>
   min-width: 0
-  padding: 16px 0
-  padding-bottom: <padding: 16px 0>
-  padding-left: <padding: 16px 0>
+  padding: 16px 12px
+  padding-bottom: <padding: 16px 12px>
+  padding-left: <padding: 16px 12px>
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
+  transition: background 120ms ease
+  transition-duration: <transition: background 120ms ease>
   will-change: transform, opacity
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+    background: color-mix(in srgb, #111119 55%, transparent)
+    background-clip: <background: color-mix(in srgb, #111119 55%, transparent)>
+    background-image: <background: color-mix(in srgb, #111119 55%, transparent)>
+    background-size: <background: color-mix(in srgb, #111119 55%, transparent)>
   :focus-visible
-    border-bottom-right-radius: <border-radius: 8px>
-    border-radius: 8px
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
@@ -14645,7 +14703,7 @@
   font-family: 'JetBrains Mono', ui-monospace, monospace
   font-size: 9px
   font-weight: 700
-  height: 30px
+  height: 26px
   justify-content: center
   letter-spacing: 0.02em
   margin: 0
@@ -14660,7 +14718,7 @@
   transition: border-color 200ms ease
   transition-duration: <transition: border-color 200ms ease>
   user-select: none
-  width: 30px
+  width: 26px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -14993,9 +15051,9 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  padding: 0 24px 8px
-  padding-bottom: <padding: 0 24px 8px>
-  padding-left: <padding: 0 24px 8px>
+  padding: 4px 24px 12px
+  padding-bottom: <padding: 4px 24px 12px>
+  padding-left: <padding: 4px 24px 12px>
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
   :hover
@@ -26008,9 +26066,9 @@
   margin-top: <margin: 0>
   overflow-x: hidden
   overflow-y: auto
-  padding: 24px 24px 8px
-  padding-bottom: <padding: 24px 24px 8px>
-  padding-left: <padding: 24px 24px 8px>
+  padding: 24px 24px 16px
+  padding-bottom: <padding: 24px 24px 16px>
+  padding-left: <padding: 24px 24px 16px>
   scroll-behavior: smooth
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
@@ -26900,92 +26958,38 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  border-bottom-right-radius: <border-radius: 16px>
+  border-radius: 16px
   box-sizing: border-box
   display: flex
   flex-direction: row-reverse
   gap: 12px
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin: 0 calc(12px * -1)
+  margin-bottom: <margin: 0 calc(12px * -1)>
+  margin-left: <margin: 0 calc(12px * -1)>
+  margin-top: <margin: 0 calc(12px * -1)>
   min-width: 0
-  padding: 16px 0
-  padding-bottom: <padding: 16px 0>
-  padding-left: <padding: 16px 0>
+  padding: 16px 12px
+  padding-bottom: <padding: 16px 12px>
+  padding-left: <padding: 16px 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
+  transition: background 120ms ease
+  transition-duration: <transition: background 120ms ease>
   will-change: transform, opacity
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
-  :focus-visible
-    border-bottom-right-radius: <border-radius: 8px>
-    border-radius: 8px
-    outline: 2px solid #b31a54
-    outline-offset: 2px
-
-[557] div.avatar
-  ::-webkit-scrollbar-thumb/background: #d9cfbe
-  ::-webkit-scrollbar-thumb/background-clip: padding-box
-  ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
-  ::-webkit-scrollbar-thumb/background-size: <background: #d9cfbe>
-  ::-webkit-scrollbar-thumb/border: 3px solid transparent
-  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
-  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
-  ::-webkit-scrollbar-thumb/border-radius: 999px
-  ::-webkit-scrollbar-track/background: transparent
-  ::-webkit-scrollbar-track/background-clip: <background: transparent>
-  ::-webkit-scrollbar-track/background-image: <background: transparent>
-  ::-webkit-scrollbar-track/background-size: <background: transparent>
-  ::-webkit-scrollbar/height: 10px
-  ::-webkit-scrollbar/width: 10px
-  ::selection/background: #b31a54
-  ::selection/background-clip: <background: #b31a54>
-  ::selection/background-image: <background: #b31a54>
-  ::selection/background-size: <background: #b31a54>
-  ::selection/color: #fffaf7
-  align-items: center
-  background: rgba(179, 26, 84, 0.10)
-  background-clip: <background: rgba(179, 26, 84, 0.10)>
-  background-image: <background: rgba(179, 26, 84, 0.10)>
-  background-size: <background: rgba(179, 26, 84, 0.10)>
-  border: 1px solid rgba(50, 36, 28, 0.12)
-  border-bottom-right-radius: <border-radius: 999px>
-  border-color: color-mix(in srgb, #b31a54 30%, transparent)
-  border-radius: 999px
-  box-sizing: border-box
-  color: #b31a54
-  display: flex
-  flex-shrink: 0
-  font-family: 'JetBrains Mono', ui-monospace, monospace
-  font-size: 9px
-  font-weight: 700
-  height: 30px
-  justify-content: center
-  letter-spacing: 0.02em
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
-  padding: 0
-  padding-bottom: <padding: 0>
-  padding-left: <padding: 0>
-  scrollbar-color: #d9cfbe transparent
-  scrollbar-width: thin
-  transition: border-color 200ms ease
-  transition-duration: <transition: border-color 200ms ease>
-  user-select: none
-  width: 30px
-  :hover
-    ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
-    ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
-    ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
+    background: color-mix(in srgb, #f8f4ed 55%, transparent)
+    background-clip: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
+    background-image: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
+    background-size: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
   :focus-visible
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[558] div.msg-content
+[557] div.msg-content
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27031,7 +27035,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[559] img.msg-attachment
+[558] img.msg-attachment
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27077,7 +27081,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[560] div.bubble.markdown-body
+[559] div.bubble.markdown-body
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27092,22 +27096,34 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::before/background: #b31a54
+  ::before/background-clip: <background: #b31a54>
+  ::before/background-image: <background: #b31a54>
+  ::before/background-size: <background: #b31a54>
+  ::before/bottom: 0
+  ::before/content: ""
+  ::before/left: 0
+  ::before/position: absolute
+  ::before/top: 0
+  ::before/width: 2px
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
-  background: linear-gradient(135deg, #b31a54 0%, #8f1242 100%)
-  background-clip: <background: linear-gradient(135deg, #b31a54 0%, #8f1242 100%)>
-  background-image: <background: linear-gradient(135deg, #b31a54 0%, #8f1242 100%)>
-  background-size: <background: linear-gradient(135deg, #b31a54 0%, #8f1242 100%)>
+  background: #f1ebe1
+  background-clip: <background: #f1ebe1>
+  background-image: <background: #f1ebe1>
+  background-size: <background: #f1ebe1>
+  border: 1px solid rgba(50, 36, 28, 0.12)
   border-bottom-right-radius: 8px
+  border-color: <border: 1px solid rgba(50, 36, 28, 0.12)>
   border-radius: 16px
-  box-shadow: 0 4px 18px rgba(179, 26, 84, 0.18)
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 1px 2px rgba(50, 36, 28, 0.08)
   box-sizing: border-box
-  color: #fffaf7
+  color: #241a16
   font-size: 15px
-  font-weight: 500
+  font-weight: 450
   line-height: 1.7
   margin: 0
   margin-bottom: <margin: 0>
@@ -27115,13 +27131,17 @@
   margin-top: <margin: 0>
   max-width: min(78%, 60ch)
   min-width: 0
+  overflow: hidden
   overflow-wrap: anywhere
+  overflow-x: <overflow: hidden>
+  overflow-y: <overflow: hidden>
   padding: 12px 16px
   padding-bottom: <padding: 12px 16px>
   padding-left: <padding: 12px 16px>
   position: relative
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
+  text-wrap: pretty
   white-space: pre-wrap
   word-break: break-word
   :hover
@@ -27132,7 +27152,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[561] p
+[560] p
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27172,7 +27192,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[562] div.msg-meta
+[561] div.msg-meta
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27197,6 +27217,7 @@
   color: #6e5a4d
   display: flex
   font-size: 11px
+  font-variant-numeric: tabular-nums
   gap: 8px
   margin: 0
   margin-bottom: <margin: 0>
@@ -27218,7 +27239,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[563] span.msg-role
+[562] span.msg-role
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27262,7 +27283,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[564] span
+[563] span
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27302,7 +27323,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[565] div.msg-row.assistant
+[564] div.msg-row.assistant
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27326,32 +27347,38 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  border-bottom-right-radius: <border-radius: 16px>
+  border-radius: 16px
   border-top: 1px solid transparent
   box-sizing: border-box
   display: flex
   gap: 12px
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin: 0 calc(12px * -1)
+  margin-bottom: <margin: 0 calc(12px * -1)>
+  margin-left: <margin: 0 calc(12px * -1)>
+  margin-top: <margin: 0 calc(12px * -1)>
   min-width: 0
-  padding: 16px 0
-  padding-bottom: <padding: 16px 0>
-  padding-left: <padding: 16px 0>
+  padding: 16px 12px
+  padding-bottom: <padding: 16px 12px>
+  padding-left: <padding: 16px 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
+  transition: background 120ms ease
+  transition-duration: <transition: background 120ms ease>
   will-change: transform, opacity
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
+    background: color-mix(in srgb, #f8f4ed 55%, transparent)
+    background-clip: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
+    background-image: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
+    background-size: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
   :focus-visible
-    border-bottom-right-radius: <border-radius: 8px>
-    border-radius: 8px
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[566] div.avatar
+[565] div.avatar
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27387,7 +27414,7 @@
   font-family: 'JetBrains Mono', ui-monospace, monospace
   font-size: 9px
   font-weight: 700
-  height: 30px
+  height: 26px
   justify-content: center
   letter-spacing: 0.02em
   margin: 0
@@ -27402,7 +27429,7 @@
   transition: border-color 200ms ease
   transition-duration: <transition: border-color 200ms ease>
   user-select: none
-  width: 30px
+  width: 26px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
@@ -27411,7 +27438,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[567] div.msg-content
+[566] div.msg-content
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27457,7 +27484,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[568] div.msg-attachment-placeholder
+[567] div.msg-attachment-placeholder
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27508,7 +27535,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[569] svg
+[568] svg
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27548,7 +27575,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[570] path
+[569] path
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27588,7 +27615,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[571] div.bubble.markdown-body
+[570] div.bubble.markdown-body
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27632,6 +27659,7 @@
   position: relative
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
+  text-wrap: pretty
   word-break: break-word
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
@@ -27643,7 +27671,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[572] h1
+[571] h1
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27679,6 +27707,7 @@
   padding-left: <padding: 0>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
+  text-wrap: balance
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
@@ -27689,7 +27718,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[573] h2
+[572] h2
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27725,6 +27754,7 @@
   padding-left: <padding: 0>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
+  text-wrap: balance
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
@@ -27735,7 +27765,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[574] h3
+[573] h3
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27771,6 +27801,7 @@
   padding-left: <padding: 0>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
+  text-wrap: balance
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
@@ -27781,7 +27812,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[575] p
+[574] p
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27821,7 +27852,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[576] a
+[575] a
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27872,7 +27903,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[577] code
+[576] code
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27922,7 +27953,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[578] strong
+[577] strong
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27964,7 +27995,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[579] ul
+[578] ul
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27995,6 +28026,47 @@
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: 20px
+  scrollbar-color: #d9cfbe transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #b31a54
+    outline-offset: 2px
+
+[579] li
+  ::-webkit-scrollbar-thumb/background: #d9cfbe
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
+  ::-webkit-scrollbar-thumb/background-size: <background: #d9cfbe>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::marker/color: #6e5a4d
+  ::selection/background: #b31a54
+  ::selection/background-clip: <background: #b31a54>
+  ::selection/background-image: <background: #b31a54>
+  ::selection/background-size: <background: #b31a54>
+  ::selection/color: #fffaf7
+  box-sizing: border-box
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: 4px
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -28048,48 +28120,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[581] li
-  ::-webkit-scrollbar-thumb/background: #d9cfbe
-  ::-webkit-scrollbar-thumb/background-clip: padding-box
-  ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
-  ::-webkit-scrollbar-thumb/background-size: <background: #d9cfbe>
-  ::-webkit-scrollbar-thumb/border: 3px solid transparent
-  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
-  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
-  ::-webkit-scrollbar-thumb/border-radius: 999px
-  ::-webkit-scrollbar-track/background: transparent
-  ::-webkit-scrollbar-track/background-clip: <background: transparent>
-  ::-webkit-scrollbar-track/background-image: <background: transparent>
-  ::-webkit-scrollbar-track/background-size: <background: transparent>
-  ::-webkit-scrollbar/height: 10px
-  ::-webkit-scrollbar/width: 10px
-  ::marker/color: #6e5a4d
-  ::selection/background: #b31a54
-  ::selection/background-clip: <background: #b31a54>
-  ::selection/background-image: <background: #b31a54>
-  ::selection/background-size: <background: #b31a54>
-  ::selection/color: #fffaf7
-  box-sizing: border-box
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
-  padding: 0
-  padding-bottom: <padding: 0>
-  padding-left: 4px
-  scrollbar-color: #d9cfbe transparent
-  scrollbar-width: thin
-  :hover
-    ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
-    ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
-    ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
-  :focus-visible
-    border-bottom-right-radius: <border-radius: 8px>
-    border-radius: 8px
-    outline: 2px solid #b31a54
-    outline-offset: 2px
-
-[582] ol
+[581] ol
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28132,7 +28163,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[583] li
+[582] li
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28173,7 +28204,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[584] blockquote
+[583] blockquote
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28216,7 +28247,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[585] p
+[584] p
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28256,7 +28287,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[586] pre
+[585] pre
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28304,7 +28335,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[587] code
+[586] code
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28355,7 +28386,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[588] table
+[587] table
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28401,7 +28432,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[589] thead
+[588] thead
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28441,7 +28472,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[590] tr
+[589] tr
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28481,7 +28512,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[591] th
+[590] th
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28532,7 +28563,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[592] tbody
+[591] tbody
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28572,7 +28603,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[593] tr
+[592] tr
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28612,7 +28643,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[594] td
+[593] td
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28656,7 +28687,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[595] img
+[594] img
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28700,7 +28731,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[596] hr
+[595] hr
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28743,7 +28774,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[597] div.code-block-wrapper
+[596] div.code-block-wrapper
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28793,7 +28824,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[598] button.code-copy-btn
+[597] button.code-copy-btn
   -webkit-backdrop-filter: blur(6px)
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -28862,7 +28893,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[599] div
+[598] div
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28902,7 +28933,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[600] pre
+[599] pre
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28953,7 +28984,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[601] code
+[600] code
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -29004,7 +29035,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[602] div.code-block-wrapper
+[601] div.code-block-wrapper
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -29054,7 +29085,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[603] button.code-copy-btn.is-copied
+[602] button.code-copy-btn.is-copied
   -webkit-backdrop-filter: blur(6px)
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -29120,7 +29151,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[604] div
+[603] div
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -29160,7 +29191,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[605] pre
+[604] pre
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -29211,7 +29242,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[606] code
+[605] code
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -29262,7 +29293,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[607] div.code-block-wrapper
+[606] div.code-block-wrapper
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -29312,7 +29343,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[608] pre.code-block-plain
+[607] pre.code-block-plain
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -29364,7 +29395,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[609] code
+[608] code
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -29415,7 +29446,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[610] div.msg-actions.is-voted
+[609] div.msg-actions.is-voted
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -29460,7 +29491,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[611] button.msg-action-btn
+[610] button.msg-action-btn
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -29519,6 +29550,63 @@
     background-size: <background: #f1ebe1>
     border-color: rgba(50, 36, 28, 0.12)
     color: #241a16
+  :focus-visible
+    outline: 2px solid #b31a54
+    outline-offset: 2px
+
+[611] button.msg-action-btn.is-copied
+  ::-webkit-scrollbar-thumb/background: #d9cfbe
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
+  ::-webkit-scrollbar-thumb/background-size: <background: #d9cfbe>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #b31a54
+  ::selection/background-clip: <background: #b31a54>
+  ::selection/background-image: <background: #b31a54>
+  ::selection/background-size: <background: #b31a54>
+  ::selection/color: #fffaf7
+  align-items: center
+  background: rgba(31, 122, 82, 0.10)
+  background-clip: <background: rgba(31, 122, 82, 0.10)>
+  background-image: <background: rgba(31, 122, 82, 0.10)>
+  background-size: <background: rgba(31, 122, 82, 0.10)>
+  border: 1px solid transparent
+  border-bottom-right-radius: <border-radius: 8px>
+  border-color: color-mix(in srgb, #1f7a52 30%, transparent)
+  border-radius: 8px
+  box-sizing: border-box
+  color: #1f7a52
+  cursor: pointer
+  display: inline-flex
+  font-family: 'Switzer', system-ui, sans-serif
+  font-size: 12px
+  gap: 4px
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  min-height: 28px
+  padding: 0 8px
+  padding-bottom: <padding: 0 8px>
+  padding-left: <padding: 0 8px>
+  scrollbar-color: #d9cfbe transparent
+  scrollbar-width: thin
+  transition: color 120ms ease, background 120ms ease, border-color 120ms ease
+  transition-duration: <transition: color 120ms ease, background 120ms ease, border-color 120ms ease>
+  user-select: none
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
   :focus-visible
     outline: 2px solid #b31a54
     outline-offset: 2px
@@ -29822,6 +29910,7 @@
   color: #6e5a4d
   display: flex
   font-size: 11px
+  font-variant-numeric: tabular-nums
   gap: 8px
   margin: 0
   margin-bottom: <margin: 0>
@@ -29951,28 +30040,34 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  border-bottom-right-radius: <border-radius: 16px>
+  border-radius: 16px
   border-top: 1px solid transparent
   box-sizing: border-box
   display: flex
   gap: 12px
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin: 0 calc(12px * -1)
+  margin-bottom: <margin: 0 calc(12px * -1)>
+  margin-left: <margin: 0 calc(12px * -1)>
+  margin-top: <margin: 0 calc(12px * -1)>
   min-width: 0
-  padding: 16px 0
-  padding-bottom: <padding: 16px 0>
-  padding-left: <padding: 16px 0>
+  padding: 16px 12px
+  padding-bottom: <padding: 16px 12px>
+  padding-left: <padding: 16px 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
+  transition: background 120ms ease
+  transition-duration: <transition: background 120ms ease>
   will-change: transform, opacity
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
+    background: color-mix(in srgb, #f8f4ed 55%, transparent)
+    background-clip: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
+    background-image: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
+    background-size: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
   :focus-visible
-    border-bottom-right-radius: <border-radius: 8px>
-    border-radius: 8px
     outline: 2px solid #b31a54
     outline-offset: 2px
 
@@ -30012,7 +30107,7 @@
   font-family: 'JetBrains Mono', ui-monospace, monospace
   font-size: 9px
   font-weight: 700
-  height: 30px
+  height: 26px
   justify-content: center
   letter-spacing: 0.02em
   margin: 0
@@ -30027,7 +30122,7 @@
   transition: border-color 200ms ease
   transition-duration: <transition: border-color 200ms ease>
   user-select: none
-  width: 30px
+  width: 26px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
@@ -30142,6 +30237,7 @@
   position: relative
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
+  text-wrap: pretty
   word-break: break-word
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
@@ -30264,28 +30360,34 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  border-bottom-right-radius: <border-radius: 16px>
+  border-radius: 16px
   border-top: 1px solid transparent
   box-sizing: border-box
   display: flex
   gap: 12px
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin: 0 calc(12px * -1)
+  margin-bottom: <margin: 0 calc(12px * -1)>
+  margin-left: <margin: 0 calc(12px * -1)>
+  margin-top: <margin: 0 calc(12px * -1)>
   min-width: 0
-  padding: 16px 0
-  padding-bottom: <padding: 16px 0>
-  padding-left: <padding: 16px 0>
+  padding: 16px 12px
+  padding-bottom: <padding: 16px 12px>
+  padding-left: <padding: 16px 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
+  transition: background 120ms ease
+  transition-duration: <transition: background 120ms ease>
   will-change: transform, opacity
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
+    background: color-mix(in srgb, #f8f4ed 55%, transparent)
+    background-clip: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
+    background-image: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
+    background-size: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
   :focus-visible
-    border-bottom-right-radius: <border-radius: 8px>
-    border-radius: 8px
     outline: 2px solid #b31a54
     outline-offset: 2px
 
@@ -30325,7 +30427,7 @@
   font-family: 'JetBrains Mono', ui-monospace, monospace
   font-size: 9px
   font-weight: 700
-  height: 30px
+  height: 26px
   justify-content: center
   letter-spacing: 0.02em
   margin: 0
@@ -30340,7 +30442,7 @@
   transition: border-color 200ms ease
   transition-duration: <transition: border-color 200ms ease>
   user-select: none
-  width: 30px
+  width: 26px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
@@ -30440,6 +30542,7 @@
   position: relative
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
+  text-wrap: pretty
   word-break: break-word
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
@@ -30640,28 +30743,34 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  border-bottom-right-radius: <border-radius: 16px>
+  border-radius: 16px
   border-top: 1px solid transparent
   box-sizing: border-box
   display: flex
   gap: 12px
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin: 0 calc(12px * -1)
+  margin-bottom: <margin: 0 calc(12px * -1)>
+  margin-left: <margin: 0 calc(12px * -1)>
+  margin-top: <margin: 0 calc(12px * -1)>
   min-width: 0
-  padding: 16px 0
-  padding-bottom: <padding: 16px 0>
-  padding-left: <padding: 16px 0>
+  padding: 16px 12px
+  padding-bottom: <padding: 16px 12px>
+  padding-left: <padding: 16px 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
+  transition: background 120ms ease
+  transition-duration: <transition: background 120ms ease>
   will-change: transform, opacity
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
+    background: color-mix(in srgb, #f8f4ed 55%, transparent)
+    background-clip: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
+    background-image: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
+    background-size: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
   :focus-visible
-    border-bottom-right-radius: <border-radius: 8px>
-    border-radius: 8px
     outline: 2px solid #b31a54
     outline-offset: 2px
 
@@ -30701,7 +30810,7 @@
   font-family: 'JetBrains Mono', ui-monospace, monospace
   font-size: 9px
   font-weight: 700
-  height: 30px
+  height: 26px
   justify-content: center
   letter-spacing: 0.02em
   margin: 0
@@ -30716,7 +30825,7 @@
   transition: border-color 200ms ease
   transition-duration: <transition: border-color 200ms ease>
   user-select: none
-  width: 30px
+  width: 26px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
@@ -30820,6 +30929,7 @@
   position: relative
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
+  text-wrap: pretty
   white-space: nowrap
   word-break: break-word
   :hover
@@ -31007,28 +31117,34 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  border-bottom-right-radius: <border-radius: 16px>
+  border-radius: 16px
   border-top: 1px solid transparent
   box-sizing: border-box
   display: flex
   gap: 12px
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin: 0 calc(12px * -1)
+  margin-bottom: <margin: 0 calc(12px * -1)>
+  margin-left: <margin: 0 calc(12px * -1)>
+  margin-top: <margin: 0 calc(12px * -1)>
   min-width: 0
-  padding: 16px 0
-  padding-bottom: <padding: 16px 0>
-  padding-left: <padding: 16px 0>
+  padding: 16px 12px
+  padding-bottom: <padding: 16px 12px>
+  padding-left: <padding: 16px 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
+  transition: background 120ms ease
+  transition-duration: <transition: background 120ms ease>
   will-change: transform, opacity
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
+    background: color-mix(in srgb, #f8f4ed 55%, transparent)
+    background-clip: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
+    background-image: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
+    background-size: <background: color-mix(in srgb, #f8f4ed 55%, transparent)>
   :focus-visible
-    border-bottom-right-radius: <border-radius: 8px>
-    border-radius: 8px
     outline: 2px solid #b31a54
     outline-offset: 2px
 
@@ -31068,7 +31184,7 @@
   font-family: 'JetBrains Mono', ui-monospace, monospace
   font-size: 9px
   font-weight: 700
-  height: 30px
+  height: 26px
   justify-content: center
   letter-spacing: 0.02em
   margin: 0
@@ -31083,7 +31199,7 @@
   transition: border-color 200ms ease
   transition-duration: <transition: border-color 200ms ease>
   user-select: none
-  width: 30px
+  width: 26px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
@@ -31416,9 +31532,9 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  padding: 0 24px 8px
-  padding-bottom: <padding: 0 24px 8px>
-  padding-left: <padding: 0 24px 8px>
+  padding: 4px 24px 12px
+  padding-bottom: <padding: 4px 24px 12px>
+  padding-left: <padding: 4px 24px 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -34108,17 +34224,17 @@
   padding: 20px 16px 8px
   padding-bottom: <padding: 20px 16px 8px>
   padding-left: <padding: 20px 16px 8px>
-  - padding: 24px 24px 8px
-  - padding-bottom: <padding: 24px 24px 8px>
-  - padding-left: <padding: 24px 24px 8px>
+  - padding: 24px 24px 16px
+  - padding-bottom: <padding: 24px 24px 16px>
+  - padding-left: <padding: 24px 24px 16px>
 
 [310] div.chat-toolbar
   padding: 0 16px 8px
   padding-bottom: <padding: 0 16px 8px>
   padding-left: <padding: 0 16px 8px>
-  - padding: 0 24px 8px
-  - padding-bottom: <padding: 0 24px 8px>
-  - padding-left: <padding: 0 24px 8px>
+  - padding: 4px 24px 12px
+  - padding-bottom: <padding: 4px 24px 12px>
+  - padding-left: <padding: 4px 24px 12px>
 
 [317] div.input-bar
   padding: 0 16px 16px
@@ -34144,17 +34260,17 @@
   padding: 20px 16px 8px
   padding-bottom: <padding: 20px 16px 8px>
   padding-left: <padding: 20px 16px 8px>
-  - padding: 24px 24px 8px
-  - padding-bottom: <padding: 24px 24px 8px>
-  - padding-left: <padding: 24px 24px 8px>
+  - padding: 24px 24px 16px
+  - padding-bottom: <padding: 24px 24px 16px>
+  - padding-left: <padding: 24px 24px 16px>
 
 [650] div.chat-toolbar
   padding: 0 16px 8px
   padding-bottom: <padding: 0 16px 8px>
   padding-left: <padding: 0 16px 8px>
-  - padding: 0 24px 8px
-  - padding-bottom: <padding: 0 24px 8px>
-  - padding-left: <padding: 0 24px 8px>
+  - padding: 4px 24px 12px
+  - padding-bottom: <padding: 4px 24px 12px>
+  - padding-left: <padding: 4px 24px 12px>
 
 [657] div.input-bar
   padding: 0 16px 16px
@@ -34326,9 +34442,9 @@
   padding: 16px 12px 8px
   padding-bottom: <padding: 16px 12px 8px>
   padding-left: <padding: 16px 12px 8px>
-  - padding: 24px 24px 8px
-  - padding-bottom: <padding: 24px 24px 8px>
-  - padding-left: <padding: 24px 24px 8px>
+  - padding: 24px 24px 16px
+  - padding-bottom: <padding: 24px 24px 16px>
+  - padding-left: <padding: 24px 24px 16px>
 
 [199] img.empty-logo
   height: 64px
@@ -34352,23 +34468,23 @@
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   - gap: 12px
-  - padding: 16px 0
-  - padding-bottom: <padding: 16px 0>
-  - padding-left: <padding: 16px 0>
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
 
-[220] div.bubble.markdown-body
+[219] div.bubble.markdown-body
   max-width: 92%
   - max-width: min(78%, 60ch)
 
-[225] div.msg-row.assistant
+[224] div.msg-row.assistant
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   - gap: 12px
-  - padding: 16px 0
-  - padding-bottom: <padding: 16px 0>
-  - padding-left: <padding: 16px 0>
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
 
 [281] div.msg-row.assistant
   gap: 8px
@@ -34376,9 +34492,9 @@
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   - gap: 12px
-  - padding: 16px 0
-  - padding-bottom: <padding: 16px 0>
-  - padding-left: <padding: 16px 0>
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
 
 [287] div.msg-row.assistant
   gap: 8px
@@ -34386,9 +34502,9 @@
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   - gap: 12px
-  - padding: 16px 0
-  - padding-bottom: <padding: 16px 0>
-  - padding-left: <padding: 16px 0>
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
 
 [295] div.msg-row.assistant
   gap: 8px
@@ -34396,9 +34512,9 @@
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   - gap: 12px
-  - padding: 16px 0
-  - padding-bottom: <padding: 16px 0>
-  - padding-left: <padding: 16px 0>
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
 
 [302] div.msg-row.assistant
   gap: 8px
@@ -34406,17 +34522,17 @@
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   - gap: 12px
-  - padding: 16px 0
-  - padding-bottom: <padding: 16px 0>
-  - padding-left: <padding: 16px 0>
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
 
 [310] div.chat-toolbar
   padding: 0 16px 8px
   padding-bottom: <padding: 0 16px 8px>
   padding-left: <padding: 0 16px 8px>
-  - padding: 0 24px 8px
-  - padding-bottom: <padding: 0 24px 8px>
-  - padding-left: <padding: 0 24px 8px>
+  - padding: 4px 24px 12px
+  - padding-bottom: <padding: 4px 24px 12px>
+  - padding-left: <padding: 4px 24px 12px>
 
 [317] div.input-bar
   padding: 0 12px 12px
@@ -34596,9 +34712,9 @@
   padding: 16px 12px 8px
   padding-bottom: <padding: 16px 12px 8px>
   padding-left: <padding: 16px 12px 8px>
-  - padding: 24px 24px 8px
-  - padding-bottom: <padding: 24px 24px 8px>
-  - padding-left: <padding: 24px 24px 8px>
+  - padding: 24px 24px 16px
+  - padding-bottom: <padding: 24px 24px 16px>
+  - padding-left: <padding: 24px 24px 16px>
 
 [539] img.empty-logo
   height: 64px
@@ -34622,23 +34738,23 @@
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   - gap: 12px
-  - padding: 16px 0
-  - padding-bottom: <padding: 16px 0>
-  - padding-left: <padding: 16px 0>
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
 
-[560] div.bubble.markdown-body
+[559] div.bubble.markdown-body
   max-width: 92%
   - max-width: min(78%, 60ch)
 
-[565] div.msg-row.assistant
+[564] div.msg-row.assistant
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   - gap: 12px
-  - padding: 16px 0
-  - padding-bottom: <padding: 16px 0>
-  - padding-left: <padding: 16px 0>
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
 
 [621] div.msg-row.assistant
   gap: 8px
@@ -34646,9 +34762,9 @@
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   - gap: 12px
-  - padding: 16px 0
-  - padding-bottom: <padding: 16px 0>
-  - padding-left: <padding: 16px 0>
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
 
 [627] div.msg-row.assistant
   gap: 8px
@@ -34656,9 +34772,9 @@
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   - gap: 12px
-  - padding: 16px 0
-  - padding-bottom: <padding: 16px 0>
-  - padding-left: <padding: 16px 0>
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
 
 [635] div.msg-row.assistant
   gap: 8px
@@ -34666,9 +34782,9 @@
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   - gap: 12px
-  - padding: 16px 0
-  - padding-bottom: <padding: 16px 0>
-  - padding-left: <padding: 16px 0>
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
 
 [642] div.msg-row.assistant
   gap: 8px
@@ -34676,17 +34792,17 @@
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   - gap: 12px
-  - padding: 16px 0
-  - padding-bottom: <padding: 16px 0>
-  - padding-left: <padding: 16px 0>
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
 
 [650] div.chat-toolbar
   padding: 0 16px 8px
   padding-bottom: <padding: 0 16px 8px>
   padding-left: <padding: 0 16px 8px>
-  - padding: 0 24px 8px
-  - padding-bottom: <padding: 0 24px 8px>
-  - padding-left: <padding: 0 24px 8px>
+  - padding: 4px 24px 12px
+  - padding-bottom: <padding: 4px 24px 12px>
+  - padding-left: <padding: 4px 24px 12px>
 
 [657] div.input-bar
   padding: 0 12px 12px
@@ -37198,20 +37314,9 @@
   transition-duration: 0.01ms
   - animation-duration: <animation: none>
   - animation-iteration-count: <animation: none>
+  - transition-duration: <transition: background 120ms ease>
 
-[217] div.avatar
-  ::after/animation-duration: 0.01ms
-  ::after/animation-iteration-count: 1
-  ::after/transition-duration: 0.01ms
-  ::before/animation-duration: 0.01ms
-  ::before/animation-iteration-count: 1
-  ::before/transition-duration: 0.01ms
-  animation-duration: 0.01ms
-  animation-iteration-count: 1
-  transition-duration: 0.01ms
-  - transition-duration: <transition: border-color 200ms ease>
-
-[218] div.msg-content
+[217] div.msg-content
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37222,7 +37327,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[219] img.msg-attachment
+[218] img.msg-attachment
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37233,7 +37338,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[220] div.bubble.markdown-body
+[219] div.bubble.markdown-body
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37244,7 +37349,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[221] p
+[220] p
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37255,7 +37360,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[222] div.msg-meta
+[221] div.msg-meta
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37266,7 +37371,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[223] span.msg-role
+[222] span.msg-role
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37277,7 +37382,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[224] span
+[223] span
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37288,7 +37393,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[225] div.msg-row.assistant
+[224] div.msg-row.assistant
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37300,8 +37405,9 @@
   transition-duration: 0.01ms
   - animation-duration: <animation: none>
   - animation-iteration-count: <animation: none>
+  - transition-duration: <transition: background 120ms ease>
 
-[226] div.avatar
+[225] div.avatar
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37313,7 +37419,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: border-color 200ms ease>
 
-[227] div.msg-content
+[226] div.msg-content
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37324,7 +37430,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[228] div.msg-attachment-placeholder
+[227] div.msg-attachment-placeholder
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37335,7 +37441,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[229] svg
+[228] svg
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37346,7 +37452,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[230] path
+[229] path
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37357,7 +37463,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[231] div.bubble.markdown-body
+[230] div.bubble.markdown-body
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37368,7 +37474,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[232] h1
+[231] h1
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37379,7 +37485,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[233] h2
+[232] h2
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37390,7 +37496,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[234] h3
+[233] h3
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37401,7 +37507,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[235] p
+[234] p
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37412,7 +37518,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[236] a
+[235] a
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37424,7 +37530,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: text-decoration-color 120ms ease, color 120ms ease>
 
-[237] code
+[236] code
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37435,7 +37541,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[238] strong
+[237] strong
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37446,7 +37552,18 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[239] ul
+[238] ul
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[239] li
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37468,7 +37585,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[241] li
+[241] ol
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37479,7 +37596,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[242] ol
+[242] li
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37490,7 +37607,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[243] li
+[243] blockquote
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37501,7 +37618,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[244] blockquote
+[244] p
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37512,7 +37629,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[245] p
+[245] pre
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37523,7 +37640,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[246] pre
+[246] code
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37534,7 +37651,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[247] code
+[247] table
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37545,7 +37662,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[248] table
+[248] thead
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37556,7 +37673,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[249] thead
+[249] tr
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37567,7 +37684,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[250] tr
+[250] th
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37578,7 +37695,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[251] th
+[251] tbody
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37589,7 +37706,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[252] tbody
+[252] tr
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37600,7 +37717,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[253] tr
+[253] td
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37611,7 +37728,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[254] td
+[254] img
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37622,7 +37739,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[255] img
+[255] hr
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37633,7 +37750,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[256] hr
+[256] div.code-block-wrapper
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37644,18 +37761,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[257] div.code-block-wrapper
-  ::after/animation-duration: 0.01ms
-  ::after/animation-iteration-count: 1
-  ::after/transition-duration: 0.01ms
-  ::before/animation-duration: 0.01ms
-  ::before/animation-iteration-count: 1
-  ::before/transition-duration: 0.01ms
-  animation-duration: 0.01ms
-  animation-iteration-count: 1
-  transition-duration: 0.01ms
-
-[258] button.code-copy-btn
+[257] button.code-copy-btn
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37667,7 +37773,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: opacity 120ms ease, color 120ms ease, background 120ms ease>
 
-[259] div
+[258] div
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37678,7 +37784,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[260] pre
+[259] pre
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37689,7 +37795,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[261] code
+[260] code
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37700,7 +37806,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[262] div.code-block-wrapper
+[261] div.code-block-wrapper
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37711,7 +37817,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[263] button.code-copy-btn.is-copied
+[262] button.code-copy-btn.is-copied
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37723,7 +37829,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: opacity 120ms ease, color 120ms ease, background 120ms ease>
 
-[264] div
+[263] div
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37734,7 +37840,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[265] pre
+[264] pre
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37745,7 +37851,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[266] code
+[265] code
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37756,7 +37862,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[267] div.code-block-wrapper
+[266] div.code-block-wrapper
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37767,7 +37873,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[268] pre.code-block-plain
+[267] pre.code-block-plain
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37778,7 +37884,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[269] code
+[268] code
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37789,7 +37895,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[270] div.msg-actions.is-voted
+[269] div.msg-actions.is-voted
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37801,7 +37907,19 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: opacity 120ms ease>
 
-[271] button.msg-action-btn
+[270] button.msg-action-btn
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+  - transition-duration: <transition: color 120ms ease, background 120ms ease, border-color 120ms ease>
+
+[271] button.msg-action-btn.is-copied
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -37926,6 +38044,7 @@
   transition-duration: 0.01ms
   - animation-duration: <animation: none>
   - animation-iteration-count: <animation: none>
+  - transition-duration: <transition: background 120ms ease>
 
 [282] div.avatar
   ::after/animation-duration: 0.01ms
@@ -37998,6 +38117,7 @@
   transition-duration: 0.01ms
   - animation-duration: <animation: none>
   - animation-iteration-count: <animation: none>
+  - transition-duration: <transition: background 120ms ease>
 
 [288] div.avatar
   ::after/animation-duration: 0.01ms
@@ -38089,6 +38209,7 @@
   transition-duration: 0.01ms
   - animation-duration: <animation: none>
   - animation-iteration-count: <animation: none>
+  - transition-duration: <transition: background 120ms ease>
 
 [296] div.avatar
   ::after/animation-duration: 0.01ms
@@ -38175,6 +38296,7 @@
   transition-duration: 0.01ms
   - animation-duration: <animation: none>
   - animation-iteration-count: <animation: none>
+  - transition-duration: <transition: background 120ms ease>
 
 [303] div.avatar
   ::after/animation-duration: 0.01ms
@@ -41103,20 +41225,9 @@
   transition-duration: 0.01ms
   - animation-duration: <animation: none>
   - animation-iteration-count: <animation: none>
+  - transition-duration: <transition: background 120ms ease>
 
-[557] div.avatar
-  ::after/animation-duration: 0.01ms
-  ::after/animation-iteration-count: 1
-  ::after/transition-duration: 0.01ms
-  ::before/animation-duration: 0.01ms
-  ::before/animation-iteration-count: 1
-  ::before/transition-duration: 0.01ms
-  animation-duration: 0.01ms
-  animation-iteration-count: 1
-  transition-duration: 0.01ms
-  - transition-duration: <transition: border-color 200ms ease>
-
-[558] div.msg-content
+[557] div.msg-content
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41127,7 +41238,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[559] img.msg-attachment
+[558] img.msg-attachment
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41138,7 +41249,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[560] div.bubble.markdown-body
+[559] div.bubble.markdown-body
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41149,7 +41260,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[561] p
+[560] p
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41160,7 +41271,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[562] div.msg-meta
+[561] div.msg-meta
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41171,7 +41282,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[563] span.msg-role
+[562] span.msg-role
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41182,7 +41293,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[564] span
+[563] span
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41193,7 +41304,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[565] div.msg-row.assistant
+[564] div.msg-row.assistant
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41205,8 +41316,9 @@
   transition-duration: 0.01ms
   - animation-duration: <animation: none>
   - animation-iteration-count: <animation: none>
+  - transition-duration: <transition: background 120ms ease>
 
-[566] div.avatar
+[565] div.avatar
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41218,7 +41330,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: border-color 200ms ease>
 
-[567] div.msg-content
+[566] div.msg-content
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41229,7 +41341,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[568] div.msg-attachment-placeholder
+[567] div.msg-attachment-placeholder
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41240,7 +41352,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[569] svg
+[568] svg
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41251,7 +41363,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[570] path
+[569] path
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41262,7 +41374,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[571] div.bubble.markdown-body
+[570] div.bubble.markdown-body
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41273,7 +41385,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[572] h1
+[571] h1
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41284,7 +41396,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[573] h2
+[572] h2
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41295,7 +41407,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[574] h3
+[573] h3
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41306,7 +41418,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[575] p
+[574] p
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41317,7 +41429,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[576] a
+[575] a
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41329,7 +41441,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: text-decoration-color 120ms ease, color 120ms ease>
 
-[577] code
+[576] code
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41340,7 +41452,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[578] strong
+[577] strong
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41351,7 +41463,18 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[579] ul
+[578] ul
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[579] li
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41373,7 +41496,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[581] li
+[581] ol
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41384,7 +41507,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[582] ol
+[582] li
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41395,7 +41518,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[583] li
+[583] blockquote
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41406,7 +41529,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[584] blockquote
+[584] p
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41417,7 +41540,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[585] p
+[585] pre
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41428,7 +41551,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[586] pre
+[586] code
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41439,7 +41562,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[587] code
+[587] table
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41450,7 +41573,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[588] table
+[588] thead
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41461,7 +41584,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[589] thead
+[589] tr
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41472,7 +41595,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[590] tr
+[590] th
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41483,7 +41606,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[591] th
+[591] tbody
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41494,7 +41617,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[592] tbody
+[592] tr
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41505,7 +41628,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[593] tr
+[593] td
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41516,7 +41639,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[594] td
+[594] img
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41527,7 +41650,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[595] img
+[595] hr
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41538,7 +41661,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[596] hr
+[596] div.code-block-wrapper
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41549,18 +41672,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[597] div.code-block-wrapper
-  ::after/animation-duration: 0.01ms
-  ::after/animation-iteration-count: 1
-  ::after/transition-duration: 0.01ms
-  ::before/animation-duration: 0.01ms
-  ::before/animation-iteration-count: 1
-  ::before/transition-duration: 0.01ms
-  animation-duration: 0.01ms
-  animation-iteration-count: 1
-  transition-duration: 0.01ms
-
-[598] button.code-copy-btn
+[597] button.code-copy-btn
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41572,7 +41684,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: opacity 120ms ease, color 120ms ease, background 120ms ease>
 
-[599] div
+[598] div
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41583,7 +41695,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[600] pre
+[599] pre
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41594,7 +41706,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[601] code
+[600] code
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41605,7 +41717,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[602] div.code-block-wrapper
+[601] div.code-block-wrapper
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41616,7 +41728,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[603] button.code-copy-btn.is-copied
+[602] button.code-copy-btn.is-copied
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41628,7 +41740,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: opacity 120ms ease, color 120ms ease, background 120ms ease>
 
-[604] div
+[603] div
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41639,7 +41751,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[605] pre
+[604] pre
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41650,7 +41762,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[606] code
+[605] code
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41661,7 +41773,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[607] div.code-block-wrapper
+[606] div.code-block-wrapper
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41672,7 +41784,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[608] pre.code-block-plain
+[607] pre.code-block-plain
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41683,7 +41795,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[609] code
+[608] code
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41694,7 +41806,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[610] div.msg-actions.is-voted
+[609] div.msg-actions.is-voted
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41706,7 +41818,19 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: opacity 120ms ease>
 
-[611] button.msg-action-btn
+[610] button.msg-action-btn
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+  - transition-duration: <transition: color 120ms ease, background 120ms ease, border-color 120ms ease>
+
+[611] button.msg-action-btn.is-copied
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -41831,6 +41955,7 @@
   transition-duration: 0.01ms
   - animation-duration: <animation: none>
   - animation-iteration-count: <animation: none>
+  - transition-duration: <transition: background 120ms ease>
 
 [622] div.avatar
   ::after/animation-duration: 0.01ms
@@ -41903,6 +42028,7 @@
   transition-duration: 0.01ms
   - animation-duration: <animation: none>
   - animation-iteration-count: <animation: none>
+  - transition-duration: <transition: background 120ms ease>
 
 [628] div.avatar
   ::after/animation-duration: 0.01ms
@@ -41994,6 +42120,7 @@
   transition-duration: 0.01ms
   - animation-duration: <animation: none>
   - animation-iteration-count: <animation: none>
+  - transition-duration: <transition: background 120ms ease>
 
 [636] div.avatar
   ::after/animation-duration: 0.01ms
@@ -42080,6 +42207,7 @@
   transition-duration: 0.01ms
   - animation-duration: <animation: none>
   - animation-iteration-count: <animation: none>
+  - transition-duration: <transition: background 120ms ease>
 
 [643] div.avatar
   ::after/animation-duration: 0.01ms

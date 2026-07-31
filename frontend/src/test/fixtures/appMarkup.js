@@ -221,7 +221,6 @@ export const appTree = (theme) => `
 
             <div class="msg-stream">
             <div class="msg-row user">
-              <div class="avatar">YOU</div>
               <div class="msg-content">
                 <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="msg-attachment" alt="Attached"/>
                 <div class="bubble markdown-body"><p>What is this?</p></div>
@@ -259,6 +258,7 @@ export const appTree = (theme) => `
                 </div>
                 <div class="msg-actions is-voted">
                   <button class="msg-action-btn">Copy</button>
+                  <button class="msg-action-btn is-copied">Copied</button>
                   <button class="msg-action-btn active"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
                   <button class="msg-action-btn is-down active"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
                 </div>

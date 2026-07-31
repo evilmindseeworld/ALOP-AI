@@ -110,6 +110,9 @@ const ICONS = {
   // app whose glyph came from the font stack rather than this file, so it
   // inherited none of the sizing, stroke weight or colour its neighbours share.
   pencil: <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" />,
+  // The confirmed state of a copy button. Same stroke weight as the copy icon
+  // it replaces, so the button does not change visual weight when it swaps.
+  check: <path d="M20 6L9 17l-5-5" />,
 };
 
 /** Icons drawn as solid shapes rather than strokes. */

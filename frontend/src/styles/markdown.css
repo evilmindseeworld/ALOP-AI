@@ -33,6 +33,10 @@
   letter-spacing: -0.015em;
   line-height: 1.25;
   color: var(--text);
+  /* balance, not pretty: a heading is short enough that the browser can even
+   * out every line, where prose only gets its last few lines rebalanced. A
+   * two-line heading breaking after one word is the thing this prevents. */
+  text-wrap: balance;
 }
 
 /* Headings need more space above than below — they belong to what follows. */

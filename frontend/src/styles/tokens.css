@@ -149,6 +149,13 @@
   --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
   --rim: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 
+  /* Code keeps its own dark surface in BOTH themes, because the syntax
+   * highlighter ships oneDark and only oneDark. Deriving it from --bg instead
+   * gave the light theme a mid-grey slab that matched neither the page nor the
+   * highlighted block that replaces it a moment later. */
+  --code-bg: #21242b;
+  --code-border: rgba(255, 255, 255, 0.08);
+
   --dur-fast: 120ms;
   --dur: 200ms;
   --dur-slow: 320ms;
@@ -228,6 +235,22 @@
   --gradient-warm:
     radial-gradient(60% 50% at 15% 0%, rgba(179, 26, 84, 0.06) 0%, transparent 70%),
     radial-gradient(55% 45% at 90% 100%, rgba(31, 122, 82, 0.05) 0%, transparent 70%);
+
+  /* THESE MUST BE REDECLARED HERE, and the reason is a genuine trap.
+   *
+   * A custom property's var()s are substituted at computed-value time on the
+   * element where the property is DECLARED — not where it is used. So
+   * `--gradient-primary: linear-gradient(..., var(--primary), ...)` declared on
+   * :root bakes in the DARK --primary, and every element inheriting it in the
+   * light theme paints dark-theme pink no matter what .app-root.light says
+   * about --primary.
+   *
+   * That is exactly what shipped: the user's own message rendered as a pale
+   * dark-theme pink in Bamboo Day, with the light theme's near-white
+   * --text-on-fill on top of it. contrast.test.js now fails if a token whose
+   * value references another token is left unredeclared here. */
+  --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
+  --gradient-emerald: linear-gradient(135deg, var(--emerald) 0%, var(--emerald-soft) 100%);
 
   /* Paper tooth: two nearly invisible grain passes. Kept only on light, where
    * a warm surface can carry texture without banding. */

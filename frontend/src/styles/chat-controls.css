@@ -1,12 +1,17 @@
 /* Empty-state starters, the transcript toolbar, jump-to-latest, and toasts. */
 
 /* ===== EMPTY-STATE STARTERS ===== */
+/* Two by two, not auto-fit.
+ *
+ * `auto-fit` with a 220px minimum laid the four starters out as three across
+ * and one orphan below, which reads as a card that failed to load. There are
+ * exactly four of them and there is no width at which 2x2 looks wrong. */
 .starter-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
   width: 100%;
-  max-width: 680px;
+  max-width: 580px;
   margin: var(--space-6) auto 0;
 }
 

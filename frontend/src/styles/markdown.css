@@ -13,7 +13,12 @@
   font-size: var(--text-base);
   line-height: 1.7;
   color: var(--text);
+  min-width: 0;
 }
+
+/* Wide content scrolls inside its own box; the page never scrolls sideways. */
+.markdown-body pre,
+.markdown-body table { max-width: 100%; }
 
 /* Vertical rhythm: the gap between blocks is set once, on the flow, rather
  * than as a margin on each element type. */
@@ -108,8 +113,8 @@
 .markdown-body pre {
   padding: var(--space-4);
   border-radius: var(--radius-md);
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg) 70%, black);
+  border: 1px solid var(--code-border);
+  background: var(--code-bg);
   overflow-x: auto;
 }
 
@@ -117,7 +122,7 @@
   padding: 0;
   border: none;
   background: none;
-  color: var(--text);
+  color: #d7dae0;
   font-size: var(--text-sm);
   line-height: 1.6;
 }

@@ -4,8 +4,8 @@
   position: relative;
   border-radius: var(--radius-md);
   overflow: hidden;
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--bg) 70%, black);
+  border: 1px solid var(--code-border);
+  background: var(--code-bg);
 }
 
 .code-block-wrapper pre {

@@ -113,6 +113,7 @@
  * makes a 900-word research answer hardest to read. */
 .msg-row {
   display: flex;
+  min-width: 0;
   gap: var(--space-3);
   padding: var(--space-4) 0;
   /* Load-bearing: rows are animated by anime.js from App.jsx, and a CSS
@@ -177,6 +178,12 @@
 /* ===== BUBBLES ===== */
 .bubble {
   max-width: 100%;
+  /* A flex item's min-width defaults to auto, i.e. its min-content width. A
+   * table with unwrappable headers, or a long code line, therefore pushed the
+   * bubble — and the whole transcript column — wider than the viewport, and the
+   * answer ran off the right edge of the phone. The table scrolls inside itself
+   * instead; see markdown.css. */
+  min-width: 0;
   font-size: var(--text-base);
   line-height: 1.7;
   color: var(--text);
@@ -186,13 +193,18 @@
 }
 
 /* The assistant's answer: no background, no border, no shadow. Just a column
- * of text at a readable measure. */
+ * of text at a readable measure.
+ *
+ * `min(measure, 100%)` and not `var(--measure)` alone. The column is
+ * `align-items: flex-start`, which sizes children shrink-to-fit rather than
+ * stretching them — so a bare 74ch cap is a 523px WIDTH on a 313px phone, and
+ * every line of the answer ran off the right edge. */
 .msg-row.assistant .bubble {
   background: none;
   border: none;
   padding: 0;
   box-shadow: none;
-  max-width: var(--measure);
+  max-width: min(var(--measure), 100%);
 }
 
 /* The question: a filled pill. Ink on pink, which is 8.4:1 — the white this

@@ -173,13 +173,37 @@
 
 /* Actions reveal on hover AND on keyboard focus.
  *
- * `opacity: 0` alone hid them from the mouse and left them in the tab order
- * looking empty — a keyboard user tabbed into an invisible Delete. */
+ * Two things were wrong with `display: flex; opacity: 0`:
+ *
+ *   - Hidden is not gone. Four 26px buttons plus gaps kept reserving ~112px of
+ *     a 264px row, so every title truncated to about eight characters —
+ *     "Monitor buying…" — with half the row sitting empty next to it.
+ *   - `opacity: 0` alone left them in the tab order looking empty, so a
+ *     keyboard user tabbed into an invisible Delete.
+ *
+ * Taking them out of flow gives the title the whole row, and the fade behind
+ * them keeps a long title from running under the icons when they appear. */
 .chat-actions {
+  position: absolute;
+  right: var(--space-1);
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   gap: 2px;
+  padding-left: var(--space-6);
   opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(to right, transparent, var(--surface-2) 24%);
+  border-radius: var(--radius-md);
   transition: opacity var(--dur-fast) ease;
+}
+
+.chat-item:hover .chat-actions,
+.chat-item:focus-within .chat-actions { pointer-events: auto; }
+
+.chat-item.active .chat-actions,
+.chat-item:hover .chat-actions {
+  background: linear-gradient(to right, transparent, var(--surface-3) 24%);
 }
 
 .chat-item:hover .chat-actions,

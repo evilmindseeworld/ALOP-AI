@@ -72,6 +72,37 @@ const PAIRS = [
   ["--info", "--surface-2", AA_LARGE],
 ];
 
+describe("theme-dependent tokens", () => {
+  /**
+   * A custom property's var()s are substituted at computed-value time on the
+   * element where the property is DECLARED, not where it is used. So a token
+   * like `--gradient-primary: linear-gradient(..., var(--primary), ...)`
+   * declared on :root bakes in the DARK --primary, and inherits that baked
+   * value into the light theme however many times .app-root.light redeclares
+   * --primary underneath it.
+   *
+   * That shipped: the user's own message painted dark-theme pink in Bamboo
+   * Day, with the light theme's near-white --text-on-fill sitting on it. No
+   * contrast pair catches it, because both tokens are individually correct.
+   */
+  const referencesAnotherToken = ([, value]) => /var\(--/.test(value);
+
+  it("redeclares every composite token in the light theme", () => {
+    const composite = Object.entries(TOKENS.dark).filter(referencesAnotherToken).map(([name]) => name);
+
+    // Guard against the check going vacuous if the tokens stop using var().
+    expect(composite.length, "no composite tokens found — has the file changed shape?").toBeGreaterThan(0);
+
+    const missing = composite.filter((name) => !(name in TOKENS.light));
+    expect(
+      missing,
+      `these tokens reference another token and are declared only on :root, so the light ` +
+      `theme inherits their DARK-resolved value: ${missing.join(", ")}. Redeclare them in ` +
+      `.app-root.light.`
+    ).toEqual([]);
+  });
+});
+
 describe.each([
   ["dark", TOKENS.dark],
   ["light", TOKENS.light],

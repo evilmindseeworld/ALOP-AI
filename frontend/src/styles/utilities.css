@@ -60,6 +60,39 @@
   .side-panel { width: 100vw; border-radius: 0; }
   .starter-grid { grid-template-columns: 1fr; max-width: none; }
   .cmdk-backdrop { padding: 8vh var(--space-3) var(--space-3); }
+
+  /* THE SIDEBAR GOES OFF-CANVAS ON WIDTH, NOT ON A JAVASCRIPT MEASUREMENT.
+   *
+   * `.sidebar.mobile` is set by ChatSidebar from `window.innerWidth <= 768`,
+   * read once at render with no resize listener. A phone gets it right because
+   * the first render is already narrow; a desktop window dragged narrower does
+   * not — the sidebar keeps its 264px column and the transcript is squeezed to
+   * a strip, which is what the gallery shows at 390px.
+   *
+   * Layout belongs in the cascade. The class stays because the component and
+   * the fixture both still carry it, but nothing here depends on it. */
+  .sidebar {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: min(300px, 86vw);
+    transform: translateX(-110%);
+    border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
+    box-shadow: var(--shadow-lg);
+    z-index: var(--z-sidebar-mobile);
+  }
+
+  /* Collapsed is a desktop idea: on a phone the drawer is already hidden, and
+   * a zero-width drawer cannot be opened again. */
+  .sidebar.collapsed {
+    width: min(300px, 86vw);
+    padding: var(--space-3);
+    border: 1px solid var(--border);
+    opacity: 1;
+  }
+
+  .sidebar.mobileOpen { transform: translateX(0); }
 }
 
 @media (max-width: 480px) {

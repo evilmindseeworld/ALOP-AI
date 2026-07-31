@@ -303,8 +303,6 @@ const AuthenticatedApp = () => {
     <div className={`app-root ${darkMode ? "dark" : "light"}`}>
       <div className="bg-layer" />
       <div className="bg-overlay" />
-      <Earring side="left" />
-      <Earring side="right" />
 
       <CommandPalette
         open={showPalette}
@@ -408,6 +406,12 @@ const AuthenticatedApp = () => {
           />
 
           <div className="chat-main">
+            {/* Inside the transcript panel, not the window: fixed positioning
+                hung these over the sidebar and the header, which is the app's
+                own chrome. They live in the margin the centred column makes. */}
+            <Earring side="left" />
+            <Earring side="right" />
+
             <AdminPanel
               open={showAdmin && isAdmin}
               onClose={() => setShowAdmin(false)}

@@ -22,20 +22,31 @@
  *     The transcript is centred and capped now, so the ornament lives in the
  *     margin that creates, and hides as soon as that margin is gone.
  */
+/* Anchored to the transcript panel, not to the window.
+ *
+ * `position: fixed` put them at the window's edges, which is where the sidebar
+ * and the header are — so the ornament hung over the app's own chrome, and at
+ * some widths over the text as well. They are children of .chat-main now and
+ * hang in the margin the centred transcript column creates: at 1600px the chat
+ * panel is ~1290px wide holding an 860px column, so there is a genuine ~200px
+ * of empty surface on each side for them to live in.
+ *
+ * That also means they cannot escape .chat-main's stacking context or its
+ * overflow, so no z-index guessing is involved — the containment does it. */
 .earring-wrap {
-  position: fixed;
-  top: 92px;
+  position: absolute;
+  top: 0;
   z-index: var(--z-earring);
   /* Clicks pass through to the UI behind it. */
   pointer-events: none;
   display: flex;
   flex-direction: column;
   align-items: center;
-  opacity: 0.55;
+  opacity: 0.5;
 }
 
-.earring-left { left: 18px; right: auto; }
-.earring-right { right: 18px; left: auto; }
+.earring-left { left: 22px; right: auto; }
+.earring-right { right: 22px; left: auto; }
 
 /* Mirrored so the pair reads as a matching set rather than two identical
  * ornaments. Was previously an inline transform on <model-viewer>, which is

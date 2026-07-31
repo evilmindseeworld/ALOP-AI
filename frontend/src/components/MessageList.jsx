@@ -114,7 +114,11 @@ export const Message = memo(({ msg, isStreaming, onCopy, onFeedback, feedback })
 
   return (
     <div className={`msg-row ${msg.role}`}>
-      <div className="avatar">{isUser ? "YOU" : "AI"}</div>
+      {/* Only the assistant gets an avatar. A right-aligned filled pill is
+          already unmistakably yours — an avatar, a "YOU" label and the
+          alignment were three ways of saying the same thing, in the corner
+          where the eye lands first. */}
+      {!isUser && <div className="avatar">AI</div>}
       <div className="msg-content">
         {/* imagePreview only exists in this session; after a reload the hasImage
             flag survives but the bytes deliberately do not — a data URL runs to
@@ -172,7 +176,7 @@ export const Message = memo(({ msg, isStreaming, onCopy, onFeedback, feedback })
         )}
 
         <div className="msg-meta">
-          <span className="msg-role">{isUser ? "You" : "ALOP-AI"}</span>
+          {!isUser && <span className="msg-role">ALOP-AI</span>}
           {msg.ts && <span>{msg.ts}</span>}
         </div>
       </div>

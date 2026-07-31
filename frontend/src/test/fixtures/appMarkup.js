@@ -10,19 +10,10 @@
  * than a media query. One pass over this tree therefore covers both.
  */
 
-const appTree = (theme) => `
+export const appTree = (theme) => `
 <div class="app-root ${theme}">
   <div class="bg-layer"></div>
   <div class="bg-overlay"></div>
-
-  <div class="earring-wrap earring-left" aria-hidden="true">
-    <div class="earring-chain"></div>
-    <div class="earring-pivot"><svg class="crescent" viewBox="0 0 110 150"><defs><linearGradient><stop/></linearGradient></defs><path d="M0 0"/></svg></div>
-  </div>
-  <div class="earring-wrap earring-right" aria-hidden="true">
-    <div class="earring-chain"></div>
-    <div class="earring-pivot"><svg class="crescent" viewBox="0 0 110 150"><path d="M0 0"/></svg></div>
-  </div>
 
   <div class="toast">Pro is active</div>
 
@@ -61,28 +52,28 @@ const appTree = (theme) => `
 
   <div class="app-shell">
     <header class="app-header">
-      <button class="icon-btn mobile-only"><svg><path d="M0 0"/></svg></button>
-      <button class="icon-btn desktop-only"><svg><path d="M0 0"/></svg></button>
+      <button class="icon-btn mobile-only"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
+      <button class="icon-btn desktop-only"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
       <div class="brand">
-        <img class="header-logo" alt=""/>
+        <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="header-logo" alt=""/>
         <div class="brand-text">
           <h1 class="main-title">ALOP-AI</h1>
           <span class="sub-title">AI Council</span>
         </div>
       </div>
       <div class="header-actions">
-        <button class="cmdk-trigger desktop-only"><svg><path d="M0 0"/></svg><span>Search</span><kbd>Ctrl K</kbd></button>
-        <button class="upgrade-btn"><svg><path d="M0 0"/></svg> Upgrade</button>
-        <button class="icon-btn admin-btn active"><svg><path d="M0 0"/></svg></button>
-        <button class="icon-btn"><svg><path d="M0 0"/></svg></button>
+        <button class="cmdk-trigger desktop-only"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg><span>Search</span><kbd>Ctrl K</kbd></button>
+        <button class="upgrade-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg> Upgrade</button>
+        <button class="icon-btn admin-btn active"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
+        <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
       </div>
     </header>
 
     <div class="app-body">
       <nav class="sidebar" aria-label="Chats">
         <div class="sidebar-header">
-          <button class="new-chat-btn"><svg><path d="M0 0"/></svg> New Chat</button>
-          <button class="icon-btn"><svg><path d="M0 0"/></svg></button>
+          <button class="new-chat-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg> New Chat</button>
+          <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
         </div>
         <div class="chat-list">
           <div class="chat-empty">No chats yet</div>
@@ -92,9 +83,9 @@ const appTree = (theme) => `
             <div class="chat-item active pinned">
               <div class="chat-title">Pinned chat</div>
               <div class="chat-actions">
-                <button class="chat-action is-on"><svg><path d="M0 0"/></svg></button>
+                <button class="chat-action is-on"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
                 <button class="chat-action">✎</button>
-                <button class="chat-action is-danger"><svg><path d="M0 0"/></svg></button>
+                <button class="chat-action is-danger"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
               </div>
             </div>
           </div>
@@ -103,7 +94,7 @@ const appTree = (theme) => `
             <div class="chat-group-label">Favourites</div>
             <div class="chat-item favorite">
               <div class="chat-title"><input class="custom-input" value="Renaming"/></div>
-              <div class="chat-actions"><button class="chat-action is-on"><svg><path d="M0 0"/></svg></button></div>
+              <div class="chat-actions"><button class="chat-action is-on"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button></div>
             </div>
           </div>
 
@@ -119,11 +110,23 @@ const appTree = (theme) => `
       <div class="sidebar mobile mobileOpen"><div class="chat-list"></div></div>
 
       <div class="chat-main">
+        <!-- The ornament hangs inside the transcript panel, in the margin the
+             centred column creates. It used to be fixed to the window, which
+             is where the sidebar and header are. -->
+        <div class="earring-wrap earring-left" aria-hidden="true">
+          <div class="earring-chain"></div>
+          <div class="earring-pivot"><svg class="crescent" width="96" height="132" viewBox="0 0 96 132"><defs><linearGradient><stop/></linearGradient></defs><path d="M0 0"/></svg></div>
+        </div>
+        <div class="earring-wrap earring-right" aria-hidden="true">
+          <div class="earring-chain"></div>
+          <div class="earring-pivot"><svg class="crescent" width="96" height="132" viewBox="0 0 96 132"><path d="M0 0"/></svg></div>
+        </div>
+
         <div class="panel-overlay"></div>
         <div class="side-panel">
           <div class="panel-header">
             <div class="panel-title">Settings</div>
-            <button class="icon-btn"><svg><path d="M0 0"/></svg></button>
+            <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
           </div>
           <div class="panel-body">
             <div class="setting-row">
@@ -139,7 +142,7 @@ const appTree = (theme) => `
             <div class="admin-title">3 Users</div>
             <div class="admin-user-card">
               <div class="admin-user-header">
-                <img class="admin-avatar" alt=""/>
+                <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="admin-avatar" alt=""/>
                 <div><div>Someone</div><div>someone@example.com</div></div>
                 <span class="admin-badge pro">pro</span>
                 <span class="admin-badge admin">Admin</span>
@@ -174,17 +177,17 @@ const appTree = (theme) => `
         <div class="chat-content">
           <div class="scroll-wrapper">
             <div class="empty-state">
-              <img class="empty-logo" alt="ALOP-AI"/>
+              <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="empty-logo" alt="ALOP-AI"/>
               <h2 class="empty-title text-shimmer">ALOP-AI</h2>
               <p class="empty-subtitle">Ask the AI Council anything.</p>
               <div class="starter-grid">
                 <button class="starter-card">
-                  <span class="starter-icon"><svg><path d="M0 0"/></svg></span>
+                  <span class="starter-icon"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></span>
                   <span class="starter-label">Weigh a decision</span>
                   <span class="starter-prompt">Postgres or Mongo?</span>
                 </button>
                 <button class="starter-card">
-                  <span class="starter-icon"><svg><path d="M0 0"/></svg></span>
+                  <span class="starter-icon"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></span>
                   <span class="starter-label">Search the live web</span>
                   <span class="starter-prompt">What changed in React?</span>
                 </button>
@@ -195,7 +198,7 @@ const appTree = (theme) => `
             <div class="msg-row user">
               <div class="avatar">YOU</div>
               <div class="msg-content">
-                <img class="msg-attachment" alt="Attached"/>
+                <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="msg-attachment" alt="Attached"/>
                 <div class="bubble markdown-body"><p>What is this?</p></div>
                 <div class="msg-meta"><span class="msg-role">You</span><span>10:04</span></div>
               </div>
@@ -204,7 +207,7 @@ const appTree = (theme) => `
             <div class="msg-row assistant">
               <div class="avatar">AI</div>
               <div class="msg-content">
-                <div class="msg-attachment-placeholder"><svg><path d="M0 0"/></svg> Image attached</div>
+                <div class="msg-attachment-placeholder"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg> Image attached</div>
                 <div class="bubble markdown-body">
                   <h1>Heading one</h1>
                   <h2>Heading two</h2>
@@ -215,7 +218,7 @@ const appTree = (theme) => `
                   <blockquote><p>Quoted</p></blockquote>
                   <pre><code>const a = 1;</code></pre>
                   <table><thead><tr><th>Head</th></tr></thead><tbody><tr><td>Cell</td></tr></tbody></table>
-                  <img alt="inline"/>
+                  <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="inline"/>
                   <hr/>
                   <div class="code-block-wrapper">
                     <button class="code-copy-btn">Copy</button>
@@ -231,8 +234,8 @@ const appTree = (theme) => `
                 </div>
                 <div class="msg-actions is-voted">
                   <button class="msg-action-btn">Copy</button>
-                  <button class="msg-action-btn active"><svg><path d="M0 0"/></svg></button>
-                  <button class="msg-action-btn is-down active"><svg><path d="M0 0"/></svg></button>
+                  <button class="msg-action-btn active"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
+                  <button class="msg-action-btn is-down active"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
                 </div>
                 <div class="msg-meta"><span class="msg-role">ALOP-AI</span><span>10:05</span></div>
               </div>
@@ -242,7 +245,7 @@ const appTree = (theme) => `
               <div class="avatar">AI</div>
               <div class="msg-content">
                 <div class="bubble markdown-body is-streaming"><p>Half an answ</p></div>
-                <img class="msg-image" alt="Generated"/>
+                <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="msg-image" alt="Generated"/>
               </div>
             </div>
 
@@ -250,7 +253,7 @@ const appTree = (theme) => `
               <div class="avatar">AI</div>
               <div class="msg-content">
                 <div class="bubble markdown-body is-stopped"><p>Interrupted</p></div>
-                <span class="msg-stopped-note"><svg><path d="M0 0"/></svg> Stopped</span>
+                <span class="msg-stopped-note"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg> Stopped</span>
               </div>
             </div>
 
@@ -274,28 +277,28 @@ const appTree = (theme) => `
             </div>
           </div>
 
-          <button class="scroll-down-btn"><svg><path d="M0 0"/></svg></button>
+          <button class="scroll-down-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
 
           <div class="chat-toolbar">
-            <button class="chat-toolbar-btn"><svg><path d="M0 0"/></svg> Regenerate</button>
-            <button class="chat-toolbar-btn"><svg><path d="M0 0"/></svg> Export</button>
+            <button class="chat-toolbar-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg> Regenerate</button>
+            <button class="chat-toolbar-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg> Export</button>
           </div>
 
           <div class="input-bar">
             <div class="input-wrapper">
               <div class="attachment-preview">
-                <img alt="Attached"/>
+                <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="Attached"/>
                 <button aria-label="Remove attached image">×</button>
               </div>
               <textarea class="input-text" rows="1" placeholder="Ask the AI Council anything..."></textarea>
               <div class="input-actions">
-                <label class="input-btn"><input type="file"/><svg><path d="M0 0"/></svg></label>
-                <button class="input-btn listening"><svg><path d="M0 0"/></svg></button>
-                <button class="input-btn"><svg><path d="M0 0"/></svg></button>
+                <label class="input-btn"><input type="file"/><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></label>
+                <button class="input-btn listening"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
+                <button class="input-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
                 <div class="input-spacer"></div>
                 <span class="input-hint desktop-only"><kbd>Enter</kbd> to send</span>
-                <button class="input-btn primary"><svg><path d="M0 0"/></svg></button>
-                <button class="input-btn primary is-stop"><svg><path d="M0 0"/></svg></button>
+                <button class="input-btn primary"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
+                <button class="input-btn primary is-stop"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
               </div>
             </div>
           </div>
@@ -317,9 +320,9 @@ const appTree = (theme) => `
  * `OverlayAssistant` also carries no theme class at all: the overlay window is
  * always dark, whatever the main window is set to.
  */
-const outsideAppRoot = `
+export const outsideAppRoot = `
 <div class="initial-loader dark">
-  <img alt="Loading ALOP-AI"/>
+  <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="Loading ALOP-AI"/>
   <div class="skeleton-block"></div>
 </div>
 
@@ -333,7 +336,7 @@ const outsideAppRoot = `
   <div class="overlay-thumb-pill">Image attached<button>×</button></div>
   <form class="overlay-bar">
     <div class="overlay-drag-handle">⠿</div>
-    <div class="overlay-icon live"><svg><path d="M0 0"/></svg></div>
+    <div class="overlay-icon live"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></div>
     <input class="overlay-input" type="text" placeholder="Ask anything..."/>
     <button class="overlay-action recording">●</button>
     <label class="overlay-action"><input type="file" class="overlay-file-input"/>+</label>

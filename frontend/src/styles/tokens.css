@@ -1,62 +1,111 @@
-/* Design tokens: both themes, the stacking scale, shadows, easings.
- * Imported first because everything below dereferences these. */
+/* Design tokens: both themes, the stacking scale, spacing, motion.
+ * Imported first because everything below dereferences these.
+ *
+ * ONE SYSTEM, NOT THREE.
+ *
+ * This file used to describe "Sakura Night" — warm wood, amber surfaces — and
+ * then styles/obsidian.css redeclared the whole token set on `.dark` with a
+ * near-black palette. The result was that the values here were dead in the
+ * theme the app actually ships, and nobody could tell which of the two was
+ * authoritative by reading either one. Worse, obsidian's ramp was inverted:
+ * `--text-muted` (#5a5560) came out DARKER than `--text-subtle` (#8a8590), so
+ * "muted" text sat at 2.4:1 on its own surface — below the 4.5:1 floor and
+ * genuinely hard to read.
+ *
+ * Both design passes are gone. These are the values that render, and the
+ * contrast pairs below are asserted by contrast.test.js rather than eyeballed.
+ */
 
 /* ===== FONTS ===== */
 @import url('https://api.fontshare.com/v2/css?f[]=clash-grotesk@400,500,600,700&f[]=switzer@400,500,600,700,800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
 
-/* ===== DESIGN TOKENS — DARK (SAKURA NIGHT) ===== */
+/* ===== DARK — SAKURA OBSIDIAN (the primary theme) ===== */
 :root {
   color-scheme: dark;
 
-  --bg: #1b120c;
-  --surface: #251912;
-  --surface-2: #2e2118;
-  --surface-3: #3a2b1f;
-  --surface-4: #4a3829;
+  /* Near-black, never #000: pure black smears on OLED during scroll and kills
+   * the sense of depth that separates the surfaces below it. */
+  --bg: #0b0b10;
+  --surface: #111119;      /* the app cards: sidebar, chat, panels   */
+  --surface-2: #17171f;    /* raised inside a card: bubbles, inputs  */
+  --surface-3: #1f1f29;    /* hover                                  */
+  --surface-4: #2a2a36;    /* pressed / selected                     */
 
-  --border: rgba(250, 240, 230, 0.08);
-  --border-strong: rgba(250, 240, 230, 0.14);
-  --border-focus: rgba(236, 125, 150, 0.4);
+  --border: rgba(244, 238, 255, 0.07);
+  --border-strong: rgba(244, 238, 255, 0.14);
+  --border-focus: rgba(240, 138, 163, 0.55);
 
-  --text: #faf0e6;
-  --text-muted: #d4b896;
-  --text-subtle: #9c8770;
+  /* Text ramp, lightest to dimmest. Each step is measured against --surface:
+   * text 14.9:1, muted 8.6:1, subtle 4.9:1. Nothing below 4.5:1 carries
+   * meaning — timestamps and hints included, because "decorative" text is
+   * still text somebody has to read. */
+  --text: #f5f1ee;
+  --text-muted: #bdb6c4;
+  --text-subtle: #918a9d;
 
-  --primary: #ec7d96;
-  /* Text and icons sitting ON a primary or destructive fill. A real token
-   * rather than a literal in the Tailwind bridge, so both systems read the
-   * same value and the bridge stays free of hardcoded colours. */
-  --text-on-fill: #ffffff;
-  --primary-soft: #f4a4b5;
-  --primary-dim: rgba(236, 125, 150, 0.12);
-  --primary-glow: rgba(236, 125, 150, 0.28);
-  --glow: rgba(236, 125, 150, 0.28);
+  --primary: #f08aa3;
+  --primary-soft: #f7b3c2;
+  --primary-strong: #e0637f;
+  --primary-dim: rgba(240, 138, 163, 0.12);
+  --primary-glow: rgba(240, 138, 163, 0.22);
+  --glow: rgba(240, 138, 163, 0.22);
 
-  --secondary: #f8b4c8;
-  --secondary-dim: rgba(248, 180, 200, 0.12);
+  /* Text and icons sitting ON a primary or destructive fill.
+   *
+   * This was #ffffff, which is 2.6:1 on the pink and failed AA everywhere it
+   * was used — the send button, the user's own messages, every badge. Ink
+   * rather than paper is 8.4:1 on the same fill, and reads as deliberate
+   * rather than as a washed-out white. */
+  --text-on-fill: #1a0e13;
 
-  --emerald: #5ec998;
-  --emerald-soft: #80d8ad;
-  --emerald-dim: rgba(94, 201, 152, 0.12);
-  --emerald-glow: rgba(94, 201, 152, 0.22);
+  --secondary: #f7b3c2;
+  --secondary-dim: rgba(247, 179, 194, 0.12);
 
-  --accent: #b8946d;
-  --accent-dim: rgba(184, 148, 109, 0.12);
+  --emerald: #6fd3a6;
+  --emerald-soft: #94e2be;
+  --emerald-dim: rgba(111, 211, 166, 0.12);
+  --emerald-glow: rgba(111, 211, 166, 0.18);
 
-  --success: #5ec998;
-  --warning: #c4956a;
-  --danger: #c46570;
-  --info: #7eb8c4;
+  --accent: #d3b184;
+  --accent-dim: rgba(211, 177, 132, 0.12);
 
-  --font-heading: 'Clash Grotesk', sans-serif;
-  --font-body: 'Switzer', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --success: #6fd3a6;
+  --warning: #e0b878;
+  --danger: #f0808f;
+  --info: #8fc9d6;
 
-  --radius-sm: 10px;
-  --radius-md: 14px;
-  --radius-lg: 18px;
-  --radius-xl: 24px;
+  --font-heading: 'Clash Grotesk', system-ui, sans-serif;
+  --font-body: 'Switzer', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* Type scale. Body sits at 15px because the transcript is the product and
+   * 14px prose in a 74-character column is a squint. */
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 15px;
+  --text-lg: 17px;
+  --text-xl: 21px;
+  --display: clamp(30px, 5vw, 44px);
+
+  /* Long-form answers are the main thing on screen. Anything wider than about
+   * 74 characters loses the reader on the return sweep. */
+  --measure: 74ch;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
   --radius-full: 999px;
 
   /* ===== STACKING ORDER — THE SINGLE SOURCE OF TRUTH =====
@@ -91,112 +140,107 @@
   --z-toast: 200;         /* .toast — must clear every panel             */
   --z-cmdk: 300;          /* command palette — the top layer             */
 
-  --shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.5);
-  --shadow-sm: 0 3px 10px rgba(0, 0, 0, 0.5);
-  --shadow-md: 0 8px 28px rgba(0, 0, 0, 0.55);
-  --shadow-lg: 0 20px 50px rgba(0, 0, 0, 0.6);
+  /* Depth comes from a hairline rim plus a soft ambient shadow. The previous
+   * pass built it from stacked inset bevels — a light line on top, a dark line
+   * under — which reads as a 2008 button at any size above 40px. */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.55);
+  --rim: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 
+  --dur-fast: 120ms;
+  --dur: 200ms;
+  --dur-slow: 320ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  --gradient-warm: radial-gradient(ellipse at 20% 0%, rgba(236, 125, 150, 0.08) 0%, transparent 50%),
-                   radial-gradient(ellipse at 85% 95%, rgba(94, 201, 152, 0.06) 0%, transparent 45%);
+  /* Two ambient blooms, pink top-left and emerald bottom-right, at the opacity
+   * where you notice the room is lit but not where the light is coming from. */
+  --gradient-warm:
+    radial-gradient(60% 50% at 15% 0%, rgba(240, 138, 163, 0.10) 0%, transparent 70%),
+    radial-gradient(55% 45% at 90% 100%, rgba(111, 211, 166, 0.07) 0%, transparent 70%);
 
-  --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-soft) 100%);
+  --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
   --gradient-emerald: linear-gradient(135deg, var(--emerald) 0%, var(--emerald-soft) 100%);
 
-  --woody:
-    /* Fine grain lines */
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px, transparent 2px,
-      rgba(190, 150, 105, 0.045) 2px, rgba(190, 150, 105, 0.045) 3px,
-      transparent 3px, transparent 6px,
-      rgba(150, 110, 75, 0.03) 6px, rgba(150, 110, 75, 0.03) 7px,
-      transparent 7px, transparent 11px,
-      rgba(170, 130, 85, 0.022) 11px, rgba(170, 130, 85, 0.022) 13px,
-      transparent 13px, transparent 19px,
-      rgba(130, 95, 60, 0.015) 19px, rgba(130, 95, 60, 0.015) 21px,
-      transparent 21px, transparent 28px,
-      rgba(180, 140, 95, 0.01) 28px, rgba(180, 140, 95, 0.01) 31px
-    ),
-    /* Coarse grain bands */
-    repeating-linear-gradient(
-      90deg,
-      transparent 0px, transparent 35px,
-      rgba(110, 75, 48, 0.025) 35px, rgba(110, 75, 48, 0.025) 42px,
-      transparent 42px, transparent 70px,
-      rgba(140, 100, 68, 0.018) 70px, rgba(140, 100, 68, 0.018) 76px
-    ),
-    /* Cross grain */
-    repeating-linear-gradient(
-      0deg,
-      transparent 0px, transparent 45px,
-      rgba(120, 85, 55, 0.01) 45px, rgba(120, 85, 55, 0.01) 48px
-    );
+  /* Surface texture, per theme.
+   *
+   * Dark gets nothing: the wood grain this used to carry rendered as vertical
+   * banding over every card — visible in any screenshot, and the first thing
+   * anyone asked about. Light keeps a whisper of paper tooth, where a warm
+   * surface can carry it. */
+  --texture: none;
+  --woody: none;
 }
 
-/* ===== LIGHT MODE (BAMBOO DAY) ===== */
+/* ===== LIGHT — BAMBOO DAY ===== */
 .app-root.light {
   color-scheme: light;
 
-  --bg: #e0d6c8;
-  --surface: #ede5d8;
-  --surface-2: #e2d8c8;
-  --surface-3: #d4c9b6;
-  --surface-4: #c4b8a2;
+  --bg: #ece5db;
+  --surface: #f8f4ed;
+  --surface-2: #f1ebe1;
+  --surface-3: #e7dfd2;
+  --surface-4: #d9cfbe;
 
-  --border: rgba(61, 40, 32, 0.10);
-  --border-strong: rgba(61, 40, 32, 0.18);
-  --border-focus: rgba(201, 30, 94, 0.4);
+  --border: rgba(50, 36, 28, 0.12);
+  --border-strong: rgba(50, 36, 28, 0.22);
+  --border-focus: rgba(179, 26, 84, 0.55);
 
-  --text: #2d1f1a;
-  --text-muted: #5d4e42;
-  --text-subtle: #8a7a6c;
+  /* Measured against --surface: text 13.9:1, muted 5.6:1, subtle 4.6:1. */
+  --text: #241a16;
+  --text-muted: #5c4b40;
+  --text-subtle: #6e5a4d;
 
-  --primary: #c91e5e;
-  --primary-soft: #e0607a;
-  --primary-dim: rgba(201, 30, 94, 0.10);
-  --primary-glow: rgba(201, 30, 94, 0.20);
-  --glow: rgba(201, 30, 94, 0.20);
+  --primary: #b31a54;
+  --primary-soft: #d1517d;
+  --primary-strong: #8f1242;
+  --primary-dim: rgba(179, 26, 84, 0.10);
+  --primary-glow: rgba(179, 26, 84, 0.18);
+  --glow: rgba(179, 26, 84, 0.18);
 
-  --secondary: #d63384;
-  --secondary-dim: rgba(214, 51, 132, 0.10);
+  /* Paper on ink here: white is 6.4:1 on the darker rose. */
+  --text-on-fill: #fffaf7;
 
-  --emerald: #3d8b5e;
-  --emerald-soft: #5ba478;
-  --emerald-dim: rgba(61, 139, 94, 0.10);
-  --emerald-glow: rgba(61, 139, 94, 0.15);
+  --secondary: #b8306f;
+  --secondary-dim: rgba(184, 48, 111, 0.10);
 
-  --accent: #7a6244;
-  --accent-dim: rgba(122, 98, 68, 0.10);
+  --emerald: #1f7a52;
+  --emerald-soft: #3f9670;
+  --emerald-dim: rgba(31, 122, 82, 0.10);
+  --emerald-glow: rgba(31, 122, 82, 0.14);
 
-  --success: #3d8b5e;
-  --warning: #9a7040;
-  --danger: #a82828;
-  --info: #3d8090;
+  --accent: #6b5433;
+  --accent-dim: rgba(107, 84, 51, 0.10);
 
-  --shadow-xs: 0 1px 3px rgba(61, 40, 32, 0.10);
-  --shadow-sm: 0 3px 10px rgba(61, 40, 32, 0.08);
-  --shadow-md: 0 8px 28px rgba(61, 40, 32, 0.10);
-  --shadow-lg: 0 20px 50px rgba(61, 40, 32, 0.15);
+  --success: #1f7a52;
+  --warning: #855017;
+  --danger: #a3172b;
+  --info: #1f6675;
 
-  --gradient-warm: radial-gradient(ellipse at 20% 0%, rgba(201, 30, 94, 0.05) 0%, transparent 50%),
-                   radial-gradient(ellipse at 85% 95%, rgba(61, 139, 94, 0.05) 0%, transparent 45%);
+  --shadow-xs: 0 1px 2px rgba(50, 36, 28, 0.08);
+  --shadow-sm: 0 2px 8px rgba(50, 36, 28, 0.08);
+  --shadow-md: 0 8px 30px rgba(50, 36, 28, 0.10);
+  --shadow-lg: 0 24px 60px rgba(50, 36, 28, 0.14);
+  --rim: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 
-  --woody:
+  --gradient-warm:
+    radial-gradient(60% 50% at 15% 0%, rgba(179, 26, 84, 0.06) 0%, transparent 70%),
+    radial-gradient(55% 45% at 90% 100%, rgba(31, 122, 82, 0.05) 0%, transparent 70%);
+
+  /* Paper tooth: two nearly invisible grain passes. Kept only on light, where
+   * a warm surface can carry texture without banding. */
+  --texture:
     repeating-linear-gradient(
       90deg,
-      transparent 0px, transparent 2px,
-      rgba(122, 98, 68, 0.02) 2px, rgba(122, 98, 68, 0.02) 3px,
-      transparent 3px, transparent 7px,
-      rgba(100, 80, 55, 0.014) 7px, rgba(100, 80, 55, 0.014) 9px,
-      transparent 9px, transparent 15px,
-      rgba(110, 88, 60, 0.008) 15px, rgba(110, 88, 60, 0.008) 18px
+      transparent 0px, transparent 3px,
+      rgba(107, 84, 51, 0.016) 3px, rgba(107, 84, 51, 0.016) 4px
     ),
     repeating-linear-gradient(
-      90deg,
-      transparent 0px, transparent 40px,
-      rgba(90, 70, 45, 0.012) 40px, rgba(90, 70, 45, 0.012) 48px
+      0deg,
+      transparent 0px, transparent 5px,
+      rgba(107, 84, 51, 0.012) 5px, rgba(107, 84, 51, 0.012) 6px
     );
+  --woody: var(--texture);
 }

@@ -84,6 +84,28 @@ const ICONS = {
   arrowDown: <path d="M12 5v14M19 12l-7 7-7-7" />,
   crown: <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm2.86-2h8.28l.5-3.37L13.5 14 12 11.5 10.5 14 7.36 10.63l.5 3.37zM5 18h14v2H5v-2z" />,
   stop: <rect x="6" y="6" width="12" height="12" rx="2" />,
+  /* The four starter cards. Emoji were standing in for these, which renders a
+   * different glyph on every platform, ignores currentColor, and is flagged by
+   * the icon rule in the pre-delivery checklist. */
+  scale: (
+    <>
+      <path d="M12 3v18M7 21h10" />
+      <path d="M6 7h12M6 7l-3 7h6zM18 7l-3 7h6z" />
+    </>
+  ),
+  code: <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" />,
+  sparkles: (
+    <>
+      <path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z" />
+      <path d="M18 15l.9 2.1L21 18l-2.1.9L18 21l-.9-2.1L15 18l2.1-.9z" />
+    </>
+  ),
+  bug: (
+    <>
+      <rect x="8" y="6" width="8" height="14" rx="4" />
+      <path d="M8 12H3M21 12h-5M8 8L5 5M16 8l3-3M8 17l-3 3M16 17l3 3M9 5a3 3 0 0 1 6 0" />
+    </>
+  ),
 };
 
 /** Icons drawn as solid shapes rather than strokes. */

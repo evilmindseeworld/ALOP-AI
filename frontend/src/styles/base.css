@@ -1,4 +1,4 @@
-/* Reset, scrollbars, and the shimmer used by headings. */
+/* Reset, the app shell, scrollbars, and the ambient background. */
 
 /* ===== RESET & BASE ===== */
 * {
@@ -13,64 +13,54 @@ html, body, #root {
 }
 
 body {
-  font-family: var(--font-body), -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-body), system-ui, -apple-system, sans-serif;
   overflow: hidden;
   background: var(--bg);
   color: var(--text);
+  font-size: var(--text-base);
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background 0.3s ease, color 0.3s ease;
+  text-rendering: optimizeLegibility;
+  transition: background var(--dur-slow) ease, color var(--dur-slow) ease;
 }
 
 ::selection {
   background: var(--primary);
-  color: #ffffff;
+  color: var(--text-on-fill);
 }
 
+/* One focus treatment for the whole app: a ring in the brand colour, offset so
+ * it never sits on top of the control's own border. Removing this is the most
+ * common accessibility regression in a restyle, so it is asserted by
+ * contrast.test.js rather than left to review. */
 :focus-visible {
   outline: 2px solid var(--primary);
   outline-offset: 2px;
+  border-radius: var(--radius-sm);
 }
 
-button:focus-visible,
-a:focus-visible,
-input:focus-visible,
-textarea:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-  border-radius: 4px;
+/* ===== APP ROOT =====
+ *
+ * `.app-root *` used to live here — a transition on EVERY element in the app,
+ * at the same specificity as each component's own rule, winning on source
+ * order alone. It is why nine duplicate-rule groups could not be merged, and
+ * why a component could not opt out of a transition it did not want. Every
+ * transition below is now declared by the thing it animates. */
+.app-root {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  color: var(--text);
+  background: var(--bg);
+  background-image: var(--texture);
+  transition: background var(--dur-slow) ease, color var(--dur-slow) ease;
 }
 
-/* ===== SCROLLBARS ===== */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(94, 201, 152, 0.15);
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(94, 201, 152, 0.30);
-}
-
-/* ===== TEXT SHIMMER ===== */
-.text-shimmer {
-  background: linear-gradient(90deg, var(--text-subtle) 0%, var(--primary-soft) 50%, var(--text-subtle) 100%);
-  background-size: 200% 100%;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  animation: shimmerMove 2.5s linear infinite;
-}
-
-@keyframes shimmerMove {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* Breathing background gradient */
+/* The ambient wash: two slow blooms behind everything. `background-attachment`
+ * is not used — the shell scrolls nothing, and a fixed attachment forces a
+ * repaint of the whole layer on every frame of the breath. */
 .app-root::after {
   content: "";
   position: absolute;
@@ -78,13 +68,18 @@ textarea:focus-visible {
   background: var(--gradient-warm);
   pointer-events: none;
   z-index: var(--z-behind);
-  animation: bgBreath 20s ease-in-out infinite alternate;
+  animation: bgBreath 24s ease-in-out infinite alternate;
 }
 
 @keyframes bgBreath {
-  0% { opacity: 0.6; transform: scale(1); }
-  100% { opacity: 1; transform: scale(1.08); }
+  0% { opacity: 0.75; transform: scale(1); }
+  100% { opacity: 1; transform: scale(1.06); }
 }
+
+/* Both were div elements the old background system painted through. The
+ * gradient lives on ::after now; these stay in the markup only because the
+ * overlay window and the loader reuse the same tree. */
+.bg-layer,
 .bg-overlay { display: none; }
 
 .app-shell {
@@ -93,6 +88,55 @@ textarea:focus-visible {
   flex-direction: column;
   width: 100%;
   height: 100%;
-  padding: 18px;
-  gap: 18px;
+  padding: var(--space-4);
+  gap: var(--space-4);
+}
+
+/* ===== SCROLLBARS ===== */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--surface-4) transparent;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track { background: transparent; }
+
+/* A track-coloured border is what keeps the thumb from touching the edges —
+ * a 4px thumb in a 10px gutter, without a second element. */
+::-webkit-scrollbar-thumb {
+  background: var(--surface-4);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dim);
+  background-clip: padding-box;
+}
+
+/* ===== TEXT SHIMMER ===== */
+.text-shimmer {
+  background: linear-gradient(
+    100deg,
+    var(--text) 20%,
+    var(--primary) 40%,
+    var(--emerald) 60%,
+    var(--text) 80%
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: shimmerMove 5s linear infinite;
+}
+
+@keyframes shimmerMove {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
 }

@@ -1,43 +1,73 @@
 /* Syntax-highlighted code blocks inside messages. */
 
-/* ===== PREMIUM CODE BLOCKS ===== */
 .code-block-wrapper {
   position: relative;
-  margin: 12px 0;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 70%, black);
 }
 
 .code-block-wrapper pre {
   margin: 0;
-  padding: 16px;
-  background: #1a1a24;
-  font-size: 13px;
-  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  padding: var(--space-4);
+  background: none;
+  border: none;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  overflow-x: auto;
 }
 
+/* Shown for the moment before the lazy highlighter arrives. Matches the
+ * highlighter's own metrics so the block does not reflow when colour lands. */
+.code-block-plain {
+  margin: 0;
+  padding: var(--space-4);
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  background: #282c34; /* oneDark's background, so the swap is invisible */
+  color: #abb2bf;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
+/* Revealed on hover and on keyboard focus. Hover-only left the copy button
+ * invisible but tabbable — the same bug the message actions had. */
 .code-copy-btn {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border: none;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 11px;
+  top: var(--space-2);
+  right: var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: color-mix(in srgb, var(--surface-3) 85%, transparent);
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: var(--text-2xs);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s ease, background 0.2s ease;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  /* Inside .chat-main's stacking context — see docs/FRONTEND.md §1. */
   z-index: var(--z-in-chat-control);
-  backdrop-filter: blur(4px);
+  transition: opacity var(--dur-fast) ease, color var(--dur-fast) ease, background var(--dur-fast) ease;
 }
 
-.code-block-wrapper:hover .code-copy-btn {
-  opacity: 1;
-}
+.code-block-wrapper:hover .code-copy-btn,
+.code-copy-btn:focus-visible { opacity: 1; }
 
 .code-copy-btn:hover {
-  background: var(--primary);
+  color: var(--text);
+  background: var(--surface-4);
+}
+
+.code-copy-btn.is-copied {
+  opacity: 1;
+  color: var(--success);
+  border-color: color-mix(in srgb, var(--success) 40%, transparent);
 }

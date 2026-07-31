@@ -79,27 +79,41 @@ const appTree = (theme) => `
     </header>
 
     <div class="app-body">
-      <div class="sidebar">
+      <nav class="sidebar" aria-label="Chats">
         <div class="sidebar-header">
           <button class="new-chat-btn"><svg><path d="M0 0"/></svg> New Chat</button>
           <button class="icon-btn"><svg><path d="M0 0"/></svg></button>
         </div>
         <div class="chat-list">
-          <div class="chat-item active pinned">
-            <div class="chat-title">Pinned chat</div>
-            <div class="chat-actions">
-              <button class="chat-action"><svg><path d="M0 0"/></svg></button>
-              <button class="chat-action">✎</button>
+          <div class="chat-empty">No chats yet</div>
+
+          <div class="chat-group">
+            <div class="chat-group-label">Pinned</div>
+            <div class="chat-item active pinned">
+              <div class="chat-title">Pinned chat</div>
+              <div class="chat-actions">
+                <button class="chat-action is-on"><svg><path d="M0 0"/></svg></button>
+                <button class="chat-action">✎</button>
+                <button class="chat-action is-danger"><svg><path d="M0 0"/></svg></button>
+              </div>
             </div>
           </div>
-          <div class="chat-item favorite">
-            <div class="chat-title"><input class="custom-input" value="Renaming"/></div>
-            <div class="chat-actions"><button class="chat-action"><svg><path d="M0 0"/></svg></button></div>
+
+          <div class="chat-group">
+            <div class="chat-group-label">Favourites</div>
+            <div class="chat-item favorite">
+              <div class="chat-title"><input class="custom-input" value="Renaming"/></div>
+              <div class="chat-actions"><button class="chat-action is-on"><svg><path d="M0 0"/></svg></button></div>
+            </div>
           </div>
-          <div class="chat-item"><div class="chat-title">Plain chat</div></div>
+
+          <div class="chat-group">
+            <div class="chat-group-label">Recent</div>
+            <div class="chat-item"><div class="chat-title">Plain chat</div></div>
+          </div>
         </div>
         <div class="sidebar-footer">ALOP-AI • Council of Minds</div>
-      </div>
+      </nav>
 
       <div class="sidebar collapsed"><div class="chat-list"></div></div>
       <div class="sidebar mobile mobileOpen"><div class="chat-list"></div></div>
@@ -120,7 +134,7 @@ const appTree = (theme) => `
               </div>
             </div>
             <div class="setting-row"><button class="theme-card">Export chat as Markdown</button></div>
-            <div class="setting-row"><button class="theme-card">Delete Chat</button></div>
+            <div class="setting-row"><button class="theme-card is-danger">Delete Chat</button></div>
 
             <div class="admin-title">3 Users</div>
             <div class="admin-user-card">
@@ -165,24 +179,25 @@ const appTree = (theme) => `
               <p class="empty-subtitle">Ask the AI Council anything.</p>
               <div class="starter-grid">
                 <button class="starter-card">
-                  <span class="starter-icon">⚖️</span>
+                  <span class="starter-icon"><svg><path d="M0 0"/></svg></span>
                   <span class="starter-label">Weigh a decision</span>
                   <span class="starter-prompt">Postgres or Mongo?</span>
                 </button>
                 <button class="starter-card">
-                  <span class="starter-icon">🔍</span>
+                  <span class="starter-icon"><svg><path d="M0 0"/></svg></span>
                   <span class="starter-label">Search the live web</span>
                   <span class="starter-prompt">What changed in React?</span>
                 </button>
               </div>
             </div>
 
+            <div class="msg-stream">
             <div class="msg-row user">
               <div class="avatar">YOU</div>
               <div class="msg-content">
                 <img class="msg-attachment" alt="Attached"/>
                 <div class="bubble markdown-body"><p>What is this?</p></div>
-                <div class="msg-meta">10:04</div>
+                <div class="msg-meta"><span class="msg-role">You</span><span>10:04</span></div>
               </div>
             </div>
 
@@ -214,19 +229,35 @@ const appTree = (theme) => `
                     <pre class="code-block-plain"><code>const a = 1;</code></pre>
                   </div>
                 </div>
-                <div class="msg-actions">
+                <div class="msg-actions is-voted">
                   <button class="msg-action-btn">Copy</button>
                   <button class="msg-action-btn active"><svg><path d="M0 0"/></svg></button>
-                  <button class="msg-action-btn"><svg><path d="M0 0"/></svg></button>
+                  <button class="msg-action-btn is-down active"><svg><path d="M0 0"/></svg></button>
                 </div>
-                <div class="msg-meta">10:05</div>
+                <div class="msg-meta"><span class="msg-role">ALOP-AI</span><span>10:05</span></div>
               </div>
             </div>
 
             <div class="msg-row assistant">
               <div class="avatar">AI</div>
               <div class="msg-content">
-                <div class="bubble typing-bubble">
+                <div class="bubble markdown-body is-streaming"><p>Half an answ</p></div>
+                <img class="msg-image" alt="Generated"/>
+              </div>
+            </div>
+
+            <div class="msg-row assistant">
+              <div class="avatar">AI</div>
+              <div class="msg-content">
+                <div class="bubble markdown-body is-stopped"><p>Interrupted</p></div>
+                <span class="msg-stopped-note"><svg><path d="M0 0"/></svg> Stopped</span>
+              </div>
+            </div>
+
+            <div class="msg-row assistant">
+              <div class="avatar">AI</div>
+              <div class="msg-content">
+                <div class="bubble typing-bubble" role="status">
                   <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
                 </div>
               </div>
@@ -237,6 +268,9 @@ const appTree = (theme) => `
               <div class="msg-content">
                 <div class="skeleton-block"></div>
               </div>
+            </div>
+
+            <p class="sr-only" role="status">Answer in progress</p>
             </div>
           </div>
 
@@ -253,11 +287,13 @@ const appTree = (theme) => `
                 <img alt="Attached"/>
                 <button aria-label="Remove attached image">×</button>
               </div>
-              <textarea class="input-text" placeholder="Ask the AI Council anything..."></textarea>
+              <textarea class="input-text" rows="1" placeholder="Ask the AI Council anything..."></textarea>
               <div class="input-actions">
                 <label class="input-btn"><input type="file"/><svg><path d="M0 0"/></svg></label>
                 <button class="input-btn listening"><svg><path d="M0 0"/></svg></button>
                 <button class="input-btn"><svg><path d="M0 0"/></svg></button>
+                <div class="input-spacer"></div>
+                <span class="input-hint desktop-only"><kbd>Enter</kbd> to send</span>
                 <button class="input-btn primary"><svg><path d="M0 0"/></svg></button>
                 <button class="input-btn primary is-stop"><svg><path d="M0 0"/></svg></button>
               </div>

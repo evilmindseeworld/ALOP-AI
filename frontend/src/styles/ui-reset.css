@@ -29,10 +29,16 @@
  *      rather than depending on how an import pipeline preserves layers.
  */
 
+/* `:where(*::before)` and `:where(*::after)` used to be listed here and were
+ * dead in every browser: a pseudo-element is not a valid argument to :where(),
+ * and :where() is forgiving — it drops what it cannot parse and is left
+ * matching nothing. They cost two "Unexpected )" warnings on every production
+ * build and bought nothing, because nothing in this app sets a border width on
+ * a pseudo-element inside a UI scope. Writing them validly is not an option:
+ * a pseudo-element carries specificity, which the zero-specificity rule below
+ * exists to prevent. If `before:border-*` is ever needed, add it then. */
 :where([data-ui-scope]),
-:where([data-ui-scope]) :where(*),
-:where([data-ui-scope]) :where(*::before),
-:where([data-ui-scope]) :where(*::after) {
+:where([data-ui-scope]) :where(*) {
   box-sizing: border-box;
   /* Tailwind's border utilities assume a zero-width solid default; without
    * this, `border` renders nothing because the width is still 0. */

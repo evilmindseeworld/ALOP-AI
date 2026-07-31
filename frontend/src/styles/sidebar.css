@@ -1,27 +1,33 @@
-/* Sidebar chrome and the chat list. */
+/* Sidebar chrome and the chat list — the Linear/Raycast register: quiet
+ * surface, small type, no ornament, everything but the active row receding. */
 
 /* ===== SIDEBAR ===== */
 .sidebar {
-  width: 270px;
+  width: 264px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  background: var(--surface);
-  background-image: var(--woody);
+  background: color-mix(in srgb, var(--surface) 72%, transparent);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
-  padding: 14px;
+  box-shadow: var(--rim), var(--shadow-sm);
+  backdrop-filter: blur(20px) saturate(1.3);
+  -webkit-backdrop-filter: blur(20px) saturate(1.3);
+  padding: var(--space-3);
   overflow: hidden;
-  transition: background 0.3s ease, border-color 0.3s ease;
- z-index: var(--z-sidebar);
+  z-index: var(--z-sidebar);
+  transition:
+    width var(--dur-slow) var(--ease-out),
+    padding var(--dur-slow) var(--ease-out),
+    transform var(--dur-slow) var(--ease-out),
+    background var(--dur) ease;
 }
 
 .sidebar.collapsed {
   width: 0;
   padding: 0;
   border: none;
-  margin: 0;
+  opacity: 0;
 }
 
 .sidebar.mobile {
@@ -30,9 +36,10 @@
   bottom: 0;
   left: 0;
   z-index: var(--z-sidebar-mobile);
-  width: 270px;
+  width: min(300px, 86vw);
   transform: translateX(-110%);
   border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
+  box-shadow: var(--shadow-lg);
 }
 
 .sidebar.mobileOpen { transform: translateX(0); }
@@ -40,107 +47,180 @@
 .sidebar-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 4px 4px 14px;
+  gap: var(--space-2);
+  padding-bottom: var(--space-3);
 }
 
-.new-chat-btn::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: -100%;
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-  animation: btnShimmer 3.5s infinite;
-  pointer-events: none;
-}
-
-@keyframes btnShimmer {
-  0% { left: -100%; }
-  60% { left: 100%; }
-  100% { left: 100%; }
+/* ===== NEW CHAT =====
+ *
+ * The one filled control in the sidebar, so it is unambiguously the primary
+ * action. The old version carried a permanent sweeping shimmer — motion with
+ * nothing to say, running forever in the corner of the eye. */
+.new-chat-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-md);
+  background: var(--gradient-primary);
+  color: var(--text-on-fill);
+  font-family: var(--font-body);
+  font-weight: 650;
+  font-size: var(--text-sm);
+  letter-spacing: 0.01em;
+  border: none;
+  cursor: pointer;
+  user-select: none;
+  will-change: transform;
+  box-shadow: 0 2px 12px var(--primary-glow);
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out),
+    filter var(--dur-fast) ease;
 }
 
 .new-chat-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px var(--primary-glow), 0 0 2px var(--emerald-glow);
+  filter: brightness(1.06);
+  box-shadow: 0 6px 22px var(--primary-glow);
+  transform: translateY(-1px);
 }
+
+.new-chat-btn:active { transform: translateY(0) scale(0.98); }
 
 /* ===== CHAT LIST ===== */
 .chat-list {
   flex: 1;
   overflow-y: auto;
-  padding: 0 4px 4px;
+  overflow-x: hidden;
+  margin: 0 calc(var(--space-1) * -1);
+  padding: 0 var(--space-1) var(--space-1);
+}
+
+/* Sections. Pinned and favourites are separated with a label rather than a
+ * coloured left border, which is what the old list used — a border that said
+ * "this row is special" without ever saying which kind of special. */
+.chat-group + .chat-group { margin-top: var(--space-4); }
+
+.chat-group-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-2) var(--space-2);
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+  user-select: none;
+}
+
+.chat-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 36px;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  margin-bottom: 2px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  position: relative;
+  color: var(--text-muted);
+  user-select: none;
+  transition:
+    background var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
 }
 
 .chat-item:hover {
   background: var(--surface-2);
   color: var(--text);
-  transform: translateX(3px);
 }
 
+.chat-item.active {
+  background: var(--surface-3);
+  border-color: var(--border);
+  color: var(--text);
+}
+
+/* The active rail. A 2px bar rather than a filled row, so the eye finds the
+ * current chat without the list turning into a block of colour. */
 .chat-item.active::before {
   content: "";
   position: absolute;
-  left: 0;
+  left: 4px;
   top: 50%;
   transform: translateY(-50%);
   width: 2px;
-  height: 60%;
+  height: 16px;
+  border-radius: var(--radius-full);
   background: var(--primary);
-  border-radius: 2px;
-  box-shadow: 0 0 8px var(--primary-glow);
 }
-
-.chat-item.pinned { border-left: 2px solid var(--emerald); }
-.chat-item.favorite { border-left: 2px solid var(--secondary); }
 
 .chat-title {
   flex: 1;
-  font-size: 13px;
+  min-width: 0;
+  font-size: var(--text-sm);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* Actions reveal on hover AND on keyboard focus.
+ *
+ * `opacity: 0` alone hid them from the mouse and left them in the tab order
+ * looking empty — a keyboard user tabbed into an invisible Delete. */
 .chat-actions {
   display: flex;
-  gap: 3px;
+  gap: 2px;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--dur-fast) ease;
 }
 
-.chat-item:hover .chat-actions { opacity: 1; }
+.chat-item:hover .chat-actions,
+.chat-item:focus-within .chat-actions { opacity: 1; }
 
 .chat-action {
   background: none;
   border: none;
   color: var(--text-subtle);
   cursor: pointer;
-  font-size: 12px;
-  width: 24px;
-  height: 24px;
+  font-size: var(--text-xs);
+  width: 26px;
+  height: 26px;
   border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: color var(--dur-fast) ease, background var(--dur-fast) ease;
 }
 
 .chat-action:hover {
-  color: var(--primary);
-  background: var(--surface-3);
-  transform: scale(1.15);
+  color: var(--text);
+  background: var(--surface-4);
+}
+
+.chat-action.is-on { color: var(--primary); }
+.chat-action.is-danger:hover { color: var(--danger); }
+
+.chat-empty {
+  padding: var(--space-6) var(--space-4);
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--text-subtle);
 }
 
 .sidebar-footer {
-  padding: 12px;
-  font-size: 11px;
+  padding: var(--space-3) var(--space-2) var(--space-1);
+  font-size: var(--text-2xs);
   text-align: center;
   color: var(--text-subtle);
   border-top: 1px solid var(--border);
-  margin-top: 8px;
+  margin-top: var(--space-2);
   user-select: none;
 }

@@ -1,16 +1,27 @@
 /* ALOP-AI stylesheet — an import manifest, not a stylesheet.
  *
- * THE ORDER OF THESE IMPORTS IS THE CASCADE. Two files deliberately override
- * what comes before them, so moving a line here changes what renders.
- * cssImportOrder.test.js asserts this list; it is the spec, not a formality.
+ * THE ORDER IS STILL THE CASCADE, but it is no longer a stack of overrides.
  *
- * Rules live in the file named for the thing they style. This file exists so
- * that there is no longer a bottom of App.css to append to — which is where
- * 195 !important declarations, seven "FIX:" sections and three copies of
- * .header-actions came from.
+ * It used to end with two whole-app design passes — `skeuomorphism` (inset
+ * bevels on every surface) and `obsidian` (a near-black palette that
+ * redeclared the entire token set) — each winning by being imported later than
+ * the file it contradicted. That is why the tokens at the top of the list were
+ * dead in the theme the app ships, why `--text-muted` ended up darker than
+ * `--text-subtle`, and why a rule's real value could not be known by reading
+ * the file that declared it.
+ *
+ * Both passes are gone. Their component rules moved into the file named for
+ * the thing they style; their bevels are not coming back. Every file below now
+ * owns its component outright, and the only ordering that still matters is:
+ *
+ *   - tokens first, because everything dereferences it;
+ *   - utilities last, because media queries must beat component defaults at
+ *     equal specificity without force.
+ *
+ * cssImportOrder.test.js asserts this list. It is the spec, not a formality.
  *
  * Add a rule by finding its file. If no file fits, the rule probably wants a
- * new one; say so in the manifest rather than pasting it at the end.
+ * new one; say so here rather than pasting it at the end of another.
  */
 
 @import "./styles/tokens.css";
@@ -18,13 +29,12 @@
 @import "./styles/layout.css";
 @import "./styles/sidebar.css";
 @import "./styles/chat.css";
+@import "./styles/markdown.css";
 @import "./styles/composer.css";
 @import "./styles/palette.css";
 @import "./styles/chat-controls.css";
 @import "./styles/panels.css";
 @import "./styles/overlay.css";
-@import "./styles/utilities.css";
-@import "./styles/skeuomorphism.css";
-@import "./styles/obsidian.css";
 @import "./styles/decoration.css";
 @import "./styles/code-blocks.css";
+@import "./styles/utilities.css";

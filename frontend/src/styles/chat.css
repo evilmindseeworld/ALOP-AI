@@ -6,14 +6,17 @@
   display: flex;
   position: relative;
   min-width: 0;
-  background: var(--surface);
-  background-image: var(--woody);
+  background: color-mix(in srgb, var(--surface) 60%, transparent);
   border: 1px solid var(--border);
   border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--rim), var(--shadow-sm);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
   overflow: hidden;
-  transition: background 0.3s ease, border-color 0.3s ease;
- z-index: var(--z-chat);
+  transition: background var(--dur) ease, border-color var(--dur) ease;
+  /* Positioned, so this is a stacking context — see docs/FRONTEND.md §1.
+   * Removing it lets in-chat controls punch through every panel. */
+  z-index: var(--z-chat);
 }
 
 .chat-content {
@@ -21,27 +24,56 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+}
+
+/* The transcript column is centred and capped, rather than stretched to the
+ * window. Padding is symmetric — the old rule added 120px on both sides only
+ * above 1200px, to keep text off the ornaments, which left the 1024–1199px
+ * range with prose running under a crescent. The ornaments now live in the
+ * shell gutter and this no longer has to compensate for them. */
+.scroll-wrapper {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--space-6) var(--space-6) var(--space-2);
+  scroll-behavior: smooth;
+}
+
+.msg-stream {
+  width: 100%;
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-wrapper { scroll-behavior: auto; }
 }
 
 /* ===== EMPTY STATE ===== */
-
-/* Suppresses a decorative gradient square an earlier revision generated here.
- * Was filed under "FIX: empty state logo + kill gradient square" 1,500 lines
- * further down, where nothing connected it to the element it belongs to. */
-.empty-state::before { display: none; }
-
-@keyframes fadeInUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: var(--space-3);
+  padding: var(--space-6) 0;
+  text-align: center;
 }
 
+.empty-state::before { display: none; }
+
 .empty-logo {
-  width: 72px;
-  height: 72px;
+  width: 76px;
+  height: 76px;
   border-radius: var(--radius-xl);
   object-fit: cover;
-  animation: emptyFloat 4s ease-in-out infinite;
-  box-shadow: 0 16px 40px var(--primary-glow), 0 0 60px var(--emerald-glow);
+  margin-bottom: var(--space-2);
+  box-shadow: 0 18px 50px var(--primary-glow), 0 0 70px var(--emerald-glow);
+  animation: emptyFloat 6s ease-in-out infinite;
   /* anime.js scales and drags this element; touch-action keeps the drag from
    * being stolen by the browser's own panning on touch devices. */
   will-change: transform;
@@ -49,64 +81,52 @@
 }
 
 @keyframes emptyFloat {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-8px) scale(1.02); }
 }
-
-
-
 
 .empty-title {
   font-family: var(--font-heading);
-  font-size: 42px;
+  font-size: var(--display);
   font-weight: 700;
-  letter-spacing: -1px;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
   color: var(--text);
-  margin: 0;
-  background: none;
-  -webkit-text-fill-color: var(--text);
   user-select: none;
 }
 
 .empty-subtitle {
-  max-width: 360px;
-  font-size: 15px;
+  max-width: 42ch;
+  font-size: var(--text-base);
   line-height: 1.6;
   color: var(--text-muted);
-  text-align: center;
-  background: none;
-  -webkit-text-fill-color: var(--text-muted);
-  animation: none;
 }
 
-/* ===== MESSAGES ===== */
-
-/* animation: none is deliberate and load-bearing. Rows are animated by anime.js
- * from App.jsx, and a CSS animation on the same element fights it — the row
- * would replay its entrance every time React re-rendered mid-stream. Two later
- * rules used to re-declare `animation` here (messageIn, then msgReveal) and
- * this had to be forced to win; both are gone, so it wins on order now. */
+/* ===== MESSAGES =====
+ *
+ * The two roles are laid out differently on purpose. An assistant answer is
+ * long-form prose — headings, lists, code, a sources block — and belongs in a
+ * measured column with no container chrome at all. A question is short and
+ * benefits from being visibly *yours*: right-aligned, filled, compact.
+ *
+ * Everything used to be an 80%-wide bevelled bubble, which is the shape that
+ * makes a 900-word research answer hardest to read. */
 .msg-row {
   display: flex;
-  gap: 14px;
-  margin-bottom: 22px;
+  gap: var(--space-3);
+  padding: var(--space-4) 0;
+  /* Load-bearing: rows are animated by anime.js from App.jsx, and a CSS
+   * animation on the same element fights it — the row would replay its
+   * entrance on every re-render mid-stream. */
   animation: none;
   will-change: transform, opacity;
 }
 
+/* Consecutive messages from the same role are one block, not two cards. */
+.msg-row + .msg-row.assistant,
+.msg-row + .msg-row.user { border-top: 1px solid transparent; }
+
 .msg-row.user { flex-direction: row-reverse; }
-
-.msg-row.user .avatar {
-  background: var(--primary-dim);
-  color: var(--primary);
-  border-color: rgba(236, 125, 150, 0.2);
-}
-
-.msg-row.assistant .avatar {
-  background: var(--emerald-dim);
-  color: var(--emerald);
-  border-color: rgba(94, 201, 152, 0.15);
-}
 
 .msg-content {
   flex: 1;
@@ -118,122 +138,246 @@
 .msg-row.user .msg-content { align-items: flex-end; }
 .msg-row.assistant .msg-content { align-items: flex-start; }
 
-.bubble {
-  padding: 14px 18px;
-  border-radius: var(--radius-lg);
-  border-bottom-left-radius: 5px;
-  background: var(--surface-2);
+/* ===== AVATAR ===== */
+.avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  user-select: none;
   border: 1px solid var(--border);
-  line-height: 1.65;
-  font-size: 14px;
-  white-space: pre-wrap;
-  word-break: break-word;
-  max-width: 80%;
+  background: var(--surface-2);
+  color: var(--text-muted);
+  transition: border-color var(--dur) ease;
+}
+
+/* These two rules were written, and then never once rendered: `.dark .avatar`
+ * forced a grey gradient over both of them. Restored in the !important
+ * cleanup, kept here because they are what tells the two roles apart at a
+ * glance when the transcript is scrolled fast. */
+.msg-row.user .avatar {
+  background: var(--primary-dim);
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+}
+
+.msg-row.assistant .avatar {
+  background: var(--emerald-dim);
+  color: var(--emerald);
+  border-color: color-mix(in srgb, var(--emerald) 28%, transparent);
+}
+
+/* ===== BUBBLES ===== */
+.bubble {
+  max-width: 100%;
+  font-size: var(--text-base);
+  line-height: 1.7;
   color: var(--text);
-  box-shadow: var(--shadow-xs);
-  transition: background 0.3s ease, border-color 0.3s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  word-break: break-word;
+  overflow-wrap: anywhere;
   position: relative;
 }
 
-.bubble:hover {
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-  border-color: var(--border-strong);
+/* The assistant's answer: no background, no border, no shadow. Just a column
+ * of text at a readable measure. */
+.msg-row.assistant .bubble {
+  background: none;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+  max-width: var(--measure);
 }
 
+/* The question: a filled pill. Ink on pink, which is 8.4:1 — the white this
+ * used to use was 2.6:1 and failed AA on the app's most-repeated element. */
 .msg-row.user .bubble {
+  max-width: min(78%, 60ch);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-sm);
   background: var(--gradient-primary);
-  color: #ffffff;
-  border-color: transparent;
-  border-bottom-right-radius: 5px;
-  border-bottom-left-radius: var(--radius-lg);
-  box-shadow: 0 4px 16px var(--primary-glow);
+  color: var(--text-on-fill);
+  font-weight: 500;
+  white-space: pre-wrap;
+  box-shadow: 0 4px 18px var(--primary-glow);
 }
 
-.msg-row.user .bubble:hover {
-  box-shadow: 0 8px 24px var(--primary-glow);
+/* Text that arrives token by token gets a caret, so a slow first token reads
+ * as "thinking" rather than as "nothing happened". */
+.bubble.is-streaming::after {
+  content: "";
+  display: inline-block;
+  width: 2px;
+  height: 1.05em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: var(--primary);
+  border-radius: 1px;
+  animation: caretBlink 1s steps(2, start) infinite;
 }
 
-/* `.bubble.typing-bubble`, not `.typing-bubble`.
- *
- * App.jsx renders this element as `class="bubble typing-bubble"`, so single-
- * class rules for both match at equal specificity and source order decides.
- * A later `.bubble` rule in the skeuomorphism pass sets padding: 12px 16px —
- * which is why the typing rule used to live at the very bottom of the file.
- * Two classes put it above every `.bubble` rule regardless of position, so
- * this can sit with the component it belongs to. */
-.bubble.typing-bubble {
-  display: flex;
-  flex-direction: row;
+@keyframes caretBlink {
+  to { opacity: 0; }
+}
+
+/* A stopped answer is not a failed one — it is marked, not styled as an error. */
+.bubble.is-stopped { opacity: 0.92; }
+
+.msg-stopped-note {
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 16px 18px;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+}
+
+/* `.bubble.typing-bubble`, not `.typing-bubble`: both single-class forms match
+ * the same element at equal specificity, so source order would decide. Two
+ * classes put this above every `.bubble` rule regardless of position. */
+.bubble.typing-bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   white-space: nowrap;
 }
 
-/* Styled by class, not by `.typing-bubble span`.
- *
- * Both selectors matched the same three elements, but the descendant form is
- * more specific — so the class rule below could only win its size by force,
- * which is why width and height were !important. The element rule was the
- * older of the two and is gone; the class is what App.jsx actually renders. */
 .typing-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--emerald);
   display: inline-block;
   animation: typingBounce 1.4s infinite ease-in-out both;
 }
 
+/* The stagger was dead for the life of the app: a forced `animation` shorthand
+ * reset animation-delay with force, so all three dots bounced in unison. */
 .typing-dot:nth-child(1) { animation-delay: -0.32s; }
 .typing-dot:nth-child(2) { animation-delay: -0.16s; }
 .typing-dot:nth-child(3) { animation-delay: 0s; }
 
-/* These are the values from the SECOND definition of typingBounce, which used
- * to sit 1,700 lines below the first and therefore won. Keeping the earlier
- * body while deleting the later one would have quietly changed the animation —
- * scale(0.5)/opacity 0.4 rather than scale(0.4)/opacity 0.3. */
 @keyframes typingBounce {
   0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; }
   40% { transform: scale(1); opacity: 1; }
 }
 
+/* ===== META & ACTIONS ===== */
 .msg-meta {
-  font-size: 11px;
-  color: var(--text-subtle);
-  margin-top: 6px;
-  user-select: none;
-}
-
-.msg-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.msg-row:hover .msg-actions { opacity: 1; }
-
-.msg-action-btn {
-  background: var(--surface-3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  font-size: 11px;
-  cursor: pointer;
-  padding: 5px 10px;
   display: flex;
   align-items: center;
-  gap: 5px;
-  transition: all 0.15s ease;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+  font-size: var(--text-2xs);
+  color: var(--text-subtle);
   user-select: none;
+}
+
+.msg-role {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Revealed on hover, on keyboard focus, and while a feedback vote is showing
+ * (`.is-voted`, set by MessageList — deliberately a class rather than `:has()`,
+ * which the cascade-snapshot walker resolves through jsdom's `matches`).
+ * Hover-only meant a keyboard user tabbed into three invisible buttons. */
+.msg-actions {
+  display: flex;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+  opacity: 0;
+  transition: opacity var(--dur-fast) ease;
+}
+
+.msg-row:hover .msg-actions,
+.msg-row:focus-within .msg-actions,
+.msg-actions.is-voted { opacity: 1; }
+
+.msg-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 28px;
+  padding: 0 var(--space-2);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-subtle);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    color var(--dur-fast) ease,
+    background var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
 }
 
 .msg-action-btn:hover {
-  background: var(--surface-2);
   color: var(--text);
-  border-color: var(--border-strong);
-  transform: translateY(-1px);
+  background: var(--surface-2);
+  border-color: var(--border);
 }
+
+.msg-action-btn.active {
+  color: var(--emerald);
+  background: var(--emerald-dim);
+  border-color: color-mix(in srgb, var(--emerald) 30%, transparent);
+}
+
+.msg-action-btn.is-down.active {
+  color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+}
+
+/* Shown for the image a message carried, in session. */
+.msg-attachment {
+  display: block;
+  max-width: min(320px, 100%);
+  max-height: 240px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  margin-bottom: var(--space-2);
+  object-fit: cover;
+}
+
+/* Shown after a reload, when the flag survived but the bytes deliberately
+ * did not. */
+.msg-attachment-placeholder {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+}
+
+.msg-image {
+  margin-top: var(--space-2);
+  max-width: min(520px, 100%);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border);
+  cursor: zoom-in;
+  transition: transform var(--dur) var(--ease-out);
+}
+
+.msg-image:hover { transform: scale(1.01); }

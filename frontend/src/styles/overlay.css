@@ -1,6 +1,14 @@
-/* The always-on-top overlay assistant, which renders outside .app-root. */
+/* The always-on-top overlay assistant.
+ *
+ * Renders OUTSIDE .app-root and carries no theme class — that window is always
+ * dark, whatever the main window is set to. Every token used here must
+ * therefore be reachable from :root, which the cascade snapshot checks.
+ *
+ * The base rules for this chrome used to live in styles/skeuomorphism.css,
+ * three files away from the only component that renders them. They are here
+ * now, with the bevels dropped.
+ */
 
-/* ===== OVERLAY ASSISTANT ===== */
 .overlay-root {
   width: 100vw;
   height: 100vh;
@@ -8,102 +16,220 @@
   flex-direction: column;
   justify-content: flex-end;
   align-items: center;
-  padding: 0 20px 36px 20px;
+  padding: 0 var(--space-5) 36px;
   background: transparent;
   pointer-events: none;
   overflow: hidden;
-  box-sizing: border-box;
 }
 
-.overlay-drag-handle {
-  cursor: grab;
-  padding: 0 8px;
-  color: var(--text-subtle);
-  user-select: none;
-  display: flex;
-  align-items: center;
-  font-size: 18px;
-  border-right: 1px solid var(--border);
-  height: 24px;
-}
-
-.overlay-drag-handle:active {
-  cursor: grabbing;
-}
-
-
+/* The window itself is click-through; only the chrome takes pointer events. */
 .overlay-root > * { pointer-events: auto; }
 
 .overlay-answer-stack {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-2);
   width: 100%;
   max-width: 720px;
-  margin-bottom: 12px;
+  margin-bottom: var(--space-3);
   align-items: flex-end;
 }
 
-.overlay-answer-text { flex: 1; }
+.overlay-answer-card {
+  align-self: flex-end;
+  max-width: 720px;
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg) var(--radius-lg) var(--radius-lg) var(--radius-sm);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  box-shadow: var(--rim), var(--shadow-md);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  animation: overlayUp var(--dur) var(--ease-out);
+}
+
+.overlay-answer-text { flex: 1; min-width: 0; }
+
+@keyframes overlayUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 
 .overlay-tts-btn {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
-  border: none;
+  border: 1px solid var(--border);
   background: var(--surface-3);
-  color: #faf0e6;
+  color: var(--text);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
-  font-size: 11px;
-  transition: all 0.15s;
+  font-size: var(--text-2xs);
+  transition: background var(--dur-fast) ease, transform var(--dur-fast) var(--ease-out);
 }
 
 .overlay-tts-btn:hover {
   background: var(--surface-4);
-  transform: scale(1.1);
+  transform: scale(1.08);
 }
 
-@keyframes overlayUp {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+.overlay-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  max-width: 720px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--rim), var(--shadow-md);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  animation: overlayUp var(--dur) var(--ease-out);
+}
+
+.overlay-drag-handle {
+  cursor: grab;
+  padding: 0 var(--space-2);
+  color: var(--text-subtle);
+  user-select: none;
+  display: flex;
+  align-items: center;
+  font-size: var(--text-lg);
+  border-right: 1px solid var(--border);
+  height: 24px;
+}
+
+.overlay-drag-handle:active { cursor: grabbing; }
+
+.overlay-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--gradient-primary);
+  display: grid;
+  place-items: center;
+  color: var(--text-on-fill);
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px var(--primary-glow);
 }
 
 .overlay-icon.live {
   background: var(--danger);
-  box-shadow: 0 0 0 0 rgba(196, 101, 112, 0.4);
-  animation: pulse-red 1.5s infinite;
+  animation: overlayPulse 1.6s ease-in-out infinite;
 }
 
-@keyframes pulse-red {
-  0% { box-shadow: 0 0 0 0 rgba(196, 101, 112, 0.45); }
-  70% { box-shadow: 0 0 0 8px rgba(196, 101, 112, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(196, 101, 112, 0); }
+@keyframes overlayPulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); }
+  50% { box-shadow: 0 0 0 8px transparent; }
 }
 
-.overlay-action:active { transform: scale(0.92); }
+.overlay-input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  padding: var(--space-1) 0;
+}
+
+.overlay-input::placeholder { color: var(--text-subtle); }
+
+.overlay-action {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid transparent;
+  background: var(--surface-3);
+  color: var(--text-muted);
+  font-size: var(--text-base);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  transition:
+    background var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.overlay-action:hover {
+  background: var(--surface-4);
+  color: var(--text);
+  transform: scale(1.06);
+}
+
+.overlay-action:active { transform: scale(0.94); }
 
 .overlay-action.recording {
   background: var(--danger);
-  color: #ffffff;
-  animation: pulse 1.2s infinite;
+  color: var(--text-on-fill);
+  animation: overlayPulse 1.6s ease-in-out infinite;
 }
 
-.overlay-submit:hover:not(:disabled) { transform: scale(1.08); }
+.overlay-submit {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: var(--gradient-primary);
+  color: var(--text-on-fill);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px var(--primary-glow);
+  /* anime.js runs a press-scale on click; see the delegated handler in App.jsx. */
+  will-change: transform;
+  transition: transform var(--dur-fast) var(--ease-spring), filter var(--dur-fast) ease;
+}
+
+.overlay-submit:hover:not(:disabled) { transform: scale(1.08); filter: brightness(1.06); }
 .overlay-submit:active:not(:disabled) { transform: scale(0.95); }
 .overlay-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .overlay-file-input { display: none; }
+
+.overlay-thumb-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-bottom: var(--space-2);
+}
 
 .overlay-thumb-pill button {
   background: none;
   border: none;
   color: var(--text-subtle);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--text-sm);
 }
 
 .overlay-thumb-pill button:hover { color: var(--text); }
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay-answer-card,
+  .overlay-bar { animation: none; }
+  .overlay-icon.live,
+  .overlay-action.recording { animation: none; }
+}

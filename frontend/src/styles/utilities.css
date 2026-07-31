@@ -1,36 +1,86 @@
-/* Display helpers and every media query. */
+/* Display helpers and every media query.
+ *
+ * Imported last, so these beat the component defaults at equal specificity
+ * without needing force. The order is the reason there is no !important here.
+ */
 
-/* ===== UTILITIES ===== */
 .mobile-only { display: none; }
 .desktop-only { display: flex; }
 
+/* Visually hidden, still announced. Used for the live region that tells a
+ * screen reader an answer has finished streaming — the old UI signalled that
+ * with animation alone, which is to say not at all. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ===== RESPONSIVE ===== */
+
+/* Below this the transcript no longer has room for a comfortable measure with
+ * the sidebar open, so the gutters tighten first. */
+@media (max-width: 1100px) {
+  .scroll-wrapper { padding: var(--space-5) var(--space-4) var(--space-2); }
+  .input-bar { padding: 0 var(--space-4) var(--space-4); }
+  .chat-toolbar { padding: 0 var(--space-4) var(--space-2); }
+}
+
 @media (max-width: 900px) {
-  .side-panel { width: 340px; }
+  .side-panel { width: min(380px, 100vw); }
 }
 
 @media (max-width: 768px) {
   .mobile-only { display: flex; }
   .desktop-only { display: none; }
-  .app-shell { padding: 12px; gap: 12px; }
-  .app-header { padding: 10px 14px; border-radius: var(--radius-lg); }
-  .main-title { font-size: 15px; }
-  .app-body { gap: 12px; }
-  .sidebar { width: 260px; }
+
+  .app-shell { padding: var(--space-2); gap: var(--space-2); }
+  .app-header { padding: var(--space-2) var(--space-3); border-radius: var(--radius-lg); }
+  .app-body { gap: var(--space-2); }
   .chat-main { border-radius: var(--radius-lg); }
-  .creativity-bar { padding: 0 14px 4px; margin: 0 12px 2px; }
-  .input-bar { margin: 0 12px 12px; border-radius: var(--radius-lg); }
-  .bubble { max-width: 88%; padding: 12px 16px; }
+
+  .main-title { font-size: var(--text-base); }
+  .sub-title { font-size: 11px; }
+
+  .scroll-wrapper { padding: var(--space-4) var(--space-3) var(--space-2); }
+  .msg-row { padding: var(--space-3) 0; gap: var(--space-2); }
+  .msg-row.user .bubble { max-width: 88%; }
+
+  /* The composer is the one control that must stay reachable with a thumb, so
+   * it keeps its full padding while everything above it tightens. */
+  .input-bar { padding: 0 var(--space-3) var(--space-3); }
+  .input-wrapper { border-radius: var(--radius-lg); }
+
   .side-panel { width: 100vw; border-radius: 0; }
+  .starter-grid { grid-template-columns: 1fr; max-width: none; }
+  .cmdk-backdrop { padding: 8vh var(--space-3) var(--space-3); }
 }
 
 @media (max-width: 480px) {
-  .empty-title { font-size: 34px; }
-  .empty-subtitle { font-size: 13px; }
-  .bubble { max-width: 92%; }
-  .creativity-track { max-width: 120px; }
+  .empty-logo { width: 64px; height: 64px; }
+  .empty-subtitle { font-size: var(--text-sm); }
+  .msg-row.user .bubble { max-width: 92%; }
+  .chat-toolbar-btn span { display: none; }
 }
 
+/* Short viewports — a phone in landscape, or a desktop window dragged flat.
+ * The empty state's logo and float are the first things to go. */
+@media (max-height: 620px) {
+  .empty-logo { display: none; }
+  .empty-state { gap: var(--space-2); }
+}
+
+/* ===== MOTION =====
+ *
+ * The only !important in the stylesheet, and the one thing the keyword is
+ * actually for: overriding an author's animation for a user who has told the
+ * operating system that motion makes them ill. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

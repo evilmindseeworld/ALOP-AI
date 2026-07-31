@@ -1,31 +1,40 @@
-/* The input bar and the controls attached to it. */
+/* The composer.
+ *
+ * One raised card holding attachments, the textarea and the action row —
+ * the ChatGPT/Claude shape. Previously the bar was a recessed well and the
+ * wrapper inside it was given a second border by the obsidian pass, so the
+ * composer rendered as a box inside a box.
+ */
 
-/* ===== INPUT BAR ===== */
+/* Just the gutter. The card is .input-wrapper. */
 .input-bar {
   display: flex;
-  align-items: flex-end;
-  gap: 12px;
-  padding: 12px 14px 14px;
-  margin: 0 18px 18px;
-  background: var(--surface-2);
-  background-image: var(--woody);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-md);
-  transition: all 0.25s var(--ease-out);
+  padding: 0 var(--space-6) var(--space-4);
+  flex-shrink: 0;
 }
 
 .input-wrapper {
   flex: 1;
+  max-width: 860px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--rim), var(--shadow-md);
+  transition:
+    border-color var(--dur) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out);
 }
 
-.input-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
+/* The focus ring goes on the card, not the textarea: the textarea has no
+ * border of its own, so a ring on it would float inside the card. */
+.input-wrapper:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: var(--rim), var(--shadow-md), 0 0 0 3px var(--primary-dim);
 }
 
 .input-text {
@@ -33,56 +42,135 @@
   border: none;
   outline: none;
   color: var(--text);
-  font-size: 15px;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: 1.55;
   resize: none;
-  max-height: 140px;
-  min-height: 24px;
-  font-family: inherit;
   width: 100%;
-  line-height: 1.5;
+  min-height: 26px;
+  max-height: 220px;
+  padding: var(--space-2) var(--space-2) 0;
 }
 
 .input-text::placeholder { color: var(--text-subtle); }
+.input-text:disabled { color: var(--text-muted); cursor: not-allowed; }
+
+.input-actions {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+/* 40px + the 8px gap clears the 44px touch target with room to spare, and the
+ * old 36px did not. */
+.input-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-subtle);
+  cursor: pointer;
+  flex-shrink: 0;
+  position: relative;
+  user-select: none;
+  transition:
+    background var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    transform var(--dur-fast) var(--ease-out);
+}
 
 .input-btn:hover {
-  background: var(--surface);
+  background: var(--surface-3);
   color: var(--text);
-  border-color: var(--border-strong);
-  transform: translateY(-1px);
+  border-color: var(--border);
 }
 
-.input-btn.primary {
-  background: var(--gradient-primary);
-  color: #ffffff;
-  border-color: transparent;
-  /* anime.js runs a press-scale on click; see the delegated handler in App.jsx. */
-  will-change: transform;
-  border-radius: var(--radius-full);
-  box-shadow: 0 4px 14px var(--primary-glow);
-}
+.input-btn:active { transform: scale(0.94); }
 
-.input-btn.primary:hover {
-  transform: scale(1.06);
-  box-shadow: 0 8px 20px var(--primary-glow);
-}
-
-.input-btn.primary:disabled {
-  opacity: 0.4;
-  transform: none;
+.input-btn:disabled {
+  opacity: 0.45;
   cursor: not-allowed;
-  box-shadow: none;
-}
-
-.input-btn.listening {
-  background: var(--danger);
-  color: #ffffff;
-  animation: pulse 1.2s infinite;
-  border-color: transparent;
+  transform: none;
 }
 
 .input-btn input[type="file"] { display: none; }
 
-/* Thumbnail of the pending attachment, shown above the composer. */
+/* Dictation running: the one place a pulse is information rather than
+ * decoration — it says the microphone is live. */
+.input-btn.listening {
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 40%, transparent);
+  animation: micPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 40%, transparent); }
+  50% { box-shadow: 0 0 0 6px transparent; }
+}
+
+.input-btn.primary {
+  background: var(--gradient-primary);
+  color: var(--text-on-fill);
+  border-color: transparent;
+  border-radius: var(--radius-full);
+  box-shadow: 0 2px 12px var(--primary-glow);
+  /* anime.js runs a press-scale on click; see the delegated handler in App.jsx. */
+  will-change: transform;
+}
+
+.input-btn.primary:hover:not(:disabled) {
+  filter: brightness(1.06);
+  box-shadow: 0 6px 20px var(--primary-glow);
+}
+
+.input-btn.primary:disabled {
+  background: var(--surface-3);
+  color: var(--text-subtle);
+  box-shadow: none;
+}
+
+/* Send becomes Stop while a reply streams. Danger-coloured, because it
+ * interrupts — and it had no colour at all until the !important cleanup, the
+ * rule having been overridden by a later duplicate. */
+.input-btn.primary.is-stop {
+  background: var(--danger);
+  color: var(--text-on-fill);
+  box-shadow: 0 2px 12px color-mix(in srgb, var(--danger) 35%, transparent);
+  animation: stopPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes stopPulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); }
+  50% { box-shadow: 0 0 0 7px transparent; }
+}
+
+.input-spacer { flex: 1; }
+
+/* The keyboard hint. Present for the same reason the palette shows Ctrl K:
+ * the shortcut exists and nothing announced it. */
+.input-hint {
+  font-size: var(--text-2xs);
+  color: var(--text-subtle);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.input-hint kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface-3);
+}
+
+/* ===== ATTACHMENTS ===== */
 .attachment-preview {
   position: relative;
   align-self: flex-start;
@@ -92,7 +180,7 @@
 .attachment-preview img {
   max-height: 84px;
   max-width: 160px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   border: 1px solid var(--border);
   object-fit: cover;
 }
@@ -101,18 +189,18 @@
   position: absolute;
   top: -7px;
   right: -7px;
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
   display: grid;
   place-items: center;
   border-radius: 50%;
   border: 1px solid var(--border-strong);
   background: var(--surface-3);
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: var(--text-sm);
   line-height: 1;
   cursor: pointer;
-  transition: color 0.15s, background 0.15s;
+  transition: color var(--dur-fast) ease, background var(--dur-fast) ease;
 }
 
 .attachment-preview button:hover {
@@ -120,29 +208,7 @@
   background: var(--surface-4);
 }
 
-/* The image as it appears in a sent message. */
-.msg-attachment {
-  display: block;
-  max-width: min(320px, 100%);
-  max-height: 240px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  margin-bottom: 8px;
-  object-fit: cover;
+@media (prefers-reduced-motion: reduce) {
+  .input-btn.listening,
+  .input-btn.primary.is-stop { animation: none; }
 }
-
-/* Shown for the moment before the lazy syntax highlighter arrives. Matches the
- * highlighter's own metrics so the block does not reflow when colour lands. */
-.code-block-plain {
-  margin: 0;
-  padding: 14px;
-  overflow-x: auto;
-  border-radius: var(--radius-sm);
-  background: #282c34; /* oneDark's background, so the swap is invisible */
-  color: #abb2bf;
-  font-family: var(--font-mono);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-.code-copy-btn.is-copied { color: var(--success); }

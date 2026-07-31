@@ -27,10 +27,11 @@ const mutate = (find, replace) => {
 
 describe("the cascade snapshot notices", () => {
   it("a changed token value, everywhere it is referenced", () => {
-    // The Obsidian value, not the :root one. `:root`'s --surface-2 turns out to
-    // be shadowed on every element that renders, which the harness correctly
-    // reports as no change at all — a small piece of dead CSS found for free.
-    expect(mutate("--surface-2: #1a1a24;", "--surface-2: #ff0000;")).not.toBe(BASELINE);
+    // This used to have to name the Obsidian value rather than the :root one,
+    // because obsidian.css redeclared --surface-2 on `.dark` and shadowed the
+    // root declaration on every element that rendered. That file is gone and
+    // there is exactly one declaration of the token again.
+    expect(mutate("--surface-2: #17171f;", "--surface-2: #ff0000;")).not.toBe(BASELINE);
   });
 
   it("a token that stops being defined", () => {
@@ -74,15 +75,27 @@ describe("the cascade snapshot notices", () => {
   });
 
   it("the wrong duplicate @keyframes being deleted", () => {
-    // floatGentle, typingBounce and emptyFloat are each defined twice with
-    // different values. The later definition is the one a browser uses, so
-    // deleting it and keeping the earlier one silently changes the animation.
-    const both = [...CSS.matchAll(/@keyframes\s+floatGentle\s*\{/g)];
-    expect(both.length, "floatGentle should still be defined twice").toBe(2);
+    // The stylesheet no longer contains a duplicate @keyframes to borrow —
+    // floatGentle, typingBounce and emptyFloat were each defined twice, and the
+    // UI overhaul removed the second copies along with the design passes that
+    // introduced them. So the duplicate is constructed here, for the same
+    // reason the !important case below constructs its own: a guard anchored on
+    // a defect in the file it guards starts passing the moment that defect is
+    // fixed, which is precisely when it stops meaning anything.
+    //
+    // The property under test is that the LAST definition of a name is the one
+    // that renders, so deleting the later duplicate changes the app and
+    // deleting the earlier one does not.
+    const later = "@keyframes typingBounce { 0%, 80%, 100% { transform: scale(0.9); opacity: 0.9; } 40% { transform: scale(1); opacity: 1; } }";
+    const withDuplicate = buildSnapshot(`${CSS}\n${later}`);
 
-    const at = both[1].index;
-    const end = CSS.indexOf("}", CSS.indexOf("}", at) + 1) + 1;
-    expect(buildSnapshot(CSS.slice(0, at) + CSS.slice(end))).not.toBe(BASELINE);
+    // Appending a second definition renders differently: the later one wins.
+    expect(withDuplicate, "a later @keyframes of the same name must win").not.toBe(BASELINE);
+
+    // Delete the EARLIER one and the app is unchanged — the later still wins.
+    const earlierDeleted = CSS.replace(/@keyframes typingBounce \{[^}]*\}[^}]*\}/, "");
+    expect(earlierDeleted, "fixture drift: typingBounce is no longer declared").not.toBe(CSS);
+    expect(buildSnapshot(`${earlierDeleted}\n${later}`)).toBe(withDuplicate);
   });
 
   it("a changed z-index token", () => {
@@ -101,13 +114,18 @@ describe("the cascade snapshot notices", () => {
   });
 
   it("but NOT a REDUNDANT !important being added", () => {
-    // Force on a declaration nothing contests changes no rendered value. This
-    // is stated as an addition rather than a removal because the cleanup left
-    // no redundant !important in the file to remove — all 52 survivors decide
-    // something.
-    const forced = CSS.replace(/(\.sidebar-footer \{\s*padding: 12px);/, "$1 !important;");
-    expect(forced).not.toBe(CSS);
-    expect(buildSnapshot(forced)).toBe(BASELINE);
+    // Force on a declaration nothing contests changes no rendered value.
+    //
+    // Both sides are appended rather than patched into an existing rule, so
+    // the case does not depend on any particular declaration still being in the
+    // file — the earlier version anchored on `.sidebar-footer { padding: 12px`
+    // and broke the moment that padding moved onto the spacing scale.
+    const appended = buildSnapshot(`${CSS}\n.sidebar-footer { padding: 12px; }`);
+    const forced = buildSnapshot(`${CSS}\n.sidebar-footer { padding: 12px !important; }`);
+
+    // Sanity: the appended rule has to actually win, or this proves nothing.
+    expect(appended, "the appended rule should change rendering").not.toBe(BASELINE);
+    expect(forced).toBe(appended);
   });
 
   it("but NOT a comment or whitespace change", () => {

@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useState, useMemo } from "react";
 import Icon from "./Icon";
 
 const ChatItem = memo(({ chat, activeChatId, onSelect, onRename, onDelete, onPin, onFavorite }) => {
@@ -48,10 +48,22 @@ const ChatItem = memo(({ chat, activeChatId, onSelect, onRename, onDelete, onPin
       {/* The row itself is the select target, so the buttons have to stop
           propagation or every action would also switch chats. */}
       <div className="chat-actions" onClick={(e) => e.stopPropagation()}>
-        <button className="chat-action" onClick={() => onPin(chat.id)} title="Pin" aria-label="Pin chat">
+        <button
+          className={`chat-action ${chat.pinned ? "is-on" : ""}`}
+          onClick={() => onPin(chat.id)}
+          title={chat.pinned ? "Unpin" : "Pin"}
+          aria-label={chat.pinned ? "Unpin chat" : "Pin chat"}
+          aria-pressed={Boolean(chat.pinned)}
+        >
           <Icon name="pin" size={13} />
         </button>
-        <button className="chat-action" onClick={() => onFavorite(chat.id)} title="Favorite" aria-label="Favorite chat">
+        <button
+          className={`chat-action ${chat.favorite ? "is-on" : ""}`}
+          onClick={() => onFavorite(chat.id)}
+          title={chat.favorite ? "Remove from favourites" : "Favourite"}
+          aria-label={chat.favorite ? "Remove chat from favourites" : "Favourite chat"}
+          aria-pressed={Boolean(chat.favorite)}
+        >
           <Icon name="heart" size={13} />
         </button>
         <button
@@ -65,7 +77,12 @@ const ChatItem = memo(({ chat, activeChatId, onSelect, onRename, onDelete, onPin
         >
           ✎
         </button>
-        <button className="chat-action" onClick={() => onDelete(chat.id)} title="Delete" aria-label="Delete chat">
+        <button
+          className="chat-action is-danger"
+          onClick={() => onDelete(chat.id)}
+          title="Delete"
+          aria-label="Delete chat"
+        >
           <Icon name="trash" size={13} />
         </button>
       </div>
@@ -74,6 +91,28 @@ const ChatItem = memo(({ chat, activeChatId, onSelect, onRename, onDelete, onPin
 });
 
 ChatItem.displayName = "ChatItem";
+
+/**
+ * Pinned, then favourites, then the rest.
+ *
+ * The list arrives already sorted in that order from useChats; this only marks
+ * where one run ends and the next begins. It replaces the coloured left border
+ * the old list used, which said "this row is special" without ever saying which
+ * kind of special — and put two different meanings on the same 2px of pixels.
+ */
+const groupChats = (chats) => {
+  const pinned = chats.filter((c) => c.pinned);
+  const favorite = chats.filter((c) => !c.pinned && c.favorite);
+  const rest = chats.filter((c) => !c.pinned && !c.favorite);
+
+  return [
+    { key: "pinned", label: "Pinned", chats: pinned },
+    { key: "favorite", label: "Favourites", chats: favorite },
+    // Unlabelled when it is the only group: a single "Recent" heading over the
+    // whole list is a label with nothing to distinguish it from.
+    { key: "recent", label: pinned.length || favorite.length ? "Recent" : null, chats: rest },
+  ].filter((g) => g.chats.length > 0);
+};
 
 const ChatSidebar = memo(
   ({
@@ -88,47 +127,56 @@ const ChatSidebar = memo(
     collapsed,
     mobileOpen,
     setMobileOpen,
-  }) => (
-    <div
-      className={`sidebar ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobileOpen" : ""} ${
-        typeof window !== "undefined" && window.innerWidth <= 768 ? "mobile" : ""
-      }`}
-    >
-      <div className="sidebar-header">
-        <button className="new-chat-btn" onClick={onCreate}>
-          <Icon name="plus" size={16} /> New Chat
-        </button>
-        {mobileOpen && (
-          <button className="icon-btn" onClick={() => setMobileOpen(false)} aria-label="Close chat list">
-            <Icon name="close" size={18} />
+  }) => {
+    const groups = useMemo(() => groupChats(chats), [chats]);
+
+    return (
+      <nav
+        className={`sidebar ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobileOpen" : ""} ${
+          typeof window !== "undefined" && window.innerWidth <= 768 ? "mobile" : ""
+        }`}
+        aria-label="Chats"
+      >
+        <div className="sidebar-header">
+          <button className="new-chat-btn" onClick={onCreate}>
+            <Icon name="plus" size={16} /> New Chat
           </button>
-        )}
-      </div>
+          {mobileOpen && (
+            <button className="icon-btn" onClick={() => setMobileOpen(false)} aria-label="Close chat list">
+              <Icon name="close" size={18} />
+            </button>
+          )}
+        </div>
 
-      <div className="chat-list">
-        {chats.length === 0 && (
-          <div style={{ textAlign: "center", opacity: 0.5, padding: 20, fontSize: 13 }}>No chats yet</div>
-        )}
-        {chats.map((chat) => (
-          <ChatItem
-            key={chat.id}
-            chat={chat}
-            activeChatId={activeChatId}
-            onSelect={onSelect}
-            onRename={onRename}
-            onDelete={onDelete}
-            onPin={onPin}
-            onFavorite={onFavorite}
-          />
-        ))}
-      </div>
+        <div className="chat-list">
+          {chats.length === 0 && <div className="chat-empty">No chats yet</div>}
 
-      <div className="sidebar-footer">ALOP-AI • Council of Minds • Learning</div>
-    </div>
-  )
+          {groups.map((group) => (
+            <div className="chat-group" key={group.key}>
+              {group.label && <div className="chat-group-label">{group.label}</div>}
+              {group.chats.map((chat) => (
+                <ChatItem
+                  key={chat.id}
+                  chat={chat}
+                  activeChatId={activeChatId}
+                  onSelect={onSelect}
+                  onRename={onRename}
+                  onDelete={onDelete}
+                  onPin={onPin}
+                  onFavorite={onFavorite}
+                />
+              ))}
+            </div>
+          ))}
+        </div>
+
+        <div className="sidebar-footer">ALOP-AI • Council of Minds</div>
+      </nav>
+    );
+  }
 );
 
 ChatSidebar.displayName = "ChatSidebar";
 
-export { ChatItem };
+export { ChatItem, groupChats };
 export default ChatSidebar;

@@ -12,11 +12,11 @@ const imported = [...MANIFEST.matchAll(/@import\s+"\.\/styles\/([\w-]+)\.css"/g)
 /**
  * App.css is an import manifest, and THE ORDER OF THOSE IMPORTS IS THE CASCADE.
  *
- * Two of the files exist specifically to override what comes before them:
- * `skeuomorphism` is a pass giving every surface physical depth, and `obsidian`
- * is a later pass laying a darker palette over it. Both win by being imported
- * late. Reorder the manifest and the app renders differently — silently, and
- * everywhere at once.
+ * It used to end with two whole-app design passes — `skeuomorphism` and
+ * `obsidian` — that existed purely to override the files above them, which is
+ * how the token file ended up dead in the shipping theme. They are gone: every
+ * file below owns its component outright, and only two ordering constraints
+ * remain, both asserted separately below.
  *
  * This test is the record of the intended order, in the same spirit as
  * zIndexOrder.test.js. If you add a file, add it here and say where it goes.
@@ -27,16 +27,15 @@ const EXPECTED = [
   "layout",
   "sidebar",
   "chat",
+  "markdown",       // answer prose; scoped to .markdown-body
   "composer",
   "palette",
   "chat-controls",
   "panels",
   "overlay",
-  "utilities",      // media queries, which must beat the component defaults
-  "skeuomorphism",  // design pass 1 — overrides components above
-  "obsidian",       // design pass 2 — overrides skeuomorphism
   "decoration",
   "code-blocks",
+  "utilities",      // media queries, which must beat the component defaults
 ];
 
 describe("stylesheet manifest", () => {
@@ -64,12 +63,24 @@ describe("stylesheet manifest", () => {
     expect(MANIFEST).not.toContain("ui-reset");
   });
 
-  it("keeps tokens first and the two design passes in order", () => {
+  it("keeps tokens first and utilities last", () => {
     // Stated separately from the full list so the failure names the invariant
-    // rather than dumping a fifteen-item array diff.
-    expect(imported[0]).toBe("tokens");
-    expect(imported.indexOf("skeuomorphism")).toBeGreaterThan(imported.indexOf("layout"));
-    expect(imported.indexOf("obsidian")).toBeGreaterThan(imported.indexOf("skeuomorphism"));
+    // rather than dumping a fourteen-item array diff. These are the only two
+    // ordering constraints left: everything between them is independent.
+    expect(imported[0], "tokens must come first — every file dereferences it").toBe("tokens");
+    expect(
+      imported.at(-1),
+      "utilities must come last: its media queries beat component defaults on " +
+      "source order, and moving it earlier would need !important to work"
+    ).toBe("utilities");
+  });
+
+  it("no longer imports a whole-app design pass", () => {
+    // The two passes were the mechanism by which a rule's real value could not
+    // be known from the file that declared it. If one comes back, the manifest
+    // is the place it will show up first.
+    expect(imported).not.toContain("skeuomorphism");
+    expect(imported).not.toContain("obsidian");
   });
 
   it("contains nothing but imports and comments", () => {

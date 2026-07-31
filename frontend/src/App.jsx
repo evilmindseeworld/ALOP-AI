@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { ClerkProvider, useUser, useAuth } from "@clerk/react";
+import { Toaster, toast } from "sonner";
 import "./App.css";
 
 import SignInPage from "./SignInPage";
@@ -41,7 +42,20 @@ const AuthenticatedApp = () => {
   const [darkMode, setDarkMode] = useState(() => Storage.get("alop-dark-mode") !== "false");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => Storage.get("pa-sidebar-collapsed") !== "false");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [toast, setToast] = useState(null);
+
+  /**
+   * Toasts are Sonner's now, behind the same one-argument call the hooks have
+   * always made.
+   *
+   * The old implementation was a single piece of state rendered as one fixed
+   * div: a second message replaced the first mid-read, the timer restarted on
+   * every render that touched it, and nothing was ever announced to a screen
+   * reader. Sonner brings the stack, the timers, swipe-to-dismiss and a live
+   * region; `setToast` keeps its signature so no hook changed.
+   */
+  const setToast = useCallback((message) => {
+    if (message) toast(message);
+  }, []);
 
   const [showSettings, setShowSettings] = useState(false);
   const [showAdmin, setShowAdmin] = useState(false);
@@ -71,12 +85,6 @@ const AuthenticatedApp = () => {
   // --- preferences -------------------------------------------------------
   useEffect(() => Storage.set("alop-dark-mode", darkMode.toString()), [darkMode]);
   useEffect(() => Storage.set("pa-sidebar-collapsed", sidebarCollapsed.toString()), [sidebarCollapsed]);
-
-  useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(null), 3000);
-    return () => clearTimeout(t);
-  }, [toast]);
 
   // The desktop shell focuses the composer when its hotkey is pressed.
   useEffect(() => {
@@ -306,7 +314,15 @@ const AuthenticatedApp = () => {
         onSelectChat={chat.setActiveChatId}
       />
 
-      {toast && <div className="toast">{toast}</div>}
+      {/* `unstyled` hands the whole appearance to .toast in chat-controls.css,
+          so a toast is dressed by the same tokens as everything else and does
+          not ship a second colour system with the library. */}
+      <Toaster
+        position="top-center"
+        duration={3200}
+        visibleToasts={3}
+        toastOptions={{ unstyled: true, className: "toast" }}
+      />
 
       {camera.isOpen && (
         <CameraOverlay

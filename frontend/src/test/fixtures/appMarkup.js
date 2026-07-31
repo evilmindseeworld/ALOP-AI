@@ -63,7 +63,7 @@ export const appTree = (theme) => `
       </div>
       <div class="header-actions">
         <button class="cmdk-trigger desktop-only"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg><span>Search</span><kbd>Ctrl K</kbd></button>
-        <button class="upgrade-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg> Upgrade</button>
+        <button class="upgrade-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg> <span class="upgrade-label">Upgrade</span></button>
         <button class="icon-btn admin-btn active"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
         <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
       </div>

@@ -398,7 +398,7 @@ const AuthenticatedApp = () => {
 
             {showUpgradeButton && (
               <MagneticButton className="upgrade-btn" onClick={() => openOnly("upgrade")} ariaLabel="Upgrade to Pro">
-                <Icon name="crown" size={14} /> Upgrade
+                <Icon name="crown" size={14} /> <span className="upgrade-label">Upgrade</span>
               </MagneticButton>
             )}
 

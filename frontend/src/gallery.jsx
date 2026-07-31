@@ -320,7 +320,7 @@ const LiveChrome = ({ theme, empty = false }) => (
               <Icon name="search" size={14} /> <span>Search</span> <kbd>Ctrl K</kbd>
             </button>
             <button className="upgrade-btn">
-              <Icon name="crown" size={14} /> Upgrade
+              <Icon name="crown" size={14} /> <span className="upgrade-label">Upgrade</span>
             </button>
             <button className="icon-btn" aria-label="Theme">
               <Icon name={theme === "dark" ? "sun" : "moon"} size={17} />

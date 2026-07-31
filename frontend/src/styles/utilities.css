@@ -88,6 +88,20 @@
 
   .main-title { font-size: var(--text-sm); }
 
+  /* Upgrade goes icon-only. `.brand` is flex:1 with min-width:0, so it yields
+   * to the action row — and at 390px the actions were taking so much of the
+   * bar that the chat title truncated to nothing. The title is the only thing
+   * in the header that says WHERE YOU ARE, so it wins the space; Upgrade keeps
+   * its crown, its colour and its 40px target, and the sidebar's account block
+   * carries the same action with a label. */
+  .upgrade-label { display: none; }
+
+  .upgrade-btn {
+    width: 40px;
+    justify-content: center;
+    padding: 0;
+  }
+
   .scroll-wrapper { padding: var(--space-4) var(--space-3) var(--space-2); }
   .msg-row { padding: var(--space-3) 0; gap: var(--space-2); }
   .msg-row.user .bubble { max-width: 88%; }

@@ -196,9 +196,15 @@ const AuthenticatedApp = () => {
   );
 
   // --- composer ----------------------------------------------------------
-  const handleFileSelect = useCallback(async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
+  /**
+   * The one place that decides whether an attachment is acceptable.
+   *
+   * There are now three ways in — the file picker, a paste, and a drop — and
+   * the camera makes a fourth that arrives already decoded. Three copies of
+   * the type check would be three chances for them to disagree about what an
+   * image is.
+   */
+  const acceptImageFile = useCallback(async (file) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
       setToast("Only images can be attached.");
@@ -209,7 +215,18 @@ const AuthenticatedApp = () => {
     } catch (err) {
       setToast(err.message);
     }
-  }, []);
+  }, [setToast]);
+
+  const handleFileSelect = useCallback(
+    (e) => {
+      const file = e.target.files?.[0];
+      // Cleared before the await, so picking the same file twice in a row
+      // still fires a change event the second time.
+      e.target.value = "";
+      acceptImageFile(file);
+    },
+    [acceptImageFile]
+  );
 
   const handleSend = useCallback(
     (text) => {
@@ -517,6 +534,7 @@ const AuthenticatedApp = () => {
                 onClearAttachment={() => setAttachedImage(null)}
                 isGenerating={status === "loading" || status === "streaming"}
                 onStop={chat.stopGeneration}
+                onImageFile={acceptImageFile}
               />
             </div>
           </div>

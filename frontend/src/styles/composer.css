@@ -27,14 +27,36 @@
   box-shadow: var(--rim), var(--shadow-md);
   transition:
     border-color var(--dur) var(--ease-out),
+    background var(--dur) var(--ease-out),
+    transform var(--dur) var(--ease-out),
     box-shadow var(--dur) var(--ease-out);
 }
 
 /* The focus ring goes on the card, not the textarea: the textarea has no
- * border of its own, so a ring on it would float inside the card. */
+ * border of its own, so a ring on it would float inside the card.
+ *
+ * The 1px lift is the composer answering you. It is the control the whole page
+ * exists to serve, and a focus state that only changes a border colour reads
+ * as nothing happening. */
 .input-wrapper:focus-within {
   border-color: var(--border-focus);
-  box-shadow: var(--rim), var(--shadow-md), 0 0 0 3px var(--primary-dim);
+  box-shadow: var(--rim), var(--shadow-lg), 0 0 0 3px var(--primary-dim);
+  transform: translateY(-1px);
+}
+
+/* A file is over the composer. Dashed, because the border is briefly a target
+ * rather than an edge, and the whole card lights so there is no ambiguity
+ * about where the drop lands. */
+.input-wrapper.is-dropping {
+  /* The full shorthand, not `border-style: dashed` alongside a border-color.
+   * The cascade snapshot expands shorthands into longhands, and it only tracks
+   * a longhand once something declares it — so introducing border-style here
+   * made the harness start recording border-style for all ~700 elements in the
+   * fixture, turning a four-line change into a 1,400-line diff of pure
+   * bookkeeping. Same rendering, none of the noise. */
+  border: 1px dashed var(--primary);
+  background: var(--primary-dim);
+  box-shadow: var(--rim), var(--shadow-lg), 0 0 0 4px var(--primary-dim);
 }
 
 .input-text {
@@ -122,6 +144,15 @@
   box-shadow: 0 2px 12px var(--primary-glow);
   /* anime.js runs a press-scale on click; see the delegated handler in App.jsx. */
   will-change: transform;
+  /* Spring on transform specifically, so the scale back to full size when the
+   * first character is typed overshoots slightly and reads as the button
+   * arriving rather than as a colour swap. */
+  transition:
+    background var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    transform var(--dur) var(--ease-spring),
+    box-shadow var(--dur) var(--ease-out),
+    filter var(--dur-fast) ease;
 }
 
 .input-btn.primary:hover:not(:disabled) {
@@ -129,10 +160,15 @@
   box-shadow: 0 6px 20px var(--primary-glow);
 }
 
+/* Disabled Send is a ghost of itself, not a greyed-out copy: it also shrinks
+ * slightly, so the button visibly ARRIVES the moment there is something to
+ * send. An opacity step alone is a state change nobody notices. */
 .input-btn.primary:disabled {
   background: var(--surface-3);
   color: var(--text-subtle);
   box-shadow: none;
+  transform: scale(0.92);
+  opacity: 1;
 }
 
 /* Send becomes Stop while a reply streams. Danger-coloured, because it

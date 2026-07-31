@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import InputBar from "../components/InputBar";
 
@@ -10,7 +10,7 @@ const setup = (props = {}) => {
   const onSend = vi.fn();
   const onClearAttachment = vi.fn();
   const onStop = vi.fn();
-  render(
+  const { container } = render(
     <InputBar
       onSend={onSend}
       disabled={false}
@@ -25,7 +25,7 @@ const setup = (props = {}) => {
       {...props}
     />
   );
-  return { onSend, onClearAttachment, onStop };
+  return { onSend, onClearAttachment, onStop, container };
 };
 
 const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==";
@@ -128,5 +128,116 @@ describe("InputBar", () => {
     const input = document.querySelector('input[type="file"]');
     expect(input).toHaveAttribute("accept", "image/*");
     expect(input).not.toHaveAttribute("multiple");
+  });
+});
+
+/**
+ * Pasting a screenshot into a chat box is the most common way anyone attaches
+ * an image, and it did nothing at all here — the only route in was the file
+ * picker, three clicks away, or the camera.
+ *
+ * Both new paths hand the raw File to the same `onImageFile` the picker uses,
+ * so there is one place that decides what an acceptable attachment is. Three
+ * entry points with three copies of that check is three chances to disagree.
+ */
+const imageFile = (type = "image/png") => new File(["x"], "shot.png", { type });
+
+const dataTransfer = (...files) => ({
+  files,
+  items: files.map((f) => ({ kind: "file", type: f.type, getAsFile: () => f })),
+  types: ["Files"],
+});
+
+describe("InputBar — pasting an image", () => {
+  it("accepts an image off the clipboard", async () => {
+    const onImageFile = vi.fn();
+    setup({ onImageFile });
+    const file = imageFile();
+
+    fireEvent.paste(screen.getByLabelText("Message the AI Council"), {
+      clipboardData: dataTransfer(file),
+    });
+
+    expect(onImageFile).toHaveBeenCalledWith(file);
+  });
+
+  it("lets ordinary text paste through untouched", async () => {
+    // Guarding the common case: intercepting every paste would break typing.
+    const onImageFile = vi.fn();
+    setup({ onImageFile });
+
+    const textarea = screen.getByLabelText("Message the AI Council");
+    fireEvent.paste(textarea, { clipboardData: { files: [], items: [], types: ["text/plain"] } });
+
+    expect(onImageFile).not.toHaveBeenCalled();
+  });
+
+  it("ignores a pasted non-image file", async () => {
+    const onImageFile = vi.fn();
+    setup({ onImageFile });
+
+    fireEvent.paste(screen.getByLabelText("Message the AI Council"), {
+      clipboardData: dataTransfer(new File(["x"], "notes.pdf", { type: "application/pdf" })),
+    });
+
+    expect(onImageFile).not.toHaveBeenCalled();
+  });
+});
+
+describe("InputBar — dropping an image", () => {
+  it("accepts an image dropped on the composer", () => {
+    const onImageFile = vi.fn();
+    const { container } = setup({ onImageFile });
+    const file = imageFile();
+
+    const wrapper = container.querySelector(".input-wrapper");
+    fireEvent.drop(wrapper, { dataTransfer: dataTransfer(file) });
+
+    expect(onImageFile).toHaveBeenCalledWith(file);
+  });
+
+  it("marks the composer while a file is over it, and unmarks it after", () => {
+    const { container } = setup({ onImageFile: vi.fn() });
+    const wrapper = container.querySelector(".input-wrapper");
+
+    fireEvent.dragEnter(wrapper, { dataTransfer: dataTransfer(imageFile()) });
+    expect(wrapper.className).toContain("is-dropping");
+
+    fireEvent.drop(wrapper, { dataTransfer: dataTransfer(imageFile()) });
+    expect(wrapper.className).not.toContain("is-dropping");
+  });
+
+  it("clears the drop state when the file leaves without being dropped", () => {
+    const { container } = setup({ onImageFile: vi.fn() });
+    const wrapper = container.querySelector(".input-wrapper");
+
+    fireEvent.dragEnter(wrapper, { dataTransfer: dataTransfer(imageFile()) });
+    fireEvent.dragLeave(wrapper, { dataTransfer: dataTransfer(imageFile()) });
+
+    expect(wrapper.className).not.toContain("is-dropping");
+  });
+
+  it("ignores a dropped non-image", () => {
+    const onImageFile = vi.fn();
+    const { container } = setup({ onImageFile });
+
+    fireEvent.drop(container.querySelector(".input-wrapper"), {
+      dataTransfer: dataTransfer(new File(["x"], "a.zip", { type: "application/zip" })),
+    });
+
+    expect(onImageFile).not.toHaveBeenCalled();
+  });
+
+  it("does not accept a drop while a reply is streaming", () => {
+    // The composer is disabled then; accepting an attachment it cannot send
+    // would leave a preview stuck above a dead input.
+    const onImageFile = vi.fn();
+    const { container } = setup({ onImageFile, disabled: true });
+
+    fireEvent.drop(container.querySelector(".input-wrapper"), {
+      dataTransfer: dataTransfer(imageFile()),
+    });
+
+    expect(onImageFile).not.toHaveBeenCalled();
   });
 });

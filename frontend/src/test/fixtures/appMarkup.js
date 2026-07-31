@@ -309,6 +309,12 @@ export const appTree = (theme) => `
             <button class="chat-toolbar-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg> Export</button>
           </div>
 
+          <!-- The drop state, rendered alongside the real composer rather than
+               on it, so the default state stays covered too. -->
+          <div class="input-bar">
+            <div class="input-wrapper is-dropping"><textarea class="input-text"></textarea></div>
+          </div>
+
           <div class="input-bar">
             <div class="input-wrapper">
               <div class="attachment-preview">

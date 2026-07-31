@@ -1,5 +1,10 @@
-import { memo, useState, useEffect, useRef } from "react";
+import { memo, useState, useEffect, useRef, useCallback } from "react";
 import Icon from "./Icon";
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "./ui/tooltip";
+
+/** The first image in a clipboard or drop payload, or null. */
+const firstImage = (transfer) =>
+  [...(transfer?.files || [])].find((f) => f.type?.startsWith("image/")) || null;
 
 /**
  * The composer.
@@ -25,9 +30,15 @@ const InputBar = memo(
     onClearAttachment,
     isGenerating,
     onStop,
+    onImageFile,
   }) => {
     const [text, setText] = useState("");
+    const [isDropping, setIsDropping] = useState(false);
     const textareaRef = useRef(null);
+    // dragenter/dragleave fire for every child the pointer crosses, so a plain
+    // boolean flickers off the moment the cursor moves from the textarea onto
+    // a button. Counting entries against leaves is the standard fix.
+    const dragDepth = useRef(0);
 
     /**
      * Grow with the content, up to the cap in composer.css.
@@ -59,9 +70,66 @@ const InputBar = memo(
       }
     };
 
+    /**
+     * Pasting a screenshot is how most people attach an image, and it did
+     * nothing here — the only routes in were the file picker and the camera.
+     *
+     * Both new paths hand the raw File to the same `onImageFile` the picker
+     * uses. Three entry points with three copies of the "is this acceptable"
+     * check is three chances for them to disagree.
+     */
+    const handlePaste = useCallback(
+      (e) => {
+        if (disabled) return;
+        const file = firstImage(e.clipboardData);
+        // No image means an ordinary text paste, which must go through
+        // untouched — intercepting every paste would break typing.
+        if (!file) return;
+        e.preventDefault();
+        onImageFile?.(file);
+      },
+      [disabled, onImageFile]
+    );
+
+    const handleDrop = useCallback(
+      (e) => {
+        e.preventDefault();
+        dragDepth.current = 0;
+        setIsDropping(false);
+        if (disabled) return;
+        const file = firstImage(e.dataTransfer);
+        if (file) onImageFile?.(file);
+      },
+      [disabled, onImageFile]
+    );
+
+    const handleDragEnter = useCallback(
+      (e) => {
+        if (disabled) return;
+        e.preventDefault();
+        dragDepth.current += 1;
+        setIsDropping(true);
+      },
+      [disabled]
+    );
+
+    const handleDragLeave = useCallback(() => {
+      dragDepth.current = Math.max(0, dragDepth.current - 1);
+      if (dragDepth.current === 0) setIsDropping(false);
+    }, []);
+
     return (
       <div className="input-bar">
-        <div className="input-wrapper">
+        <div
+          className={`input-wrapper ${isDropping ? "is-dropping" : ""}`}
+          onPaste={handlePaste}
+          onDrop={handleDrop}
+          onDragEnter={handleDragEnter}
+          onDragLeave={handleDragLeave}
+          // Without preventDefault on dragover the browser navigates to the
+          // dropped file instead of firing drop.
+          onDragOver={(e) => e.preventDefault()}
+        >
           {attachedImage && (
             <div className="attachment-preview">
               <img src={attachedImage} alt="Attached" />
@@ -83,31 +151,49 @@ const InputBar = memo(
             aria-label="Message the AI Council"
           />
 
+          {/* Tooltips SUPPLEMENT the labels, they do not replace them. Every
+              control keeps its aria-label, because a tooltip is not an
+              accessible name and never appears for a screen reader at all. */}
+          <TooltipProvider delayDuration={400}>
           <div className="input-actions">
-            <label className="input-btn" title="Upload image">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={onFileSelect}
-                disabled={disabled}
-                aria-label="Upload image"
-              />
-              <Icon name="image" size={17} />
-            </label>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <label className="input-btn">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={onFileSelect}
+                    disabled={disabled}
+                    aria-label="Upload image"
+                  />
+                  <Icon name="image" size={17} />
+                </label>
+              </TooltipTrigger>
+              <TooltipContent>Attach an image — or paste one</TooltipContent>
+            </Tooltip>
 
-            <button
-              className={`input-btn ${isListening ? "listening" : ""}`}
-              onClick={toggleListening}
-              title="Voice input"
-              aria-label="Voice input"
-              aria-pressed={isListening}
-            >
-              <Icon name="mic" size={17} />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  className={`input-btn ${isListening ? "listening" : ""}`}
+                  onClick={toggleListening}
+                  aria-label="Voice input"
+                  aria-pressed={isListening}
+                >
+                  <Icon name="mic" size={17} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>{isListening ? "Stop dictating" : "Dictate"}</TooltipContent>
+            </Tooltip>
 
-            <button className="input-btn" onClick={onStartCamera} title="Camera" aria-label="Camera" disabled={disabled}>
-              <Icon name="camera" size={17} />
-            </button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button className="input-btn" onClick={onStartCamera} aria-label="Camera" disabled={disabled}>
+                  <Icon name="camera" size={17} />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Capture from the camera</TooltipContent>
+            </Tooltip>
 
             <div className="input-spacer" />
 
@@ -122,26 +208,31 @@ const InputBar = memo(
             {/* Send becomes Stop while a reply is streaming. One button, because
                 two would leave a disabled Send sitting next to an active Stop. */}
             {isGenerating ? (
-              <button
-                className="input-btn primary is-stop"
-                onClick={onStop}
-                title="Stop generating"
-                aria-label="Stop generating"
-              >
-                <Icon name="stop" size={15} />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button className="input-btn primary is-stop" onClick={onStop} aria-label="Stop generating">
+                    <Icon name="stop" size={15} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Stop generating</TooltipContent>
+              </Tooltip>
             ) : (
-              <button
-                className="input-btn primary"
-                onClick={submit}
-                disabled={disabled || !text.trim()}
-                title="Send"
-                aria-label="Send"
-              >
-                <Icon name="send" size={17} />
-              </button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    className="input-btn primary"
+                    onClick={submit}
+                    disabled={disabled || !text.trim()}
+                    aria-label="Send"
+                  >
+                    <Icon name="send" size={17} />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Send — or press Enter</TooltipContent>
+              </Tooltip>
             )}
           </div>
+          </TooltipProvider>
         </div>
       </div>
     );

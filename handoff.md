@@ -2,7 +2,10 @@
 
 **Written:** 2026-07-31
 **Repo:** `C:\Users\LENOVO\Documents\AI-Classroom` — `evilmindseeworld/ALOP-AI` (**PUBLIC**)
-**Branch:** `css-cleanup-panel-extraction` — reviewed, merged to `main`, deployed.
+**Branch:** `css-cleanup-panel-extraction` — reviewed, merged to `main` via
+[PR #1](https://github.com/evilmindseeworld/ALOP-AI/pull/1). Frontend-only, so
+nothing on Render changed. The Vercel deploy was **not** verified: no frontend
+URL is recorded anywhere in this repo, and guessing one returned nothing.
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Written:** 2026-07-31
 **Repo:** `C:\Users\LENOVO\Documents\AI-Classroom` — `evilmindseeworld/ALOP-AI` (**PUBLIC**)
-**Branch:** `css-cleanup-panel-extraction`, 17 commits ahead of `main`, not yet pushed.
+**Branch:** `css-cleanup-panel-extraction` — reviewed, merged to `main`, deployed.
 
 ---
 
@@ -19,7 +19,7 @@ finishes C: the CSS foundation and the component extraction.
 | `FIX:` sections | 7 | 0 |
 | Dead rules | 64 | 0 |
 | `App.jsx` | 975 lines | **~520**, composition only |
-| Frontend tests | 89 | **279** |
+| Frontend tests | 89 | **283** |
 
 `npm run build` is clean. The app bundle is unchanged in size; Radix sits in
 its own chunk.
@@ -54,6 +54,29 @@ clipped labels. See `docs/FRONTEND.md` §4.
 
 ---
 
+## What the code review of the extraction turned up
+
+Two bugs, both the same shape — a value read from a closure that a later step
+had already invalidated. Both are fixed and covered by tests.
+
+1. **Regenerate grew the transcript instead of replacing its tail.**
+   `regenerateLast` truncated the messages and then called `send()`, but that
+   `send` was captured on the same render and still held the pre-truncation
+   copy. The answer it had just deleted came back, with the question duplicated
+   underneath. `send()` now takes the base messages to append to.
+2. **Dictation reached the screen and nothing else.** The transcript was written
+   with `el.value += text`, which passes through React's value tracker — the
+   tracker records the assignment, then sees no change when the input event
+   arrives and skips `onChange`. The words appeared, the composer's state never
+   learned about them, and Send posted an empty message. `lib/dom.js` goes
+   through the prototype setter, which is what makes the event reach React.
+   Voice input has never once worked in this app; it does now.
+
+Everything else in the extraction held up: the hooks, the palette, the panels
+and the billing flow were read end to end and no third issue survived checking.
+
+---
+
 ## Read this before touching the frontend
 
 `docs/FRONTEND.md` is rewritten and is the real handoff. It covers the stacking
@@ -81,13 +104,13 @@ map, and the known gaps.
 
 ### Immediate technical
 
-3. **Open the PR for this branch.** `gh` is still not installed; either
-   `winget install GitHub.cli` or use
-   `https://github.com/evilmindseeworld/ALOP-AI/compare/main...css-cleanup-panel-extraction?expand=1`.
-4. **Remove `.app-root *`.** It sets a transition on every element in the app
+3. **Remove `.app-root *`.** It sets a transition on every element in the app
    at the same specificity as each component's own rule, winning on source
    order alone. It is the reason 16 duplicate selectors could not be merged.
    Deliberately left: it is a behaviour change, not a refactor.
+4. **Check dictation and regenerate against the real app.** Both are fixed and
+   tested, but neither has been exercised in a browser since — voice input in
+   particular has never worked, so nobody has seen it succeed.
 5. **Slice B (AI smartness)**, then D (sign-in polish).
 
 ---
@@ -98,8 +121,10 @@ map, and the known gaps.
   change is intended, and say so in the commit:
   `UPDATE_CASCADE_BASELINE=1 npx vitest run src/__tests__/cssSnapshot.test.js`
 - **Style gallery:** `npm run dev`, then `/gallery.html`. Dev server only.
-- **Verification:** `cd frontend && npm test` → 279; `cd backend && npm test` →
+- **Verification:** `cd frontend && npm test` → 283; `cd backend && npm test` →
   29; `npm run build` → clean.
+- **`gh` is installed now** (`C:\Program Files\GitHub CLI\gh.exe`). The previous
+  handoff's "gh is not installed, use the compare URL" note is stale.
 - **Zero-cost prod probing.** Middleware order makes some endpoints
   self-describing: `requireStripe` runs *before* `requireAuth` on
   `/api/create-checkout-session`, so **503 = Stripe unconfigured, 401 =

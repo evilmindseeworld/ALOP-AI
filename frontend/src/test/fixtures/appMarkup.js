@@ -69,43 +69,70 @@ export const appTree = (theme) => `
 
     <div class="app-body">
       <nav class="sidebar" aria-label="Chats">
-        <div class="sidebar-header">
-          <button class="new-chat-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg> New Chat</button>
-          <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
+        <div class="sidebar-rail" aria-hidden="true">
+          <button class="rail-btn rail-new"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
+          <button class="rail-btn rail-search"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
+          <div class="rail-divider"></div>
+          <div class="rail-chats">
+            <button class="rail-chat active" aria-label="Pinned chat">P</button>
+            <button class="rail-chat" aria-label="Plain chat">P</button>
+          </div>
         </div>
-        <div class="chat-list">
-          <div class="chat-empty">No chats yet</div>
 
-          <div class="chat-group">
-            <div class="chat-group-label">Pinned</div>
-            <div class="chat-item active pinned">
-              <div class="chat-title">Pinned chat</div>
-              <div class="chat-actions">
-                <button class="chat-action is-on"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
-                <button class="chat-action">✎</button>
-                <button class="chat-action is-danger"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
+        <div class="sidebar-full">
+          <div class="sidebar-header">
+            <button class="new-chat-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg> New Chat</button>
+            <button class="icon-btn"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
+          </div>
+
+          <div class="sidebar-search">
+            <svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg>
+            <input class="sidebar-search-input" type="text" placeholder="Search chats"/>
+            <button class="sidebar-search-clear"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
+          </div>
+
+          <div class="chat-list">
+            <div class="chat-empty">No chats yet</div>
+
+            <div class="chat-group">
+              <div class="chat-group-label">Pinned</div>
+              <div class="chat-item active pinned">
+                <button class="chat-title">Pinned chat</button>
+                <div class="chat-actions">
+                  <button class="chat-action is-on"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
+                  <button class="chat-action"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
+                  <button class="chat-action is-danger"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="chat-group">
-            <div class="chat-group-label">Favourites</div>
-            <div class="chat-item favorite">
-              <div class="chat-title"><input class="custom-input" value="Renaming"/></div>
-              <div class="chat-actions"><button class="chat-action is-on"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button></div>
+            <div class="chat-group">
+              <div class="chat-group-label">Favourites</div>
+              <div class="chat-item favorite">
+                <input class="custom-input chat-title-input" value="Renaming"/>
+                <div class="chat-actions"><button class="chat-action is-on"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button></div>
+              </div>
+            </div>
+
+            <div class="chat-group">
+              <div class="chat-group-label">Recent</div>
+              <div class="chat-item"><button class="chat-title">Plain chat</button></div>
             </div>
           </div>
 
-          <div class="chat-group">
-            <div class="chat-group-label">Recent</div>
-            <div class="chat-item"><div class="chat-title">Plain chat</div></div>
+          <div class="sidebar-user">
+            <div class="sidebar-user-avatar is-fallback">A</div>
+            <div class="sidebar-user-text">
+              <span class="sidebar-user-name">Ada Lovelace</span>
+              <span class="sidebar-user-plan">Free</span>
+            </div>
+            <button class="sidebar-upgrade"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></button>
           </div>
         </div>
-        <div class="sidebar-footer">ALOP-AI • Council of Minds</div>
       </nav>
 
-      <div class="sidebar collapsed"><div class="chat-list"></div></div>
-      <div class="sidebar mobile mobileOpen"><div class="chat-list"></div></div>
+      <div class="sidebar collapsed"><div class="sidebar-rail"><div class="rail-chats"></div></div><div class="sidebar-full"><div class="chat-list"></div></div></div>
+      <div class="sidebar mobileOpen"><div class="sidebar-full"><div class="chat-list"></div></div></div>
 
       <div class="chat-main">
         <!-- The ornament hangs inside the transcript panel, in the margin the

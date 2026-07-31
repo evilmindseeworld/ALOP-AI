@@ -127,6 +127,7 @@
   --frame-inset: 10px;
   --topbar-h: 48px;
   --sidebar-w: 272px;
+  --rail-w: 56px;
 
   /* ===== STACKING ORDER — THE SINGLE SOURCE OF TRUTH =====
    *
@@ -149,6 +150,7 @@
    * That containment is why a copy button at 80 does not cover a panel at 70.
    */
   --z-behind: 0;        /* .app-root::after — background wash            */
+  --z-sticky-label: 1;  /* .chat-group-label — scoped INSIDE .chat-list  */
   --z-chat: 3;          /* .chat-main — creates a stacking context       */
   --z-in-chat-control: 80; /* .code-copy-btn — scoped INSIDE --z-chat    */
   --z-earring: 4;       /* decoration: above the chat, below all menus   */

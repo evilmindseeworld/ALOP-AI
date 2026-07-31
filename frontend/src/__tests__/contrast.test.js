@@ -66,6 +66,9 @@ const PAIRS = [
   // ring. Icons and boundaries, so 3:1.
   ["--emerald", "--surface", AA_LARGE],
   ["--emerald", "--surface-2", AA_LARGE],
+  // The sidebar's upgrade button draws its crown in --accent on --accent-dim,
+  // which sits on --surface. An icon, so 3:1.
+  ["--accent", "--surface", AA_LARGE],
   ["--primary", "--bg", AA_LARGE],
   ["--success", "--surface-2", AA_LARGE],
   ["--warning", "--surface-2", AA_LARGE],

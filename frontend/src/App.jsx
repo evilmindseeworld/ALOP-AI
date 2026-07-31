@@ -415,6 +415,11 @@ const AuthenticatedApp = () => {
             collapsed={sidebarCollapsed}
             mobileOpen={mobileSidebarOpen}
             setMobileOpen={setMobileSidebarOpen}
+            onExpand={() => setSidebarCollapsed(false)}
+            userName={user?.fullName || user?.firstName || user?.username || user?.primaryEmailAddress?.emailAddress}
+            userImageUrl={user?.imageUrl}
+            userPlan={billing.userPlan}
+            onUpgrade={showUpgradeButton ? () => openOnly("upgrade") : undefined}
           />
 
           <div className="chat-main">

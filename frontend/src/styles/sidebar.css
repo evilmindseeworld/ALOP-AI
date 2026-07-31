@@ -21,31 +21,123 @@
     background var(--dur) ease;
 }
 
-/* Collapsed still hides outright. It becomes a --rail-w icon rail in §2, which
- * is where the rail's markup arrives; a rail width with no rail contents is a
- * column of clipped buttons, so the two ship together or not at all. */
+/* ===== COLLAPSED = A RAIL =====
+ *
+ * Not `width: 0`. That is the ChatGPT behaviour — the whole column goes and the
+ * only way back is a toggle in the top bar, away from where the eye was.
+ * Linear and Raycast keep a rail, so nothing vanishes and re-expanding starts
+ * from where you were already looking.
+ *
+ * WHICH OF THE TWO IS VISIBLE IS DECIDED HERE, NOT IN THE COMPONENT. Both the
+ * rail and the full list are always in the markup. `collapsed` defaults to
+ * true, so on a phone the FIRST render is collapsed — a component that swapped
+ * in rail markup on that flag would put a 56px icon column inside a 300px
+ * drawer. Layout belongs in the cascade; the mobile block in utilities.css
+ * flips it back for exactly this reason.
+ *
+ * `display: none` rather than visibility or opacity, because it also takes the
+ * hidden copy out of the accessibility tree — otherwise every chat would be
+ * announced twice, once as a row and once as a rail glyph. */
 .sidebar.collapsed {
-  width: 0;
-  padding: 0;
-  border-right: none;
-  opacity: 0;
+  width: var(--rail-w);
+  padding: var(--space-3) var(--space-2);
 }
 
-/* The drawer overlays the transcript rather than dividing it, so unlike the
- * desktop column it needs a surface of its own — the frame's background is
- * behind the text it has to cover. */
-.sidebar.mobile {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  z-index: var(--z-sidebar-mobile);
-  width: min(300px, 86vw);
-  transform: translateX(-110%);
-  background: var(--surface);
-  border-right: 1px solid var(--border);
-  border-radius: 0 var(--radius-xl) var(--radius-xl) 0;
-  box-shadow: var(--shadow-lg);
+.sidebar-rail { display: none; }
+.sidebar.collapsed .sidebar-rail { display: flex; }
+.sidebar.collapsed .sidebar-full { display: none; }
+
+.sidebar-full {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.sidebar-rail {
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 0;
+  flex: 1;
+}
+
+.rail-btn,
+.rail-chat {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+  transition:
+    background var(--dur-fast) ease,
+    color var(--dur-fast) ease,
+    border-color var(--dur-fast) ease,
+    transform var(--dur-fast) var(--ease-out);
+}
+
+.rail-btn:hover,
+.rail-chat:hover {
+  background: var(--surface-3);
+  color: var(--text);
+  border-color: var(--border);
+}
+
+.rail-btn:active,
+.rail-chat:active { transform: scale(0.94); }
+
+/* New chat keeps its fill in the rail: it is the primary action in both states,
+ * and a rail of five identical ghost buttons has no entry point. */
+.rail-new {
+  background: var(--gradient-primary);
+  color: var(--text-on-fill);
+  box-shadow: 0 2px 10px var(--primary-glow);
+}
+
+.rail-new:hover {
+  background: var(--gradient-primary);
+  color: var(--text-on-fill);
+  filter: brightness(1.06);
+  border-color: transparent;
+}
+
+.rail-divider {
+  width: 20px;
+  height: 1px;
+  flex-shrink: 0;
+  background: var(--border);
+}
+
+.rail-chats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+
+/* A chat is one letter here, so the letter has to carry the whole identity:
+ * mono, because a proportional capital I next to a capital W in a 36px square
+ * reads as two different button sizes. */
+.rail-chat {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.rail-chat.active {
+  background: var(--surface-3);
+  border-color: var(--border-strong);
+  color: var(--text);
 }
 
 .sidebar.mobileOpen { transform: translateX(0); }
@@ -54,7 +146,65 @@
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+}
+
+/* ===== SEARCH =====
+ *
+ * The one addition that most makes this read as Linear rather than as a chat
+ * history. It filters titles only — full-text search over transcripts is a
+ * server feature, and a box that looks like it searches everything while
+ * searching titles is worse than one that is obviously a filter. */
+.sidebar-search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: 32px;
+  padding: 0 var(--space-2);
+  margin-bottom: var(--space-2);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-subtle);
+  transition: border-color var(--dur-fast) ease, background var(--dur-fast) ease;
+}
+
+.sidebar-search:focus-within {
+  border-color: var(--border-focus);
+  background: var(--surface-3);
+}
+
+.sidebar-search-input {
+  flex: 1;
+  min-width: 0;
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+}
+
+.sidebar-search-input::placeholder { color: var(--text-subtle); }
+
+.sidebar-search-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-subtle);
+  cursor: pointer;
+  transition: color var(--dur-fast) ease, background var(--dur-fast) ease;
+}
+
+.sidebar-search-clear:hover {
+  color: var(--text);
+  background: var(--surface-4);
 }
 
 /* ===== NEW CHAT =====
@@ -110,11 +260,18 @@
  * "this row is special" without ever saying which kind of special. */
 .chat-group + .chat-group { margin-top: var(--space-4); }
 
+/* Sticky, so a long Recent run does not scroll away from the heading that
+ * says what it is. The background is opaque where it overlaps rows passing
+ * underneath — a transparent sticky label renders as text on text. */
 .chat-group-label {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-sticky-label);
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding: 0 var(--space-2) var(--space-2);
+  padding: var(--space-1) var(--space-2) var(--space-2);
+  background: var(--surface);
   font-size: var(--text-2xs);
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -123,15 +280,17 @@
   user-select: none;
 }
 
+/* No cursor: pointer here any more. The row is not the click target — the
+ * title button inside it is, and a pointer cursor over the dead margin either
+ * side of it was pointing at nothing. */
 .chat-item {
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  min-height: 36px;
-  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  min-height: 34px;
+  padding: 0 var(--space-2) 0 var(--space-1);
   border-radius: var(--radius-md);
-  margin-bottom: 2px;
-  cursor: pointer;
+  margin-bottom: 1px;
   border: 1px solid transparent;
   position: relative;
   color: var(--text-muted);
@@ -167,14 +326,32 @@
   background: var(--primary);
 }
 
+/* A button now, so it needs the reset a button carries by default: the browser
+ * supplies a background, a border, a font and centred text, none of which the
+ * div it replaced had. */
 .chat-title {
   flex: 1;
   min-width: 0;
+  display: block;
+  padding: var(--space-2) var(--space-2);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  color: inherit;
+  font-family: var(--font-body);
   font-size: var(--text-sm);
   font-weight: 500;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.chat-title-input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-sm);
 }
 
 /* Actions reveal on hover AND on keyboard focus.
@@ -245,12 +422,82 @@
   color: var(--text-subtle);
 }
 
-.sidebar-footer {
-  padding: var(--space-3) var(--space-2) var(--space-1);
-  font-size: var(--text-2xs);
-  text-align: center;
-  color: var(--text-subtle);
-  border-top: 1px solid var(--border);
+/* ===== THE ACCOUNT BLOCK =====
+ *
+ * This was a centred line reading "ALOP-AI • Council of Minds" — the app's own
+ * name, shown to someone already inside the app. Linear and Raycast put the
+ * account here instead, which is also the only place the upgrade prompt can
+ * live without competing with the chat title for the top bar. */
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-1);
   margin-top: var(--space-2);
+  border-top: 1px solid var(--border);
   user-select: none;
+}
+
+.sidebar-user-avatar {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  border: 1px solid var(--border);
+}
+
+.sidebar-user-avatar.is-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--primary-dim);
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 700;
+}
+
+.sidebar-user-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.sidebar-user-name {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-user-plan {
+  font-size: var(--text-2xs);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-subtle);
+}
+
+.sidebar-upgrade {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  background: var(--accent-dim);
+  color: var(--accent);
+  cursor: pointer;
+  transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
+}
+
+.sidebar-upgrade:hover {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+  color: var(--text);
 }

@@ -72,14 +72,12 @@
 
   /* THE SIDEBAR GOES OFF-CANVAS ON WIDTH, NOT ON A JAVASCRIPT MEASUREMENT.
    *
-   * `.sidebar.mobile` is set by ChatSidebar from `window.innerWidth <= 768`,
-   * read once at render with no resize listener. A phone gets it right because
-   * the first render is already narrow; a desktop window dragged narrower does
-   * not — the sidebar keeps its 264px column and the transcript is squeezed to
-   * a strip, which is what the gallery shows at 390px.
-   *
-   * Layout belongs in the cascade. The class stays because the component and
-   * the fixture both still carry it, but nothing here depends on it. */
+   * ChatSidebar used to set a `.mobile` class from `window.innerWidth <= 768`,
+   * read once at render with no resize listener. A phone got it right because
+   * the first render is already narrow; a desktop window dragged narrower did
+   * not — the sidebar kept its full column and the transcript was squeezed to
+   * a strip. The rules here always did the real work, so the class is gone
+   * from the component, the stylesheet and the fixture together. */
   .sidebar {
     position: absolute;
     top: 0;
@@ -97,14 +95,20 @@
     z-index: var(--z-sidebar-mobile);
   }
 
-  /* Collapsed is a desktop idea: on a phone the drawer is already hidden, and
-   * a zero-width drawer cannot be opened again. */
+  /* THE RAIL IS A DESKTOP IDEA. On a phone the drawer is already off-canvas,
+   * so `collapsed` carries no meaning here — and it defaults to TRUE, which
+   * means the very first render on a phone would otherwise show a 56px icon
+   * column inside a 300px drawer. This is the reason the component renders
+   * both the rail and the full list and lets the cascade choose. */
   .sidebar.collapsed {
     width: min(300px, 86vw);
     padding: var(--space-3) var(--space-2);
     border-right: 1px solid var(--border);
     opacity: 1;
   }
+
+  .sidebar.collapsed .sidebar-rail { display: none; }
+  .sidebar.collapsed .sidebar-full { display: flex; }
 
   .sidebar.mobileOpen { transform: translateX(0); }
 }

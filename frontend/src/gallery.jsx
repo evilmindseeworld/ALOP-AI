@@ -344,6 +344,10 @@ const LiveChrome = ({ theme, empty = false }) => (
             collapsed={false}
             mobileOpen={false}
             setMobileOpen={() => {}}
+            onExpand={() => {}}
+            userName="Ada Lovelace"
+            userPlan={empty ? "free" : "pro"}
+            onUpgrade={() => {}}
           />
 
           <div className="chat-main">
@@ -398,7 +402,7 @@ const LiveChrome = ({ theme, empty = false }) => (
 const OVERLAYS = [".cmdk-backdrop", ".camera-overlay", ".panel-overlay", ".side-panel", ".toast"];
 
 /** The variants of a component the fixture renders side by side for coverage. */
-const DUPLICATE_SIDEBARS = [".sidebar.collapsed", ".sidebar.mobile"];
+const DUPLICATE_SIDEBARS = [".sidebar.collapsed", ".sidebar.mobileOpen"];
 
 const Gallery = () => (
   <div style={{ minHeight: "100vh", background: "#0a0a0f", color: "#f0ebe6" }}>

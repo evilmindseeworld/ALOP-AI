@@ -25,6 +25,29 @@ const mutate = (find, replace) => {
   return buildSnapshot(CSS.replace(find, replace));
 };
 
+/**
+ * The selector four of the cases below mutate, named once.
+ *
+ * They used to spell `.sidebar-footer` out four separate times, and renaming
+ * that rule broke three of them at once — which is the SECOND time this file
+ * has been bitten by an anchor: the comments below record an earlier version
+ * that anchored on `.sidebar-footer { padding: 12px` and broke when the
+ * padding moved onto the spacing scale.
+ *
+ * A guard that mutates a real stylesheet needs a real selector, so this cannot
+ * be avoided entirely — but it can be a one-line repair instead of a hunt.
+ *
+ * Requirements for whatever this points at:
+ *   - it matches an element in test/fixtures/appMarkup.js, or a mutation
+ *     changes nothing and every case here passes vacuously;
+ *   - it declares a property something else also declares, so the !important
+ *     case has a contest to win.
+ *
+ * `.chat-list` qualifies on both and is structural rather than decorative,
+ * which makes it about as rename-proof as this file can get.
+ */
+const ANCHOR = ".chat-list";
+
 describe("the cascade snapshot notices", () => {
   it("a changed token value, everywhere it is referenced", () => {
     // This used to have to name the Obsidian value rather than the :root one,
@@ -39,7 +62,7 @@ describe("the cascade snapshot notices", () => {
   });
 
   it("a deleted rule", () => {
-    expect(mutate(".sidebar-footer {", ".sidebar-footer-deleted {")).not.toBe(BASELINE);
+    expect(mutate(`${ANCHOR} {`, `${ANCHOR}-deleted {`)).not.toBe(BASELINE);
   });
 
   it("!important winning from an earlier rule, and not winning without it", () => {
@@ -48,7 +71,7 @@ describe("the cascade snapshot notices", () => {
     // that the cleanup then deleted, so it started passing for the wrong
     // reason. A guard that depends on the thing it guards being unchanged is
     // not a guard.
-    const rule = ".sidebar-footer { padding: 99px";
+    const rule = `${ANCHOR} { padding: 99px`;
 
     // Prepended, so it loses on source order and can only win by force.
     expect(buildSnapshot(`${rule} !important; }\n${CSS}`)).not.toBe(BASELINE);
@@ -108,7 +131,7 @@ describe("the cascade snapshot notices", () => {
     // commit and be switched off inside a day.
     // Two rules where there was one, same selector, same position — so the
     // second still wins and nothing renders differently.
-    const split = CSS.replace(".sidebar-footer {", ".sidebar-footer { padding: 12px; }\n.sidebar-footer {");
+    const split = CSS.replace(`${ANCHOR} {`, `${ANCHOR} { padding: 12px; }\n${ANCHOR} {`);
     expect(split).not.toBe(CSS);
     expect(buildSnapshot(split)).toBe(BASELINE);
   });
@@ -119,9 +142,10 @@ describe("the cascade snapshot notices", () => {
     // Both sides are appended rather than patched into an existing rule, so
     // the case does not depend on any particular declaration still being in the
     // file — the earlier version anchored on `.sidebar-footer { padding: 12px`
-    // and broke the moment that padding moved onto the spacing scale.
-    const appended = buildSnapshot(`${CSS}\n.sidebar-footer { padding: 12px; }`);
-    const forced = buildSnapshot(`${CSS}\n.sidebar-footer { padding: 12px !important; }`);
+    // and broke the moment that padding moved onto the spacing scale. It now
+    // routes through ANCHOR for the same reason.
+    const appended = buildSnapshot(`${CSS}\n${ANCHOR} { padding: 12px; }`);
+    const forced = buildSnapshot(`${CSS}\n${ANCHOR} { padding: 12px !important; }`);
 
     // Sanity: the appended rule has to actually win, or this proves nothing.
     expect(appended, "the appended rule should change rendering").not.toBe(BASELINE);

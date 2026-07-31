@@ -106,6 +106,10 @@ const ICONS = {
       <path d="M8 12H3M21 12h-5M8 8L5 5M16 8l3-3M8 17l-3 3M16 17l3 3M9 5a3 3 0 0 1 6 0" />
     </>
   ),
+  // Rename. The sidebar drew this as a literal "✎" — the one control in the
+  // app whose glyph came from the font stack rather than this file, so it
+  // inherited none of the sizing, stroke weight or colour its neighbours share.
+  pencil: <path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" />,
 };
 
 /** Icons drawn as solid shapes rather than strokes. */

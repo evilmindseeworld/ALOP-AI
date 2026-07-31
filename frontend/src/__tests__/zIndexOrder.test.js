@@ -45,6 +45,13 @@ describe("z-index token scale", () => {
         "--z-panel-overlay",
 "--z-sidebar",
         "--z-sidebar-mobile",
+        // Scoped INSIDE .chat-list, like --z-in-chat-control is scoped inside
+        // .chat-main. It is not in the `ascending` array below because it is
+        // not comparable with the root scale: sticky group headings only have
+        // to beat the .chat-item rows they scroll past, and those rows are
+        // positioned (for .chat-actions), so DOM order would otherwise let a
+        // later row paint over an earlier heading.
+        "--z-sticky-label",
         "--z-toast",
       ].sort()
     );

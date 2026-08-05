@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import OverlayAssistant from "../overlay/OverlayAssistant";
 
@@ -213,6 +213,56 @@ describe("OverlayAssistant", () => {
 
     await user.click(screen.getByText("■"));
     expect(window.speechSynthesis.cancel).toHaveBeenCalled();
+  });
+
+  // ===== dictation, via the shared hook =====
+  //
+  // The overlay used to carry its own copy of the SpeechRecognition lifecycle,
+  // and the copy had drifted: no ten-second ceiling, and an alert() on an
+  // unsupported browser. It uses useSpeechRecognition now, so it inherits the
+  // ceiling and its test — these cover the wiring on this side of it.
+
+  class FakeRecognition {
+    static instances = [];
+    constructor() {
+      this.stopped = false;
+      FakeRecognition.instances.push(this);
+    }
+    start() { this.onstart?.(); }
+    stop() { this.stopped = true; this.onend?.(); }
+    static last() { return FakeRecognition.instances.at(-1); }
+  }
+
+  it("appends dictated text to whatever is already typed", async () => {
+    // Appends rather than replaces: someone types half a question, dictates the
+    // rest, and losing the typed half is the worst possible outcome.
+    FakeRecognition.instances = [];
+    window.SpeechRecognition = FakeRecognition;
+    const user = userEvent.setup();
+    render(<OverlayAssistant />);
+    const input = screen.getByPlaceholderText(/Ask anything/i);
+
+    await user.type(input, "which ");
+    await user.click(screen.getByTitle("Dictate"));
+    act(() => FakeRecognition.last()?.onresult?.({ resultIndex: 0, results: [[{ transcript: "monitor" }]] }));
+
+    await waitFor(() => expect(input).toHaveValue("which monitor "));
+    delete window.SpeechRecognition;
+  });
+
+  it("tells the user in the UI when the browser cannot dictate, rather than alerting", async () => {
+    // The old implementation called alert(), which in a frameless always-on-top
+    // window is a modal with no obvious way out.
+    delete window.SpeechRecognition;
+    delete window.webkitSpeechRecognition;
+    const alertSpy = vi.spyOn(window, "alert").mockImplementation(() => {});
+    const user = userEvent.setup();
+    render(<OverlayAssistant />);
+
+    await user.click(screen.getByTitle("Dictate"));
+
+    expect(alertSpy).not.toHaveBeenCalled();
+    expect(await screen.findByText(/Chrome or Edge/i)).toBeInTheDocument();
   });
 
   // ===== the desktop wiring, which cannot be reached by clicking =====

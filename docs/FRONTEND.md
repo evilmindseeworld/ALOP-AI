@@ -429,11 +429,17 @@ list is worse than none — it sends people to fix what is fixed.
   neither, so an ordering bug between "start requested" and "browser granted
   the mic" would pass here.
 
-- **The overlay assistant's own dictation path is untested.** It has its own
-  copy of the SpeechRecognition lifecycle rather than using the hook — the 14
-  tests in `OverlayAssistant.test.jsx` cover screen capture, the failure paths
-  and the `alop-focus`/Escape wiring, but not that. Two implementations of the
-  same thing is the actual gap; one of them should go.
+### Closed: the overlay's second dictation implementation
+
+The overlay used to carry its own copy of the `SpeechRecognition` lifecycle,
+and the two copies had already drifted in the way duplicated lifecycles always
+do — the overlay's had **no ten-second ceiling**. A session that never fires
+`onend` therefore left the microphone indicator lit with no way to clear it,
+and that window loses focus constantly, because it is an always-on-top bar
+sitting over other applications. It also called `alert()` on an unsupported
+browser: a modal, in a frameless always-on-top window, with no obvious way out.
+
+It uses `useSpeechRecognition` now and inherits the ceiling and its test.
 
   **A trap that file records:** Vitest runs `afterEach` LIFO, and
   `@testing-library/react` registers its auto-cleanup on import — before

@@ -33,7 +33,19 @@ const DECLARATIONS = CSS.replace(/\/\*[\s\S]*?\*\//g, "");
 const IMPORTANT_BUDGET = 3;
 // Restyling Clerk's shipped components. Tracked separately — see the test.
 const CLERK_IMPORTANT_BUDGET = 52;
-const DUPLICATE_BUDGET = 14;
+
+// 16 -> 19 -> 14 -> 10, and the trip up is the interesting part. Folding
+// signin.css into the manifest surfaced six duplicate blocks that had always
+// existed and were never counted, all of them from declaring an animation in
+// one rule and its animation-delay in another. Merging those got to 14;
+// merging .sidebar-rail and the .chat-actions reveal got to 10.
+//
+// Before driving this lower, know what the remaining 10 ARE: mostly grouped
+// selectors sharing one member with another rule, because the counter splits
+// comma lists — a rule for two selectors sitting beside a rule for one of them
+// reads as a duplicate. And the two universal rules in base.css are deliberate;
+// there is a comment there explaining why merging them would be worse.
+const DUPLICATE_BUDGET = 10;
 const FIX_SECTION_BUDGET = 0;
 
 /**

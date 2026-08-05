@@ -43,21 +43,30 @@
   padding: var(--space-3) var(--space-2);
 }
 
-.sidebar-rail { display: none; }
+/* One rule, not two. `display: none` and the flex layout used to be declared
+ * forty lines apart, which reads as two independent decisions about the same
+ * element and is how a third one gets added later.
+ *
+ * The flex properties sit on a hidden element on purpose: `.sidebar.collapsed
+ * .sidebar-rail` below flips display to flex at (0,2,0), so the layout is
+ * already resolved by the time it is shown. Declaring them there instead would
+ * mean the rail has no layout in its default state, which is only invisible
+ * because it is also not displayed. */
+.sidebar-rail {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 0;
+  flex: 1;
+}
+
 .sidebar.collapsed .sidebar-rail { display: flex; }
 .sidebar.collapsed .sidebar-full { display: none; }
 
 .sidebar-full {
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  flex: 1;
-}
-
-.sidebar-rail {
-  flex-direction: column;
-  align-items: center;
-  gap: var(--space-2);
   min-height: 0;
   flex: 1;
 }
@@ -381,16 +390,24 @@
   transition: opacity var(--dur-fast) ease;
 }
 
+/* Revealing the actions is ONE rule. `opacity` and `pointer-events` were
+ * declared in two identical-selector blocks with an unrelated background rule
+ * between them — which is how they end up disagreeing: a later edit to one is
+ * easy to make without noticing the other.
+ *
+ * Both are needed together and neither works alone. opacity alone leaves a
+ * keyboard user tabbing into invisible buttons; pointer-events alone leaves
+ * buttons that are visible and dead. */
 .chat-item:hover .chat-actions,
-.chat-item:focus-within .chat-actions { pointer-events: auto; }
+.chat-item:focus-within .chat-actions {
+  opacity: 1;
+  pointer-events: auto;
+}
 
 .chat-item.active .chat-actions,
 .chat-item:hover .chat-actions {
   background: linear-gradient(to right, transparent, var(--surface-3) 24%);
 }
-
-.chat-item:hover .chat-actions,
-.chat-item:focus-within .chat-actions { opacity: 1; }
 
 .chat-action {
   background: none;

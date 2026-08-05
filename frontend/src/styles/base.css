@@ -196,7 +196,27 @@ body {
   overflow: hidden;
 }
 
-/* ===== SCROLLBARS ===== */
+/* ===== SCROLLBARS =====
+ *
+ * THE SECOND `*` RULE IN THIS FILE, AND IT STAYS THAT WAY. cssHygiene counts it
+ * as a duplicate selector, which it literally is, and merging it into the reset
+ * at the top would be worse: these two declarations belong with the
+ * ::-webkit-scrollbar rules directly below them, and hoisting them 190 lines
+ * away would separate the standards-track half of the scrollbar styling from
+ * the WebKit half.
+ *
+ * It is not the bug the duplicate budget exists for. That bug is the same
+ * DECISION made twice in two places — `.sidebar-rail` had its display in one
+ * rule and its layout forty lines later, and `.chat-actions` had opacity and
+ * pointer-events in two identical-selector blocks with something unrelated
+ * between them. Both of those were merged. This is two different concerns that
+ * happen to share the universal selector.
+ *
+ * Not folded into `html` either, tempting as it is — both properties inherit,
+ * so it would render identically. But the cascade snapshot resolves selectors
+ * per element and does not model inheritance, so the change would read as
+ * "every element lost its scrollbar styling" in a 700-element diff that is
+ * entirely wrong. */
 * {
   scrollbar-width: thin;
   scrollbar-color: var(--surface-4) transparent;

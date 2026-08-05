@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
 import { ClerkProvider, useUser, useAuth } from "@clerk/react";
 import { Toaster, toast } from "sonner";
 import "./App.css";
@@ -11,13 +11,28 @@ import Icon from "./components/Icon";
 import Earring from "./components/Earring";
 import InputBar from "./components/InputBar";
 import ChatSidebar from "./components/ChatSidebar";
-import MessageList from "./components/MessageList";
 import CameraOverlay from "./components/CameraOverlay";
 import { InitialLoader, AppSkeleton } from "./components/Skeletons";
 import SettingsPanel from "./components/panels/SettingsPanel";
 import AdminPanel from "./components/panels/AdminPanel";
 import UpgradePanel from "./components/panels/UpgradePanel";
-import OverlayAssistant from "./overlay/OverlayAssistant";
+
+/* THE MARKDOWN RENDERER, OFF THE SIGN-IN PATH.
+ *
+ * react-markdown and its remark/rehype pipeline are 49 KB gzipped, and these
+ * two components are the only things importing them. Both render exclusively
+ * behind a signed-in check, but a static import is downloaded whether or not
+ * the component ever renders — so every visitor paid for a markdown renderer
+ * in order to look at a login form.
+ *
+ * Lazy here costs a signed-in user one extra round trip for the chunk, which
+ * overlaps the Clerk handshake and the first /api/chats call and is invisible
+ * against them. It saves a signed-out user the whole 49 KB.
+ *
+ * Their own test files import these modules directly, so the split does not
+ * reach the tests. */
+const MessageList = lazy(() => import("./components/MessageList"));
+const OverlayAssistant = lazy(() => import("./overlay/OverlayAssistant"));
 
 import { useApi } from "./lib/api";
 import { Storage } from "./lib/storage";
@@ -504,6 +519,7 @@ const AuthenticatedApp = () => {
                   setShowScrollDown(el.scrollHeight - el.scrollTop - el.clientHeight > FOLLOW_THRESHOLD_PX);
                 }}
               >
+                <Suspense fallback={null}>
                 <MessageList
                   messages={activeMessages}
                   status={status}
@@ -512,6 +528,7 @@ const AuthenticatedApp = () => {
                   onFeedback={chat.submitFeedback}
                   onPickStarter={handleSend}
                 />
+                </Suspense>
               </div>
 
               {showScrollDown && (
@@ -592,7 +609,13 @@ const App = () => (
     }}
   >
     <div style={{ width: "100vw", height: "100dvh" }}>
-      {isOverlayWindow() ? <OverlayAssistant /> : <AuthenticatedAppWrapper />}
+      {isOverlayWindow() ? (
+        <Suspense fallback={null}>
+          <OverlayAssistant />
+        </Suspense>
+      ) : (
+        <AuthenticatedAppWrapper />
+      )}
     </div>
   </ClerkProvider>
 );

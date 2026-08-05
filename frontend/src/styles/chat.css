@@ -39,6 +39,21 @@
   overflow-x: hidden;
   padding: var(--space-6) var(--space-6) var(--space-4);
   scroll-behavior: smooth;
+  /* Mid-scroll, the last line of prose was cut by a hard horizontal edge where
+   * the transcript ends and the composer begins — the same "wall" the frame's
+   * border used to make, relocated. Removing the frame fixed the outline and
+   * left this.
+   *
+   * A 28px fade at the bottom edge dissolves that line instead of slicing it,
+   * which is what makes a transcript read as continuing rather than as ending.
+   * The top is left hard on purpose: the header already draws a real boundary
+   * there, and fading content into it would just make the header look like it
+   * was floating.
+   *
+   * Percentages, not pixels, because the mask is resolved against the padding
+   * box and this container's height changes with the viewport. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%);
 }
 
 .msg-stream {

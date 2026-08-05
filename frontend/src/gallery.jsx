@@ -371,7 +371,13 @@ const LiveChrome = ({ theme, empty = false, streaming = false, loaded = false, c
           </button>
           <div className="brand">
             <h1 className="main-title">{empty ? "ALOP-AI" : "Monitor buying advice"}</h1>
-            <Badge variant="secondary" data-ui-scope="" className="shrink-0">
+            {/* These classes are copied from App.jsx and must stay copied.
+                Without `hidden sm:inline-flex` this frame showed the badge at
+                every width while the real header hides it below 640px — so the
+                gallery was reporting a crowded mobile header the app does not
+                actually have. A fixture that differs from the app stops
+                guarding the thing it differs on. */}
+            <Badge variant="secondary" data-ui-scope="" className="hidden shrink-0 sm:inline-flex">
               7 models
             </Badge>
           </div>

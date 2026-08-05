@@ -134,10 +134,17 @@
    * already demonstrates: a `window.innerWidth <= 768` measurement in JSX and a
    * `max-width: 768px` media query in CSS, agreeing only by coincidence.
    *
-   * --frame-inset is not zero on purpose. A frame flush to the viewport edge
-   * loses the ambient bloom entirely and reads flat; 10px of visible wash
-   * around it is the whole difference between "dark app" and "lit room". */
-  --frame-inset: 10px;
+   * --frame-inset WAS 10px, to keep a rim of ambient wash visible around the
+   * frame. The reasoning was right and the result was wrong: a 10px gutter
+   * plus a 1px border plus a 22px radius reads as a card with an edge, and at
+   * the bottom — where the composer sits hard against it — that edge reads as
+   * a wall the conversation is cut off by.
+   *
+   * The wash does not need a gutter to be visible. It lives on .app-root::after
+   * across the whole viewport, and the frame was covering it with 68% surface
+   * and a 24px blur. Making the frame transparent shows MORE of it, not less.
+   * The room is lit through the app rather than around it. */
+  --frame-inset: 0px;
   --topbar-h: 48px;
   --sidebar-w: 272px;
   --rail-w: 56px;

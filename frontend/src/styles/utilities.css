@@ -71,11 +71,10 @@
   .mobile-only { display: flex; }
   .desktop-only { display: none; }
 
-  /* The frame goes nearly flush on a phone: 10px of visible wash is a luxury a
-   * 390px viewport cannot afford, and the radius has to come down with it or
-   * the corner eats the first character of the title. */
-  .app-shell { padding: var(--space-1); }
-  .app-frame { border-radius: var(--radius-lg); }
+  /* The frame draws nothing at any width now, so the phone override that
+   * pulled its inset and radius in has nothing left to pull. Both were removed
+   * rather than zeroed: a rule setting a property no longer declared anywhere
+   * is a rule that survives a refactor and confuses the next reader. */
 
   /* The bar grows rather than shrinking, and its buttons go back to 40px.
    * These are the app's primary controls and on a touch device they are thumb

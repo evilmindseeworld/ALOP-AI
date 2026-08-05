@@ -204,6 +204,7 @@ export const appTree = (theme) => `
         <div class="chat-content">
           <div class="scroll-wrapper">
             <div class="empty-state">
+              <div class="sakura-frame" aria-hidden="true"><svg class="sakura-torii" viewBox="0 0 240 190"><path d="M0 0"/></svg><svg class="sakura-corner sakura-corner-tl" viewBox="0 0 120 76"><path d="M0 0"/></svg><svg class="sakura-corner sakura-corner-tr" viewBox="0 0 120 76"><path d="M0 0"/></svg><svg class="sakura-corner sakura-corner-bl" viewBox="0 0 120 76"><path d="M0 0"/></svg><svg class="sakura-corner sakura-corner-br" viewBox="0 0 120 76"><path d="M0 0"/></svg></div>
               <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="empty-logo" alt="ALOP-AI"/>
               <p class="empty-eyebrow">The AI Council</p>
               <h2 class="empty-title text-shimmer">ALOP-AI<span class="empty-title-accent">Assembled.</span></h2>
@@ -234,6 +235,14 @@ export const appTree = (theme) => `
             <div class="msg-row assistant">
               <div class="avatar">AI</div>
               <div class="msg-content">
+                <details class="tool-trail" open>
+                  <summary class="tool-trail-summary"><svg width="13" height="13" viewBox="0 0 24 24"><path d="M0 0"/></svg><span>Checked 2 sources</span></summary>
+                  <ol class="tool-trail-list">
+                    <li class="tool-trail-row is-done"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M0 0"/></svg><span class="tool-trail-text">2 results for "OLED burn-in 2026"</span></li>
+                    <li class="tool-trail-row is-pending"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M0 0"/></svg><span class="tool-trail-text">read_url: https://rtings.com/monitor</span></li>
+                    <li class="tool-trail-row is-failed"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M0 0"/></svg><span class="tool-trail-text">Refused to fetch that URL: resolves to a private address.</span></li>
+                  </ol>
+                </details>
                 <div class="msg-attachment-placeholder"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg> Image attached</div>
                 <div class="bubble markdown-body">
                   <h1>Heading one</h1>

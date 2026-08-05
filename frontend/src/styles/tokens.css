@@ -194,6 +194,12 @@
    * look for it. */
   --grain-opacity: 0.055;
   --z-sticky-label: 1;  /* .chat-group-label — scoped INSIDE .chat-list  */
+  /* Both scoped INSIDE .empty-state, which is a positioned flex column of
+   * otherwise-static children. They order the decoration against the content
+   * and are not comparable with the root scale — same status as
+   * --z-sticky-label above. */
+  --z-empty-decor: 0;   /* .sakura-frame, .empty-state::after            */
+  --z-empty-content: 1; /* everything else in .empty-state              */
   --z-chat: 3;          /* .chat-main — creates a stacking context       */
   --z-in-chat-control: 80; /* .code-copy-btn — scoped INSIDE --z-chat    */
   --z-earring: 4;       /* decoration: above the chat, below all menus   */

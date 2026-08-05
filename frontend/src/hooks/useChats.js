@@ -257,6 +257,11 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
       // Hoisted so the catch can persist whatever streamed before an abort.
       // Discarding it would throw away text the user already watched arrive.
       let acc = "";
+      // Mutated in place as frames arrive, and spread into the message on each
+      // render so React sees a new array. It is deliberately NOT state: a
+      // setState per frame would re-render the whole transcript on every tool
+      // event, and the transcript already re-renders per chunk.
+      const activity = [];
 
       try {
         const token = await getToken();
@@ -307,18 +312,35 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
             }
             if (frame.type === "chunk") acc += frame.text;
             else if (frame.type === "error") throw new Error(frame.text);
+            // The council's tool loop reports what it is doing while it does
+            // it. These arrive BEFORE any chunk — the loop runs to completion
+            // before synthesis starts — so without them the user watches a
+            // spinner for up to 25 seconds.
+            //
+            // A tool_result is matched to its tool_start by (round, name) and
+            // REPLACES it, so a call renders as one row that resolves rather
+            // than two rows. Matching on that pair rather than on an id is
+            // safe because the loop executes each unique call once per round,
+            // which is the whole point of the dedupe.
+            else if (frame.type === "tool_start") {
+              activity.push({ round: frame.round, name: frame.name, summary: frame.summary, pending: true });
+            } else if (frame.type === "tool_result") {
+              const row = activity.find((a) => a.round === frame.round && a.name === frame.name && a.pending);
+              if (row) Object.assign(row, { ok: frame.ok, summary: frame.summary, pending: false });
+              else activity.push({ round: frame.round, name: frame.name, summary: frame.summary, ok: frame.ok });
+            }
           }
 
           setChats((p) =>
             p.map((c) =>
               c.id === chatId
-                ? { ...c, messages: [...updated, { ...assistantMsg, typing: false, content: acc }] }
+                ? { ...c, messages: [...updated, { ...assistantMsg, typing: false, content: acc, activity: activity.length ? [...activity] : undefined }] }
                 : c
             )
           );
         }
 
-        await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: acc }]);
+        await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: acc, activity: activity.length ? [...activity] : undefined }]);
         setStatus("idle");
       } catch (err) {
         if (err.name === "AbortError") {

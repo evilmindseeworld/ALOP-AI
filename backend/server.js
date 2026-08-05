@@ -225,6 +225,33 @@ const searchWikipedia = async (query) => {
   try { const sr = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query.slice(0,100))}&format=json&origin=*`, { signal: AbortSignal.timeout(6000) }); if (!sr.ok) return ''; const sd = await sr.json(); const titles = (sd.query?.search||[]).slice(0,2).map(s => s.title); if (titles.length === 0) return ''; const er = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=true&explaintext=true&titles=${encodeURIComponent(titles.join('|'))}&format=json&origin=*`, { signal: AbortSignal.timeout(6000) }); if (!er.ok) return ''; const ed = await er.json(); return Object.values(ed.query?.pages||{}).map(p => p.extract||'').filter(e => e.length > 100).join('\n\n').slice(0, 5000); } catch { return ''; }
 };
 
+/**
+ * Open the SSE stream, at most once.
+ *
+ * Idempotent because the agent loop opens the stream BEFORE the answer exists
+ * — it has tool progress to report and hiding that behind a spinner for up to
+ * 25s would be worse than what the router path does today. Every later branch
+ * (fallback, synthesis) then reaches its own open call with headers already
+ * sent, and setHeader after send throws ERR_HTTP_HEADERS_SENT.
+ */
+const openStream = (res) => {
+  if (res.headersSent) return;
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  // Nginx and Render's proxy both buffer by default, which holds every event
+  // until the response completes — precisely defeating the point of streaming
+  // progress. Without this the trail arrives all at once, at the end.
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders?.();
+};
+
+/** One SSE frame. Never throws: a dead socket must not become a 500. */
+const sendEvent = (res, payload) => {
+  if (res.writableEnded) return;
+  try { res.write(`data: ${JSON.stringify(payload)}\n\n`); } catch { /* client went away */ }
+};
+
 // ===== COUNCIL TOOL CALLING =====
 // docs/superpowers/specs/2026-07-31-council-tool-calling-design.md
 const { buildRegistry } = require('./lib/tool-registry');
@@ -515,7 +542,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       console.log('[COUNCIL] Memory question.');
       const memSys = `You are ALOP-AI. The user is asking about a previous conversation. The history below IS your memory. Do NOT say you can't remember. Reference what was discussed. Be concise.${convSummary ? `\n\nSummary: ${convSummary}` : ''}`;
       const memMsgs = [{ role: 'system', content: memSys }, ...histArr.slice(-10), { role: 'user', content: pv.value }];
-      res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
+      openStream(res);
       await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0);
       if (!res.writableEnded) res.end();
       updateChatSummary(chatId,pv.value, 'Answered memory question.').catch(() => {});
@@ -527,7 +554,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     if (!imageContext && selection.category === 'greeting') {
       console.log('[COUNCIL] Greeting.');
       const greetMsgs = [{ role: 'system', content: `You are ALOP-AI. Greet briefly.${convSummary ? ` Context: ${convSummary}` : ''}` }, { role: 'user', content: pv.value }];
-      res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
+      openStream(res);
       await streamModel(res, PRIMARY_MODEL, greetMsgs, 0.0);
       if (!res.writableEnded) res.end();
       await auditLog(user.id, 'council', { category: 'greeting' }, req.ip);
@@ -541,7 +568,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     if (searchQuery) {
       const { context, sources, found, images } = await comprehensiveSearch(searchQuery, shouldCheckWiki);
       if (!found) {
-        res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
+        openStream(res);
         res.write(`data: ${JSON.stringify({ type: 'chunk', text: "I searched but couldn't find results. Could you rephrase?" })}\n\n`);
         res.write('data: [DONE]\n\n');
         if (!res.writableEnded) res.end();
@@ -551,7 +578,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       console.log(`[COUNCIL] ${sources.length} sources, ${context.length} chars.`);
       const extSys = `You are a precision data extraction engine. Use ONLY the provided data.\n\nRULES:\n1. Only state facts from the data.\n2. No training data.\n3. No inferring/guessing.\n4. No comparing unless both products are in data.\n5. If not in data, say "I couldn't find this in the search results."\n6. Include URLs as Markdown: [Title](URL)\n7. No inventing specs/prices.\n8. Note contradictions between sources.\n9. Format in Markdown. Match answer length to question. Be concise for simple questions.\n10. List sources at bottom under "## Sources".\n11. Embed images if provided: ![Description](url)\n12. CONVERSATION CONTEXT and history are EXEMPT from rules 1-5.${lang !== 'English' ? `\n13. Respond in ${lang}.` : ''}`;
       const extMsgs = [{ role: 'system', content: extSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n\n=== SEARCH DATA ===\n${context}` }];
-      res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
+      openStream(res);
       await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0);
       if (!res.writableEnded) res.end();
       const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
@@ -566,7 +593,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       if (wiki) {
         const wikiSys = `You are a data extraction engine. Use ONLY the Wikipedia content. No training data. If not found, say "I couldn't find this on Wikipedia." Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
         const wikiMsgs = [{ role: 'system', content: wikiSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n=== WIKIPEDIA ===\n${wiki}` }];
-        res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
+        openStream(res);
         await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0);
         if (!res.writableEnded) res.end();
         updateChatSummary(chatId,pv.value, 'Wikipedia response.').catch(() => {});
@@ -591,10 +618,18 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     let validResponses, toolResearch = '', toolTruncated = null;
     if (TOOLS_ENABLED && !imageContext) {
       const registry = buildRegistry({ search: toolSearch, readUrl: readPageContent, assertSafeUrl });
+      // Opened BEFORE the loop so tool progress can be reported as it happens.
+      // The loop can run for 25s, and a spinner for 25s is worse than the
+      // router path it replaced. From here on every failure is an SSE frame,
+      // never a 500 — see the catch at the end of this route.
+      openStream(res);
       const loop = await runAgentLoop({
         members: selection.members.map((m) => m.model),
         registry,
-        onEvent: (e) => console.log(`[TOOLS] r${e.round} ${e.type} ${e.name}${e.ok === false ? ' FAILED' : ''} — ${e.summary}`),
+        onEvent: (e) => {
+          console.log(`[TOOLS] r${e.round} ${e.type} ${e.name}${e.ok === false ? ' FAILED' : ''} — ${e.summary}`);
+          sendEvent(res, e);
+        },
         askMember: (model, ctx) =>
           callModel(model, toolMessages(councilMsgs, registry, ctx), 0.0, selection.whipMs, selection.tokenLimit),
       });
@@ -620,7 +655,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       console.log('[COUNCIL] Fallback.');
       const fbSys = `You are a helpful AI assistant. Answer directly. Match length to question. If you don't know, say "I don't have enough information." Don't guess. Use context if provided. Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
       const fbMsgs = [{ role: 'system', content: fbSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
-      res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
+      openStream(res);
       await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0);
       if (!res.writableEnded) res.end();
       updateChatSummary(chatId,pv.value, 'Fallback response.').catch(() => {});
@@ -647,7 +682,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       ? `\n\n=== NOTE ===\nResearch was cut short: ${toolTruncated} Where the experts' claims rest on something that was not verified, say so plainly rather than asserting it.`
       : '';
     const synthMsgs = [{ role: 'system', content: synthSys }, { role: 'user', content: `Question: ${truncatedPrompt}\n\nResponses:\n${validResponses.map((r,i) => `[Expert ${i+1}]: ${r.content}`).join('\n\n')}${researchBlock}${truncationBlock}` }];
-    res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
+    openStream(res);
     await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0);
     if (!res.writableEnded) res.end();
     const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
@@ -657,7 +692,16 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     console.error('Council error:', err.message);
     Sentry.captureException(err);
     if (!res.headersSent) return res.status(500).json({ error: err.message });
-    if (!res.writableEnded) res.end();
+    // The stream was already open, so a 500 is no longer available. Ending it
+    // silently — which is what this used to do — leaves the client's reader to
+    // hit `done` with no [DONE] and no error, and the frontend then SAVES the
+    // empty accumulator as the answer. A failed turn became a blank assistant
+    // message with no indication anything went wrong.
+    //
+    // The error text is the same one a pre-stream failure would have put in a
+    // 500 body, so the client sees a failure either way.
+    sendEvent(res, { type: 'error', text: err.message });
+    if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
   }
 });
 

@@ -45,6 +45,12 @@ describe("z-index token scale", () => {
         "--z-grain",
         "--z-cmdk",
         "--z-earring",
+        // Both scoped INSIDE .empty-state and excluded from `ascending` for the
+        // same reason --z-sticky-label is: they order decoration against
+        // content within one positioned flex column, and are not comparable
+        // with the root scale.
+        "--z-empty-content",
+        "--z-empty-decor",
 "--z-in-chat-control",
         "--z-panel",
         "--z-panel-overlay",

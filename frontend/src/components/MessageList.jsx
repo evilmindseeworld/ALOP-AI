@@ -1,4 +1,5 @@
 import { memo, lazy, Suspense, useState, useRef, useEffect } from "react";
+import SakuraFrame from "./SakuraFrame";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Icon from "./Icon";
@@ -102,6 +103,9 @@ MessageActions.displayName = "MessageActions";
  */
 export const EmptyState = memo(({ onPick }) => (
   <div className="empty-state">
+    {/* Behind everything, and only here — see SakuraFrame for why the frame
+        does not follow the transcript. */}
+    <SakuraFrame />
     <img src="/logo.png" alt="" className="empty-logo" />
     <p className="empty-eyebrow">The AI Council</p>
     {/* Two typefaces on one line: the product name in the UI sans, the thing it
@@ -142,6 +146,58 @@ EmptyState.displayName = "EmptyState";
  * Everything used to be an 80%-wide bubble with a bevel, which is the single
  * worst shape for a 900-word research answer.
  */
+/**
+ * What the council did before it answered.
+ *
+ * The tool loop runs to completion before synthesis emits a single chunk, so
+ * without this the user watches a spinner for up to 25 seconds while seven
+ * models search and read pages. The events arrive on the same SSE stream as
+ * the answer.
+ *
+ * `<details>` rather than a hand-rolled disclosure: it is keyboard operable,
+ * announced correctly, and survives with no JavaScript at all. Open to begin
+ * with, because the whole point is watching it happen; local state after that,
+ * so collapsing it makes it stay collapsed instead of springing back open on
+ * the next frame.
+ *
+ * This is NOT persisted. The server's message whitelist keeps role, content
+ * and a hasImage flag, so `activity` is dropped on save — the same treatment
+ * imagePreview gets, and for the same reason: it is ephemeral progress, not
+ * content. A reloaded conversation shows the answer without the trail.
+ */
+const TOOL_ICON = { web_search: "search", read_url: "code", read_file: "image", run_code: "code" };
+
+export const ToolTrail = memo(({ activity }) => {
+  const pending = activity.some((a) => a.pending);
+  const [open, setOpen] = useState(true);
+
+  return (
+    <details className="tool-trail" open={open} onToggle={(e) => setOpen(e.currentTarget.open)}>
+      <summary className="tool-trail-summary">
+        <Icon name={pending ? "refresh" : "check"} size={13} />
+        <span>
+          {pending
+            ? "Researching…"
+            : `Checked ${activity.length} source${activity.length === 1 ? "" : "s"}`}
+        </span>
+      </summary>
+      <ol className="tool-trail-list">
+        {activity.map((a, i) => (
+          <li
+            key={`${a.round}-${a.name}-${i}`}
+            className={`tool-trail-row ${a.pending ? "is-pending" : a.ok === false ? "is-failed" : "is-done"}`}
+          >
+            <Icon name={TOOL_ICON[a.name] || "sparkles"} size={12} />
+            <span className="tool-trail-text">{a.summary}</span>
+          </li>
+        ))}
+      </ol>
+    </details>
+  );
+});
+
+ToolTrail.displayName = "ToolTrail";
+
 export const Message = memo(({ msg, isStreaming, onCopy, onFeedback, feedback }) => {
   const isUser = msg.role === "user";
 
@@ -153,6 +209,8 @@ export const Message = memo(({ msg, isStreaming, onCopy, onFeedback, feedback })
           where the eye lands first. */}
       {!isUser && <div className="avatar">AI</div>}
       <div className="msg-content">
+        {/* Above the answer, because it happened before the answer. */}
+        {!isUser && msg.activity?.length > 0 && <ToolTrail activity={msg.activity} />}
         {/* imagePreview only exists in this session; after a reload the hasImage
             flag survives but the bytes deliberately do not — a data URL runs to
             megabytes and a chat row holds up to 200 messages. */}

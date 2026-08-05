@@ -274,6 +274,15 @@ const SAMPLE_MESSAGES = [
     id: "a1",
     role: "assistant",
     ts: "16:05",
+    // All three row states at once — done, still running, refused by the SSRF
+    // guard. The failed row is the one worth looking at: it is what a model
+    // pointing the server at 169.254.169.254 actually renders as.
+    activity: [
+      { round: 1, name: "web_search", summary: '6 results for "OLED burn-in 2026"', ok: true },
+      { round: 1, name: "web_search", summary: '5 results for "QD-OLED vs WOLED"', ok: true },
+      { round: 2, name: "read_url", summary: "Read rtings.com", pending: true },
+      { round: 2, name: "read_url", summary: "Refused to fetch that URL: resolves to 169.254.169.254, which is a private or reserved address.", ok: false },
+    ],
     content: `The **ASUS ROG Strix XG27AQWMG** is the one to buy at this budget.
 
 ### Why this one

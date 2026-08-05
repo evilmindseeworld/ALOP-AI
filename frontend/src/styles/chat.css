@@ -86,6 +86,18 @@
   50% { transform: translateY(-8px) scale(1.02); }
 }
 
+/* The eyebrow. Small, uppercase, tracked wide, and dimmer than the subtitle —
+ * it names the room without asking to be read first. */
+.empty-eyebrow {
+  font-family: var(--font-body);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-subtle);
+  user-select: none;
+}
+
 .empty-title {
   font-family: var(--font-heading);
   font-size: var(--display);
@@ -96,11 +108,35 @@
   user-select: none;
 }
 
+/* The accent half of the display line: same size, serif, italic.
+ *
+ * Two typefaces on one line only works when they agree about the baseline and
+ * disagree about everything else. Instrument Serif runs small for its point
+ * size next to Clash Grotesk, so it is nudged up to match x-height rather than
+ * nominal size — set them at the same px and the serif reads as a size smaller,
+ * which looks like a mistake instead of a contrast.
+ *
+ * Weight drops to 400 because an italic serif at 700 is a different voice, not
+ * an emphasis of the same one. */
+.empty-title-accent {
+  font-family: var(--font-display-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.12em;
+  letter-spacing: -0.01em;
+  /* The serif's own side bearing is tighter than the sans's word space, so
+   * without this the two halves collide. Measured at the rendered size rather
+   * than guessed: 0.12em still read as one hyphenated word. */
+  margin-left: 0.26em;
+  color: var(--text);
+}
+
 .empty-subtitle {
-  max-width: 42ch;
+  max-width: 46ch;
   font-size: var(--text-base);
-  line-height: 1.6;
+  line-height: 1.65;
   color: var(--text-muted);
+  text-wrap: balance;
 }
 
 /* ===== MESSAGES =====

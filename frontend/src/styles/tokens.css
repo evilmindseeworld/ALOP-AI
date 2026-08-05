@@ -19,6 +19,9 @@
 /* ===== FONTS ===== */
 @import url('https://api.fontshare.com/v2/css?f[]=clash-grotesk@400,500,600,700&f[]=switzer@400,500,600,700,800&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+/* Italic only — the roman is never used, and shipping it would double the
+ * request for a face nothing renders. */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&display=swap');
 
 /* ===== DARK — SAKURA OBSIDIAN (the primary theme) ===== */
 :root {
@@ -78,6 +81,16 @@
   --font-heading: 'Clash Grotesk', system-ui, sans-serif;
   --font-body: 'Switzer', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  /* An editorial serif, used ONLY in italic and ONLY for the accent half of a
+   * display line — the "Botanic /Architecture./" move. It carries no body text
+   * and no UI chrome, so if it fails to load the fallback is one italic word in
+   * Georgia rather than a differently-proportioned interface. */
+  --font-display-serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+
+  /* An eyebrow: the small uppercase label that names a section without
+   * competing with it. Tracked wide because at 11px letterspacing is the only
+   * thing that separates "label" from "small heading". */
+  --tracking-eyebrow: 0.18em;
 
   /* Type scale. Body sits at 15px because the transcript is the product and
    * 14px prose in a 74-character column is a squint. */
@@ -186,9 +199,14 @@
 
   /* Two ambient blooms, pink top-left and emerald bottom-right, at the opacity
    * where you notice the room is lit but not where the light is coming from. */
+  /* The same four-layer build as dark — source, wash, counterlight, vignette —
+   * but a light surface cannot take a black vignette without going grey and
+   * muddy, so the falloff is a warm tint of the paper instead. */
   --gradient-warm:
-    radial-gradient(60% 50% at 15% 0%, rgba(240, 138, 163, 0.10) 0%, transparent 70%),
-    radial-gradient(55% 45% at 90% 100%, rgba(111, 211, 166, 0.07) 0%, transparent 70%);
+    radial-gradient(36% 28% at 12% -4%, rgba(240, 138, 163, 0.20) 0%, transparent 68%),
+    radial-gradient(70% 56% at 18% 2%, rgba(240, 138, 163, 0.09) 0%, transparent 72%),
+    radial-gradient(60% 50% at 92% 104%, rgba(111, 211, 166, 0.08) 0%, transparent 70%),
+    radial-gradient(120% 100% at 50% 45%, transparent 46%, rgba(120, 92, 64, 0.09) 100%);
 
   --gradient-primary: linear-gradient(135deg, var(--primary) 0%, var(--primary-strong) 100%);
   --gradient-emerald: linear-gradient(135deg, var(--emerald) 0%, var(--emerald-soft) 100%);
@@ -254,9 +272,29 @@
   --shadow-lg: 0 24px 60px rgba(50, 36, 28, 0.14);
   --rim: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 
+  /* Depth, in four layers, lightest first.
+   *
+   * The previous two blooms sat at 5–6% and read as an evenly lit flat panel:
+   * you could tell the background was not pure black, but not where the light
+   * was. Depth needs a light SOURCE and a falloff, so:
+   *
+   *   1. a tight, brighter pink core top-left — the source;
+   *   2. the wide pink wash it falls off into;
+   *   3. the emerald counterlight bottom-right, kept dim so it reads as bounce
+   *      rather than a second lamp;
+   *   4. a vignette, which is what actually sells the other three. Without it
+   *      the blooms fade into a field of equal darkness and the frame edge is
+   *      the only thing with a shape.
+   *
+   * Every layer is a radial-gradient of one hue at low alpha. Dark surfaces
+   * band when a gradient crosses many steps in few pixels — that is what put
+   * vertical stripes over every card the last time this had texture — so the
+   * stops are wide and there is no repeating pattern here at all. */
   --gradient-warm:
-    radial-gradient(60% 50% at 15% 0%, rgba(179, 26, 84, 0.06) 0%, transparent 70%),
-    radial-gradient(55% 45% at 90% 100%, rgba(31, 122, 82, 0.05) 0%, transparent 70%);
+    radial-gradient(38% 30% at 12% -4%, rgba(179, 26, 84, 0.14) 0%, transparent 68%),
+    radial-gradient(72% 58% at 18% 2%, rgba(179, 26, 84, 0.07) 0%, transparent 72%),
+    radial-gradient(62% 52% at 92% 104%, rgba(31, 122, 82, 0.06) 0%, transparent 70%),
+    radial-gradient(120% 100% at 50% 50%, transparent 42%, rgba(0, 0, 0, 0.34) 100%);
 
   /* THESE MUST BE REDECLARED HERE, and the reason is a genuine trap.
    *

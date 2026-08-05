@@ -103,9 +103,16 @@ MessageActions.displayName = "MessageActions";
 export const EmptyState = memo(({ onPick }) => (
   <div className="empty-state">
     <img src="/logo.png" alt="" className="empty-logo" />
-    <h2 className="empty-title text-shimmer">ALOP-AI</h2>
+    <p className="empty-eyebrow">The AI Council</p>
+    {/* Two typefaces on one line: the product name in the UI sans, the thing it
+        does in an italic serif. The accent is a span rather than a second
+        heading so screen readers still announce one title, "ALOP-AI Assembled",
+        in one breath. */}
+    <h2 className="empty-title text-shimmer">
+      ALOP-AI<span className="empty-title-accent">Assembled.</span>
+    </h2>
     <p className="empty-subtitle">
-      Ask the AI Council anything. Multiple models work together, debate, then answer. It learns from your feedback.
+      Several models answer separately, read each other, then agree on one reply. Tell it when it is wrong and it remembers.
     </p>
     <div className="starter-grid">
       {STARTERS.map((s) => (

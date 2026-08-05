@@ -253,6 +253,10 @@ const searchWikipedia = async (query) => {
  */
 const openStream = (res) => {
   if (res.headersSent) return;
+  // Stamped once, on the first open. Every route that streams calls this, so
+  // it is the one place that reliably marks "the user stopped waiting".
+  if (!res.locals) res.locals = {};
+  res.locals.firstByteAt = Date.now();
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
@@ -588,20 +592,59 @@ const requireAuth = (req, res, next) =>
     return next(Object.assign(new Error('Authentication required'), { status: 401 }));
   });
 
-const ensureUser = async (userId) => {
+/**
+ * The user row, off the critical path wherever possible.
+ *
+ * This used to await THREE network round trips on every single request, in
+ * series, before any work began: Clerk's getUser, a Supabase select, and a
+ * Supabase update writing back a name and avatar that had almost never
+ * changed. For an existing user — which is every request after their first —
+ * two of those bought nothing the answer depended on.
+ *
+ * Now: look the row up first. If it exists, return it and refresh the profile
+ * from Clerk in the BACKGROUND. Clerk is only awaited when the row is missing,
+ * because an insert genuinely needs the email.
+ *
+ * `cached` lets a caller pass a row a middleware already fetched, removing the
+ * select as well. checkSuspended runs on every council request and was
+ * selecting the same row two lines earlier.
+ *
+ * The trade is that a name or avatar changed in Clerk shows up one request
+ * late. That is the correct thing to be slightly stale about.
+ */
+const refreshProfile = async (userId) => {
+  try {
+    const clerkUser = await clerkClient.users.getUser(userId);
+    const email = clerkUser?.emailAddresses?.[0]?.emailAddress || null;
+    const name = clerkUser?.fullName || clerkUser?.username || (email ? email.split('@')[0] : 'User');
+    await supabase.from('users').update({ email, name, avatar_url: clerkUser?.imageUrl || null }).eq('clerk_id', userId);
+  } catch (e) {
+    console.error('[USER] background profile refresh failed:', e.message);
+  }
+};
+
+const ensureUser = async (userId, { cached } = {}) => {
   if (!userId) throw new Error('Missing userId');
+
+  if (cached && cached.id) { refreshProfile(userId); return cached; }
+
+  const { data: existing, error: selErr } = await supabase.from('users').select('*').eq('clerk_id', userId).single();
+  if (selErr && selErr.code !== 'PGRST116') throw selErr;
+  if (existing) { refreshProfile(userId); return existing; }
+
+  // First sight of this user. Clerk has to be awaited here — the insert needs
+  // an email, and there is no row to fall back on.
   let clerkUser; try { clerkUser = await clerkClient.users.getUser(userId); } catch (e) { throw new Error(`Clerk failed: ${e.message}`); }
   const email = clerkUser?.emailAddresses?.[0]?.emailAddress || null;
   const name = clerkUser?.fullName || clerkUser?.username || (email ? email.split('@')[0] : 'User');
-  const avatar = clerkUser?.imageUrl || null;
-  const { data: existing, error: selErr } = await supabase.from('users').select('*').eq('clerk_id', userId).single();
-  if (selErr && selErr.code !== 'PGRST116') throw selErr;
-  if (existing) { const { error: updErr } = await supabase.from('users').update({ email, name, avatar_url: avatar }).eq('clerk_id', userId); if (updErr) console.error('Update failed:', updErr.message); return existing; }
-  const { data: created, error: insErr } = await supabase.from('users').insert({ clerk_id: userId, email, name, avatar_url: avatar, plan: 'free' }).select().single();
+  const { data: created, error: insErr } = await supabase.from('users').insert({ clerk_id: userId, email, name, avatar_url: clerkUser?.imageUrl || null, plan: 'free' }).select().single();
   if (insErr) throw insErr; if (!created) throw new Error('Insert returned no data'); return created;
 };
 
-const checkSuspended = async (req, res, next) => { try { if (!req.auth || !req.auth.userId) return res.status(401).json({ error: 'Not authenticated' }); const { data: user, error } = await supabase.from('users').select('suspended, plan').eq('clerk_id', req.auth.userId).single(); if (error) throw error; if (user && user.suspended) return res.status(403).json({ error: 'Account suspended' }); req.userPlan = user?.plan || 'free'; next(); } catch (err) { Sentry.captureException(err); return res.status(500).json({ error: 'Verify failed' }); } };
+// Selects the WHOLE row and stashes it, because ensureUser was fetching the
+// same row again two lines later. One select instead of two, on every
+// authenticated request that carries this middleware.
+const checkSuspended = async (req, res, next) => { try { if (!req.auth || !req.auth.userId) return res.status(401).json({ error: 'Not authenticated' }); const { data: user, error } = await supabase.from('users').select('*').eq('clerk_id', req.auth.userId).single(); if (error && error.code !== 'PGRST116') throw error; if (user && user.suspended) return res.status(403).json({ error: 'Account suspended' }); req.userRow = user || null; req.userPlan = user?.plan || 'free'; next(); } catch (err) { Sentry.captureException(err); return res.status(500).json({ error: 'Verify failed' }); } };
 const requireOwnership = (table, col = 'user_id') => async (req, res, next) => { try { if (!req.auth || !req.auth.userId) return res.status(401).json({ error: 'Not authenticated' }); const user = await ensureUser(req.auth.userId); const id = req.params.id; if (!id || typeof id !== 'string') return res.status(400).json({ error: 'ID required' }); if (!/^[0-9a-fA-F-]{36}$/.test(id)) return res.status(400).json({ error: 'Invalid ID' }); const { data: resource, error } = await supabase.from(table).select(col).eq('id', id).single(); if (error || !resource) return res.status(404).json({ error: 'Not found' }); if (resource[col] !== user.id) return res.status(403).json({ error: 'No permission' }); req.resource = resource; next(); } catch (err) { Sentry.captureException(err); return res.status(500).json({ error: 'Ownership check failed' }); } };
 // Selects `id` as well as `is_admin` so downstream handlers can record WHICH
 // admin acted, and can compare against a :id param — both are Supabase user
@@ -617,8 +660,14 @@ app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISO
 
 // ===== COUNCIL =====
 app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
+  // Wall-clock to the point where the first byte of an answer starts streaming.
+  // Everything before that is the user watching nothing happen, and until now
+  // it was invisible: the only latency anyone could see was the total, which
+  // mixes it with however long the model took to write. `council.tools` records
+  // it so the admin console can report it without a log dashboard.
+  const t0 = Date.now();
   try {
-    const user = await ensureUser(req.auth.userId);
+    const user = await ensureUser(req.auth.userId, { cached: req.userRow });
     const { message, history = [], chatId, image } = req.body;
     const pv = validatePrompt(message);
     if (!pv.valid) return res.status(400).json({ error: pv.error });
@@ -727,7 +776,24 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     // build their own message arrays and never read contextMsgs, so routing here
     // would drop the image description on the floor. An attached image also means
     // the user wants that image looked at, not a recap.
-    if (!imageContext && await isMemoryOrReferenceQuestion(pv.value)) {
+    /* THE TWO ROUTER CALLS RUN TOGETHER, not one after the other.
+     *
+     * Both are FAST_MODEL round trips to the gateway and both take only inputs
+     * that exist before either runs. In series they were the first two things
+     * on the critical path of every message, and nothing could start until both
+     * had returned.
+     *
+     * The trade, stated plainly: a memory question now also pays for a search
+     * decision it will not use. That is one call to a fast model with a
+     * 50-token ceiling, on a minority of turns, against a full round trip saved
+     * on the majority. Worth it — but it IS a real cost, not a free win.
+     *
+     * Not awaited here. Each branch awaits the one it needs, so a memory
+     * question never blocks on the search decision finishing. */
+    const memoryP = imageContext ? Promise.resolve(false) : isMemoryOrReferenceQuestion(pv.value).catch(() => false);
+    const searchQueryP = imageContext ? Promise.resolve(null) : getSearchQuery(pv.value, convSummary, region).catch(() => null);
+
+    if (await memoryP) {
       console.log('[COUNCIL] Memory question.');
       const memSys = `You are ALOP-AI. The user is asking about a previous conversation. The history below IS your memory. Do NOT say you can't remember. Reference what was discussed. Be concise.${convSummary ? `\n\nSummary: ${convSummary}` : ''}`;
       const memMsgs = [{ role: 'system', content: memSys }, ...histArr.slice(-10), { role: 'user', content: pv.value }];
@@ -751,7 +817,9 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     }
 
     // 2. SEARCH
-    const searchQuery = await getSearchQuery(pv.value, convSummary, region);
+    // Started above, alongside the memory check. By the time control reaches
+    // here it has usually already resolved, so this await is free.
+    const searchQuery = await searchQueryP;
     const shouldCheckWiki = needsWikiCheck(pv.value);
 
     if (searchQuery) {
@@ -855,6 +923,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       // In audit_logs they survive log rotation, they aggregate, and the admin
       // console can answer "is the dedupe earning its place" from a phone.
       await auditLog(user.id, 'council.tools', {
+        msToFirstByte: (res.locals?.firstByteAt || Date.now()) - t0,
         rounds: loop.rounds,
         uniqueCalls: loop.uniqueCallsUsed,
         members: selection.members.length,
@@ -929,7 +998,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
 // ===== OVERLAY (bulletproof — never returns 500) =====
 app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
   try {
-    const user = await ensureUser(req.auth.userId);
+    const user = await ensureUser(req.auth.userId, { cached: req.userRow });
     const { prompt, image, history = [] } = req.body;
     const pv = validatePrompt(prompt);
     if (!pv.valid) return res.status(400).json({ error: pv.error });

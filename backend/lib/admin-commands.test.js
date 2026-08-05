@@ -260,3 +260,33 @@ test("says plainly when there is nothing recorded, rather than reporting zeros a
   assert.equal(r.result.turns, 0);
   assert.match(r.result.note, /COUNCIL_TOOLS is not 1/);
 });
+
+test("reports time-to-first-byte as percentiles, not a mean", async () => {
+  // One cold start at 22s drags a mean somewhere no real request ever was.
+  // The median is what a user actually experiences.
+  const c = buildCommands({
+    supabase: fakeSupabase(councilRows([
+      { msToFirstByte: 1200, rounds: 1, uniqueCalls: 1, members: 7, tools: {} },
+      { msToFirstByte: 1400, rounds: 1, uniqueCalls: 1, members: 7, tools: {} },
+      { msToFirstByte: 1500, rounds: 1, uniqueCalls: 1, members: 7, tools: {} },
+      { msToFirstByte: 22000, rounds: 1, uniqueCalls: 1, members: 7, tools: {} },
+    ])),
+    env: {}, proc: process,
+  });
+  const r = await c.run("council");
+  assert.equal(r.result.msToFirstByteMedian, 1500);
+  assert.equal(r.result.msToFirstByteWorst, 22000);
+});
+
+test("turns with no timing recorded do not break the percentiles", async () => {
+  // Rows written before msToFirstByte existed.
+  const c = buildCommands({
+    supabase: fakeSupabase(councilRows([
+      { rounds: 1, uniqueCalls: 1, members: 7, tools: {} },
+      { msToFirstByte: 900, rounds: 1, uniqueCalls: 1, members: 7, tools: {} },
+    ])),
+    env: {}, proc: process,
+  });
+  const r = await c.run("council");
+  assert.equal(r.result.msToFirstByteMedian, 900);
+});

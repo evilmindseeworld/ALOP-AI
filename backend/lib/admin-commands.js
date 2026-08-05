@@ -234,9 +234,18 @@ function buildCommands({ supabase, env = process.env, proc = process } = {}) {
         const fellBack = rows.filter((r) => r.fellBack).length;
         const truncated = rows.filter((r) => r.truncated).length;
 
+        // How long the user waited before the first character appeared. The
+        // median matters more than the mean here: one cold start at 22s drags
+        // an average somewhere no real request ever was.
+        const waits = rows.map((r) => Number(r.msToFirstByte)).filter(Number.isFinite).sort((a, b) => a - b);
+        const pct = (p) => (waits.length ? waits[Math.min(waits.length - 1, Math.floor(waits.length * p))] : null);
+
         return {
           turns: rows.length,
           since: data[data.length - 1].created_at,
+          msToFirstByteMedian: pct(0.5),
+          msToFirstByteP90: pct(0.9),
+          msToFirstByteWorst: waits.length ? waits[waits.length - 1] : null,
           avgRounds: +(sum((r) => r.rounds) / rows.length).toFixed(2),
           avgUniqueCalls: +(uniqueCalls / rows.length).toFixed(2),
           // < 0.4 is the dedupe working. Near 1.0 means it is not.

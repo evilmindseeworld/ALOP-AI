@@ -648,6 +648,48 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
 
     console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | Mem: ${convSummary ? 'Y' : 'N'} | Lang: ${lang} | Region: ${region ? `${region.country} via ${region.source}` : 'unknown'}`);
 
+    /* THE SHADOW PROBE RUNS HERE, ABOVE THE ROUTER — and that placement is the
+     * whole point of it.
+     *
+     * It was originally inside step 4 alongside the live loop, which is where
+     * the live loop belongs and is exactly the wrong place for a probe. Steps
+     * 0 through 3 all `return`, so step 4 is reached only when the router
+     * decided the question needed no memory lookup, no greeting, NO SEARCH and
+     * no Wikipedia. For any substantive question the search branch returns
+     * first, so the probe never ran — [COUNCIL] appeared in the logs on every
+     * request and [PROBE] appeared on almost none.
+     *
+     * That is also the more useful measurement. The question worth answering is
+     * "would these models emit a tool call for the things people actually
+     * ask?", and the things people actually ask are precisely the ones the
+     * router sends to search. Sampling only the leftovers would have measured
+     * the wrong population and looked like a clean result.
+     *
+     * Fire-and-forget: nothing awaits it, it cannot delay the answer or fail
+     * the turn, and Node finishes the promise after the response has been sent.
+     * Greetings and image turns are skipped — a greeting has nothing to
+     * research, and an image turn is not a path the live loop ever takes. */
+    if (TOOLS_SHADOW && !imageContext && selection.category !== 'greeting' && selection.members.length) {
+      const probeSys = `You are an elite AI expert in the ALOP-AI Council. If you answer, be direct. Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+      const probeMsgs = [{ role: 'system', content: probeSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
+      const probeRegistry = buildRegistry({ search: toolSearch, readUrl: readPageContent, assertSafeUrl, checkLinks: checkSearchLinks });
+
+      Promise.all(
+        selection.members.map(async ({ model }) => {
+          try {
+            const raw = await callModel(model, toolMessages(probeMsgs, probeRegistry, { round: 1, isFinalRound: false }), 0.0, selection.whipMs, selection.tokenLimit);
+            return { member: model, ...parseToolRequests(raw) };
+          } catch (err) {
+            return { member: model, calls: [], text: '', error: err.message };
+          }
+        }),
+      ).then((replies) => {
+        const s = summariseProbe(replies);
+        console.log(`[PROBE] ${s.verdict} | category=${selection.category} members=${s.members} failed=${s.failed} emitted=${s.emitted} unparsed=${s.unparsed} tools=${JSON.stringify(s.byTool)}`);
+        if (s.sample) console.log(`[PROBE] unparsed sample: ${s.sample.replace(/\s+/g, ' ').slice(0, 300)}`);
+      }).catch((err) => console.error('[PROBE] failed:', err.message));
+    }
+
     // 0. MEMORY BYPASS
     // Skipped when an image is attached: this branch and the greeting one below
     // build their own message arrays and never read contextMsgs, so routing here
@@ -772,30 +814,6 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
         console.log('[TOOLS] no usable answers, falling back to the plain council.');
         validResponses = await runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit);
       }
-    } else if (TOOLS_SHADOW && !imageContext) {
-      // Probe and answer at the same time, so the user waits exactly as long as
-      // they would have. The probe's result is logged and discarded; it can
-      // neither change the answer nor fail the turn.
-      const probeRegistry = buildRegistry({ search: toolSearch, readUrl: readPageContent, assertSafeUrl, checkLinks: checkSearchLinks });
-      const probe = Promise.all(
-        selection.members.map(async ({ model }) => {
-          try {
-            const raw = await callModel(model, toolMessages(councilMsgs, probeRegistry, { round: 1, isFinalRound: false }), 0.0, selection.whipMs, selection.tokenLimit);
-            return { member: model, ...parseToolRequests(raw) };
-          } catch (err) {
-            return { member: model, calls: [], text: '', error: err.message };
-          }
-        }),
-      ).then((replies) => {
-        const s = summariseProbe(replies);
-        console.log(`[PROBE] ${s.verdict} | members=${s.members} failed=${s.failed} emitted=${s.emitted} unparsed=${s.unparsed} tools=${JSON.stringify(s.byTool)}`);
-        if (s.sample) console.log(`[PROBE] unparsed sample: ${s.sample.replace(/\s+/g, ' ')}`);
-      }).catch((err) => console.error('[PROBE] failed:', err.message));
-
-      [validResponses] = await Promise.all([
-        runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit),
-        probe,
-      ]);
     } else {
       validResponses = await runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit);
     }
@@ -1078,7 +1096,13 @@ const server = app.listen(PORT, () => {
   console.log(`║  Port: ${PORT} | Council: ${COUNCIL.length} pro / ${FREE_COUNCIL.length} free      ║`);
   console.log(`║  T=${TAVILY_API_KEY?'ON':'OFF'} B=${BRAVE_API_KEY?'ON':'OFF'} G=${GOOGLE_SEARCH_API_KEY&&GOOGLE_CSE_ID?'ON':'OFF'} J=${JINA_API_KEY?'ON':'OFF'} Wiki=ON  ║`);
   console.log(`║  Memory: Supabase | Quick + Feedback        ║`);
-  console.log(`╚════════════════════════════════════════════╝\n`);
+  console.log(`╚════════════════════════════════════════════╝`);
+  // Printed unconditionally, including when it is off. A feature flag that is
+  // silent when disabled is indistinguishable from one that is enabled and
+  // broken — which is exactly the half hour this cost: COUNCIL_TOOLS=shadow was
+  // set correctly, the probe was in unreachable code, and nothing on either
+  // side of the boot said so.
+  console.log(`[BOOT] COUNCIL_TOOLS=${process.env.COUNCIL_TOOLS || '(unset)'} -> tools ${TOOLS_ENABLED ? 'LIVE' : TOOLS_SHADOW ? 'SHADOW (probe only, answers unchanged)' : 'OFF'}\n`);
 });
 
 process.on('SIGTERM', () => server.close(() => process.exit(0)));

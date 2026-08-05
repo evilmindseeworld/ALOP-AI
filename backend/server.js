@@ -231,7 +231,12 @@ const searchGoogleImages = async (query) => {
   try { const res = await fetch(`https://www.googleapis.com/customsearch/v1?key=${GOOGLE_SEARCH_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query.slice(0,200))}&searchType=image&num=5`, { signal: AbortSignal.timeout(8000) }); if (!res.ok) return []; const data = await res.json(); return (data.items||[]).map(r => ({ url: r.link, title: r.title?.slice(0,200)||'' })); } catch { return []; }
 };
 const readPageContent = async (url) => {
-  try { const headers = { 'Accept': 'text/markdown' }; if (JINA_API_KEY) headers['Authorization'] = `Bearer ${JINA_API_KEY}`; const res = await fetch(`https://r.jina.ai/${url}`, { method: 'GET', headers, signal: AbortSignal.timeout(6000) }); if (!res.ok) return ''; return (await res.text()).slice(0, 3000); } catch { return ''; }
+  // extractPageSignal, not slice(0, 3000). A retail page's markdown spends its
+  // first few thousand characters on nav, breadcrumbs and marketing, so a flat
+  // truncation cut the price off — which produced a real answer saying three
+  // UAE retailers "did not display a price" when all three did. See
+  // lib/page-extract.js.
+  try { const headers = { 'Accept': 'text/markdown' }; if (JINA_API_KEY) headers['Authorization'] = `Bearer ${JINA_API_KEY}`; const res = await fetch(`https://r.jina.ai/${url}`, { method: 'GET', headers, signal: AbortSignal.timeout(6000) }); if (!res.ok) return ''; return extractPageSignal(await res.text()); } catch { return ''; }
 };
 const searchWikipedia = async (query) => {
   try { const sr = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query.slice(0,100))}&format=json&origin=*`, { signal: AbortSignal.timeout(6000) }); if (!sr.ok) return ''; const sd = await sr.json(); const titles = (sd.query?.search||[]).slice(0,2).map(s => s.title); if (titles.length === 0) return ''; const er = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=true&explaintext=true&titles=${encodeURIComponent(titles.join('|'))}&format=json&origin=*`, { signal: AbortSignal.timeout(6000) }); if (!er.ok) return ''; const ed = await er.json(); return Object.values(ed.query?.pages||{}).map(p => p.extract||'').filter(e => e.length > 100).join('\n\n').slice(0, 5000); } catch { return ''; }
@@ -270,6 +275,7 @@ const { buildRegistry } = require('./lib/tool-registry');
 const { runAgentLoop } = require('./lib/agent-loop');
 const { assertSafeUrl } = require('./lib/url-guard');
 const { checkLinks } = require('./lib/link-check');
+const { extractPageSignal } = require('./lib/page-extract');
 const { detectRegion, regionHint } = require('./lib/region');
 const { firstWithResults, toolMessages, summariseProbe } = require('./lib/council-tools');
 const { parseToolRequests } = require('./lib/tool-protocol');
@@ -886,7 +892,9 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
 5. Introduce no fact that appears in none of the responses.
 6. Never mention the panel, the experts, how many there were, or that synthesis happened. Write as a single voice.
 7. Match length to the question's complexity. Do not pad.
-8. Use Markdown.${lang !== 'English' ? `\n9. Respond in ${lang}.` : ''}`;
+8. Use Markdown.
+9. End on the answer. No "Would you like help with anything else?", no "Let me know if...", no closing offer of further assistance. The user knows they can ask again.
+10. If you are inferring rather than reporting — a price you did not see, a spec you are reasoning to, a substitute product — say so IN THE SAME SENTENCE. "Likely higher" without "I did not find a listed price" reads as a fact.${lang !== 'English' ? `\n11. Respond in ${lang}.` : ''}`;
     // Research and truncation reach the synthesiser, because the design's rule
     // is that a cut-short answer must be able to hedge rather than assert. A
     // truncated answer presented as a complete one is worse than a slow one.

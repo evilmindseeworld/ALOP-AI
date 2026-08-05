@@ -132,6 +132,73 @@ test("web_search accepts the Tavily {results:[…]} shape as well as a bare arra
   assert.equal(r.ok, true);
 });
 
+// ===== dead-link filtering =====
+
+const LIVE = { title: "Live", url: "https://live.test/p/1", description: "in stock" };
+const DEAD = { title: "Dead", url: "https://dead.test/p/2", description: "gone" };
+const verdicts = (m) => async (urls) => new Map(urls.map((u) => [u, { verdict: m[u] || "ok", reason: "" }]));
+
+test("dead links never reach the model", async () => {
+  const reg = buildRegistry({
+    search: async () => [LIVE, DEAD],
+    checkLinks: verdicts({ "https://dead.test/p/2": "gone" }),
+  });
+  const r = await reg.execute({ name: "web_search", args: { query: "x" } });
+  assert.ok(r.content.includes("live.test"));
+  assert.equal(r.content.includes("dead.test"), false);
+  assert.ok(r.summary.includes("1 dead or unavailable link removed"));
+});
+
+test("an unavailable product is dropped as a source too", async () => {
+  const reg = buildRegistry({
+    search: async () => [LIVE, DEAD],
+    checkLinks: verdicts({ "https://dead.test/p/2": "unavailable" }),
+  });
+  const r = await reg.execute({ name: "web_search", args: { query: "x" } });
+  assert.equal(r.content.includes("dead.test"), false);
+});
+
+test("a link we merely could not REACH is kept", async () => {
+  // Our network trouble is not evidence about the page.
+  const reg = buildRegistry({
+    search: async () => [LIVE, DEAD],
+    checkLinks: verdicts({ "https://dead.test/p/2": "unreachable" }),
+  });
+  const r = await reg.execute({ name: "web_search", args: { query: "x" } });
+  assert.ok(r.content.includes("dead.test"));
+  assert.equal(r.summary.includes("removed"), false);
+});
+
+test("if EVERY link is dead the originals come back rather than nothing", async () => {
+  // A checker that silently empties a good search is worse than no checker: a
+  // stale link the model can caveat beats no source at all.
+  const reg = buildRegistry({
+    search: async () => [LIVE, DEAD],
+    checkLinks: verdicts({ "https://live.test/p/1": "gone", "https://dead.test/p/2": "gone" }),
+  });
+  const r = await reg.execute({ name: "web_search", args: { query: "x" } });
+  assert.equal(r.ok, true);
+  assert.ok(r.content.includes("live.test"));
+});
+
+test("without a checker, search behaves exactly as before", async () => {
+  const r = await buildRegistry({ search: async () => [LIVE, DEAD] }).execute({
+    name: "web_search",
+    args: { query: "x" },
+  });
+  assert.ok(r.content.includes("dead.test"));
+  assert.equal(r.summary.includes("removed"), false);
+});
+
+test("a checker that throws does not take down search", async () => {
+  const reg = buildRegistry({
+    search: async () => [LIVE],
+    checkLinks: async () => { throw new Error("checker exploded"); },
+  });
+  const r = await reg.execute({ name: "web_search", args: { query: "x" } });
+  assert.equal(r.ok, false, "it surfaces as a failed tool result, never an unhandled throw");
+});
+
 test("no results is a clean failure, not an exception", async () => {
   const reg = buildRegistry({ search: async () => [] });
   const r = await reg.execute({ name: "web_search", args: { query: "zzz" } });

@@ -153,7 +153,10 @@ const InputBar = memo(
               {attachedFiles.map((f) => (
                 <li key={f.id} className="file-chip">
                   <Icon name="code" size={12} />
-                  <span className="file-chip-name">{f.name}</span>
+                  {/* The name truncates with an ellipsis and the extension is
+                      the first thing lost, so the full name has to be
+                      recoverable without opening anything. */}
+                  <span className="file-chip-name" title={f.name}>{f.name}</span>
                   <button
                     type="button"
                     onClick={() => onRemoveFile(f.id)}

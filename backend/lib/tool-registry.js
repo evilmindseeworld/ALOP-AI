@@ -22,6 +22,8 @@
  * failure above. They arrive with their backing, per the design's step order.
  */
 
+const { isCitable } = require("./link-check");
+
 /** Result shapes are uniform so the loop never has to know which tool ran. */
 const ok = (summary, content) => ({ ok: true, summary, content });
 const fail = (summary) => ({ ok: false, summary, content: "" });
@@ -97,11 +99,33 @@ function buildRegistry(deps = {}) {
         const results = await deps.search(query);
         const list = Array.isArray(results) ? results : results && results.results;
         if (!list || list.length === 0) return fail(`No results for "${query}".`);
-        const rendered = list
-          .slice(0, 6)
+
+        let top = list.slice(0, 6);
+        let dropped = 0;
+
+        // Search APIs index pages that have since 404'd, been bounced to a
+        // homepage, or now say "no longer available". Citing one of those is
+        // the failure a reader actually notices, because it is the one they
+        // can check. Verify before the model ever sees them.
+        //
+        // Optional: without a checker the tool behaves exactly as before, so
+        // this cannot become a hard dependency of search working at all.
+        if (deps.checkLinks) {
+          const verdicts = await deps.checkLinks(top.map((r) => r.url).filter(Boolean));
+          const kept = top.filter((r) => !r.url || isCitable((verdicts.get(r.url) || {}).verdict || "ok"));
+          dropped = top.length - kept.length;
+          // If EVERY result is dead, hand back the originals rather than
+          // nothing. A stale link the model can caveat beats no source at all,
+          // and a checker that silently empties a good search is worse than no
+          // checker.
+          top = kept.length ? kept : top;
+        }
+
+        const rendered = top
           .map((r, i) => `${i + 1}. ${r.title || "Untitled"}\n   ${r.url || ""}\n   ${(r.description || r.content || "").slice(0, 300)}`)
           .join("\n\n");
-        return ok(`${list.length} results for "${query}"`, clamp(rendered));
+        const note = dropped ? ` (${dropped} dead or unavailable link${dropped === 1 ? "" : "s"} removed)` : "";
+        return ok(`${top.length} results for "${query}"${note}`, clamp(rendered));
       },
     });
   }

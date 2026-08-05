@@ -111,11 +111,30 @@
 
 .file-chip button:hover { color: var(--danger); }
 
+/* The chip's remove button is a real tab stop. Without its own focus ring the
+ * only keyboard route to detaching a file is invisible — the global
+ * :focus-visible ring lands on a 10px glyph and reads as a stray artifact
+ * rather than as "this is where you are". */
+/* Only the colour, deliberately. The ring itself comes from the one global
+ * :focus-visible in base.css — redeclaring it here in a NEARLY identical
+ * colour is how an app ends up with two focus treatments that differ by a
+ * shade, which is worse than either alone. */
+.file-chip button:focus-visible { color: var(--danger); }
+
+/* Long names truncate with an ellipsis, which loses the extension — the one
+ * part of a filename that says what the thing IS. The title attribute is set
+ * in JSX; this keeps the pointer honest about there being more to read. */
+.file-chip-name { cursor: default; }
+
 .input-text {
   background: transparent;
   border: none;
   outline: none;
   color: var(--text);
+  /* The caret is the one piece of UI the user watches continuously while
+   * typing, and it was the default flat white. In the brand colour it is the
+   * cheapest possible signal that this composer belongs to this app. */
+  caret-color: var(--primary);
   font-family: var(--font-body);
   font-size: var(--text-base);
   line-height: 1.55;

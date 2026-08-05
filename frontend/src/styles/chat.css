@@ -53,6 +53,18 @@
   .scroll-wrapper { scroll-behavior: auto; }
 }
 
+/* The skip link's destination. Without this the jump lands the first message
+ * flush against the header, so the thing the user just asked to be taken to is
+ * the one thing half-hidden — which is the whole point of the link failing
+ * quietly. */
+#transcript { scroll-margin-top: var(--space-6); }
+
+/* The focus ring is deliberately LEFT ON. It was tempting to remove it — a
+ * 2px ring around the whole transcript looks heavy — but it is the only
+ * confirmation a keyboard user gets that the skip link worked, and stripping a
+ * focus indicator to tidy up an unusual-looking one is the most common
+ * accessibility regression in a restyle. */
+
 /* ===== EMPTY STATE ===== */
 .empty-state {
   display: flex;
@@ -252,7 +264,19 @@
   font-size: var(--text-xs);
   line-height: 1.5;
   color: var(--text-subtle);
+  /* A pending row's summary ("read_url: https://…") is replaced by a shorter
+   * resolved one ("Read rtings.com"), and a one-line row becoming a one-line
+   * row of different length is fine — but a two-line one collapsing to one
+   * shifts every row beneath it while the user is reading them. A floor costs
+   * nothing and holds the list still. */
+  min-height: 1.5em;
 }
+
+/* The trail is the only place in the app where content resolves UNDER the
+ * pointer, so the summary text changing must not move the disclosure it is
+ * inside. Reserving the row gutter keeps the icon column fixed whatever the
+ * text does. */
+.tool-trail-row svg { flex: 0 0 auto; margin-top: 0.15em; }
 
 .tool-trail-row.is-pending { color: var(--text-muted); }
 .tool-trail-row.is-pending svg { animation: toolSpin 1.1s linear infinite; }

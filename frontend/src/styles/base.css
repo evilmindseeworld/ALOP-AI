@@ -12,6 +12,39 @@ html, body, #root {
   width: 100%;
 }
 
+html {
+  /* iOS Safari inflates font sizes on rotation to landscape unless told not
+   * to. The app is a fixed shell, so the "help" reflows the transcript to a
+   * size nobody chose. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  /* A rubber-band scroll at the top of the transcript otherwise drags the
+   * whole page on iOS and Chrome Android, which on an app shell looks like the
+   * UI has come loose. */
+  overscroll-behavior: none;
+}
+
+/* The grey flash Chrome and Safari paint over a tapped control. It fires
+ * before :active does, in a colour belonging to neither theme, and it is one
+ * of the main reasons a well-made web app still feels like a web page on a
+ * phone. Every control here already has its own :active state.
+ *
+ * Listed by element rather than written `* { … }`. This file used to carry
+ * `.app-root *` — a universal rule that won on source order and blocked nine
+ * duplicate-rule merges — and a universal selector also adds this property to
+ * every element in the cascade snapshot, which is 1,600 lines of bookkeeping
+ * for a property only tappable things can use. */
+a, button, label, summary, input, textarea, select, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+:root {
+  /* Checkboxes, radios and the file picker are drawn by the OS unless a colour
+   * is named. One declaration makes the native controls agree with the brand
+   * instead of arriving in Windows blue. */
+  accent-color: var(--primary);
+}
+
 body {
   font-family: var(--font-body), system-ui, -apple-system, sans-serif;
   overflow: hidden;

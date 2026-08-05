@@ -9,6 +9,7 @@
 === width=1400 ===
 
 [0] html
+  -webkit-text-size-adjust: 100%
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -28,6 +29,7 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
+  accent-color: #f08aa3
   box-sizing: border-box
   color-scheme: dark
   height: 100%
@@ -35,11 +37,13 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
+  overscroll-behavior: none
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
+  text-size-adjust: 100%
   width: 100%
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
@@ -234,6 +238,7 @@
     outline-offset: 2px
 
 [4] a.skip-link
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -616,6 +621,7 @@
     outline-offset: 2px
 
 [12] button.camera-btn.primary
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -673,6 +679,7 @@
     outline-offset: 2px
 
 [13] button.camera-btn.secondary
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -940,6 +947,7 @@
     outline-offset: 2px
 
 [18] input.cmdk-input
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -1128,6 +1136,7 @@
     outline-offset: 2px
 
 [22] button.cmdk-item.is-active
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -1323,6 +1332,7 @@
     outline-offset: 2px
 
 [26] button.cmdk-item
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -1991,6 +2001,7 @@
     outline-offset: 2px
 
 [40] button.icon-btn.mobile-only
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -2137,6 +2148,7 @@
     outline-offset: 2px
 
 [43] button.icon-btn.desktop-only
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -2474,6 +2486,7 @@
     outline-offset: 2px
 
 [50] button.cmdk-trigger.desktop-only
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -2704,6 +2717,7 @@
     outline-offset: 2px
 
 [55] button.upgrade-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -2887,6 +2901,7 @@
     outline-offset: 2px
 
 [59] button.icon-btn.admin-btn.active
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -3032,6 +3047,7 @@
     outline-offset: 2px
 
 [62] button.icon-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -3324,6 +3340,7 @@
     outline-offset: 2px
 
 [68] button.rail-btn.rail-new
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -3466,6 +3483,7 @@
     outline-offset: 2px
 
 [71] button.rail-btn.rail-search
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -3705,6 +3723,7 @@
     outline-offset: 2px
 
 [76] button.rail-chat.active
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -3767,6 +3786,7 @@
     transform: scale(0.94)
 
 [77] button.rail-chat
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -3923,6 +3943,7 @@
     outline-offset: 2px
 
 [80] button.new-chat-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -4072,6 +4093,7 @@
     outline-offset: 2px
 
 [83] button.icon-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -4351,6 +4373,7 @@
     outline-offset: 2px
 
 [89] input.sidebar-search-input[type=text]
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -4404,6 +4427,7 @@
     outline-offset: 2px
 
 [90] button.sidebar-search-clear
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -4796,6 +4820,7 @@
     outline-offset: 2px
 
 [98] button.chat-title
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -4913,6 +4938,7 @@
     outline-offset: 2px
 
 [100] button.chat-action.is-on
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -5053,6 +5079,7 @@
     outline-offset: 2px
 
 [103] button.chat-action
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -5194,6 +5221,7 @@
     outline-offset: 2px
 
 [106] button.chat-action.is-danger
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -5487,6 +5515,7 @@
     outline-offset: 2px
 
 [112] input.custom-input.chat-title-input
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -5605,6 +5634,7 @@
     outline-offset: 2px
 
 [114] button.chat-action.is-on
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -5897,6 +5927,7 @@
     outline-offset: 2px
 
 [120] button.chat-title
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -6198,6 +6229,7 @@
     outline-offset: 2px
 
 [126] button.sidebar-upgrade
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -7548,6 +7580,7 @@
     outline-offset: 2px
 
 [155] button.icon-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -8039,6 +8072,7 @@
     outline-offset: 2px
 
 [165] button.theme-card
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -8148,6 +8182,7 @@
     outline-offset: 2px
 
 [167] button.theme-card.is-danger
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -8660,6 +8695,7 @@
     outline-offset: 2px
 
 [178] button.msg-action-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -8723,6 +8759,7 @@
     outline-offset: 2px
 
 [179] button.msg-action-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -9454,6 +9491,7 @@
     outline-offset: 2px
 
 [195] button.plan-buy
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -9516,6 +9554,7 @@
     opacity: 0.55
 
 [196] button.plan-buy.is-secondary
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -10571,6 +10610,7 @@
     outline-offset: 2px
 
 [218] button.starter-card
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -10873,6 +10913,7 @@
     outline-offset: 2px
 
 [224] button.starter-card
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -11810,6 +11851,7 @@
     outline-offset: 2px
 
 [243] summary.tool-trail-summary
+  -webkit-tap-highlight-color: transparent
   ::-webkit-details-marker/display: none
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -12058,6 +12100,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
+  min-height: 1.5em
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -12094,10 +12137,12 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  flex: 0 0 auto
+  flex-shrink: <flex: 0 0 auto>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin-top: 0.15em
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -12226,6 +12271,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
+  min-height: 1.5em
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -12266,10 +12312,12 @@
   animation-duration: <animation: toolSpin 1.1s linear infinite>
   animation-iteration-count: <animation: toolSpin 1.1s linear infinite>
   box-sizing: border-box
+  flex: 0 0 auto
+  flex-shrink: <flex: 0 0 auto>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin-top: 0.15em
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -12398,6 +12446,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
+  min-height: 1.5em
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -12434,10 +12483,12 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  flex: 0 0 auto
+  flex-shrink: <flex: 0 0 auto>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin-top: 0.15em
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -12904,6 +12955,7 @@
     outline-offset: 2px
 
 [268] a
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -13877,6 +13929,7 @@
 
 [290] button.code-copy-btn
   -webkit-backdrop-filter: blur(6px)
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -14138,6 +14191,7 @@
 
 [295] button.code-copy-btn.is-copied
   -webkit-backdrop-filter: blur(6px)
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -14543,6 +14597,7 @@
     outline-offset: 2px
 
 [303] button.msg-action-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -14606,6 +14661,7 @@
     outline-offset: 2px
 
 [304] button.msg-action-btn.is-copied
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -14663,6 +14719,7 @@
     outline-offset: 2px
 
 [305] button.msg-action-btn.active
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -14800,6 +14857,7 @@
     outline-offset: 2px
 
 [308] button.msg-action-btn.is-down.active
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -16406,6 +16464,7 @@
     outline-offset: 2px
 
 [340] button.scroll-down-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -16599,6 +16658,7 @@
     outline-offset: 2px
 
 [344] button.chat-toolbar-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -16741,6 +16801,7 @@
     outline-offset: 2px
 
 [347] button.chat-toolbar-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -16980,6 +17041,7 @@
     outline-offset: 2px
 
 [352] textarea.input-text
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -17007,6 +17069,7 @@
   border: none
   border-color: <border: none>
   box-sizing: border-box
+  caret-color: #f08aa3
   color: #f5f1ee
   font-family: 'Switzer', system-ui, sans-serif
   font-size: 15px
@@ -17223,6 +17286,7 @@
     outline-offset: 2px
 
 [357] button
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -17484,6 +17548,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  cursor: default
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -17510,6 +17575,7 @@
     outline-offset: 2px
 
 [363] button
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -17559,6 +17625,7 @@
   :focus-visible
     border-bottom-right-radius: <border-radius: 8px>
     border-radius: 8px
+    color: #f0808f
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
@@ -17715,6 +17782,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  cursor: default
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -17741,6 +17809,7 @@
     outline-offset: 2px
 
 [368] button
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -17790,10 +17859,12 @@
   :focus-visible
     border-bottom-right-radius: <border-radius: 8px>
     border-radius: 8px
+    color: #f0808f
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
 [369] textarea.input-text
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -17821,6 +17892,7 @@
   border: none
   border-color: <border: none>
   box-sizing: border-box
+  caret-color: #f08aa3
   color: #f5f1ee
   font-family: 'Switzer', system-ui, sans-serif
   font-size: 15px
@@ -17895,6 +17967,7 @@
     outline-offset: 2px
 
 [371] label.input-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -17965,6 +18038,7 @@
     transform: none
 
 [372] input[type=file]
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -18086,6 +18160,7 @@
     outline-offset: 2px
 
 [375] button.input-btn.listening
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -18234,6 +18309,7 @@
     outline-offset: 2px
 
 [378] button.input-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -18519,6 +18595,7 @@
     outline-offset: 2px
 
 [384] button.input-btn.primary
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -18673,6 +18750,7 @@
     outline-offset: 2px
 
 [387] button.input-btn.primary.is-stop
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -18908,6 +18986,7 @@
     outline-offset: 2px
 
 [391] a.skip-link
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -19290,6 +19369,7 @@
     outline-offset: 2px
 
 [399] button.camera-btn.primary
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -19347,6 +19427,7 @@
     outline-offset: 2px
 
 [400] button.camera-btn.secondary
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -19614,6 +19695,7 @@
     outline-offset: 2px
 
 [405] input.cmdk-input
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -19802,6 +19884,7 @@
     outline-offset: 2px
 
 [409] button.cmdk-item.is-active
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -19997,6 +20080,7 @@
     outline-offset: 2px
 
 [413] button.cmdk-item
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -20665,6 +20749,7 @@
     outline-offset: 2px
 
 [427] button.icon-btn.mobile-only
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -20811,6 +20896,7 @@
     outline-offset: 2px
 
 [430] button.icon-btn.desktop-only
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -21148,6 +21234,7 @@
     outline-offset: 2px
 
 [437] button.cmdk-trigger.desktop-only
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -21378,6 +21465,7 @@
     outline-offset: 2px
 
 [442] button.upgrade-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -21561,6 +21649,7 @@
     outline-offset: 2px
 
 [446] button.icon-btn.admin-btn.active
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -21706,6 +21795,7 @@
     outline-offset: 2px
 
 [449] button.icon-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -21998,6 +22088,7 @@
     outline-offset: 2px
 
 [455] button.rail-btn.rail-new
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -22140,6 +22231,7 @@
     outline-offset: 2px
 
 [458] button.rail-btn.rail-search
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -22379,6 +22471,7 @@
     outline-offset: 2px
 
 [463] button.rail-chat.active
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -22441,6 +22534,7 @@
     transform: scale(0.94)
 
 [464] button.rail-chat
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -22597,6 +22691,7 @@
     outline-offset: 2px
 
 [467] button.new-chat-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -22746,6 +22841,7 @@
     outline-offset: 2px
 
 [470] button.icon-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -23025,6 +23121,7 @@
     outline-offset: 2px
 
 [476] input.sidebar-search-input[type=text]
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -23078,6 +23175,7 @@
     outline-offset: 2px
 
 [477] button.sidebar-search-clear
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -23470,6 +23568,7 @@
     outline-offset: 2px
 
 [485] button.chat-title
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -23587,6 +23686,7 @@
     outline-offset: 2px
 
 [487] button.chat-action.is-on
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -23727,6 +23827,7 @@
     outline-offset: 2px
 
 [490] button.chat-action
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -23868,6 +23969,7 @@
     outline-offset: 2px
 
 [493] button.chat-action.is-danger
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -24161,6 +24263,7 @@
     outline-offset: 2px
 
 [499] input.custom-input.chat-title-input
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -24279,6 +24382,7 @@
     outline-offset: 2px
 
 [501] button.chat-action.is-on
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -24571,6 +24675,7 @@
     outline-offset: 2px
 
 [507] button.chat-title
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -24872,6 +24977,7 @@
     outline-offset: 2px
 
 [513] button.sidebar-upgrade
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -26222,6 +26328,7 @@
     outline-offset: 2px
 
 [542] button.icon-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -26713,6 +26820,7 @@
     outline-offset: 2px
 
 [552] button.theme-card
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -26822,6 +26930,7 @@
     outline-offset: 2px
 
 [554] button.theme-card.is-danger
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27334,6 +27443,7 @@
     outline-offset: 2px
 
 [565] button.msg-action-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -27397,6 +27507,7 @@
     outline-offset: 2px
 
 [566] button.msg-action-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28128,6 +28239,7 @@
     outline-offset: 2px
 
 [582] button.plan-buy
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -28190,6 +28302,7 @@
     opacity: 0.55
 
 [583] button.plan-buy.is-secondary
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -29245,6 +29358,7 @@
     outline-offset: 2px
 
 [605] button.starter-card
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -29547,6 +29661,7 @@
     outline-offset: 2px
 
 [611] button.starter-card
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -30484,6 +30599,7 @@
     outline-offset: 2px
 
 [630] summary.tool-trail-summary
+  -webkit-tap-highlight-color: transparent
   ::-webkit-details-marker/display: none
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -30732,6 +30848,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
+  min-height: 1.5em
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -30768,10 +30885,12 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  flex: 0 0 auto
+  flex-shrink: <flex: 0 0 auto>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin-top: 0.15em
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -30900,6 +31019,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
+  min-height: 1.5em
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -30940,10 +31060,12 @@
   animation-duration: <animation: toolSpin 1.1s linear infinite>
   animation-iteration-count: <animation: toolSpin 1.1s linear infinite>
   box-sizing: border-box
+  flex: 0 0 auto
+  flex-shrink: <flex: 0 0 auto>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin-top: 0.15em
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -31072,6 +31194,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
+  min-height: 1.5em
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -31108,10 +31231,12 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  flex: 0 0 auto
+  flex-shrink: <flex: 0 0 auto>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
-  margin-top: <margin: 0>
+  margin-top: 0.15em
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -31578,6 +31703,7 @@
     outline-offset: 2px
 
 [655] a
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -32551,6 +32677,7 @@
 
 [677] button.code-copy-btn
   -webkit-backdrop-filter: blur(6px)
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -32812,6 +32939,7 @@
 
 [682] button.code-copy-btn.is-copied
   -webkit-backdrop-filter: blur(6px)
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -33217,6 +33345,7 @@
     outline-offset: 2px
 
 [690] button.msg-action-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -33280,6 +33409,7 @@
     outline-offset: 2px
 
 [691] button.msg-action-btn.is-copied
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -33337,6 +33467,7 @@
     outline-offset: 2px
 
 [692] button.msg-action-btn.active
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -33474,6 +33605,7 @@
     outline-offset: 2px
 
 [695] button.msg-action-btn.is-down.active
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -35080,6 +35212,7 @@
     outline-offset: 2px
 
 [727] button.scroll-down-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -35273,6 +35406,7 @@
     outline-offset: 2px
 
 [731] button.chat-toolbar-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -35415,6 +35549,7 @@
     outline-offset: 2px
 
 [734] button.chat-toolbar-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -35654,6 +35789,7 @@
     outline-offset: 2px
 
 [739] textarea.input-text
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -35681,6 +35817,7 @@
   border: none
   border-color: <border: none>
   box-sizing: border-box
+  caret-color: #b31a54
   color: #241a16
   font-family: 'Switzer', system-ui, sans-serif
   font-size: 15px
@@ -35897,6 +36034,7 @@
     outline-offset: 2px
 
 [744] button
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -36158,6 +36296,7 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  cursor: default
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -36184,6 +36323,7 @@
     outline-offset: 2px
 
 [750] button
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -36233,6 +36373,7 @@
   :focus-visible
     border-bottom-right-radius: <border-radius: 8px>
     border-radius: 8px
+    color: #a3172b
     outline: 2px solid #b31a54
     outline-offset: 2px
 
@@ -36389,6 +36530,7 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  cursor: default
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -36415,6 +36557,7 @@
     outline-offset: 2px
 
 [755] button
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -36464,10 +36607,12 @@
   :focus-visible
     border-bottom-right-radius: <border-radius: 8px>
     border-radius: 8px
+    color: #a3172b
     outline: 2px solid #b31a54
     outline-offset: 2px
 
 [756] textarea.input-text
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -36495,6 +36640,7 @@
   border: none
   border-color: <border: none>
   box-sizing: border-box
+  caret-color: #b31a54
   color: #241a16
   font-family: 'Switzer', system-ui, sans-serif
   font-size: 15px
@@ -36569,6 +36715,7 @@
     outline-offset: 2px
 
 [758] label.input-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -36639,6 +36786,7 @@
     transform: none
 
 [759] input[type=file]
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -36760,6 +36908,7 @@
     outline-offset: 2px
 
 [762] button.input-btn.listening
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -36908,6 +37057,7 @@
     outline-offset: 2px
 
 [765] button.input-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -37193,6 +37343,7 @@
     outline-offset: 2px
 
 [771] button.input-btn.primary
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -37347,6 +37498,7 @@
     outline-offset: 2px
 
 [774] button.input-btn.primary.is-stop
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -37894,6 +38046,7 @@
     outline-offset: 2px
 
 [785] button.overlay-tts-btn
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -38008,6 +38161,7 @@
     outline-offset: 2px
 
 [787] button
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -38303,6 +38457,7 @@
     outline-offset: 2px
 
 [793] input.overlay-input[type=text]
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -38356,6 +38511,7 @@
     outline-offset: 2px
 
 [794] button.overlay-action.recording
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -38420,6 +38576,7 @@
     transform: scale(0.94)
 
 [795] label.overlay-action
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -38485,6 +38642,7 @@
     transform: scale(0.94)
 
 [796] input.overlay-file-input[type=file]
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -38526,6 +38684,7 @@
     outline-offset: 2px
 
 [797] button.overlay-submit
+  -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -48745,6 +48904,7 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
 # Either the fixture is missing markup, or the rule is dead. Both are worth
 # knowing, and a change to this list is a change to the stylesheet's reach.
 
+#transcript
 .chat-toolbar-btn span
 .markdown-body > * + h1
 .markdown-body em
@@ -48753,3 +48913,5 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
 .markdown-body li > ul
 .markdown-body tbody tr:nth-child(even) td
 .msg-row + .msg-row.user
+[role="button"]
+select

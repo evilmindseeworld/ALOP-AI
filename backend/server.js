@@ -257,6 +257,7 @@ const sendEvent = (res, payload) => {
 const { buildRegistry } = require('./lib/tool-registry');
 const { runAgentLoop } = require('./lib/agent-loop');
 const { assertSafeUrl } = require('./lib/url-guard');
+const { checkLinks } = require('./lib/link-check');
 const { firstWithResults, toolMessages } = require('./lib/council-tools');
 const { prepareUpload, UploadRejected, MAX_FILES_PER_CHAT } = require('./lib/file-intake');
 
@@ -294,6 +295,46 @@ const TOOLS_ENABLED = process.env.COUNCIL_TOOLS === '1';
 
 // Cached because members in the same turn ask overlapping questions across
 // ROUNDS as well as within one — dedupe only unions a single round.
+/**
+ * Fetch just enough of a page to tell whether it is still a page.
+ *
+ * GET rather than HEAD: a soft 404 answers HEAD with a cheerful 200, and the
+ * evidence that it is not a real page is in the <title>. The body is capped at
+ * 16KB and the reader is cancelled once <head> is through — enough for the
+ * title on every real site, and it never pulls a whole product page.
+ */
+const fetchPageHead = async (url) => {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 5000);
+  try {
+    const res = await fetch(url, {
+      redirect: 'follow',
+      signal: controller.signal,
+      // Some CDNs serve a bot-check page to an unfamiliar agent, which would
+      // read as a soft 404. Ask like a browser.
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ALOP-AI link check)', 'Accept': 'text/html,*/*' },
+    });
+    let html = '';
+    const type = res.headers.get('content-type') || '';
+    if (type.includes('html') && res.body) {
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      while (html.length < 16384) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        html += decoder.decode(value, { stream: true });
+        if (/<\/head>/i.test(html)) break;
+      }
+      reader.cancel().catch(() => {});
+    }
+    return { status: res.status, finalUrl: res.url || url, html };
+  } finally {
+    clearTimeout(timer);
+  }
+};
+
+const checkSearchLinks = (urls) => checkLinks(urls, { fetchPage: fetchPageHead, assertSafeUrl });
+
 const toolSearch = async (query) => {
   const cached = getCachedSearch(`tool:${query}`);
   if (cached) return cached;
@@ -655,6 +696,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
         search: toolSearch,
         readUrl: readPageContent,
         assertSafeUrl,
+        checkLinks: checkSearchLinks,
         ...(attached.length ? { files } : {}),
       });
       // Opened BEFORE the loop so tool progress can be reported as it happens.

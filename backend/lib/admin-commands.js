@@ -146,6 +146,52 @@ function buildCommands({ supabase, env = process.env, proc = process } = {}) {
       },
     },
 
+    /**
+     * The domain-cutover preflight.
+     *
+     * Moving to a custom domain touches four systems that must agree, and the
+     * failure mode when they do not is silent to the server and total for the
+     * user: the browser gets a CORS refusal, the app renders, and every request
+     * fails. Nothing in the backend logs looks wrong, because from its side
+     * refusing a disallowed origin IS working correctly.
+     *
+     * This puts all four in one answer so they can be compared at a glance
+     * instead of remembered.
+     */
+    origins: {
+      summary: "CORS allowlist and Clerk instance — the domain-cutover preflight",
+      run: async () => {
+        const exact = [env.FRONTEND_URL, ...(env.ALLOWED_ORIGINS || "").split(",")]
+          .map((s) => (s || "").trim())
+          .filter(Boolean);
+        const pk = env.CLERK_PUBLISHABLE_KEY || "";
+        return {
+          FRONTEND_URL: env.FRONTEND_URL || ABSENT,
+          ALLOWED_ORIGINS: env.ALLOWED_ORIGINS || ABSENT,
+          acceptedOrigins: exact,
+          // Only the PREFIX, never the key. pk_ keys are public by design, but
+          // "public by design" is not a reason to start echoing credentials
+          // out of an endpoint whose whole purpose is not doing that.
+          clerkInstance: pk.startsWith("pk_live_")
+            ? "PRODUCTION"
+            : pk.startsWith("pk_test_")
+              ? "DEVELOPMENT — capped at 100 users, shows a dev banner"
+              : ABSENT,
+          stripeMode: (env.STRIPE_SECRET_KEY || "").startsWith("sk_live_")
+            ? "LIVE"
+            : (env.STRIPE_SECRET_KEY || "").startsWith("sk_test_")
+              ? "TEST"
+              : ABSENT,
+          // The mismatch that actually bites. Everything else can be read off;
+          // this is the one worth stating as a conclusion.
+          warning:
+            pk.startsWith("pk_live_") && !exact.some((o) => !o.includes(".vercel.app"))
+              ? "Clerk is on a production instance but no custom-domain origin is allowed — the app will load and every API call will fail CORS."
+              : null,
+        };
+      },
+    },
+
     audit: {
       summary: "The 20 most recent audit entries",
       run: async () => {

@@ -133,3 +133,53 @@ test("a hanging command is cut off", async () => {
   assert.match(r.error, /timed out/);
   assert.ok(Date.now() - started < 1500);
 });
+
+// ===== the cutover preflight =====
+
+test("origins reports the allowlist and the Clerk instance type", async () => {
+  const r = await build({
+    env: {
+      FRONTEND_URL: "https://alop.com",
+      ALLOWED_ORIGINS: "https://www.alop.com, https://alop-ai-omega.vercel.app",
+      CLERK_PUBLISHABLE_KEY: "pk_live_abc",
+      STRIPE_SECRET_KEY: "sk_live_abc",
+    },
+  }).run("origins");
+
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.result.acceptedOrigins, [
+    "https://alop.com",
+    "https://www.alop.com",
+    "https://alop-ai-omega.vercel.app",
+  ]);
+  assert.equal(r.result.clerkInstance, "PRODUCTION");
+  assert.equal(r.result.stripeMode, "LIVE");
+  assert.equal(r.result.warning, null);
+});
+
+test("ORIGINS NEVER ECHOES A KEY, ONLY ITS PREFIX", async () => {
+  const r = await build({
+    env: { CLERK_PUBLISHABLE_KEY: "pk_live_SECRETPART", STRIPE_SECRET_KEY: "sk_live_SECRETPART" },
+  }).run("origins");
+  assert.equal(JSON.stringify(r.result).includes("SECRETPART"), false);
+});
+
+test("names the mismatch that actually breaks a cutover", async () => {
+  // Clerk moved to production, origins still only the vercel alias: the app
+  // loads and every API call fails CORS. Nothing in the server logs looks
+  // wrong, because refusing a disallowed origin IS the server working.
+  const r = await build({
+    env: {
+      FRONTEND_URL: "https://alop-ai-omega.vercel.app",
+      ALLOWED_ORIGINS: "",
+      CLERK_PUBLISHABLE_KEY: "pk_live_abc",
+    },
+  }).run("origins");
+  assert.match(r.result.warning, /fail CORS/);
+});
+
+test("a development Clerk instance is called what it is", async () => {
+  const r = await build({ env: { CLERK_PUBLISHABLE_KEY: "pk_test_abc" } }).run("origins");
+  assert.match(r.result.clerkInstance, /DEVELOPMENT/);
+  assert.match(r.result.clerkInstance, /100 users/);
+});

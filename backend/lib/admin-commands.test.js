@@ -2,15 +2,26 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { buildCommands, TRACKED_ENV, SHOWABLE } = require("./admin-commands");
 
-/** A Supabase stand-in: every from().select() resolves to a count. */
+/**
+ * A Supabase stand-in.
+ *
+ * `select()` is thenable so a head:true count query resolves directly, and
+ * carries the chain methods the commands actually use. `eq` returns the same
+ * object rather than filtering: these tests supply exactly the rows a query
+ * should see, so filtering here would just re-implement Postgres badly and
+ * test the fake instead of the command.
+ */
 const fakeSupabase = (over = {}) => ({
-  from: (table) => ({
-    select: () => ({
-      // head:true count query
-      then: (res) => res(over[table] || { count: 7, error: null }),
-      order: () => ({ limit: () => Promise.resolve(over[table] || { data: [], error: null }) }),
-    }),
-  }),
+  from: (table) => {
+    const result = over[table] || { count: 7, error: null, data: [] };
+    const chain = {
+      then: (res) => res(result),
+      eq: () => chain,
+      order: () => chain,
+      limit: () => Promise.resolve(result),
+    };
+    return { select: () => chain };
+  },
 });
 
 const build = (over = {}) =>
@@ -182,4 +193,70 @@ test("a development Clerk instance is called what it is", async () => {
   const r = await build({ env: { CLERK_PUBLISHABLE_KEY: "pk_test_abc" } }).run("origins");
   assert.match(r.result.clerkInstance, /DEVELOPMENT/);
   assert.match(r.result.clerkInstance, /100 users/);
+});
+
+// ===== council tool-loop health =====
+
+const councilRows = (rows) => ({
+  audit_logs: { data: rows.map((metadata) => ({ metadata, created_at: "2026-08-05T12:00:00Z" })), error: null },
+});
+
+test("aggregates tool-loop turns into a dedupe ratio", async () => {
+  // Seven members, two unique calls: the dedupe collapsed five overlapping
+  // requests. That ratio is the whole reason the design works.
+  const c = buildCommands({
+    supabase: fakeSupabase(councilRows([
+      { rounds: 2, uniqueCalls: 2, members: 7, answered: 7, usable: 6, fellBack: false, tools: { web_search: 2 } },
+      { rounds: 2, uniqueCalls: 3, members: 7, answered: 7, usable: 7, fellBack: false, tools: { web_search: 2, read_url: 1 } },
+    ])),
+    env: {},
+    proc: process,
+  });
+  const r = await c.run("council");
+  assert.equal(r.result.turns, 2);
+  assert.equal(r.result.avgUniqueCalls, 2.5);
+  assert.equal(r.result.callsPerMember, 0.36);
+  assert.deepEqual(r.result.toolsUsed, { web_search: 4, read_url: 1 });
+  assert.equal(r.result.verdict, "Healthy.");
+});
+
+test("CALLS THE DEDUPE OUT WHEN IT IS NOT EARNING ITS PLACE", async () => {
+  // Seven members, seven unique calls, every turn: nothing is collapsing and
+  // the loop costs seven searches to do one member's worth of research.
+  const c = buildCommands({
+    supabase: fakeSupabase(councilRows([
+      { rounds: 2, uniqueCalls: 7, members: 7, fellBack: false, tools: { web_search: 7 } },
+    ])),
+    env: {},
+    proc: process,
+  });
+  const r = await c.run("council");
+  assert.equal(r.result.callsPerMember, 1);
+  assert.match(r.result.verdict, /DEDUPE IS NOT EARNING ITS PLACE/);
+});
+
+test("names the case where no tool was ever called", async () => {
+  const c = buildCommands({
+    supabase: fakeSupabase(councilRows([{ rounds: 1, uniqueCalls: 0, members: 7, fellBack: false, tools: {} }])),
+    env: {},
+    proc: process,
+  });
+  assert.match((await c.run("council")).result.verdict, /No tool was ever called/);
+});
+
+test("flags frequent fallbacks to the plain council", async () => {
+  const rows = Array.from({ length: 4 }, (_, i) => ({
+    rounds: 2, uniqueCalls: 2, members: 7, fellBack: i < 2, tools: { web_search: 2 },
+  }));
+  const c = buildCommands({ supabase: fakeSupabase(councilRows(rows)), env: {}, proc: process });
+  const r = await c.run("council");
+  assert.equal(r.result.fellBackToPlainCouncil, "2 of 4");
+  assert.match(r.result.verdict, /Falling back/);
+});
+
+test("says plainly when there is nothing recorded, rather than reporting zeros as health", async () => {
+  const c = buildCommands({ supabase: fakeSupabase(councilRows([])), env: {}, proc: process });
+  const r = await c.run("council");
+  assert.equal(r.result.turns, 0);
+  assert.match(r.result.note, /COUNCIL_TOOLS is not 1/);
 });

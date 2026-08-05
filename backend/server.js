@@ -836,10 +836,29 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       // A loop that produced nothing usable falls through to the plain council
       // rather than to the fallback: losing seven experts because the tool
       // round misfired is a worse answer than not having used tools at all.
-      if (validResponses.length === 0) {
+      const fellBack = validResponses.length === 0;
+      if (fellBack) {
         console.log('[TOOLS] no usable answers, falling back to the plain council.');
         validResponses = await runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit);
       }
+
+      // Recorded, not just logged. The numbers that say whether this feature is
+      // working — how many members asked for a tool, and how many UNIQUE calls
+      // that collapsed to — only existed in stdout, which means they are
+      // readable on a laptop with the Render dashboard open and nowhere else.
+      // In audit_logs they survive log rotation, they aggregate, and the admin
+      // console can answer "is the dedupe earning its place" from a phone.
+      await auditLog(user.id, 'council.tools', {
+        rounds: loop.rounds,
+        uniqueCalls: loop.uniqueCallsUsed,
+        members: selection.members.length,
+        answered: Object.keys(loop.answers).length,
+        usable: validResponses.length,
+        fellBack,
+        truncated: loop.truncated || null,
+        // Which tools, so a tool that is never chosen is visible as such.
+        tools: loop.toolResults.reduce((acc, { call }) => ({ ...acc, [call.name]: (acc[call.name] || 0) + 1 }), {}),
+      }, req.ip);
     } else {
       validResponses = await runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit);
     }

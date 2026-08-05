@@ -192,6 +192,70 @@ function buildCommands({ supabase, env = process.env, proc = process } = {}) {
       },
     },
 
+    /**
+     * Is the council's tool loop earning its place?
+     *
+     * The numbers that answer that used to exist only in stdout, which meant
+     * reading them required the Render dashboard on a large screen, and they
+     * rolled off with log retention. They are audit rows now, so this
+     * aggregates them.
+     *
+     * THE NUMBER THAT MATTERS IS callsPerMember. The whole design rests on
+     * seven members' overlapping requests collapsing to a handful of unique
+     * calls — if it is near 1.0, every member is asking something different,
+     * the dedupe is saving nothing, and the prompt needs to push harder toward
+     * shared phrasing. Near 0.2 means it is working.
+     */
+    council: {
+      summary: "Tool-loop health over the last 200 turns — rounds, dedupe ratio, fallbacks",
+      run: async () => {
+        const { data, error } = await supabase
+          .from("audit_logs")
+          .select("metadata,created_at")
+          .eq("action", "council.tools")
+          .order("created_at", { ascending: false })
+          .limit(200);
+        if (error) return { error: error.message };
+
+        const rows = (data || []).map((r) => r.metadata || {});
+        if (!rows.length) {
+          return {
+            turns: 0,
+            note: "No tool-loop turns recorded yet. Either COUNCIL_TOOLS is not 1, or every question so far was routed to memory, search or a greeting before reaching the council.",
+          };
+        }
+
+        const sum = (f) => rows.reduce((n, r) => n + (Number(f(r)) || 0), 0);
+        const uniqueCalls = sum((r) => r.uniqueCalls);
+        const members = sum((r) => r.members);
+        const tools = {};
+        for (const r of rows) for (const [k, v] of Object.entries(r.tools || {})) tools[k] = (tools[k] || 0) + v;
+
+        const fellBack = rows.filter((r) => r.fellBack).length;
+        const truncated = rows.filter((r) => r.truncated).length;
+
+        return {
+          turns: rows.length,
+          since: data[data.length - 1].created_at,
+          avgRounds: +(sum((r) => r.rounds) / rows.length).toFixed(2),
+          avgUniqueCalls: +(uniqueCalls / rows.length).toFixed(2),
+          // < 0.4 is the dedupe working. Near 1.0 means it is not.
+          callsPerMember: members ? +(uniqueCalls / members).toFixed(2) : 0,
+          toolsUsed: tools,
+          fellBackToPlainCouncil: `${fellBack} of ${rows.length}`,
+          hitACeiling: `${truncated} of ${rows.length}`,
+          verdict:
+            !uniqueCalls
+              ? "No tool was ever called. Models are answering directly — check a [PROBE] line, or the questions genuinely needed no research."
+              : members && uniqueCalls / members > 0.7
+                ? "DEDUPE IS NOT EARNING ITS PLACE: members are asking for different things almost every time. Tighten the prompt toward shared phrasing."
+                : fellBack > rows.length / 4
+                  ? "Falling back to the plain council often. The loop is running and producing nothing usable."
+                  : "Healthy.",
+        };
+      },
+    },
+
     audit: {
       summary: "The 20 most recent audit entries",
       run: async () => {

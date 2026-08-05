@@ -96,9 +96,39 @@ it arithmetically hopeless.
 |---|---|
 | `health` | Uptime, memory, Node version, pid, which rate-limit store is active |
 | `config` | Which environment variables are **set** — never their values |
+| `origins` | CORS allowlist and Clerk instance — the domain-cutover preflight |
+| `council` | Tool-loop health over the last 200 turns |
 | `schema` | Which migrations have landed, by checking for what each created |
 | `usage` | Row counts for the main tables |
 | `audit` | The 20 most recent audit entries |
+
+### Reading `council`
+
+```json
+{
+  "turns": 3,
+  "avgRounds": 2,
+  "avgUniqueCalls": 2,
+  "callsPerMember": 0.29,
+  "toolsUsed": { "web_search": 5, "read_url": 1 },
+  "fellBackToPlainCouncil": "0 of 3",
+  "hitACeiling": "1 of 3",
+  "verdict": "Healthy."
+}
+```
+
+**`callsPerMember` is the number that matters.** The whole tool-calling design
+rests on seven members' overlapping requests collapsing into a handful of
+unique calls. Near **0.3** means the dedupe is doing its job. Near **1.0** means
+every member asked for something different, nothing collapsed, and the loop is
+paying for seven searches to do one member's worth of research — the prompt
+needs to push harder toward shared phrasing.
+
+`verdict` says which of those it is, so the judgement is not left to memory.
+
+These come from `audit_logs`, not from stdout. That is deliberate: the same
+numbers used to exist only in Render's log stream, which meant reading them
+needed a large screen and they rolled off with retention.
 
 `config` reports presence as `set` / `not set`. A short list of variables show
 their actual value — `COUNCIL_TOOLS`, `RATE_LIMIT_STORE`, `FRONTEND_URL`,

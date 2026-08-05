@@ -1,7 +1,31 @@
 import { SignIn, useUser } from "@clerk/react";
 import SakuraFrame from "./components/SakuraFrame";
+import { COUNCIL, FREE_COUNT } from "./constants/council";
 import "./SignInPage.css";
 
+/**
+ * The sign-in screen.
+ *
+ * THE THESIS: the most characteristic thing about this product is that seven
+ * models answer separately and then have to agree. The old page described that
+ * in a sentence and then showed four emoji in cards — which is the shape of
+ * every AI landing page, and says nothing a competitor could not copy.
+ *
+ * So the hero IS the council: the real roster, ordered by temperature, low to
+ * high. That ordering is not decoration and it is not "01 / 02 / 03" wearing a
+ * disguise — the spread from 0.2 to 0.8 is the actual reason a council works.
+ * A panel of seven identical models would return one answer seven times. The
+ * ladder shows why it does not, using the product's own numbers, and it could
+ * not be lifted onto any other product.
+ *
+ * The convergence rule beneath it is the single signature element: seven dim
+ * voices, one bright line. Everything else on the page is deliberately quiet.
+ *
+ * Cut on the way: the "ONLINE" status pill (invented telemetry — nothing was
+ * measuring anything), the "Secure authentication / No card required" trust
+ * line (emoji, plus reassurance about a fear nobody arrived with), and the four
+ * feature cards.
+ */
 export default function SignInPage() {
   const { isSignedIn, isLoaded } = useUser();
   if (!isLoaded) return null;
@@ -16,53 +40,52 @@ export default function SignInPage() {
 
       <div className="signin-wrap">
         <div className="signin-brand">
-          <div className="signin-logo-mark">
-            <img src="/logo.png" alt="ALOP-AI" />
-          </div>
+          <img src="/logo.png" alt="" className="signin-logo-mark" />
           <span className="signin-logo-text">ALOP-AI</span>
-          <div className="signin-status">
-            <span className="signin-status-dot" />
-            <span>ONLINE</span>
-          </div>
         </div>
 
-        {/* The same display treatment as the app's empty state — sans, then an
-            italic serif for the turn. A user who signs in should recognise the
-            screen they land on. */}
-        <p className="signin-eyebrow">The AI Council</p>
-        <h1 className="signin-title">
-          One council.<span className="signin-title-accent">Every model.</span>
-        </h1>
-        <p className="signin-tagline">
-          Several models answer separately, read each other, then agree on one reply.
-          Tell it when it is wrong and it remembers.
-        </p>
+        <div className="signin-grid">
+          <section className="signin-thesis">
+            <p className="signin-eyebrow">The council</p>
+            <h1 className="signin-title">
+              Seven answers.<span className="signin-title-accent">One reply.</span>
+            </h1>
 
-        {/* Was four emoji in bevelled cards. Emoji render differently on every
-            platform, carry no meaning to a screen reader, and four of them
-            stacked is the visual signature of a template. A plain list, set
-            quietly, says the same thing and survives being read aloud. */}
-        <ul className="signin-features">
-          <li>Models debate before they answer</li>
-          <li>Reads your screen, your images, your files</li>
-          <li>Generates images from a prompt</li>
-          <li>Learns from what you tell it</li>
-        </ul>
+            {/* The roster is the argument. Each row is a real model and its real
+                temperature; the column of numbers is what makes the claim
+                checkable rather than atmospheric. */}
+            <ol className="council-ladder">
+              {COUNCIL.map((m) => (
+                <li key={m.model} className={`council-row ${m.free ? "" : "is-pro"}`}>
+                  <span className="council-temp">{m.temperature.toFixed(1)}</span>
+                  <span className="council-name">{m.model}</span>
+                  {!m.free && <span className="council-tag">Pro</span>}
+                </li>
+              ))}
+            </ol>
 
-        <div className="signin-card">
-          <div className="signin-card-inner">
-            <SignIn fallbackRedirectUrl="/" signUpFallbackRedirectUrl="/" />
-          </div>
-          <div className="signin-trust">
-            <span>🔒 Secure authentication</span>
-            <span className="signin-dot">•</span>
-            <span>No card required</span>
-          </div>
-          <div className="signin-links">
-            <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy</a>
-            <span className="signin-dot">•</span>
-            <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a>
-          </div>
+            <p className="council-resolve">One reply, reconciled.</p>
+
+            <p className="signin-tagline">
+              Temperature runs {COUNCIL[0].temperature.toFixed(1)} to{" "}
+              {COUNCIL[COUNCIL.length - 1].temperature.toFixed(1)} — literal to lateral. They
+              disagree on purpose. You get what they agreed on, and what they didn&rsquo;t.
+            </p>
+          </section>
+
+          <section className="signin-card">
+            <div className="signin-card-inner">
+              <SignIn fallbackRedirectUrl="/" signUpFallbackRedirectUrl="/" />
+            </div>
+            <p className="signin-plan">
+              {FREE_COUNT} models free. All {COUNCIL.length} on Pro.
+            </p>
+            <div className="signin-links">
+              <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy</a>
+              <span className="signin-dot">·</span>
+              <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a>
+            </div>
+          </section>
         </div>
       </div>
     </div>

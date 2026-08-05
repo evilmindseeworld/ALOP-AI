@@ -70,16 +70,14 @@
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 440px;
+  max-width: 1040px;
   margin: 0 auto;
-  padding: 60px 20px;
+  padding: 48px 24px;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  gap: 18px;
-  animation: signinFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  gap: var(--space-6);
 }
 
 @keyframes signinFadeIn {
@@ -90,70 +88,33 @@
 .signin-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 4px;
+  gap: var(--space-3);
 }
 
 .signin-logo-mark {
-  width: 56px;
-  height: 56px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, var(--primary), var(--primary-soft));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset, 0 -1px 0 rgba(0,0,0,0.2) inset, 0 8px 28px color-mix(in srgb, var(--primary) 25%, transparent);
-  overflow: visible;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-.signin-logo-mark:hover {
-  transform: scale(1.08) rotate(-3deg);
-}
-
-.signin-logo-mark img {
-  width: 100%;
-  height: 100%;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
   object-fit: cover;
-  border-radius: 14px;
 }
+
+
+
+
 
 .signin-logo-text {
-  font-family: 'Clash Grotesk', sans-serif;
+  font-family: var(--font-heading), 'Clash Grotesk', sans-serif;
   font-weight: 700;
-  font-size: 22px;
+  font-size: var(--text-lg);
   color: var(--text);
-  letter-spacing: -0.4px;
+  letter-spacing: -0.02em;
 }
 
-.signin-status {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 9px;
-  color: var(--emerald);
-  background: var(--surface);
-  border: 1px solid color-mix(in srgb, var(--text) 6%, transparent);
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 3%, transparent) inset, 0 -1px 0 rgba(0,0,0,0.2) inset;
-  border-radius: 999px;
-  padding: 5px 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
 
-.signin-status-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--emerald);
-  animation: dotPulse 2s infinite;
-}
 
-@keyframes dotPulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 color-mix(in srgb, var(--emerald) 50%, transparent); }
-  50% { opacity: 0.4; box-shadow: 0 0 0 6px rgba(94,201,152,0); }
-}
+
+
+
 
 /* The eyebrow, matching the app's empty state. */
 .signin-eyebrow {
@@ -176,7 +137,7 @@
   line-height: 1.1;
   letter-spacing: -0.03em;
   color: var(--text);
-  text-align: center;
+  text-align: left;
   margin: 0;
   text-wrap: balance;
 }
@@ -190,14 +151,16 @@
   margin-left: 0.26em;
 }
 
+/* Left, flush with the ladder. Centred, it drifted out of the column the
+ * temperatures establish and the whole left side stopped having an edge. */
 .signin-tagline {
-  font-size: var(--text-base);
+  font-size: var(--text-sm);
   line-height: 1.65;
   color: var(--text-muted);
-  text-align: center;
+  text-align: left;
   margin: 0;
-  max-width: 42ch;
-  text-wrap: balance;
+  max-width: 46ch;
+  text-wrap: pretty;
 }
 
 /* Was four emoji in bevelled, blurred, hover-lifting cards.
@@ -210,67 +173,32 @@
  *
  * A quiet list says the same thing, reads aloud correctly, and costs nothing.
  * The rule is a mark, not a container. */
-.signin-features {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  width: 100%;
-  max-width: 360px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
 
-.signin-features li {
-  position: relative;
-  padding-left: var(--space-4);
-  font-size: var(--text-sm);
-  line-height: 1.5;
-  color: var(--text-muted);
-}
 
-.signin-features li::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0.62em;
-  width: 8px;
-  height: 1px;
-  background: var(--primary);
-  opacity: 0.7;
-}
+
+
+
 
 .signin-card {
   width: 100%;
-  max-width: 360px;
-  background: var(--surface);
-  border: 1px solid color-mix(in srgb, var(--text) 6%, transparent);
-  border-top-color: color-mix(in srgb, var(--text) 8%, transparent);
-  border-bottom-color: rgba(0,0,0,0.4);
-  border-radius: 20px;
-  padding: 24px;
-  backdrop-filter: blur(24px);
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 4%, transparent) inset, 0 -1px 0 rgba(0,0,0,0.3) inset, 0 20px 50px rgba(0,0,0,0.5);
+  max-width: 380px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  padding: var(--space-5);
+  box-shadow: var(--rim), var(--shadow-lg);
 }
 
+/* Was a second bordered, inset-shadowed box inside .signin-card — and Clerk
+ * draws its own card inside THAT, so the form sat in three nested frames.
+ * Chanel's rule: take one off. It is now a plain wrapper that exists only as a
+ * scope for the Clerk overrides below, which is the one job it was actually
+ * doing. */
 .signin-card-inner {
-  background: var(--surface-2);
-  border: 1px solid color-mix(in srgb, var(--text) 4%, transparent);
-  border-top-color: rgba(0,0,0,0.3);
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
   border-radius: 14px;
-  padding: 18px;
 }
 
-.signin-trust {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 14px;
-  font-size: 11px;
-  color: var(--text-subtle);
-}
+
 
 .signin-dot {
   color: color-mix(in srgb, var(--text) 10%, transparent);
@@ -331,7 +259,7 @@
 }
 
 .signin-card-inner .cl-socialButtonsBlockButton:hover {
-  background: rgba(58,43,31,0.8) !important;
+  background: var(--surface-3) !important;
   border-color: color-mix(in srgb, var(--text) 10%, transparent) !important;
   transform: translateY(-1px) !important;
 }
@@ -388,7 +316,7 @@
 @media (max-width: 480px) {
   .signin-tagline { font-size: var(--text-sm); }
   .signin-card { padding: 18px; }
-  .signin-status { display: none; }
+
   .signin-wrap { gap: 16px; padding: 40px 16px; }
 }
 
@@ -411,4 +339,175 @@
 
 @media (max-width: 640px) {
   .signin-root .sakura-corner { width: clamp(64px, 22vw, 100px); opacity: 0.2; }
+}
+
+/* ===== THE COUNCIL LADDER =====
+ *
+ * The signature element, and the only place this page spends boldness.
+ *
+ * It is a roster, not an ornament. Each row is a real model from the real
+ * COUNCIL array with its real temperature, sorted low to high — and that
+ * ordering is the argument the page is making: seven identical models would
+ * return one answer seven times, and the 0.2-to-0.8 spread is why they do not.
+ *
+ * The numbers deliberately are NOT an invented 01/02/03 sequence. They are
+ * data, they are checkable, and they are the reason the product works.
+ */
+.signin-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+  gap: clamp(32px, 6vw, 88px);
+  align-items: center;
+}
+
+.signin-thesis {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.council-ladder {
+  list-style: none;
+  margin: var(--space-2) 0 0;
+  padding: 0;
+  width: 100%;
+  max-width: 34ch;
+  /* The rule that gathers. It runs the height of the roster on the left of the
+   * temperature column, and stops at the resolve line — seven voices entering,
+   * one leaving. */
+  border-left: 1px solid var(--border);
+}
+
+.council-row {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
+  padding: 5px 0 5px var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  /* Staggered on load: they answer separately. `backwards` so nothing paints
+   * at full opacity during its own delay and then snaps out. */
+  animation: councilRow 380ms var(--ease-out) backwards;
+}
+
+/* Seven explicit delays rather than a loop. The list is a fixed roster read
+ * from a constant, not an arbitrary-length collection, and seven lines here is
+ * less machinery than a CSS variable threaded through the JSX. */
+.council-row:nth-child(1) { animation-delay: 120ms; }
+.council-row:nth-child(2) { animation-delay: 180ms; }
+.council-row:nth-child(3) { animation-delay: 240ms; }
+.council-row:nth-child(4) { animation-delay: 300ms; }
+.council-row:nth-child(5) { animation-delay: 360ms; }
+.council-row:nth-child(6) { animation-delay: 420ms; }
+.council-row:nth-child(7) { animation-delay: 480ms; }
+
+@keyframes councilRow {
+  from { opacity: 0; transform: translateX(-6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* tabular-nums so the decimal points line up into a real column edge. Without
+ * it the numbers wander and the ladder reads as a list of labels rather than
+ * as a scale. */
+.council-temp {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--primary);
+  opacity: 0.85;
+  flex: 0 0 auto;
+}
+
+.council-name {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* Merchandising without a pricing table: which three you do not get for free,
+ * stated once, next to the thing itself. */
+.council-tag {
+  margin-left: auto;
+  font-size: var(--text-2xs);
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-subtle);
+  flex: 0 0 auto;
+}
+
+.council-row.is-pro .council-name { color: var(--text-subtle); }
+
+/* The resolution. Seven dim rows above, one bright line here — the convergence
+ * the whole page exists to claim, arriving last. */
+.council-resolve {
+  margin: 0;
+  padding-left: var(--space-4);
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--text);
+  position: relative;
+  animation: councilResolve 420ms var(--ease-out) 560ms backwards;
+}
+
+/* A short rule that meets the ladder's border where it ends, so the seven
+ * lines visibly feed into this one. */
+.council-resolve::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 12px;
+  height: 1px;
+  background: var(--primary);
+}
+
+@keyframes councilResolve {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.signin-plan {
+  margin: var(--space-3) 0 0;
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+}
+
+/* One column below the split. The ladder stays — it is the argument, not
+ * decoration — but the card leads, because on a phone the user came to sign in
+ * and scrolling past a roster to reach the form is a worse trade than reading
+ * it afterwards. */
+@media (max-width: 900px) {
+  .signin-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-6);
+    justify-items: center;
+  }
+  .signin-thesis { order: 2; align-items: center; }
+  .signin-card { order: 1; }
+  .signin-title, .signin-tagline { text-align: center; }
+  .council-ladder { max-width: 30ch; }
+}
+
+/* Clerk renders its own card — background, border, radius, shadow — inside
+ * .signin-card. That was the third nested frame: ours, this, and the
+ * .signin-card-inner box that has already gone. The form sits flat in our card
+ * now, so the page has exactly one surface on the right.
+ *
+ * .cl-footer keeps its own tint by default, which reads as a fourth panel at
+ * the bottom of a card that no longer has panels. */
+.signin-card-inner .cl-card,
+.signin-card-inner .cl-cardBox,
+.signin-card-inner .cl-footer,
+.signin-card-inner .cl-main {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
 }

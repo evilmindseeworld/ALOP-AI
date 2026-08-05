@@ -258,6 +258,35 @@ const { buildRegistry } = require('./lib/tool-registry');
 const { runAgentLoop } = require('./lib/agent-loop');
 const { assertSafeUrl } = require('./lib/url-guard');
 const { firstWithResults, toolMessages } = require('./lib/council-tools');
+const { prepareUpload, UploadRejected, MAX_FILES_PER_CHAT } = require('./lib/file-intake');
+
+/**
+ * A file store bound to ONE (user, chat).
+ *
+ * The binding is the security property: read_file's signature has nowhere to
+ * name a different user or chat, so a model cannot ask for someone else's file
+ * — not because the code checks, but because there is no parameter for it.
+ *
+ * Both queries filter on user_id AND chat_id. The service-role key bypasses
+ * RLS, so these predicates are the control that actually runs.
+ */
+// Validating the shape keeps a malformed value from reaching Postgres and
+// coming back as a 500 that reads like a server fault. requireOwnership does
+// this for its own :id; these are the params it does not cover.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const uuidParam = (name = 'id') => (req, res, next) =>
+  UUID_RE.test(req.params[name] || '') ? next() : res.status(400).json({ error: 'Invalid ID' });
+
+const fileStoreFor = (userId, chatId) => ({
+  list: async () => {
+    const { data } = await supabase.from('chat_files').select('id,name,kind,bytes').eq('user_id', userId).eq('chat_id', chatId).order('created_at', { ascending: true }).limit(MAX_FILES_PER_CHAT);
+    return data || [];
+  },
+  get: async (id) => {
+    const { data } = await supabase.from('chat_files').select('id,name,kind,bytes,content,truncated').eq('id', id).eq('user_id', userId).eq('chat_id', chatId).maybeSingle();
+    return data || null;
+  },
+});
 
 // Off unless explicitly enabled. The router path is untouched, so a bad turn is
 // one env var away from reverted without a deploy.
@@ -617,7 +646,17 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     // without a deploy.
     let validResponses, toolResearch = '', toolTruncated = null;
     if (TOOLS_ENABLED && !imageContext) {
-      const registry = buildRegistry({ search: toolSearch, readUrl: readPageContent, assertSafeUrl });
+      // read_file is offered only when this conversation actually has files.
+      // A tool that can only ever answer "no files" is a tool the council
+      // wastes a round discovering is useless.
+      const files = chatId ? fileStoreFor(user.id, chatId) : null;
+      const attached = files ? await files.list() : [];
+      const registry = buildRegistry({
+        search: toolSearch,
+        readUrl: readPageContent,
+        assertSafeUrl,
+        ...(attached.length ? { files } : {}),
+      });
       // Opened BEFORE the loop so tool progress can be reported as it happens.
       // The loop can run for 25s, and a spinner for 25s is worse than the
       // router path it replaced. From here on every failure is an SSE frame,
@@ -631,7 +670,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
           sendEvent(res, e);
         },
         askMember: (model, ctx) =>
-          callModel(model, toolMessages(councilMsgs, registry, ctx), 0.0, selection.whipMs, selection.tokenLimit),
+          callModel(model, toolMessages(councilMsgs, registry, { ...ctx, attachedFiles: attached }), 0.0, selection.whipMs, selection.tokenLimit),
       });
       toolResearch = loop.research;
       toolTruncated = loop.truncated;
@@ -750,6 +789,57 @@ app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
   }
 });
 
+// ===== FILES =====
+//
+// Upload lives behind requireOwnership on the CHAT, so a file can only ever be
+// attached to a conversation the caller already owns. That check is what makes
+// fileStoreFor's (user, chat) binding meaningful — without it a caller could
+// seed a file into someone else's chat for their council to read.
+app.post('/api/chats/:id/files', requireAuth, checkSuspended, requireOwnership('chats'), async (req, res) => {
+  try {
+    const user = await ensureUser(req.auth.userId);
+    const { count } = await supabase.from('chat_files').select('id', { count: 'exact', head: true }).eq('chat_id', req.params.id).eq('user_id', user.id);
+    if ((count || 0) >= MAX_FILES_PER_CHAT) {
+      return res.status(409).json({ error: `This conversation already has ${MAX_FILES_PER_CHAT} files.` });
+    }
+
+    // Throws UploadRejected for anything not on the allowlist, anything that
+    // is not actually text whatever it claims, and anything oversized.
+    const prepared = prepareUpload({ name: req.body.name, mime: req.body.mime, base64: req.body.base64 });
+
+    const { data, error } = await supabase.from('chat_files')
+      .insert({ user_id: user.id, chat_id: req.params.id, ...prepared })
+      .select('id,name,kind,bytes,truncated')
+      .single();
+    if (error) throw error;
+
+    await auditLog(user.id, 'file.upload', { chatId: req.params.id, name: prepared.name, kind: prepared.kind, bytes: prepared.bytes }, req.ip);
+    res.json(data);
+  } catch (err) {
+    // A rejected upload is the caller's input, not a server fault, and the
+    // message is written to be shown to them verbatim.
+    if (err instanceof UploadRejected) return res.status(400).json({ error: err.message });
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/chats/:id/files', requireAuth, requireOwnership('chats'), async (req, res) => {
+  try {
+    const user = await ensureUser(req.auth.userId);
+    res.json(await fileStoreFor(user.id, req.params.id).list());
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/chats/:id/files/:fileId', requireAuth, requireOwnership('chats'), uuidParam('fileId'), async (req, res) => {
+  try {
+    const user = await ensureUser(req.auth.userId);
+    const { error } = await supabase.from('chat_files').delete().eq('id', req.params.fileId).eq('user_id', user.id).eq('chat_id', req.params.id);
+    if (error) throw error;
+    res.json({ deleted: true });
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+});
+
 // ===== FEEDBACK =====
 app.post('/api/feedback', requireAuth, async (req, res) => {
   try {
@@ -787,14 +877,13 @@ app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => { try
 // malformed value from reaching Postgres and coming back as a 500 that reads
 // like a server fault. requireOwnership already does this for user routes; the
 // admin routes did not.
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const requireUuidParam = (req, res, next) => UUID.test(req.params.id || '') ? next() : res.status(400).json({ error: 'Invalid ID' });
+// (uuidParam is defined above, next to the other route guards.)
 
-app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, requireUuidParam, async (req, res) => { try { const { data: t } = await supabase.from('users').select('is_admin,email').eq('id', req.params.id).single(); if (!t) return res.status(404).json({ error: 'Not found' }); if (t.is_admin) return res.status(403).json({ error: 'Cannot suspend admin' }); const { error } = await supabase.from('users').update({ suspended: true }).eq('id', req.params.id); if (error) throw error; await auditLog(req.adminUserId, 'admin.suspend', { target: req.params.id, targetEmail: t.email }, req.ip); res.json({ suspended: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, uuidParam(), async (req, res) => { try { const { data: t } = await supabase.from('users').select('is_admin,email').eq('id', req.params.id).single(); if (!t) return res.status(404).json({ error: 'Not found' }); if (t.is_admin) return res.status(403).json({ error: 'Cannot suspend admin' }); const { error } = await supabase.from('users').update({ suspended: true }).eq('id', req.params.id); if (error) throw error; await auditLog(req.adminUserId, 'admin.suspend', { target: req.params.id, targetEmail: t.email }, req.ip); res.json({ suspended: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 
-app.post('/api/admin/users/:id/unsuspend', requireAuth, requireAdmin, requireUuidParam, async (req, res) => { try { const { error } = await supabase.from('users').update({ suspended: false }).eq('id', req.params.id); if (error) throw error; await auditLog(req.adminUserId, 'admin.unsuspend', { target: req.params.id }, req.ip); res.json({ unsuspended: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+app.post('/api/admin/users/:id/unsuspend', requireAuth, requireAdmin, uuidParam(), async (req, res) => { try { const { error } = await supabase.from('users').update({ suspended: false }).eq('id', req.params.id); if (error) throw error; await auditLog(req.adminUserId, 'admin.unsuspend', { target: req.params.id }, req.ip); res.json({ unsuspended: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 
-app.delete('/api/admin/users/:id', requireAuth, requireAdmin, requireUuidParam, async (req, res) => { try {
+app.delete('/api/admin/users/:id', requireAuth, requireAdmin, uuidParam(), async (req, res) => { try {
   // The old self-delete guard compared req.auth.userId (a Clerk id, "user_2ab…")
   // against req.params.id (a Supabase uuid). Those are different id spaces and
   // can never be equal, so the check never fired once. It was masked by the

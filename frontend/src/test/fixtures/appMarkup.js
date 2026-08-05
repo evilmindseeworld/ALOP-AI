@@ -333,6 +333,10 @@ export const appTree = (theme) => `
                 <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="Attached"/>
                 <button aria-label="Remove attached image">×</button>
               </div>
+              <ul class="file-chips">
+                <li class="file-chip"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M0 0"/></svg><span class="file-chip-name">budget.csv</span><button aria-label="Remove budget.csv">×</button></li>
+                <li class="file-chip"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M0 0"/></svg><span class="file-chip-name">a-very-long-attachment-filename-that-must-truncate.md</span><button aria-label="Remove it">×</button></li>
+              </ul>
               <textarea class="input-text" rows="1" placeholder="Ask the AI Council anything..."></textarea>
               <div class="input-actions">
                 <label class="input-btn"><input type="file"/><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg></label>

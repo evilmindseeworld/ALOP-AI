@@ -4,6 +4,19 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
     <title>ALOP-AI</title>
+    <!-- Connection setup starts here, in the HTML, because these run while the
+         JS bundle is still downloading. A preconnect opens DNS + TCP + TLS
+         ahead of the first request, which is worth 100-300ms per origin on a
+         cold connection — and the API and Clerk are both on the critical path
+         to a signed-in screen.
+
+         The API origin is hardcoded rather than templated from VITE_API_BASE:
+         index.html is not processed for env vars, and this value is already
+         public in the shipped bundle. If the backend ever moves, this line
+         moves with it — a stale preconnect is a wasted connection, not a
+         broken one. -->
+    <link rel="preconnect" href="https://alop-ai.onrender.com" crossorigin />
+    <link rel="dns-prefetch" href="https://alop-ai.onrender.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />

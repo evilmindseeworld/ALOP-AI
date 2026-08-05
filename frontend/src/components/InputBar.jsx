@@ -31,6 +31,9 @@ const InputBar = memo(
     isGenerating,
     onStop,
     onImageFile,
+    attachedFiles = [],
+    onDocSelect = () => {},
+    onRemoveFile = () => {},
   }) => {
     const [text, setText] = useState("");
     const [isDropping, setIsDropping] = useState(false);
@@ -139,6 +142,31 @@ const InputBar = memo(
             </div>
           )}
 
+          {/* Documents are listed rather than previewed. An image has something
+              worth showing; a CSV does not, and a thumbnail of text is a
+              thumbnail of nothing.
+              These persist for the whole conversation, unlike the image, which
+              belongs to one message — so they live here as a standing list the
+              council can read from on any turn. */}
+          {attachedFiles.length > 0 && (
+            <ul className="file-chips">
+              {attachedFiles.map((f) => (
+                <li key={f.id} className="file-chip">
+                  <Icon name="code" size={12} />
+                  <span className="file-chip-name">{f.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => onRemoveFile(f.id)}
+                    aria-label={`Remove ${f.name}`}
+                    title={`Remove ${f.name}`}
+                  >
+                    ×
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+
           <textarea
             ref={textareaRef}
             className="input-text"
@@ -170,6 +198,27 @@ const InputBar = memo(
                 </label>
               </TooltipTrigger>
               <TooltipContent>Attach an image — or paste one</TooltipContent>
+            </Tooltip>
+
+            {/* `accept` lists the SAME types the server allows, and is a
+                convenience only — the browser file picker is not a security
+                boundary and a user can always pick "all files". lib/file-intake
+                is what actually decides, and it checks the bytes rather than
+                the extension. */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <label className="input-btn">
+                  <input
+                    type="file"
+                    accept=".txt,.md,.markdown,.csv,.tsv,.json,text/plain,text/markdown,text/csv,application/json"
+                    onChange={onDocSelect}
+                    disabled={disabled}
+                    aria-label="Attach a document"
+                  />
+                  <Icon name="code" size={17} />
+                </label>
+              </TooltipTrigger>
+              <TooltipContent>Attach a document — text, Markdown, CSV or JSON</TooltipContent>
             </Tooltip>
 
             <Tooltip>

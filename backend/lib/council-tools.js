@@ -46,7 +46,7 @@ async function firstWithResults(providers, query) {
  * @param {{round: number, toolResults: Array, isFinalRound: boolean}} ctx
  */
 function toolMessages(baseMsgs, registry, ctx) {
-  const { round = 1, toolResults = [], isFinalRound = false } = ctx || {};
+  const { round = 1, toolResults = [], isFinalRound = false, attachedFiles = [] } = ctx || {};
   const base = Array.isArray(baseMsgs) && baseMsgs.length ? baseMsgs : [{ role: "system", content: "" }];
   const head = base[0] && base[0].role === "system" ? base[0].content : "";
   const rest = base[0] && base[0].role === "system" ? base.slice(1) : base;
@@ -63,7 +63,17 @@ function toolMessages(baseMsgs, registry, ctx) {
     ? "This is the final round. Do NOT request any more tools — anything you ask for now will not run. Answer with what you have."
     : 'If you need information you do not have, request a tool INSTEAD of answering, by emitting exactly one fenced block:\n\n```tool_call\n{"name": "web_search", "args": {"query": "your query"}}\n```\n\nOtherwise answer normally. Do not do both. Do not request a tool for something you already know.';
 
-  const sys = `${head}\n\n=== TOOLS (round ${round}) ===\n${catalogue}\n\n${instruction}`;
+  // read_file takes an opaque id, which means the ids have to be KNOWABLE or
+  // the tool is unusable — a model cannot guess a UUID. This manifest is the
+  // only place they come from, and it is the reason read_file never needs to
+  // accept a filename: the model already has the id next to the name.
+  const manifest = attachedFiles.length
+    ? `\n\n=== ATTACHED FILES ===\n${attachedFiles
+        .map((f) => `- id: ${f.id}  name: ${f.name}${f.kind ? `  (${f.kind})` : ""}`)
+        .join("\n")}\nUse read_file with the id, exactly as written above.`
+    : "";
+
+  const sys = `${head}\n\n=== TOOLS (round ${round}) ===\n${catalogue}${manifest}\n\n${instruction}`;
 
   if (toolResults.length === 0) return [{ role: "system", content: sys }, ...rest];
 

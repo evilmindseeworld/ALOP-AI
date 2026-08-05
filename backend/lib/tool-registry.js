@@ -133,6 +133,43 @@ function buildRegistry(deps = {}) {
     });
   }
 
+  /**
+   * read_file takes an OPAQUE ID and never a path.
+   *
+   * `deps.files` is a store already bound to (user, chat) by the caller, so
+   * the scope is not a parameter this tool can get wrong — a model cannot ask
+   * for another user's file because there is nowhere in this signature to name
+   * one. `list()` is what makes the ids knowable at all: without it a model
+   * would have to guess a UUID, which is not a usable interface.
+   *
+   * Registered only when files actually exist for this turn. A tool that can
+   * only ever answer "no files" is a tool the council will waste a round on.
+   */
+  if (deps.files && typeof deps.files.get === "function" && typeof deps.files.list === "function") {
+    tools.push({
+      name: "read_file",
+      description:
+        "Read a file the user attached to this conversation, by its id. Ids come from the ATTACHED FILES list in your prompt. Takes an id, never a filename and never a path.",
+      schema: { id: { type: "string", required: true, maxLength: 64 } },
+      run: async ({ id }) => {
+        // Shape-checked before it reaches the store, so a malformed id is a
+        // clear message rather than a database error.
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+          const known = (await deps.files.list()).map((f) => `${f.id} (${f.name})`).join(", ");
+          return fail(`"${id}" is not a file id. Available: ${known || "none"}.`);
+        }
+        const file = await deps.files.get(id);
+        // Indistinguishable from "belongs to someone else" ON PURPOSE. The
+        // store only ever returns files in this (user, chat), so a miss means
+        // either it does not exist or it is not theirs — and saying which
+        // would confirm the existence of another user's file.
+        if (!file) return fail(`No file with id ${id} in this conversation.`);
+        const note = file.truncated ? `\n\n[truncated — this is the first part of ${file.name}]` : "";
+        return ok(`Read ${file.name} (${file.kind}, ${file.bytes} bytes)`, clamp(file.content + note));
+      },
+    });
+  }
+
   const byName = new Map(tools.map((t) => [t.name, t]));
 
   return {

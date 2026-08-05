@@ -548,6 +548,15 @@ const AuthenticatedApp = () => {
                 isGenerating={status === "loading" || status === "streaming"}
                 onStop={chat.stopGeneration}
                 onImageFile={acceptImageFile}
+                attachedFiles={chat.chatFiles}
+                onDocSelect={(e) => {
+                  const file = e.target.files?.[0];
+                  // Cleared so picking the same file twice in a row still
+                  // fires change — the input keeps its value otherwise.
+                  e.target.value = "";
+                  chat.uploadFile(file);
+                }}
+                onRemoveFile={chat.removeFile}
               />
             </div>
           </div>

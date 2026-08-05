@@ -113,6 +113,31 @@ test("a failed result is shown as failed rather than omitted", () => {
   assert.ok(m[m.length - 1].content.includes("404"));
 });
 
+test("lists attached file ids, because a model cannot guess a UUID", () => {
+  // read_file takes an opaque id and never a filename. That only works if the
+  // ids are knowable, and this manifest is the only place they come from.
+  const m = toolMessages(BASE, registry, {
+    round: 1,
+    attachedFiles: [
+      { id: "11111111-2222-4333-8444-555555555555", name: "budget.csv", kind: "csv" },
+      { id: "99999999-8888-4777-8666-555555555555", name: "notes.md", kind: "md" },
+    ],
+  });
+  assert.ok(m[0].content.includes("11111111-2222-4333-8444-555555555555"));
+  assert.ok(m[0].content.includes("budget.csv"));
+  assert.ok(m[0].content.includes("notes.md"));
+  assert.ok(m[0].content.includes("ATTACHED FILES"));
+});
+
+test("no attachments means no manifest section at all", () => {
+  // An empty "ATTACHED FILES" heading invites a model to invent an id for it.
+  assert.equal(toolMessages(BASE, registry, { round: 1 })[0].content.includes("ATTACHED FILES"), false);
+  assert.equal(
+    toolMessages(BASE, registry, { round: 1, attachedFiles: [] })[0].content.includes("ATTACHED FILES"),
+    false,
+  );
+});
+
 test("survives a missing or malformed base message list", () => {
   for (const base of [undefined, [], [{ role: "user", content: "hi" }]]) {
     const m = toolMessages(base, registry, { round: 1 });

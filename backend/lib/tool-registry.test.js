@@ -40,11 +40,73 @@ test("an empty registry is legal and offers nothing", () => {
   assert.deepEqual(buildRegistry().list(), []);
 });
 
-test("read_file and run_code are absent until their backing exists", () => {
-  // Specified in the design; a content store and a sandbox key do not exist yet.
+test("read_file is absent when no store is supplied, run_code until it has a sandbox", () => {
   const names = full().list().map((t) => t.name);
   assert.equal(names.includes("read_file"), false);
   assert.equal(names.includes("run_code"), false);
+});
+
+// ===== read_file =====
+
+const FILE = {
+  id: "11111111-2222-4333-8444-555555555555",
+  name: "budget.csv",
+  kind: "csv",
+  bytes: 412,
+  content: "month,spend\njan,120",
+  truncated: false,
+};
+
+/** A store already bound to one (user, chat) — the scope is not a parameter. */
+const fileStore = (files = [FILE]) => ({
+  list: async () => files.map(({ id, name }) => ({ id, name })),
+  get: async (id) => files.find((f) => f.id === id) || null,
+});
+
+const withFiles = (files) => buildRegistry({ search: async () => RESULTS, files: fileStore(files) });
+
+test("read_file is offered once a store is supplied", () => {
+  assert.equal(withFiles().has("read_file"), true);
+});
+
+test("reads a file by id", async () => {
+  const r = await withFiles().execute({ name: "read_file", args: { id: FILE.id } });
+  assert.equal(r.ok, true);
+  assert.ok(r.content.includes("month,spend"));
+  assert.ok(r.summary.includes("budget.csv"));
+});
+
+test("a truncated file says so inside the content the model reads", async () => {
+  const r = await withFiles([{ ...FILE, truncated: true }]).execute({ name: "read_file", args: { id: FILE.id } });
+  assert.ok(r.content.includes("truncated"));
+});
+
+test("A PATH IS NOT AN ID, and the refusal lists what is", async () => {
+  // The whole design rests on this: a model-issued path is attacker-controlled
+  // the moment anyone can get text into a prompt.
+  for (const id of ["../../.env", "/etc/passwd", "..\\..\\config", "budget.csv", "1", ""]) {
+    const r = await withFiles().execute({ name: "read_file", args: { id } });
+    assert.equal(r.ok, false, id);
+  }
+  const r = await withFiles().execute({ name: "read_file", args: { id: "../../.env" } });
+  assert.ok(r.summary.includes("budget.csv"), "a wasted round should become a corrected one");
+});
+
+test("a well-formed id for a file in another chat is a plain miss", async () => {
+  // The store only ever holds this (user, chat), so "not found" and "not yours"
+  // are the same answer — deliberately. Distinguishing them would confirm the
+  // existence of another user's file.
+  const r = await withFiles().execute({ name: "read_file", args: { id: "99999999-8888-4777-8666-555555555555" } });
+  assert.equal(r.ok, false);
+  assert.equal(/permission|denied|forbidden/i.test(r.summary), false);
+  assert.ok(/no file with id/i.test(r.summary));
+});
+
+test("the store is never asked for anything the tool did not shape-check", async () => {
+  let asked = [];
+  const reg = buildRegistry({ files: { list: async () => [], get: async (id) => { asked.push(id); return null; } } });
+  await reg.execute({ name: "read_file", args: { id: "../../.env" } });
+  assert.deepEqual(asked, [], "a malformed id must not reach the database at all");
 });
 
 test("every offered tool carries a description and a schema", () => {

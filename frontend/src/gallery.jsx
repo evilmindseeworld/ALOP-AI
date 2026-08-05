@@ -444,6 +444,14 @@ const LiveChrome = ({ theme, empty = false, streaming = false, loaded = false, c
                 onStartCamera={() => {}}
                 isListening={loaded}
                 toggleListening={() => {}}
+                attachedFiles={
+                  loaded
+                    ? [
+                        { id: "f1", name: "budget.csv" },
+                        { id: "f2", name: "a-very-long-attachment-filename-that-must-truncate.md" },
+                      ]
+                    : []
+                }
                 attachedImage={loaded ? SAMPLE_ATTACHMENT : null}
                 onClearAttachment={() => {}}
                 isGenerating={streaming}

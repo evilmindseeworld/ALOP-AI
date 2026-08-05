@@ -205,6 +205,96 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
   }, []);
 
   /**
+   * Documents attached to the active conversation.
+   *
+   * Kept separate from `messages` on purpose. An image belongs to one message;
+   * a document belongs to the CONVERSATION, and the council can read it on any
+   * turn via read_file. Storing it in the transcript would mean re-sending its
+   * contents with every request, which is the thing the opaque-id design exists
+   * to avoid.
+   */
+  const [chatFiles, setChatFiles] = useState([]);
+
+  const loadChatFiles = useCallback(
+    async (chatId) => {
+      if (!chatId) return setChatFiles([]);
+      try {
+        const res = await apiCall(`/api/chats/${chatId}/files`);
+        setChatFiles(res.ok ? await res.json() : []);
+      } catch {
+        setChatFiles([]);
+      }
+    },
+    [apiCall]
+  );
+
+  useEffect(() => {
+    if (isReady) loadChatFiles(activeChatId);
+  }, [isReady, activeChatId, loadChatFiles]);
+
+  /**
+   * Read a picked file and hand the bytes to the server.
+   *
+   * base64 rather than multipart: every other endpoint here speaks JSON, the
+   * ceiling is 512KB, and adding a multipart parser to the request path for
+   * one route is a dependency and an attack surface for no gain at this size.
+   *
+   * The server decides what is acceptable — this does no validation beyond
+   * refusing an empty pick, because a client-side check is a convenience and
+   * never a boundary.
+   */
+  const uploadFile = useCallback(
+    async (file) => {
+      if (!file) return;
+      let chatId = activeChatId;
+      if (!chatId) chatId = await createChat();
+      if (!chatId) return;
+
+      try {
+        const base64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          // result is a data URL; the payload is everything after the comma.
+          reader.onload = () => resolve(String(reader.result).split(",")[1] || "");
+          reader.onerror = () => reject(new Error("Could not read that file."));
+          reader.readAsDataURL(file);
+        });
+
+        const res = await apiCall(`/api/chats/${chatId}/files`, {
+          method: "POST",
+          body: JSON.stringify({ name: file.name, mime: file.type, base64 }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          // The server's rejection messages are written to be shown verbatim.
+          setToast(body.error || "That file could not be attached.");
+          return;
+        }
+        setChatFiles((p) => [...p, body]);
+        setToast(`${body.name} attached — the council can read it.`);
+      } catch (e) {
+        setToast(e.message || "That file could not be attached.");
+      }
+    },
+    [activeChatId, createChat, apiCall, setToast]
+  );
+
+  const removeFile = useCallback(
+    async (fileId) => {
+      if (!activeChatId) return;
+      const before = chatFiles;
+      setChatFiles((p) => p.filter((f) => f.id !== fileId));
+      try {
+        const res = await apiCall(`/api/chats/${activeChatId}/files/${fileId}`, { method: "DELETE" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      } catch {
+        setChatFiles(before);
+        setToast("Couldn't remove that file.");
+      }
+    },
+    [activeChatId, chatFiles, apiCall, setToast]
+  );
+
+  /**
    * `baseMessages` is what the new exchange is appended to. It defaults to the
    * live transcript, and only regenerate passes anything else: it has just
    * truncated the transcript, and this closure still holds the pre-truncation
@@ -408,6 +498,9 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
     send,
     stopGeneration,
     regenerateLast,
+    chatFiles,
+    uploadFile,
+    removeFile,
   };
 }
 

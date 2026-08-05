@@ -1,0 +1,54 @@
+name: Keep the API warm
+
+# THE SINGLE BIGGEST LATENCY IN THE PRODUCT, and it costs nothing to fix.
+#
+# Render's free tier spins an idle instance down after ~15 minutes. The next
+# request pays the full boot: measured at 22.5 seconds against 0.21s warm. That
+# is larger than every code optimisation in this repo combined, and it lands on
+# exactly the person you least want it to — someone arriving at a quiet moment,
+# which is most arrivals before there are users.
+#
+# An inbound request resets that idle timer. This sends one every 10 minutes.
+#
+# WHY GITHUB ACTIONS: scheduled workflows are free and unmetered on public
+# repositories, so this adds nothing to the bill. Render's own free-tier
+# allowance is 750 instance-hours a month against a ~730-hour month, so one
+# service staying awake fits — but ONLY one. If a second free service is ever
+# added, this has to be reconsidered or the allowance runs out mid-month.
+#
+# WHAT THIS IS NOT: a substitute for the $7 Starter plan, which removes
+# spin-down properly and does not depend on GitHub's scheduler. It is what to
+# do until that is affordable.
+on:
+  schedule:
+    # Every 10 minutes. GitHub delays scheduled runs under load — sometimes by
+    # several minutes — so 10 leaves margin against Render's ~15 minute idle
+    # window. Every 5 would be wasteful; every 15 would lose the race.
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+# Read-only. This workflow touches nothing in the repository.
+permissions:
+  contents: read
+
+concurrency:
+  group: keep-warm
+  cancel-in-progress: true
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    # A cold boot takes ~25s and this job should never hang a runner past that.
+    timeout-minutes: 3
+    steps:
+      - name: Ping /health
+        run: |
+          # /health is unauthenticated, does no database work, and is rate
+          # limited at 120/min — six pings an hour is nothing.
+          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 \
+            https://alop-ai.onrender.com/health)
+          echo "health -> $code"
+          # A non-200 is worth failing on: this workflow is also the closest
+          # thing to an uptime check the project has, and a silent ping that
+          # never notices the service is down is worse than no ping.
+          test "$code" = "200"

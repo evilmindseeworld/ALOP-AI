@@ -882,7 +882,28 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const shouldCheckWiki = needsWikiCheck(pv.value);
 
     if (searchQuery) {
+      /* THE SCREEN STOPS BEING BLANK HERE, not when the answer starts.
+       *
+       * The search path is the most common one and it showed nothing until the
+       * whole fan-out had finished and the model had begun writing — seconds of
+       * a spinner that says only "something is happening". The user cannot tell
+       * a slow search from a hung request, and the second guess is the one that
+       * makes them reload.
+       *
+       * These are the SAME tool_start / tool_result events the council's
+       * activity trail already emits, so the frontend renders them with no new
+       * code: one row that says what is being searched for, then resolves.
+       * Reusing that contract rather than inventing a second progress channel
+       * is also why this is four lines. */
+      openStream(res);
+      sendEvent(res, { type: 'tool_start', round: 1, name: 'web_search', summary: `Searching: ${searchQuery.slice(0, 80)}` });
+
       const { context, sources, found, images } = await comprehensiveSearch(searchQuery, shouldCheckWiki);
+
+      sendEvent(res, {
+        type: 'tool_result', round: 1, name: 'web_search', ok: found,
+        summary: found ? `${sources.length} source${sources.length === 1 ? '' : 's'}` : 'No results',
+      });
       if (!found) {
         openStream(res);
         res.write(`data: ${JSON.stringify({ type: 'chunk', text: "I searched but couldn't find results. Could you rephrase?" })}\n\n`);

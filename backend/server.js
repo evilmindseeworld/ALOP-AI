@@ -299,14 +299,40 @@ const getFeedbackGuidance = async (userId) => {
 };
 
 // ===== MIDDLEWARE =====
-const allowedOrigins = process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [];
-app.use(cors({ origin: (origin, cb) => { if (!origin) return cb(null, true); const l = origin.toLowerCase(); if (allowedOrigins.map(o => o.toLowerCase()).includes(l)) return cb(null, true); if (process.env.NODE_ENV === 'development') return cb(null, true); if (l.includes('.vercel.app')) return cb(null, true); cb(new Error(`CORS: ${origin}`)); }, credentials: true, methods: ['GET','POST','PUT','DELETE','OPTIONS'], allowedHeaders: ['Content-Type','Authorization','X-Requested-With'], maxAge: 86400 }));
+// The allowlist is host-parsed, not substring-matched — see lib/origin-guard.js
+// for the two ways the previous `origin.includes('.vercel.app')` was wrong.
+// Preview deployments need ALLOWED_ORIGIN_SUFFIXES set; an unset variable
+// deliberately grants nothing.
+const { isOriginAllowed, originPolicyFromEnv } = require('./lib/origin-guard');
+const originPolicy = originPolicyFromEnv();
+if (!originPolicy.exact.length && !originPolicy.allowAll) console.warn('[BOOT] FRONTEND_URL not set — every cross-origin browser request will be refused.');
+app.use(cors({ origin: (origin, cb) => isOriginAllowed(origin, originPolicy) ? cb(null, true) : cb(new Error(`CORS: ${origin}`)), credentials: true, methods: ['GET','POST','PUT','DELETE','OPTIONS'], allowedHeaders: ['Content-Type','Authorization','X-Requested-With'], maxAge: 86400 }));
 app.use(helmet({ contentSecurityPolicy: { directives: { defaultSrc: ["'self'"], connectSrc: ["'self'", process.env.FRONTEND_URL, 'https://*.clerk.com', 'https://*.stripe.com'], scriptSrc: ["'self'", "'unsafe-inline'", 'https://*.clerk.com'], styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'https://image.pollinations.ai'], fontSrc: ["'self'", 'https://fonts.gstatic.com'], frameAncestors: ["'none'"], formAction: ["'self'", 'https://*.stripe.com'], upgradeInsecureRequests: [] } }, crossOriginEmbedderPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' }, hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }, referrerPolicy: { policy: 'strict-origin-when-cross-origin' }, xContentTypeOptions: true, xFrameOptions: 'DENY', xPermittedCrossDomainPolicies: 'none' }));
-app.use((req, res, next) => { req.requestId = crypto.randomUUID(); req.clientFingerprint = crypto.createHash('sha256').update(req.ip + (req.headers['user-agent']||'')).digest('hex').slice(0,16); next(); });
+// clientFingerprint used to be computed here and used as the rate-limit key.
+// It hashed the User-Agent, so it was not an identity — it was a bucket the
+// caller could change at will. Nothing derives from a client-chosen header now.
+app.use((req, res, next) => { req.requestId = crypto.randomUUID(); next(); });
 
 app.post('/api/stripe/webhook', requireStripe, express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature']; if (!sig) return res.status(400).send('Missing sig');
   let event; try { event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET); } catch (err) { Sentry.captureException(err); return res.status(400).send(`Webhook: ${err.message}`); }
+
+  // Stripe retries on any non-2xx and can deliver the same event more than
+  // once even on success — at-least-once, by design. Every handler below was
+  // replay-safe by luck rather than by construction (they all set a field to a
+  // fixed value), and "the current handlers happen to be idempotent" is not a
+  // property that survives someone adding a credit grant. Claim the event id
+  // first; a duplicate insert means we have already processed it.
+  //
+  // Failing OPEN on an insert error is deliberate: if the ledger is unreachable
+  // the worse outcome is re-applying a plan change, not silently dropping a
+  // paid subscription.
+  try {
+    const { error: dupe } = await supabase.from('stripe_events').insert({ id: event.id, type: event.type });
+    if (dupe && dupe.code === '23505') return res.json({ received: true, duplicate: true });
+    if (dupe) console.error('[stripe] event ledger unavailable, processing anyway:', dupe.message);
+  } catch (e) { console.error('[stripe] event ledger threw, processing anyway:', e.message); }
+
   try { if (event.type === 'checkout.session.completed') { const s = event.data.object; const email = s.customer_email || s.customer_details?.email; if (email) await supabase.from('users').update({ plan:'pro', stripe_customer_id: s.customer, stripe_subscription_id: s.subscription }).eq('email', email.toLowerCase()); } if (event.type === 'invoice.paid') await supabase.from('users').update({ plan:'pro' }).eq('stripe_customer_id', event.data.object.customer); if (['customer.subscription.deleted','customer.subscription.updated'].includes(event.type)) { const sub = event.data.object; await supabase.from('users').update({ plan: sub.status === 'active' ? 'pro' : 'free' }).eq('stripe_subscription_id', sub.id); } res.json({ received: true }); } catch (err) { Sentry.captureException(err); res.status(500).send('Webhook failed'); }
 });
 
@@ -314,8 +340,18 @@ app.use(compression());
 app.use(timeout('300s'));
 app.use((req, res, next) => { if (req.timedout) return res.status(503).json({ error: 'Timeout' }); next(); });
 
-const rlKey = (req, res) => { if (req.auth && req.auth.userId) return req.auth.userId; if (req.clientFingerprint) return req.clientFingerprint; return rateLimit.ipKeyGenerator(req, res); };
-const createLimiter = (windowMs, max, msg) => rateLimit({ windowMs, max, message: { error: msg }, standardHeaders: true, legacyHeaders: false, keyGenerator: (req, res) => rlKey(req, res), skip: (req) => req.path === '/health' || req.path === '/api/stripe/webhook', handler: (req, res) => { res.status(429).json({ error: msg }); } });
+// The key must not contain anything the caller chooses. It used to hash the
+// User-Agent in, which handed every caller unlimited buckets — see
+// lib/rate-limit-key.js. `ipKeyGenerator` is express-rate-limit's own, and is
+// IPv6-aware: it collapses an address to its /56 so one client cannot walk its
+// own prefix.
+const { rateLimitKey } = require('./lib/rate-limit-key');
+const createLimiter = (windowMs, max, msg) => rateLimit({ windowMs, max, message: { error: msg }, standardHeaders: true, legacyHeaders: false, keyGenerator: (req, res) => rateLimitKey(req, res, rateLimit.ipKeyGenerator), handler: (req, res) => { res.status(429).json({ error: msg }); } });
+
+// Every route is under a limit. The blanket /api/ limiter is the floor, and a
+// route with its own limiter is subject to BOTH — the narrower one binds first.
+// A route with no entry here is not unlimited, it inherits the floor; the
+// entries below exist where the floor is too generous for what the call costs.
 app.use('/api/', createLimiter(60000, 120, 'Too many requests.'));
 app.use('/api/council', createLimiter(60000, 30, 'Too many council requests.'));
 app.use('/api/quick', createLimiter(60000, 60, 'Too many quick requests.'));
@@ -326,9 +362,25 @@ app.use('/api/image', createLimiter(60000, 10, 'Too many image requests.'));
 app.use('/api/create-checkout-session', createLimiter(300000, 5, 'Too many billing requests.'));
 app.use('/api/create-portal-session', createLimiter(300000, 5, 'Too many billing requests.'));
 app.use('/api/admin/', createLimiter(60000, 60, 'Too many admin requests.'));
+// Previously covered only by the /api/ floor. Chat writes hit the database on
+// every call and the plan/price reads hit Clerk and Stripe, so 120/min each is
+// more headroom than any real client uses.
+app.use('/api/chats', createLimiter(60000, 60, 'Too many chat requests.'));
+app.use('/api/user/', createLimiter(60000, 60, 'Too many requests.'));
+app.use('/api/billing/', createLimiter(60000, 30, 'Too many billing requests.'));
+// /health is outside /api/ and so had no limit at all. It is cheap, but an
+// unlimited endpoint is still an unlimited endpoint.
+app.use('/health', createLimiter(60000, 120, 'Too many requests.'));
 
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+// The 50 MB ceiling exists for image data URLs, and applied to EVERY route —
+// so any endpoint could be made to buffer 50 MB per request. It now applies
+// only where an image can legitimately arrive; everything else gets 1 MB.
+// (The Stripe webhook is mounted above this with express.raw and is unaffected.)
+const IMAGE_ROUTES = ['/api/council', '/api/vision', '/api/overlay', '/api/image'];
+const bigJson = express.json({ limit: '50mb' });
+const smallJson = express.json({ limit: '1mb' });
+app.use((req, res, next) => (IMAGE_ROUTES.some((p) => req.path.startsWith(p)) ? bigJson : smallJson)(req, res, next));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // ===== SANITIZATION =====
 const MAX_PROMPT = 100000, MAX_HISTORY = 20, ALLOWED_ROLES = ['user','assistant','system'];
@@ -367,8 +419,14 @@ const ensureUser = async (userId) => {
 
 const checkSuspended = async (req, res, next) => { try { if (!req.auth || !req.auth.userId) return res.status(401).json({ error: 'Not authenticated' }); const { data: user, error } = await supabase.from('users').select('suspended, plan').eq('clerk_id', req.auth.userId).single(); if (error) throw error; if (user && user.suspended) return res.status(403).json({ error: 'Account suspended' }); req.userPlan = user?.plan || 'free'; next(); } catch (err) { Sentry.captureException(err); return res.status(500).json({ error: 'Verify failed' }); } };
 const requireOwnership = (table, col = 'user_id') => async (req, res, next) => { try { if (!req.auth || !req.auth.userId) return res.status(401).json({ error: 'Not authenticated' }); const user = await ensureUser(req.auth.userId); const id = req.params.id; if (!id || typeof id !== 'string') return res.status(400).json({ error: 'ID required' }); if (!/^[0-9a-fA-F-]{36}$/.test(id)) return res.status(400).json({ error: 'Invalid ID' }); const { data: resource, error } = await supabase.from(table).select(col).eq('id', id).single(); if (error || !resource) return res.status(404).json({ error: 'Not found' }); if (resource[col] !== user.id) return res.status(403).json({ error: 'No permission' }); req.resource = resource; next(); } catch (err) { Sentry.captureException(err); return res.status(500).json({ error: 'Ownership check failed' }); } };
-const requireAdmin = async (req, res, next) => { try { if (!req.auth || !req.auth.userId) return res.status(401).json({ error: 'Not authenticated' }); const { data: user, error } = await supabase.from('users').select('is_admin').eq('clerk_id', req.auth.userId).single(); if (error) throw error; if (!user || !user.is_admin) return res.status(403).json({ error: 'Admin only' }); next(); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: 'Admin check failed' }); } };
-const auditLog = async (userId, action, metadata = {}) => { try { await supabase.from('audit_logs').insert({ user_id: userId, action, metadata, ip_address: null, created_at: new Date().toISOString() }); } catch (e) { console.error('Audit failed:', e.message); } };
+// Selects `id` as well as `is_admin` so downstream handlers can record WHICH
+// admin acted, and can compare against a :id param — both are Supabase user
+// ids. req.auth.userId is a Clerk id and is not comparable to either.
+const requireAdmin = async (req, res, next) => { try { if (!req.auth || !req.auth.userId) return res.status(401).json({ error: 'Not authenticated' }); const { data: user, error } = await supabase.from('users').select('id,is_admin,suspended').eq('clerk_id', req.auth.userId).single(); if (error) throw error; if (!user || !user.is_admin) return res.status(403).json({ error: 'Admin only' }); if (user.suspended) return res.status(403).json({ error: 'Account suspended' }); req.adminUserId = user.id; next(); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: 'Admin check failed' }); } };
+// ip_address was hardcoded to null, so the audit trail could say what happened
+// and to whom but never from where — which is the column you want first when
+// you are reading it at all.
+const auditLog = async (userId, action, metadata = {}, ip = null) => { try { await supabase.from('audit_logs').insert({ user_id: userId, action, metadata, ip_address: ip || null, created_at: new Date().toISOString() }); } catch (e) { console.error('Audit failed:', e.message); } };
 
 // ===== HEALTH =====
 app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
@@ -440,7 +498,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0);
       if (!res.writableEnded) res.end();
       updateChatSummary(chatId,pv.value, 'Answered memory question.').catch(() => {});
-      await auditLog(user.id, 'council', { category: 'memory' });
+      await auditLog(user.id, 'council', { category: 'memory' }, req.ip);
       return;
     }
 
@@ -451,7 +509,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
       await streamModel(res, PRIMARY_MODEL, greetMsgs, 0.0);
       if (!res.writableEnded) res.end();
-      await auditLog(user.id, 'council', { category: 'greeting' });
+      await auditLog(user.id, 'council', { category: 'greeting' }, req.ip);
       return;
     }
 
@@ -466,7 +524,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
         res.write(`data: ${JSON.stringify({ type: 'chunk', text: "I searched but couldn't find results. Could you rephrase?" })}\n\n`);
         res.write('data: [DONE]\n\n');
         if (!res.writableEnded) res.end();
-        await auditLog(user.id, 'council', { category: 'no_results' });
+        await auditLog(user.id, 'council', { category: 'no_results' }, req.ip);
         return;
       }
       console.log(`[COUNCIL] ${sources.length} sources, ${context.length} chars.`);
@@ -477,7 +535,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       if (!res.writableEnded) res.end();
       const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
       updateChatSummary(chatId,pv.value, lastA || 'Search response.').catch(() => {});
-      await auditLog(user.id, 'council', { category: 'search', sources: sources.length });
+      await auditLog(user.id, 'council', { category: 'search', sources: sources.length }, req.ip);
       return;
     }
 
@@ -491,7 +549,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
         await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0);
         if (!res.writableEnded) res.end();
         updateChatSummary(chatId,pv.value, 'Wikipedia response.').catch(() => {});
-        await auditLog(user.id, 'council', { category: 'wiki' });
+        await auditLog(user.id, 'council', { category: 'wiki' }, req.ip);
         return;
       }
     }
@@ -510,7 +568,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0);
       if (!res.writableEnded) res.end();
       updateChatSummary(chatId,pv.value, 'Fallback response.').catch(() => {});
-      await auditLog(user.id, 'council', { category: 'fallback' });
+      await auditLog(user.id, 'council', { category: 'fallback' }, req.ip);
       return;
     }
 
@@ -531,7 +589,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     if (!res.writableEnded) res.end();
     const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
     updateChatSummary(chatId,pv.value, lastA || validResponses[0]?.content?.slice(0,800) || 'Council response.').catch(() => {});
-    await auditLog(user.id, 'council', { category: 'council', models: validResponses.length });
+    await auditLog(user.id, 'council', { category: 'council', models: validResponses.length }, req.ip);
   } catch (err) {
     console.error('Council error:', err.message);
     Sentry.captureException(err);
@@ -591,7 +649,7 @@ app.post('/api/feedback', requireAuth, async (req, res) => {
     const user = await ensureUser(req.auth.userId);
     const { feedback, question, answer } = req.body;
     if (!feedback || !['up','down'].includes(feedback)) return res.status(400).json({ error: 'Invalid feedback' });
-    await auditLog(user.id, 'feedback', { feedback, question: question?.slice(0,500), answer: answer?.slice(0,500) });
+    await auditLog(user.id, 'feedback', { feedback, question: question?.slice(0,500), answer: answer?.slice(0,500) }, req.ip);
     // One row per rating in its own table. These notes used to be appended onto
     // users.conversation_summary, so every thumbs-up ate into the same 2000
     // characters the conversation memory needed and eventually destroyed both.
@@ -618,9 +676,36 @@ app.delete('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req,
 
 // ===== ADMIN =====
 app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => { try { const { data, error } = await supabase.from('users').select('id,clerk_id,email,name,avatar_url,plan,is_admin,suspended,created_at,stripe_subscription_id'); if (error) throw error; res.json(data || []); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
-app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, async (req, res) => { try { const { data: t } = await supabase.from('users').select('is_admin').eq('id', req.params.id).single(); if (t && t.is_admin) return res.status(403).json({ error: 'Cannot suspend admin' }); const { error } = await supabase.from('users').update({ suspended: true }).eq('id', req.params.id); if (error) throw error; res.json({ suspended: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
-app.post('/api/admin/users/:id/unsuspend', requireAuth, requireAdmin, async (req, res) => { try { const { error } = await supabase.from('users').update({ suspended: false }).eq('id', req.params.id); if (error) throw error; res.json({ unsuspended: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
-app.delete('/api/admin/users/:id', requireAuth, requireAdmin, async (req, res) => { try { if (req.auth.userId === req.params.id) return res.status(400).json({ error: 'Cannot delete yourself' }); const { data: t } = await supabase.from('users').select('is_admin').eq('id', req.params.id).single(); if (t && t.is_admin) return res.status(403).json({ error: 'Cannot delete admin' }); const { error } = await supabase.from('users').delete().eq('id', req.params.id); if (error) throw error; res.json({ deleted: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+// Admin routes take a Supabase users.id in :id. Validating the shape keeps a
+// malformed value from reaching Postgres and coming back as a 500 that reads
+// like a server fault. requireOwnership already does this for user routes; the
+// admin routes did not.
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const requireUuidParam = (req, res, next) => UUID.test(req.params.id || '') ? next() : res.status(400).json({ error: 'Invalid ID' });
+
+app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, requireUuidParam, async (req, res) => { try { const { data: t } = await supabase.from('users').select('is_admin,email').eq('id', req.params.id).single(); if (!t) return res.status(404).json({ error: 'Not found' }); if (t.is_admin) return res.status(403).json({ error: 'Cannot suspend admin' }); const { error } = await supabase.from('users').update({ suspended: true }).eq('id', req.params.id); if (error) throw error; await auditLog(req.adminUserId, 'admin.suspend', { target: req.params.id, targetEmail: t.email }, req.ip); res.json({ suspended: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+
+app.post('/api/admin/users/:id/unsuspend', requireAuth, requireAdmin, requireUuidParam, async (req, res) => { try { const { error } = await supabase.from('users').update({ suspended: false }).eq('id', req.params.id); if (error) throw error; await auditLog(req.adminUserId, 'admin.unsuspend', { target: req.params.id }, req.ip); res.json({ unsuspended: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+
+app.delete('/api/admin/users/:id', requireAuth, requireAdmin, requireUuidParam, async (req, res) => { try {
+  // The old self-delete guard compared req.auth.userId (a Clerk id, "user_2ab…")
+  // against req.params.id (a Supabase uuid). Those are different id spaces and
+  // can never be equal, so the check never fired once. It was masked by the
+  // is_admin check below — an admin deleting themselves was refused as "an
+  // admin", which is the right outcome reached by the wrong route. Compare the
+  // ids that are actually comparable.
+  if (req.adminUserId === req.params.id) return res.status(400).json({ error: 'Cannot delete yourself' });
+  const { data: t } = await supabase.from('users').select('is_admin,email').eq('id', req.params.id).single();
+  if (!t) return res.status(404).json({ error: 'Not found' });
+  if (t.is_admin) return res.status(403).json({ error: 'Cannot delete admin' });
+  const { error } = await supabase.from('users').delete().eq('id', req.params.id);
+  if (error) throw error;
+  // Written after the delete succeeds and before the reply, so a 200 always has
+  // a matching audit row. audit_logs.user_id is ON DELETE SET NULL, so deleting
+  // a user cannot take the record of their deletion with them.
+  await auditLog(req.adminUserId, 'admin.delete_user', { target: req.params.id, targetEmail: t.email }, req.ip);
+  res.json({ deleted: true });
+} catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 app.get('/api/admin/chats/:userId', requireAuth, requireAdmin, async (req, res) => { try { const { data, error } = await supabase.from('chats').select('*').eq('user_id', req.params.userId).order('updated_at', { ascending: false }); if (error) throw error; res.json(data || []); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) => { try { const { data, error } = await supabase.from('usage').select('*').eq('user_id', req.params.userId).order('date', { ascending: false }).limit(30); if (error) throw error; res.json(data || []); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 

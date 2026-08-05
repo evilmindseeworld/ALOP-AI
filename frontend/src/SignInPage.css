@@ -2,21 +2,28 @@
   position: fixed;
   inset: 0;
   z-index: 300;
-  background: #1b120c;
-  background-image:
-    repeating-linear-gradient(90deg, transparent 0px, transparent 2px, rgba(200,160,110,0.055) 2px, rgba(200,160,110,0.055) 3px, transparent 3px, transparent 6px, rgba(160,115,78,0.038) 6px, rgba(160,115,78,0.038) 7px, transparent 7px, transparent 11px, rgba(180,140,92,0.028) 11px, rgba(180,140,92,0.028) 13px, transparent 13px, transparent 19px, rgba(140,100,65,0.02) 19px, rgba(140,100,65,0.02) 21px),
-    repeating-linear-gradient(90deg, transparent 0px, transparent 35px, rgba(115,80,50,0.035) 35px, rgba(115,80,50,0.035) 42px, transparent 42px, transparent 70px, rgba(145,105,72,0.025) 70px, rgba(145,105,72,0.025) 76px);
+  background: var(--bg);
+  /* Was two repeating-linear-gradient wood-grain passes — the same vertical
+   * banding that was deleted from the app in 680679a, left behind here because
+   * this file is outside the App.css manifest and so outside every guard that
+   * would have caught it. The app's own four-layer wash instead: source, wash,
+   * counterlight, vignette. */
+  background-image: var(--gradient-warm);
   overflow-y: auto;
   min-height: 100vh;
   font-family: 'Switzer', -apple-system, sans-serif;
-  color: #faf0e6;
+  color: var(--text);
 }
 
+/* The same grain asset the app uses, from the same token, at the same
+ * measured opacity — rather than a second inline copy of a turbulence filter
+ * that had drifted to a different frequency and a different alpha. */
 .signin-noise {
   position: fixed;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity: 0.02;
+  background-image: var(--grain-image);
+  background-size: 160px 160px;
+  opacity: var(--grain-opacity);
   pointer-events: none;
   z-index: 0;
 }
@@ -32,7 +39,7 @@
 .signin-orb-1 {
   width: 600px;
   height: 600px;
-  background: #ec7d96;
+  background: var(--primary);
   top: -200px;
   right: -150px;
   opacity: 0.14;
@@ -42,7 +49,7 @@
 .signin-orb-2 {
   width: 500px;
   height: 500px;
-  background: #5ec998;
+  background: var(--emerald);
   bottom: -180px;
   left: -120px;
   opacity: 0.10;
@@ -91,11 +98,11 @@
   width: 56px;
   height: 56px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #ec7d96, #f4a4b5);
+  background: linear-gradient(135deg, var(--primary), var(--primary-soft));
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset, 0 -1px 0 rgba(0,0,0,0.2) inset, 0 8px 28px rgba(236,125,150,0.25);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset, 0 -1px 0 rgba(0,0,0,0.2) inset, 0 8px 28px color-mix(in srgb, var(--primary) 25%, transparent);
   overflow: visible;
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -115,7 +122,7 @@
   font-family: 'Clash Grotesk', sans-serif;
   font-weight: 700;
   font-size: 22px;
-  color: #faf0e6;
+  color: var(--text);
   letter-spacing: -0.4px;
 }
 
@@ -125,11 +132,10 @@
   gap: 6px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
-  color: #5ec998;
-  background: rgba(37,25,18,0.8);
-  background-image: repeating-linear-gradient(90deg, transparent 0px, transparent 3px, rgba(200,160,110,0.03) 3px, rgba(200,160,110,0.03) 4px);
-  border: 1px solid rgba(250,240,230,0.06);
-  box-shadow: 0 1px 0 rgba(255,235,224,0.03) inset, 0 -1px 0 rgba(0,0,0,0.2) inset;
+  color: var(--emerald);
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--text) 6%, transparent);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 3%, transparent) inset, 0 -1px 0 rgba(0,0,0,0.2) inset;
   border-radius: 999px;
   padding: 5px 10px;
   text-transform: uppercase;
@@ -140,85 +146,116 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #5ec998;
+  background: var(--emerald);
   animation: dotPulse 2s infinite;
 }
 
 @keyframes dotPulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(94,201,152,0.5); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 color-mix(in srgb, var(--emerald) 50%, transparent); }
   50% { opacity: 0.4; box-shadow: 0 0 0 6px rgba(94,201,152,0); }
 }
 
+/* The eyebrow, matching the app's empty state. */
+.signin-eyebrow {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-subtle);
+  margin: 0;
+}
+
+/* Same two-typeface display line as the empty state, so the screen a user
+ * signs in FROM and the screen they land ON are recognisably the same product.
+ * The serif runs small for its point size, hence 1.12em; 400 because an italic
+ * serif at 700 is a different voice rather than an emphasis of the same one. */
 .signin-title {
-  font-family: 'Clash Grotesk', sans-serif;
-  font-size: 38px;
+  font-family: var(--font-heading), 'Clash Grotesk', sans-serif;
+  font-size: clamp(30px, 4.4vw, 40px);
   font-weight: 700;
-  line-height: 1.15;
-  letter-spacing: -1.3px;
-  color: #faf0e6;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  color: var(--text);
   text-align: center;
   margin: 0;
+  text-wrap: balance;
+}
+
+.signin-title-accent {
+  font-family: var(--font-display-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 1.12em;
+  letter-spacing: -0.01em;
+  margin-left: 0.26em;
 }
 
 .signin-tagline {
-  font-size: 15px;
+  font-size: var(--text-base);
   line-height: 1.65;
-  color: #d4b896;
+  color: var(--text-muted);
   text-align: center;
   margin: 0;
-  max-width: 360px;
+  max-width: 42ch;
+  text-wrap: balance;
 }
 
+/* Was four emoji in bevelled, blurred, hover-lifting cards.
+ *
+ * Three things wrong with that, in order of how much they cost: emoji render
+ * differently on every platform and carry nothing to a screen reader; four
+ * identical cards stacked is the visual signature of a template; and each one
+ * ran a backdrop-filter, so the sign-in screen composited four blur layers
+ * before the user had done anything.
+ *
+ * A quiet list says the same thing, reads aloud correctly, and costs nothing.
+ * The rule is a mark, not a container. */
 .signin-features {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
   width: 100%;
   max-width: 360px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.signin-feature {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 13px;
-  color: #d4b896;
-  background: rgba(37,25,18,0.6);
-  border: 1px solid rgba(250,240,230,0.04);
-  border-radius: 12px;
-  padding: 10px 14px;
-  box-shadow: 0 1px 0 rgba(255,235,224,0.03) inset, 0 -1px 0 rgba(0,0,0,0.15) inset, 0 1px 3px rgba(0,0,0,0.2);
-  backdrop-filter: blur(12px);
-  transition: all 0.2s ease;
+.signin-features li {
+  position: relative;
+  padding-left: var(--space-4);
+  font-size: var(--text-sm);
+  line-height: 1.5;
+  color: var(--text-muted);
 }
 
-.signin-feature:hover {
-  background: rgba(46,33,24,0.7);
-  transform: translateY(-1px);
-  box-shadow: 0 1px 0 rgba(255,235,224,0.04) inset, 0 -1px 0 rgba(0,0,0,0.15) inset, 0 3px 8px rgba(0,0,0,0.25);
-}
-
-.signin-feature span {
-  font-size: 16px;
+.signin-features li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.62em;
+  width: 8px;
+  height: 1px;
+  background: var(--primary);
+  opacity: 0.7;
 }
 
 .signin-card {
   width: 100%;
   max-width: 360px;
-  background: rgba(37,25,18,0.9);
-  background-image: repeating-linear-gradient(90deg, transparent 0px, transparent 3px, rgba(200,160,110,0.028) 3px, rgba(200,160,110,0.028) 4px, transparent 4px, transparent 8px, rgba(160,115,78,0.018) 8px, rgba(160,115,78,0.018) 10px, transparent 10px, transparent 16px);
-  border: 1px solid rgba(250,240,230,0.06);
-  border-top-color: rgba(250,240,230,0.08);
+  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--text) 6%, transparent);
+  border-top-color: color-mix(in srgb, var(--text) 8%, transparent);
   border-bottom-color: rgba(0,0,0,0.4);
   border-radius: 20px;
   padding: 24px;
   backdrop-filter: blur(24px);
-  box-shadow: 0 1px 0 rgba(250,240,230,0.04) inset, 0 -1px 0 rgba(0,0,0,0.3) inset, 0 20px 50px rgba(0,0,0,0.5);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 4%, transparent) inset, 0 -1px 0 rgba(0,0,0,0.3) inset, 0 20px 50px rgba(0,0,0,0.5);
 }
 
 .signin-card-inner {
-  background: rgba(27,18,12,0.5);
-  border: 1px solid rgba(250,240,230,0.04);
+  background: var(--surface-2);
+  border: 1px solid color-mix(in srgb, var(--text) 4%, transparent);
   border-top-color: rgba(0,0,0,0.3);
   box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
   border-radius: 14px;
@@ -232,11 +269,11 @@
   gap: 8px;
   margin-top: 14px;
   font-size: 11px;
-  color: #9c8770;
+  color: var(--text-subtle);
 }
 
 .signin-dot {
-  color: rgba(250,240,230,0.1);
+  color: color-mix(in srgb, var(--text) 10%, transparent);
 }
 
 .signin-links {
@@ -246,23 +283,23 @@
   gap: 8px;
   margin-top: 6px;
   font-size: 11px;
-  color: #9c8770;
+  color: var(--text-subtle);
 }
 
 .signin-links a {
-  color: #d4b896;
+  color: var(--text-muted);
   text-decoration: none;
   transition: color 0.15s;
 }
 
 .signin-links a:hover {
-  color: #ec7d96;
+  color: var(--primary);
 }
 
 /* Clerk overrides */
 .signin-card-inner .cl-formButtonPrimary {
   width: 100% !important;
-  background: linear-gradient(135deg, #ec7d96, #f4a4b5) !important;
+  background: linear-gradient(135deg, var(--primary), var(--primary-soft)) !important;
   color: #fff !important;
   font-family: 'Switzer', sans-serif !important;
   font-weight: 700 !important;
@@ -270,13 +307,13 @@
   border-radius: 12px !important;
   padding: 12px !important;
   border: none !important;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset, 0 -1px 0 rgba(0,0,0,0.2) inset, 0 4px 12px rgba(236,125,150,0.2) !important;
-  transition: all 0.2s ease !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset, 0 -1px 0 rgba(0,0,0,0.2) inset, 0 4px 12px color-mix(in srgb, var(--primary) 20%, transparent) !important;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
 }
 
 .signin-card-inner .cl-formButtonPrimary:hover {
   transform: translateY(-1px) !important;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset, 0 -1px 0 rgba(0,0,0,0.2) inset, 0 8px 24px rgba(236,125,150,0.25) !important;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset, 0 -1px 0 rgba(0,0,0,0.2) inset, 0 8px 24px color-mix(in srgb, var(--primary) 25%, transparent) !important;
 }
 
 .signin-card-inner .cl-formButtonPrimary:active {
@@ -285,59 +322,59 @@
 }
 
 .signin-card-inner .cl-socialButtonsBlockButton {
-  background: rgba(46,33,24,0.8) !important;
-  border: 1px solid rgba(250,240,230,0.05) !important;
+  background: var(--surface-2) !important;
+  border: 1px solid color-mix(in srgb, var(--text) 5%, transparent) !important;
   border-radius: 12px !important;
-  color: #faf0e6 !important;
-  box-shadow: 0 1px 0 rgba(250,240,230,0.03) inset, 0 -1px 0 rgba(0,0,0,0.15) inset !important;
-  transition: all 0.2s ease !important;
+  color: var(--text) !important;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 3%, transparent) inset, 0 -1px 0 rgba(0,0,0,0.15) inset !important;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
 }
 
 .signin-card-inner .cl-socialButtonsBlockButton:hover {
   background: rgba(58,43,31,0.8) !important;
-  border-color: rgba(250,240,230,0.1) !important;
+  border-color: color-mix(in srgb, var(--text) 10%, transparent) !important;
   transform: translateY(-1px) !important;
 }
 
 .signin-card-inner .cl-headerTitle {
-  color: #faf0e6 !important;
+  color: var(--text) !important;
   font-family: 'Clash Grotesk', sans-serif !important;
   font-weight: 600 !important;
 }
 
 .signin-card-inner .cl-headerSubtitle {
-  color: #d4b896 !important;
+  color: var(--text-muted) !important;
 }
 
 .signin-card-inner .cl-formFieldLabel {
-  color: #d4b896 !important;
+  color: var(--text-muted) !important;
   font-size: 12px !important;
 }
 
 .signin-card-inner .cl-input {
-  background: rgba(46,33,24,0.8) !important;
-  border: 1px solid rgba(250,240,230,0.05) !important;
+  background: var(--surface-2) !important;
+  border: 1px solid color-mix(in srgb, var(--text) 5%, transparent) !important;
   border-radius: 12px !important;
-  color: #faf0e6 !important;
+  color: var(--text) !important;
   padding: 11px 13px !important;
   font-size: 14px !important;
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.2) !important;
-  transition: all 0.2s ease !important;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
 }
 
 .signin-card-inner .cl-input:focus {
-  border-color: rgba(236,125,150,0.3) !important;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 0 0 3px rgba(236,125,150,0.08) !important;
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent) !important;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 0 0 3px color-mix(in srgb, var(--primary) 8%, transparent) !important;
 }
 
 .signin-card-inner .cl-footerActionLink {
-  color: #f4a4b5 !important;
+  color: var(--primary-soft) !important;
   font-weight: 600 !important;
   transition: color 0.15s !important;
 }
 
 .signin-card-inner .cl-footerActionLink:hover {
-  color: #ec7d96 !important;
+  color: var(--primary) !important;
 }
 
 .signin-card-inner .cl-form {
@@ -345,13 +382,33 @@
 }
 
 .signin-card-inner .cl-internalNavigation {
-  color: #d4b896 !important;
+  color: var(--text-muted) !important;
 }
 
 @media (max-width: 480px) {
-  .signin-title { font-size: 30px; }
-  .signin-tagline { font-size: 14px; }
+  .signin-tagline { font-size: var(--text-sm); }
   .signin-card { padding: 18px; }
   .signin-status { display: none; }
   .signin-wrap { gap: 16px; padding: 40px 16px; }
+}
+
+/* ===== THE SAKURA FRAME, ON A FULL VIEWPORT =====
+ *
+ * The frame was sized for .empty-state, which is a panel inside the app shell.
+ * Here the container is the whole window, so the same clamp() lands much larger
+ * relative to the content, and the torii sits directly behind the tagline —
+ * where it reads as a shape competing with the text rather than atmosphere.
+ *
+ * Corners only, and smaller. The sign-in card occupies the middle of this
+ * screen; there is nothing for a centred ornament to be behind except the
+ * thing the user came here to use. */
+.signin-root .sakura-torii { display: none; }
+
+.signin-root .sakura-corner {
+  width: clamp(90px, 11vw, 150px);
+  opacity: 0.26;
+}
+
+@media (max-width: 640px) {
+  .signin-root .sakura-corner { width: clamp(64px, 22vw, 100px); opacity: 0.2; }
 }

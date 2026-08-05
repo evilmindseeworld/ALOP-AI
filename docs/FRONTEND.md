@@ -420,6 +420,16 @@ list is worse than none — it sends people to fix what is fixed.
   `getDisplayMedia`, `SpeechRecognition` and `speechSynthesis`, none of which
   exist in jsdom.
 - **Four unmounted motion primitives** in `components/ui/` — see §5.
+- **`SignInPage.css` is outside every guard in this document.** It is imported
+  directly by `SignInPage.jsx` rather than through the `App.css` manifest, so
+  the cascade snapshot never walks it, `cssHygiene` never counts its
+  `!important`s (it has several, on Clerk overrides), and `zIndexOrder` never
+  sees its bare `z-index: 300`. That is exactly why it drifted: it was still
+  carrying a brown wood-grain palette and the repeating-gradient banding that
+  was deleted from the app in `680679a`, months after the app stopped using
+  either. It now uses the real tokens, but nothing stops it drifting again.
+  Folding it into the manifest is the fix; the obstacle is that it renders
+  outside `.app-root`.
 - **Three duplicate top-level selectors remain**, down from 16: `*`,
   `.sidebar-rail`, and the `.chat-item:hover/.focus-within .chat-actions` pair.
   All three are two declarations of the same selector in one file, not a

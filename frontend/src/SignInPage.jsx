@@ -1,4 +1,5 @@
 import { SignIn, useUser } from "@clerk/react";
+import SakuraFrame from "./components/SakuraFrame";
 import "./SignInPage.css";
 
 export default function SignInPage() {
@@ -11,6 +12,7 @@ export default function SignInPage() {
       <div className="signin-noise" />
       <div className="signin-orb signin-orb-1" />
       <div className="signin-orb signin-orb-2" />
+      <SakuraFrame />
 
       <div className="signin-wrap">
         <div className="signin-brand">
@@ -24,18 +26,28 @@ export default function SignInPage() {
           </div>
         </div>
 
-        <h1 className="signin-title">One council. Every frontier model.</h1>
+        {/* The same display treatment as the app's empty state — sans, then an
+            italic serif for the turn. A user who signs in should recognise the
+            screen they land on. */}
+        <p className="signin-eyebrow">The AI Council</p>
+        <h1 className="signin-title">
+          One council.<span className="signin-title-accent">Every model.</span>
+        </h1>
         <p className="signin-tagline">
-          A council of AI models that debate before they answer. Generate images,
-          analyze your screen, and build a knowledge base — all in one interface.
+          Several models answer separately, read each other, then agree on one reply.
+          Tell it when it is wrong and it remembers.
         </p>
 
-        <div className="signin-features">
-          <div className="signin-feature"><span>🧠</span> Models debate, then agree</div>
-          <div className="signin-feature"><span>👁️</span> Vision & screen analysis</div>
-          <div className="signin-feature"><span>🖼️</span> Image generation</div>
-          <div className="signin-feature"><span>🎙️</span> Voice input</div>
-        </div>
+        {/* Was four emoji in bevelled cards. Emoji render differently on every
+            platform, carry no meaning to a screen reader, and four of them
+            stacked is the visual signature of a template. A plain list, set
+            quietly, says the same thing and survives being read aloud. */}
+        <ul className="signin-features">
+          <li>Models debate before they answer</li>
+          <li>Reads your screen, your images, your files</li>
+          <li>Generates images from a prompt</li>
+          <li>Learns from what you tell it</li>
+        </ul>
 
         <div className="signin-card">
           <div className="signin-card-inner">

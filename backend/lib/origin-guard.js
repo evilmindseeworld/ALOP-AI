@@ -91,13 +91,22 @@ function isOriginAllowed(origin, { exact = [], suffixes = [], allowAll = false }
  * access, because the whole class of bug being fixed here is a default that
  * was wider than anyone realised.
  */
+const list = (value) =>
+  (value || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
 function originPolicyFromEnv(env = process.env) {
   return {
-    exact: env.FRONTEND_URL ? [env.FRONTEND_URL] : [],
-    suffixes: (env.ALLOWED_ORIGIN_SUFFIXES || "")
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean),
+    // FRONTEND_URL is the canonical one and is used elsewhere (Stripe return
+    // URLs, the CSP). ALLOWED_ORIGINS carries the others this deployment
+    // answers on. Vercel serves the same project on three stable hostnames —
+    // the project alias, the team alias and the git-branch alias — and they
+    // are siblings joined by HYPHENS, not a shared dot-subdomain, so no suffix
+    // rule can cover them. Listing them is the honest way to say "these three".
+    exact: [...list(env.FRONTEND_URL), ...list(env.ALLOWED_ORIGINS)],
+    suffixes: list(env.ALLOWED_ORIGIN_SUFFIXES),
     allowAll: env.NODE_ENV === "development",
   };
 }

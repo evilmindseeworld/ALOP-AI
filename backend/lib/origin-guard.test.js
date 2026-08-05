@@ -96,6 +96,23 @@ test("an unset ALLOWED_ORIGIN_SUFFIXES grants nothing extra", () => {
   assert.equal(isOriginAllowed("https://alop-ai-omega.vercel.app", policy), true);
 });
 
+test("ALLOWED_ORIGINS carries the sibling deployment hostnames", () => {
+  // Vercel's three stable aliases for one project are joined by hyphens, not by
+  // a shared dot-subdomain, so no suffix rule can express them. If this ever
+  // regresses, the live site stops being able to call its own API.
+  const policy = originPolicyFromEnv({
+    FRONTEND_URL: "https://alop-ai-omega.vercel.app",
+    ALLOWED_ORIGINS:
+      "https://alop-ai-evilmindseeworlds-projects.vercel.app," +
+      "https://alop-ai-git-main-evilmindseeworlds-projects.vercel.app",
+  });
+  assert.equal(isOriginAllowed("https://alop-ai-omega.vercel.app", policy), true);
+  assert.equal(isOriginAllowed("https://alop-ai-evilmindseeworlds-projects.vercel.app", policy), true);
+  assert.equal(isOriginAllowed("https://alop-ai-git-main-evilmindseeworlds-projects.vercel.app", policy), true);
+  // and still nothing else on vercel.app
+  assert.equal(isOriginAllowed("https://attacker-clone.vercel.app", policy), false);
+});
+
 test("env parsing trims and drops empties", () => {
   const policy = originPolicyFromEnv({
     FRONTEND_URL: "https://a.example",

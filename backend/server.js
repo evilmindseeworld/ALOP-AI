@@ -225,6 +225,27 @@ const searchWikipedia = async (query) => {
   try { const sr = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query.slice(0,100))}&format=json&origin=*`, { signal: AbortSignal.timeout(6000) }); if (!sr.ok) return ''; const sd = await sr.json(); const titles = (sd.query?.search||[]).slice(0,2).map(s => s.title); if (titles.length === 0) return ''; const er = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=true&explaintext=true&titles=${encodeURIComponent(titles.join('|'))}&format=json&origin=*`, { signal: AbortSignal.timeout(6000) }); if (!er.ok) return ''; const ed = await er.json(); return Object.values(ed.query?.pages||{}).map(p => p.extract||'').filter(e => e.length > 100).join('\n\n').slice(0, 5000); } catch { return ''; }
 };
 
+// ===== COUNCIL TOOL CALLING =====
+// docs/superpowers/specs/2026-07-31-council-tool-calling-design.md
+const { buildRegistry } = require('./lib/tool-registry');
+const { runAgentLoop } = require('./lib/agent-loop');
+const { assertSafeUrl } = require('./lib/url-guard');
+const { firstWithResults, toolMessages } = require('./lib/council-tools');
+
+// Off unless explicitly enabled. The router path is untouched, so a bad turn is
+// one env var away from reverted without a deploy.
+const TOOLS_ENABLED = process.env.COUNCIL_TOOLS === '1';
+
+// Cached because members in the same turn ask overlapping questions across
+// ROUNDS as well as within one — dedupe only unions a single round.
+const toolSearch = async (query) => {
+  const cached = getCachedSearch(`tool:${query}`);
+  if (cached) return cached;
+  const results = await firstWithResults([searchBrave, searchTavily, searchGoogleWeb], query);
+  if (results.length) setCachedSearch(`tool:${query}`, results);
+  return results;
+};
+
 // ===== COMPREHENSIVE SEARCH =====
 const comprehensiveSearch = async (query, needsWiki) => {
   const cached = getCachedSearch(query); if (cached) return cached;
@@ -557,7 +578,42 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     // 4. COUNCIL
     const councilSys = `You are an elite AI expert in the ALOP-AI Council. If outside your expertise, reply ONLY "SKIP". If you answer, be direct. Match response length to question complexity. Use Markdown. If context/history provided, use for continuity. ${isDetailed ? 'Be thorough.' : 'Be concise.'}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
     const councilMsgs = [{ role: 'system', content: councilSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
-    const validResponses = await runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit);
+
+    // The agent loop, when enabled, replaces the single-shot council with
+    // propose → dedupe → broadcast. It only ever runs HERE, after the router
+    // decided no search was needed — which is exactly the gap it exists for: a
+    // member that disagrees with that decision can now act on it, where before
+    // the tools were present and the initiative was not.
+    //
+    // COUNCIL_TOOLS is off by default and the router path below is untouched,
+    // so this ships dark and a bad turn is one env var from being reverted
+    // without a deploy.
+    let validResponses, toolResearch = '', toolTruncated = null;
+    if (TOOLS_ENABLED && !imageContext) {
+      const registry = buildRegistry({ search: toolSearch, readUrl: readPageContent, assertSafeUrl });
+      const loop = await runAgentLoop({
+        members: selection.members.map((m) => m.model),
+        registry,
+        onEvent: (e) => console.log(`[TOOLS] r${e.round} ${e.type} ${e.name}${e.ok === false ? ' FAILED' : ''} — ${e.summary}`),
+        askMember: (model, ctx) =>
+          callModel(model, toolMessages(councilMsgs, registry, ctx), 0.0, selection.whipMs, selection.tokenLimit),
+      });
+      toolResearch = loop.research;
+      toolTruncated = loop.truncated;
+      console.log(`[TOOLS] ${loop.rounds} round(s), ${loop.uniqueCallsUsed} unique call(s), ${Object.keys(loop.answers).length} answer(s)${loop.truncated ? ` — ${loop.truncated}` : ''}`);
+      validResponses = Object.entries(loop.answers)
+        .filter(([, content]) => content && !/^skip[.!]?$/i.test(content.trim()) && content.trim().length > 3)
+        .map(([model, content]) => ({ model, content }));
+      // A loop that produced nothing usable falls through to the plain council
+      // rather than to the fallback: losing seven experts because the tool
+      // round misfired is a worse answer than not having used tools at all.
+      if (validResponses.length === 0) {
+        console.log('[TOOLS] no usable answers, falling back to the plain council.');
+        validResponses = await runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit);
+      }
+    } else {
+      validResponses = await runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit);
+    }
 
     // 5. FALLBACK
     if (validResponses.length === 0) {
@@ -583,7 +639,14 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
 6. Never mention the panel, the experts, how many there were, or that synthesis happened. Write as a single voice.
 7. Match length to the question's complexity. Do not pad.
 8. Use Markdown.${lang !== 'English' ? `\n9. Respond in ${lang}.` : ''}`;
-    const synthMsgs = [{ role: 'system', content: synthSys }, { role: 'user', content: `Question: ${truncatedPrompt}\n\nResponses:\n${validResponses.map((r,i) => `[Expert ${i+1}]: ${r.content}`).join('\n\n')}` }];
+    // Research and truncation reach the synthesiser, because the design's rule
+    // is that a cut-short answer must be able to hedge rather than assert. A
+    // truncated answer presented as a complete one is worse than a slow one.
+    const researchBlock = toolResearch ? `\n\n=== RESEARCH GATHERED THIS TURN ===\n${toolResearch}` : '';
+    const truncationBlock = toolTruncated
+      ? `\n\n=== NOTE ===\nResearch was cut short: ${toolTruncated} Where the experts' claims rest on something that was not verified, say so plainly rather than asserting it.`
+      : '';
+    const synthMsgs = [{ role: 'system', content: synthSys }, { role: 'user', content: `Question: ${truncatedPrompt}\n\nResponses:\n${validResponses.map((r,i) => `[Expert ${i+1}]: ${r.content}`).join('\n\n')}${researchBlock}${truncationBlock}` }];
     res.setHeader('Content-Type', 'text/event-stream'); res.setHeader('Cache-Control', 'no-cache'); res.setHeader('Connection', 'keep-alive');
     await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0);
     if (!res.writableEnded) res.end();

@@ -98,4 +98,63 @@ function toolMessages(baseMsgs, registry, ctx) {
   ];
 }
 
-module.exports = { firstWithResults, toolMessages };
+/**
+ * Summarise a shadow probe.
+ *
+ * The agent loop is fully tested against fakes, which proves the loop. It does
+ * NOT prove the one thing that actually decides whether COUNCIL_TOOLS is safe
+ * to enable: **do these particular models, on this particular gateway, emit a
+ * parseable ```tool_call block when asked to?** Nothing offline can answer
+ * that, and the failure mode if they do not is silent — the loop simply gets
+ * final answers in round one and behaves exactly like the router path, at
+ * three rounds of cost.
+ *
+ * So the probe asks every member ONE round with the real tool prompt, parses
+ * the replies, records what happened, and throws the result away. No tool is
+ * executed, no answer is affected, and the numbers say whether to turn the
+ * feature on.
+ *
+ * @param {Array<{member: string, calls: Array, text: string, error?: string}>} replies
+ *        already run through parseToolRequests
+ */
+function summariseProbe(replies) {
+  const rows = (replies || []).filter(Boolean);
+  const failed = rows.filter((r) => r.error);
+  const answered = rows.filter((r) => !r.error);
+  const emitted = answered.filter((r) => r.calls && r.calls.length > 0);
+
+  // A member that emitted nothing is not necessarily broken — the question may
+  // genuinely not need a tool. What matters is whether ANY member can, and
+  // whether the ones that tried produced something the parser could read.
+  const looksLikeAttempt = (r) =>
+    /tool_call|"name"\s*:|web_search|read_url/i.test(r.text || "");
+  const triedButUnparsed = answered.filter((r) => r.calls.length === 0 && looksLikeAttempt(r));
+
+  const byTool = {};
+  for (const r of emitted) {
+    for (const c of r.calls) byTool[c.name] = (byTool[c.name] || 0) + 1;
+  }
+
+  return {
+    members: rows.length,
+    failed: failed.length,
+    emitted: emitted.length,
+    unparsed: triedButUnparsed.length,
+    byTool,
+    // The verdict a human reads in the log. `unparsed` is the alarming one: it
+    // means a model IS trying to call a tool and the parser is not seeing it,
+    // which is a prompt or format bug rather than a capability gap.
+    verdict:
+      rows.length === 0
+        ? "no members responded"
+        : triedButUnparsed.length > 0
+          ? `PARSER GAP: ${triedButUnparsed.length}/${answered.length} tried to call a tool and were not parsed`
+          : emitted.length === 0
+            ? `no member requested a tool (${answered.length} answered directly)`
+            : `${emitted.length}/${answered.length} requested a tool`,
+    /** The first unparsed reply, truncated — the thing to actually look at. */
+    sample: triedButUnparsed.length ? (triedButUnparsed[0].text || "").slice(0, 400) : null,
+  };
+}
+
+module.exports = { firstWithResults, toolMessages, summariseProbe };

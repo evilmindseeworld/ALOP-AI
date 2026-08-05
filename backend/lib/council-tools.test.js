@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { firstWithResults, toolMessages } = require("./council-tools");
+const { firstWithResults, toolMessages, summariseProbe } = require("./council-tools");
 
 // ===== firstWithResults =====
 
@@ -149,4 +149,62 @@ test("survives a missing or malformed base message list", () => {
 test("survives an empty registry", () => {
   const m = toolMessages(BASE, { list: () => [] }, { round: 1 });
   assert.equal(m[0].role, "system");
+});
+
+// ===== the shadow probe =====
+//
+// The loop is proven against fakes. The probe answers the one question fakes
+// cannot: do THESE models, on THIS gateway, emit a parseable tool_call block?
+
+const call = (name = "web_search") => ({ name, args: { query: "x" } });
+
+test("counts members that requested a tool", () => {
+  const s = summariseProbe([
+    { member: "a", calls: [call()], text: "" },
+    { member: "b", calls: [], text: "The answer is 4." },
+    { member: "c", calls: [call("read_url")], text: "" },
+  ]);
+  assert.equal(s.members, 3);
+  assert.equal(s.emitted, 2);
+  assert.deepEqual(s.byTool, { web_search: 1, read_url: 1 });
+  assert.match(s.verdict, /2\/3 requested a tool/);
+});
+
+test("A PARSER GAP IS THE ALARMING RESULT AND IS CALLED OUT AS ONE", () => {
+  // A model TRYING to call a tool and not being parsed is a format bug on our
+  // side, not a capability gap — and it is invisible unless it is named,
+  // because the loop just sees a final answer and moves on.
+  const s = summariseProbe([
+    { member: "a", calls: [], text: 'Sure: {"name": "web_search", "args": {"query": "oled"}}' },
+    { member: "b", calls: [call()], text: "" },
+  ]);
+  assert.equal(s.unparsed, 1);
+  assert.match(s.verdict, /PARSER GAP/);
+  assert.ok(s.sample.includes("web_search"), "the sample is the thing to look at");
+});
+
+test("plain prose is not mistaken for a failed tool call", () => {
+  const s = summariseProbe([
+    { member: "a", calls: [], text: "The XG27AQWMG, because it holds black level in a lit room." },
+  ]);
+  assert.equal(s.unparsed, 0);
+  assert.match(s.verdict, /no member requested a tool/);
+  assert.equal(s.sample, null);
+});
+
+test("a member that errored is counted separately from one that declined", () => {
+  // Different problems: a gateway failure says nothing about tool support.
+  const s = summariseProbe([
+    { member: "a", calls: [], text: "", error: "502" },
+    { member: "b", calls: [], text: "Direct answer." },
+  ]);
+  assert.equal(s.failed, 1);
+  assert.match(s.verdict, /1 answered directly/);
+});
+
+test("no responses at all is stated plainly rather than read as success", () => {
+  const s = summariseProbe([]);
+  assert.equal(s.verdict, "no members responded");
+  assert.equal(summariseProbe(undefined).members, 0);
+  assert.equal(summariseProbe(null).members, 0);
 });

@@ -416,9 +416,18 @@ list is worse than none — it sends people to fix what is fixed.
 - **`CommandPalette` is still hand-rolled**, not `components/ui/command`. It
   carries a regression test for a dropped-first-keystroke bug that took a
   session to find; a swap has to keep that test passing unmodified.
-- **The overlay assistant has no tests.** It is 144 lines over
-  `getDisplayMedia`, `SpeechRecognition` and `speechSynthesis`, none of which
-  exist in jsdom.
+- **The overlay assistant's `SpeechRecognition` path is still untested.** The
+  rest of it now has 14 tests (`OverlayAssistant.test.jsx`) covering the
+  capture lifecycle, the failure paths and the desktop `alop-focus`/Escape
+  wiring. Dictation was left out because it needs a fake event stream rather
+  than a fake object, and it shares that gap with the main composer's
+  dictation, which has also never been used in a browser.
+
+  **A trap that file records:** Vitest runs `afterEach` LIFO, and
+  `@testing-library/react` registers its auto-cleanup on import — before
+  anything in your test file. A teardown you write therefore runs BEFORE the
+  unmount it is meant to clean up after, so restoring a global the component
+  touches during cleanup makes every test fail on the PREVIOUS test's unmount.
 - **Four unmounted motion primitives** in `components/ui/` — see §5.
 - **`SignInPage.css` is outside every guard in this document.** It is imported
   directly by `SignInPage.jsx` rather than through the `App.css` manifest, so

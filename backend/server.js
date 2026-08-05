@@ -258,7 +258,8 @@ const { buildRegistry } = require('./lib/tool-registry');
 const { runAgentLoop } = require('./lib/agent-loop');
 const { assertSafeUrl } = require('./lib/url-guard');
 const { checkLinks } = require('./lib/link-check');
-const { firstWithResults, toolMessages } = require('./lib/council-tools');
+const { firstWithResults, toolMessages, summariseProbe } = require('./lib/council-tools');
+const { parseToolRequests } = require('./lib/tool-protocol');
 const { prepareUpload, UploadRejected, MAX_FILES_PER_CHAT } = require('./lib/file-intake');
 
 /**
@@ -291,7 +292,27 @@ const fileStoreFor = (userId, chatId) => ({
 
 // Off unless explicitly enabled. The router path is untouched, so a bad turn is
 // one env var away from reverted without a deploy.
-const TOOLS_ENABLED = process.env.COUNCIL_TOOLS === '1';
+/**
+ * COUNCIL_TOOLS has three settings, not two:
+ *
+ *   unset / 0   off. The router path, untouched.
+ *   shadow      run ONE probe round with the real tool prompt, log what came
+ *               back, throw it away, and answer from the plain council. The
+ *               user sees no difference at all.
+ *   1           live.
+ *
+ * `shadow` exists because the loop is fully tested against fakes and fakes
+ * cannot answer the only question that decides whether this is safe to turn
+ * on: do these models, on this gateway, actually emit a parseable ```tool_call
+ * block? If they do not, the live loop silently degrades into the router path
+ * at three rounds of cost, and nothing in the logs would say so.
+ *
+ * The probe runs CONCURRENTLY with the real council, so it adds no latency —
+ * only tokens. Turn it on for a day, read the [PROBE] lines, then decide.
+ */
+const TOOLS_MODE = (process.env.COUNCIL_TOOLS || '').toLowerCase();
+const TOOLS_ENABLED = TOOLS_MODE === '1' || TOOLS_MODE === 'true';
+const TOOLS_SHADOW = TOOLS_MODE === 'shadow';
 
 // Cached because members in the same turn ask overlapping questions across
 // ROUNDS as well as within one — dedupe only unions a single round.
@@ -727,6 +748,30 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
         console.log('[TOOLS] no usable answers, falling back to the plain council.');
         validResponses = await runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit);
       }
+    } else if (TOOLS_SHADOW && !imageContext) {
+      // Probe and answer at the same time, so the user waits exactly as long as
+      // they would have. The probe's result is logged and discarded; it can
+      // neither change the answer nor fail the turn.
+      const probeRegistry = buildRegistry({ search: toolSearch, readUrl: readPageContent, assertSafeUrl, checkLinks: checkSearchLinks });
+      const probe = Promise.all(
+        selection.members.map(async ({ model }) => {
+          try {
+            const raw = await callModel(model, toolMessages(councilMsgs, probeRegistry, { round: 1, isFinalRound: false }), 0.0, selection.whipMs, selection.tokenLimit);
+            return { member: model, ...parseToolRequests(raw) };
+          } catch (err) {
+            return { member: model, calls: [], text: '', error: err.message };
+          }
+        }),
+      ).then((replies) => {
+        const s = summariseProbe(replies);
+        console.log(`[PROBE] ${s.verdict} | members=${s.members} failed=${s.failed} emitted=${s.emitted} unparsed=${s.unparsed} tools=${JSON.stringify(s.byTool)}`);
+        if (s.sample) console.log(`[PROBE] unparsed sample: ${s.sample.replace(/\s+/g, ' ')}`);
+      }).catch((err) => console.error('[PROBE] failed:', err.message));
+
+      [validResponses] = await Promise.all([
+        runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit),
+        probe,
+      ]);
     } else {
       validResponses = await runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit);
     }

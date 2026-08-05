@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
-import { API_BASE } from "../lib/api";
+import { API_BASE, clientTimezone } from "../lib/api";
 import { uid, generateChatTitle, parseImagePrompt, buildImageUrl } from "../lib/format";
 
 const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -358,7 +358,7 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
         const res = await fetch(`${API_BASE}/api/council`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ message: cleanText, history, chatId, ...(image ? { image } : {}) }),
+          body: JSON.stringify({ message: cleanText, history, chatId, timezone: clientTimezone(), ...(image ? { image } : {}) }),
           signal: abortRef.current.signal,
         });
 

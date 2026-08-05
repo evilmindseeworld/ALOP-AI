@@ -44,6 +44,26 @@ export function useApi(getToken) {
  * it can never delay or break a render. `keepalive` lets it outlive the
  * navigation that started it.
  */
+/**
+ * The IANA timezone this browser is set to, or null.
+ *
+ * The one location signal the server cannot see for itself. It is stable,
+ * user-correctable, and far more specific than a language tag — `Asia/Dubai`
+ * is one country, while `en-GB` is spoken in dozens.
+ *
+ * Deliberately NOT geolocation: no permission prompt, no coordinates, nothing
+ * the user has to agree to. A timezone is a device setting, it is already sent
+ * to every analytics script on the web, and the server turns it into a country
+ * and a currency and then forgets it.
+ */
+export function clientTimezone() {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || null;
+  } catch {
+    return null;
+  }
+}
+
 export function warmBackend() {
   try {
     fetch(`${API_BASE}/health`, { method: "GET", mode: "cors", keepalive: true }).catch(() => {});

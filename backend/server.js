@@ -173,9 +173,21 @@ const isMemoryOrReferenceQuestion = async (text) => {
 };
 
 // ===== SEARCH DECISION =====
-const getSearchQuery = async (text, convSummary) => {
+// The region reaches the QUERY, not just the answer. A prompt hint makes the
+// model *phrase* prices differently; it cannot make a search API return a
+// local retailer it was never asked for. "OLED monitor price" returns US shops
+// to everyone — "OLED monitor price UAE" does not, and that is the difference
+// between a converted number and an actual place to buy the thing.
+//
+// Only where it helps: a query about tax law or a person is not improved by a
+// country appended to it, so the model is told to use it when the answer is
+// local and to leave it alone otherwise.
+const getSearchQuery = async (text, convSummary, region) => {
   const userContent = convSummary ? `Context: ${convSummary}\n\nQuestion: ${text}` : text;
-  const response = await callModel(FAST_MODEL, [{ role: 'system', content: 'Analyze the prompt. If it needs real-time web search (products, facts, reviews, specs, prices), reply ONLY with the optimal search query. If not, reply ONLY "NO". Memory/reference questions do NOT need search.' }, { role: 'user', content: userContent }], 0.0, 4000, 50);
+  const locale = region
+    ? ` The user appears to be in ${region.place}. If — and only if — the answer depends on where they are (prices, availability, retailers, local services, regulations), include that country in the query. Otherwise ignore it.`
+    : '';
+  const response = await callModel(FAST_MODEL, [{ role: 'system', content: `Analyze the prompt. If it needs real-time web search (products, facts, reviews, specs, prices), reply ONLY with the optimal search query. If not, reply ONLY "NO". Memory/reference questions do NOT need search.${locale}` }, { role: 'user', content: userContent }], 0.0, 4000, 50);
   const trimmed = response.trim();
   if (trimmed.toUpperCase() === 'NO' || !trimmed) return null;
   return trimmed;
@@ -258,6 +270,7 @@ const { buildRegistry } = require('./lib/tool-registry');
 const { runAgentLoop } = require('./lib/agent-loop');
 const { assertSafeUrl } = require('./lib/url-guard');
 const { checkLinks } = require('./lib/link-check');
+const { detectRegion, regionHint } = require('./lib/region');
 const { firstWithResults, toolMessages, summariseProbe } = require('./lib/council-tools');
 const { parseToolRequests } = require('./lib/tool-protocol');
 const { prepareUpload, UploadRejected, MAX_FILES_PER_CHAT } = require('./lib/file-intake');
@@ -616,13 +629,24 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
 
     // Injected into every prompt path below, so memory and learned preferences
     // stay in lockstep instead of each call site assembling its own context.
+    // Where the user probably is, from what the browser already volunteers —
+    // no IP lookup, no third-party service, nothing stored. It is the last
+    // system message so it is the weakest thing in the stack: an inferred
+    // location must never outrank what the user actually asked for.
+    const region = detectRegion({
+      cdnCountry: req.headers['cf-ipcountry'] || req.headers['x-vercel-ip-country'],
+      timezone: sanitizeString(req.body.timezone, 64),
+      acceptLanguage: req.headers['accept-language'],
+    });
+
     const contextMsgs = [
       ...(convSummary ? [{ role: 'system', content: `CONVERSATION CONTEXT: ${convSummary}` }] : []),
       ...(feedbackGuidance ? [{ role: 'system', content: `USER PREFERENCES, learned from their past ratings. Honour these unless they conflict with accuracy:\n${feedbackGuidance}` }] : []),
       ...(imageContext ? [{ role: 'system', content: `THE USER ATTACHED AN IMAGE. This is what it shows — treat it as something you can see, and answer with reference to it:\n${imageContext}` }] : []),
+      ...(region ? [{ role: 'system', content: regionHint(region) }] : []),
     ];
 
-    console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | Mem: ${convSummary ? 'Y' : 'N'} | Lang: ${lang}`);
+    console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | Mem: ${convSummary ? 'Y' : 'N'} | Lang: ${lang} | Region: ${region ? `${region.country} via ${region.source}` : 'unknown'}`);
 
     // 0. MEMORY BYPASS
     // Skipped when an image is attached: this branch and the greeting one below
@@ -653,7 +677,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     }
 
     // 2. SEARCH
-    const searchQuery = await getSearchQuery(pv.value, convSummary);
+    const searchQuery = await getSearchQuery(pv.value, convSummary, region);
     const shouldCheckWiki = needsWikiCheck(pv.value);
 
     if (searchQuery) {

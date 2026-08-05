@@ -129,4 +129,46 @@ describe("useSpeechRecognition", () => {
 
     expect(instances[0].stopped).toBe(true);
   });
+
+  it("does not fire the ten-second cap after a session ended normally", () => {
+    // The hook clears the timer in onend. Without that, stop() is called on a
+    // dead session ten seconds after every successful dictation — harmless in
+    // Chrome and an InvalidStateError in Safari, which is the next test.
+    const { result } = renderHook(() => useSpeechRecognition({}));
+
+    act(() => result.current.start());
+    act(() => instances[0].onend());
+
+    instances[0].stopped = false;
+    act(() => vi.advanceTimersByTime(20_000));
+
+    expect(instances[0].stopped).toBe(false);
+  });
+
+  it("survives a stop() that throws", () => {
+    // Safari throws InvalidStateError when stop() is called on a session that
+    // has already finished. The hook catches it; nothing proved that until now,
+    // and an uncaught throw here would leave isListening stuck on.
+    const { result } = renderHook(() => useSpeechRecognition({}));
+
+    act(() => result.current.start());
+    instances[0].stop = () => {
+      throw new Error("InvalidStateError");
+    };
+
+    expect(() => act(() => result.current.stop())).not.toThrow();
+    expect(result.current.isListening).toBe(false);
+  });
+
+  it("a second session does not leave the first one running", () => {
+    const { result } = renderHook(() => useSpeechRecognition({}));
+
+    act(() => result.current.start());
+    act(() => result.current.stop());
+    act(() => result.current.start());
+
+    expect(instances).toHaveLength(2);
+    expect(instances[0].stopped).toBe(true);
+    expect(result.current.isListening).toBe(true);
+  });
 });

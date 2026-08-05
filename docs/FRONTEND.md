@@ -416,12 +416,24 @@ list is worse than none — it sends people to fix what is fixed.
 - **`CommandPalette` is still hand-rolled**, not `components/ui/command`. It
   carries a regression test for a dropped-first-keystroke bug that took a
   session to find; a swap has to keep that test passing unmodified.
-- **The overlay assistant's `SpeechRecognition` path is still untested.** The
-  rest of it now has 14 tests (`OverlayAssistant.test.jsx`) covering the
-  capture lifecycle, the failure paths and the desktop `alop-focus`/Escape
-  wiring. Dictation was left out because it needs a fake event stream rather
-  than a fake object, and it shares that gap with the main composer's
-  dictation, which has also never been used in a browser.
+- **Dictation has never been exercised in a real browser**, though it is
+  tested. `useSpeechRecognition.test.jsx` has 11 tests over a faked API — the
+  ten-second cap, the cap NOT firing after a normal end, a `stop()` that throws
+  (Safari's `InvalidStateError`), unmount cleanup, and the transcript join.
+  What no test can cover is whether the browser actually grants the microphone
+  and returns words, and voice input has never worked in this app's history, so
+  nobody has seen it succeed. That is a browser session, not a test.
+
+  **The fake's fidelity is the known limit:** its `start()` synchronously calls
+  `onstart`, and its `stop()` synchronously calls `onend`. The real API does
+  neither, so an ordering bug between "start requested" and "browser granted
+  the mic" would pass here.
+
+- **The overlay assistant's own dictation path is untested.** It has its own
+  copy of the SpeechRecognition lifecycle rather than using the hook — the 14
+  tests in `OverlayAssistant.test.jsx` cover screen capture, the failure paths
+  and the `alop-focus`/Escape wiring, but not that. Two implementations of the
+  same thing is the actual gap; one of them should go.
 
   **A trap that file records:** Vitest runs `afterEach` LIFO, and
   `@testing-library/react` registers its auto-cleanup on import — before

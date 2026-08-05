@@ -145,37 +145,20 @@
   to   { opacity: 1; transform: translateY(0); }
 }
 
-.empty-eyebrow,
-.empty-subtitle,
-.starter-grid {
-  animation: emptyRise var(--dur-slow) var(--ease-out) backwards;
-}
-
-/* .empty-title carries BOTH, and the second name is not optional.
+/* Each element's delay lives in ITS OWN rule below, not in a second pass of
+ * one-liners.
  *
- * The title is <h2 class="empty-title text-shimmer">. `.text-shimmer` lives in
- * base.css and `.empty-title` in chat.css, both at (0,1,0) — so the component
- * rule wins on source order, and an `animation` shorthand here REPLACES the
- * shimmer rather than adding to it. The first version of this stagger did
- * exactly that and silently deleted the shimmer from the one element in the
- * app that has it; the cascade snapshot is what caught it.
- *
- * Listing both is the honest fix at this specificity. If text-shimmer's timing
- * ever changes, this line has to change with it — the snapshot will say so. */
-.empty-title {
-  animation:
-    emptyRise var(--dur-slow) var(--ease-out) backwards,
-    shimmerMove 5s linear infinite;
-}
-
-.empty-eyebrow  { animation-delay: 60ms; }
-.empty-title    { animation-delay: 120ms, 0s; }
-.empty-subtitle { animation-delay: 190ms; }
-.starter-grid   { animation-delay: 260ms; }
+ * The first version of this stagger declared the animation here, then the
+ * delays in four more rules, on top of the four styling rules that already
+ * existed — three separate blocks for `.empty-title`. cssHygiene's
+ * duplicate-selector budget caught it the moment this file joined the manifest,
+ * which is exactly the append-then-append-again habit that budget exists for.
+ * It was mine, and it was two weeks old. */
 
 /* The eyebrow. Small, uppercase, tracked wide, and dimmer than the subtitle —
  * it names the room without asking to be read first. */
 .empty-eyebrow {
+  animation: emptyRise var(--dur-slow) var(--ease-out) 60ms backwards;
   font-family: var(--font-body);
   font-size: var(--text-2xs);
   font-weight: 600;
@@ -185,7 +168,23 @@
   user-select: none;
 }
 
+/* BOTH animations, and the second name is not optional.
+ *
+ * The title is <h2 class="empty-title text-shimmer">. `.text-shimmer` lives in
+ * base.css and `.empty-title` here, both at (0,1,0) — so this rule wins on
+ * source order, and an `animation` shorthand REPLACES the shimmer rather than
+ * adding to it. The first version of the stagger did exactly that and silently
+ * deleted the shimmer from the one element in the app that has it; the cascade
+ * snapshot is what caught it.
+ *
+ * The per-animation delays are positional: 120ms for the rise, 0s for the
+ * shimmer. If text-shimmer's timing changes, this line changes with it, and
+ * the snapshot will say so. */
 .empty-title {
+  animation:
+    emptyRise var(--dur-slow) var(--ease-out) backwards,
+    shimmerMove 5s linear infinite;
+  animation-delay: 120ms, 0s;
   font-family: var(--font-heading);
   font-size: var(--display);
   font-weight: 700;
@@ -219,6 +218,7 @@
 }
 
 .empty-subtitle {
+  animation: emptyRise var(--dur-slow) var(--ease-out) 190ms backwards;
   max-width: 46ch;
   font-size: var(--text-base);
   line-height: 1.65;

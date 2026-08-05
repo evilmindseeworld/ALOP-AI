@@ -207,6 +207,11 @@
    * --z-sticky-label above. */
   --z-empty-decor: 0;   /* .sakura-frame, .empty-state::after            */
   --z-empty-content: 1; /* everything else in .empty-state              */
+  /* .signin-root. Not comparable with the scale above and excluded from it for
+   * a different reason than the others: the sign-in page renders INSTEAD of the
+   * app, never over it, so there is nothing for it to be above. The value only
+   * has to clear whatever a browser extension might inject. */
+  --z-signin: 300;
   --z-chat: 3;          /* .chat-main — creates a stacking context       */
   --z-in-chat-control: 80; /* .code-copy-btn — scoped INSIDE --z-chat    */
   --z-earring: 4;       /* decoration: above the chat, below all menus   */

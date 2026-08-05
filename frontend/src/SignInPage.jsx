@@ -1,7 +1,6 @@
 import { SignIn, useUser } from "@clerk/react";
 import SakuraFrame from "./components/SakuraFrame";
 import { COUNCIL, FREE_COUNT } from "./constants/council";
-import "./SignInPage.css";
 
 /**
  * The sign-in screen.

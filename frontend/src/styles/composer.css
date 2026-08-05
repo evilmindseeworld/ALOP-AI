@@ -101,6 +101,10 @@
 /* A filename is user-supplied and can be 80 characters. Truncating keeps one
  * long name from pushing the composer's controls off the row. */
 .file-chip-name {
+  /* Truncated with an ellipsis, so the extension — the part that says what the
+   * thing IS — is the first casualty. The full name is in a title attribute;
+   * the default cursor keeps the pointer honest about there being more. */
+  cursor: default;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -130,10 +134,6 @@
  * shade, which is worse than either alone. */
 .file-chip button:focus-visible { color: var(--danger); }
 
-/* Long names truncate with an ellipsis, which loses the extension — the one
- * part of a filename that says what the thing IS. The title attribute is set
- * in JSX; this keeps the pointer honest about there being more to read. */
-.file-chip-name { cursor: default; }
 
 .input-text {
   background: transparent;

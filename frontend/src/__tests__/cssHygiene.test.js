@@ -31,8 +31,19 @@ const DECLARATIONS = CSS.replace(/\/\*[\s\S]*?\*\//g, "");
 // keeps its !important because overriding an author's animation for a user with
 // a vestibular disorder is the one thing the keyword is actually for.
 const IMPORTANT_BUDGET = 3;
-const DUPLICATE_BUDGET = 16;
+// Restyling Clerk's shipped components. Tracked separately — see the test.
+const CLERK_IMPORTANT_BUDGET = 52;
+const DUPLICATE_BUDGET = 14;
 const FIX_SECTION_BUDGET = 0;
+
+/**
+ * Drop every rule whose selector mentions a Clerk class.
+ *
+ * Selector-based, not file-based: a `.cl-*` override could be written anywhere,
+ * and a rule of ours could sit in signin.css. What matters is what a
+ * declaration is fighting, not which file it lives in.
+ */
+const withoutClerkRules = (css) => css.replace(/[^{}]*\.cl-[^{}]*\{[^}]*\}/g, "");
 
 /** Rule blocks at top level, with at-rule context tracked by brace depth. */
 const topLevelBlocks = () => {
@@ -77,13 +88,46 @@ const topLevelBlocks = () => {
 };
 
 describe("App.css hygiene", () => {
-  it(`uses no more than ${IMPORTANT_BUDGET} !important declarations`, () => {
-    const count = (DECLARATIONS.match(/!important/g) || []).length;
+  it(`uses no more than ${IMPORTANT_BUDGET} !important declarations OUTSIDE the Clerk overrides`, () => {
+    // Rules targeting .cl-* are excluded, and the distinction is the whole
+    // point of the budget rather than a hole in it.
+    //
+    // This budget exists because App.css grew append-only and !important was
+    // how each new paste beat the duplicate above it. Every one of those was a
+    // fight with OUR OWN stylesheet, and every one was winnable by deleting the
+    // duplicate instead.
+    //
+    // The Clerk overrides are a different thing: Clerk ships its own CSS at a
+    // specificity we do not control and cannot reliably out-specify, and
+    // !important is the documented way to restyle it. Counting those against
+    // the same budget would either force the number up — making it stop
+    // meaning anything — or block the sign-in page from ever joining the
+    // manifest, which is what left it unguarded for months in the first place.
+    //
+    // They are counted separately below, so the number is still visible and
+    // still cannot grow unnoticed.
+    const ours = withoutClerkRules(DECLARATIONS);
+    const count = (ours.match(/!important/g) || []).length;
     expect(
       count,
-      `!important went up to ${count}. Reach for specificity or the cascade instead — ` +
-      `if a rule needs !important, something above it is probably a duplicate.`
+      `!important went up to ${count} outside the Clerk overrides. Reach for specificity ` +
+      `or the cascade instead — if a rule needs !important, something above it is ` +
+      `probably a duplicate.`
     ).toBeLessThanOrEqual(IMPORTANT_BUDGET);
+  });
+
+  it(`uses no more than ${CLERK_IMPORTANT_BUDGET} !important declarations inside the Clerk overrides`, () => {
+    // A ratchet like the others: it records what restyling Clerk currently
+    // costs, and fails if that cost grows quietly. If Clerk ever ships a real
+    // theming API, this number should fall to zero.
+    const clerkOnly = DECLARATIONS.length - withoutClerkRules(DECLARATIONS).length;
+    expect(clerkOnly).toBeGreaterThan(0); // guard on the guard: the matcher still matches
+    const count = ((DECLARATIONS.match(/!important/g) || []).length)
+      - ((withoutClerkRules(DECLARATIONS).match(/!important/g) || []).length);
+    expect(
+      count,
+      `Clerk overrides now use ${count} !important declarations, up from ${CLERK_IMPORTANT_BUDGET}.`
+    ).toBeLessThanOrEqual(CLERK_IMPORTANT_BUDGET);
   });
 
   it(`defines no more than ${DUPLICATE_BUDGET} redundant top-level selector blocks`, () => {

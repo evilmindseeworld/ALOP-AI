@@ -51,6 +51,10 @@ describe("z-index token scale", () => {
         // with the root scale.
         "--z-empty-content",
         "--z-empty-decor",
+        // .signin-root. Excluded from `ascending` for a different reason than
+        // the scoped tokens: the sign-in page renders INSTEAD of the app, never
+        // over it, so there is nothing in the scale for it to be above.
+        "--z-signin",
 "--z-in-chat-control",
         "--z-panel",
         "--z-panel-overlay",

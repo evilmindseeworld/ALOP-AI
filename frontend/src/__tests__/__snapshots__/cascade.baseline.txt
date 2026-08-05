@@ -4,7 +4,7 @@
 # here means a refactor changed behaviour. Do not regenerate it to make a
 # test pass; fix the CSS.
 #
-# elements: 798   environments: 4   states: 6
+# elements: 833   environments: 4   states: 6
 
 === width=1400 ===
 
@@ -926,6 +926,7 @@
   color: #918a9d
   display: grid
   font-size: 13px
+  justify-items: <place-items: center>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -1219,6 +1220,7 @@
   color: #f08aa3
   display: grid
   flex-shrink: 0
+  justify-items: <place-items: center>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -1415,6 +1417,7 @@
   color: #918a9d
   display: grid
   flex-shrink: 0
+  justify-items: <place-items: center>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -10360,10 +10363,10 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards
-  animation-delay: 60ms
-  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
-  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 60ms backwards
+  animation-delay: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 60ms backwards>
+  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 60ms backwards>
+  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 60ms backwards>
   box-sizing: border-box
   color: #918a9d
   font-family: 'Switzer', system-ui, sans-serif
@@ -10518,10 +10521,10 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards
-  animation-delay: 190ms
-  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
-  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards
+  animation-delay: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
+  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
+  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
   box-sizing: border-box
   color: #bdb6c4
   font-size: 15px
@@ -10569,10 +10572,10 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards
-  animation-delay: 260ms
-  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
-  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards
+  animation-delay: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards>
+  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards>
+  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards>
   box-sizing: border-box
   display: grid
   gap: 8px
@@ -10713,6 +10716,7 @@
   color: #f08aa3
   display: grid
   height: 26px
+  justify-items: <place-items: center>
   margin: 0
   margin-bottom: 4px
   margin-left: <margin: 0>
@@ -11016,6 +11020,7 @@
   color: #f08aa3
   display: grid
   height: 26px
+  justify-items: <place-items: center>
   margin: 0
   margin-bottom: 4px
   margin-left: <margin: 0>
@@ -16495,6 +16500,7 @@
   cursor: pointer
   display: grid
   height: 34px
+  justify-items: <place-items: center>
   left: 50%
   margin: 0
   margin-bottom: <margin: 0>
@@ -17312,6 +17318,7 @@
   display: grid
   font-size: 13px
   height: 22px
+  justify-items: <place-items: center>
   line-height: 1
   margin: 0
   margin-bottom: <margin: 0>
@@ -19665,6 +19672,7 @@
   color: #6e5a4d
   display: grid
   font-size: 13px
+  justify-items: <place-items: center>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -19958,6 +19966,7 @@
   color: #b31a54
   display: grid
   flex-shrink: 0
+  justify-items: <place-items: center>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -20154,6 +20163,7 @@
   color: #6e5a4d
   display: grid
   flex-shrink: 0
+  justify-items: <place-items: center>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -29099,10 +29109,10 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
-  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards
-  animation-delay: 60ms
-  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
-  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 60ms backwards
+  animation-delay: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 60ms backwards>
+  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 60ms backwards>
+  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 60ms backwards>
   box-sizing: border-box
   color: #6e5a4d
   font-family: 'Switzer', system-ui, sans-serif
@@ -29257,10 +29267,10 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
-  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards
-  animation-delay: 190ms
-  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
-  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards
+  animation-delay: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
+  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
+  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
   box-sizing: border-box
   color: #5c4b40
   font-size: 15px
@@ -29308,10 +29318,10 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
-  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards
-  animation-delay: 260ms
-  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
-  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards
+  animation-delay: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards>
+  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards>
+  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards>
   box-sizing: border-box
   display: grid
   gap: 8px
@@ -29452,6 +29462,7 @@
   color: #b31a54
   display: grid
   height: 26px
+  justify-items: <place-items: center>
   margin: 0
   margin-bottom: 4px
   margin-left: <margin: 0>
@@ -29755,6 +29766,7 @@
   color: #b31a54
   display: grid
   height: 26px
+  justify-items: <place-items: center>
   margin: 0
   margin-bottom: 4px
   margin-left: <margin: 0>
@@ -35234,6 +35246,7 @@
   cursor: pointer
   display: grid
   height: 34px
+  justify-items: <place-items: center>
   left: 50%
   margin: 0
   margin-bottom: <margin: 0>
@@ -36051,6 +36064,7 @@
   display: grid
   font-size: 13px
   height: 22px
+  justify-items: <place-items: center>
   line-height: 1
   margin: 0
   margin-bottom: <margin: 0>
@@ -38064,6 +38078,7 @@
   flex-shrink: 0
   font-size: 11px
   height: 28px
+  justify-items: <place-items: center>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -38339,6 +38354,7 @@
   display: grid
   flex-shrink: 0
   height: 32px
+  justify-items: <place-items: center>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -38533,6 +38549,7 @@
   flex-shrink: 0
   font-size: 15px
   height: 34px
+  justify-items: <place-items: center>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -38594,6 +38611,7 @@
   flex-shrink: 0
   font-size: 15px
   height: 34px
+  justify-items: <place-items: center>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -38704,6 +38722,7 @@
   font-size: 17px
   font-weight: 700
   height: 36px
+  justify-items: <place-items: center>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -38732,6 +38751,1652 @@
   :disabled
     cursor: not-allowed
     opacity: 0.5
+
+[798] div.signin-root
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  background: #0b0b10
+  background-clip: <background: #0b0b10>
+  background-image: radial-gradient(36% 28% at 12% -4%, rgba(240, 138, 163, 0.20) 0%, transparent 68%), radial-gradient(70% 56% at 18% 2%, rgba(240, 138, 163, 0.09) 0%, transparent 72%), radial-gradient(60% 50% at 92% 104%, rgba(111, 211, 166, 0.08) 0%, transparent 70%), radial-gradient(120% 100% at 50% 45%, transparent 46%, rgba(120, 92, 64, 0.09) 100%)
+  background-size: <background: #0b0b10>
+  bottom: <inset: 0>
+  box-sizing: border-box
+  color: #f5f1ee
+  font-family: 'Switzer', -apple-system, sans-serif
+  inset: 0
+  left: <inset: 0>
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  min-height: 100vh
+  overflow-y: auto
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  position: fixed
+  right: <inset: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  top: <inset: 0>
+  z-index: 300
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[799] div.signin-noise
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E")
+  background-size: 160px 160px
+  bottom: <inset: 0>
+  box-sizing: border-box
+  inset: 0
+  left: <inset: 0>
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  opacity: 0.055
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  pointer-events: none
+  position: fixed
+  right: <inset: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  top: <inset: 0>
+  z-index: 0
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[800] div.signin-orb.signin-orb-1
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  animation: orb1 18s ease-in-out infinite
+  animation-delay: <animation: orb1 18s ease-in-out infinite>
+  animation-duration: <animation: orb1 18s ease-in-out infinite>
+  animation-iteration-count: <animation: orb1 18s ease-in-out infinite>
+  background: #f08aa3
+  background-clip: <background: #f08aa3>
+  background-image: <background: #f08aa3>
+  background-size: <background: #f08aa3>
+  border-bottom-right-radius: <border-radius: 50%>
+  border-radius: 50%
+  box-sizing: border-box
+  filter: blur(140px)
+  height: 600px
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  opacity: 0.14
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  pointer-events: none
+  position: fixed
+  right: -150px
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  top: -200px
+  width: 600px
+  z-index: 0
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[801] div.signin-orb.signin-orb-2
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  animation: orb2 22s ease-in-out infinite
+  animation-delay: <animation: orb2 22s ease-in-out infinite>
+  animation-duration: <animation: orb2 22s ease-in-out infinite>
+  animation-iteration-count: <animation: orb2 22s ease-in-out infinite>
+  background: #6fd3a6
+  background-clip: <background: #6fd3a6>
+  background-image: <background: #6fd3a6>
+  background-size: <background: #6fd3a6>
+  border-bottom-right-radius: <border-radius: 50%>
+  border-radius: 50%
+  bottom: -180px
+  box-sizing: border-box
+  filter: blur(140px)
+  height: 500px
+  left: -120px
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  opacity: 0.10
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  pointer-events: none
+  position: fixed
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  width: 500px
+  z-index: 0
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[802] div.sakura-frame
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  bottom: <inset: 0>
+  box-sizing: border-box
+  color: #f08aa3
+  inset: 0
+  left: <inset: 0>
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  pointer-events: none
+  position: absolute
+  right: <inset: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  top: <inset: 0>
+  z-index: 0
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[803] svg.sakura-torii
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  display: none
+  height: auto
+  left: 50%
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  opacity: 0.06
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  position: absolute
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  top: 50%
+  transform: translate(-50%, -52%)
+  width: clamp(200px, 26%, 340px)
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[804] path
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[805] svg.sakura-corner.sakura-corner-tl
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  height: auto
+  left: 3%
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  opacity: 0.26
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  position: absolute
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  top: 4%
+  width: clamp(90px, 11vw, 150px)
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[806] path
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[807] div.signin-wrap
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  display: flex
+  flex-direction: column
+  gap: 24px
+  justify-content: center
+  margin: 0 auto
+  margin-bottom: <margin: 0 auto>
+  margin-left: <margin: 0 auto>
+  margin-top: <margin: 0 auto>
+  max-width: 1040px
+  min-height: 100vh
+  padding: 48px 24px
+  padding-bottom: <padding: 48px 24px>
+  padding-left: <padding: 48px 24px>
+  position: relative
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  width: 100%
+  z-index: 1
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[808] div.signin-brand
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  align-items: center
+  box-sizing: border-box
+  display: flex
+  gap: 12px
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[809] img.signin-logo-mark
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  border-bottom-right-radius: <border-radius: 10px>
+  border-radius: 10px
+  box-sizing: border-box
+  height: 34px
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  object-fit: cover
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  width: 34px
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[810] span.signin-logo-text
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #f5f1ee
+  font-family: 'Clash Grotesk', system-ui, sans-serif, 'Clash Grotesk', sans-serif
+  font-size: 17px
+  font-weight: 700
+  letter-spacing: -0.02em
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[811] div.signin-grid
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  align-items: center
+  box-sizing: border-box
+  display: grid
+  gap: clamp(32px, 6vw, 88px)
+  grid-template-columns: minmax(0, 1fr) minmax(0, 380px)
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[812] section.signin-thesis
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  align-items: flex-start
+  box-sizing: border-box
+  display: flex
+  flex-direction: column
+  gap: 16px
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  min-width: 0
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[813] p.signin-eyebrow
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #918a9d
+  font-size: 11px
+  font-weight: 600
+  letter-spacing: 0.18em
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  text-transform: uppercase
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[814] h1.signin-title
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #f5f1ee
+  font-family: 'Clash Grotesk', system-ui, sans-serif, 'Clash Grotesk', sans-serif
+  font-size: clamp(30px, 4.4vw, 40px)
+  font-weight: 700
+  letter-spacing: -0.03em
+  line-height: 1.1
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  text-align: left
+  text-wrap: balance
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[815] span.signin-title-accent
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif
+  font-size: 1.12em
+  font-style: italic
+  font-weight: 400
+  letter-spacing: -0.01em
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: 0.26em
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[816] ol.council-ladder
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  border-left: 1px solid rgba(244, 238, 255, 0.07)
+  box-sizing: border-box
+  list-style: none
+  margin: 8px 0 0
+  margin-bottom: <margin: 8px 0 0>
+  margin-left: <margin: 8px 0 0>
+  margin-top: <margin: 8px 0 0>
+  max-width: 34ch
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  width: 100%
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[817] li.council-row
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  align-items: baseline
+  animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards
+  animation-delay: 120ms
+  animation-duration: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation-iteration-count: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  box-sizing: border-box
+  color: #bdb6c4
+  display: flex
+  font-size: 13px
+  gap: 12px
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 5px 0 5px 16px
+  padding-bottom: <padding: 5px 0 5px 16px>
+  padding-left: <padding: 5px 0 5px 16px>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[818] span.council-temp
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #f08aa3
+  flex: 0 0 auto
+  flex-shrink: <flex: 0 0 auto>
+  font-family: 'JetBrains Mono', ui-monospace, monospace
+  font-size: 12px
+  font-variant-numeric: tabular-nums
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  opacity: 0.85
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[819] span.council-name
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  font-family: 'JetBrains Mono', ui-monospace, monospace
+  font-size: 12px
+  letter-spacing: -0.01em
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  min-width: 0
+  overflow: hidden
+  overflow-x: <overflow: hidden>
+  overflow-y: <overflow: hidden>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  text-overflow: ellipsis
+  white-space: nowrap
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[820] li.council-row.is-pro
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  align-items: baseline
+  animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards
+  animation-delay: 180ms
+  animation-duration: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation-iteration-count: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  box-sizing: border-box
+  color: #bdb6c4
+  display: flex
+  font-size: 13px
+  gap: 12px
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 5px 0 5px 16px
+  padding-bottom: <padding: 5px 0 5px 16px>
+  padding-left: <padding: 5px 0 5px 16px>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[821] span.council-temp
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #f08aa3
+  flex: 0 0 auto
+  flex-shrink: <flex: 0 0 auto>
+  font-family: 'JetBrains Mono', ui-monospace, monospace
+  font-size: 12px
+  font-variant-numeric: tabular-nums
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  opacity: 0.85
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[822] span.council-name
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #918a9d
+  font-family: 'JetBrains Mono', ui-monospace, monospace
+  font-size: 12px
+  letter-spacing: -0.01em
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  min-width: 0
+  overflow: hidden
+  overflow-x: <overflow: hidden>
+  overflow-y: <overflow: hidden>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  text-overflow: ellipsis
+  white-space: nowrap
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[823] span.council-tag
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #918a9d
+  flex: 0 0 auto
+  flex-shrink: <flex: 0 0 auto>
+  font-size: 11px
+  letter-spacing: 0.18em
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: auto
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  text-transform: uppercase
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[824] p.council-resolve
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::before/background: #f08aa3
+  ::before/background-clip: <background: #f08aa3>
+  ::before/background-image: <background: #f08aa3>
+  ::before/background-size: <background: #f08aa3>
+  ::before/content: ""
+  ::before/height: 1px
+  ::before/left: 0
+  ::before/position: absolute
+  ::before/top: 50%
+  ::before/width: 12px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards
+  animation-delay: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
+  animation-duration: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
+  animation-iteration-count: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
+  box-sizing: border-box
+  color: #f5f1ee
+  font-size: 15px
+  font-weight: 600
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: 16px
+  position: relative
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[825] p.signin-tagline
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #bdb6c4
+  font-size: 13px
+  line-height: 1.65
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  max-width: 46ch
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  text-align: left
+  text-wrap: pretty
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[826] section.signin-card
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  background: #111119
+  background-clip: <background: #111119>
+  background-image: <background: #111119>
+  background-size: <background: #111119>
+  border: 1px solid rgba(244, 238, 255, 0.07)
+  border-bottom-right-radius: <border-radius: 22px>
+  border-color: <border: 1px solid rgba(244, 238, 255, 0.07)>
+  border-radius: 22px
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 24px 60px rgba(0, 0, 0, 0.55)
+  box-sizing: border-box
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  max-width: 380px
+  padding: 20px
+  padding-bottom: <padding: 20px>
+  padding-left: <padding: 20px>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  width: 100%
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[827] div.signin-card-inner
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  border-bottom-right-radius: <border-radius: 14px>
+  border-radius: 14px
+  box-sizing: border-box
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[828] p.signin-plan
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #918a9d
+  font-size: 12px
+  margin: 12px 0 0
+  margin-bottom: <margin: 12px 0 0>
+  margin-left: <margin: 12px 0 0>
+  margin-top: <margin: 12px 0 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  text-align: center
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[829] div.signin-links
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  align-items: center
+  box-sizing: border-box
+  color: #918a9d
+  display: flex
+  font-size: 11px
+  gap: 8px
+  justify-content: center
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: 6px
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[830] a
+  -webkit-tap-highlight-color: transparent
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #bdb6c4
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  text-decoration: none
+  transition: color 0.15s
+  transition-duration: <transition: color 0.15s>
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+    color: #f08aa3
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[831] span.signin-dot
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: color-mix(in srgb, #f5f1ee 10%, transparent)
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[832] a
+  -webkit-tap-highlight-color: transparent
+  ::-webkit-scrollbar-thumb/background: #2a2a36
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #bdb6c4
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #2a2a36 transparent
+  scrollbar-width: thin
+  text-decoration: none
+  transition: color 0.15s
+  transition-duration: <transition: color 0.15s>
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+    color: #f08aa3
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
 
 === width=900 (changes vs width=1400) ===
 
@@ -38822,6 +40487,33 @@
   - padding: 0 24px 20px
   - padding-bottom: <padding: 0 24px 20px>
   - padding-left: <padding: 0 24px 20px>
+
+[811] div.signin-grid
+  gap: 24px
+  grid-template-columns: minmax(0, 1fr)
+  justify-items: center
+  - gap: clamp(32px, 6vw, 88px)
+  - grid-template-columns: minmax(0, 1fr) minmax(0, 380px)
+
+[812] section.signin-thesis
+  align-items: center
+  order: 2
+  - align-items: flex-start
+
+[814] h1.signin-title
+  text-align: center
+  - text-align: left
+
+[816] ol.council-ladder
+  max-width: 30ch
+  - max-width: 34ch
+
+[825] p.signin-tagline
+  text-align: center
+  - text-align: left
+
+[826] section.signin-card
+  order: 1
 
 === width=400 (changes vs width=1400) ===
 
@@ -39444,6 +41136,55 @@
 [769] span.input-hint.desktop-only
   display: none
   - display: flex
+
+[805] svg.sakura-corner.sakura-corner-tl
+  opacity: 0.2
+  width: clamp(64px, 22vw, 100px)
+  - opacity: 0.26
+  - width: clamp(90px, 11vw, 150px)
+
+[807] div.signin-wrap
+  gap: 16px
+  padding: 40px 16px
+  padding-bottom: <padding: 40px 16px>
+  padding-left: <padding: 40px 16px>
+  - gap: 24px
+  - padding: 48px 24px
+  - padding-bottom: <padding: 48px 24px>
+  - padding-left: <padding: 48px 24px>
+
+[811] div.signin-grid
+  gap: 24px
+  grid-template-columns: minmax(0, 1fr)
+  justify-items: center
+  - gap: clamp(32px, 6vw, 88px)
+  - grid-template-columns: minmax(0, 1fr) minmax(0, 380px)
+
+[812] section.signin-thesis
+  align-items: center
+  order: 2
+  - align-items: flex-start
+
+[814] h1.signin-title
+  text-align: center
+  - text-align: left
+
+[816] ol.council-ladder
+  max-width: 30ch
+  - max-width: 34ch
+
+[825] p.signin-tagline
+  text-align: center
+  - text-align: left
+
+[826] section.signin-card
+  order: 1
+  padding: 18px
+  padding-bottom: <padding: 18px>
+  padding-left: <padding: 18px>
+  - padding: 20px
+  - padding-bottom: <padding: 20px>
+  - padding-left: <padding: 20px>
 
 === width=1400 reduced-motion (changes vs width=1400) ===
 
@@ -41893,8 +43634,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
-  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 60ms backwards>
+  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 60ms backwards>
 
 [214] h2.empty-title.text-shimmer
   ::after/animation-duration: 0.01ms
@@ -41930,8 +43671,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
-  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
+  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
 
 [217] div.starter-grid
   ::after/animation-duration: 0.01ms
@@ -41943,8 +43684,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
-  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards>
+  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards>
 
 [218] button.starter-card
   ::after/animation-duration: 0.01ms
@@ -46338,8 +48079,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
-  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 60ms backwards>
+  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 60ms backwards>
 
 [601] h2.empty-title.text-shimmer
   ::after/animation-duration: 0.01ms
@@ -46375,8 +48116,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
-  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
+  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
 
 [604] div.starter-grid
   ::after/animation-duration: 0.01ms
@@ -46388,8 +48129,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
-  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards>
+  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards>
 
 [605] button.starter-card
   ::after/animation-duration: 0.01ms
@@ -48634,11 +50375,410 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: transform 120ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 120ms ease>
 
+[798] div.signin-root
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[799] div.signin-noise
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[800] div.signin-orb.signin-orb-1
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+  - animation-duration: <animation: orb1 18s ease-in-out infinite>
+  - animation-iteration-count: <animation: orb1 18s ease-in-out infinite>
+
+[801] div.signin-orb.signin-orb-2
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+  - animation-duration: <animation: orb2 22s ease-in-out infinite>
+  - animation-iteration-count: <animation: orb2 22s ease-in-out infinite>
+
+[802] div.sakura-frame
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[803] svg.sakura-torii
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[804] path
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[805] svg.sakura-corner.sakura-corner-tl
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[806] path
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[807] div.signin-wrap
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[808] div.signin-brand
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[809] img.signin-logo-mark
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[810] span.signin-logo-text
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[811] div.signin-grid
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[812] section.signin-thesis
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[813] p.signin-eyebrow
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[814] h1.signin-title
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[815] span.signin-title-accent
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[816] ol.council-ladder
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[817] li.council-row
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+  - animation-duration: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-iteration-count: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+
+[818] span.council-temp
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[819] span.council-name
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[820] li.council-row.is-pro
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+  - animation-duration: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-iteration-count: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+
+[821] span.council-temp
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[822] span.council-name
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[823] span.council-tag
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[824] p.council-resolve
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+  - animation-duration: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
+  - animation-iteration-count: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
+
+[825] p.signin-tagline
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[826] section.signin-card
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[827] div.signin-card-inner
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[828] p.signin-plan
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[829] div.signin-links
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[830] a
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+  - transition-duration: <transition: color 0.15s>
+
+[831] span.signin-dot
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[832] a
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+  - transition-duration: <transition: color 0.15s>
+
 === keyframes (last definition wins) ===
 
 bgBreath: 0% { opacity: 0.75; transform: scale(1); } 100% { opacity: 1; transform: scale(1.06); }
 caretBlink: to { opacity: 0; }
 cmdkIn: from { opacity: 0; transform: translateY(-10px) scale(0.98); } to { opacity: 1; transform: none; }
+councilResolve: from { opacity: 0; } to { opacity: 1; }
+councilRow: from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); }
 earringSwing: 0%, 100% { transform: rotate(-3.5deg); } 50% { transform: rotate(3.5deg); }
 earringSwingActive: 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); }
 emptyFloat: 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.02); }
@@ -48646,11 +50786,14 @@ emptyRise: from { opacity: 0; transform: translateY(8px); } to { opacity: 1; tra
 fadeIn: from { opacity: 0; } to { opacity: 1; }
 logoPulse: 0%, 100% { transform: scale(1); opacity: 0.85; box-shadow: 0 0 30px var(--primary-glow); } 50% { transform: scale(1.06); opacity: 1; box-shadow: 0 0 60px var(--primary-glow); }
 micPulse: 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 40%, transparent); } 50% { box-shadow: 0 0 0 6px transparent; }
+orb1: 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(-30px, 50px) scale(1.1); }
+orb2: 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: translate(40px, -30px) scale(1.05); }
 overlayPulse: 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); } 50% { box-shadow: 0 0 0 8px transparent; }
 overlayUp: from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); }
 panelIn: from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity: 1; }
 scrollDownIn: from { opacity: 0; transform: translateX(-50%) translateY(6px); } to { opacity: 1; transform: translateX(-50%) translateY(0); }
 shimmerMove: 0% { background-position: 200% center; } 100% { background-position: -200% center; }
+signinFadeIn: from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); }
 skeletonShimmer: 0% { background-position: 200% 0; } 100% { background-position: -200% 0; }
 stopPulse: 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); } 50% { box-shadow: 0 0 0 7px transparent; }
 toastIn: from { opacity: 0; transform: translateY(-14px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); }
@@ -48752,6 +50895,7 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --z-panel-overlay: 60
   --z-sidebar: 10
   --z-sidebar-mobile: 50
+  --z-signin: 300
   --z-sticky-label: 1
   --z-toast: 200
 
@@ -48848,6 +50992,7 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --z-panel-overlay: 60
   --z-sidebar: 10
   --z-sidebar-mobile: 50
+  --z-signin: 300
   --z-sticky-label: 1
   --z-toast: 200
 
@@ -48858,6 +51003,11 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
 
 #transcript
 .chat-toolbar-btn span
+.council-row:nth-child(3)
+.council-row:nth-child(4)
+.council-row:nth-child(5)
+.council-row:nth-child(6)
+.council-row:nth-child(7)
 .markdown-body > * + h1
 .markdown-body em
 .markdown-body h4
@@ -48865,5 +51015,24 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
 .markdown-body li > ul
 .markdown-body tbody tr:nth-child(even) td
 .msg-row + .msg-row.user
+.signin-card-inner .cl-card
+.signin-card-inner .cl-cardBox
+.signin-card-inner .cl-footer
+.signin-card-inner .cl-footerActionLink
+.signin-card-inner .cl-footerActionLink:hover
+.signin-card-inner .cl-form
+.signin-card-inner .cl-formButtonPrimary
+.signin-card-inner .cl-formButtonPrimary:active
+.signin-card-inner .cl-formButtonPrimary:hover
+.signin-card-inner .cl-formFieldLabel
+.signin-card-inner .cl-headerSubtitle
+.signin-card-inner .cl-headerTitle
+.signin-card-inner .cl-input
+.signin-card-inner .cl-input:focus
+.signin-card-inner .cl-internalNavigation
+.signin-card-inner .cl-main
+.signin-card-inner .cl-rootBox
+.signin-card-inner .cl-socialButtonsBlockButton
+.signin-card-inner .cl-socialButtonsBlockButton:hover
 [role="button"]
 select

@@ -88,7 +88,7 @@ array in the test. The test is the spec.
 
 ```
 tokens → base → layout → sidebar → chat → markdown → composer →
-palette → chat-controls → panels → overlay → decoration →
+palette → chat-controls → panels → overlay → signin → decoration →
 code-blocks → utilities
 ```
 
@@ -447,20 +447,33 @@ It uses `useSpeechRecognition` now and inherits the ceiling and its test.
   unmount it is meant to clean up after, so restoring a global the component
   touches during cleanup makes every test fail on the PREVIOUS test's unmount.
 - **Four unmounted motion primitives** in `components/ui/` — see §5.
-- **`SignInPage.css` is outside every guard in this document.** It is imported
-  directly by `SignInPage.jsx` rather than through the `App.css` manifest, so
-  the cascade snapshot never walks it, `cssHygiene` never counts its
-  `!important`s (it has several, on Clerk overrides), and `zIndexOrder` never
-  sees its bare `z-index: 300`. That is exactly why it drifted: it was still
-  carrying a brown wood-grain palette and the repeating-gradient banding that
-  was deleted from the app in `680679a`, months after the app stopped using
-  either. It now uses the real tokens, but nothing stops it drifting again.
-  Folding it into the manifest is the fix; the obstacle is that it renders
-  outside `.app-root`.
+- **Three duplicate top-level selectors remain**: `*`, `.sidebar-rail`, and the
+  `.chat-item:hover / :focus-within .chat-actions` pair. All three are two
+  declarations of one selector inside one file, not a cross-file override.
 - **Three duplicate top-level selectors remain**, down from 16: `*`,
   `.sidebar-rail`, and the `.chat-item:hover/.focus-within .chat-actions` pair.
   All three are two declarations of the same selector in one file, not a
   cross-file override.
+
+### The sign-in page is inside the manifest now
+
+`signin.css` sits between `overlay` and `decoration`, and it renders **instead
+of** the app rather than over it — which is why `--z-signin` is excluded from
+the `ascending` array: there is nothing in the scale for it to be above.
+
+Folding it in immediately paid for itself, in a way worth recording:
+
+- The duplicate budget jumped **16 → 19**. Adding one file to the guarded set
+  surfaced six duplicate blocks that had always existed and were never counted
+  — all of them mine, all from declaring an animation in one rule and its
+  `animation-delay` in another. Merging them landed at **14**: below where it
+  started, *with* a new file included.
+- `!important` is now counted in two buckets. The 52 inside `.cl-*` rules are
+  tracked separately from the 3 elsewhere, because they are a different problem:
+  the budget exists to stop `!important` winning fights with **our own**
+  stylesheet, and Clerk ships CSS at a specificity we cannot reliably
+  out-specify. Folding them into one number would either force the budget up
+  until it meant nothing, or keep this page outside the guards forever.
 
 ### Closed, and worth not re-opening
 

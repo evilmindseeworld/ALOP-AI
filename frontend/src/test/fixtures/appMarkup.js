@@ -391,6 +391,52 @@ export const outsideAppRoot = `
     <button class="overlay-submit">→</button>
   </form>
 </div>
+
+<!-- The sign-in page. It renders INSTEAD of the app rather than over it, and
+     it lived outside the App.css manifest until signin.css joined — which is
+     why it kept a deleted wood-grain palette for months with nothing to say so.
+     Transcribed from SignInPage.jsx; a Clerk-rendered form is represented by
+     the wrapper only, since its inner markup is theirs and changes on their
+     schedule. -->
+<div class="signin-root">
+  <div class="signin-noise"></div>
+  <div class="signin-orb signin-orb-1"></div>
+  <div class="signin-orb signin-orb-2"></div>
+  <div class="sakura-frame">
+    <svg class="sakura-torii" viewBox="0 0 240 190"><path d="M0 0"/></svg>
+    <svg class="sakura-corner sakura-corner-tl" viewBox="0 0 120 76"><path d="M0 0"/></svg>
+  </div>
+
+  <div class="signin-wrap">
+    <div class="signin-brand">
+      <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="signin-logo-mark" alt=""/>
+      <span class="signin-logo-text">ALOP-AI</span>
+    </div>
+
+    <div class="signin-grid">
+      <section class="signin-thesis">
+        <p class="signin-eyebrow">The council</p>
+        <h1 class="signin-title">Seven answers.<span class="signin-title-accent">One reply.</span></h1>
+        <ol class="council-ladder">
+          <li class="council-row"><span class="council-temp">0.3</span><span class="council-name">kimi-k2.7-code</span></li>
+          <li class="council-row is-pro"><span class="council-temp">0.8</span><span class="council-name">minimax-m3</span><span class="council-tag">Pro</span></li>
+        </ol>
+        <p class="council-resolve">One reply, reconciled.</p>
+        <p class="signin-tagline">They disagree on purpose.</p>
+      </section>
+
+      <section class="signin-card">
+        <div class="signin-card-inner"></div>
+        <p class="signin-plan">3 models free. All 7 on Pro.</p>
+        <div class="signin-links">
+          <a href="/privacy.html">Privacy</a>
+          <span class="signin-dot">·</span>
+          <a href="/terms.html">Terms</a>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
 `;
 
 /**

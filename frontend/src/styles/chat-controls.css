@@ -7,6 +7,7 @@
  * and one orphan below, which reads as a card that failed to load. There are
  * exactly four of them and there is no width at which 2x2 looks wrong. */
 .starter-grid {
+  animation: emptyRise var(--dur-slow) var(--ease-out) 260ms backwards;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2);
@@ -16,6 +17,10 @@
 }
 
 .starter-card {
+  /* Positioned for the ::before highlight below — it needs a containing block,
+   * and this rule is where .starter-card is defined. */
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -36,15 +41,7 @@
 /* A highlight along the top edge, as if the card caught the light source the
  * background wash establishes top-left. It is a ::before rather than a
  * border-top, because a border changes the box and would shift the text by a
- * pixel on hover — the single most common way a hover effect reads as broken.
- *
- * Absolutely positioned, so .starter-card needs a positioning context; it did
- * not have one before. */
-.starter-card {
-  position: relative;
-  overflow: hidden;
-}
-
+ * pixel on hover — the single most common way a hover effect reads as broken. */
 .starter-card::before {
   content: "";
   position: absolute;

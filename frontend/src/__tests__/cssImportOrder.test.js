@@ -33,6 +33,12 @@ const EXPECTED = [
   "chat-controls",
   "panels",
   "overlay",
+  // Next to overlay because both style a surface that renders OUTSIDE
+  // .app-root. It was imported directly by SignInPage.jsx until now, which put
+  // it outside the cascade snapshot, outside cssHygiene and outside
+  // zIndexOrder — and that is why it drifted, still carrying a wood-grain
+  // palette months after the app deleted one.
+  "signin",
   "decoration",
   "code-blocks",
   "utilities",      // media queries, which must beat the component defaults

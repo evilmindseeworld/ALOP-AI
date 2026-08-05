@@ -208,10 +208,6 @@ const detectLanguage = (text) => {
   return 'English';
 };
 
-// ===== CACHES =====
-const searchCache = new Map();
-const getCachedSearch = (q) => { const c = searchCache.get(q); if (c && (Date.now()-c.timestamp) < 300000) return c.data; if (c) searchCache.delete(q); return null; };
-const setCachedSearch = (q, d) => { if (searchCache.size >= 50) { const k = searchCache.keys().next().value; searchCache.delete(k); } searchCache.set(q, { data: d, timestamp: Date.now() }); };
 
 // ===== SEARCH FUNCTIONS =====
 const searchBrave = async (query) => {
@@ -281,6 +277,7 @@ const { assertSafeUrl } = require('./lib/url-guard');
 const { checkLinks } = require('./lib/link-check');
 const { extractPageSignal } = require('./lib/page-extract');
 const { settleByDeadline } = require('./lib/deadline');
+const { createSearchCache } = require('./lib/search-cache');
 const { detectRegion, regionHint } = require('./lib/region');
 const { firstWithResults, toolMessages, summariseProbe } = require('./lib/council-tools');
 const { parseToolRequests } = require('./lib/tool-protocol');
@@ -381,7 +378,7 @@ const fetchPageHead = async (url) => {
 const checkSearchLinks = (urls) => checkLinks(urls, { fetchPage: fetchPageHead, assertSafeUrl });
 
 const toolSearch = async (query) => {
-  const cached = getCachedSearch(`tool:${query}`);
+  const cached = await getCachedSearch(`tool:${query}`);
   if (cached) return cached;
   const results = await firstWithResults([searchBrave, searchTavily, searchGoogleWeb], query);
   if (results.length) setCachedSearch(`tool:${query}`, results);
@@ -390,7 +387,7 @@ const toolSearch = async (query) => {
 
 // ===== COMPREHENSIVE SEARCH =====
 const comprehensiveSearch = async (query, needsWiki) => {
-  const cached = getCachedSearch(query); if (cached) return cached;
+  const cached = await getCachedSearch(query); if (cached) return cached;
 
   /* THE SEARCH WHIP, and it is the same idea runCouncilWithWhip already uses
    * for models: take what has arrived, do not wait for stragglers.
@@ -633,6 +630,19 @@ const validateHistory = (h) => { if (!h) return []; if (!Array.isArray(h)) retur
 
 // ===== SUPABASE & CLERK =====
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
+
+// ===== CACHES =====
+/* Was a 50-entry Map in this process. Render redeploys on every push and a
+ * redeploy is a new process, so it was almost always empty — the person who
+ * arrived after a deploy paid the full fan-out for a question answered ten
+ * minutes earlier. The Map is still the first tier; Postgres is the tier that
+ * survives. See lib/search-cache.js for why it can never throw. */
+const searchCache = createSearchCache({
+  supabase,
+  ttlMs: Number(process.env.SEARCH_CACHE_TTL_MS) || 15 * 60 * 1000,
+});
+const getCachedSearch = (q) => searchCache.get(q);
+const setCachedSearch = (q, d) => searchCache.set(q, d);
 // clerk-sdk-node@5 ignores its own `onError` option: it calls next() with a bare Error
 // that carries no status, so every rejected request used to surface as a 500 and the
 // client could not tell an expired session from a server fault. Map the status here.

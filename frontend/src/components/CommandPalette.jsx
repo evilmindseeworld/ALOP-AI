@@ -8,6 +8,13 @@ import { useState, useEffect, useMemo, useRef, useCallback } from "react";
  *
  * Deliberately presentational — it receives chats and actions and reports what
  * was chosen. That keeps it testable without Clerk, routing, or a live backend.
+ *
+ * HAND-ROLLED ON PURPOSE, not for want of a library. Replacing this with cmdk
+ * was tried and rejected: cmdk's input is `role="combobox"` where these tests
+ * reach for a textbox, and the ordering below — actions first when the query is
+ * empty, chats first once you type — means it would have to run with
+ * `shouldFilter={false}`, disabling the thing it exists to do. The `.cmdk-*`
+ * class names predate that decision and are just names. See FRONTEND.md §9.
  */
 export default function CommandPalette({ open, onClose, chats = [], actions = [], onSelectChat }) {
   const [query, setQuery] = useState("");

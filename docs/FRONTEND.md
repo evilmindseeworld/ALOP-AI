@@ -413,9 +413,9 @@ Checked against the tree on 2026-08-05, not carried forward on trust. Three of
 the four gaps this section used to list were already closed, and a stale gap
 list is worse than none — it sends people to fix what is fixed.
 
-- **`CommandPalette` is still hand-rolled**, not `components/ui/command`. It
-  carries a regression test for a dropped-first-keystroke bug that took a
-  session to find; a swap has to keep that test passing unmodified.
+- **`CommandPalette` stays hand-rolled, and this is now a decision rather than
+  a to-do.** `components/ui/command.jsx` and the `cmdk` dependency have been
+  deleted; the reasoning is below so nobody re-litigates it from scratch.
 - **Dictation has never been exercised in a real browser**, though it is
   tested. `useSpeechRecognition.test.jsx` has 11 tests over a faked API — the
   ten-second cap, the cap NOT firing after a normal end, a `stop()` that throws
@@ -454,6 +454,32 @@ It uses `useSpeechRecognition` now and inherits the ceiling and its test.
   `.sidebar-rail`, and the `.chat-item:hover/.focus-within .chat-actions` pair.
   All three are two declarations of the same selector in one file, not a
   cross-file override.
+
+### Why the palette was not swapped for cmdk
+
+The plan was to replace the 128-line hand-rolled `CommandPalette` with
+`components/ui/command`, keeping `CommandPalette.test.jsx` passing unmodified.
+Three findings killed it, and the third is the one that matters.
+
+**`components/ui/command.jsx` was imported by nobody.** It had been sitting
+there since the shadcn install, exactly like the four motion primitives.
+
+**cmdk's input renders `role="combobox"`.** The test reaches the input with
+`getByRole("textbox")` in six places. A combobox is not a textbox, so the swap
+required either editing the test — which was the one constraint — or passing
+`role="textbox"` to override it, which is an accessibility **downgrade**:
+combobox is the correct role for a filtering input that controls a listbox.
+Making the app worse to satisfy a test is the wrong way round.
+
+**There was nothing left to gain.** The palette needs its own ordering —
+actions first when the query is empty, chats first once you type — so cmdk
+would run with `shouldFilter={false}`, disabling the thing it is for. What
+remains is arrow-key navigation with wrapping, which is four lines here and
+already covered by two tests.
+
+Deleting the unused component and the dependency **did not change the bundle**:
+116.81 kB before and after, because it was already tree-shaken. The win is one
+fewer dependency to audit and update, not bytes.
 
 ### The sign-in page is inside the manifest now
 

@@ -76,9 +76,25 @@ function isOriginAllowed(origin, { exact = [], suffixes = [], allowAll = false }
 
   return suffixes.some((suffix) => {
     const s = suffix.toLowerCase();
-    // A suffix without its dot would let `evil-alop-ai.vercel.app` satisfy a
-    // rule written for `alop-ai.vercel.app`.
-    if (!s.startsWith(".")) return false;
+    // A suffix must start with a SEPARATOR — "." for a subdomain, "-" for
+    // Vercel's preview scheme, which builds hostnames as
+    // <project>-<hash>-<team>.vercel.app and so has no dot to anchor on.
+    //
+    // Without a required separator, `.foo.example` would be satisfied by
+    // `evilfoo.example`.
+    //
+    // A "-" SUFFIX IS WEAKER THAN A "." ONE, and the difference is worth
+    // knowing before using it. `.foo.example` can only be minted by whoever
+    // controls foo.example. `-myteam-projects.vercel.app` can also be matched
+    // by a Vercel team whose slug happens to END with "myteam-projects" —
+    // registering `evil-myteam-projects` would do it.
+    //
+    // That is an acceptable trade HERE and might not be elsewhere: every
+    // endpoint behind this requires a Clerk bearer token that a cross-origin
+    // page cannot read, so reaching the API is not the same as being able to
+    // use it. It is documented rather than hidden because the calculation
+    // changes the moment anything starts authenticating with a cookie.
+    if (!s.startsWith(".") && !s.startsWith("-")) return false;
     return host.endsWith(s);
   });
 }

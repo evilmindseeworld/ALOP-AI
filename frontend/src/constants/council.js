@@ -17,7 +17,7 @@
  * producing one answer seven times.
  */
 export const COUNCIL = [
-  { model: "glm-5.2", temperature: 0.2, free: true },
+  { model: "glm-5.2", temperature: 0.2, free: false },
   { model: "deepseek-v4-pro", temperature: 0.4, free: false },
   { model: "kimi-k2.7-code", temperature: 0.3, free: true },
   { model: "qwen3.5", temperature: 0.5, free: true },

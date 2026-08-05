@@ -86,7 +86,7 @@ const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 // step with nothing to reconcile. The determinism that matters — extracting
 // facts from search results — is unaffected; those paths still run at 0.0.
 const COUNCIL = [
-  { model: 'glm-5.2',          temperature: 0.2, free: true  },
+  { model: 'glm-5.2',          temperature: 0.2, free: false },
   { model: 'kimi-k2.7-code',   temperature: 0.3, free: true  },
   { model: 'qwen3.5',          temperature: 0.5, free: true  },
   { model: 'gemma4',           temperature: 0.7, free: true  },

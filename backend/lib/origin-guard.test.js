@@ -120,3 +120,48 @@ test("env parsing trims and drops empties", () => {
   });
   assert.deepEqual(policy.suffixes, [".one.example", ".two.example"]);
 });
+
+// ===== Vercel preview deployments =====
+//
+// The exact-origin allowlist that replaced the wildcard broke every preview
+// deployment: Vercel builds them as <project>-<hash>-<team>.vercel.app, which
+// shares no dot-subdomain with the production alias. Testing on a preview URL
+// therefore produced "Failed to create chat" with a 403 on the preflight.
+
+const PREVIEW = { exact: [], suffixes: ["-evilmindseeworlds-projects.vercel.app"] };
+
+test("a hyphen-separated suffix admits team preview deployments", () => {
+  assert.equal(
+    isOriginAllowed("https://alop-hf3uxgy03-evilmindseeworlds-projects.vercel.app", PREVIEW),
+    true,
+  );
+  assert.equal(
+    isOriginAllowed("https://alop-gfqrretq1-evilmindseeworlds-projects.vercel.app", PREVIEW),
+    true,
+  );
+});
+
+test("it still refuses every other vercel deployment", () => {
+  assert.equal(isOriginAllowed("https://attacker-clone.vercel.app", PREVIEW), false);
+  assert.equal(isOriginAllowed("https://alop-hash-someoneelse-projects.vercel.app", PREVIEW), false);
+});
+
+test("a suffix with no leading separator is still ignored", () => {
+  // The separator is what stops `foo.example` being matched by `evilfoo.example`.
+  assert.equal(
+    isOriginAllowed("https://x-evilmindseeworlds-projects.vercel.app", { exact: [], suffixes: ["evilmindseeworlds-projects.vercel.app"] }),
+    false,
+  );
+});
+
+test("the documented weakness of a hyphen suffix is real and asserted", () => {
+  // A Vercel team whose slug ENDS with yours would match. This is written down
+  // rather than hidden because it is the trade being made: every endpoint
+  // behind this needs a Clerk bearer token a cross-origin page cannot read, so
+  // reaching the API is not the same as being able to use it. If anything here
+  // ever authenticates with a cookie, this test is the thing to come back to.
+  assert.equal(
+    isOriginAllowed("https://p-hash-evil-evilmindseeworlds-projects.vercel.app", PREVIEW),
+    true,
+  );
+});

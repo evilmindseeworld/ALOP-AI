@@ -66,10 +66,15 @@ export default function SignInPage() {
 
             <p className="council-resolve">One reply, reconciled.</p>
 
+            {/* The previous line explained the temperature column — "runs 0.2 to
+                0.8, literal to lateral". It was true and it was the wrong
+                sentence: to anyone who does not already know what a sampling
+                temperature is, "temperature" is the weather. The numbers can
+                stay as texture for people who recognise them; the caption has
+                to work for everyone, so it says what the product does instead
+                of what the column means. */}
             <p className="signin-tagline">
-              Temperature runs {COUNCIL[0].temperature.toFixed(1)} to{" "}
-              {COUNCIL[COUNCIL.length - 1].temperature.toFixed(1)} — literal to lateral. They
-              disagree on purpose. You get what they agreed on, and what they didn&rsquo;t.
+              They disagree on purpose. You get what they agreed on — and where they didn&rsquo;t.
             </p>
           </section>
 

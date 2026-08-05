@@ -502,6 +502,13 @@
  *
  * .cl-footer keeps its own tint by default, which reads as a fourth panel at
  * the bottom of a card that no longer has panels. */
+/* .cl-rootBox is FIRST for a reason: it is Clerk's outermost element and it
+ * sizes to its content, so it was 249px inside a 338px card and everything
+ * within it inherited that width. The form was not off-centre — it was
+ * left-aligned inside a box narrower than the one it appeared to be in, which
+ * looks the same and has a different cause. Measured before fixing:
+ * 20px gap on the left, 111px on the right. */
+.signin-card-inner .cl-rootBox,
 .signin-card-inner .cl-card,
 .signin-card-inner .cl-cardBox,
 .signin-card-inner .cl-footer,
@@ -510,4 +517,15 @@
   border: none !important;
   box-shadow: none !important;
   border-radius: 0 !important;
+  /* PADDING TOO, and leaving it out is what made the form look off-centre.
+   *
+   * Clerk's card carries its own horizontal padding. With .signin-card also
+   * padding, the two stacked on the left while several of Clerk's inner
+   * elements — the social button, the input — are full-bleed to their own
+   * container and so reached the right edge. The result was a form sitting
+   * visibly right of the box it is in.
+   *
+   * One source of padding: ours. */
+  padding: 0 !important;
+  width: 100% !important;
 }

@@ -498,7 +498,33 @@ app.use((req, res, next) => { if (req.timedout) return res.status(503).json({ er
 // IPv6-aware: it collapses an address to its /56 so one client cannot walk its
 // own prefix.
 const { rateLimitKey } = require('./lib/rate-limit-key');
-const createLimiter = (windowMs, max, msg) => rateLimit({ windowMs, max, message: { error: msg }, standardHeaders: true, legacyHeaders: false, keyGenerator: (req, res) => rateLimitKey(req, res, rateLimit.ipKeyGenerator), handler: (req, res) => { res.status(429).json({ error: msg }); } });
+/**
+ * The counter's home.
+ *
+ * Memory by default, which is correct on ONE instance and measurably wrong on
+ * two: the default store is per-process, so "120 per minute" becomes 240 the
+ * moment the service scales. Scaling on Render is a dropdown — no deploy, no
+ * review, nothing that would flag it.
+ *
+ * Postgres is therefore built, tested and dormant. It costs a database round
+ * trip per request, which one instance should not pay, so it is opt-in via
+ * RATE_LIMIT_STORE=postgres. BEFORE SCALING TO MORE THAN ONE INSTANCE, set it
+ * — migrations/004 creates the table and the atomic increment.
+ */
+const USE_PG_RATE_LIMIT = process.env.RATE_LIMIT_STORE === 'postgres';
+const { PostgresStore } = require('./lib/pg-rate-limit-store');
+
+const createLimiter = (windowMs, max, msg) => rateLimit({
+  windowMs, max, message: { error: msg }, standardHeaders: true, legacyHeaders: false,
+  keyGenerator: (req, res) => rateLimitKey(req, res, rateLimit.ipKeyGenerator),
+  handler: (req, res) => { res.status(429).json({ error: msg }); },
+  // A store instance per limiter, because each carries its own window.
+  // The arrow defers dereferencing `supabase`, which is declared BELOW this
+  // point — the limiters are registered before the client exists. It is only
+  // called at request time, by which point the const is initialised. Passing
+  // `supabase.rpc` directly here would throw at boot.
+  ...(USE_PG_RATE_LIMIT ? { store: new PostgresStore({ rpc: (fn, args) => supabase.rpc(fn, args) }) } : {}),
+});
 
 // Every route is under a limit. The blanket /api/ limiter is the floor, and a
 // route with its own limiter is subject to BOTH — the narrower one binds first.
@@ -1102,7 +1128,10 @@ const server = app.listen(PORT, () => {
   // broken — which is exactly the half hour this cost: COUNCIL_TOOLS=shadow was
   // set correctly, the probe was in unreachable code, and nothing on either
   // side of the boot said so.
-  console.log(`[BOOT] COUNCIL_TOOLS=${process.env.COUNCIL_TOOLS || '(unset)'} -> tools ${TOOLS_ENABLED ? 'LIVE' : TOOLS_SHADOW ? 'SHADOW (probe only, answers unchanged)' : 'OFF'}\n`);
+  console.log(`[BOOT] COUNCIL_TOOLS=${process.env.COUNCIL_TOOLS || '(unset)'} -> tools ${TOOLS_ENABLED ? 'LIVE' : TOOLS_SHADOW ? 'SHADOW (probe only, answers unchanged)' : 'OFF'}`);
+  // Same reasoning as the line above: a store that is silently per-process is
+  // indistinguishable from a shared one until the limits are already wrong.
+  console.log(`[BOOT] RATE_LIMIT_STORE=${process.env.RATE_LIMIT_STORE || '(unset)'} -> ${USE_PG_RATE_LIMIT ? 'postgres, shared across instances' : 'in-memory, PER PROCESS — set RATE_LIMIT_STORE=postgres before scaling past one instance'}\n`);
 });
 
 process.on('SIGTERM', () => server.close(() => process.exit(0)));

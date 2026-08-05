@@ -22,7 +22,11 @@ const imported = [...MANIFEST.matchAll(/@import\s+"\.\/styles\/([\w-]+)\.css"/g)
  * zIndexOrder.test.js. If you add a file, add it here and say where it goes.
  */
 const EXPECTED = [
-  "tokens",         // must be first: everything below dereferences these
+  // @font-face for the self-hosted Inter. First so the family is defined
+  // before tokens.css names it, and because a reader chasing --font-body
+  // should meet the declaration before the reference.
+  "fonts",
+  "tokens",         // dereferenced by everything below
   "base",
   "layout",
   "sidebar",
@@ -69,11 +73,20 @@ describe("stylesheet manifest", () => {
     expect(MANIFEST).not.toContain("ui-reset");
   });
 
-  it("keeps tokens first and utilities last", () => {
+  it("keeps tokens first among cascading files, and utilities last", () => {
     // Stated separately from the full list so the failure names the invariant
-    // rather than dumping a fourteen-item array diff. These are the only two
+    // rather than dumping a fifteen-item array diff. These are the only two
     // ordering constraints left: everything between them is independent.
-    expect(imported[0], "tokens must come first — every file dereferences it").toBe("tokens");
+    //
+    // fonts.css sits above tokens and is exempt: it contains @font-face and
+    // nothing else, so it declares no property that could win or lose a
+    // cascade. The constraint that matters is that tokens precedes every file
+    // that dereferences it, which is every file that declares anything.
+    expect(imported[0], "fonts must come first — it only defines @font-face").toBe("fonts");
+    expect(
+      imported.filter((n) => n !== "fonts")[0],
+      "tokens must come first among cascading files — every file dereferences it"
+    ).toBe("tokens");
     expect(
       imported.at(-1),
       "utilities must come last: its media queries beat component defaults on " +

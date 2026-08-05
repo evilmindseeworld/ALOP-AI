@@ -17,9 +17,22 @@
          broken one. -->
     <link rel="preconnect" href="https://alop-ai.onrender.com" crossorigin />
     <link rel="dns-prefetch" href="https://alop-ai.onrender.com" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <!-- Inter is served from this origin, not from Google. Two reasons, and
+         the first is not a performance one: loading it from fonts.googleapis.com
+         sent every visitor's IP address to Google before anything rendered, with
+         no consent and no way to refuse. A German court awarded damages over
+         precisely that in 2022, and it is one of the few GDPR questions with a
+         ruling rather than an argument behind it. Self-hosting deletes the
+         transfer, so there is no longer a third party to disclose.
+
+         It is also faster. The old pair of preconnects existed because the font
+         needed two extra origins on the critical path, and the stylesheet
+         request had to complete before the browser could even discover the
+         font's URL. Preloading the file directly removes that round trip; the
+         `crossorigin` attribute is required even same-origin, because fonts are
+         always fetched in CORS mode and without it the preload is discarded and
+         fetched a second time. -->
+    <link rel="preload" href="/fonts/switzer-400.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
     <div id="root"></div>

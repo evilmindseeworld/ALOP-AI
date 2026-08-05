@@ -24,6 +24,10 @@
  * new one; say so here rather than pasting it at the end of another.
  */
 
+/* @font-face only. First because tokens.css names 'Inter' in --font-body, and
+   a reader looking for where that family comes from should find it before the
+   line that uses it. */
+@import "./styles/fonts.css";
 @import "./styles/tokens.css";
 @import "./styles/base.css";
 @import "./styles/layout.css";

@@ -716,7 +716,34 @@ const requireAdmin = async (req, res, next) => { try { if (!req.auth || !req.aut
 // ip_address was hardcoded to null, so the audit trail could say what happened
 // and to whom but never from where — which is the column you want first when
 // you are reading it at all.
-const auditLog = async (userId, action, metadata = {}, ip = null) => { try { await supabase.from('audit_logs').insert({ user_id: userId, action, metadata, ip_address: ip || null, created_at: new Date().toISOString() }); } catch (e) { console.error('Audit failed:', e.message); } };
+/* Audit rows are swept on a counter rather than a schedule.
+ *
+ * The free tier has no scheduler, and audit_logs.ip_address is personal data
+ * that the privacy policy says is kept for 90 days. A retention period the
+ * database does not actually honour is a false published statement, so the
+ * deletion has to happen somewhere — and the cheapest correct place is here,
+ * amortised across writes.
+ *
+ * Not awaited, and failures are swallowed: housekeeping must never be able to
+ * fail a user's request. Falling behind costs disk and nothing else, because
+ * nothing reads a row's age to make a decision. */
+let auditWritesSinceSweep = 0;
+const AUDIT_SWEEP_EVERY = 200;
+const AUDIT_RETAIN_DAYS = Number(process.env.AUDIT_RETAIN_DAYS) || 90;
+
+const auditLog = async (userId, action, metadata = {}, ip = null) => {
+  try {
+    await supabase.from('audit_logs').insert({ user_id: userId, action, metadata, ip_address: ip || null, created_at: new Date().toISOString() });
+  } catch (e) {
+    console.error('Audit failed:', e.message);
+  }
+  if (++auditWritesSinceSweep >= AUDIT_SWEEP_EVERY) {
+    auditWritesSinceSweep = 0;
+    Promise.resolve(supabase.rpc('sweep_audit_logs', { retain_days: AUDIT_RETAIN_DAYS }))
+      .then((r) => { if (r?.data) console.log(`[RETENTION] swept ${r.data} audit rows older than ${AUDIT_RETAIN_DAYS}d`); })
+      .catch(() => {});
+  }
+};
 
 // ===== HEALTH =====
 app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));

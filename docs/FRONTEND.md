@@ -82,26 +82,33 @@ array in the test. The test is the spec.
 
 ---
 
-## 2. The stylesheet is fourteen files, and the import order is the cascade
+## 2. The stylesheet is fifteen files, and the import order is the cascade
 
-`src/App.css` is a 40-line **import manifest**. It contains no rules.
+`src/App.css` is a 45-line **import manifest**. It contains no rules.
 
 ```
-tokens → base → layout → sidebar → chat → markdown → composer →
+fonts → tokens → base → layout → sidebar → chat → markdown → composer →
 palette → chat-controls → panels → overlay → signin → decoration →
 code-blocks → utilities
 ```
 
-Fifteen files sit in `src/styles/`; fourteen are in that list. The fifteenth is
+Sixteen files sit in `src/styles/`; fifteen are in that list. The sixteenth is
 `ui-reset.css`, which belongs to the Tailwind layer stack rather than this
 cascade — `tailwind.css` imports it into `layer(base)` so unlayered App.css
 still outranks it. See §4.
 
 **Only two positions in that order are load-bearing**, and both are asserted
-separately: `tokens` first, because every file below dereferences it, and
-`utilities` last, because its media queries have to beat component defaults at
-equal specificity without `!important`. The twelve in between own their
-components outright and do not override each other.
+separately: `tokens` first among cascading files, because every file below
+dereferences it, and `utilities` last, because its media queries have to beat
+component defaults at equal specificity without `!important`. The twelve in
+between own their components outright and do not override each other.
+
+`fonts.css` sits above `tokens` and is outside that rule, because it contains
+`@font-face` and nothing else — it declares no property that can win or lose a
+cascade. It is first only so that the family is defined before `tokens.css`
+names it in `--font-body`. It holds the self-hosted Inter: the font used to
+load from `fonts.googleapis.com`, which sent every visitor's IP to Google
+before first paint, with no consent and no way to refuse.
 
 That is a change from how this file used to read. The manifest once ended with
 `skeuomorphism` and `obsidian` — two whole-app design passes, inset bevels and

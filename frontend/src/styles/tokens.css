@@ -16,12 +16,18 @@
  * contrast pairs below are asserted by contrast.test.js rather than eyeballed.
  */
 
-/* ===== FONTS ===== */
-@import url('https://api.fontshare.com/v2/css?f[]=clash-grotesk@400,500,600,700&f[]=switzer@400,500,600,700,800&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
-/* Italic only — the roman is never used, and shipping it would double the
- * request for a face nothing renders. */
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@1&display=swap');
+/* ===== FONTS =====
+ * The @font-face rules live in fonts.css, imported before this file.
+ *
+ * They used to be three @import urls right here, pointing at
+ * api.fontshare.com and fonts.googleapis.com. That sent every visitor's IP to
+ * two third parties before first paint, and an @import inside an imported
+ * stylesheet is the slowest possible way to load a font — the browser cannot
+ * even discover the font's URL until it has fetched and parsed a stylesheet
+ * from another origin. Both problems went away together.
+ *
+ * Instrument Serif is italic-only on purpose: the roman is never used, and
+ * shipping it would double the bytes for a face nothing renders. */
 
 /* ===== DARK — SAKURA OBSIDIAN (the primary theme) ===== */
 :root {

@@ -944,6 +944,67 @@ app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
   }
 });
 
+// ===== ADMIN CONSOLE =====
+//
+// A diagnostics console, not a shell. There is no subprocess anywhere in it —
+// see lib/admin-commands.js for why that is the design rather than a
+// limitation. It takes a command ID from a closed set and never a command.
+//
+// Four independent conditions, all required, enforced in lib/terminal-access.js:
+// a Clerk session, is_admin, membership of TERMINAL_ADMINS, and a
+// TERMINAL_SECRET header. Unset variables DISABLE it rather than relaxing to
+// is_admin.
+const { buildCommands } = require('./lib/admin-commands');
+const { checkTerminalAccess, terminalConfig } = require('./lib/terminal-access');
+const adminConsole = buildCommands({ supabase });
+
+// Its own limiter, far tighter than the admin floor. The secret is the only
+// guessable credential in the chain, and 10 attempts a minute makes guessing
+// it arithmetically hopeless while leaving normal use unhindered.
+const terminalLimiter = createLimiter(60000, 10, 'Too many console requests.');
+
+/**
+ * Every attempt — allowed or refused — is audited BEFORE the reply.
+ *
+ * The response is one generic 403 whatever failed. The specific reason goes to
+ * the audit log only: telling a rejected caller which of the four conditions
+ * they missed hands them a map of the lock, and the difference between "not an
+ * admin" and "bad secret" tells an attacker exactly how far they have got.
+ */
+const requireTerminal = async (req, res, next) => {
+  const clerkUserId = req.auth && req.auth.userId;
+  let isAdmin = false;
+  let userRow = null;
+  try {
+    const { data } = await supabase.from('users').select('id,is_admin').eq('clerk_id', clerkUserId || '').single();
+    userRow = data;
+    isAdmin = Boolean(data && data.is_admin);
+  } catch { /* absent user is simply not an admin */ }
+
+  const verdict = checkTerminalAccess({ clerkUserId, isAdmin, secret: req.get('x-terminal-secret') }, process.env);
+  await auditLog(userRow ? userRow.id : null, verdict.allowed ? 'terminal.access' : 'terminal.denied', {
+    reason: verdict.reason,
+    clerkUserId: clerkUserId || null,
+    command: sanitizeString(req.body && req.body.command, 40) || null,
+    userAgent: sanitizeString(req.get('user-agent'), 120) || null,
+  }, req.ip);
+
+  if (!verdict.allowed) return res.status(403).json({ error: 'Not available.' });
+  req.terminalUserId = userRow ? userRow.id : null;
+  next();
+};
+
+app.get('/api/admin/console', requireAuth, terminalLimiter, requireTerminal, (req, res) => {
+  res.json({ commands: adminConsole.list() });
+});
+
+app.post('/api/admin/console', requireAuth, terminalLimiter, requireTerminal, async (req, res) => {
+  const id = sanitizeString(req.body && req.body.command, 40);
+  const out = await adminConsole.run(id);
+  await auditLog(req.terminalUserId, 'terminal.run', { command: id, ok: out.ok }, req.ip);
+  res.status(out.ok ? 200 : 400).json(out);
+});
+
 // ===== FILES =====
 //
 // Upload lives behind requireOwnership on the CHAT, so a file can only ever be
@@ -1131,7 +1192,11 @@ const server = app.listen(PORT, () => {
   console.log(`[BOOT] COUNCIL_TOOLS=${process.env.COUNCIL_TOOLS || '(unset)'} -> tools ${TOOLS_ENABLED ? 'LIVE' : TOOLS_SHADOW ? 'SHADOW (probe only, answers unchanged)' : 'OFF'}`);
   // Same reasoning as the line above: a store that is silently per-process is
   // indistinguishable from a shared one until the limits are already wrong.
-  console.log(`[BOOT] RATE_LIMIT_STORE=${process.env.RATE_LIMIT_STORE || '(unset)'} -> ${USE_PG_RATE_LIMIT ? 'postgres, shared across instances' : 'in-memory, PER PROCESS — set RATE_LIMIT_STORE=postgres before scaling past one instance'}\n`);
+  console.log(`[BOOT] RATE_LIMIT_STORE=${process.env.RATE_LIMIT_STORE || '(unset)'} -> ${USE_PG_RATE_LIMIT ? 'postgres, shared across instances' : 'in-memory, PER PROCESS — set RATE_LIMIT_STORE=postgres before scaling past one instance'}`);
+  // Third flag, same rule. The console being disabled is the SAFE state, so it
+  // says so plainly rather than staying quiet and looking like it works.
+  const tc = terminalConfig();
+  console.log(`[BOOT] admin console -> ${tc.enabled ? `ENABLED for ${tc.admins.length} allowlisted admin(s)` : `disabled (${tc.reason})`}\n`);
 });
 
 process.on('SIGTERM', () => server.close(() => process.exit(0)));

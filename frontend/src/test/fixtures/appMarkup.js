@@ -428,11 +428,10 @@ export const outsideAppRoot = `
       <section class="signin-card">
         <div class="signin-card-inner"></div>
         <p class="signin-plan">3 models free. All 7 on Pro.</p>
-        <div class="signin-links">
-          <a href="/privacy.html">Privacy</a>
-          <span class="signin-dot">·</span>
-          <a href="/terms.html">Terms</a>
-        </div>
+        <p class="signin-legal">
+          By continuing you confirm you are at least 13 years old (16 in the EEA and UK) and agree
+          to our <a href="/terms.html">Terms</a> and <a href="/privacy.html">Privacy Policy</a>.
+        </p>
       </section>
     </div>
   </div>

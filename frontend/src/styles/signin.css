@@ -204,23 +204,29 @@
   color: color-mix(in srgb, var(--text) 10%, transparent);
 }
 
-.signin-links {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin-top: 6px;
+/* Replaced a bare "Privacy · Terms" pair. Those two links satisfied nobody:
+   the age minimum and the agreement live in the documents, and a link is not
+   a statement that the person read one. This is a sentence, so it has to
+   wrap and stay readable rather than sit on one line. */
+.signin-legal {
+  margin-top: 10px;
+  max-width: 34ch;
+  margin-inline: auto;
+  text-align: center;
   font-size: 11px;
+  line-height: 1.5;
   color: var(--text-subtle);
+  text-wrap: pretty;
 }
 
-.signin-links a {
+.signin-legal a {
   color: var(--text-muted);
-  text-decoration: none;
+  text-decoration: underline;
+  text-underline-offset: 2px;
   transition: color 0.15s;
 }
 
-.signin-links a:hover {
+.signin-legal a:hover {
   color: var(--primary);
 }
 

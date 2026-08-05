@@ -4,7 +4,7 @@
 # here means a refactor changed behaviour. Do not regenerate it to make a
 # test pass; fix the CSS.
 #
-# elements: 833   environments: 4   states: 6
+# elements: 832   environments: 4   states: 6
 
 === width=1400 ===
 
@@ -40219,7 +40219,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[829] div.signin-links
+[829] p.signin-legal
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
@@ -40239,22 +40239,23 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  align-items: center
   box-sizing: border-box
   color: #918a9d
-  display: flex
   font-size: 11px
-  gap: 8px
-  justify-content: center
+  line-height: 1.5
   margin: 0
   margin-bottom: <margin: 0>
+  margin-inline: auto
   margin-left: <margin: 0>
-  margin-top: 6px
+  margin-top: 10px
+  max-width: 34ch
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
+  text-align: center
+  text-wrap: pretty
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -40297,7 +40298,8 @@
   padding-left: <padding: 0>
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
-  text-decoration: none
+  text-decoration: underline
+  text-underline-offset: 2px
   transition: color 0.15s
   transition-duration: <transition: color 0.15s>
   :hover
@@ -40311,48 +40313,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[831] span.signin-dot
-  ::-webkit-scrollbar-thumb/background: #2a2a36
-  ::-webkit-scrollbar-thumb/background-clip: padding-box
-  ::-webkit-scrollbar-thumb/background-image: <background: #2a2a36>
-  ::-webkit-scrollbar-thumb/background-size: <background: #2a2a36>
-  ::-webkit-scrollbar-thumb/border: 3px solid transparent
-  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
-  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
-  ::-webkit-scrollbar-thumb/border-radius: 999px
-  ::-webkit-scrollbar-track/background: transparent
-  ::-webkit-scrollbar-track/background-clip: <background: transparent>
-  ::-webkit-scrollbar-track/background-image: <background: transparent>
-  ::-webkit-scrollbar-track/background-size: <background: transparent>
-  ::-webkit-scrollbar/height: 10px
-  ::-webkit-scrollbar/width: 10px
-  ::selection/background: #f08aa3
-  ::selection/background-clip: <background: #f08aa3>
-  ::selection/background-image: <background: #f08aa3>
-  ::selection/background-size: <background: #f08aa3>
-  ::selection/color: #1a0e13
-  box-sizing: border-box
-  color: color-mix(in srgb, #f5f1ee 10%, transparent)
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
-  padding: 0
-  padding-bottom: <padding: 0>
-  padding-left: <padding: 0>
-  scrollbar-color: #2a2a36 transparent
-  scrollbar-width: thin
-  :hover
-    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
-    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
-    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
-  :focus-visible
-    border-bottom-right-radius: <border-radius: 8px>
-    border-radius: 8px
-    outline: 2px solid #f08aa3
-    outline-offset: 2px
-
-[832] a
+[831] a
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #2a2a36
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -40384,7 +40345,8 @@
   padding-left: <padding: 0>
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
-  text-decoration: none
+  text-decoration: underline
+  text-underline-offset: 2px
   transition: color 0.15s
   transition-duration: <transition: color 0.15s>
   :hover
@@ -50726,7 +50688,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[829] div.signin-links
+[829] p.signin-legal
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50749,18 +50711,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: color 0.15s>
 
-[831] span.signin-dot
-  ::after/animation-duration: 0.01ms
-  ::after/animation-iteration-count: 1
-  ::after/transition-duration: 0.01ms
-  ::before/animation-duration: 0.01ms
-  ::before/animation-iteration-count: 1
-  ::before/transition-duration: 0.01ms
-  animation-duration: 0.01ms
-  animation-iteration-count: 1
-  transition-duration: 0.01ms
-
-[832] a
+[831] a
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -51034,5 +50985,6 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
 .signin-card-inner .cl-rootBox
 .signin-card-inner .cl-socialButtonsBlockButton
 .signin-card-inner .cl-socialButtonsBlockButton:hover
+.signin-dot
 [role="button"]
 select

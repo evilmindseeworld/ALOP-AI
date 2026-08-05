@@ -84,11 +84,19 @@ export default function SignInPage() {
             <p className="signin-plan">
               {FREE_COUNT} models free. All {COUNCIL.length} on Pro.
             </p>
-            <div className="signin-links">
-              <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy</a>
-              <span className="signin-dot">·</span>
-              <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a>
-            </div>
+            {/* The Terms set a minimum age of 13, and 16 in the EEA and UK.
+                A minimum age that appears only inside a linked document is a
+                promise the product does not make — the point of stating it at
+                the moment of sign-up is that the claim becomes something the
+                user actually saw, which is what turns it from paper into a
+                defensible position. COPPA attaches to collecting a child's
+                email, not to what the app is for, and Clerk collects one. */}
+            <p className="signin-legal">
+              By continuing you confirm you are at least 13 years old (16 in the EEA and UK) and
+              agree to our{" "}
+              <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a> and{" "}
+              <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>.
+            </p>
           </section>
         </div>
       </div>

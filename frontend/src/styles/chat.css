@@ -86,6 +86,62 @@
   50% { transform: translateY(-8px) scale(1.02); }
 }
 
+/* The entrance.
+ *
+ * The empty state used to appear all at once, which reads as a page load. A
+ * short stagger in reading order — eyebrow, title, subtitle, then the cards —
+ * reads as the room assembling itself, and it costs four animation-delay
+ * declarations.
+ *
+ * Rules this follows, because a staggered entrance is the easiest place to
+ * make an interface feel slow:
+ *
+ *   - The whole sequence finishes in 420ms. Anything past about half a second
+ *     stops being an entrance and becomes a wait, and this is the screen a
+ *     user sees before every single conversation.
+ *   - Nothing moves more than 8px. Long travel is what makes stagger look
+ *     like a template.
+ *   - `backwards` fill is load-bearing: without it every element paints at its
+ *     final opacity for the length of its own delay, then snaps to 0 and fades
+ *     back in — the flash is more noticeable than the animation.
+ *   - The starter cards animate as ONE group, not per card. Six cards on their
+ *     own delays is a slot machine.
+ *
+ * The global prefers-reduced-motion block collapses all of this to 0.01ms, so
+ * a user who asked for less motion gets the final state immediately. */
+@keyframes emptyRise {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.empty-eyebrow,
+.empty-subtitle,
+.starter-grid {
+  animation: emptyRise var(--dur-slow) var(--ease-out) backwards;
+}
+
+/* .empty-title carries BOTH, and the second name is not optional.
+ *
+ * The title is <h2 class="empty-title text-shimmer">. `.text-shimmer` lives in
+ * base.css and `.empty-title` in chat.css, both at (0,1,0) — so the component
+ * rule wins on source order, and an `animation` shorthand here REPLACES the
+ * shimmer rather than adding to it. The first version of this stagger did
+ * exactly that and silently deleted the shimmer from the one element in the
+ * app that has it; the cascade snapshot is what caught it.
+ *
+ * Listing both is the honest fix at this specificity. If text-shimmer's timing
+ * ever changes, this line has to change with it — the snapshot will say so. */
+.empty-title {
+  animation:
+    emptyRise var(--dur-slow) var(--ease-out) backwards,
+    shimmerMove 5s linear infinite;
+}
+
+.empty-eyebrow  { animation-delay: 60ms; }
+.empty-title    { animation-delay: 120ms, 0s; }
+.empty-subtitle { animation-delay: 190ms; }
+.starter-grid   { animation-delay: 260ms; }
+
 /* The eyebrow. Small, uppercase, tracked wide, and dimmer than the subtitle —
  * it names the room without asking to be read first. */
 .empty-eyebrow {

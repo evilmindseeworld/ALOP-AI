@@ -183,6 +183,18 @@
   ::after/right: <inset: 0>
   ::after/top: <inset: 0>
   ::after/z-index: 0
+  ::before/background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E")
+  ::before/background-size: 160px 160px
+  ::before/bottom: <inset: 0>
+  ::before/content: ""
+  ::before/inset: 0
+  ::before/left: <inset: 0>
+  ::before/opacity: 0.055
+  ::before/pointer-events: none
+  ::before/position: absolute
+  ::before/right: <inset: 0>
+  ::before/top: <inset: 0>
+  ::before/z-index: 1
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
   ::selection/background-image: <background: #f08aa3>
@@ -9820,6 +9832,10 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
+  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards
+  animation-delay: 60ms
+  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   box-sizing: border-box
   color: #918a9d
   font-family: 'Switzer', system-ui, sans-serif
@@ -9869,10 +9885,10 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  animation: shimmerMove 5s linear infinite
-  animation-delay: <animation: shimmerMove 5s linear infinite>
-  animation-duration: <animation: shimmerMove 5s linear infinite>
-  animation-iteration-count: <animation: shimmerMove 5s linear infinite>
+  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite
+  animation-delay: 120ms, 0s
+  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite>
+  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite>
   background: linear-gradient( 100deg, #f5f1ee 20%, #f08aa3 40%, #6fd3a6 60%, #f5f1ee 80% )
   background-clip: text
   background-image: <background: linear-gradient( 100deg, #f5f1ee 20%, #f08aa3 40%, #6fd3a6 60%, #f5f1ee 80% )>
@@ -9970,6 +9986,10 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
+  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards
+  animation-delay: 190ms
+  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   box-sizing: border-box
   color: #bdb6c4
   font-size: 15px
@@ -10015,6 +10035,10 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
+  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards
+  animation-delay: 260ms
+  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   box-sizing: border-box
   display: grid
   gap: 8px
@@ -10055,6 +10079,19 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::before/background: linear-gradient(90deg, transparent, #f08aa3, transparent)
+  ::before/background-clip: <background: linear-gradient(90deg, transparent, #f08aa3, transparent)>
+  ::before/background-image: <background: linear-gradient(90deg, transparent, #f08aa3, transparent)>
+  ::before/background-size: <background: linear-gradient(90deg, transparent, #f08aa3, transparent)>
+  ::before/content: ""
+  ::before/height: 1px
+  ::before/left: 12%
+  ::before/opacity: 0
+  ::before/position: absolute
+  ::before/right: 12%
+  ::before/top: 0
+  ::before/transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1)
+  ::before/transition-duration: <transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1)>
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
   ::selection/background-image: <background: #f08aa3>
@@ -10079,9 +10116,13 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
+  overflow: hidden
+  overflow-x: <overflow: hidden>
+  overflow-y: <overflow: hidden>
   padding: 12px 16px
   padding-bottom: <padding: 12px 16px>
   padding-left: <padding: 12px 16px>
+  position: relative
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
   text-align: left
@@ -10091,13 +10132,16 @@
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+    ::before/opacity: 1
     background: #1f1f29
     background-clip: <background: #1f1f29>
     background-image: <background: #1f1f29>
     background-size: <background: #1f1f29>
     border-color: rgba(240, 138, 163, 0.55)
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45)
     transform: translateY(-2px)
   :focus-visible
+    ::before/opacity: 1
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
@@ -10337,6 +10381,19 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::before/background: linear-gradient(90deg, transparent, #f08aa3, transparent)
+  ::before/background-clip: <background: linear-gradient(90deg, transparent, #f08aa3, transparent)>
+  ::before/background-image: <background: linear-gradient(90deg, transparent, #f08aa3, transparent)>
+  ::before/background-size: <background: linear-gradient(90deg, transparent, #f08aa3, transparent)>
+  ::before/content: ""
+  ::before/height: 1px
+  ::before/left: 12%
+  ::before/opacity: 0
+  ::before/position: absolute
+  ::before/right: 12%
+  ::before/top: 0
+  ::before/transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1)
+  ::before/transition-duration: <transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1)>
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
   ::selection/background-image: <background: #f08aa3>
@@ -10361,9 +10418,13 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
+  overflow: hidden
+  overflow-x: <overflow: hidden>
+  overflow-y: <overflow: hidden>
   padding: 12px 16px
   padding-bottom: <padding: 12px 16px>
   padding-left: <padding: 12px 16px>
+  position: relative
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
   text-align: left
@@ -10373,13 +10434,16 @@
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+    ::before/opacity: 1
     background: #1f1f29
     background-clip: <background: #1f1f29>
     background-image: <background: #1f1f29>
     background-size: <background: #1f1f29>
     border-color: rgba(240, 138, 163, 0.55)
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45)
     transform: translateY(-2px)
   :focus-visible
+    ::before/opacity: 1
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
@@ -17013,6 +17077,18 @@
   ::after/right: <inset: 0>
   ::after/top: <inset: 0>
   ::after/z-index: 0
+  ::before/background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E")
+  ::before/background-size: 160px 160px
+  ::before/bottom: <inset: 0>
+  ::before/content: ""
+  ::before/inset: 0
+  ::before/left: <inset: 0>
+  ::before/opacity: 0.03
+  ::before/pointer-events: none
+  ::before/position: absolute
+  ::before/right: <inset: 0>
+  ::before/top: <inset: 0>
+  ::before/z-index: 1
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>
   ::selection/background-image: <background: #b31a54>
@@ -26651,6 +26727,10 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
+  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards
+  animation-delay: 60ms
+  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   box-sizing: border-box
   color: #6e5a4d
   font-family: 'Switzer', system-ui, sans-serif
@@ -26700,10 +26780,10 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
-  animation: shimmerMove 5s linear infinite
-  animation-delay: <animation: shimmerMove 5s linear infinite>
-  animation-duration: <animation: shimmerMove 5s linear infinite>
-  animation-iteration-count: <animation: shimmerMove 5s linear infinite>
+  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite
+  animation-delay: 120ms, 0s
+  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite>
+  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite>
   background: linear-gradient( 100deg, #241a16 20%, #b31a54 40%, #1f7a52 60%, #241a16 80% )
   background-clip: text
   background-image: <background: linear-gradient( 100deg, #241a16 20%, #b31a54 40%, #1f7a52 60%, #241a16 80% )>
@@ -26801,6 +26881,10 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
+  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards
+  animation-delay: 190ms
+  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   box-sizing: border-box
   color: #5c4b40
   font-size: 15px
@@ -26846,6 +26930,10 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
+  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards
+  animation-delay: 260ms
+  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   box-sizing: border-box
   display: grid
   gap: 8px
@@ -26886,6 +26974,19 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::before/background: linear-gradient(90deg, transparent, #b31a54, transparent)
+  ::before/background-clip: <background: linear-gradient(90deg, transparent, #b31a54, transparent)>
+  ::before/background-image: <background: linear-gradient(90deg, transparent, #b31a54, transparent)>
+  ::before/background-size: <background: linear-gradient(90deg, transparent, #b31a54, transparent)>
+  ::before/content: ""
+  ::before/height: 1px
+  ::before/left: 12%
+  ::before/opacity: 0
+  ::before/position: absolute
+  ::before/right: 12%
+  ::before/top: 0
+  ::before/transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1)
+  ::before/transition-duration: <transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1)>
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>
   ::selection/background-image: <background: #b31a54>
@@ -26910,9 +27011,13 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
+  overflow: hidden
+  overflow-x: <overflow: hidden>
+  overflow-y: <overflow: hidden>
   padding: 12px 16px
   padding-bottom: <padding: 12px 16px>
   padding-left: <padding: 12px 16px>
+  position: relative
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   text-align: left
@@ -26922,13 +27027,16 @@
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
+    ::before/opacity: 1
     background: #e7dfd2
     background-clip: <background: #e7dfd2>
     background-image: <background: #e7dfd2>
     background-size: <background: #e7dfd2>
     border-color: rgba(179, 26, 84, 0.55)
+    box-shadow: 0 8px 30px rgba(50, 36, 28, 0.10)
     transform: translateY(-2px)
   :focus-visible
+    ::before/opacity: 1
     outline: 2px solid #b31a54
     outline-offset: 2px
 
@@ -27168,6 +27276,19 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::before/background: linear-gradient(90deg, transparent, #b31a54, transparent)
+  ::before/background-clip: <background: linear-gradient(90deg, transparent, #b31a54, transparent)>
+  ::before/background-image: <background: linear-gradient(90deg, transparent, #b31a54, transparent)>
+  ::before/background-size: <background: linear-gradient(90deg, transparent, #b31a54, transparent)>
+  ::before/content: ""
+  ::before/height: 1px
+  ::before/left: 12%
+  ::before/opacity: 0
+  ::before/position: absolute
+  ::before/right: 12%
+  ::before/top: 0
+  ::before/transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1)
+  ::before/transition-duration: <transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1)>
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>
   ::selection/background-image: <background: #b31a54>
@@ -27192,9 +27313,13 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
+  overflow: hidden
+  overflow-x: <overflow: hidden>
+  overflow-y: <overflow: hidden>
   padding: 12px 16px
   padding-bottom: <padding: 12px 16px>
   padding-left: <padding: 12px 16px>
+  position: relative
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   text-align: left
@@ -27204,13 +27329,16 @@
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
+    ::before/opacity: 1
     background: #e7dfd2
     background-clip: <background: #e7dfd2>
     background-image: <background: #e7dfd2>
     background-size: <background: #e7dfd2>
     border-color: rgba(179, 26, 84, 0.55)
+    box-shadow: 0 8px 30px rgba(50, 36, 28, 0.10)
     transform: translateY(-2px)
   :focus-visible
+    ::before/opacity: 1
     outline: 2px solid #b31a54
     outline-offset: 2px
 
@@ -37920,6 +38048,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
+  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
 
 [203] h2.empty-title.text-shimmer
   ::after/animation-duration: 0.01ms
@@ -37931,8 +38061,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: shimmerMove 5s linear infinite>
-  - animation-iteration-count: <animation: shimmerMove 5s linear infinite>
+  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite>
+  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite>
 
 [204] span.empty-title-accent
   ::after/animation-duration: 0.01ms
@@ -37955,6 +38085,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
+  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
 
 [206] div.starter-grid
   ::after/animation-duration: 0.01ms
@@ -37966,6 +38098,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
+  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
 
 [207] button.starter-card
   ::after/animation-duration: 0.01ms
@@ -37979,6 +38113,7 @@
   transition-duration: 0.01ms
   :hover
     transform: none
+  - ::before/transition-duration: <transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1)>
   - transition-duration: <transition: border-color 120ms cubic-bezier(0.16, 1, 0.3, 1), transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease>
   :hover
   - transform: translateY(-2px)
@@ -38050,6 +38185,7 @@
   transition-duration: 0.01ms
   :hover
     transform: none
+  - ::before/transition-duration: <transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1)>
   - transition-duration: <transition: border-color 120ms cubic-bezier(0.16, 1, 0.3, 1), transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease>
   :hover
   - transform: translateY(-2px)
@@ -41913,6 +42049,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
+  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
 
 [550] h2.empty-title.text-shimmer
   ::after/animation-duration: 0.01ms
@@ -41924,8 +42062,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: shimmerMove 5s linear infinite>
-  - animation-iteration-count: <animation: shimmerMove 5s linear infinite>
+  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite>
+  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite>
 
 [551] span.empty-title-accent
   ::after/animation-duration: 0.01ms
@@ -41948,6 +42086,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
+  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
 
 [553] div.starter-grid
   ::after/animation-duration: 0.01ms
@@ -41959,6 +42099,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
+  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
 
 [554] button.starter-card
   ::after/animation-duration: 0.01ms
@@ -41972,6 +42114,7 @@
   transition-duration: 0.01ms
   :hover
     transform: none
+  - ::before/transition-duration: <transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1)>
   - transition-duration: <transition: border-color 120ms cubic-bezier(0.16, 1, 0.3, 1), transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease>
   :hover
   - transform: translateY(-2px)
@@ -42043,6 +42186,7 @@
   transition-duration: 0.01ms
   :hover
     transform: none
+  - ::before/transition-duration: <transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1)>
   - transition-duration: <transition: border-color 120ms cubic-bezier(0.16, 1, 0.3, 1), transform 120ms cubic-bezier(0.16, 1, 0.3, 1), background 120ms ease>
   :hover
   - transform: translateY(-2px)
@@ -43885,6 +44029,7 @@ cmdkIn: from { opacity: 0; transform: translateY(-10px) scale(0.98); } to { opac
 earringSwing: 0%, 100% { transform: rotate(-3.5deg); } 50% { transform: rotate(3.5deg); }
 earringSwingActive: 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); }
 emptyFloat: 0%, 100% { transform: translateY(0) scale(1); } 50% { transform: translateY(-8px) scale(1.02); }
+emptyRise: from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); }
 fadeIn: from { opacity: 0; } to { opacity: 1; }
 logoPulse: 0%, 100% { transform: scale(1); opacity: 0.85; box-shadow: 0 0 30px var(--primary-glow); } 50% { transform: scale(1.06); opacity: 1; box-shadow: 0 0 60px var(--primary-glow); }
 micPulse: 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 40%, transparent); } 50% { box-shadow: 0 0 0 6px transparent; }
@@ -43929,6 +44074,8 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --gradient-emerald: linear-gradient(135deg, #6fd3a6 0%, #94e2be 100%)
   --gradient-primary: linear-gradient(135deg, #f08aa3 0%, #e0637f 100%)
   --gradient-warm: radial-gradient(36% 28% at 12% -4%, rgba(240, 138, 163, 0.20) 0%, transparent 68%), radial-gradient(70% 56% at 18% 2%, rgba(240, 138, 163, 0.09) 0%, transparent 72%), radial-gradient(60% 50% at 92% 104%, rgba(111, 211, 166, 0.08) 0%, transparent 70%), radial-gradient(120% 100% at 50% 45%, transparent 46%, rgba(120, 92, 64, 0.09) 100%)
+  --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E")
+  --grain-opacity: 0.055
   --info: #8fc9d6
   --measure: 74ch
   --primary: #f08aa3
@@ -43983,6 +44130,7 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --z-chat: 3
   --z-cmdk: 300
   --z-earring: 4
+  --z-grain: 1
   --z-in-chat-control: 80
   --z-panel: 70
   --z-panel-overlay: 60
@@ -44020,6 +44168,8 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --gradient-emerald: linear-gradient(135deg, #1f7a52 0%, #3f9670 100%)
   --gradient-primary: linear-gradient(135deg, #b31a54 0%, #8f1242 100%)
   --gradient-warm: radial-gradient(38% 30% at 12% -4%, rgba(179, 26, 84, 0.14) 0%, transparent 68%), radial-gradient(72% 58% at 18% 2%, rgba(179, 26, 84, 0.07) 0%, transparent 72%), radial-gradient(62% 52% at 92% 104%, rgba(31, 122, 82, 0.06) 0%, transparent 70%), radial-gradient(120% 100% at 50% 50%, transparent 42%, rgba(0, 0, 0, 0.34) 100%)
+  --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E")
+  --grain-opacity: 0.03
   --info: #1f6675
   --measure: 74ch
   --primary: #b31a54
@@ -44074,6 +44224,7 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --z-chat: 3
   --z-cmdk: 300
   --z-earring: 4
+  --z-grain: 1
   --z-in-chat-control: 80
   --z-panel: 70
   --z-panel-overlay: 60

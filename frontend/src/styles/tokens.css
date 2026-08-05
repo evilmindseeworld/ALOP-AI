@@ -163,6 +163,36 @@
    * That containment is why a copy button at 80 does not cover a panel at 70.
    */
   --z-behind: 0;        /* .app-root::after — background wash            */
+  --z-grain: 1;         /* .app-root::before — grain, ABOVE the wash     */
+
+  /* Film grain, as one inline SVG.
+   *
+   * This is here to solve a specific problem, not for decoration. A wide, low
+   * -alpha gradient across a dark surface crosses very few 8-bit steps over
+   * hundreds of pixels, and the eye reads those steps as concentric bands.
+   * That is why dark carried no texture at all: the previous attempt was a
+   * repeating-linear-gradient wood grain, which is a PATTERN, and a regular
+   * pattern over a gradient makes banding worse by giving it an edge to
+   * align to.
+   *
+   * Fractal noise is the opposite. It is aperiodic, so it dithers the steps
+   * apart instead of reinforcing them — the same trick every image encoder
+   * uses. feColorMatrix desaturates it, so it never tints the surface it sits
+   * on and one asset serves both themes.
+   *
+   * baseFrequency 0.82 puts the grain just above one pixel per cell at 1x, so
+   * it reads as texture rather than as static, and stitchTiles keeps the seams
+   * invisible when it tiles.
+   *
+   * Inline rather than a file: it is under 400 bytes, and a separate request
+   * for the background of the first paint is a worse trade than the bytes. */
+  --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E");
+  /* Measured, not chosen. feTurbulence emits noise in the ALPHA channel as
+   * well as in colour, so the layer has real coverage rather than being a
+   * neutral 50% grey — at 0.42 it lifted the black level across the whole app
+   * and the surface went milky. Grain is supposed to be invisible until you
+   * look for it. */
+  --grain-opacity: 0.055;
   --z-sticky-label: 1;  /* .chat-group-label — scoped INSIDE .chat-list  */
   --z-chat: 3;          /* .chat-main — creates a stacking context       */
   --z-in-chat-control: 80; /* .code-copy-btn — scoped INSIDE --z-chat    */
@@ -326,4 +356,9 @@
       rgba(107, 84, 51, 0.012) 5px, rgba(107, 84, 51, 0.012) 6px
     );
   --woody: var(--texture);
+
+  /* Light needs almost none: a warm paper surface already carries --texture,
+   * and its gradient spans a much smaller luminance range than the dark one,
+   * so it has far less to band. */
+  --grain-opacity: 0.03;
 }

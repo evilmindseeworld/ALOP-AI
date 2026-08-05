@@ -33,10 +33,42 @@
     background var(--dur-fast) ease;
 }
 
+/* A highlight along the top edge, as if the card caught the light source the
+ * background wash establishes top-left. It is a ::before rather than a
+ * border-top, because a border changes the box and would shift the text by a
+ * pixel on hover — the single most common way a hover effect reads as broken.
+ *
+ * Absolutely positioned, so .starter-card needs a positioning context; it did
+ * not have one before. */
+.starter-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.starter-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--primary), transparent);
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
 .starter-card:hover {
   border-color: var(--border-focus);
   background: var(--surface-3);
   transform: translateY(-2px);
+  /* Lifted, so it casts. Without the shadow the translate reads as the card
+   * having jumped rather than risen. */
+  box-shadow: var(--shadow-md);
+}
+
+.starter-card:hover::before,
+.starter-card:focus-visible::before {
+  opacity: 1;
 }
 
 .starter-icon {

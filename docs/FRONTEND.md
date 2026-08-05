@@ -20,6 +20,7 @@ The scale, lowest to highest:
 | Token | Value | Owner |
 |---|---|---|
 | `--z-behind` | 0 | `.app-root::after` background wash |
+| `--z-grain` | 1 | `.app-root::before` film grain — **above** the wash |
 | `--z-chat` | 3 | `.chat-main` — **creates a stacking context** |
 | `--z-earring` | 4 | decoration: above chat, below every menu |
 | `--z-sidebar` | 10 | `.sidebar` (desktop) |
@@ -35,6 +36,13 @@ The scale, lowest to highest:
 named had already been deleted. A scale that lists layers which do not exist is
 worse than a long one — it invites someone to slot a new element "between" two
 phantoms.
+
+`--z-grain` looks like it could be `--z-behind` and cannot. Noise dithers a
+gradient's 8-bit steps apart, and it can only do that from **above** — beneath
+the wash, the gradient paints over it and the banding it exists to break is
+untouched. It is a separate element from the wash for a second reason: `::after`
+is animated, and scaling noise makes the grid resample every frame, so the
+surface looks like it is boiling.
 
 ### The trap that keeps catching people
 

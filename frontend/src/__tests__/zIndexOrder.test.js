@@ -38,6 +38,11 @@ describe("z-index token scale", () => {
 "--z-behind",
         "--z-camera",
         "--z-chat",
+        // The grain sits ABOVE the wash and below every piece of content, so
+        // it dithers the gradient rather than being dithered by it. Banding is
+        // what happens when a gradient crosses many steps in few pixels; noise
+        // on top is the standard fix, and it only works from on top.
+        "--z-grain",
         "--z-cmdk",
         "--z-earring",
 "--z-in-chat-control",
@@ -84,6 +89,7 @@ describe("stacking order invariants", () => {
   // failure names the two layers that inverted rather than dumping the array.
   const ascending = [
     "--z-behind",
+    "--z-grain",
     "--z-chat",
     "--z-earring",
     "--z-sidebar",

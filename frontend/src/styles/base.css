@@ -76,6 +76,34 @@ body {
   100% { opacity: 1; transform: scale(1.06); }
 }
 
+/* The grain, on its own layer ABOVE the wash and below every piece of content.
+ *
+ * On top is the whole point. Noise dithers a gradient's 8-bit steps apart, and
+ * it can only do that from above — underneath, the gradient paints over it and
+ * the banding it was there to break is untouched.
+ *
+ * It is also deliberately NOT on ::after with the wash. ::after is animated,
+ * and scaling noise makes it crawl: the grid resamples every frame and the
+ * result is a surface that looks like it is boiling. Static layer, animated
+ * layer, separate elements.
+ *
+ * No transition either. This element never changes, and a transition on it
+ * would repaint a full-viewport layer on every theme toggle for no visible
+ * gain — the grain looks identical in both themes by construction, because
+ * feColorMatrix desaturates it. */
+.app-root::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-grain);
+  pointer-events: none;
+  background-image: var(--grain-image);
+  opacity: var(--grain-opacity);
+  /* The generated pattern is authored at 1x. Without this it doubles on a
+   * retina display and reads as visible speckle instead of texture. */
+  background-size: 160px 160px;
+}
+
 /* Both were div elements the old background system painted through. The
  * gradient lives on ::after now; these stay in the markup only because the
  * overlay window and the loader reuse the same tree. */

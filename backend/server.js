@@ -280,6 +280,7 @@ const { runAgentLoop } = require('./lib/agent-loop');
 const { assertSafeUrl } = require('./lib/url-guard');
 const { checkLinks } = require('./lib/link-check');
 const { extractPageSignal } = require('./lib/page-extract');
+const { settleByDeadline } = require('./lib/deadline');
 const { detectRegion, regionHint } = require('./lib/region');
 const { firstWithResults, toolMessages, summariseProbe } = require('./lib/council-tools');
 const { parseToolRequests } = require('./lib/tool-protocol');
@@ -390,7 +391,48 @@ const toolSearch = async (query) => {
 // ===== COMPREHENSIVE SEARCH =====
 const comprehensiveSearch = async (query, needsWiki) => {
   const cached = getCachedSearch(query); if (cached) return cached;
-  const [tavilyResult, braveResults, googleResults, googleImages, wikiContent] = await Promise.all([searchTavily(query), searchBrave(query), searchGoogleWeb(query), searchGoogleImages(query), needsWiki ? searchWikipedia(query) : Promise.resolve('')]);
+
+  /* THE SEARCH WHIP, and it is the same idea runCouncilWithWhip already uses
+   * for models: take what has arrived, do not wait for stragglers.
+   *
+   * This was one Promise.all over five providers, which made it exactly as slow
+   * as the slowest of them — and their own timeouts are 7-8 seconds. Brave
+   * answering in 300ms with everything the question needed still cost the user
+   * eight seconds if Google was having a bad day.
+   *
+   * `enough` resolves the moment there are eight web results in hand. Eight is
+   * past the six the council is ever shown, so waiting longer buys nothing that
+   * reaches the answer.
+   *
+   * 3.5s is the hard stop. Anything still outstanding is dropped and its
+   * provider simply does not contribute to this turn. */
+  const { results: [tavilyResult, braveResults, googleResults, googleImages, wikiContent], waited, pending } =
+    await settleByDeadline(
+      [
+        { promise: searchTavily(query), fallback: { answer: '', results: [], images: [] } },
+        { promise: searchBrave(query), fallback: [] },
+        { promise: searchGoogleWeb(query), fallback: [] },
+        { promise: searchGoogleImages(query), fallback: [] },
+        { promise: needsWiki ? searchWikipedia(query) : Promise.resolve(''), fallback: '' },
+      ],
+      {
+        deadlineMs: 3500,
+        // TWO conditions, and the second is the one that took a measurement to
+        // find. Volume alone let Brave's ten results resolve the whole fan-out
+        // at 400ms and throw away Tavily's synthesised ANSWER, which landed at
+        // 600ms and is the single most useful thing any provider returns.
+        // Saving 200ms by discarding the best source is not a speed win.
+        //
+        // Requiring two providers is also what makes the results diverse, which
+        // is the reason for having five of them at all.
+        enough: ([tav, brave, google]) => {
+          const counts = [tav && tav.results ? tav.results.length : 0, brave?.length || 0, google?.length || 0];
+          const reporting = counts.filter((n) => n > 0).length;
+          return reporting >= 2 && counts.reduce((a, b) => a + b, 0) >= 8;
+        },
+      },
+    );
+  if (pending > 0) console.log(`[SEARCH] answered in ${waited}ms with ${pending} provider(s) still outstanding`);
   const td = Array.isArray(tavilyResult) ? { answer:'',results:[],images:[] } : tavilyResult;
   const sources = [], allImages = []; let ctx = '';
   if (td.answer) ctx += `TAVILY ANSWER: ${td.answer}\n\n---\n\n`;
@@ -400,7 +442,18 @@ const comprehensiveSearch = async (query, needsWiki) => {
   if (googleResults.length > 0) { ctx += `GOOGLE:\n${googleResults.map((r,i) => `SOURCE ${i+1}:\nTitle: ${r.title}\nURL: ${r.url}\nContent: ${r.description}`).join('\n\n---\n\n')}\n\n---\n\n`; googleResults.forEach(r => { if (!sources.find(s => s.url === r.url)) sources.push({title:r.title,url:r.url}); }); }
   if (googleImages.length > 0) allImages.push(...googleImages.map(img => img.url).filter(u => u && u.startsWith('http')));
   if (wikiContent) ctx += `WIKIPEDIA:\n${wikiContent}\n\n---\n\n`;
-  if (sources.length > 0) { const pc = await readPageContent(sources[0].url); if (pc.length > 200) ctx += `FULL PAGE (${sources[0].url}):\n${pc}\n\n---\n\n`; }
+  // The full read of the top result, on a leash. It used to be an unbounded
+  // await after the fan-out had already finished — so a slow page added its own
+  // six seconds on top of the search, in series, for a nice-to-have. It is
+  // extra depth on one source; the snippets already carry the answer often
+  // enough that waiting is the wrong trade.
+  if (sources.length > 0) {
+    const { results: [pc] } = await settleByDeadline(
+      [{ promise: readPageContent(sources[0].url), fallback: '' }],
+      { deadlineMs: 2500 },
+    );
+    if (pc && pc.length > 200) ctx += `FULL PAGE (${sources[0].url}):\n${pc}\n\n---\n\n`;
+  }
   if (allImages.length > 0) { const unique = [...new Set(allImages)].slice(0,5); ctx += `IMAGES:\n${unique.map((u,i) => `IMAGE ${i+1}: ${u}`).join('\n')}\n\n---\n\n`; }
   const found = sources.length > 0 || !!wikiContent || !!td.answer;
   const result = { context: ctx.trim(), sources, found, images: allImages };
@@ -790,8 +843,14 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
      *
      * Not awaited here. Each branch awaits the one it needs, so a memory
      * question never blocks on the search decision finishing. */
-    const memoryP = imageContext ? Promise.resolve(false) : isMemoryOrReferenceQuestion(pv.value).catch(() => false);
-    const searchQueryP = imageContext ? Promise.resolve(null) : getSearchQuery(pv.value, convSummary, region).catch(() => null);
+    // A greeting is decided by a regex in classifyRequest before either of
+    // these runs, and then answered by a branch that reads neither. Paying two
+    // model round trips to route "hi" was pure latency on the cheapest possible
+    // turn — and greetings are disproportionately a user's FIRST message, which
+    // is the one that forms their impression of how fast this is.
+    const skipRouter = Boolean(imageContext) || selection.category === 'greeting';
+    const memoryP = skipRouter ? Promise.resolve(false) : isMemoryOrReferenceQuestion(pv.value).catch(() => false);
+    const searchQueryP = skipRouter ? Promise.resolve(null) : getSearchQuery(pv.value, convSummary, region).catch(() => null);
 
     if (await memoryP) {
       console.log('[COUNCIL] Memory question.');

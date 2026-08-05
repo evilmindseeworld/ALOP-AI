@@ -83,6 +83,40 @@ describe("stylesheet manifest", () => {
     expect(imported).not.toContain("obsidian");
   });
 
+  /**
+   * FRONTEND.md §2 prints this same order, and it is the first thing anyone
+   * touching the frontend reads. It sat wrong for five commits: it still listed
+   * `skeuomorphism` and `obsidian`, deleted in 680679a, and still claimed
+   * fifteen files in a manifest that holds fourteen. Nobody noticed because
+   * nothing compared the two — the doc described itself as "the real handoff"
+   * while naming two stylesheets that did not exist.
+   *
+   * Documentation that no test reads is a comment on a different file. This
+   * parses the fenced block out of §2 and asserts it against App.css, so the
+   * next person to add a stylesheet cannot land it doc-less.
+   */
+  it("matches the order printed in docs/FRONTEND.md §2", () => {
+    // Normalised: this file is edited on Windows and git may hand back CRLF,
+    // which silently breaks every anchored match below.
+    const doc = readFileSync(join(here, "..", "..", "..", "docs", "FRONTEND.md"), "utf8").replace(/\r\n/g, "\n");
+    const section = doc.split(/^## /m).find((s) => s.startsWith("2."));
+    expect(section, "FRONTEND.md has no section 2").toBeTruthy();
+
+    const fence = section.match(/```\n([\s\S]*?)```/);
+    expect(fence, "FRONTEND.md §2 no longer prints the manifest in a fenced block").toBeTruthy();
+
+    const documented = fence[1]
+      .split(/[\n→]/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    expect(
+      documented,
+      "docs/FRONTEND.md §2 disagrees with src/App.css. Update the doc in the " +
+      "same commit as the manifest — that is the whole point of this test."
+    ).toEqual(EXPECTED);
+  });
+
   it("contains nothing but imports and comments", () => {
     // The whole point of the split is that there is no bottom of App.css to
     // append a rule to. A rule here would recreate it.

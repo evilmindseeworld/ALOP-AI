@@ -13,6 +13,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import MagneticButton from "@/components/ui/MagneticButton";
 import Earring from "./components/Earring";
 import Icon, { ICON_NAMES } from "./components/Icon";
 import MessageList from "./components/MessageList";
@@ -125,6 +126,38 @@ const Primitives = () => (
       <div style={{ position: "relative", height: 190, width: 280 }}>
         <Earring side="left" active />
         <Earring side="right" active />
+      </div>
+    </Section>
+
+    {/* The header buttons are MagneticButton, not <button> — they lean toward the
+     * cursor. It is the one motion primitive in components/ui/ the app actually
+     * mounts, and it was missing here, so its rest state was the only one any
+     * screenshot had ever shown. Hover these. */}
+    <Section title="Magnetic button" note="What the header controls really are. Springs toward the pointer; snaps back on leave.">
+      <div className="app-root dark" style={{ display: "flex", gap: 12, padding: 16, borderRadius: 12, border: "1px solid rgba(255,255,255,0.12)" }}>
+        <MagneticButton className="upgrade-btn" ariaLabel="Upgrade to Pro">
+          <Icon name="crown" size={14} /> <span className="upgrade-label">Upgrade</span>
+        </MagneticButton>
+        <MagneticButton className="icon-btn" ariaLabel="Theme">
+          <Icon name="moon" size={17} />
+        </MagneticButton>
+        <MagneticButton className="icon-btn" ariaLabel="Settings" disabled>
+          <Icon name="settings" size={17} />
+        </MagneticButton>
+      </div>
+    </Section>
+
+    {/* The skip link is invisible until focused — `transform: translateY(-200%)`,
+     * not `display: none`, because a hidden link cannot be focused and a link
+     * that cannot be focused cannot be skipped to. A gallery that rendered it
+     * honestly would render nothing, so this frame pins it to its focused
+     * position. The mechanism is asserted in tests; this is here so the
+     * focused appearance is reviewable at all. */}
+    <Section title="Skip link" note="Shown in its focused position. In the app it sits off-screen until Tab reaches it.">
+      <div className="app-root dark" style={{ position: "relative", height: 78, width: 320, borderRadius: 12, overflow: "hidden", border: "1px solid rgba(255,255,255,0.12)" }}>
+        <a className="skip-link" href="#transcript" style={{ transform: "translateY(0)" }}>
+          Skip to the conversation
+        </a>
       </div>
     </Section>
 
@@ -278,7 +311,22 @@ const SAMPLE_CHATS = [
   { id: "4", title: "Postgres or Mongo for a social app" },
 ];
 
-const LiveChrome = ({ theme, empty = false }) => (
+/** A 1×1 PNG, enough to prove the attachment thumbnail's box without a fixture file. */
+const SAMPLE_ATTACHMENT =
+  "data:image/svg+xml;utf8," +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"><rect width="120" height="80" fill="#3b2f4a"/><circle cx="60" cy="40" r="22" fill="#e6b8c8"/></svg>',
+  );
+
+/**
+ * @param streaming  the council is answering: ornament lit, transcript typing,
+ *                   composer showing Stop instead of Send. This is the state
+ *                   §5 of the overhaul added and the one screenshot nobody had.
+ * @param loaded     composer carrying an attachment and dictating — the two
+ *                   §4 states that only appear mid-interaction.
+ * @param collapsed  the 56px sidebar rail from §2.
+ */
+const LiveChrome = ({ theme, empty = false, streaming = false, loaded = false, collapsed = false, label }) => (
   <figure style={{ margin: "0 24px 28px" }}>
     <figcaption
       style={{
@@ -290,7 +338,7 @@ const LiveChrome = ({ theme, empty = false }) => (
       }}
     >
       Live components — {theme}
-      {empty ? " — empty state" : ""}
+      {label ? ` — ${label}` : empty ? " — empty state" : ""}
     </figcaption>
     <div
       className={`app-root ${theme}`}
@@ -303,6 +351,9 @@ const LiveChrome = ({ theme, empty = false }) => (
         border: "1px solid rgba(255,255,255,0.12)",
       }}
     >
+      <a className="skip-link" href="#transcript">
+        Skip to the conversation
+      </a>
       <div className="app-shell">
        <div className="app-frame">
         <header className="app-header">
@@ -341,7 +392,7 @@ const LiveChrome = ({ theme, empty = false }) => (
             onRename={() => {}}
             onPin={() => {}}
             onFavorite={() => {}}
-            collapsed={false}
+            collapsed={collapsed}
             mobileOpen={false}
             setMobileOpen={() => {}}
             onExpand={() => {}}
@@ -351,14 +402,14 @@ const LiveChrome = ({ theme, empty = false }) => (
           />
 
           <div className="chat-main">
-            <Earring side="left" />
-            <Earring side="right" />
+            <Earring side="left" active={streaming} />
+            <Earring side="right" active={streaming} />
 
             <div className="chat-content">
               <div className="scroll-wrapper">
                 <MessageList
                   messages={empty ? [] : SAMPLE_MESSAGES}
-                  status="idle"
+                  status={streaming ? "streaming" : "idle"}
                   feedback={{ a1: "up" }}
                   onCopy={() => {}}
                   onFeedback={() => {}}
@@ -382,11 +433,11 @@ const LiveChrome = ({ theme, empty = false }) => (
                 disabled={false}
                 onFileSelect={() => {}}
                 onStartCamera={() => {}}
-                isListening={false}
+                isListening={loaded}
                 toggleListening={() => {}}
-                attachedImage={null}
+                attachedImage={loaded ? SAMPLE_ATTACHMENT : null}
                 onClearAttachment={() => {}}
-                isGenerating={false}
+                isGenerating={streaming}
                 onStop={() => {}}
               />
             </div>
@@ -431,6 +482,13 @@ const Gallery = () => (
     <LiveChrome theme="dark" />
     <LiveChrome theme="dark" empty />
     <LiveChrome theme="light" />
+
+    {/* The three states the overhaul added that only exist mid-interaction, and
+        which no screenshot covered until §7. Idle chrome is what everyone sees;
+        these are what the work actually changed. */}
+    <LiveChrome theme="dark" streaming label="council answering (§5 ornament, typing, Stop)" />
+    <LiveChrome theme="dark" loaded label="composer loaded (§4 attachment + dictation)" />
+    <LiveChrome theme="light" collapsed label="sidebar rail, 56px (§2)" />
 
     <Frame
       label="Dark — Sakura Obsidian (fixture)"

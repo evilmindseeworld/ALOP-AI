@@ -74,21 +74,39 @@ array in the test. The test is the spec.
 
 ---
 
-## 2. The stylesheet is fifteen files, and the import order is the cascade
+## 2. The stylesheet is fourteen files, and the import order is the cascade
 
-`src/App.css` is a 31-line **import manifest**. It contains no rules.
+`src/App.css` is a 40-line **import manifest**. It contains no rules.
 
 ```
-tokens → base → layout → sidebar → chat → composer → palette →
-chat-controls → panels → overlay → utilities → skeuomorphism →
-obsidian → decoration → code-blocks
+tokens → base → layout → sidebar → chat → markdown → composer →
+palette → chat-controls → panels → overlay → decoration →
+code-blocks → utilities
 ```
 
-`skeuomorphism` and `obsidian` are two whole-app design passes — physical
-surfaces, then a darker palette — and they win by being imported late. Moving a
-line in the manifest changes what renders. `cssImportOrder.test.js` asserts the
-list, that every file on disk is imported and no phantom is, and that App.css
-contains nothing but imports.
+Fifteen files sit in `src/styles/`; fourteen are in that list. The fifteenth is
+`ui-reset.css`, which belongs to the Tailwind layer stack rather than this
+cascade — `tailwind.css` imports it into `layer(base)` so unlayered App.css
+still outranks it. See §4.
+
+**Only two positions in that order are load-bearing**, and both are asserted
+separately: `tokens` first, because every file below dereferences it, and
+`utilities` last, because its media queries have to beat component defaults at
+equal specificity without `!important`. The twelve in between own their
+components outright and do not override each other.
+
+That is a change from how this file used to read. The manifest once ended with
+`skeuomorphism` and `obsidian` — two whole-app design passes, inset bevels and
+then a near-black palette that redeclared the entire token set — each winning by
+being imported after the file it contradicted. Both were deleted in `680679a`.
+That is why the tokens at the top of the list used to be dead in the shipping
+theme, why `--text-muted` ended up darker than `--text-subtle`, and why a rule's
+real value could not be known by reading the file that declared it. **If you are
+reading a rule and wondering what overrides it later: nothing does.**
+
+`cssImportOrder.test.js` asserts the list, that every file on disk is imported
+and no phantom is, that `ui-reset` stays out, and that App.css contains nothing
+but imports.
 
 ### Why the split exists
 
@@ -98,7 +116,7 @@ came from one property: **the file had a bottom**. Appending to a 3,000-line
 stylesheet is easier than finding the rule that already exists, and the cascade
 rewards whoever appends.
 
-Fifteen files named for what they style removes the bottom. Add a rule by
+Fourteen files named for what they style removes the bottom. Add a rule by
 finding its file. If none fits, the rule probably wants a new file — say so in
 the manifest rather than pasting at the end.
 
@@ -230,19 +248,28 @@ than `#ffffff` inline.
 ## 5. Component map
 
 ```
-App.jsx                    composition only, ~520 lines
-  components/              Icon, Earring, InputBar, ChatSidebar, MessageList,
-                           CameraOverlay, Skeletons, CommandPalette, SidePanel,
-                           CodeBlock, Crescent
+App.jsx                    composition only, ~590 lines
+  components/              Icon, Earring, Crescent, InputBar, ChatSidebar,
+                           MessageList, CameraOverlay, Skeletons,
+                           CommandPalette, SidePanel, CodeBlock
   components/panels/       SettingsPanel, AdminPanel, UpgradePanel
   components/ui/           shadcn primitives (button, sheet, dialog, switch,
                            tabs, tooltip, scroll-area, dropdown-menu, command,
                            badge, separator, skeleton)
+                           plus five hand-added motion primitives — see below
   hooks/                   useChats, useBilling, useCamera, useSpeechRecognition
-  lib/                     api, format, image, storage, utils
+  lib/                     api, dom, format, image, storage, utils
   overlay/                 OverlayAssistant
   constants/               starters
 ```
+
+**Four of the five motion primitives in `components/ui/` are mounted nowhere.**
+`MagneticButton` is real — every header control is one, which is why they lean
+toward the cursor — and it is in the gallery. `AnimatedTabs`, `BorderTrail`,
+`Spotlight` and `TextShimmer` have no importer outside their own files. They are
+not in the gallery, because a gallery of things the app does not render is how
+the manifest above went stale in the first place. Delete them or use them; do
+not let them sit here being counted as a component layer.
 
 `useChats` holds the council streaming loop and is the only genuinely intricate
 piece. Read the comments on its abort path before changing it: it used to
@@ -272,6 +299,48 @@ cannot drift: a component missing from the gallery is missing from the guard.
 
 The gallery is how the dead Tailwind utilities were found. The snapshot proves
 which declaration wins; it cannot show you that a button's label is clipped.
+
+### It carries the states, not just the components
+
+Idle chrome is the easy screenshot and the least useful one — it is what
+everybody already sees. The frames that earn their place are the ones that only
+exist mid-interaction, and each names the overhaul section that introduced it:
+
+| Frame | What only it shows |
+|---|---|
+| `council answering` | ornament lit, typing bubble, composer showing Stop |
+| `composer loaded` | attachment thumbnail and the dictation-active mic |
+| `sidebar rail, 56px` | the collapsed rail, in the light theme |
+| `Magnetic button` | what the header controls actually are |
+| `Skip link` | pinned to its focused position — see below |
+
+The skip link is the one deliberate lie in the gallery. It lives at
+`translateY(-200%)` and returns to 0 on `:focus`, because a `display: none` link
+cannot be focused and a link that cannot be focused cannot be skipped to. A
+frame that rendered it honestly would render an empty box, so that frame
+overrides the transform. **The mechanism is asserted in tests; the gallery only
+shows the appearance.**
+
+### Screenshots
+
+`docs/screenshots/gallery-{1440,768,390}.webp` — full-page, at desktop, tablet
+and phone. Regenerate them whenever a frame changes:
+
+```bash
+npm run dev                        # serves /gallery.html
+# then, per width, drive a real browser (Chrome DevTools MCP or any headless
+# driver): set the viewport, full-page capture, save over the file.
+#   1440x900   → gallery-1440.webp
+#    768x1024  → gallery-768.webp
+#    390x844   → gallery-390.webp
+```
+
+**WebP at quality 80, not PNG.** The same three full-page captures are 10.5 MB
+as PNG and 1.2 MB as WebP, and this repo is public and clones with its history.
+No screenshot dependency is installed for this — 300 MB of browser binary to
+produce three images, in a repo whose whole point is that the *cascade snapshot*
+is the automated guard, is not a trade worth making. Screenshots here are for
+human review; the test suite is what fails the build.
 
 ---
 
@@ -332,15 +401,28 @@ behind it.
 
 ## 9. Known gaps
 
-- **`.app-root *` sets a transition on every element in the app**, at the same
-  specificity as each component's own rule, so it wins on source order alone.
-  It is why nine duplicate-rule groups could not be merged — consolidating them
-  to a position after it flips the winner. Worth removing, but that is a
-  behaviour change.
-- **16 duplicate top-level selectors remain**, all blocked by the above.
+Checked against the tree on 2026-08-05, not carried forward on trust. Three of
+the four gaps this section used to list were already closed, and a stale gap
+list is worse than none — it sends people to fix what is fixed.
+
 - **`CommandPalette` is still hand-rolled**, not `components/ui/command`. It
   carries a regression test for a dropped-first-keystroke bug that took a
   session to find; a swap has to keep that test passing unmodified.
 - **The overlay assistant has no tests.** It is 144 lines over
   `getDisplayMedia`, `SpeechRecognition` and `speechSynthesis`, none of which
   exist in jsdom.
+- **Four unmounted motion primitives** in `components/ui/` — see §5.
+- **Three duplicate top-level selectors remain**, down from 16: `*`,
+  `.sidebar-rail`, and the `.chat-item:hover/.focus-within .chat-actions` pair.
+  All three are two declarations of the same selector in one file, not a
+  cross-file override.
+
+### Closed, and worth not re-opening
+
+- **`.app-root *` is gone.** It set a transition on every element in the app at
+  the same specificity as each component's own rule, so it won on source order
+  alone, and it is why nine duplicate-rule groups could not be merged. Every
+  transition is now declared by the thing it animates. `base.css` keeps a
+  comment where it was, recording what it did and why it went.
+- **The `skeuomorphism` and `obsidian` passes are gone** (`680679a`). §2.
+- **13 of the 16 duplicate top-level selectors** went with `.app-root *`.

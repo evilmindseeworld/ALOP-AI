@@ -227,7 +227,16 @@ CDNs from the critical path and the GDPR exposure with them.
 
 ---
 
-## Three traps this repo will set for you
+## Four traps this repo will set for you
+
+**The local preview serves a stale build, not your source.**
+`~/.claude/launch.json` defines `alop-frontend` as `vite preview`, which serves
+`dist/`. Edit a component, reload, and you are looking at the last `npm run
+build` — with no warning, because the page renders perfectly. This cost real
+time this session: a sign-up fix was verified as *not working* three times
+before the served `index.html` turned out to reference a hashed production
+bundle. **`npm run build` first, every time.** Which is also the rule below.
+
 
 **Read the built output, not the source.** Three separate things this session
 read as correct and shipped the opposite. The CORS fix looked right and broke

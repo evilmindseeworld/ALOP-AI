@@ -1,6 +1,28 @@
-import { SignIn, useUser } from "@clerk/react";
+import { SignIn, SignUp, useUser } from "@clerk/react";
 import SakuraFrame from "./components/SakuraFrame";
 import { COUNCIL, FREE_COUNT } from "./constants/council";
+
+/**
+ * Whether the visitor asked to register.
+ *
+ * THERE WAS NO WAY TO SIGN UP. `ClerkProvider` had `signUpUrl="/"`, and `/`
+ * renders this page, which rendered `<SignIn>` unconditionally — so Clerk's
+ * own "Sign up" link went to the sign-in form. Verified against the live site:
+ * clicking it reloaded `https://alop-ai.com/` and came back to "Sign in to
+ * ALOP-AI". Email registration was unreachable; only the Google button could
+ * create an account, because OAuth signs up and signs in through one flow.
+ *
+ * That was survivable while the three development-instance accounts existed.
+ * It is not survivable through the production cutover, because a production
+ * Clerk instance is a separate user store and EVERY user has to register again.
+ *
+ * Read from the path rather than from state so the URL is shareable and a
+ * refresh keeps you where you were. `vercel.json` is what makes that safe —
+ * without a rewrite to index.html, `/sign-up` is a 404 on Vercel, which is
+ * exactly what the live site returned before this commit.
+ */
+const wantsSignUp = () =>
+  typeof window !== "undefined" && window.location.pathname.replace(/\/+$/, "") === "/sign-up";
 
 /**
  * The sign-in screen.
@@ -29,6 +51,7 @@ export default function SignInPage() {
   const { isSignedIn, isLoaded } = useUser();
   if (!isLoaded) return null;
   if (isSignedIn) return null;
+  const signUp = wantsSignUp();
 
   return (
     <div className="signin-root">
@@ -78,8 +101,17 @@ export default function SignInPage() {
           </section>
 
           <section className="signin-card">
+            {/* One shell, two cards. The hero, the plan line and the age
+                confirmation below are identical either way and are all MORE
+                load-bearing on the sign-up side — the whole argument for
+                stating the minimum age here rather than only inside the linked
+                Terms is that registration is the moment it has to be seen. */}
             <div className="signin-card-inner">
-              <SignIn fallbackRedirectUrl="/" signUpFallbackRedirectUrl="/" />
+              {signUp ? (
+                <SignUp signInUrl="/" fallbackRedirectUrl="/" />
+              ) : (
+                <SignIn signUpUrl="/sign-up" fallbackRedirectUrl="/" signUpFallbackRedirectUrl="/" />
+              )}
             </div>
             <p className="signin-plan">
               {FREE_COUNT} models free. All {COUNCIL.length} on Pro.

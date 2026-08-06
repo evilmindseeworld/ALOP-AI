@@ -600,7 +600,10 @@ const App = () => (
   <ClerkProvider
     publishableKey={import.meta.env.VITE_CLERK_PUBLISHABLE_KEY}
     signInUrl="/"
-    signUpUrl="/"
+    // Was "/", which renders the sign-in form — so Clerk's own "Sign up" link
+    // led back to sign-in and email registration was unreachable. SignInPage
+    // renders <SignUp> on this path; vercel.json rewrites it to index.html.
+    signUpUrl="/sign-up"
     afterSignInUrl="/"
     afterSignUpUrl="/"
     appearance={{

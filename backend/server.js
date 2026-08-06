@@ -154,17 +154,17 @@ const runCouncilWithWhip = async (members, messages, whipMs, quorum, tokenLimit)
 };
 
 // ===== ROUTER =====
-// Anchored, and matching the whole message. The previous pattern was an
-// unanchored alternation, so any short message merely *containing* one of these
-// fragments was routed to the greeting path — "which one?" matches "hi",
-// "you sure?" matches "yo", "summary?" matches "sup".
-const GREETING_RE = /^(hi|hello|hey|yo|sup|howdy|gm|good (morning|afternoon|evening))\b[\s!.,?]*$/i;
-
-const classifyRequest = (text, userPlan) => {
-  const members = userPlan === 'pro' ? COUNCIL : FREE_COUNCIL;
-  if (GREETING_RE.test(text.trim())) return { members: [], quorum: 0, whipMs: 5000, tokenLimit: 200, category: 'greeting' };
-  return { members, quorum: Math.min(3, members.length), whipMs: 30000, tokenLimit: 2000, category: 'council' };
-};
+// Moved to lib/router.js, where it can be called with a sentence and checked.
+// These five decisions shape a system prompt each, and a wrong one is invisible
+// in every log: the council still runs, still streams, and answers a German
+// question in French. See the header of that file for what each one gets wrong
+// when it is wrong.
+const {
+  detectLanguage,
+  wantsDetailedAnswer,
+  needsWikiCheck,
+  classifyRequest,
+} = require('./lib/router');
 
 // ===== MEMORY DETECTION =====
 const isMemoryOrReferenceQuestion = async (text) => {
@@ -192,22 +192,6 @@ const getSearchQuery = async (text, convSummary, region) => {
   if (trimmed.toUpperCase() === 'NO' || !trimmed) return null;
   return trimmed;
 };
-
-// ===== CLASSIFIERS =====
-const wantsDetailedAnswer = (text) => ['explain in detail','detailed','in depth','comprehensive','thorough','step by step','deep dive','elaborate','full explanation','essay','write a'].some(t => text.toLowerCase().includes(t));
-const needsWikiCheck = (text) => /what is|who is|history|explain|definition|meaning of|tell me about|biography|born|origin/i.test(text);
-const detectLanguage = (text) => {
-  if (/[\u0600-\u06FF]/.test(text)) return 'Arabic';
-  if (/[\u4e00-\u9fff]/.test(text)) return 'Chinese';
-  if (/[\u3040-\u30ff]/.test(text)) return 'Japanese';
-  if (/[\uac00-\ud7af]/.test(text)) return 'Korean';
-  if (/[\u0400-\u04FF]/.test(text)) return 'Russian';
-  if (/[àâçéèêëîïôûùüÿœ]/i.test(text)) return 'French';
-  if (/[äöüß]/i.test(text)) return 'German';
-  if (/[ñ¿áéíóú]/i.test(text)) return 'Spanish';
-  return 'English';
-};
-
 
 // ===== SEARCH FUNCTIONS =====
 const searchBrave = async (query) => {
@@ -767,7 +751,9 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const userPlan = user.plan || 'free';
     const isDetailed = wantsDetailedAnswer(pv.value);
     const lang = detectLanguage(pv.value);
-    const selection = classifyRequest(pv.value, userPlan);
+    // The plan decides the roster HERE, once, rather than inside the router —
+    // which is what lets the router be called with a sentence and checked.
+    const selection = classifyRequest(pv.value, userPlan === 'pro' ? COUNCIL : FREE_COUNCIL);
     const truncatedPrompt = truncatePrompt(pv.value);
     const histArr = Array.isArray(hv) ? hv : (hv.value || []);
 

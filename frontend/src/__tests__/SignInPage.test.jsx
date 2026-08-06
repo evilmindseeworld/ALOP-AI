@@ -137,7 +137,7 @@ describe("what has to be on the page whichever card is showing", () => {
       // branch, because the sign-up card is the one a new visitor sees first.
       expect(screen.getAllByRole("listitem")).toHaveLength(7);
       expect(screen.getByText("The Architect")).toBeInTheDocument();
-      expect(screen.getByText("The Oracle")).toBeInTheDocument();
+      expect(screen.getByText("The Explorer")).toBeInTheDocument();
     });
 
     it(`leaks no vendor model id into the DOM on ${label}`, () => {
@@ -157,6 +157,33 @@ describe("what has to be on the page whichever card is showing", () => {
       const { container } = render(<SignInPage />);
       for (const m of COUNCIL) {
         expect(container.textContent, `no attribution for ${m.title}`).toContain(m.company);
+      }
+    });
+
+    it(`makes no superlative claim about any seat on ${label}`, () => {
+      // The attribution is the company and nothing else. An earlier draft read
+      // "Powered by [company]'s most powerful model", which was false on two
+      // seats, unverifiable on the other five, and did not describe how the
+      // service routes — greetings never reach the council, search and fallback
+      // answer from a single model, and the whip resolves at three of seven.
+      //
+      // Under FTC standards that is a comparative performance claim needing
+      // substantiation, on a page that exists to induce a AED 30/month purchase.
+      // This test is here because the line is tempting and the objection is not
+      // obvious from reading the page.
+      at(path);
+      const { container } = render(<SignInPage />);
+      const ladder = container.querySelector(".council-ladder").textContent;
+      for (const claim of [
+        /most powerful/i,
+        /best\b/i,
+        /strongest/i,
+        /smartest/i,
+        /flagship/i,
+        /world'?s leading/i,
+        /#\s*1\b/,
+      ]) {
+        expect(ladder, `the roster is making a superlative claim: ${claim}`).not.toMatch(claim);
       }
     });
   }

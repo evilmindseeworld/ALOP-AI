@@ -79,16 +79,17 @@ export default function SignInPage() {
                 own temperature — but a seat is named for what it DOES, and
                 credited to the company behind it rather than to a model id.
                 The titles run the same axis as the numbers beside them: The
-                Architect holds to what is literally there, The Oracle is
-                furthest from it. See constants/council.js, including why two of
-                the seven blurbs deliberately do not say "most powerful". */}
+                Architect holds to what is literally there, The Explorer is
+                furthest from it. The second line is the COMPANY and nothing
+                more — constants/council.js records why there is no superlative
+                on it, and why one must not be added back. */}
             <ol className="council-ladder">
               {COUNCIL.map((m) => (
                 <li key={m.model} className={`council-row ${m.free ? "" : "is-pro"}`}>
                   <span className="council-temp">{m.temperature.toFixed(1)}</span>
                   <span className="council-seat">
                     <span className="council-name">{m.title}</span>
-                    <span className="council-blurb">{m.blurb}</span>
+                    <span className="council-blurb">{m.company}</span>
                   </span>
                   {!m.free && <span className="council-tag">Pro</span>}
                 </li>

@@ -19,9 +19,18 @@
  * advertising someone else's product. A title says what the seat is FOR.
  *
  * The titles run the same axis the temperatures do — The Architect holds to
- * what is literally there, The Oracle is furthest from it, and the five between
- * move along that line in order. That ordering is the argument the page makes:
- * seven identical models would return one answer seven times.
+ * what is literally there, The Explorer is furthest from it, and the five
+ * between move along that line in order. That ordering is the argument the page
+ * makes: seven identical models would return one answer seven times.
+ *
+ * The last seat was "The Oracle" and was renamed on evidence. Research on
+ * anthropomorphism in AI splits persona names into ones that signal a ROLE and
+ * ones that signal AUTHORITY: role names calibrate what a user expects, while
+ * authority names inflate it and are punished harder when the system is wrong.
+ * "Oracle" promises foresight, and it sat on the 0.8 seat — the most lateral,
+ * the likeliest to be wrong, and Pro-only. It was the seat most likely to
+ * disappoint wearing the name that promised most. "Explorer" carries the same
+ * lateral meaning without claiming to be right.
  *
  * The COMPANY is named and the MODEL is not. That is a real distinction and it
  * is deliberate: which vendor is behind a seat is stable and worth stating,
@@ -30,26 +39,39 @@
  *
  * ---
  *
- * `blurb` IS AN ADVERTISING CLAIM ON A PAID PRODUCT. Treat it as one.
+ * THERE IS NO SUPERLATIVE HERE, AND THAT IS DELIBERATE. DO NOT ADD ONE BACK.
  *
- * The brief was "Powered by [company]'s most powerful model" on every seat.
- * Five say that. Two do not, because for those two it is false:
+ * An earlier draft read "Powered by [company]'s most powerful model" under every
+ * seat. It was removed, and the reasons are worth keeping because the line is
+ * tempting and the objection is not obvious.
  *
- *   - GEMMA IS NOT GOOGLE'S MOST POWERFUL MODEL. Gemma is Google's open,
- *     lightweight family; Gemini is the flagship. This is not a close call or a
- *     matter of benchmark choice — the two lines exist to be different things.
- *   - KIMI K2.7 CODE IS A CODE-SPECIALISED VARIANT, not Moonshot's top general
- *     model. Its strength is real and it is not generality.
+ * 1. IT WAS FALSE ON TWO SEATS. Gemma is Google's open lightweight family, not
+ *    its flagship — Gemini is. kimi-k2.7-code is a code-specialised variant, not
+ *    Moonshot's top general model.
  *
- * The other five say "most powerful" as briefed. They are not independently
- * verified here — those model versions could not be checked — so if any turns
- * out not to be that vendor's flagship, the line has to change with it.
+ * 2. IT WAS UNVERIFIABLE ON THE OTHER FIVE. Nobody here has checked that these
+ *    versions are their vendors' flagships, and a claim you cannot check is one
+ *    you cannot defend.
  *
- * Why this is worth being careful about on a login page: the product charges
- * AED 30/month, which makes every line here a claim made to induce a purchase.
- * And this page's whole design premise, recorded through every rewrite of it,
- * is that its claims are CHECKABLE. One false superlative costs more than it
- * buys, because it makes the temperature column look like decoration too.
+ * 3. IT DID NOT MATCH HOW THE SERVICE ACTUALLY ROUTES, which is the objection
+ *    that survives even if every seat really were a flagship. Greetings never
+ *    reach the council at all. The search and Wikipedia paths answer from a
+ *    single PRIMARY_MODEL. The fallback is one model. runCouncilWithWhip
+ *    resolves at a quorum of 3, so a Pro user routinely gets three of seven and
+ *    a free user only ever has three seats. "Powered by the most powerful
+ *    model" describes none of that.
+ *
+ * Under FTC standards a line like that is a source claim AND a comparative
+ * performance claim, and both require substantiation. The product charges
+ * AED 30/month, so every line here is made to induce a purchase. And this page's
+ * whole premise — kept through every rewrite of it — is that its claims are
+ * CHECKABLE. One unverifiable superlative makes the temperature column read as
+ * decoration too, which costs more than the superlative buys.
+ *
+ * Naming the COMPANY has the marketing value anyway. Only about a quarter of
+ * AI products hide their vendors; naming them is the norm and reads as a
+ * quality signal. The company is a fact, it needs no substantiation, and it
+ * does not have to be revisited every time a model is swapped.
  *
  * ---
  *
@@ -69,7 +91,6 @@ export const COUNCIL = [
     free: false,
     title: "The Architect",
     company: "Zhipu AI",
-    blurb: "Zhipu AI's most powerful model",
   },
   {
     model: "kimi-k2.7-code",
@@ -77,10 +98,6 @@ export const COUNCIL = [
     free: true,
     title: "The Engineer",
     company: "Moonshot AI",
-    // NOT "most powerful": this is the code-specialised model, and saying
-    // otherwise would be false. The honest claim is the stronger one anyway —
-    // it says what the seat is actually good at.
-    blurb: "Moonshot AI's sharpest model for code",
   },
   {
     model: "deepseek-v4-pro",
@@ -88,7 +105,6 @@ export const COUNCIL = [
     free: false,
     title: "The Analyst",
     company: "DeepSeek",
-    blurb: "DeepSeek's most powerful model",
   },
   {
     model: "qwen3.5",
@@ -96,7 +112,6 @@ export const COUNCIL = [
     free: true,
     title: "The Strategist",
     company: "Alibaba",
-    blurb: "Alibaba's most powerful model",
   },
   {
     model: "nemotron-3-ultra",
@@ -104,7 +119,6 @@ export const COUNCIL = [
     free: false,
     title: "The Scholar",
     company: "NVIDIA",
-    blurb: "NVIDIA's most powerful model",
   },
   {
     model: "gemma4",
@@ -112,18 +126,13 @@ export const COUNCIL = [
     free: true,
     title: "The Alchemist",
     company: "Google",
-    // NOT "most powerful": Gemma is Google's open lightweight family and Gemini
-    // is the flagship. Claiming otherwise on a paid product's landing page is a
-    // false advertising claim, not a stretch.
-    blurb: "Google's open model family",
   },
   {
     model: "minimax-m3",
     temperature: 0.8,
     free: false,
-    title: "The Oracle",
+    title: "The Explorer",
     company: "MiniMax",
-    blurb: "MiniMax's most powerful model",
   },
 ]
   // Sorted by temperature so the ladder reads literal at the top and lateral at

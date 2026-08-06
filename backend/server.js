@@ -595,11 +595,8 @@ const createLimiter = (windowMs, max, msg) => rateLimit({
 // entries below exist where the floor is too generous for what the call costs.
 app.use('/api/', createLimiter(60000, 120, 'Too many requests.'));
 app.use('/api/council', createLimiter(60000, 30, 'Too many council requests.'));
-app.use('/api/quick', createLimiter(60000, 60, 'Too many quick requests.'));
-app.use('/api/vision', createLimiter(60000, 10, 'Too many vision requests.'));
 app.use('/api/overlay', createLimiter(60000, 30, 'Too many overlay requests.'));
 app.use('/api/feedback', createLimiter(60000, 30, 'Too many feedback requests.'));
-app.use('/api/image', createLimiter(60000, 10, 'Too many image requests.'));
 app.use('/api/create-checkout-session', createLimiter(300000, 5, 'Too many billing requests.'));
 app.use('/api/create-portal-session', createLimiter(300000, 5, 'Too many billing requests.'));
 app.use('/api/admin/', createLimiter(60000, 60, 'Too many admin requests.'));
@@ -617,7 +614,13 @@ app.use('/health', createLimiter(60000, 120, 'Too many requests.'));
 // so any endpoint could be made to buffer 50 MB per request. It now applies
 // only where an image can legitimately arrive; everything else gets 1 MB.
 // (The Stripe webhook is mounted above this with express.raw and is unaffected.)
-const IMAGE_ROUTES = ['/api/council', '/api/vision', '/api/overlay', '/api/image'];
+//
+// `/api/vision` and `/api/image` were on this list and have no handler. Body
+// parsing runs before routing, so a POST to either buffered 50 MB and then
+// 404'd — the ceiling was granted to a door that was not there. Their rate
+// limiters, and `/api/quick`'s, are gone with them. Nothing in the frontend
+// called any of the three.
+const IMAGE_ROUTES = ['/api/council', '/api/overlay'];
 const bigJson = express.json({ limit: '50mb' });
 const smallJson = express.json({ limit: '1mb' });
 app.use((req, res, next) => (IMAGE_ROUTES.some((p) => req.path.startsWith(p)) ? bigJson : smallJson)(req, res, next));

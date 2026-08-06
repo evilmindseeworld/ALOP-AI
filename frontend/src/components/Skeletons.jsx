@@ -14,6 +14,35 @@ export const InitialLoader = () => (
   </div>
 );
 
+/**
+ * The transcript alone, for a conversation whose messages are still arriving.
+ *
+ * Messages no longer come with the chat list — they are fetched per
+ * conversation on open — so there is now a gap where a chat is selected and its
+ * transcript is not here yet. AppSkeleton is the wrong thing to show for it:
+ * that replaces the entire application, so clicking between two conversations
+ * would blank the sidebar and the header you just clicked in.
+ *
+ * Deliberately the SAME rows as AppSkeleton's transcript, extracted rather than
+ * re-typed, so the two cannot drift into looking like different products.
+ */
+export const MessageSkeleton = () => (
+  <>
+    {Array.from({ length: 3 }, (_, i) => (
+      <div key={i} className={`msg-row ${i % 2 === 0 ? "assistant" : "user"}`}>
+        <div
+          className="skeleton-block"
+          style={{ width: "36px", height: "36px", borderRadius: "10px", flexShrink: 0 }}
+        />
+        <div className="msg-content" style={{ gap: "10px", display: "flex", flexDirection: "column" }}>
+          <div className="skeleton-block" style={{ height: "16px", width: "70%" }} />
+          <div className="skeleton-block" style={{ height: "16px", width: "85%" }} />
+        </div>
+      </div>
+    ))}
+  </>
+);
+
 export const AppSkeleton = () => (
   <div className="app-root dark">
     <div className="bg-layer" />

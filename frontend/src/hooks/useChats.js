@@ -26,6 +26,17 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
   const activeChat = useMemo(() => chats.find((c) => c.id === activeChatId), [chats, activeChatId]);
   const activeMessages = useMemo(() => activeChat?.messages || [], [activeChat]);
 
+  /**
+   * The open conversation's transcript has not arrived yet.
+   *
+   * `undefined` means "not fetched"; `[]` means "genuinely empty". Without that
+   * distinction the two are the same to the UI, and opening a conversation would
+   * show the empty state — "ask me anything" over a chat with fifty messages in
+   * it — until the fetch landed. On a cold backend that is twenty seconds of
+   * telling the user their history is gone.
+   */
+  const isLoadingMessages = Boolean(activeChat) && activeChat.messages === undefined;
+
   /** Pinned first, then favourites, then most recently posted in. */
   const sortedChats = useMemo(
     () =>
@@ -60,7 +71,11 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
     try {
       const res = await apiCall("/api/chats");
       const data = await res.json();
-      if (Array.isArray(data)) setChats(data);
+      // `{chats, hasMore}` now; a bare array was the old shape. Both are read so
+      // a client running against an older deploy — or a cached bundle mid-roll —
+      // still lists conversations instead of showing none.
+      const list = Array.isArray(data) ? data : data?.chats;
+      if (Array.isArray(list)) setChats(list);
     } catch (e) {
       console.error(e.message);
       setToast("Couldn't load your chats.");
@@ -72,6 +87,49 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
   useEffect(() => {
     if (isReady) loadChats();
   }, [isReady, loadChats]);
+
+  /**
+   * Messages arrive per conversation, not with the list.
+   *
+   * /api/chats used to return every message of every chat so the sidebar could
+   * render titles — megabytes of JSON to draw a list of rows, of which the
+   * client kept one conversation's worth and discarded the rest. The list is
+   * now metadata only and this fills in the one transcript being read.
+   *
+   * `messages === undefined` is the "not fetched yet" marker and an empty array
+   * is a genuinely empty conversation, so the two are distinguishable and a new
+   * chat never triggers a pointless request. Once loaded it stays in `chats`,
+   * so switching back to a conversation costs nothing.
+   */
+  const loadingMessagesRef = useRef(new Set());
+
+  const loadMessages = useCallback(
+    async (chatId) => {
+      // Guard against the double-invoke React does in StrictMode, and against a
+      // re-render landing while the first request is still open.
+      if (!chatId || loadingMessagesRef.current.has(chatId)) return;
+      loadingMessagesRef.current.add(chatId);
+      try {
+        const res = await apiCall(`/api/chats/${chatId}`);
+        const full = await res.json();
+        if (full && Array.isArray(full.messages)) {
+          setChats((p) => p.map((c) => (c.id === chatId ? { ...c, messages: full.messages } : c)));
+        }
+      } catch (e) {
+        console.error(e.message);
+        setToast("Couldn't load that conversation.");
+      } finally {
+        loadingMessagesRef.current.delete(chatId);
+      }
+    },
+    [apiCall, setToast]
+  );
+
+  useEffect(() => {
+    if (!isReady || !activeChatId) return;
+    const c = chats.find((x) => x.id === activeChatId);
+    if (c && c.messages === undefined) loadMessages(activeChatId);
+  }, [isReady, activeChatId, chats, loadMessages]);
 
   const updateChatMessages = useCallback(
     async (chatId, messages, saveToDb = true) => {
@@ -520,6 +578,7 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
     status,
     feedback,
     isInitialLoading,
+    isLoadingMessages,
     createChat,
     deleteChat,
     renameChat,

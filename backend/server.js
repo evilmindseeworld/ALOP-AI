@@ -1359,7 +1359,55 @@ app.post('/api/feedback', requireAuth, async (req, res) => {
 });
 
 // ===== CHATS =====
-app.get('/api/chats', requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); const { data, error } = await supabase.from('chats').select('id,user_id,title,messages,pinned,favorite,created_at,updated_at').eq('user_id', user.id).order('updated_at', { ascending: false }); if (error) throw error; res.json(data || []); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+// THE LIST DOES NOT CARRY MESSAGES, and that is the single largest payload
+// change in this file.
+//
+// It used to select `messages` for EVERY chat the user owns, on every app load,
+// to render a sidebar that displays a title and a date. A user with 50
+// conversations of 20 messages was downloading several megabytes of JSON to
+// draw 50 rows of text, over a connection that had just paid a cold start —
+// and then the client threw all but one conversation's messages away.
+//
+// Messages now come from GET /api/chats/:id, one conversation at a time, when
+// one is actually opened. `limit` and `offset` bound the list itself, because
+// "select every row belonging to this user" has no ceiling and the sidebar can
+// only show so many.
+app.get('/api/chats', requireAuth, async (req, res) => {
+  try {
+    const user = await ensureUser(req.auth.userId);
+    // Clamped rather than trusted. A caller asking for 100000 gets 100.
+    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 100);
+    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+    const { data, error } = await supabase
+      .from('chats')
+      .select('id,user_id,title,pinned,favorite,created_at,updated_at')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+    if (error) throw error;
+    // `hasMore` rather than a total count: a count is a second query over the
+    // same rows, and the only question the sidebar asks is whether to fetch
+    // another page.
+    res.json({ chats: data || [], hasMore: (data || []).length === limit, limit, offset });
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+});
+
+// One conversation, with its messages. requireOwnership re-checks the row
+// belongs to the caller before the handler runs, so this cannot become a way to
+// read someone else's transcript by guessing a UUID.
+app.get('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => {
+  try {
+    const user = await ensureUser(req.auth.userId);
+    const { data, error } = await supabase
+      .from('chats')
+      .select('id,user_id,title,messages,pinned,favorite,created_at,updated_at')
+      .eq('id', req.params.id)
+      .eq('user_id', user.id)
+      .single();
+    if (error) throw error;
+    res.json(data);
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+});
 app.post('/api/chats', requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); const title = sanitizeString(req.body.title, 120) || 'New Chat'; const { data, error } = await supabase.from('chats').insert({ user_id: user.id, title, messages: [] }).select().single(); if (error) throw error; res.json(data); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 app.put('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => { try { const user = await ensureUser(req.auth.userId); const { payload, error: buildErr } = buildChatUpdate(req.body); if (buildErr) return res.status(400).json({ error: buildErr }); if (Object.keys(payload).length === 0) return res.status(400).json({ error: 'No updatable fields' }); const { error } = await supabase.from('chats').update(payload).eq('id', req.params.id).eq('user_id', user.id); if (error) throw error; res.json({ ok: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 app.delete('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => { try { const user = await ensureUser(req.auth.userId); const { error } = await supabase.from('chats').delete().eq('id', req.params.id).eq('user_id', user.id); if (error) throw error; res.json({ deleted: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });

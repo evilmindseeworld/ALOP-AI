@@ -126,15 +126,16 @@
 
   <h2>5. Who we share it with</h2>
   <p>
-    ALOP-AI is built on third-party services. The table below is the complete list of processors that
-    receive your data, and exactly what each one receives. Several of these are outside the UAE,
-    including in the United States.
+    ALOP-AI is built on third-party services. The tables below list the processors that receive your
+    data, and what each one receives. Several of these are outside the UAE, including in the United
+    States. Where a service is reached directly by your browser rather than by our server, we say so,
+    because in those cases it also sees your IP address.
   </p>
 
   <h3>Services that receive your conversation content</h3>
   <table>
     <tr><th>Service</th><th>What it receives</th><th>Why</th></tr>
-    <tr><td>Ollama</td><td>Your messages and conversation history</td><td>Runs the language models that write your answers</td></tr>
+    <tr><td>Ollama</td><td>Your messages and conversation history</td><td>The single gateway through which every language model is reached. All model inference is routed through it</td></tr>
     <tr><td>Google (Gemini API)</td><td>Images, screen captures and message text</td><td>Vision analysis and text processing</td></tr>
     <tr><td>Brave Search</td><td>Generated search queries</td><td>Web search results</td></tr>
     <tr><td>Tavily</td><td>Generated search queries</td><td>Web search results</td></tr>

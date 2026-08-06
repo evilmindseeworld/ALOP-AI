@@ -70,36 +70,98 @@ async function runSql(query) {
   return body;
 }
 
+const columnExists = (table, column) => ({
+  label: `${table}.${column} exists`,
+  sql: `select 1 from information_schema.columns
+        where table_schema='public' and table_name='${table}'
+          and column_name='${column}'`,
+});
+const tableExists = (table) => ({
+  label: `${table} table exists`,
+  sql: `select 1 from information_schema.tables
+        where table_schema='public' and table_name='${table}'`,
+});
+const indexExists = (name) => ({
+  label: `${name} index exists`,
+  sql: `select 1 from pg_indexes where schemaname='public' and indexname='${name}'`,
+});
+const functionExists = (name) => ({
+  label: `${name}() exists`,
+  sql: `select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname='public' and p.proname='${name}'`,
+});
+const rlsForced = (table) => ({
+  label: `${table} has RLS forced`,
+  sql: `select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
+        where n.nspname='public' and c.relname='${table}'
+          and c.relrowsecurity and c.relforcerowsecurity`,
+});
+
+/**
+ * What each migration must have produced, checked per file.
+ *
+ * THIS USED TO BE ONE HARDCODED LIST — 001's three artifacts, run no matter
+ * which file was applied. So `run-migration.mjs 006_audit_retention.sql` would
+ * apply 006 and then print "✓ Migration verified" on the strength of a column
+ * 001 had added months earlier, without ever looking at `sweep_audit_logs`. A
+ * verification that cannot fail for the thing you just ran is worse than none,
+ * because it is the reason nobody looks again.
+ *
+ * A file with no entry here is a hard failure rather than a pass: silently
+ * verifying nothing is the exact behaviour being removed.
+ */
+const MIGRATION_CHECKS = {
+  "001_per_chat_memory.sql": [
+    columnExists("chats", "conversation_summary"),
+    tableExists("feedback_notes"),
+    indexExists("feedback_notes_user_recent"),
+  ],
+  "002_rls_and_webhook_ledger.sql": [tableExists("stripe_events"), rlsForced("stripe_events")],
+  "003_chat_files.sql": [tableExists("chat_files")],
+  "004_rate_limits.sql": [
+    tableExists("rate_limits"),
+    indexExists("rate_limits_expiry"),
+    functionExists("increment_rate_limit"),
+    functionExists("decrement_rate_limit"),
+    rlsForced("rate_limits"),
+  ],
+  "005_search_cache.sql": [
+    tableExists("search_cache"),
+    indexExists("search_cache_expiry"),
+    functionExists("sweep_search_cache"),
+    rlsForced("search_cache"),
+  ],
+  "006_audit_retention.sql": [
+    indexExists("audit_logs_created_at"),
+    functionExists("sweep_audit_logs"),
+    {
+      // The function existing is not the claim the privacy policy makes. The
+      // claim is that rows older than 90 days are gone, so assert THAT.
+      label: "no audit_logs row is older than 90 days",
+      sql: `select 1 from audit_logs where created_at < now() - interval '90 days' limit 1`,
+      expectEmpty: true,
+    },
+  ],
+};
+
 /**
  * Checks the migration's observable effects rather than trusting the write.
- * Both are the exact failures the backend was hitting: 42703 for the missing
- * column, PGRST205 for the missing table.
  */
-async function verify() {
-  const checks = [
-    {
-      label: "chats.conversation_summary exists",
-      sql: `select 1 from information_schema.columns
-            where table_schema='public' and table_name='chats'
-              and column_name='conversation_summary'`,
-    },
-    {
-      label: "feedback_notes table exists",
-      sql: `select 1 from information_schema.tables
-            where table_schema='public' and table_name='feedback_notes'`,
-    },
-    {
-      label: "feedback_notes_user_recent index exists",
-      sql: `select 1 from pg_indexes
-            where schemaname='public' and indexname='feedback_notes_user_recent'`,
-    },
-  ];
+async function verify(forFile) {
+  const checks = MIGRATION_CHECKS[forFile];
+  if (!checks) {
+    console.log(`  ✗ no verification defined for ${forFile} — add one to MIGRATION_CHECKS`);
+    return false;
+  }
 
   let allPassed = true;
   for (const check of checks) {
     try {
       const rows = await runSql(check.sql);
-      const ok = Array.isArray(rows) && rows.length > 0;
+      const found = Array.isArray(rows) && rows.length > 0;
+      // Most checks assert a thing exists; a few assert a query returns
+      // nothing, which is the only way to state "and the old rows are gone".
+      const ok = check.expectEmpty ? !found : found;
       console.log(`  ${ok ? "✓" : "✗"} ${check.label}`);
       if (!ok) allPassed = false;
     } catch (err) {
@@ -114,8 +176,8 @@ const main = async () => {
   console.log(`\nProject: ${projectRef}`);
 
   if (verifyOnly) {
-    console.log("\nVerifying:");
-    process.exit((await verify()) ? 0 : 1);
+    console.log(`\nVerifying ${file}:`);
+    process.exit((await verify(file)) ? 0 : 1);
   }
 
   const path = resolve(join(HERE, "..", "migrations", file));
@@ -123,7 +185,7 @@ const main = async () => {
   console.log(`Migration: ${file} (${sql.split("\n").length} lines)`);
 
   console.log("\nBefore:");
-  await verify();
+  await verify(file);
 
   console.log("\nApplying...");
   try {
@@ -134,7 +196,7 @@ const main = async () => {
   }
 
   console.log("\nAfter:");
-  const ok = await verify();
+  const ok = await verify(file);
 
   // Applying without error is not the same as the schema being correct, so the
   // exit code follows verification, not the write.

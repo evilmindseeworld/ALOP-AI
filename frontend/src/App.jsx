@@ -523,6 +523,7 @@ const AuthenticatedApp = () => {
                 <Suspense fallback={null}>
                 <MessageList
                   messages={activeMessages}
+                  isLoadingMessages={chat.isLoadingMessages}
                   status={status}
                   feedback={chat.feedback}
                   onCopy={(content) => navigator.clipboard.writeText(content)}

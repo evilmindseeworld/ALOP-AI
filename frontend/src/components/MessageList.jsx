@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Icon from "./Icon";
 import { STARTERS } from "../constants/starters";
+import { MessageSkeleton } from "./Skeletons";
 
 // react-syntax-highlighter is ~4.9MB installed and carries a grammar for every
 // language it supports. Loading it lazily keeps it off the critical path for
@@ -277,7 +278,16 @@ export const Message = memo(({ msg, isStreaming, onCopy, onFeedback, feedback })
 
 Message.displayName = "Message";
 
-export default function MessageList({ messages, status, feedback, onCopy, onFeedback, onPickStarter }) {
+export default function MessageList({ messages, status, feedback, onCopy, onFeedback, onPickStarter, isLoadingMessages }) {
+  // A conversation whose transcript is still in flight is NOT an empty one.
+  //
+  // Messages no longer arrive with the chat list — they are fetched per
+  // conversation when it is opened — so between the click and the response
+  // `messages` is legitimately empty. Without this branch the user opens a chat
+  // with fifty messages in it and is shown "ask me anything", which reads as
+  // their history having been deleted. On a cold backend that lasts twenty
+  // seconds.
+  if (isLoadingMessages) return <MessageSkeleton />;
   if (messages.length === 0 && status === "idle") return <EmptyState onPick={onPickStarter} />;
 
   // Only the last assistant message can be the one currently arriving, so the

@@ -189,15 +189,18 @@
   box-shadow: var(--rim), var(--shadow-lg);
 }
 
-/* Was a second bordered, inset-shadowed box inside .signin-card — and Clerk
+/* .signin-card-inner has no rule any more, and the div is kept on purpose.
+ *
+ * It was a second bordered, inset-shadowed box inside .signin-card — and Clerk
  * draws its own card inside THAT, so the form sat in three nested frames.
- * Chanel's rule: take one off. It is now a plain wrapper that exists only as a
- * scope for the Clerk overrides below, which is the one job it was actually
- * doing. */
-.signin-card-inner {
-  border-radius: 14px;
-}
-
+ * Chanel's rule: take one off. What survived was a scoping hook for the Clerk
+ * overrides, and those are now in lib/clerkAppearance.js, so the last
+ * declaration on it (a border-radius with nothing to clip) went with them.
+ *
+ * The element stays as the card's layout slot: removing it changes the block
+ * structure Clerk mounts into, which is a rendering risk for no gain on the one
+ * screen every new user sees. It is markup with no styles, which is honest —
+ * not a rule that pretends to do something. */
 
 
 .signin-dot {
@@ -229,96 +232,6 @@
 .signin-legal a:hover {
   color: var(--primary);
 }
-
-/* Clerk overrides */
-.signin-card-inner .cl-formButtonPrimary {
-  width: 100% !important;
-  background: linear-gradient(135deg, var(--primary), var(--primary-soft)) !important;
-  color: #fff !important;
-  font-family: 'Switzer', sans-serif !important;
-  font-weight: 700 !important;
-  font-size: 14px !important;
-  border-radius: 12px !important;
-  padding: 12px !important;
-  border: none !important;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset, 0 -1px 0 rgba(0,0,0,0.2) inset, 0 4px 12px color-mix(in srgb, var(--primary) 20%, transparent) !important;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
-}
-
-.signin-card-inner .cl-formButtonPrimary:hover {
-  transform: translateY(-1px) !important;
-  box-shadow: 0 1px 0 rgba(255,255,255,0.15) inset, 0 -1px 0 rgba(0,0,0,0.2) inset, 0 8px 24px color-mix(in srgb, var(--primary) 25%, transparent) !important;
-}
-
-.signin-card-inner .cl-formButtonPrimary:active {
-  transform: scale(0.98) !important;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.3) !important;
-}
-
-.signin-card-inner .cl-socialButtonsBlockButton {
-  background: var(--surface-2) !important;
-  border: 1px solid color-mix(in srgb, var(--text) 5%, transparent) !important;
-  border-radius: 12px !important;
-  color: var(--text) !important;
-  box-shadow: 0 1px 0 color-mix(in srgb, var(--text) 3%, transparent) inset, 0 -1px 0 rgba(0,0,0,0.15) inset !important;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
-}
-
-.signin-card-inner .cl-socialButtonsBlockButton:hover {
-  background: var(--surface-3) !important;
-  border-color: color-mix(in srgb, var(--text) 10%, transparent) !important;
-  transform: translateY(-1px) !important;
-}
-
-.signin-card-inner .cl-headerTitle {
-  color: var(--text) !important;
-  font-family: 'Clash Grotesk', sans-serif !important;
-  font-weight: 600 !important;
-}
-
-.signin-card-inner .cl-headerSubtitle {
-  color: var(--text-muted) !important;
-}
-
-.signin-card-inner .cl-formFieldLabel {
-  color: var(--text-muted) !important;
-  font-size: 12px !important;
-}
-
-.signin-card-inner .cl-input {
-  background: var(--surface-2) !important;
-  border: 1px solid color-mix(in srgb, var(--text) 5%, transparent) !important;
-  border-radius: 12px !important;
-  color: var(--text) !important;
-  padding: 11px 13px !important;
-  font-size: 14px !important;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2) !important;
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease !important;
-}
-
-.signin-card-inner .cl-input:focus {
-  border-color: color-mix(in srgb, var(--primary) 30%, transparent) !important;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2), 0 0 0 3px color-mix(in srgb, var(--primary) 8%, transparent) !important;
-}
-
-.signin-card-inner .cl-footerActionLink {
-  color: var(--primary-soft) !important;
-  font-weight: 600 !important;
-  transition: color 0.15s !important;
-}
-
-.signin-card-inner .cl-footerActionLink:hover {
-  color: var(--primary) !important;
-}
-
-.signin-card-inner .cl-form {
-  gap: 10px !important;
-}
-
-.signin-card-inner .cl-internalNavigation {
-  color: var(--text-muted) !important;
-}
-
 @media (max-width: 480px) {
   .signin-tagline { font-size: var(--text-sm); }
   .signin-card { padding: 18px; }
@@ -499,39 +412,4 @@
   .signin-card { order: 1; }
   .signin-title, .signin-tagline { text-align: center; }
   .council-ladder { max-width: 30ch; }
-}
-
-/* Clerk renders its own card — background, border, radius, shadow — inside
- * .signin-card. That was the third nested frame: ours, this, and the
- * .signin-card-inner box that has already gone. The form sits flat in our card
- * now, so the page has exactly one surface on the right.
- *
- * .cl-footer keeps its own tint by default, which reads as a fourth panel at
- * the bottom of a card that no longer has panels. */
-/* .cl-rootBox is FIRST for a reason: it is Clerk's outermost element and it
- * sizes to its content, so it was 249px inside a 338px card and everything
- * within it inherited that width. The form was not off-centre — it was
- * left-aligned inside a box narrower than the one it appeared to be in, which
- * looks the same and has a different cause. Measured before fixing:
- * 20px gap on the left, 111px on the right. */
-.signin-card-inner .cl-rootBox,
-.signin-card-inner .cl-card,
-.signin-card-inner .cl-cardBox,
-.signin-card-inner .cl-footer,
-.signin-card-inner .cl-main {
-  background: transparent !important;
-  border: none !important;
-  box-shadow: none !important;
-  border-radius: 0 !important;
-  /* PADDING TOO, and leaving it out is what made the form look off-centre.
-   *
-   * Clerk's card carries its own horizontal padding. With .signin-card also
-   * padding, the two stacked on the left while several of Clerk's inner
-   * elements — the social button, the input — are full-bleed to their own
-   * container and so reached the right edge. The result was a form sitting
-   * visibly right of the box it is in.
-   *
-   * One source of padding: ours. */
-  padding: 0 !important;
-  width: 100% !important;
 }

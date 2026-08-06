@@ -4,6 +4,7 @@ import { Toaster, toast } from "sonner";
 import "./App.css";
 
 import SignInPage from "./SignInPage";
+import clerkAppearance from "./lib/clerkAppearance";
 import MagneticButton from "./components/ui/MagneticButton";
 import { Badge } from "./components/ui/badge";
 import CommandPalette from "./components/CommandPalette";
@@ -606,10 +607,10 @@ const App = () => (
     signUpUrl="/sign-up"
     afterSignInUrl="/"
     afterSignUpUrl="/"
-    appearance={{
-      baseTheme: "dark",
-      variables: { colorPrimary: "#ec7d96", colorBackground: "#1b120c", colorText: "#faf0e6" },
-    }}
+    // Element styling moved here from 21 CSS rules that named Clerk's internal
+    // classes — the pattern Clerk warns about on every page load, because those
+    // selectors break when it ships a component update. See lib/clerkAppearance.js.
+    appearance={clerkAppearance}
   >
     <div style={{ width: "100vw", height: "100dvh" }}>
       {isOverlayWindow() ? (

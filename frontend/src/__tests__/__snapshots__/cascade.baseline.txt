@@ -40156,8 +40156,6 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  border-bottom-right-radius: <border-radius: 14px>
-  border-radius: 14px
   box-sizing: border-box
   margin: 0
   margin-bottom: <margin: 0>
@@ -40173,6 +40171,8 @@
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
   :focus-visible
+    border-bottom-right-radius: <border-radius: 8px>
+    border-radius: 8px
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
@@ -50966,25 +50966,6 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
 .markdown-body li > ul
 .markdown-body tbody tr:nth-child(even) td
 .msg-row + .msg-row.user
-.signin-card-inner .cl-card
-.signin-card-inner .cl-cardBox
-.signin-card-inner .cl-footer
-.signin-card-inner .cl-footerActionLink
-.signin-card-inner .cl-footerActionLink:hover
-.signin-card-inner .cl-form
-.signin-card-inner .cl-formButtonPrimary
-.signin-card-inner .cl-formButtonPrimary:active
-.signin-card-inner .cl-formButtonPrimary:hover
-.signin-card-inner .cl-formFieldLabel
-.signin-card-inner .cl-headerSubtitle
-.signin-card-inner .cl-headerTitle
-.signin-card-inner .cl-input
-.signin-card-inner .cl-input:focus
-.signin-card-inner .cl-internalNavigation
-.signin-card-inner .cl-main
-.signin-card-inner .cl-rootBox
-.signin-card-inner .cl-socialButtonsBlockButton
-.signin-card-inner .cl-socialButtonsBlockButton:hover
 .signin-dot
 [role="button"]
 select

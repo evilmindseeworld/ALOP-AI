@@ -31,8 +31,9 @@ const DECLARATIONS = CSS.replace(/\/\*[\s\S]*?\*\//g, "");
 // keeps its !important because overriding an author's animation for a user with
 // a vestibular disorder is the one thing the keyword is actually for.
 const IMPORTANT_BUDGET = 3;
-// Restyling Clerk's shipped components. Tracked separately — see the test.
-const CLERK_IMPORTANT_BUDGET = 52;
+// Restyling Clerk's shipped components. Was 52, and is now 0 — see the test,
+// which no longer measures a budget because there is nothing left to measure.
+const CLERK_IMPORTANT_BUDGET = 0;
 
 // 16 -> 19 -> 14 -> 10, and the trip up is the interesting part. Folding
 // signin.css into the manifest surfaced six duplicate blocks that had always
@@ -128,18 +129,40 @@ describe("App.css hygiene", () => {
     ).toBeLessThanOrEqual(IMPORTANT_BUDGET);
   });
 
-  it(`uses no more than ${CLERK_IMPORTANT_BUDGET} !important declarations inside the Clerk overrides`, () => {
-    // A ratchet like the others: it records what restyling Clerk currently
-    // costs, and fails if that cost grows quietly. If Clerk ever ships a real
-    // theming API, this number should fall to zero.
-    const clerkOnly = DECLARATIONS.length - withoutClerkRules(DECLARATIONS).length;
-    expect(clerkOnly).toBeGreaterThan(0); // guard on the guard: the matcher still matches
-    const count = ((DECLARATIONS.match(/!important/g) || []).length)
-      - ((withoutClerkRules(DECLARATIONS).match(/!important/g) || []).length);
+  it("names no Clerk internal class in CSS at all", () => {
+    // This replaced a ratchet that allowed 52 !important declarations inside
+    // rules like `.signin-card-inner .cl-formButtonPrimary`. Its comment said:
+    // "If Clerk ever ships a real theming API, this number should fall to
+    // zero." It has one — `appearance.elements` — and the styles now live in
+    // lib/clerkAppearance.js, so the assertion is no longer a budget.
+    //
+    // The budget was the wrong shape anyway. The cost being tracked was
+    // !important, but the actual risk was never the keyword: it was that a
+    // selector naming `.cl-*` depends on the internal DOM of a component
+    // library that says, in a console warning on every page load, that it
+    // changes those internals between releases. A file could have scored zero
+    // on the old ratchet and still shattered on a Clerk deploy.
+    //
+    // The !important was a SYMPTOM of that coupling. Clerk styles its primary
+    // button with `.cl-internal-…[data-variant="solid"][data-color="primary"]`
+    // — specificity 0,3,0 against 0,2,0 for our descendant selector — so every
+    // one of those 52 declarations existed to lose a cascade fight our rules
+    // could not win. Styles handed to Clerk are injected as Clerk's own and
+    // need none of it.
+    const offenders = [...DECLARATIONS.matchAll(/([^{}]*\.cl-[^{}]*)\{/g)].map((m) =>
+      m[1].trim().replace(/\s+/g, " ").slice(0, 90),
+    );
     expect(
-      count,
-      `Clerk overrides now use ${count} !important declarations, up from ${CLERK_IMPORTANT_BUDGET}.`
-    ).toBeLessThanOrEqual(CLERK_IMPORTANT_BUDGET);
+      offenders,
+      `CSS is naming Clerk's internal classes again:\n  ${offenders.join("\n  ")}\n` +
+        "Style these through appearance.elements in src/lib/clerkAppearance.js instead — " +
+        "those selectors break when Clerk ships a component update.",
+    ).toEqual([]);
+    // And the keyword went with them, which is the measurable half.
+    const inClerkRules =
+      (DECLARATIONS.match(/!important/g) || []).length -
+      (withoutClerkRules(DECLARATIONS).match(/!important/g) || []).length;
+    expect(inClerkRules).toBe(CLERK_IMPORTANT_BUDGET);
   });
 
   it(`defines no more than ${DUPLICATE_BUDGET} redundant top-level selector blocks`, () => {

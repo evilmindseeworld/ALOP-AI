@@ -68,8 +68,12 @@ permissions:
 jobs:
   ping:
     runs-on: ubuntu-latest
-    # Covers the ~20 minute loop with margin for a cold boot on the last ping.
-    timeout-minutes: 25
+    # WORST CASE, computed rather than guessed: four 300s sleeps between the
+    # five pings is 1200s, and each ping can spend --max-time 60 + 15s + 60s
+    # when it retries, so 5 × 135s = 675s. 1875s is 31m15s. A 25-minute cap
+    # killed the job before the "fail only if all five failed" check could
+    # run, which turned a partial degradation into a red run by accident.
+    timeout-minutes: 35
     steps:
       - name: Ping /health across the idle window
         run: |

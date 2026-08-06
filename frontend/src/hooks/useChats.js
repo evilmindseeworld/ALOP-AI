@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
-import { API_BASE, clientTimezone } from "../lib/api";
+import { API_BASE, clientTimezone, untilAborted } from "../lib/api";
 import { uid, generateChatTitle, parseImagePrompt, buildImageUrl } from "../lib/format";
 
 const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -380,7 +380,13 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
       const activity = [];
 
       try {
-        const token = await getToken();
+        // Raced against the abort signal, NOT awaited bare. `getToken()` is
+        // not a fetch, so `abortRef` cannot cancel it — and this happens
+        // before the signal is handed to `fetch`, which is the window where
+        // Stop looks like it does nothing. If Clerk hangs here, status stays
+        // "streaming", the composer stays disabled, the catch below never
+        // runs, and pressing Stop changes nothing at all.
+        const token = await Promise.race([getToken(), untilAborted(abortRef.current.signal)]);
         const res = await fetch(`${API_BASE}/api/council`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },

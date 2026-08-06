@@ -11,8 +11,15 @@ export const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000"
  */
 export const API_TIMEOUT_MS = 45_000;
 
-/** A promise that rejects when `signal` aborts, and never resolves. */
-function untilAborted(signal) {
+/**
+ * A promise that rejects when `signal` aborts, and never resolves.
+ *
+ * Exported because `getToken()` is not a fetch, so no signal can cancel it —
+ * anywhere a token is awaited before a request, it has to be raced against
+ * the abort that is supposed to be able to cancel that request. The council
+ * stream in `useChats` is the other such place.
+ */
+export function untilAborted(signal) {
   return new Promise((_, reject) => {
     const fail = () => reject(new Error("aborted"));
     if (signal.aborted) fail();
@@ -51,11 +58,25 @@ export function useApi(getToken) {
       // replace it. Without this, passing `signal` would silently do nothing.
       const external = options.signal;
       const relay = () => controller.abort();
-      external?.addEventListener("abort", relay, { once: true });
+      // An ALREADY-aborted signal never fires the event, so subscribing alone
+      // would ignore it for the full 45s. Real `fetch` rejects immediately on
+      // a pre-aborted signal and this wrapper has to match that.
+      if (external?.aborted) relay();
+      else external?.addEventListener("abort", relay, { once: true });
 
+      const release = () => {
+        clearTimeout(timer);
+        external?.removeEventListener("abort", relay);
+      };
+      // Only OUR deadline becomes a timeout. A caller who aborted on purpose
+      // gets their own abort back, not a message blaming the network.
+      const asTimeout = (e) =>
+        timedOut ? new Error(`Request timed out after ${API_TIMEOUT_MS / 1000}s`) : e;
+
+      let res;
       try {
         const token = await Promise.race([getToken(), untilAborted(controller.signal)]);
-        return await fetch(`${API_BASE}${path}`, {
+        res = await fetch(`${API_BASE}${path}`, {
           ...options,
           signal: controller.signal,
           headers: {
@@ -65,14 +86,43 @@ export function useApi(getToken) {
           },
         });
       } catch (e) {
-        // Only OUR deadline becomes a timeout. A caller who aborted on purpose
-        // gets their own abort back, not a message blaming the network.
-        if (timedOut) throw new Error(`Request timed out after ${API_TIMEOUT_MS / 1000}s`);
-        throw e;
-      } finally {
-        clearTimeout(timer);
-        external?.removeEventListener("abort", relay);
+        release();
+        throw asTimeout(e);
       }
+
+      // THE DEADLINE HAS TO OUTLIVE THIS RETURN, and getting that wrong is how
+      // the first version of this fix still shipped the bug it was fixing.
+      //
+      // `fetch` resolves as soon as the response HEADERS arrive. The body has
+      // not been read yet, and every caller reads it — `await res.json()` —
+      // after this function has returned. Clearing the timer here left a
+      // backend that answers headers and then stalls the body hanging the
+      // caller exactly as before: `loadChats` waits at its `res.json()`, its
+      // `finally` never runs, and the skeletons stay up forever.
+      //
+      // So the timer keeps running, and CONSUMING THE BODY is what releases
+      // it. A caller that never reads the body (the DELETE and PUT routes)
+      // simply lets the timer expire and abort a response that has already
+      // completed, which does nothing.
+      // Guarded: a wrapper whose whole job is to stop a hang must not become a
+      // new way to throw. Anything without a `json` gets the timer released
+      // now rather than a TypeError.
+      if (typeof res?.json !== "function") {
+        release();
+        return res;
+      }
+
+      const readJson = res.json.bind(res);
+      res.json = async () => {
+        try {
+          return await readJson();
+        } catch (e) {
+          throw asTimeout(e);
+        } finally {
+          release();
+        }
+      };
+      return res;
     },
     [getToken]
   );

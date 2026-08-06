@@ -18,15 +18,36 @@ describe("apiCall timeouts", () => {
   // an ALREADY-aborted signal rejects immediately rather than waiting for an
   // abort event that has been and gone. Getting that wrong hangs the test and
   // reads exactly like a source bug, which cost a run here.
+  // Rejects with the shape the REAL fetch uses: a DOMException whose `name` is
+  // "AbortError". The first version rejected with `new Error("AbortError")`,
+  // so the abort test matched on a message the platform never produces and
+  // could not tell "reported as an abort" from "reported as anything at all".
+  const abortError = () =>
+    typeof DOMException === "function"
+      ? new DOMException("The user aborted a request.", "AbortError")
+      : Object.assign(new Error("The user aborted a request."), { name: "AbortError" });
+
   const hangingFetch = () =>
     vi.fn(
       (_url, opts) =>
         new Promise((_, reject) => {
-          const fail = () => reject(new Error("AbortError"));
+          const fail = () => reject(abortError());
           if (opts.signal.aborted) fail();
           else opts.signal.addEventListener("abort", fail, { once: true });
         })
     );
+
+  /** A response whose headers have arrived but whose body never will. */
+  const headersThenStall = () =>
+    vi.fn(async (_url, opts) => ({
+      ok: true,
+      json: () =>
+        new Promise((_, reject) => {
+          const fail = () => reject(abortError());
+          if (opts.signal.aborted) fail();
+          else opts.signal.addEventListener("abort", fail, { once: true });
+        }),
+    }));
 
   beforeEach(() => {
     vi.useFakeTimers();
@@ -60,27 +81,71 @@ describe("apiCall timeouts", () => {
     await assertion;
   });
 
-  it("does not abort a call that finishes inside the deadline", async () => {
-    // The guard against the obvious over-correction: a timeout that fires on a
-    // healthy request is worse than no timeout, because it breaks the app that
-    // was working. A cold boot is 22.5s and must still succeed.
-    const fetchMock = vi.fn(async () => ({ ok: true }));
+  it("rejects when the body never arrives, not just when the headers do not", async () => {
+    // THE BUG THE FIRST FIX MISSED. `fetch` resolves at the response HEADERS.
+    // Every caller reads the body afterwards — `loadChats` does `res.json()`
+    // — so clearing the deadline on return left a backend that answers
+    // headers and then stalls hanging the caller exactly as before.
+    vi.stubGlobal("fetch", headersThenStall());
+    const res = await call(async () => "token")("/api/chats");
+
+    const p = res.json();
+    const assertion = expect(p).rejects.toThrow(/timed out/i);
+    await vi.advanceTimersByTimeAsync(API_TIMEOUT_MS + 1);
+    await assertion;
+  });
+
+  it("survives a 22.5s cold boot, which is what the 45s is for", async () => {
+    // A timeout that fires on a healthy request is worse than no timeout: it
+    // breaks the app that was working. The measured Render cold boot is 22.5s.
+    //
+    // This asserts the number rather than assuming it — the earlier version
+    // used a mock that resolved at t=0, so it passed for ANY value of
+    // API_TIMEOUT_MS, including 1ms. Lower the constant below 22.5s and this
+    // fails.
+    const COLD_BOOT_MS = 22_500;
+    expect(API_TIMEOUT_MS).toBeGreaterThan(COLD_BOOT_MS);
+
+    const fetchMock = vi.fn(
+      () => new Promise((resolve) => setTimeout(() => resolve({ ok: true, json: async () => ({}) }), COLD_BOOT_MS))
+    );
     vi.stubGlobal("fetch", fetchMock);
-    const apiCall = call(async () => "token");
 
-    const res = await apiCall("/api/chats");
+    const p = call(async () => "token")("/api/chats");
+    await vi.advanceTimersByTimeAsync(COLD_BOOT_MS);
+    const res = await p;
 
-    expect(res).toEqual({ ok: true });
+    expect(res.ok).toBe(true);
     expect(fetchMock.mock.calls[0][1].signal.aborted).toBe(false);
+  });
 
-    // The timer must be cleared, or it aborts a signal nobody is watching and
-    // — worse — keeps the test environment awake.
+  it("releases the deadline once the body is read", async () => {
+    // The timer must not outlive a completed read, or it aborts a response
+    // nobody is watching and keeps the environment awake.
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({ chats: [] }) }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const res = await call(async () => "token")("/api/chats");
+    await expect(res.json()).resolves.toEqual({ chats: [] });
+
     await vi.advanceTimersByTimeAsync(API_TIMEOUT_MS + 1);
     expect(fetchMock.mock.calls[0][1].signal.aborted).toBe(false);
   });
 
+  it("rejects immediately when the caller's signal is already aborted", async () => {
+    // An aborted signal never fires the event, so subscribing alone ignored it
+    // for the full 45s. Real fetch rejects at once.
+    vi.stubGlobal("fetch", hangingFetch());
+    const external = new AbortController();
+    external.abort();
+
+    await expect(
+      call(async () => "token")("/api/chats", { signal: external.signal })
+    ).rejects.toMatchObject({ name: "AbortError" });
+  });
+
   it("sends the bearer token and the API base path", async () => {
-    const fetchMock = vi.fn(async () => ({ ok: true }));
+    const fetchMock = vi.fn(async () => ({ ok: true, json: async () => ({}) }));
     vi.stubGlobal("fetch", fetchMock);
 
     await call(async () => "abc123")("/api/chats");
@@ -100,7 +165,10 @@ describe("apiCall timeouts", () => {
     external.abort();
 
     // A deliberate abort is NOT a timeout, and must not be reported as one:
-    // the caller cancelled, the network is fine.
-    await expect(p).rejects.toThrow(/AbortError/);
+    // the caller cancelled, the network is fine. Asserted on `name`, which is
+    // where the platform actually puts it — matching the message would pass
+    // against any error at all.
+    await expect(p).rejects.toMatchObject({ name: "AbortError" });
+    await expect(p).rejects.not.toThrow(/timed out/i);
   });
 });

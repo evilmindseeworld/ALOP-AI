@@ -4,9 +4,16 @@
 **Repo:** `C:\Users\LENOVO\Documents\AI-Classroom` — `evilmindseeworld/ALOP-AI`
 (**PUBLIC** — never commit a secret, and treat anything already in history as
 compromised)
-**Branch:** `main`, HEAD `f90a4c1`, **committed locally and NOT pushed.**
-The four commits above `72c4e13` include two security fixes. Nothing in them is
-live until someone pushes, so read the next section before the Clerk one.
+**Branch:** `main`, HEAD `e31d6ad`, **committed locally and NOT pushed.**
+Seven commits above `72c4e13`, including two security fixes and a launch
+blocker. Nothing in them is live until someone pushes.
+
+**Verified against the live site, not assumed:** the Clerk key swap has NOT
+taken. `alop-ai.com`'s bundle still ships `pk_test_…`, which decodes to
+`relaxing-impala-5.clerk.accounts.dev`; `window.Clerk.frontendApi` confirms it
+at runtime and the sign-in page renders a **"Development mode"** badge. The
+production instance itself is fine — `clerk.alop-ai.com` returns 200 — so this
+is the Vercel variable or the redeploy, exactly the trap below.
 
 **Owner:** Mohamed Fateh Douba, Style Tower 2603, Sharjah, UAE.
 Now named as data controller in both legal documents — public information on
@@ -149,6 +156,33 @@ None of it is engineering. Every item needs a login.
 ---
 
 ## What this session did
+
+### There was no way to sign up
+
+`ClerkProvider` had `signUpUrl="/"`, `/` renders the sign-in page, and that page
+rendered `<SignIn>` unconditionally — so Clerk's own "Sign up" link led back to
+the sign-in form. Clicked on the live site to confirm. Email registration was
+unreachable; only the Google button could make an account, because OAuth signs
+up and signs in through one flow, **which is why this survived: the path the
+owner uses works.** It is a launch blocker specifically because a production
+Clerk instance is a separate user store, so everyone re-registers — through a
+loop. Fixed, plus the `vercel.json` that was missing entirely (every deep link
+404'd, so `/sign-up` would have died on refresh).
+
+### Clerk is no longer styled through its internal DOM
+
+21 CSS rules named `.cl-*` classes, and Clerk warned about it on every page
+load: those selectors break when it ships a component update. On the one screen
+every new user sees. Now `appearance.elements`.
+
+The useful measurement: the 52 `!important` declarations were not sloppiness.
+Clerk styles its button at specificity 0,3,0 and our selectors sat at 0,2,0, so
+they lost the cascade outright. Through the API most become unnecessary — but
+**three properties still need pinning**, because `box-shadow` and `border` are
+set at Clerk's variant level. The first attempt claimed zero and was wrong;
+diffing computed styles against a pre-change baseline caught the button silently
+losing its inset highlights. Every property and rect now matches that baseline
+exactly.
 
 ### The later half — four commits, all unpushed
 

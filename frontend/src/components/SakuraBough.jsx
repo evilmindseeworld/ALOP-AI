@@ -25,8 +25,20 @@ import { memo } from "react";
  * They are simply not rendered, and the bough stays. A still branch is a
  * finished picture; a still petal halfway down the screen is a bug.
  *
- * COUNT. Fourteen. Enough to read as weather rather than as a list, few enough
- * that the whole effect is fourteen composited layers.
+ * WHERE THEY FALL, AND WHY IT IS NOT THE WHOLE PAGE. The first version ran them
+ * down the full viewport, across the sign-in card and the roster. WCAG 2.1 and
+ * WebAIM name that specific pattern — moving images beneath static text — as a
+ * vestibular trigger, with dizziness and nausea as the reported symptoms rather
+ * than mere distraction. `prefers-reduced-motion` is honoured here, but one
+ * published dataset puts its adoption at 25-30%, so most people it would help
+ * never switch it on. The petals are now confined to the bough's own box; the
+ * CSS carries the full reasoning.
+ *
+ * COUNT. Eight, down from fourteen. Visual complexity is the strongest measured
+ * predictor of first-impression appeal and LOW complexity wins — an effect
+ * detectable at 17ms of exposure. Fourteen moving objects were working against
+ * the one screen where that is measured. Eight in a band still read as weather;
+ * they just no longer compete with the form.
  */
 
 /** One five-petal blossom, matching SakuraFrame's so the two read as one tree. */
@@ -98,20 +110,14 @@ const Bough = () => (
  * petal, and no two screenshots of this page would ever match.
  */
 const PETALS = [
-  { left: 6, delay: 0, dur: 13, drift: 42, spin: 220, scale: 0.9 },
-  { left: 14, delay: 5.5, dur: 16, drift: -30, spin: -180, scale: 0.65 },
-  { left: 22, delay: 2.2, dur: 11, drift: 58, spin: 300, scale: 1 },
-  { left: 29, delay: 8.4, dur: 15, drift: -46, spin: 160, scale: 0.75 },
-  { left: 37, delay: 1.1, dur: 17, drift: 34, spin: -260, scale: 0.55 },
-  { left: 44, delay: 6.8, dur: 12, drift: -62, spin: 200, scale: 0.95 },
-  { left: 52, delay: 3.6, dur: 14.5, drift: 50, spin: -140, scale: 0.7 },
-  { left: 59, delay: 9.9, dur: 18, drift: -26, spin: 280, scale: 0.6 },
-  { left: 67, delay: 0.7, dur: 12.5, drift: 44, spin: 180, scale: 1.05 },
-  { left: 74, delay: 7.3, dur: 16.5, drift: -54, spin: -220, scale: 0.8 },
-  { left: 81, delay: 4.4, dur: 13.5, drift: 38, spin: 240, scale: 0.68 },
-  { left: 88, delay: 10.6, dur: 15.5, drift: -36, spin: -300, scale: 0.9 },
-  { left: 94, delay: 2.9, dur: 11.5, drift: 52, spin: 190, scale: 0.58 },
-  { left: 99, delay: 8.1, dur: 17.5, drift: -44, spin: -170, scale: 0.85 },
+  { left: 9, delay: 0, dur: 13, drift: 34, spin: 220, scale: 0.85 },
+  { left: 21, delay: 6.2, dur: 16, drift: -26, spin: -180, scale: 0.6 },
+  { left: 34, delay: 2.4, dur: 11.5, drift: 44, spin: 300, scale: 0.95 },
+  { left: 46, delay: 9.1, dur: 15, drift: -38, spin: 160, scale: 0.7 },
+  { left: 58, delay: 3.9, dur: 17, drift: 30, spin: -260, scale: 0.55 },
+  { left: 70, delay: 11.4, dur: 12.5, drift: -46, spin: 200, scale: 0.9 },
+  { left: 82, delay: 1.6, dur: 14.5, drift: 40, spin: -140, scale: 0.65 },
+  { left: 93, delay: 7.7, dur: 16.5, drift: -32, spin: 280, scale: 0.8 },
 ];
 
 /** One petal: an ellipse with one pointed end, which is what makes it a petal. */

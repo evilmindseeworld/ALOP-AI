@@ -262,28 +262,59 @@
 
 /* ===== THE BOUGH, AND WHAT FALLS FROM IT =====
  *
- * A blossoming branch across the top of the page with petals drifting down it.
+ * A blossoming branch across the top of the page with petals drifting below it.
  *
- * TRANSFORM AND OPACITY ONLY, on every animated property. Both are composited
- * without touching layout or paint. Animating `top` would relayout the whole
- * page sixty times a second behind a form somebody is typing into, which is how
- * decoration turns into a dropped keystroke.
+ * THE PETALS ARE CONFINED TO THIS BOX, AND THAT IS AN ACCESSIBILITY DECISION.
  *
- * The petals are also the reason `.signin-root` must keep `overflow-y: auto`
- * rather than gaining `overflow: hidden` for them — they are clipped by the
- * container it already is, and a second clipping rule here would break the
- * sign-up card's scroll. */
+ * The first version ran them down the whole viewport — `position: fixed;
+ * inset: 0` — so they crossed the sign-in card and the roster. That is the
+ * exact pattern WCAG 2.1 and WebAIM name as a vestibular trigger: moving images
+ * beneath static text, large-field continuous motion in the reading area.
+ * Reported symptoms are dizziness, nausea and headache, not annoyance.
+ *
+ * `prefers-reduced-motion` alone is not enough of an answer. One published
+ * dataset puts adoption at 25-30%, which means most people who would be
+ * affected never set it and get the motion anyway. The guidance is to keep
+ * motion out of the reading area OR provide a visible control; confining it is
+ * the cheaper of the two and costs nothing visually, because the petals were
+ * always meant to read as weather at the top of the frame rather than as
+ * something falling across the form.
+ *
+ * There is a second reason. Visual complexity is the strongest measured
+ * predictor of first-impression appeal, and low complexity wins — an effect
+ * detectable at 17ms. Fourteen moving objects over the whole page worked
+ * against the one screen where that is measured. Eight, in a band, do not.
+ *
+ * TRANSFORM AND OPACITY ONLY, on every animated property. Both composite
+ * without touching layout or paint. Animating `top` would relayout the page
+ * sixty times a second behind a form somebody is typing into, which is how
+ * decoration turns into a dropped keystroke. */
 .sakura-bough {
+  --bough-h: min(46vh, 340px);
+  /* The petals fall a SHORTER distance than the branch is tall, and the gap
+   * between the two numbers is the accessibility fix.
+   *
+   * There is no band of this page with no text in it — the brand wordmark sits
+   * 48px from the top — so "keep the motion above the content" is not
+   * achievable on a centred full-bleed layout. What IS achievable is keeping it
+   * clear of everything anyone actually READS. Measured at 1280x720: the
+   * headline starts at 139px, the sign-in card at 120px, the first roster row
+   * at 212px, and the form fields below that. A 150px fall with the fade below
+   * puts every meaningfully visible petal above all of them; only the brand
+   * mark shares the band, and a logo is not reading content.
+   *
+   * The BRANCH still spans the full 340px. It is static, and static art behind
+   * text is not what the vestibular guidance is about. */
+  --petal-fall: min(20vh, 150px);
   position: absolute;
   inset: 0 0 auto 0;
-  height: min(46vh, 340px);
+  height: var(--bough-h);
   z-index: var(--z-empty-decor);
   pointer-events: none;
   color: var(--primary);
-  /* The petals fall past the bottom of this box and must not widen the page.
-   * Vertical overflow is visible on purpose so a petal can leave the box; the
-   * horizontal clip is what stops drift creating a scrollbar. */
-  overflow-x: clip;
+  /* Clipped on BOTH axes now. Vertical used to be visible so petals could fall
+   * out of the box; that is precisely what is no longer wanted. */
+  overflow: hidden;
 }
 
 .sakura-bough-svg {
@@ -293,10 +324,10 @@
   opacity: 0.3;
 }
 
-/* The petals live in their own full-height layer so their fall is measured
- * against the viewport, not against the bough's 340px box. */
+/* The petals share the bough's box rather than the viewport, which is what
+ * keeps them out of the reading area. `absolute`, not `fixed`. */
 .sakura-petals {
-  position: fixed;
+  position: absolute;
   inset: 0;
   overflow: hidden;
   pointer-events: none;
@@ -304,7 +335,7 @@
 
 .sakura-petal {
   position: absolute;
-  top: -6vh;
+  top: -20px;
   left: var(--petal-left);
   width: 12px;
   height: 14px;
@@ -327,17 +358,22 @@
     opacity: 0;
     transform: translate3d(0, 0, 0) rotate(0deg) scale(var(--petal-scale));
   }
-  8% { opacity: 0.75; }
-  85% { opacity: 0.55; }
+  /* Fades in and back out INSIDE the box. The old version ran to opacity 0 only
+   * at the very end of a full-viewport fall, so a petal was still visible as it
+   * crossed the form. Now it is gone before it reaches the bottom edge, and the
+   * `overflow: hidden` above is a backstop rather than the thing doing the
+   * work — a petal cut off mid-flight by a clip reads as a glitch. */
+  12% { opacity: 0.75; }
+  70% { opacity: 0.4; }
   100% {
     opacity: 0;
-    transform: translate3d(var(--petal-drift), 112vh, 0) rotate(var(--petal-spin))
+    transform: translate3d(var(--petal-drift), var(--petal-fall), 0) rotate(var(--petal-spin))
       scale(var(--petal-scale));
   }
 }
 
 @media (max-width: 640px) {
-  .sakura-bough { height: min(32vh, 220px); }
+  .sakura-bough { --bough-h: min(32vh, 220px); --petal-fall: min(16vh, 110px); }
   .sakura-bough-svg { opacity: 0.22; }
 }
 

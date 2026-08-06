@@ -1,0 +1,17 @@
+# ALOP-AI — https://alop-ai.com
+#
+# This file has to be a REAL file. Before it existed, vercel.json rewrote every
+# unmatched path to index.html, so a crawler requesting /robots.txt got a 200
+# and a page of HTML. Vercel checks the filesystem before it applies rewrites,
+# so the fix is the file itself; the rewrite is now also scoped to paths with no
+# dot in them, which means a missing .txt or .xml 404s like it should.
+#
+# Almost all of this product is behind authentication. The four URLs in
+# sitemap.xml are the entire public surface, and there is nothing else worth
+# crawling — which is why there is no long Disallow list here. A rule for a
+# path that does not exist is noise.
+
+User-agent: *
+Allow: /
+
+Sitemap: https://alop-ai.com/sitemap.xml

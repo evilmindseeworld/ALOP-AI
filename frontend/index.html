@@ -3,7 +3,47 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
-    <title>ALOP-AI</title>
+
+    <!-- WHAT A CRAWLER AND A LINK PREVIEW SEE.
+         Before this, the entire head was charset, viewport and a one-word
+         title: no description, no canonical, no social card. Google had nothing
+         to write a result snippet from, so it would have invented one from
+         whatever text it found, and every link shared to WhatsApp or Discord
+         rendered as a bare URL.
+
+         This is a single-page app, so these are the ONLY tags a crawler gets —
+         they are served identically for every route, and the router swaps the
+         view client-side afterwards. That is the honest limit of SEO here:
+         almost the whole product is behind Clerk, and the public surface is
+         this page plus the two legal documents. -->
+    <title>ALOP-AI — Seven AI models answer. One reply.</title>
+    <meta
+      name="description"
+      content="ALOP-AI puts your question to a council of seven AI models, each tuned to a different temperature, then reconciles their answers into one reply — and tells you where they disagreed."
+    />
+    <link rel="canonical" href="https://alop-ai.com/" />
+    <meta name="theme-color" content="#1b120c" />
+    <meta name="color-scheme" content="dark light" />
+
+    <!-- Open Graph / Twitter. The image is the logo already in public/ rather
+         than a purpose-built card: a real 512px mark beats a placeholder, and a
+         missing og:image makes some clients render no preview at all. -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="ALOP-AI" />
+    <meta property="og:url" content="https://alop-ai.com/" />
+    <meta property="og:title" content="ALOP-AI — Seven AI models answer. One reply." />
+    <meta
+      property="og:description"
+      content="A council of seven AI models answers separately, then has to agree. You get the reconciled reply — and where they disagreed."
+    />
+    <meta property="og:image" content="https://alop-ai.com/logo.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="ALOP-AI — Seven AI models answer. One reply." />
+    <meta
+      name="twitter:description"
+      content="A council of seven AI models answers separately, then has to agree. You get the reconciled reply — and where they disagreed."
+    />
+    <meta name="twitter:image" content="https://alop-ai.com/logo.png" />
     <!-- Connection setup starts here, in the HTML, because these run while the
          JS bundle is still downloading. A preconnect opens DNS + TCP + TLS
          ahead of the first request, which is worth 100-300ms per origin on a

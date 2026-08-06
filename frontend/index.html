@@ -56,6 +56,41 @@
       content="A council of seven AI models answers separately, then has to agree. You get the reconciled reply — and where they disagreed."
     />
     <meta name="twitter:image" content="https://alop-ai.com/logo.png" />
+
+    <!-- Structured data: tells Google that a thing called "ALOP-AI" exists and
+         that this domain is it.
+
+         This is the last technical lever available for a brand query. Ranking
+         for your own name is not won with tags — it is won when Google has
+         enough corroboration to believe the name maps to the domain. Schema is
+         the part of that we control; the rest is external mentions.
+
+         Deliberately NO `offers` block. Prices are stated in the Terms, and a
+         second copy here would be a second thing to keep true. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://alop-ai.com/#organization",
+            "name": "ALOP-AI",
+            "url": "https://alop-ai.com/",
+            "logo": "https://alop-ai.com/logo.png",
+            "email": "privacy@alop-ai.com"
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://alop-ai.com/#website",
+            "url": "https://alop-ai.com/",
+            "name": "ALOP-AI",
+            "alternateName": "ALOP AI",
+            "description": "A council of seven AI models answers separately, then reconciles into one reply.",
+            "publisher": { "@id": "https://alop-ai.com/#organization" }
+          }
+        ]
+      }
+    </script>
     <!-- Connection setup starts here, in the HTML, because these run while the
          JS bundle is still downloading. A preconnect opens DNS + TCP + TLS
          ahead of the first request, which is worth 100-300ms per origin on a

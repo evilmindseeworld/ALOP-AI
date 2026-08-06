@@ -328,8 +328,34 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
       await updateChatMessages(chatId, updated);
 
       if (baseMessages.length === 0) {
+        // TWO TITLES, IN ORDER. The local one is the first six words and lands
+        // instantly, so the sidebar never shows "New Chat" while a request is
+        // in flight. The model-written one replaces it when it arrives.
+        //
+        // Deliberately not awaited. A title is not on the path to an answer,
+        // and blocking the send on it would trade the thing the user asked for
+        // against the label on the row they are already looking at.
         const title = generateChatTitle(cleanText);
         if (title) renameChat(chatId, title);
+
+        getToken()
+          .then((token) =>
+            fetch(`${API_BASE}/api/chat-title`, {
+              method: "POST",
+              headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ message: cleanText }),
+            }),
+          )
+          .then((r) => (r.ok ? r.json() : null))
+          .then((d) => {
+            // Null is the documented "keep what you had" answer, not an error —
+            // the endpoint returns 200 with title: null for every failure,
+            // precisely so this branch stays one condition.
+            if (d?.title) renameChat(chatId, d.title);
+          })
+          // Swallowed on purpose. The chat already has a title; a failed
+          // rename is not something to tell the user about.
+          .catch(() => {});
       }
 
       const assistantId = uid();

@@ -597,6 +597,9 @@ app.use('/api/', createLimiter(60000, 120, 'Too many requests.'));
 app.use('/api/council', createLimiter(60000, 30, 'Too many council requests.'));
 app.use('/api/overlay', createLimiter(60000, 30, 'Too many overlay requests.'));
 app.use('/api/feedback', createLimiter(60000, 30, 'Too many feedback requests.'));
+// One model call each. Generous, because the client fires exactly one per new
+// conversation and a user who hits 30 in a minute is not typing them.
+app.use('/api/chat-title', createLimiter(60000, 30, 'Too many title requests.'));
 app.use('/api/create-checkout-session', createLimiter(300000, 5, 'Too many billing requests.'));
 app.use('/api/create-portal-session', createLimiter(300000, 5, 'Too many billing requests.'));
 app.use('/api/admin/', createLimiter(60000, 60, 'Too many admin requests.'));
@@ -635,6 +638,7 @@ const { parseDataUrl } = require('./lib/data-url');
 // message array, so a caller could supply `role: "system"` and override the
 // server's own prompt. See lib/history.js for the three things that fixed.
 const { sanitizeHistory } = require('./lib/history');
+const { TITLE_PROMPT, sanitizeTitle } = require('./lib/chat-title');
 const truncatePrompt = (text, maxChars = 90000) => { if (text.length <= maxChars) return text; const h = Math.floor(maxChars/2); return text.slice(0,h) + '\n\n[...truncated...]\n\n' + text.slice(-h); };
 const validatePrompt = (p) => { if (!p || typeof p !== 'string') return { valid: false, error: 'Prompt required' }; const t = p.trim(); if (!t) return { valid: false, error: 'Prompt empty' }; if (t.length > MAX_PROMPT) return { valid: false, error: `Exceeds ${MAX_PROMPT}` }; return { valid: true, value: t }; };
 
@@ -1290,6 +1294,46 @@ app.delete('/api/chats/:id/files/:fileId', requireAuth, requireOwnership('chats'
 });
 
 // ===== FEEDBACK =====
+// ===== CHAT TITLE =====
+//
+// The sidebar used to name a conversation with the first six words the user
+// typed. "How do I get my", "Can you help me with", "Hi I wanted to ask" — all
+// different conversations, all indistinguishable in a list a week later. That
+// is the low-information-scent failure the chat-history usability work names
+// directly, and it makes finding an old chat depend on recalling your own
+// phrasing.
+//
+// DELIBERATELY ITS OWN ENDPOINT rather than a field on the council response.
+// The council answer is an SSE stream, and a title is not part of an answer; it
+// would need a new frame type, and it would arrive only after the whole reply
+// had generated. Here the client fires this alongside the first message and
+// renames when it lands.
+//
+// The client keeps its local six-word title as an immediate placeholder and
+// only upgrades it if this succeeds, so a failure here costs nothing — which is
+// why every failure path returns 200 with title: null rather than an error the
+// caller has to handle.
+app.post('/api/chat-title', requireAuth, checkSuspended, async (req, res) => {
+  try {
+    const pv = validatePrompt(req.body.message);
+    if (!pv.valid) return res.json({ title: null });
+    // 600 characters is more than enough to name a topic and bounds what a
+    // caller can spend on a FAST_MODEL call.
+    const raw = await callModel(
+      FAST_MODEL,
+      [{ role: 'system', content: TITLE_PROMPT }, { role: 'user', content: pv.value.slice(0, 600) }],
+      0.0,
+      6000,
+      24,
+    );
+    res.json({ title: sanitizeTitle(raw) });
+  } catch (err) {
+    // Not Sentry-worthy and not a 500: the caller already has a usable title.
+    console.error('[TITLE] Failed:', err.message);
+    res.json({ title: null });
+  }
+});
+
 app.post('/api/feedback', requireAuth, async (req, res) => {
   try {
     const user = await ensureUser(req.auth.userId);

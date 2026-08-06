@@ -21,6 +21,19 @@ const sseStream = (frames) => {
   };
 };
 
+/**
+ * The council requests only, selected by URL rather than by call index.
+ *
+ * `send()` now issues two fetches on the first message of a chat: the answer,
+ * and a one-shot /api/chat-title so the sidebar gets a written name instead of
+ * the first six words. Three tests here indexed `fetch.mock.calls[0]` and
+ * started reading the title request's body instead of the council's. Selecting
+ * by endpoint says what the assertion is actually about and does not break
+ * again the next time something else is fired alongside a send.
+ */
+const councilCalls = (fetchImpl) =>
+  fetchImpl.mock.calls.filter(([url]) => String(url).includes("/api/council"));
+
 const setup = ({ fetchImpl } = {}) => {
   const setToast = vi.fn();
   const apiCall = vi.fn(async (path, options = {}) => {
@@ -157,6 +170,63 @@ describe("useChats", () => {
     expect(renamed, "the chat was never renamed from its first message").toBeTruthy();
   });
 
+  it("upgrades the six-word title to the written one when it arrives", async () => {
+    // Two renames, in order. The local slice lands immediately so the sidebar
+    // never shows "New Chat" while a request is in flight; the model-written
+    // title replaces it. The first six words of a question are the
+    // low-information-scent pattern this endpoint exists to fix.
+    const fetchImpl = vi.fn(async (url) => {
+      if (String(url).includes("/api/chat-title")) {
+        return { ok: true, json: async () => ({ title: "Promise resolution order" }) };
+      }
+      return { ok: true, body: sseStream(["data: [DONE]\n"]) };
+    });
+    const { result, apiCall } = setup({ fetchImpl });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.send("how do promises work in javascript");
+    });
+
+    await waitFor(() => {
+      const written = apiCall.mock.calls.find(([, o]) => o?.body?.includes("Promise resolution order"));
+      expect(written, "the written title never replaced the six-word one").toBeTruthy();
+    });
+
+    const local = apiCall.mock.calls.findIndex(([, o]) => o?.body?.includes("How do promises work"));
+    const written = apiCall.mock.calls.findIndex(([, o]) => o?.body?.includes("Promise resolution order"));
+    expect(local, "the instant title must come first").toBeLessThan(written);
+  });
+
+  it("keeps the local title when the title endpoint fails or declines", async () => {
+    // The endpoint answers 200 with title: null for every failure, so the
+    // client has one condition rather than an error path. A chat that already
+    // has a usable name must never be renamed to nothing.
+    for (const response of [
+      { ok: true, json: async () => ({ title: null }) },
+      { ok: false, json: async () => ({}) },
+    ]) {
+      const fetchImpl = vi.fn(async (url) =>
+        String(url).includes("/api/chat-title")
+          ? response
+          : { ok: true, body: sseStream(["data: [DONE]\n"]) },
+      );
+      const { result, apiCall } = setup({ fetchImpl });
+      await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+
+      await act(async () => {
+        await result.current.send("how do promises work in javascript");
+      });
+
+      const renames = apiCall.mock.calls.filter(([, o]) => o?.body?.includes("title"));
+      expect(renames.some(([, o]) => /"title":\s*null/.test(o.body))).toBe(false);
+      expect(
+        apiCall.mock.calls.some(([, o]) => o?.body?.includes("How do promises work")),
+        "the six-word title should have survived",
+      ).toBe(true);
+    }
+  });
+
   it("sends only the last few turns as history", async () => {
     const fetchImpl = vi.fn(async () => ({ ok: true, body: sseStream(["data: [DONE]\n"]) }));
     const { result } = setup({ fetchImpl });
@@ -166,7 +236,7 @@ describe("useChats", () => {
       await result.current.send("first");
     });
 
-    const body = JSON.parse(fetchImpl.mock.calls[0][1].body);
+    const body = JSON.parse(councilCalls(fetchImpl)[0][1].body);
     expect(Array.isArray(body.history)).toBe(true);
     expect(body.history.length).toBeLessThanOrEqual(8);
   });
@@ -179,12 +249,12 @@ describe("useChats", () => {
     await act(async () => {
       await result.current.send("no image");
     });
-    expect(JSON.parse(fetchImpl.mock.calls[0][1].body)).not.toHaveProperty("image");
+    expect(JSON.parse(councilCalls(fetchImpl)[0][1].body)).not.toHaveProperty("image");
 
     await act(async () => {
       await result.current.send("with image", "data:image/jpeg;base64,AAAA");
     });
-    expect(JSON.parse(fetchImpl.mock.calls[1][1].body).image).toBe("data:image/jpeg;base64,AAAA");
+    expect(JSON.parse(councilCalls(fetchImpl)[1][1].body).image).toBe("data:image/jpeg;base64,AAAA");
   });
 
   it("replaces the last answer on regenerate instead of appending a second exchange", async () => {
@@ -193,10 +263,19 @@ describe("useChats", () => {
     // messages puts the discarded answer back and duplicates the question.
     const replies = ["first", "second"];
     let call = 0;
-    const fetchImpl = vi.fn(async () => ({
-      ok: true,
-      body: sseStream([`data: {"type":"chunk","text":"${replies[call++]}"}\n`, "data: [DONE]\n"]),
-    }));
+    // Branches on the endpoint rather than counting calls. `send()` also fires
+    // /api/chat-title on the first message of a chat, and a purely
+    // order-dependent mock handed that request "first" — leaving the council
+    // with "second" and regenerate with undefined.
+    const fetchImpl = vi.fn(async (url) => {
+      if (String(url).includes("/api/chat-title")) {
+        return { ok: true, json: async () => ({ title: "A written title" }) };
+      }
+      return {
+        ok: true,
+        body: sseStream([`data: {"type":"chunk","text":"${replies[call++]}"}\n`, "data: [DONE]\n"]),
+      };
+    });
 
     const { result } = setup({ fetchImpl });
     await waitFor(() => expect(result.current.isInitialLoading).toBe(false));

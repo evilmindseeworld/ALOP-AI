@@ -113,21 +113,47 @@ describe("the two cards link to each other", () => {
   });
 });
 
+describe("where the legal documents are reachable from", () => {
+  it("sign-in links both documents, because it has no consent checkbox", () => {
+    // Consent is taken once, at registration. On sign-in this sentence is the
+    // only route to either document from the screen.
+    at("/");
+    render(<SignInPage />);
+    expect(screen.getByRole("link", { name: /terms/i })).toHaveAttribute("href", "/terms.html");
+    expect(screen.getByRole("link", { name: /privacy policy/i })).toHaveAttribute(
+      "href",
+      "/privacy.html",
+    );
+  });
+
+  it("sign-up does NOT restate the agreement, because Clerk's checkbox does", () => {
+    // Clerk renders a required "I agree to the Terms of Service and Privacy
+    // Policy" checkbox inside the form, with its own links. Repeating it here
+    // states the same obligation twice in two wordings a few pixels apart —
+    // and the weaker one, a sentence nobody acts on, sitting under the stronger
+    // one they do act on reads as the real terms being somewhere else.
+    at("/sign-up");
+    const { container } = render(<SignInPage />);
+    const ownLegal = container.querySelector(".signin-legal");
+    expect(ownLegal.textContent).not.toMatch(/agree to/i);
+    expect(ownLegal.querySelectorAll("a")).toHaveLength(0);
+    // But the age statement must survive — the checkbox does not carry it.
+    expect(ownLegal.textContent).toMatch(/at least 13 years old/i);
+  });
+});
+
 describe("what has to be on the page whichever card is showing", () => {
   // The age confirmation is MORE load-bearing on the sign-up side: the whole
   // argument for stating it here rather than only inside the linked Terms is
   // that registration is the moment it has to be seen.
   for (const [label, path] of [["sign-in", "/"], ["sign-up", "/sign-up"]]) {
-    it(`states the minimum age and links both documents on ${label}`, () => {
+    it(`states the minimum age on ${label}`, () => {
+      // The age line is on BOTH cards and is the reason this paragraph exists.
+      // Clerk's consent checkbox does not carry it.
       at(path);
       render(<SignInPage />);
       expect(screen.getByText(/at least 13 years old/i)).toBeInTheDocument();
-      expect(screen.getByText(/16 in the EEA and UK/i)).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /terms/i })).toHaveAttribute("href", "/terms.html");
-      expect(screen.getByRole("link", { name: /privacy policy/i })).toHaveAttribute(
-        "href",
-        "/privacy.html",
-      );
+      expect(screen.getByText(/16 in the EEA and/i)).toBeInTheDocument();
     });
 
     it(`shows all seven council seats on ${label}`, () => {

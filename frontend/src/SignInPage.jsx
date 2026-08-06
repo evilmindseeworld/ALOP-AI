@@ -133,12 +133,30 @@ export default function SignInPage() {
                 user actually saw, which is what turns it from paper into a
                 defensible position. COPPA attaches to collecting a child's
                 email, not to what the app is for, and Clerk collects one. */}
-            <p className="signin-legal">
-              By continuing you confirm you are at least 13 years old (16 in the EEA and UK) and
-              agree to our{" "}
-              <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a> and{" "}
-              <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>.
-            </p>
+            {signUp ? (
+              /* AGE ONLY on sign-up, because Clerk now renders a required
+                 "I agree to the Terms of Service and Privacy Policy" checkbox
+                 inside the form, with its own links to both documents.
+                 Repeating the agreement here would state the same obligation
+                 twice in two different wordings a few pixels apart, and the
+                 weaker of the two — a sentence nobody acts on — sitting under
+                 the stronger one that they do act on reads as the real terms
+                 being somewhere else. The age line stays: the checkbox does not
+                 carry it, and it is the reason this paragraph existed. */
+              <p className="signin-legal">
+                You must be at least 13 years old to use ALOP-AI &mdash; 16 in the EEA and the UK.
+              </p>
+            ) : (
+              /* Sign-in has no consent checkbox: consent is taken once, at
+                 registration. So this stays the full sentence AND the only
+                 route to either document from this screen. */
+              <p className="signin-legal">
+                By continuing you confirm you are at least 13 years old (16 in the EEA and UK) and
+                agree to our{" "}
+                <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a> and{" "}
+                <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>.
+              </p>
+            )}
           </section>
         </div>
       </div>

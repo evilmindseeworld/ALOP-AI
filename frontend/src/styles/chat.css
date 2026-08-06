@@ -405,8 +405,15 @@
    * answer ran off the right edge of the phone. The table scrolls inside itself
    * instead; see markdown.css. */
   min-width: 0;
-  font-size: var(--text-base);
-  line-height: 1.7;
+  /* The reading size, not the interface size — see --text-prose in tokens.css.
+   * This is the one surface on screen that gets read hundreds of words at a
+   * time, and it is the product. */
+  font-size: var(--text-prose);
+  /* Was 1.7. The guidance is 1.4-1.6 for body text, and leading above that
+   * range is usually compensating for type that is too small — which it was,
+   * at 15px. With the size fixed, the leading can come back into the band and
+   * the paragraph stops feeling airy. */
+  line-height: 1.6;
   color: var(--text);
   word-break: break-word;
   overflow-wrap: anywhere;

@@ -84,7 +84,7 @@
   box-sizing: border-box
   color: #f5f1ee
   font-family: 'Switzer', system-ui, sans-serif, system-ui, -apple-system, sans-serif
-  font-size: 15px
+  font-size: 16px
   height: 100%
   line-height: 1.55
   margin: 0
@@ -980,7 +980,7 @@
   flex: 1
   flex-shrink: <flex: 1>
   font-family: 'Switzer', system-ui, sans-serif
-  font-size: 15px
+  font-size: 16px
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -2403,7 +2403,7 @@
   box-sizing: border-box
   color: #f5f1ee
   font-family: 'Clash Grotesk', system-ui, sans-serif
-  font-size: 15px
+  font-size: 16px
   font-weight: 600
   letter-spacing: -0.01em
   margin: 0
@@ -7548,7 +7548,7 @@
   box-sizing: border-box
   color: #f5f1ee
   font-family: 'Clash Grotesk', system-ui, sans-serif
-  font-size: 17px
+  font-size: 18px
   font-weight: 600
   letter-spacing: -0.01em
   margin: 0
@@ -9069,7 +9069,7 @@
   color: #f5f1ee
   display: flex
   font-family: 'Clash Grotesk', system-ui, sans-serif
-  font-size: 15px
+  font-size: 16px
   font-weight: 650
   gap: 8px
   margin: 0
@@ -9245,7 +9245,7 @@
   color: #f5f1ee
   display: flex
   font-family: 'Clash Grotesk', system-ui, sans-serif
-  font-size: 15px
+  font-size: 16px
   font-weight: 650
   gap: 8px
   margin: 0
@@ -10527,7 +10527,7 @@
   animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
   box-sizing: border-box
   color: #bdb6c4
-  font-size: 15px
+  font-size: 16px
   line-height: 1.65
   margin: 0
   margin-bottom: <margin: 0>
@@ -11443,9 +11443,9 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 1px 2px rgba(0, 0, 0, 0.4)
   box-sizing: border-box
   color: #f5f1ee
-  font-size: 15px
+  font-size: 17px
   font-weight: 450
-  line-height: 1.7
+  line-height: 1.6
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -12742,13 +12742,13 @@
   box-shadow: none
   box-sizing: border-box
   color: #f5f1ee
-  font-size: 15px
-  line-height: 1.7
+  font-size: 17px
+  line-height: 1.6
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  max-width: min(74ch, 100%)
+  max-width: min(66ch, 100%)
   min-width: 0
   overflow-wrap: anywhere
   padding: 0
@@ -12792,7 +12792,7 @@
   box-sizing: border-box
   color: #f5f1ee
   font-family: 'Clash Grotesk', system-ui, sans-serif
-  font-size: 21px
+  font-size: 1.4em
   font-weight: 600
   letter-spacing: -0.015em
   line-height: 1.25
@@ -12839,7 +12839,7 @@
   box-sizing: border-box
   color: #f5f1ee
   font-family: 'Clash Grotesk', system-ui, sans-serif
-  font-size: 17px
+  font-size: 1.18em
   font-weight: 600
   letter-spacing: -0.015em
   line-height: 1.25
@@ -12886,7 +12886,7 @@
   box-sizing: border-box
   color: #f5f1ee
   font-family: 'Clash Grotesk', system-ui, sans-serif
-  font-size: 15px
+  font-size: 1em
   font-weight: 600
   letter-spacing: -0.015em
   line-height: 1.25
@@ -15327,13 +15327,13 @@
   box-shadow: none
   box-sizing: border-box
   color: #f5f1ee
-  font-size: 15px
-  line-height: 1.7
+  font-size: 17px
+  line-height: 1.6
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  max-width: min(74ch, 100%)
+  max-width: min(66ch, 100%)
   min-width: 0
   overflow-wrap: anywhere
   padding: 0
@@ -15631,13 +15631,13 @@
   box-shadow: none
   box-sizing: border-box
   color: #f5f1ee
-  font-size: 15px
-  line-height: 1.7
+  font-size: 17px
+  line-height: 1.6
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  max-width: min(74ch, 100%)
+  max-width: min(66ch, 100%)
   min-width: 0
   opacity: 0.92
   overflow-wrap: anywhere
@@ -16018,14 +16018,14 @@
   box-sizing: border-box
   color: #f5f1ee
   display: inline-flex
-  font-size: 15px
+  font-size: 17px
   gap: 5px
-  line-height: 1.7
+  line-height: 1.6
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  max-width: min(74ch, 100%)
+  max-width: min(66ch, 100%)
   min-width: 0
   overflow-wrap: anywhere
   padding: 0
@@ -17069,7 +17069,7 @@
   caret-color: #f08aa3
   color: #f5f1ee
   font-family: 'Switzer', system-ui, sans-serif
-  font-size: 15px
+  font-size: 16px
   line-height: 1.55
   margin: 0
   margin-bottom: <margin: 0>
@@ -17602,7 +17602,7 @@
   box-sizing: border-box
   color: #918a9d
   cursor: pointer
-  font-size: 15px
+  font-size: 16px
   line-height: 1
   margin: 0
   margin-bottom: <margin: 0>
@@ -17836,7 +17836,7 @@
   box-sizing: border-box
   color: #918a9d
   cursor: pointer
-  font-size: 15px
+  font-size: 16px
   line-height: 1
   margin: 0
   margin-bottom: <margin: 0>
@@ -17893,7 +17893,7 @@
   caret-color: #f08aa3
   color: #f5f1ee
   font-family: 'Switzer', system-ui, sans-serif
-  font-size: 15px
+  font-size: 16px
   line-height: 1.55
   margin: 0
   margin-bottom: <margin: 0>
@@ -19726,7 +19726,7 @@
   flex: 1
   flex-shrink: <flex: 1>
   font-family: 'Switzer', system-ui, sans-serif
-  font-size: 15px
+  font-size: 16px
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -21149,7 +21149,7 @@
   box-sizing: border-box
   color: #241a16
   font-family: 'Clash Grotesk', system-ui, sans-serif
-  font-size: 15px
+  font-size: 16px
   font-weight: 600
   letter-spacing: -0.01em
   margin: 0
@@ -26294,7 +26294,7 @@
   box-sizing: border-box
   color: #241a16
   font-family: 'Clash Grotesk', system-ui, sans-serif
-  font-size: 17px
+  font-size: 18px
   font-weight: 600
   letter-spacing: -0.01em
   margin: 0
@@ -27815,7 +27815,7 @@
   color: #241a16
   display: flex
   font-family: 'Clash Grotesk', system-ui, sans-serif
-  font-size: 15px
+  font-size: 16px
   font-weight: 650
   gap: 8px
   margin: 0
@@ -27991,7 +27991,7 @@
   color: #241a16
   display: flex
   font-family: 'Clash Grotesk', system-ui, sans-serif
-  font-size: 15px
+  font-size: 16px
   font-weight: 650
   gap: 8px
   margin: 0
@@ -29273,7 +29273,7 @@
   animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
   box-sizing: border-box
   color: #5c4b40
-  font-size: 15px
+  font-size: 16px
   line-height: 1.65
   margin: 0
   margin-bottom: <margin: 0>
@@ -30189,9 +30189,9 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 1px 2px rgba(50, 36, 28, 0.08)
   box-sizing: border-box
   color: #241a16
-  font-size: 15px
+  font-size: 17px
   font-weight: 450
-  line-height: 1.7
+  line-height: 1.6
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -31488,13 +31488,13 @@
   box-shadow: none
   box-sizing: border-box
   color: #241a16
-  font-size: 15px
-  line-height: 1.7
+  font-size: 17px
+  line-height: 1.6
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  max-width: min(74ch, 100%)
+  max-width: min(66ch, 100%)
   min-width: 0
   overflow-wrap: anywhere
   padding: 0
@@ -31538,7 +31538,7 @@
   box-sizing: border-box
   color: #241a16
   font-family: 'Clash Grotesk', system-ui, sans-serif
-  font-size: 21px
+  font-size: 1.4em
   font-weight: 600
   letter-spacing: -0.015em
   line-height: 1.25
@@ -31585,7 +31585,7 @@
   box-sizing: border-box
   color: #241a16
   font-family: 'Clash Grotesk', system-ui, sans-serif
-  font-size: 17px
+  font-size: 1.18em
   font-weight: 600
   letter-spacing: -0.015em
   line-height: 1.25
@@ -31632,7 +31632,7 @@
   box-sizing: border-box
   color: #241a16
   font-family: 'Clash Grotesk', system-ui, sans-serif
-  font-size: 15px
+  font-size: 1em
   font-weight: 600
   letter-spacing: -0.015em
   line-height: 1.25
@@ -34073,13 +34073,13 @@
   box-shadow: none
   box-sizing: border-box
   color: #241a16
-  font-size: 15px
-  line-height: 1.7
+  font-size: 17px
+  line-height: 1.6
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  max-width: min(74ch, 100%)
+  max-width: min(66ch, 100%)
   min-width: 0
   overflow-wrap: anywhere
   padding: 0
@@ -34377,13 +34377,13 @@
   box-shadow: none
   box-sizing: border-box
   color: #241a16
-  font-size: 15px
-  line-height: 1.7
+  font-size: 17px
+  line-height: 1.6
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  max-width: min(74ch, 100%)
+  max-width: min(66ch, 100%)
   min-width: 0
   opacity: 0.92
   overflow-wrap: anywhere
@@ -34764,14 +34764,14 @@
   box-sizing: border-box
   color: #241a16
   display: inline-flex
-  font-size: 15px
+  font-size: 17px
   gap: 5px
-  line-height: 1.7
+  line-height: 1.6
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  max-width: min(74ch, 100%)
+  max-width: min(66ch, 100%)
   min-width: 0
   overflow-wrap: anywhere
   padding: 0
@@ -35815,7 +35815,7 @@
   caret-color: #b31a54
   color: #241a16
   font-family: 'Switzer', system-ui, sans-serif
-  font-size: 15px
+  font-size: 16px
   line-height: 1.55
   margin: 0
   margin-bottom: <margin: 0>
@@ -36348,7 +36348,7 @@
   box-sizing: border-box
   color: #6e5a4d
   cursor: pointer
-  font-size: 15px
+  font-size: 16px
   line-height: 1
   margin: 0
   margin-bottom: <margin: 0>
@@ -36582,7 +36582,7 @@
   box-sizing: border-box
   color: #6e5a4d
   cursor: pointer
-  font-size: 15px
+  font-size: 16px
   line-height: 1
   margin: 0
   margin-bottom: <margin: 0>
@@ -36639,7 +36639,7 @@
   caret-color: #b31a54
   color: #241a16
   font-family: 'Switzer', system-ui, sans-serif
-  font-size: 15px
+  font-size: 16px
   line-height: 1.55
   margin: 0
   margin-bottom: <margin: 0>
@@ -37979,8 +37979,8 @@
   color: #f5f1ee
   flex: 1
   flex-shrink: <flex: 1>
-  font-size: 15px
-  line-height: 1.7
+  font-size: 17px
+  line-height: 1.6
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -38293,7 +38293,7 @@
   color: #918a9d
   cursor: grab
   display: flex
-  font-size: 17px
+  font-size: 18px
   height: 24px
   margin: 0
   margin-bottom: <margin: 0>
@@ -38487,7 +38487,7 @@
   flex: 1
   flex-shrink: <flex: 1>
   font-family: 'Switzer', system-ui, sans-serif
-  font-size: 15px
+  font-size: 16px
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -38547,7 +38547,7 @@
   cursor: pointer
   display: grid
   flex-shrink: 0
-  font-size: 15px
+  font-size: 16px
   height: 34px
   justify-items: <place-items: center>
   margin: 0
@@ -38609,7 +38609,7 @@
   cursor: pointer
   display: grid
   flex-shrink: 0
-  font-size: 15px
+  font-size: 16px
   height: 34px
   justify-items: <place-items: center>
   margin: 0
@@ -38719,7 +38719,7 @@
   cursor: pointer
   display: grid
   flex-shrink: 0
-  font-size: 17px
+  font-size: 18px
   font-weight: 700
   height: 36px
   justify-items: <place-items: center>
@@ -39353,7 +39353,7 @@
   box-sizing: border-box
   color: #f5f1ee
   font-family: 'Clash Grotesk', system-ui, sans-serif, 'Clash Grotesk', sans-serif
-  font-size: 17px
+  font-size: 18px
   font-weight: 700
   letter-spacing: -0.02em
   margin: 0
@@ -40020,7 +40020,7 @@
   animation-iteration-count: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
   box-sizing: border-box
   color: #f5f1ee
-  font-size: 15px
+  font-size: 16px
   font-weight: 600
   margin: 0
   margin-bottom: <margin: 0>
@@ -40516,7 +40516,7 @@
 
 [48] h1.main-title
   font-size: 13px
-  - font-size: 15px
+  - font-size: 16px
 
 [50] button.cmdk-trigger.desktop-only
   display: none
@@ -40678,7 +40678,7 @@
 
 [216] p.empty-subtitle
   font-size: 13px
-  - font-size: 15px
+  - font-size: 16px
 
 [217] div.starter-grid
   grid-template-columns: 1fr
@@ -40826,7 +40826,7 @@
 
 [435] h1.main-title
   font-size: 13px
-  - font-size: 15px
+  - font-size: 16px
 
 [437] button.cmdk-trigger.desktop-only
   display: none
@@ -40988,7 +40988,7 @@
 
 [603] p.empty-subtitle
   font-size: 13px
-  - font-size: 15px
+  - font-size: 16px
 
 [604] div.starter-grid
   grid-template-columns: 1fr
@@ -50787,7 +50787,7 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E")
   --grain-opacity: 0.055
   --info: #8fc9d6
-  --measure: 74ch
+  --measure: 66ch
   --primary: #f08aa3
   --primary-dim: rgba(240, 138, 163, 0.12)
   --primary-glow: rgba(240, 138, 163, 0.22)
@@ -50822,13 +50822,14 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --surface-4: #2a2a36
   --text: #f5f1ee
   --text-2xs: 11px
-  --text-base: 15px
-  --text-lg: 17px
+  --text-base: 16px
+  --text-lg: 18px
   --text-muted: #bdb6c4
   --text-on-fill: #1a0e13
+  --text-prose: 17px
   --text-sm: 13px
   --text-subtle: #918a9d
-  --text-xl: 21px
+  --text-xl: 22px
   --text-xs: 12px
   --texture: none
   --topbar-h: 48px
@@ -50884,7 +50885,7 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E")
   --grain-opacity: 0.03
   --info: #1f6675
-  --measure: 74ch
+  --measure: 66ch
   --primary: #b31a54
   --primary-dim: rgba(179, 26, 84, 0.10)
   --primary-glow: rgba(179, 26, 84, 0.18)
@@ -50919,13 +50920,14 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --surface-4: #d9cfbe
   --text: #241a16
   --text-2xs: 11px
-  --text-base: 15px
-  --text-lg: 17px
+  --text-base: 16px
+  --text-lg: 18px
   --text-muted: #5c4b40
   --text-on-fill: #fffaf7
+  --text-prose: 17px
   --text-sm: 13px
   --text-subtle: #6e5a4d
-  --text-xl: 21px
+  --text-xl: 22px
   --text-xs: 12px
   --texture: repeating-linear-gradient( 90deg, transparent 0px, transparent 3px, rgba(107, 84, 51, 0.016) 3px, rgba(107, 84, 51, 0.016) 4px ), repeating-linear-gradient( 0deg, transparent 0px, transparent 5px, rgba(107, 84, 51, 0.012) 5px, rgba(107, 84, 51, 0.012) 6px )
   --topbar-h: 48px

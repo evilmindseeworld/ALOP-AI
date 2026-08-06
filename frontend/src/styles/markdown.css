@@ -9,9 +9,18 @@
  * Nothing bleeds into the app chrome.
  */
 
+/* THE SAME READING SIZE AS .bubble, deliberately restated rather than
+ * inherited.
+ *
+ * `.markdown-body` has two consumers: the transcript, where it is on the SAME
+ * element as `.bubble`, and the overlay's answer pane, where it is not. Both
+ * are model output being read, so both want the reading size — and because the
+ * two rules now resolve to the same token, it no longer matters which of
+ * chat.css and markdown.css the manifest loads last. Before this, whichever
+ * came second silently decided the size of every answer in the app. */
 .markdown-body {
-  font-size: var(--text-base);
-  line-height: 1.7;
+  font-size: var(--text-prose);
+  line-height: 1.6;
   color: var(--text);
   min-width: 0;
 }
@@ -48,10 +57,22 @@
 .markdown-body > * + h2,
 .markdown-body > * + h3 { margin-top: var(--space-6); }
 
-.markdown-body h1 { font-size: var(--text-xl); }
-.markdown-body h2 { font-size: var(--text-lg); }
-.markdown-body h3 { font-size: var(--text-base); }
-.markdown-body h4 { font-size: var(--text-sm); color: var(--text-muted); }
+/* Headings are `em`, so they are RELATIVE TO THE PROSE they head rather than
+ * borrowed from the interface scale.
+ *
+ * They used to be --text-xl / --text-lg / --text-base / --text-sm. That broke
+ * the moment prose moved to 17px: h3 was --text-base at 16px, which is SMALLER
+ * than the paragraph under it, and h4 at 13px was smaller still. A heading that
+ * is smaller than its body text is not a subtle problem — it inverts the
+ * document's structure, and it would have shipped invisibly because no test
+ * compares two font sizes.
+ *
+ * In em, the whole scale tracks --text-prose automatically. h3 matches the body
+ * size and separates on weight instead, which is what h3 is for. */
+.markdown-body h1 { font-size: 1.4em; }
+.markdown-body h2 { font-size: 1.18em; }
+.markdown-body h3 { font-size: 1em; }
+.markdown-body h4 { font-size: 0.88em; color: var(--text-muted); }
 
 .markdown-body p { margin: 0; }
 

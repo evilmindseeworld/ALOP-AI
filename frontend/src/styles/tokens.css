@@ -98,19 +98,46 @@
    * thing that separates "label" from "small heading". */
   --tracking-eyebrow: 0.18em;
 
-  /* Type scale. Body sits at 15px because the transcript is the product and
-   * 14px prose in a 74-character column is a squint. */
+  /* Type scale.
+   *
+   * Body was 15px, raised from 14px on the reasoning that "the transcript is
+   * the product and 14px prose in a 74-character column is a squint". The
+   * direction was right and the distance was short: the reading research puts
+   * the floor for body text at 16px, and 15px sat under it everywhere the token
+   * is used — the transcript, the composer, the panels, the overlay.
+   *
+   * 16px is the floor, not the target. Long-form reading on a desktop is
+   * usually put at 18-20px, which is what --text-prose exists for. */
   --text-2xs: 11px;
   --text-xs: 12px;
   --text-sm: 13px;
-  --text-base: 15px;
-  --text-lg: 17px;
-  --text-xl: 21px;
+  --text-base: 16px;
+  --text-lg: 18px;
+  --text-xl: 22px;
   --display: clamp(30px, 5vw, 44px);
 
-  /* Long-form answers are the main thing on screen. Anything wider than about
-   * 74 characters loses the reader on the return sweep. */
-  --measure: 74ch;
+  /* THE READING SIZE, for the transcript only.
+   *
+   * A separate token because it answers a different question from --text-base.
+   * --text-base sizes interface text: labels, buttons, menu rows, things you
+   * glance at. This sizes the one surface on the screen that gets READ, several
+   * hundred words at a time, and the evidence for those two is not the same
+   * number. Reusing --text-lg would have coupled the transcript to whatever
+   * headings need. */
+  --text-prose: 17px;
+
+  /* The measure: how many characters to a line.
+   *
+   * Was 74ch, on the reasoning that "anything wider than about 74 characters
+   * loses the reader on the return sweep". That is the right mechanism and the
+   * wrong end of the range — 45-75 is the acceptable band and 55-66 is where
+   * the research actually puts the optimum, so 74 was sitting on the outer
+   * edge of tolerable.
+   *
+   * The pixel width barely moves, which is the happy part: 74ch at 15px and
+   * 66ch at 17px are within a few pixels of each other. The column looks the
+   * same and the line gets shorter in the unit that matters. */
+  --measure: 66ch;
 
   --space-1: 4px;
   --space-2: 8px;

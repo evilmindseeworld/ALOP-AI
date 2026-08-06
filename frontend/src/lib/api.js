@@ -3,23 +3,76 @@ import { useCallback } from "react";
 export const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
 
 /**
+ * How long any single API call may take before it is abandoned.
+ *
+ * MEASURED, not picked: a cold Render free-tier boot takes 22.5s, so anything
+ * at or below that would turn a slow start into a fake failure. 45s is that
+ * number with margin, and it is the knob to turn if the hosting plan changes.
+ */
+export const API_TIMEOUT_MS = 45_000;
+
+/** A promise that rejects when `signal` aborts, and never resolves. */
+function untilAborted(signal) {
+  return new Promise((_, reject) => {
+    const fail = () => reject(new Error("aborted"));
+    if (signal.aborted) fail();
+    else signal.addEventListener("abort", fail, { once: true });
+  });
+}
+
+/**
  * An authenticated `fetch` bound to the API base.
  *
  * The Clerk token is fetched per call rather than held: it is short-lived, and
  * a cached one is exactly how a long-lived tab starts 401ing.
+ *
+ * EVERY call is bounded, and that is the point rather than a nicety. Callers
+ * clear their loading state in a `finally` — `loadChats` is the one that bit
+ * us — so a request that never settles leaves the app on skeleton loaders
+ * indefinitely, with no error, no toast and nothing to click. A sleeping
+ * backend produced exactly that. The bound belongs here, in the one function
+ * every route goes through, rather than in each caller.
+ *
+ * Both phases are covered: `getToken()` can hang on its own if Clerk is
+ * unreachable, and it is not a fetch, so the signal cannot cancel it. It is
+ * raced against the same deadline instead of being given a second timer.
  */
 export function useApi(getToken) {
   return useCallback(
     async (path, options = {}) => {
-      const token = await getToken();
-      return fetch(`${API_BASE}${path}`, {
-        ...options,
-        headers: {
-          ...options.headers,
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      const controller = new AbortController();
+      let timedOut = false;
+      const timer = setTimeout(() => {
+        timedOut = true;
+        controller.abort();
+      }, API_TIMEOUT_MS);
+
+      // A caller's own signal still has to work, so relay it rather than
+      // replace it. Without this, passing `signal` would silently do nothing.
+      const external = options.signal;
+      const relay = () => controller.abort();
+      external?.addEventListener("abort", relay, { once: true });
+
+      try {
+        const token = await Promise.race([getToken(), untilAborted(controller.signal)]);
+        return await fetch(`${API_BASE}${path}`, {
+          ...options,
+          signal: controller.signal,
+          headers: {
+            ...options.headers,
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+      } catch (e) {
+        // Only OUR deadline becomes a timeout. A caller who aborted on purpose
+        // gets their own abort back, not a message blaming the network.
+        if (timedOut) throw new Error(`Request timed out after ${API_TIMEOUT_MS / 1000}s`);
+        throw e;
+      } finally {
+        clearTimeout(timer);
+        external?.removeEventListener("abort", relay);
+      }
     },
     [getToken]
   );

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { COUNCIL, MODEL_IDS } from "../constants/council";
 
 /**
  * The first screen of the product had no test, and it was broken.
@@ -129,14 +130,34 @@ describe("what has to be on the page whichever card is showing", () => {
       );
     });
 
-    it(`shows the council roster on ${label}`, () => {
+    it(`shows all seven council seats on ${label}`, () => {
       at(path);
       render(<SignInPage />);
       // The roster is the page's argument and it is asserted to survive the
       // branch, because the sign-up card is the one a new visitor sees first.
-      expect(screen.getByText("glm-5.2")).toBeInTheDocument();
-      expect(screen.getByText("minimax-m3")).toBeInTheDocument();
       expect(screen.getAllByRole("listitem")).toHaveLength(7);
+      expect(screen.getByText("The Architect")).toBeInTheDocument();
+      expect(screen.getByText("The Oracle")).toBeInTheDocument();
+    });
+
+    it(`leaks no vendor model id into the DOM on ${label}`, () => {
+      // The whole point of the display layer. `model` stays in the constant so
+      // the backend parity test has something to compare against, which means
+      // it is one careless {m.model} away from being rendered again.
+      at(path);
+      const { container } = render(<SignInPage />);
+      const text = container.textContent;
+      for (const id of MODEL_IDS) {
+        expect(text, `"${id}" is on the page`).not.toContain(id);
+      }
+    });
+
+    it(`credits a company for every seat on ${label}`, () => {
+      at(path);
+      const { container } = render(<SignInPage />);
+      for (const m of COUNCIL) {
+        expect(container.textContent, `no attribution for ${m.title}`).toContain(m.company);
+      }
     });
   }
 });

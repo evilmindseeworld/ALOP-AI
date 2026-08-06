@@ -39666,7 +39666,7 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  align-items: baseline
+  align-items: first baseline
   animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards
   animation-delay: 120ms
   animation-duration: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
@@ -39680,9 +39680,9 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  padding: 5px 0 5px 16px
-  padding-bottom: <padding: 5px 0 5px 16px>
-  padding-left: <padding: 5px 0 5px 16px>
+  padding: 7px 0 7px 16px
+  padding-bottom: <padding: 7px 0 7px 16px>
+  padding-left: <padding: 7px 0 7px 16px>
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
   :hover
@@ -39763,8 +39763,9 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  font-family: 'JetBrains Mono', ui-monospace, monospace
-  font-size: 12px
+  color: #f5f1ee
+  font-size: 13px
+  font-weight: 600
   letter-spacing: -0.01em
   margin: 0
   margin-bottom: <margin: 0>
@@ -39811,7 +39812,7 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  align-items: baseline
+  align-items: first baseline
   animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards
   animation-delay: 180ms
   animation-duration: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
@@ -39825,9 +39826,9 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  padding: 5px 0 5px 16px
-  padding-bottom: <padding: 5px 0 5px 16px>
-  padding-left: <padding: 5px 0 5px 16px>
+  padding: 7px 0 7px 16px
+  padding-bottom: <padding: 7px 0 7px 16px>
+  padding-left: <padding: 7px 0 7px 16px>
   scrollbar-color: #2a2a36 transparent
   scrollbar-width: thin
   :hover
@@ -39908,9 +39909,9 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  color: #918a9d
-  font-family: 'JetBrains Mono', ui-monospace, monospace
-  font-size: 12px
+  color: #bdb6c4
+  font-size: 13px
+  font-weight: 600
   letter-spacing: -0.01em
   margin: 0
   margin-bottom: <margin: 0>
@@ -50742,6 +50743,7 @@ orb2: 0%, 100% { transform: translate(0, 0) scale(1); } 50% { transform: transla
 overlayPulse: 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); } 50% { box-shadow: 0 0 0 8px transparent; }
 overlayUp: from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); }
 panelIn: from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity: 1; }
+petalFall: 0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(0deg) scale(var(--petal-scale)); } 8% { opacity: 0.75; } 85% { opacity: 0.55; } 100% { opacity: 0; transform: translate3d(var(--petal-drift), 112vh, 0) rotate(var(--petal-spin)) scale(var(--petal-scale)); }
 scrollDownIn: from { opacity: 0; transform: translateX(-50%) translateY(6px); } to { opacity: 1; transform: translateX(-50%) translateY(0); }
 shimmerMove: 0% { background-position: 200% center; } 100% { background-position: -200% center; }
 signinFadeIn: from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); }
@@ -50954,11 +50956,13 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
 
 #transcript
 .chat-toolbar-btn span
+.council-blurb
 .council-row:nth-child(3)
 .council-row:nth-child(4)
 .council-row:nth-child(5)
 .council-row:nth-child(6)
 .council-row:nth-child(7)
+.council-seat
 .markdown-body > * + h1
 .markdown-body em
 .markdown-body h4
@@ -50966,6 +50970,11 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
 .markdown-body li > ul
 .markdown-body tbody tr:nth-child(even) td
 .msg-row + .msg-row.user
+.sakura-bough
+.sakura-bough-svg
+.sakura-petal
+.sakura-petal svg
+.sakura-petals
 .signin-dot
 [role="button"]
 select

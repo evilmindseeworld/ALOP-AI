@@ -260,6 +260,97 @@
   .signin-root .sakura-corner { width: clamp(64px, 22vw, 100px); opacity: 0.2; }
 }
 
+/* ===== THE BOUGH, AND WHAT FALLS FROM IT =====
+ *
+ * A blossoming branch across the top of the page with petals drifting down it.
+ *
+ * TRANSFORM AND OPACITY ONLY, on every animated property. Both are composited
+ * without touching layout or paint. Animating `top` would relayout the whole
+ * page sixty times a second behind a form somebody is typing into, which is how
+ * decoration turns into a dropped keystroke.
+ *
+ * The petals are also the reason `.signin-root` must keep `overflow-y: auto`
+ * rather than gaining `overflow: hidden` for them — they are clipped by the
+ * container it already is, and a second clipping rule here would break the
+ * sign-up card's scroll. */
+.sakura-bough {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: min(46vh, 340px);
+  z-index: var(--z-empty-decor);
+  pointer-events: none;
+  color: var(--primary);
+  /* The petals fall past the bottom of this box and must not widen the page.
+   * Vertical overflow is visible on purpose so a petal can leave the box; the
+   * horizontal clip is what stops drift creating a scrollbar. */
+  overflow-x: clip;
+}
+
+.sakura-bough-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0.3;
+}
+
+/* The petals live in their own full-height layer so their fall is measured
+ * against the viewport, not against the bough's 340px box. */
+.sakura-petals {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sakura-petal {
+  position: absolute;
+  top: -6vh;
+  left: var(--petal-left);
+  width: 12px;
+  height: 14px;
+  opacity: 0;
+  color: var(--primary-soft);
+  animation: petalFall var(--petal-duration) linear var(--petal-delay) infinite;
+}
+
+.sakura-petal svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* One keyframe rule for all fourteen. Everything that differs between them is a
+ * custom property set on the element, so there is one definition of what
+ * falling means rather than fourteen near-copies to keep in sync. */
+@keyframes petalFall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(0deg) scale(var(--petal-scale));
+  }
+  8% { opacity: 0.75; }
+  85% { opacity: 0.55; }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--petal-drift), 112vh, 0) rotate(var(--petal-spin))
+      scale(var(--petal-scale));
+  }
+}
+
+@media (max-width: 640px) {
+  .sakura-bough { height: min(32vh, 220px); }
+  .sakura-bough-svg { opacity: 0.22; }
+}
+
+/* Reduced motion removes the petals ENTIRELY rather than freezing them.
+ *
+ * A stopped petal halfway down the screen is not a calmer animation, it is a
+ * pink shape stuck in the middle of a login form — it reads as a rendering bug,
+ * which is worse than the motion it was meant to spare. The bough stays,
+ * because a still branch is a finished picture. */
+@media (prefers-reduced-motion: reduce) {
+  .sakura-petals { display: none; }
+}
+
 /* ===== THE COUNCIL LADDER =====
  *
  * The signature element, and the only place this page spends boldness.
@@ -301,9 +392,14 @@
 
 .council-row {
   display: flex;
-  align-items: baseline;
+  /* `baseline` was right when a row was one line. A seat is now a title over a
+   * blurb, and baseline-aligning a two-line block against a single number
+   * hangs the number off the first line and leaves the second unaccounted for.
+   * `first baseline` on a flex item does what baseline used to: the temperature
+   * sits on the title's line, and the blurb hangs below both. */
+  align-items: first baseline;
   gap: var(--space-3);
-  padding: 5px 0 5px var(--space-4);
+  padding: 7px 0 7px var(--space-4);
   font-size: var(--text-sm);
   color: var(--text-muted);
   /* Staggered on load: they answer separately. `backwards` so nothing paints
@@ -339,10 +435,35 @@
   flex: 0 0 auto;
 }
 
+/* A seat is a title over an attribution. Column, not row, so the blurb sits
+ * under the name it belongs to rather than beside it — a two-column layout puts
+ * the vendor in the same visual rank as the title, and the title is what the
+ * row is about. */
+.council-seat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
 .council-name {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
   letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+}
+
+/* The attribution. Deliberately quieter than the title and quieter than the
+ * temperature: it is a credit, not a boast, and setting it at the same weight
+ * as the title turns every row into two competing headlines. */
+.council-blurb {
+  font-size: var(--text-2xs);
+  color: var(--text-subtle);
+  letter-spacing: 0.01em;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -360,7 +481,10 @@
   flex: 0 0 auto;
 }
 
-.council-row.is-pro .council-name { color: var(--text-subtle); }
+/* Pro seats read one step back, so the free tier is what the eye lands on
+ * first — the row still says Pro, but the page is not selling upward before
+ * anyone has signed in. */
+.council-row.is-pro .council-name { color: var(--text-muted); }
 
 /* The resolution. Seven dim rows above, one bright line here — the convergence
  * the whole page exists to claim, arriving last. */

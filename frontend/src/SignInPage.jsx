@@ -1,5 +1,6 @@
 import { SignIn, SignUp, useUser } from "@clerk/react";
 import SakuraFrame from "./components/SakuraFrame";
+import SakuraBough from "./components/SakuraBough";
 import { COUNCIL, FREE_COUNT } from "./constants/council";
 
 /**
@@ -59,6 +60,7 @@ export default function SignInPage() {
       <div className="signin-orb signin-orb-1" />
       <div className="signin-orb signin-orb-2" />
       <SakuraFrame />
+      <SakuraBough />
 
       <div className="signin-wrap">
         <div className="signin-brand">
@@ -68,19 +70,26 @@ export default function SignInPage() {
 
         <div className="signin-grid">
           <section className="signin-thesis">
-            <p className="signin-eyebrow">The council</p>
+            <p className="signin-eyebrow">The Council</p>
             <h1 className="signin-title">
               Seven answers.<span className="signin-title-accent">One reply.</span>
             </h1>
 
-            {/* The roster is the argument. Each row is a real model and its real
-                temperature; the column of numbers is what makes the claim
-                checkable rather than atmospheric. */}
+            {/* The roster is still the argument — seven seats, each held at its
+                own temperature — but a seat is named for what it DOES, and
+                credited to the company behind it rather than to a model id.
+                The titles run the same axis as the numbers beside them: The
+                Architect holds to what is literally there, The Oracle is
+                furthest from it. See constants/council.js, including why two of
+                the seven blurbs deliberately do not say "most powerful". */}
             <ol className="council-ladder">
               {COUNCIL.map((m) => (
                 <li key={m.model} className={`council-row ${m.free ? "" : "is-pro"}`}>
                   <span className="council-temp">{m.temperature.toFixed(1)}</span>
-                  <span className="council-name">{m.model}</span>
+                  <span className="council-seat">
+                    <span className="council-name">{m.title}</span>
+                    <span className="council-blurb">{m.blurb}</span>
+                  </span>
                   {!m.free && <span className="council-tag">Pro</span>}
                 </li>
               ))}

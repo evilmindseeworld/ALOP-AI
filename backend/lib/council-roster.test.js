@@ -34,17 +34,35 @@ const FRONTEND = readFileSync(
 );
 
 /**
- * One pattern for both files. The two differ in quote style and padding and in
- * nothing else, which is why a single regex can be the arbiter — if either side
- * is reformatted into a shape this does not match, the count guard below fails
- * loudly rather than silently comparing two empty lists.
+ * Seats are parsed FIELD BY FIELD, not by one whole-object pattern.
+ *
+ * The first version matched `{ model: …, temperature: …, free: … }` as a single
+ * shape, and broke the moment the frontend seats grew `title`, `company` and
+ * `blurb` for the display layer — it parsed zero seats on that side. It failed
+ * loudly rather than comparing two empty lists, which is the only reason that
+ * was a five-minute fix instead of a guard that had silently stopped guarding.
+ *
+ * So: find each object block that declares a `model`, then pull the three
+ * fields that must agree out of it independently. Field order, line breaks and
+ * any number of extra display-only fields are all now irrelevant, because the
+ * contract is about three values and never was about formatting.
  */
-const SEAT =
-  /\{\s*model:\s*['"]([^'"]+)['"]\s*,\s*temperature:\s*([0-9.]+)\s*,\s*free:\s*(true|false)\s*\}/g;
+const blocks = (src) => src.split("{").filter((b) => /\bmodel:\s*['"]/.test(b));
+
+const field = (block, name, pattern) => {
+  const m = new RegExp(`\\b${name}:\\s*${pattern}`).exec(block);
+  return m ? m[1] : null;
+};
 
 const seats = (src) =>
-  [...src.matchAll(SEAT)]
-    .map((m) => `${m[1]} @${Number(m[2]).toFixed(1)} ${m[3] === "true" ? "free" : "pro"}`)
+  blocks(src)
+    .map((b) => ({
+      model: field(b, "model", `['"]([^'"]+)['"]`),
+      temperature: field(b, "temperature", `([0-9.]+)`),
+      free: field(b, "free", `(true|false)`),
+    }))
+    .filter((s) => s.model && s.temperature !== null && s.free !== null)
+    .map((s) => `${s.model} @${Number(s.temperature).toFixed(1)} ${s.free === "true" ? "free" : "pro"}`)
     .sort();
 
 const backendSeats = seats(BACKEND);
@@ -76,7 +94,7 @@ test("the free tier is a real subset, not the whole council", () => {
 test("temperatures actually spread, because the spread is the product claim", () => {
   // "They disagree on purpose" is on the sign-in page. Seven seats at one
   // temperature would be one answer seven times, and the page would be lying.
-  const temps = [...BACKEND.matchAll(SEAT)].map((m) => Number(m[2]));
+  const temps = backendSeats.map((s) => Number(/@([0-9.]+)/.exec(s)[1]));
   assert.ok(Math.max(...temps) - Math.min(...temps) >= 0.3, `spread is only ${Math.max(...temps) - Math.min(...temps)}`);
   assert.ok(new Set(temps).size >= 3, "fewer than three distinct temperatures");
 });

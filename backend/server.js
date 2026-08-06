@@ -605,12 +605,16 @@ app.use((req, res, next) => (IMAGE_ROUTES.some((p) => req.path.startsWith(p)) ? 
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // ===== SANITIZATION =====
-const MAX_PROMPT = 100000, MAX_HISTORY = 20, ALLOWED_ROLES = ['user','assistant','system'];
+const MAX_PROMPT = 100000;
 const { buildChatUpdate, sanitizeString } = require('./lib/chat-update');
 const { parseDataUrl } = require('./lib/data-url');
+// History is INPUT, not state. Both routes that take it now go through one
+// function — /api/overlay previously spread client objects straight into the
+// message array, so a caller could supply `role: "system"` and override the
+// server's own prompt. See lib/history.js for the three things that fixed.
+const { sanitizeHistory } = require('./lib/history');
 const truncatePrompt = (text, maxChars = 90000) => { if (text.length <= maxChars) return text; const h = Math.floor(maxChars/2); return text.slice(0,h) + '\n\n[...truncated...]\n\n' + text.slice(-h); };
 const validatePrompt = (p) => { if (!p || typeof p !== 'string') return { valid: false, error: 'Prompt required' }; const t = p.trim(); if (!t) return { valid: false, error: 'Prompt empty' }; if (t.length > MAX_PROMPT) return { valid: false, error: `Exceeds ${MAX_PROMPT}` }; return { valid: true, value: t }; };
-const validateHistory = (h) => { if (!h) return []; if (!Array.isArray(h)) return { valid: false, error: 'History must be array' }; if (h.length > MAX_HISTORY) return { valid: false, error: `Exceeds ${MAX_HISTORY}` }; return { valid: true, value: h.filter(m => m && typeof m === 'object').map(m => ({ role: ALLOWED_ROLES.includes(m.role) ? m.role : 'user', content: typeof m.content === 'string' ? m.content.slice(0, MAX_PROMPT) : '' })).slice(0, MAX_HISTORY) }; };
 
 // ===== SUPABASE & CLERK =====
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { autoRefreshToken: false, persistSession: false } });
@@ -745,8 +749,10 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const { message, history = [], chatId, image } = req.body;
     const pv = validatePrompt(message);
     if (!pv.valid) return res.status(400).json({ error: pv.error });
-    const hv = validateHistory(history);
-    if (!hv.valid && hv.error) return res.status(400).json({ error: hv.error });
+    // Trimmed rather than rejected. The old code returned 400 on a 21st message
+    // while silently clipping a 100,000-character one, which is two different
+    // answers to the same question; and the council slices to the last ten
+    // anyway, so the rejection was refusing input it was about to discard.
 
     const userPlan = user.plan || 'free';
     const isDetailed = wantsDetailedAnswer(pv.value);
@@ -755,7 +761,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     // which is what lets the router be called with a sentence and checked.
     const selection = classifyRequest(pv.value, userPlan === 'pro' ? COUNCIL : FREE_COUNCIL);
     const truncatedPrompt = truncatePrompt(pv.value);
-    const histArr = Array.isArray(hv) ? hv : (hv.value || []);
+    const histArr = sanitizeHistory(history);
 
     const [convSummary, feedbackGuidance] = await Promise.all([readChatSummary(chatId, user.id), getFeedbackGuidance(user.id)]);
 
@@ -1118,8 +1124,14 @@ app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
       } catch (e) { console.error('[OVERLAY] Vision skipped:', e.message); }
     }
 
-    // Single model, fast and reliable
-    const histArr = Array.isArray(history) ? history.slice(-4) : [];
+    // Single model, fast and reliable.
+    //
+    // This line used to be `Array.isArray(history) ? history.slice(-4) : []`,
+    // spreading client-supplied objects into the message array below with no
+    // check on role, content type or size — so a caller could send
+    // `role: "system"` and have it land after the overlay's own system prompt.
+    // Four turns is the overlay's own budget; the sanitising is shared.
+    const histArr = sanitizeHistory(history, { maxMessages: 4 });
     const overlayMsgs = [
       { role: 'system', content: 'You are ALOP-AI Overlay. Give concise answers. For coding, provide working code. If screen description provided, use it.' },
       ...histArr,

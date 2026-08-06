@@ -8,7 +8,7 @@ name: Keep the API warm
 # exactly the person you least want it to — someone arriving at a quiet moment,
 # which is most arrivals before there are users.
 #
-# An inbound request resets that idle timer. This sends one every 10 minutes.
+# An inbound request resets that idle timer.
 #
 # WHY GITHUB ACTIONS: scheduled workflows are free and unmetered on public
 # repositories, so this adds nothing to the bill. Render's own free-tier
@@ -18,12 +18,42 @@ name: Keep the API warm
 #
 # WHAT THIS IS NOT: a substitute for the $7 Starter plan, which removes
 # spin-down properly and does not depend on GitHub's scheduler. It is what to
-# do until that is affordable.
+# do until that is affordable, and the ceiling below is the reason to buy it.
+#
+# ---------------------------------------------------------------------------
+# MEASURED FAILURE, 2026-08-06. The first version of this file did not keep
+# anything warm, and it reported itself as healthy while not doing so.
+#
+# Two independent causes, both fixed here:
+#
+# 1. `cancel-in-progress: true` was throwing away runs that HAD fired. A run
+#    sitting in the queue waiting for a runner is "in progress" as far as that
+#    setting is concerned, so the next tick killed it. Two of the three recent
+#    non-successes were `cancelled` after 15 minutes of queueing, not failures.
+#    `timeout-minutes` did not save it either — that clock starts when the job
+#    begins executing, so a queued job can burn far past it.
+#
+# 2. GitHub silently DROPS scheduled ticks under load. This is documented
+#    behaviour for `schedule`, and high-frequency crons on public repos are the
+#    first to go. Observed gaps between actual runs: 1h42m, 2h17m, 2h22m and
+#    5h36m — against Render's ~15 minute idle window. The cron said every ten
+#    minutes and reality was every couple of hours.
+#
+# So one fired tick now has to cover more than one tick's worth of time: the
+# job pings repeatedly across ~20 minutes instead of once and exiting.
+#
+# THE CEILING, stated rather than hidden: this widens coverage per fired tick
+# and stops us discarding ticks that fired. It CANNOT cover a five-hour gap,
+# because nothing was running to cover it. If gaps like that persist, the fix
+# is the $7 Starter plan, not more YAML. The client-side guard is what makes
+# that survivable in the meantime — `apiCall` now bounds every request, so a
+# cold boot surfaces as an error instead of skeleton loaders that never resolve.
+# ---------------------------------------------------------------------------
 on:
   schedule:
-    # Every 10 minutes. GitHub delays scheduled runs under load — sometimes by
-    # several minutes — so 10 leaves margin against Render's ~15 minute idle
-    # window. Every 5 would be wasteful; every 15 would lose the race.
+    # Every 10 minutes, understood as best-effort rather than a guarantee.
+    # Frequent ticks are the redundancy against dropped ones; the in-job loop
+    # below is the redundancy against a whole run going missing.
     - cron: "*/10 * * * *"
   workflow_dispatch:
 
@@ -31,24 +61,45 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: keep-warm
-  cancel-in-progress: true
+# NO `concurrency` BLOCK, deliberately. Overlapping runs are the point: two
+# jobs pinging a health endpoint cost nothing and cannot conflict, whereas the
+# grouping that was here cancelled queued runs and was the primary bug.
 
 jobs:
   ping:
     runs-on: ubuntu-latest
-    # A cold boot takes ~25s and this job should never hang a runner past that.
-    timeout-minutes: 3
+    # Covers the ~20 minute loop with margin for a cold boot on the last ping.
+    timeout-minutes: 25
     steps:
-      - name: Ping /health
+      - name: Ping /health across the idle window
         run: |
-          # /health is unauthenticated, does no database work, and is rate
-          # limited at 120/min — six pings an hour is nothing.
-          code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 \
-            https://alop-ai.onrender.com/health)
-          echo "health -> $code"
-          # A non-200 is worth failing on: this workflow is also the closest
-          # thing to an uptime check the project has, and a silent ping that
-          # never notices the service is down is worse than no ping.
-          test "$code" = "200"
+          set -u
+          URL="https://alop-ai.onrender.com/health"
+          # Five pings, five minutes apart, so one run spans a full Render idle
+          # window and then some. /health is unauthenticated, does no database
+          # work, and is rate limited at 120/min — this is nowhere near it.
+          # No `|| echo 000` here: curl already prints 000 on a connection
+          # failure, so the fallback produced "000000" and made the log lie
+          # about what came back. There is no `set -e`, so a non-zero curl
+          # exit does not abort the loop.
+          FAILED=0
+          for i in $(seq 1 5); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$URL")
+            if [ "$code" != "200" ]; then
+              # Retry once before believing it. A cold boot can answer 502 for
+              # a moment, and a keep-warm that cries wolf is one that gets
+              # muted — at which point it stops being an uptime check at all.
+              echo "ping $i: $code — retrying in 15s"
+              sleep 15
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$URL")
+            fi
+            echo "ping $i/5 -> $code"
+            [ "$code" = "200" ] || FAILED=$((FAILED + 1))
+            [ "$i" = "5" ] || sleep 300
+          done
+
+          # Fail only if EVERY ping failed. One bad ping in five is a blip; five
+          # out of five is the service being down, which is worth a red run —
+          # this workflow is also the closest thing to an uptime check here.
+          echo "failed pings: $FAILED/5"
+          test "$FAILED" -lt 5

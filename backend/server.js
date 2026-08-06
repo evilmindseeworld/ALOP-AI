@@ -447,14 +447,33 @@ const comprehensiveSearch = async (query, needsWiki) => {
 // unrelated chats. Requires migrations/001_per_chat_memory.sql; if that has not
 // been run the select fails, the catch logs it, and the app simply runs without
 // memory rather than erroring.
-const updateChatSummary = async (chatId, userMsg, assistantMsg) => {
-  if (!chatId) return;
+const updateChatSummary = async (chatId, userId, userMsg, assistantMsg) => {
+  if (!chatId || !userId) return;
   try {
-    const { data: existing, error: selErr } = await supabase.from('chats').select('conversation_summary').eq('id', chatId).single();
-    // PGRST116 just means no row. Anything else (typically the column not existing
-    // because 001_per_chat_memory.sql has not been run) means the write cannot land,
-    // so bail before spending a model call on a summary with nowhere to go.
-    if (selErr && selErr.code !== 'PGRST116') { console.error('[MEMORY] Unavailable, skipping:', selErr.message); return; }
+    // BOTH queries are scoped by user_id, and that is the whole point of this
+    // function's signature having changed.
+    //
+    // `chatId` arrives in the request body. Neither of these queries filtered on
+    // the owner, while readChatSummary immediately below always has — so a
+    // caller could pass ANY chat's id and this would read that conversation's
+    // summary, feed it to the summarising model as `Previous:`, and write the
+    // result back over it. The service-role key bypasses RLS, so migration 002
+    // was never going to catch this: the row-level policies are not consulted
+    // for this client at all.
+    //
+    // The write was the serious half. It let one account overwrite another
+    // account's conversation memory with text of its choosing, which then
+    // shapes every later answer in that chat — the victim's assistant quietly
+    // conditioned on a stranger's input, with nothing visible to either of them.
+    const { data: existing, error: selErr } = await supabase.from('chats').select('conversation_summary').eq('id', chatId).eq('user_id', userId).single();
+    // PGRST116 means no row: either the chat does not exist or it is not this
+    // caller's. Both are "there is nowhere to write", so bail before spending a
+    // model call. Anything else (typically the column not existing because
+    // 001_per_chat_memory.sql has not been run) is the same conclusion.
+    if (selErr) {
+      if (selErr.code !== 'PGRST116') console.error('[MEMORY] Unavailable, skipping:', selErr.message);
+      return;
+    }
     const prev = existing?.conversation_summary || '';
     const u = userMsg.slice(0, 800); const a = assistantMsg.slice(0, 800);
     const newSummary = prev
@@ -463,7 +482,7 @@ const updateChatSummary = async (chatId, userMsg, assistantMsg) => {
     if (newSummary.trim()) {
       // supabase-js resolves rather than throws on failure, so an unchecked update
       // logged "Saved." even when nothing was written.
-      const { error: updErr } = await supabase.from('chats').update({ conversation_summary: newSummary.trim().slice(0, 2000) }).eq('id', chatId);
+      const { error: updErr } = await supabase.from('chats').update({ conversation_summary: newSummary.trim().slice(0, 2000) }).eq('id', chatId).eq('user_id', userId);
       if (updErr) console.error('[MEMORY] Save failed:', updErr.message);
       else console.log('[MEMORY] Saved.');
     }
@@ -888,7 +907,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       openStream(res);
       await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0);
       if (!res.writableEnded) res.end();
-      updateChatSummary(chatId,pv.value, 'Answered memory question.').catch(() => {});
+      updateChatSummary(chatId, user.id, pv.value, 'Answered memory question.').catch(() => {});
       await auditLog(user.id, 'council', { category: 'memory' }, req.ip);
       return;
     }
@@ -948,7 +967,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0);
       if (!res.writableEnded) res.end();
       const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
-      updateChatSummary(chatId,pv.value, lastA || 'Search response.').catch(() => {});
+      updateChatSummary(chatId, user.id, pv.value, lastA || 'Search response.').catch(() => {});
       await auditLog(user.id, 'council', { category: 'search', sources: sources.length }, req.ip);
       return;
     }
@@ -962,7 +981,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
         openStream(res);
         await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0);
         if (!res.writableEnded) res.end();
-        updateChatSummary(chatId,pv.value, 'Wikipedia response.').catch(() => {});
+        updateChatSummary(chatId, user.id, pv.value, 'Wikipedia response.').catch(() => {});
         await auditLog(user.id, 'council', { category: 'wiki' }, req.ip);
         return;
       }
@@ -1055,7 +1074,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       openStream(res);
       await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0);
       if (!res.writableEnded) res.end();
-      updateChatSummary(chatId,pv.value, 'Fallback response.').catch(() => {});
+      updateChatSummary(chatId, user.id, pv.value, 'Fallback response.').catch(() => {});
       await auditLog(user.id, 'council', { category: 'fallback' }, req.ip);
       return;
     }
@@ -1085,7 +1104,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0);
     if (!res.writableEnded) res.end();
     const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
-    updateChatSummary(chatId,pv.value, lastA || validResponses[0]?.content?.slice(0,800) || 'Council response.').catch(() => {});
+    updateChatSummary(chatId, user.id, pv.value, lastA || validResponses[0]?.content?.slice(0,800) || 'Council response.').catch(() => {});
     await auditLog(user.id, 'council', { category: 'council', models: validResponses.length }, req.ip);
   } catch (err) {
     console.error('Council error:', err.message);

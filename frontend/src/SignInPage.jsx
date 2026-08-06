@@ -22,8 +22,26 @@ import { COUNCIL, FREE_COUNT } from "./constants/council";
  * without a rewrite to index.html, `/sign-up` is a 404 on Vercel, which is
  * exactly what the live site returned before this commit.
  */
-const wantsSignUp = () =>
-  typeof window !== "undefined" && window.location.pathname.replace(/\/+$/, "") === "/sign-up";
+const wantsSignUp = () => {
+  if (typeof window === "undefined") return false;
+  const p = window.location.pathname.replace(/\/+$/, "");
+  // `/sign-up` AND its sub-paths.
+  //
+  // THE SUB-PATHS ARE THE WHOLE POINT, and leaving them out broke Google
+  // sign-in the day it was switched on. Clerk's components are multi-step and
+  // route by PATH: mounted at /sign-up they navigate to /sign-up/sso-callback,
+  // /sign-up/continue, /sign-up/verify-email-address as the flow proceeds. An
+  // exact match returned false for every one of those, so <SignIn> mounted in
+  // the middle of a sign-up — the wrong component, with no idea what to do
+  // with the OAuth result. The user came back from Google to a dead page.
+  //
+  // Verified against the live site: /sign-up/sso-callback rendered
+  // .cl-signIn-root and the heading "Sign in to ALOP-AI".
+  //
+  // Still NOT a bare prefix test: `startsWith("/sign-up")` also swallows
+  // /sign-upgrade. The boundary is the slash.
+  return p === "/sign-up" || p.startsWith("/sign-up/");
+};
 
 /**
  * The sign-in screen.

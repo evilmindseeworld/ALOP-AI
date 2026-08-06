@@ -76,6 +76,26 @@ describe("which card the page renders", () => {
     expect(screen.getByTestId("clerk-sign-up")).toBeInTheDocument();
   });
 
+  it("stays on sign-up through Clerk's own sub-paths", () => {
+    // THE REGRESSION. Clerk's components are multi-step and route by path:
+    // mounted at /sign-up they navigate to these as the flow proceeds. An exact
+    // match returned false for every one, so <SignIn> mounted in the middle of
+    // a sign-up and the user came back from Google to a dead page. It shipped
+    // because this file only ever tested /sign-up itself.
+    for (const p of [
+      "/sign-up/sso-callback",
+      "/sign-up/continue",
+      "/sign-up/verify-email-address",
+      "/sign-up/verify",
+      "/sign-up/sso-callback/",
+    ]) {
+      at(p);
+      const { unmount } = render(<SignInPage />);
+      expect(screen.getByTestId("clerk-sign-up"), p).toBeInTheDocument();
+      unmount();
+    }
+  });
+
   it("does not match a path that merely contains sign-up", () => {
     // A prefix or substring match would send /about-sign-up and /sign-uphill to
     // the registration form.

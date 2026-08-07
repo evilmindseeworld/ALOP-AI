@@ -44,6 +44,32 @@ purpose. They derive from one user's own turns under their own `user_id`, so the
 only session either can inject is that user's own — and they already own the
 user turn. Do not "fix" these; the comment above them says the same thing.
 
+**Browser security headers live in `frontend/vercel.json`, not `helmet`.** The
+backend's `helmet` config covers `alop-ai.onrender.com` and has never applied to
+the pages a browser loads — `alop-ai.com` is static on Vercel. A scan found it
+serving only HSTS. The CSP is the one header here that can take the product
+down, and its failure mode is silent: miss an origin and sign-in dies with
+nothing but a console message.
+
+Two things that are easy to get wrong and were:
+
+- **`clerk.alop-ai.com` is not in the frontend source.** Clerk derives its host
+  from the publishable key at runtime and loads `clerk.browser.js` from it, so
+  grepping for hardcoded URLs will not find it. Same for
+  `challenges.cloudflare.com` — that is the Turnstile widget behind
+  `bot_protection.captcha_enabled`, it only renders during sign-up, so omitting
+  it looks fine until a real user registers.
+- **Do not copy a scanner's Permissions-Policy advice.** It says disable camera,
+  microphone and geolocation. This app ships `useCamera`,
+  `useSpeechRecognition` and the overlay's `getDisplayMedia`; two of those three
+  would have been switched off. Only `geolocation` is genuinely unused.
+
+Test a CSP against a build made with PRODUCTION config. The ordinary local build
+points at the development Clerk instance and `localhost:3000`, so it produces
+violations that do not exist in production and hides the ones that do.
+`securityHeaders.test.js` asserts every external origin in the frontend source
+appears in the CSP.
+
 **Migrations go through the Supabase MCP `apply_migration`.** It wraps
 statements in a transaction, so `CREATE INDEX CONCURRENTLY` fails there. Keep
 `CONCURRENTLY` in the migration file (right for a rebuild under load), drop it

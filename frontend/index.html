@@ -23,6 +23,18 @@
     />
     <link rel="canonical" href="https://alop-ai.com/" />
 
+    <!-- THE ICON WAS NEVER DECLARED. public/favicon.svg has existed the whole
+         time and nothing linked it, so every browser fell back to its default
+         guess of /favicon.ico — which does not exist — and every page load
+         logged a 404. The file was fine; the one line pointing at it was
+         missing.
+
+         `sizes="any"` tells a browser that supports SVG to prefer it at every
+         size rather than continuing to hunt for a raster .ico. apple-touch-icon
+         is a PNG because iOS does not accept SVG there. -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+    <link rel="apple-touch-icon" href="/logo.png" />
+
     <!-- Google Search Console ownership proof.
          Public by design — this token only asserts control of this document,
          grants nothing, and is meant to be readable by anyone. It is not a

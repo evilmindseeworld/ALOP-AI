@@ -2,7 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { buildChatUpdate, sanitizeString } = require('./chat-update');
+const { buildChatUpdate, mergeMessages, sanitizeString } = require('./chat-update');
 
 test('pinned and favorite are persisted as booleans', () => {
   const { payload } = buildChatUpdate({ pinned: true, favorite: false });
@@ -58,17 +58,26 @@ test('undefined body does not throw', () => {
   assert.deepEqual(payload, {});
 });
 
-test('messages are clamped to 200 entries', () => {
+test('messages over 200 entries are rejected instead of silently truncated', () => {
   const many = Array.from({ length: 250 }, (_, i) => ({ role: 'user', content: `m${i}` }));
-  const { payload } = buildChatUpdate({ messages: many });
-  assert.equal(payload.messages.length, 200);
+  const result = buildChatUpdate({ messages: many });
+  assert.equal(result.error, 'Maximum 200 messages');
+  assert.equal(result.payload, undefined);
 });
 
-test('message content is clamped and unknown fields are stripped', () => {
-  const { payload } = buildChatUpdate({
+test('oversized message content is rejected and unknown fields are stripped', () => {
+  const result = buildChatUpdate({
     messages: [{ role: 'user', content: 'x'.repeat(200000), id: 'a', ts: '1', evil: 'drop me' }],
   });
-  assert.equal(payload.messages[0].content.length, 100000);
+  assert.equal(result.error, 'Message content exceeds 100000 characters');
+  assert.equal(result.payload, undefined);
+});
+
+test('message fields outside the whitelist are stripped', () => {
+  const { payload } = buildChatUpdate({
+    messages: [{ role: 'user', content: 'x', id: 'a', ts: '1', evil: 'drop me' }],
+  });
+  assert.equal(payload.messages[0].content, 'x');
   assert.equal('evil' in payload.messages[0], false);
 });
 
@@ -96,4 +105,31 @@ test('sanitizeString returns empty string for non-strings', () => {
   assert.equal(sanitizeString(null), '');
   assert.equal(sanitizeString(42), '');
   assert.equal(sanitizeString(undefined), '');
+});
+
+test('legacy stale write cannot remove stored messages', () => {
+  const existing = [
+    { role: 'user', content: 'old question', id: 'u1' },
+    { role: 'assistant', content: 'old answer', id: 'a1' },
+  ];
+  const result = mergeMessages(existing, [{ role: 'user', content: 'new question', id: 'u2' }]);
+  assert.deepEqual(result.messages, [...existing, { role: 'user', content: 'new question', id: 'u2' }]);
+});
+
+test('legacy stale write can append an assistant response without replacing history', () => {
+  const existing = [{ role: 'user', content: 'old question', id: 'u1' }];
+  const result = mergeMessages(existing, [
+    { role: 'user', content: 'new question', id: 'u2' },
+    { role: 'assistant', content: 'new answer', id: 'a2' },
+  ]);
+  assert.deepEqual(result.messages, [...existing, { role: 'user', content: 'new question', id: 'u2' }, { role: 'assistant', content: 'new answer', id: 'a2' }]);
+});
+
+test('legacy stale prefix preserves newer stored answer', () => {
+  const existing = [
+    { role: 'user', content: 'question', id: 'u1' },
+    { role: 'assistant', content: 'new answer', id: 'a1' },
+  ];
+  const result = mergeMessages(existing, [{ role: 'user', content: 'question', id: 'u1' }]);
+  assert.deepEqual(result.messages, existing);
 });

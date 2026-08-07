@@ -21,7 +21,18 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
   const [status, setStatus] = useState("idle");
   const [feedback, setFeedback] = useState({});
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [messageLoadState, setMessageLoadState] = useState({});
   const abortRef = useRef(null);
+  const sendInFlightRef = useRef(false);
+  const regenerateInFlightRef = useRef(false);
+  const chatsRef = useRef(chats);
+  const chatVersionsRef = useRef(new Map());
+  const loadingMessagesRef = useRef(new Map());
+
+  // Event handlers can outlive the render that created them. Keeping the list
+  // here lets a send that waited for a transcript use the response that is
+  // actually current, not the `activeMessages` array captured before the wait.
+  chatsRef.current = chats;
 
   const activeChat = useMemo(() => chats.find((c) => c.id === activeChatId), [chats, activeChatId]);
   const activeMessages = useMemo(() => activeChat?.messages || [], [activeChat]);
@@ -35,7 +46,12 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
    * it — until the fetch landed. On a cold backend that is twenty seconds of
    * telling the user their history is gone.
    */
-  const isLoadingMessages = Boolean(activeChat) && activeChat.messages === undefined;
+  const activeMessageLoadState = activeChatId ? messageLoadState[activeChatId] : undefined;
+  const isLoadingMessages =
+    Boolean(activeChat) &&
+    activeChat.messages === undefined &&
+    activeMessageLoadState !== "error";
+  const messageLoadError = Boolean(activeChat) && activeChat.messages === undefined && activeMessageLoadState === "error";
 
   /** Pinned first, then favourites, then most recently posted in. */
   const sortedChats = useMemo(
@@ -51,8 +67,14 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
   const createChat = useCallback(async () => {
     try {
       const r = await apiCall("/api/chats", { method: "POST", body: JSON.stringify({ title: "New Chat" }) });
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const d = await r.json();
-      setChats((p) => [d, ...p]);
+      if (!d?.id) throw new Error("Chat creation returned no id");
+      // The POST response normally carries messages: [], but making that
+      // invariant explicit keeps a new chat from taking the lazy-load path.
+      const chat = { ...d, messages: Array.isArray(d.messages) ? d.messages : [] };
+      if (chat.updated_at) chatVersionsRef.current.set(chat.id, chat.updated_at);
+      setChats((p) => [chat, ...p]);
       setActiveChatId(d.id);
       return d.id;
     } catch {
@@ -70,12 +92,39 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
   const loadChats = useCallback(async () => {
     try {
       const res = await apiCall("/api/chats");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       // `{chats, hasMore}` now; a bare array was the old shape. Both are read so
       // a client running against an older deploy — or a cached bundle mid-roll —
       // still lists conversations instead of showing none.
       const list = Array.isArray(data) ? data : data?.chats;
-      if (Array.isArray(list)) setChats(list);
+      if (!Array.isArray(list)) throw new Error("Invalid chats response");
+
+      for (const chat of list) {
+        // A list response can be older than a transcript PUT that completed
+        // while this request was in flight. Never let that metadata roll the
+        // CAS token backwards; a stale token causes a safe 409, but it makes
+        // an otherwise valid next message look unsaveable to the user.
+        if (chat?.id && chat.updated_at && !chatVersionsRef.current.has(chat.id)) {
+          chatVersionsRef.current.set(chat.id, chat.updated_at);
+        }
+      }
+
+      setChats((current) => {
+        const byId = new Map(current.map((chat) => [chat.id, chat]));
+        const listedIds = new Set(list.map((chat) => chat.id));
+        const loaded = list.map((chat) => {
+          const previous = byId.get(chat.id);
+          // Do not throw away a transcript that arrived while this list request
+          // was in flight. This also preserves a newly-created chat if the first
+          // list response was older than the POST that created it.
+          return previous?.messages !== undefined
+            ? { ...chat, messages: previous.messages, updated_at: previous.updated_at || chat.updated_at }
+            : chat;
+        });
+        const localOnly = current.filter((chat) => !listedIds.has(chat.id));
+        return [...loaded, ...localOnly];
+      });
     } catch (e) {
       console.error(e.message);
       setToast("Couldn't load your chats.");
@@ -101,26 +150,60 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
    * chat never triggers a pointless request. Once loaded it stays in `chats`,
    * so switching back to a conversation costs nothing.
    */
-  const loadingMessagesRef = useRef(new Set());
-
   const loadMessages = useCallback(
-    async (chatId) => {
-      // Guard against the double-invoke React does in StrictMode, and against a
-      // re-render landing while the first request is still open.
-      if (!chatId || loadingMessagesRef.current.has(chatId)) return;
-      loadingMessagesRef.current.add(chatId);
-      try {
-        const res = await apiCall(`/api/chats/${chatId}`);
-        const full = await res.json();
-        if (full && Array.isArray(full.messages)) {
-          setChats((p) => p.map((c) => (c.id === chatId ? { ...c, messages: full.messages } : c)));
+    async (chatId, { force = false } = {}) => {
+      if (!chatId) return null;
+
+      // One promise per chat prevents StrictMode, rapid switching, and a retry
+      // click from creating competing reads. A response is applied by chat id,
+      // never by whichever conversation happens to be active when it lands.
+      const pending = loadingMessagesRef.current.get(chatId);
+      if (pending) return pending;
+
+      let request;
+      request = (async () => {
+        setMessageLoadState((p) => ({ ...p, [chatId]: "loading" }));
+        try {
+          const res = await apiCall(`/api/chats/${chatId}`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const full = await res.json();
+          if (!full || !Array.isArray(full.messages)) throw new Error("Invalid conversation response");
+
+          const knownVersion = chatVersionsRef.current.get(chatId);
+          const fullTime = typeof full.updated_at === "string" ? Date.parse(full.updated_at) : NaN;
+          const knownTime = typeof knownVersion === "string" ? Date.parse(knownVersion) : NaN;
+          // A late ordinary GET must not move the CAS token behind a PUT that
+          // already completed. Forced reloads are authoritative; otherwise
+          // only an actually newer ISO timestamp may replace known metadata.
+          if (
+            full.updated_at &&
+            (force || !knownVersion || (Number.isFinite(fullTime) && (!Number.isFinite(knownTime) || fullTime >= knownTime)))
+          ) {
+            chatVersionsRef.current.set(chatId, full.updated_at);
+          }
+          setChats((p) =>
+            p.map((c) => {
+              if (c.id !== chatId) return c;
+              // A forced reload is used after a server conflict. The ordinary
+              // path refuses to overwrite local messages that appeared while
+              // the GET was in flight; a late read must never erase a write.
+              if (!force && c.messages !== undefined) return c;
+              return { ...c, ...full, messages: full.messages };
+            })
+          );
+          setMessageLoadState((p) => ({ ...p, [chatId]: "loaded" }));
+          return full;
+        } catch (e) {
+          console.error(e.message);
+          setMessageLoadState((p) => ({ ...p, [chatId]: "error" }));
+          setToast("Couldn't load that conversation.");
+          return null;
+        } finally {
+          if (loadingMessagesRef.current.get(chatId) === request) loadingMessagesRef.current.delete(chatId);
         }
-      } catch (e) {
-        console.error(e.message);
-        setToast("Couldn't load that conversation.");
-      } finally {
-        loadingMessagesRef.current.delete(chatId);
-      }
+      })();
+      loadingMessagesRef.current.set(chatId, request);
+      return request;
     },
     [apiCall, setToast]
   );
@@ -131,25 +214,94 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
     if (c && c.messages === undefined) loadMessages(activeChatId);
   }, [isReady, activeChatId, chats, loadMessages]);
 
+  const ensureMessagesLoaded = useCallback(
+    async (chatId) => {
+      if (!chatId) return [];
+      const current = chatsRef.current.find((chat) => chat.id === chatId);
+      if (!current) return null;
+      if (current.messages !== undefined) return current.messages;
+
+      const full = await loadMessages(chatId);
+      if (!full) return null;
+      // Another update may have landed while the GET was open. Read the ref
+      // after the await so callers never continue with the closure's old `[]`.
+      const latest = chatsRef.current.find((chat) => chat.id === chatId);
+      return Array.isArray(latest?.messages) ? latest.messages : full.messages;
+    },
+    [loadMessages]
+  );
+
+  const retryMessages = useCallback(
+    (chatId = activeChatId) => {
+      if (!chatId) return Promise.resolve(null);
+      return loadMessages(chatId, { force: true });
+    },
+    [activeChatId, loadMessages]
+  );
+
   const updateChatMessages = useCallback(
     async (chatId, messages, saveToDb = true) => {
+      const previousChat = chatsRef.current.find((chat) => chat.id === chatId);
+      const previousMessages = previousChat?.messages;
       setChats((p) =>
         p.map((c) => (c.id === chatId ? { ...c, messages, updated_at: new Date().toISOString() } : c))
       );
-      if (!saveToDb) return;
+      if (!saveToDb) return true;
+
+      const expectedUpdatedAt = chatVersionsRef.current.get(chatId);
+      const body = { messages };
+      if (expectedUpdatedAt) body.expectedUpdatedAt = expectedUpdatedAt;
+
+      let reloadedAfterFailure = false;
       try {
-        await apiCall(`/api/chats/${chatId}`, { method: "PUT", body: JSON.stringify({ messages }) });
+        const res = await apiCall(`/api/chats/${chatId}`, { method: "PUT", body: JSON.stringify(body) });
+        const responseBody = typeof res.json === "function" ? await res.json().catch(() => ({})) : {};
+        if (!res.ok) {
+          if (res.status === 409) {
+            // The server refused a stale replacement. Reload its copy before
+            // returning so the local optimistic transcript cannot masquerade as
+            // saved data and cannot be followed by another stale PUT.
+            reloadedAfterFailure = Boolean(await loadMessages(chatId, { force: true }));
+            throw new Error("Chat changed elsewhere. Latest transcript restored.");
+          }
+          throw new Error(responseBody.error || `HTTP ${res.status}`);
+        }
+        if (responseBody.updated_at) chatVersionsRef.current.set(chatId, responseBody.updated_at);
+        return true;
       } catch (e) {
+        // A failed HTTP response is not proof the database rejected the write:
+        // a timeout can happen after Supabase committed it. Reload first so a
+        // committed answer survives a lost response; if that reload also
+        // fails, restore the last known local copy instead of showing an
+        // optimistic transcript that will disappear on the next page load.
+        if (!reloadedAfterFailure) {
+          const latest = await loadMessages(chatId, { force: true });
+          if (!latest && previousChat) {
+            setChats((p) =>
+              p.map((chat) => (chat.id === chatId ? { ...chat, messages: previousMessages } : chat))
+            );
+          }
+        }
         console.error(e.message);
+        setToast(e.message || "Couldn't save that conversation.");
+        return false;
       }
     },
-    [apiCall]
+    [apiCall, loadMessages, setToast]
   );
 
   const deleteChat = useCallback(
     async (id) => {
       try {
-        await apiCall(`/api/chats/${id}`, { method: "DELETE" });
+        const res = await apiCall(`/api/chats/${id}`, { method: "DELETE" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        chatVersionsRef.current.delete(id);
+        loadingMessagesRef.current.delete(id);
+        setMessageLoadState((p) => {
+          const next = { ...p };
+          delete next[id];
+          return next;
+        });
         setChats((p) => p.filter((c) => c.id !== id));
         setActiveChatId((current) => (current === id ? null : current));
       } catch (e) {
@@ -162,14 +314,18 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
   const renameChat = useCallback(
     async (id, title) => {
       if (!title?.trim()) return;
+      const before = chatsRef.current.find((chat) => chat.id === id)?.title;
       setChats((p) => p.map((c) => (c.id === id ? { ...c, title } : c)));
       try {
-        await apiCall(`/api/chats/${id}`, { method: "PUT", body: JSON.stringify({ title }) });
+        const res = await apiCall(`/api/chats/${id}`, { method: "PUT", body: JSON.stringify({ title }) });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
       } catch (e) {
         console.error(e.message);
+        setChats((p) => p.map((c) => (c.id === id ? { ...c, title: before } : c)));
+        setToast("Couldn't save chat title.");
       }
     },
-    [apiCall]
+    [apiCall, setToast]
   );
 
   /**
@@ -203,11 +359,14 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
     async (msgId, type) => {
       setFeedback((p) => ({ ...p, [msgId]: type }));
       try {
-        const idx = activeMessages.findIndex((m) => m.id === msgId);
+        if (!activeChatId) return;
+        const messages = await ensureMessagesLoaded(activeChatId);
+        if (!messages) return;
+        const idx = messages.findIndex((m) => m.id === msgId);
         if (idx === -1) return;
-        const msg = activeMessages[idx];
+        const msg = messages[idx];
         // The question that produced this answer, for the learning store.
-        const question = idx > 0 ? activeMessages[idx - 1]?.content : "";
+        const question = idx > 0 ? messages[idx - 1]?.content : "";
         await apiCall("/api/feedback", {
           method: "POST",
           body: JSON.stringify({ messageId: msgId, feedback: type, question, answer: msg.content }),
@@ -217,7 +376,7 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
         console.error(e.message);
       }
     },
-    [activeMessages, apiCall, setToast]
+    [activeChatId, apiCall, ensureMessagesLoaded, setToast]
   );
 
   const generateImage = useCallback(
@@ -227,30 +386,55 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
         setToast("Describe image");
         return;
       }
+      if (status !== "idle" || sendInFlightRef.current || regenerateInFlightRef.current) return;
+      sendInFlightRef.current = true;
+      setStatus("loading");
 
       // The chat row is created here rather than earlier. An earlier revision
       // called createChat() BEFORE the image-request check, and generateImage
       // called it again from a closure holding a stale activeChatId — which
       // produced two rows for one image.
       let chatId = activeChatId;
-      if (!chatId) chatId = await createChat();
-      if (!chatId) return;
+      let created = false;
+      if (!chatId) {
+        chatId = await createChat();
+        created = true;
+      }
+      if (!chatId) {
+        sendInFlightRef.current = false;
+        setStatus("idle");
+        return;
+      }
+
+      const baseMessages = created ? [] : await ensureMessagesLoaded(chatId);
+      if (!baseMessages) {
+        sendInFlightRef.current = false;
+        setStatus("idle");
+        return;
+      }
 
       const userMsg = { role: "user", content: `Generate image: ${imagePrompt}`, ts: now(), id: uid() };
-      const withUser = [...activeMessages, userMsg];
-      await updateChatMessages(chatId, withUser);
+      const withUser = [...baseMessages, userMsg];
+      if (!(await updateChatMessages(chatId, withUser))) {
+        sendInFlightRef.current = false;
+        setStatus("idle");
+        return;
+      }
 
-      if (activeMessages.length === 0) {
+      if (baseMessages.length === 0) {
         const title = generateChatTitle(imagePrompt);
         if (title) renameChat(chatId, title);
       }
 
-      await updateChatMessages(chatId, [
+      const saved = await updateChatMessages(chatId, [
         ...withUser,
         { role: "assistant", content: "", imageUrl: buildImageUrl(imagePrompt), imagePrompt, ts: now(), id: uid() },
       ]);
+      sendInFlightRef.current = false;
+      setStatus("idle");
+      if (!saved) return;
     },
-    [activeChatId, activeMessages, createChat, renameChat, updateChatMessages, setToast]
+    [activeChatId, createChat, ensureMessagesLoaded, renameChat, status, updateChatMessages, setToast]
   );
 
   /**
@@ -360,17 +544,49 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
    * the question.
    */
   const send = useCallback(
-    async (text, attachedImage, onAttachmentConsumed, baseMessages = activeMessages) => {
+    async (text, attachedImage, onAttachmentConsumed, suppliedBaseMessages) => {
       const cleanText = text.trim();
-      if (!cleanText || status !== "idle") return;
+      if (!cleanText || status !== "idle" || sendInFlightRef.current || regenerateInFlightRef.current) return;
+      sendInFlightRef.current = true;
+      // Lock before any await. Otherwise two clicks during a transcript fetch
+      // both observe the old `idle` closure and append competing turns.
+      setStatus("loading");
 
       let chatId = activeChatId;
-      if (!chatId) chatId = await createChat();
-      if (!chatId) return;
+      let created = false;
+      if (!chatId) {
+        chatId = await createChat();
+        created = true;
+      }
+      if (!chatId) {
+        sendInFlightRef.current = false;
+        setStatus("idle");
+        return;
+      }
+
+      const loadedMessages = created ? [] : await ensureMessagesLoaded(chatId);
+      if (!loadedMessages) {
+        sendInFlightRef.current = false;
+        setStatus("idle");
+        return;
+      }
+      // `suppliedBaseMessages` is used only by regenerateLast. It is the
+      // deliberate replacement base for one compare-and-set write; keeping the
+      // old answer in the database until that write succeeds makes a failed
+      // regeneration leave the original exchange intact.
+      const baseMessages = suppliedBaseMessages ?? loadedMessages;
 
       const image = attachedImage;
-      onAttachmentConsumed?.();
-      setStatus("loading");
+      try {
+        onAttachmentConsumed?.();
+      } catch (error) {
+        // This callback belongs to the composer, not this hook. It normally
+        // only clears a preview, but a caller exception must not strand the
+        // message-operation lock and permanently disable future sends.
+        sendInFlightRef.current = false;
+        setStatus("idle");
+        throw error;
+      }
 
       // imagePreview is local-only: the server whitelist keeps hasImage and
       // drops it, so a reloaded chat shows the marker without storing
@@ -383,7 +599,11 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
         ...(image ? { hasImage: true, imagePreview: image } : {}),
       };
       const updated = [...baseMessages, userMsg];
-      await updateChatMessages(chatId, updated);
+      if (!(await updateChatMessages(chatId, updated))) {
+        sendInFlightRef.current = false;
+        setStatus("idle");
+        return;
+      }
 
       if (baseMessages.length === 0) {
         // TWO TITLES, IN ORDER. The local one is the first six words and lands
@@ -520,7 +740,16 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
           );
         }
 
-        await updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: acc, activity: activity.length ? [...activity] : undefined }]);
+        const saved = await updateChatMessages(chatId, [
+          ...updated,
+          { ...assistantMsg, typing: false, content: acc, activity: activity.length ? [...activity] : undefined },
+        ]);
+        if (!saved) {
+          sendInFlightRef.current = false;
+          setStatus("idle");
+          return;
+        }
+        sendInFlightRef.current = false;
         setStatus("idle");
       } catch (err) {
         if (err.name === "AbortError") {
@@ -536,10 +765,12 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
           } else {
             await updateChatMessages(chatId, updated);
           }
+          sendInFlightRef.current = false;
           setStatus("idle");
           return;
         }
 
+        sendInFlightRef.current = false;
         setStatus("error");
         await updateChatMessages(chatId, [
           ...updated,
@@ -547,7 +778,7 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
         ]);
       }
     },
-    [activeChatId, activeMessages, status, createChat, renameChat, updateChatMessages, getToken]
+    [activeChatId, status, createChat, ensureMessagesLoaded, renameChat, updateChatMessages, getToken]
   );
 
   /**
@@ -556,17 +787,47 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
    * without retyping, and without leaving the stale reply in the transcript.
    */
   const regenerateLast = useCallback(async () => {
-    if (status !== "idle") return;
-    const lastUserIdx = activeMessages.map((m) => m.role).lastIndexOf("user");
-    if (lastUserIdx === -1) return;
+    // Regeneration has an await before it calls send. Without its own lock,
+    // two clicks (or a click followed by typing) can both read the same
+    // transcript, both remove the same answer, and then race two council
+    // requests. The PUT CAS prevents silent server loss, but it cannot make
+    // that user interaction coherent, so block every message operation while
+    // this read/replacement/replay sequence is in flight.
+    if (status !== "idle" || sendInFlightRef.current || regenerateInFlightRef.current) return;
+    if (!activeChatId) return;
+    regenerateInFlightRef.current = true;
+    setStatus("loading");
+    const currentMessages = await ensureMessagesLoaded(activeChatId);
+    if (!currentMessages) {
+      regenerateInFlightRef.current = false;
+      setStatus("idle");
+      return;
+    }
 
-    const prompt = activeMessages[lastUserIdx].content;
-    if (!prompt?.trim()) return;
+    const lastUserIdx = currentMessages.map((m) => m.role).lastIndexOf("user");
+    if (lastUserIdx === -1) {
+      regenerateInFlightRef.current = false;
+      setStatus("idle");
+      return;
+    }
 
-    const kept = activeMessages.slice(0, lastUserIdx);
-    await updateChatMessages(activeChatId, kept);
+    const prompt = currentMessages[lastUserIdx].content;
+    if (!prompt?.trim()) {
+      regenerateInFlightRef.current = false;
+      setStatus("idle");
+      return;
+    }
+
+    const kept = currentMessages.slice(0, lastUserIdx);
+
+    // Release immediately before send. No event can interleave between these
+    // synchronous statements, and send takes its own lock before its first
+    // await. This hands ownership of the operation to the normal streaming
+    // path without leaving a window where another click can start.
+    regenerateInFlightRef.current = false;
+    setStatus("idle");
     await send(prompt, null, undefined, kept);
-  }, [status, activeMessages, activeChatId, updateChatMessages, send]);
+  }, [status, activeChatId, ensureMessagesLoaded, send]);
 
   return {
     chats,
@@ -579,6 +840,8 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
     feedback,
     isInitialLoading,
     isLoadingMessages,
+    messageLoadError,
+    retryMessages,
     createChat,
     deleteChat,
     renameChat,

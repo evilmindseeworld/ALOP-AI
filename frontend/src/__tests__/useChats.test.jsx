@@ -34,15 +34,27 @@ const sseStream = (frames) => {
 const councilCalls = (fetchImpl) =>
   fetchImpl.mock.calls.filter(([url]) => String(url).includes("/api/council"));
 
-const setup = ({ fetchImpl } = {}) => {
-  const setToast = vi.fn();
-  const apiCall = vi.fn(async (path, options = {}) => {
-    if (path === "/api/chats" && options.method === "POST") {
-      return { ok: true, json: async () => ({ id: "chat-1", title: "New Chat", messages: [] }) };
-    }
-    if (path === "/api/chats") return { ok: true, json: async () => [] };
-    return { ok: true, json: async () => ({}) };
+const deferred = () => {
+  let resolve;
+  let reject;
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
   });
+  return { promise, resolve, reject };
+};
+
+const setup = ({ fetchImpl, apiCallImpl, chatsResponse = [] } = {}) => {
+  const setToast = vi.fn();
+  const apiCall =
+    apiCallImpl ||
+    vi.fn(async (path, options = {}) => {
+      if (path === "/api/chats" && options.method === "POST") {
+        return { ok: true, json: async () => ({ id: "chat-1", title: "New Chat", messages: [] }) };
+      }
+      if (path === "/api/chats") return { ok: true, json: async () => chatsResponse };
+      return { ok: true, json: async () => ({}) };
+    });
 
   global.fetch = fetchImpl || vi.fn();
 
@@ -60,6 +72,148 @@ describe("useChats", () => {
     await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
     expect(result.current.status).toBe("idle");
     expect(result.current.chats).toEqual([]);
+  });
+
+  it("waits for an old transcript before saving a new message", async () => {
+    const transcript = deferred();
+    const fetchImpl = vi.fn(async (url) => {
+      if (String(url).includes("/api/chat-title")) return { ok: true, json: async () => ({ title: null }) };
+      return { ok: true, body: sseStream(["data: [DONE]\n"]) };
+    });
+    const apiCall = vi.fn(async (path, options = {}) => {
+      if (path === "/api/chats" && !options.method) {
+        return {
+          ok: true,
+          json: async () => [{ id: "old", title: "Old", messages: undefined, updated_at: "v1" }],
+        };
+      }
+      if (path === "/api/chats/old" && !options.method) {
+        return { ok: true, json: async () => transcript.promise };
+      }
+      if (path === "/api/chats/old" && options.method === "PUT") {
+        return { ok: true, json: async () => ({ updated_at: `v${apiCall.mock.calls.length}` }) };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    const { result } = setup({ fetchImpl, apiCallImpl: apiCall });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+
+    act(() => result.current.setActiveChatId("old"));
+    await waitFor(() => expect(apiCall.mock.calls.some(([path]) => path === "/api/chats/old")).toBe(true));
+
+    let sendPromise;
+    await act(async () => {
+      sendPromise = result.current.send("new question");
+      await Promise.resolve();
+    });
+    expect(apiCall.mock.calls.filter(([, options]) => options?.method === "PUT")).toHaveLength(0);
+
+    transcript.resolve({
+      id: "old",
+      title: "Old",
+      messages: Array.from({ length: 50 }, (_, i) => ({ role: "user", content: `old-${i}`, id: `m-${i}` })),
+      updated_at: "v1",
+    });
+    await act(async () => {
+      await sendPromise;
+    });
+
+    const messageWrites = apiCall.mock.calls.filter(
+      ([path, options]) => path === "/api/chats/old" && options?.method === "PUT" && JSON.parse(options.body).messages,
+    );
+    expect(JSON.parse(messageWrites[0][1].body).messages).toHaveLength(51);
+    expect(JSON.parse(messageWrites[0][1].body).expectedUpdatedAt).toBe("v1");
+    expect(JSON.parse(messageWrites.at(-1)[1].body).messages).toHaveLength(52);
+  });
+
+  it("does not write when transcript loading fails", async () => {
+    const fetchImpl = vi.fn();
+    const apiCall = vi.fn(async (path, options = {}) => {
+      if (path === "/api/chats" && !options.method) {
+        return { ok: true, json: async () => [{ id: "old", title: "Old", messages: undefined, updated_at: "v1" }] };
+      }
+      if (path === "/api/chats/old" && !options.method) {
+        return { ok: false, status: 503, json: async () => ({ error: "unavailable" }) };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    const { result } = setup({ fetchImpl, apiCallImpl: apiCall });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+    act(() => result.current.setActiveChatId("old"));
+    await waitFor(() => expect(result.current.messageLoadError).toBe(true));
+
+    await act(async () => {
+      await result.current.send("must not overwrite");
+    });
+
+    expect(apiCall.mock.calls.some(([, options]) => options?.method === "PUT")).toBe(false);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("reloads persisted history after a message save fails", async () => {
+    const persisted = [{ id: "old-1", role: "user", content: "already saved" }];
+    const fetchImpl = vi.fn();
+    const apiCall = vi.fn(async (path, options = {}) => {
+      if (path === "/api/chats" && !options.method) {
+        return { ok: true, json: async () => [{ id: "old", title: "Old", messages: undefined, updated_at: "v1" }] };
+      }
+      if (path === "/api/chats/old" && !options.method) {
+        return { ok: true, json: async () => ({ id: "old", messages: persisted, updated_at: "v1" }) };
+      }
+      if (path === "/api/chats/old" && options.method === "PUT") {
+        return { ok: false, status: 503, json: async () => ({ error: "unavailable" }) };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    const { result } = setup({ fetchImpl, apiCallImpl: apiCall });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+    act(() => result.current.setActiveChatId("old"));
+    await waitFor(() => expect(result.current.chats.find((chat) => chat.id === "old").messages).toEqual(persisted));
+
+    await act(async () => {
+      await result.current.send("must not look saved");
+    });
+
+    expect(result.current.chats.find((chat) => chat.id === "old").messages).toEqual(persisted);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("applies lazy-load responses to their own chat during fast switching", async () => {
+    const loads = { a: deferred(), b: deferred() };
+    const apiCall = vi.fn(async (path, options = {}) => {
+      if (path === "/api/chats" && !options.method) {
+        return {
+          ok: true,
+          json: async () => [
+            { id: "a", title: "A", messages: undefined },
+            { id: "b", title: "B", messages: undefined },
+          ],
+        };
+      }
+      if (!options.method && path === "/api/chats/a") return { ok: true, json: async () => loads.a.promise };
+      if (!options.method && path === "/api/chats/b") return { ok: true, json: async () => loads.b.promise };
+      return { ok: true, json: async () => ({}) };
+    });
+
+    const { result } = setup({ apiCallImpl: apiCall });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+
+    act(() => result.current.setActiveChatId("a"));
+    await waitFor(() => expect(apiCall.mock.calls.some(([path]) => path === "/api/chats/a")).toBe(true));
+    act(() => result.current.setActiveChatId("b"));
+    await waitFor(() => expect(apiCall.mock.calls.some(([path]) => path === "/api/chats/b")).toBe(true));
+
+    loads.a.resolve({ id: "a", messages: [{ id: "a1", role: "user", content: "A" }], updated_at: "a-v1" });
+    await waitFor(() => expect(result.current.chats.find((chat) => chat.id === "a").messages[0].content).toBe("A"));
+    expect(result.current.activeChatId).toBe("b");
+    expect(result.current.chats.find((chat) => chat.id === "b").messages).toBeUndefined();
+
+    loads.b.resolve({ id: "b", messages: [{ id: "b1", role: "user", content: "B" }], updated_at: "b-v1" });
+    await waitFor(() => expect(result.current.chats.find((chat) => chat.id === "b").messages[0].content).toBe("B"));
+    expect(result.current.chats.find((chat) => chat.id === "a").messages[0].content).toBe("A");
   });
 
   it("streams chunks into the assistant message and returns to idle", async () => {
@@ -293,6 +447,38 @@ describe("useChats", () => {
     const messages = result.current.chats[0].messages;
     expect(messages.map((m) => m.role)).toEqual(["user", "assistant"]);
     expect(messages[0].content).toBe("hi");
+  });
+
+  it("keeps the original exchange when regenerate cannot save its replacement", async () => {
+    const persisted = [
+      { id: "u1", role: "user", content: "hi" },
+      { id: "a1", role: "assistant", content: "first" },
+    ];
+    const fetchImpl = vi.fn();
+    const apiCall = vi.fn(async (path, options = {}) => {
+      if (path === "/api/chats" && !options.method) {
+        return { ok: true, json: async () => [{ id: "old", title: "Old", messages: undefined, updated_at: "v1" }] };
+      }
+      if (path === "/api/chats/old" && !options.method) {
+        return { ok: true, json: async () => ({ id: "old", messages: persisted, updated_at: "v1" }) };
+      }
+      if (path === "/api/chats/old" && options.method === "PUT") {
+        return { ok: false, status: 503, json: async () => ({ error: "unavailable" }) };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    const { result } = setup({ fetchImpl, apiCallImpl: apiCall });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+    act(() => result.current.setActiveChatId("old"));
+    await waitFor(() => expect(result.current.chats.find((chat) => chat.id === "old").messages).toEqual(persisted));
+
+    await act(async () => {
+      await result.current.regenerateLast();
+    });
+
+    expect(result.current.chats.find((chat) => chat.id === "old").messages).toEqual(persisted);
+    expect(fetchImpl).not.toHaveBeenCalled();
   });
 
   it("clears the attachment through the callback, not by reaching into the parent", async () => {

@@ -25,7 +25,7 @@ const route = (verb, path) => {
   const i = SRC.indexOf(`app.${verb}('${path}'`);
   if (i === -1) return null;
   // Far enough to cover the handler, short enough not to swallow the next one.
-  return SRC.slice(i, i + 1400);
+  return SRC.slice(i, i + 2600);
 };
 
 test("both chat routes still exist and parse", () => {
@@ -75,17 +75,26 @@ test("the list is bounded, and the bound cannot be raised by the caller", () => 
   assert.match(list, /\.range\(/, "the list is unpaginated");
   assert.match(list, /Math\.min\(/, "the limit is not clamped");
   // A caller asking for 100000 must not get 100000.
-  const clamp = /Math\.min\(Math\.max\(parseInt\(req\.query\.limit, 10\) \|\| (\d+), 1\), (\d+)\)/.exec(list);
-  assert.ok(clamp, "the limit clamp is not in the expected shape");
-  const [, dflt, max] = clamp.map(Number);
-  assert.ok(dflt > 0 && dflt <= max, `default ${dflt} is not within 1..${max}`);
-  assert.ok(max <= 200, `a single page can return ${max} rows`);
+  assert.match(list, /Number\.parseInt\(req\.query\.limit, 10\)/);
+  assert.match(list, /Math\.min\(Math\.max\(parsedLimit, 1\), 100\)/);
+  assert.match(list, /: 50;/, "the default page size disappeared");
 });
 
-test("offset cannot go negative", () => {
-  // A negative range start is a Postgres error, i.e. a 500 a caller can trigger
-  // from the query string.
-  assert.match(route("get", "/api/chats"), /Math\.max\(parseInt\(req\.query\.offset, 10\) \|\| 0, 0\)/);
+test("offset is non-negative and capped before it reaches Postgres", () => {
+  // A negative range start is a Postgres error, while a huge positive offset
+  // makes the database walk and discard rows. Neither belongs on a user route.
+  const list = route("get", "/api/chats");
+  assert.match(list, /Number\.parseInt\(req\.query\.offset, 10\)/);
+  assert.match(list, /Math\.min\(Math\.max\(parsedOffset, 0\), MAX_CHAT_OFFSET\)/);
+  assert.match(SRC, /const MAX_CHAT_OFFSET = 10000/);
+});
+
+test("message PUTs use compare-and-set and reject conflicts", () => {
+  const put = route("put", "/api/chats/:id");
+  assert.match(put, /expectedUpdatedAt/);
+  assert.match(put, /writeChatMessages/);
+  assert.match(put, /status\(409\)/);
+  assert.match(SRC, /writeChatMessages[\s\S]*?\.eq\('user_id', user\.id\)/);
 });
 
 test("the migration indexes exactly the query the list runs", () => {

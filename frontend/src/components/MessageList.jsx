@@ -278,7 +278,17 @@ export const Message = memo(({ msg, isStreaming, onCopy, onFeedback, feedback })
 
 Message.displayName = "Message";
 
-export default function MessageList({ messages, status, feedback, onCopy, onFeedback, onPickStarter, isLoadingMessages }) {
+export default function MessageList({
+  messages,
+  status,
+  feedback,
+  onCopy,
+  onFeedback,
+  onPickStarter,
+  isLoadingMessages,
+  messageLoadError,
+  onRetryMessages,
+}) {
   // A conversation whose transcript is still in flight is NOT an empty one.
   //
   // Messages no longer arrive with the chat list — they are fetched per
@@ -288,6 +298,16 @@ export default function MessageList({ messages, status, feedback, onCopy, onFeed
   // their history having been deleted. On a cold backend that lasts twenty
   // seconds.
   if (isLoadingMessages) return <MessageSkeleton />;
+  if (messageLoadError) {
+    return (
+      <div className="empty-state message-load-error" role="alert">
+        <p>Couldn&apos;t load this conversation.</p>
+        <button className="input-btn primary" onClick={onRetryMessages}>
+          Retry
+        </button>
+      </div>
+    );
+  }
   if (messages.length === 0 && status === "idle") return <EmptyState onPick={onPickStarter} />;
 
   // Only the last assistant message can be the one currently arriving, so the

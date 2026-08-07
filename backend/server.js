@@ -631,7 +631,7 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // ===== SANITIZATION =====
 const MAX_PROMPT = 100000;
-const { buildChatUpdate, sanitizeString } = require('./lib/chat-update');
+const { buildChatUpdate, mergeMessages, sanitizeString } = require('./lib/chat-update');
 const { parseDataUrl } = require('./lib/data-url');
 // History is INPUT, not state. Both routes that take it now go through one
 // function — /api/overlay previously spread client objects straight into the
@@ -1372,12 +1372,84 @@ app.post('/api/feedback', requireAuth, async (req, res) => {
 // one is actually opened. `limit` and `offset` bound the list itself, because
 // "select every row belonging to this user" has no ceiling and the sidebar can
 // only show so many.
+const MAX_CHAT_OFFSET = 10000;
+
+/**
+ * Write messages without allowing an old browser to replace a newer transcript.
+ *
+ * The current frontend sends `expectedUpdatedAt`, which turns a full-transcript
+ * PUT into compare-and-set: the update happens only if the row still has the
+ * version the browser read. Two tabs, a delayed request, and a cached bundle
+ * can therefore fail loudly instead of one silently erasing the other tab.
+ *
+ * Older bundles do not send that token. They get a compatibility path that
+ * reads the current row, merges only genuinely new message ids, and updates
+ * with the row's timestamp as a compare-and-set predicate. The read/merge/write
+ * loop may retry after a race, but it never falls back to an unconditional
+ * replacement. That is the server-side guard the client cannot provide.
+ */
+const writeChatMessages = async (chatId, userId, payload, expectedUpdatedAt) => {
+  const hasExpected = expectedUpdatedAt !== undefined && expectedUpdatedAt !== null;
+  if (hasExpected && (typeof expectedUpdatedAt !== 'string' || expectedUpdatedAt.length > 100)) {
+    return { error: 'Invalid expectedUpdatedAt' };
+  }
+
+  if (hasExpected) {
+    const { data, error } = await supabase
+      .from('chats')
+      .update(payload)
+      .eq('id', chatId)
+      .eq('user_id', userId)
+      .eq('updated_at', expectedUpdatedAt)
+      .select('updated_at')
+      .maybeSingle();
+    if (error) throw error;
+    return data ? { updated_at: data.updated_at } : { conflict: true };
+  }
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const { data: current, error: readError } = await supabase
+      .from('chats')
+      .select('messages,updated_at')
+      .eq('id', chatId)
+      .eq('user_id', userId)
+      .single();
+    if (readError) throw readError;
+
+    const merged = mergeMessages(current?.messages, payload.messages);
+    if (merged.error) return merged;
+
+    const nextPayload = { ...payload, messages: merged.messages, updated_at: new Date().toISOString() };
+    let update = supabase
+      .from('chats')
+      .update(nextPayload)
+      .eq('id', chatId)
+      .eq('user_id', userId);
+    // `.eq('updated_at', null)` is not SQL NULL semantics. Use `.is` for old
+    // rows that predate a timestamp, otherwise the first compatibility write
+    // would be rejected forever even though it is safe to perform.
+    update = current?.updated_at ? update.eq('updated_at', current.updated_at) : update.is('updated_at', null);
+    const { data, error } = await update.select('updated_at').maybeSingle();
+    if (error) throw error;
+    if (data) return { updated_at: data.updated_at };
+  }
+
+  return { conflict: true };
+};
+
 app.get('/api/chats', requireAuth, async (req, res) => {
   try {
     const user = await ensureUser(req.auth.userId);
     // Clamped rather than trusted. A caller asking for 100000 gets 100.
-    const limit = Math.min(Math.max(parseInt(req.query.limit, 10) || 50, 1), 100);
-    const offset = Math.max(parseInt(req.query.offset, 10) || 0, 0);
+    const parsedLimit = Number.parseInt(req.query.limit, 10);
+    const limit = Number.isFinite(parsedLimit) ? Math.min(Math.max(parsedLimit, 1), 100) : 50;
+    // A huge offset still makes Postgres walk and discard a huge number of
+    // rows. Keep pagination bounded even when the caller is not using the
+    // frontend, because this route is public to every signed-in client.
+    const parsedOffset = Number.parseInt(req.query.offset, 10);
+    const offset = Number.isFinite(parsedOffset)
+      ? Math.min(Math.max(parsedOffset, 0), MAX_CHAT_OFFSET)
+      : 0;
     const { data, error } = await supabase
       .from('chats')
       .select('id,user_id,title,pinned,favorite,created_at,updated_at')
@@ -1388,7 +1460,7 @@ app.get('/api/chats', requireAuth, async (req, res) => {
     // `hasMore` rather than a total count: a count is a second query over the
     // same rows, and the only question the sidebar asks is whether to fetch
     // another page.
-    res.json({ chats: data || [], hasMore: (data || []).length === limit, limit, offset });
+    res.json({ chats: data || [], hasMore: (data || []).length === limit && offset + limit <= MAX_CHAT_OFFSET, limit, offset });
   } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 
@@ -1409,7 +1481,28 @@ app.get('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, re
   } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
 });
 app.post('/api/chats', requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); const title = sanitizeString(req.body.title, 120) || 'New Chat'; const { data, error } = await supabase.from('chats').insert({ user_id: user.id, title, messages: [] }).select().single(); if (error) throw error; res.json(data); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
-app.put('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => { try { const user = await ensureUser(req.auth.userId); const { payload, error: buildErr } = buildChatUpdate(req.body); if (buildErr) return res.status(400).json({ error: buildErr }); if (Object.keys(payload).length === 0) return res.status(400).json({ error: 'No updatable fields' }); const { error } = await supabase.from('chats').update(payload).eq('id', req.params.id).eq('user_id', user.id); if (error) throw error; res.json({ ok: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+app.put('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => {
+  try {
+    const user = await ensureUser(req.auth.userId);
+    const { payload, error: buildErr } = buildChatUpdate(req.body);
+    if (buildErr) return res.status(400).json({ error: buildErr });
+    if (Object.keys(payload).length === 0) return res.status(400).json({ error: 'No updatable fields' });
+
+    if (payload.messages !== undefined) {
+      const result = await writeChatMessages(req.params.id, user.id, payload, req.body?.expectedUpdatedAt);
+      if (result.error) return res.status(400).json({ error: result.error });
+      if (result.conflict) return res.status(409).json({ error: 'Chat changed elsewhere. Reload before saving.' });
+      return res.json({ ok: true, updated_at: result.updated_at || payload.updated_at });
+    }
+
+    const { error } = await supabase.from('chats').update(payload).eq('id', req.params.id).eq('user_id', user.id);
+    if (error) throw error;
+    res.json({ ok: true });
+  } catch (err) {
+    Sentry.captureException(err);
+    res.status(500).json({ error: err.message });
+  }
+});
 app.delete('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => { try { const user = await ensureUser(req.auth.userId); const { error } = await supabase.from('chats').delete().eq('id', req.params.id).eq('user_id', user.id); if (error) throw error; res.json({ deleted: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 
 // ===== ADMIN =====

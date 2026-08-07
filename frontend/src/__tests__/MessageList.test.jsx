@@ -28,6 +28,15 @@ describe("MessageList", () => {
     expect(document.querySelector(".starter-grid")).toBeInTheDocument();
   });
 
+  it("shows retry instead of treating a failed transcript fetch as empty", async () => {
+    const onRetryMessages = vi.fn();
+    renderList({ messages: [], messageLoadError: true, onRetryMessages });
+    expect(screen.getByRole("alert")).toHaveTextContent("Couldn't load this conversation");
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(onRetryMessages).toHaveBeenCalled();
+    expect(document.querySelector(".starter-grid")).not.toBeInTheDocument();
+  });
+
   it("gives only the assistant an avatar", () => {
     // A right-aligned filled pill is already unmistakably yours. An avatar, a
     // role label AND the alignment are three ways of saying the same thing.

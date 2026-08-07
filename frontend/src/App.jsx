@@ -524,6 +524,8 @@ const AuthenticatedApp = () => {
                 <MessageList
                   messages={activeMessages}
                   isLoadingMessages={chat.isLoadingMessages}
+                  messageLoadError={chat.messageLoadError}
+                  onRetryMessages={chat.retryMessages}
                   status={status}
                   feedback={chat.feedback}
                   onCopy={(content) => navigator.clipboard.writeText(content)}
@@ -557,7 +559,7 @@ const AuthenticatedApp = () => {
 
               <InputBar
                 onSend={handleSend}
-                disabled={status !== "idle"}
+                disabled={status !== "idle" || chat.isLoadingMessages || chat.messageLoadError}
                 onFileSelect={handleFileSelect}
                 onStartCamera={camera.start}
                 isListening={speech.isListening}

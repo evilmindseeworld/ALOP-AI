@@ -144,6 +144,27 @@ production. See the trap below.
 
 ### Open, in the order I would take them
 
+0. **SIGN-IN: clerk-js is asking for `/__clerk` and this repo never told it
+   to.** This is a live outage class and it needs the Clerk Dashboard, not
+   code. What is established, on the wire:
+
+   - The publishable key is `pk_live_Y2xlcmsuYWxvcC1haS5jb20k`, which base64
+     decodes to `clerk.alop-ai.com$`. The direct Frontend API is healthy:
+     `POST https://clerk.alop-ai.com/v1/client/sign_ins` answers **200**.
+   - Nothing in this repo sets a proxy. `ClerkProvider` passes only
+     `publishableKey`; there is no `proxyUrl`, no `<meta>`, and no
+     `CLERK_PROXY_URL` in Vercel (checked with `vercel env ls production`).
+   - A static rewrite CANNOT serve `/__clerk`. Vercel forwards the original
+     Host, so Clerk answers `host_invalid`; adding `Clerk-Proxy-Url` gets
+     `proxy_request_missing_secret_key`. Proxying needs a server function
+     that holds `CLERK_SECRET_KEY` — do not try the rewrite again, it is
+     already in the git history as a revert.
+
+   **Fix it in the Clerk Dashboard: turn the proxy off** so clerk-js uses the
+   CNAME the key already names. Only build the proxy function if the proxy is
+   wanted deliberately, and know that it puts the instance secret key into
+   the frontend project.
+
 1. **Accessibility: the browser pass.** Everything checkable without a
    browser is now done and guarded — see the checklist below for what is
    left. Still the largest remaining item and the only one carrying legal

@@ -49,9 +49,16 @@
     <meta name="theme-color" content="#1b120c" />
     <meta name="color-scheme" content="dark light" />
 
-    <!-- Open Graph / Twitter. The image is the logo already in public/ rather
-         than a purpose-built card: a real 512px mark beats a placeholder, and a
-         missing og:image makes some clients render no preview at all. -->
+    <!-- Open Graph / Twitter.
+         This was logo.png, which is 721x720. Every platform crops a large
+         summary card to 1.91:1, so a square image was letterboxed or
+         centre-cropped and a shared link showed a padded logo. og.png is a
+         purpose-built 1200x630 card generated from public/og.svg — see that
+         file for how to regenerate it.
+
+         The declared width and height matter: without them some clients fetch
+         the image before deciding whether to render a large card at all, and a
+         slow first fetch means the small card is chosen instead. -->
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="ALOP-AI" />
     <meta property="og:url" content="https://alop-ai.com/" />
@@ -60,14 +67,17 @@
       property="og:description"
       content="A council of seven AI models answers separately, then has to agree. You get the reconciled reply — and where they disagreed."
     />
-    <meta property="og:image" content="https://alop-ai.com/logo.png" />
+    <meta property="og:image" content="https://alop-ai.com/og.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="ALOP-AI — seven AI models, each at a different temperature, answering as a council." />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="ALOP-AI — Seven AI models answer. One reply." />
     <meta
       name="twitter:description"
       content="A council of seven AI models answers separately, then has to agree. You get the reconciled reply — and where they disagreed."
     />
-    <meta name="twitter:image" content="https://alop-ai.com/logo.png" />
+    <meta name="twitter:image" content="https://alop-ai.com/og.png" />
 
     <!-- Structured data: tells Google that a thing called "ALOP-AI" exists and
          that this domain is it.

@@ -91,6 +91,41 @@ test("the free tier is a real subset, not the whole council", () => {
   assert.ok(free.length < backendSeats.length, "every seat is free — Pro buys nothing");
 });
 
+test("the social preview card shows the roster the server runs", () => {
+  // og.svg is a THIRD copy of the roster, and the one nobody will ever look at
+  // again. It is baked into og.png and served to every link preview on every
+  // platform, so a drifted seat there is wrong in the place the product is seen
+  // most often by people who have never used it — and it is invisible from
+  // inside the app.
+  //
+  // Titles and temperatures only. The card deliberately shows neither model ids
+  // nor companies; see constants/council.js for why the display layer is not
+  // the model id.
+  const svg = readFileSync(
+    join(__dirname, "..", "..", "frontend", "public", "og.svg"),
+    "utf8",
+  );
+  const FRONT = readFileSync(
+    join(__dirname, "..", "..", "frontend", "src", "constants", "council.js"),
+    "utf8",
+  );
+
+  const titles = [...FRONT.matchAll(/title:\s*"([^"]+)"/g)].map((m) => m[1]);
+  assert.ok(titles.length >= 5, `parsed only ${titles.length} titles — the guard stopped reading`);
+
+  for (const t of titles) {
+    assert.ok(svg.includes(t), `"${t}" is a council seat but is missing from the preview card`);
+  }
+
+  // And the temperatures beside them. The ladder is the card's whole argument,
+  // so a seat retuned on the server makes the picture a claim that is no longer
+  // true.
+  const temps = [...FRONT.matchAll(/temperature:\s*([0-9.]+)/g)].map((m) => Number(m[1]).toFixed(1));
+  for (const temp of new Set(temps)) {
+    assert.ok(svg.includes(`>${temp}<`), `temperature ${temp} is on the roster but not on the card`);
+  }
+});
+
 test("temperatures actually spread, because the spread is the product claim", () => {
   // "They disagree on purpose" is on the sign-in page. Seven seats at one
   // temperature would be one answer seven times, and the page would be lying.

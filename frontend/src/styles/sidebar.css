@@ -439,6 +439,40 @@
   color: var(--text-subtle);
 }
 
+/* The failed-list state. Left-aligned where the empty state is centred: this
+ * one is three lines and a control, and centred prose with a centred button
+ * under it reads as a marketing block rather than something gone wrong. */
+.chat-empty.is-error { text-align: left; }
+
+.chat-empty-title {
+  margin: 0 0 var(--space-1);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.chat-empty-body {
+  margin: 0 0 var(--space-3);
+  line-height: 1.5;
+}
+
+.chat-empty-retry {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.chat-empty-retry:hover { background: var(--surface-3); }
+
+.chat-empty-retry:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
 /* ===== THE ACCOUNT BLOCK =====
  *
  * This was a centred line reading "ALOP-AI • Council of Minds" — the app's own

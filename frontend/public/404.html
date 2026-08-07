@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Not found — ALOP-AI</title>
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/favicon.png" type="image/png" sizes="128x128" />
+    <!--
+      WHAT ACTUALLY REACHES THIS PAGE, because it is narrower than it looks.
+      vercel.json rewrites every extensionless path to index.html, so an
+      unknown app route renders the SPA and never gets here. This serves the
+      paths the rewrite deliberately excludes: /api/*, /v1/* and anything with
+      a file extension. Vercel's stock 404 was showing for those.
+
+      Self-contained on purpose — no stylesheet, no font file, no script. A
+      page that exists to say "that asset is missing" cannot depend on another
+      asset resolving. The colours are the shipped tokens as literals for the
+      same reason.
+    -->
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: #0a0a0a;
+        color: #f5f1ee;
+        font-family: "Segoe UI", -apple-system, system-ui, sans-serif;
+      }
+      main { max-width: 30rem; }
+      .rule { height: 3px; background: #f08aa3; margin: 0 0 28px; }
+      h1 { margin: 0 0 10px; font-size: 1.6rem; letter-spacing: -0.02em; }
+      p { margin: 0 0 22px; line-height: 1.6; color: #b8b3ae; }
+      code { color: #f5f1ee; word-break: break-all; }
+      a {
+        display: inline-block;
+        padding: 9px 16px;
+        border-radius: 6px;
+        background: #f08aa3;
+        color: #0a0a0a;
+        font-weight: 600;
+        text-decoration: none;
+      }
+      a:focus-visible { outline: 2px solid #f5f1ee; outline-offset: 2px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="rule"></div>
+      <h1>That page doesn&rsquo;t exist.</h1>
+      <p>
+        Nothing is broken and nothing was lost — there is simply no page at
+        <code id="path"></code>. Your chats are where you left them.
+      </p>
+      <a href="/">Back to ALOP-AI</a>
+    </main>
+    <script>
+      // textContent, never innerHTML: the path is attacker-controlled and
+      // writing it as markup is how a 404 page becomes reflected XSS.
+      document.getElementById("path").textContent = location.pathname;
+    </script>
+  </body>
+</html>

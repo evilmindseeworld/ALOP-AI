@@ -482,6 +482,8 @@ const AuthenticatedApp = () => {
             onRename={chat.renameChat}
             onPin={chat.togglePinChat}
             onFavorite={chat.toggleFavoriteChat}
+            error={chat.chatsError}
+            onRetry={chat.retryChats}
             collapsed={sidebarCollapsed}
             mobileOpen={mobileSidebarOpen}
             setMobileOpen={setMobileSidebarOpen}

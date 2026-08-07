@@ -339,3 +339,27 @@ describe("ChatSidebar — the user block", () => {
     expect(container.querySelector(".sidebar-user").textContent).not.toMatch(/undefined/);
   });
 });
+
+describe("a failed chat list", () => {
+  // The regression this exists for: a failed request left `chats` empty, so
+  // the sidebar rendered "No chats yet" — telling a user their conversations
+  // were gone when nothing had happened to them.
+  it("never says 'No chats yet' when the request failed", () => {
+    renderSidebar({ chats: [], error: "HTTP 500" });
+    expect(screen.queryByText("No chats yet")).not.toBeInTheDocument();
+    expect(screen.getByText("Couldn’t load your chats.")).toBeInTheDocument();
+    expect(screen.getByText(/safe on the server/)).toBeInTheDocument();
+  });
+
+  it("offers a retry that calls back", async () => {
+    const onRetry = vi.fn();
+    renderSidebar({ chats: [], error: "HTTP 500", onRetry });
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(onRetry).toHaveBeenCalledOnce();
+  });
+
+  it("shows the normal empty state when there is genuinely nothing", () => {
+    renderSidebar({ chats: [] });
+    expect(screen.getByText("No chats yet")).toBeInTheDocument();
+  });
+});

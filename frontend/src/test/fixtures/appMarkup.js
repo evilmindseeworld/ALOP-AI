@@ -95,6 +95,11 @@ export const appTree = (theme) => `
 
           <div class="chat-list">
             <div class="chat-empty">No chats yet</div>
+    <div class="chat-empty is-error" role="status">
+      <p class="chat-empty-title">Couldn&rsquo;t load your chats.</p>
+      <p class="chat-empty-body">They are safe on the server.</p>
+      <button class="chat-empty-retry">Try again</button>
+    </div>
 
             <div class="chat-group">
               <div class="chat-group-label">Pinned</div>

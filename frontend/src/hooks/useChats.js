@@ -21,6 +21,12 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
   const [status, setStatus] = useState("idle");
   const [feedback, setFeedback] = useState({});
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  /* The list failing is NOT the same as having no chats, and the sidebar used
+   * to render both as "No chats yet" — telling a user their conversations are
+   * gone when the request merely failed. That is the worst possible lie for
+   * this app to tell. Tracked separately so the sidebar can say what actually
+   * happened and offer the retry. Mirrors messageLoadError/retryMessages. */
+  const [chatsError, setChatsError] = useState(null);
   const [messageLoadState, setMessageLoadState] = useState({});
   const abortRef = useRef(null);
   const sendInFlightRef = useRef(false);
@@ -90,6 +96,7 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
    * longer leaves an empty "New Chat" behind on every page load.
    */
   const loadChats = useCallback(async () => {
+    setChatsError(null);
     try {
       const res = await apiCall("/api/chats");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -127,6 +134,7 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
       });
     } catch (e) {
       console.error(e.message);
+      setChatsError(e.message || "Request failed");
       setToast("Couldn't load your chats.");
     } finally {
       setIsInitialLoading(false);
@@ -839,6 +847,8 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
     status,
     feedback,
     isInitialLoading,
+    chatsError,
+    retryChats: loadChats,
     isLoadingMessages,
     messageLoadError,
     retryMessages,

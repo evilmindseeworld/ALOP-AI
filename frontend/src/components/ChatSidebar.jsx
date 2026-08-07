@@ -138,6 +138,8 @@ const ChatSidebar = memo(
     onRename,
     onPin,
     onFavorite,
+    error = null,
+    onRetry,
     collapsed,
     mobileOpen,
     setMobileOpen,
@@ -276,11 +278,29 @@ const ChatSidebar = memo(
           )}
 
           <div className="chat-list" onKeyDown={onListKeyDown}>
-            {chats.length === 0 && <div className="chat-empty">No chats yet</div>}
+            {/* ERROR BEFORE EMPTY, and the order is the whole point. A failed
+                list request left `chats` empty, so the next line announced
+                "No chats yet" — an app telling a user their conversations are
+                gone when nothing had happened to them. Nothing here deletes
+                anything; the data is on the server. Say that, and offer the
+                retry. */}
+            {error && (
+              <div className="chat-empty is-error" role="status">
+                <p className="chat-empty-title">Couldn&rsquo;t load your chats.</p>
+                <p className="chat-empty-body">
+                  They are safe on the server — this request failed, not your data.
+                </p>
+                <button className="chat-empty-retry" onClick={onRetry}>
+                  Try again
+                </button>
+              </div>
+            )}
+
+            {!error && chats.length === 0 && <div className="chat-empty">No chats yet</div>}
 
             {/* Distinct from "No chats yet" on purpose: one means start a chat,
                 the other means change what you typed. */}
-            {chats.length > 0 && filtered.length === 0 && (
+            {!error && chats.length > 0 && filtered.length === 0 && (
               <div className="chat-empty">No chats match “{query.trim()}”</div>
             )}
 

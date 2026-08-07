@@ -516,10 +516,17 @@ const AuthenticatedApp = () => {
               }}
             />
 
+            {/* `&& Boolean(billing.prices)` was here, which made Upgrade a
+                dead button whenever the prices request failed: no panel, no
+                message, nothing. The panel owns that state now and says which
+                failure it was. */}
             <UpgradePanel
-              open={showUpgrade && Boolean(billing.prices)}
+              open={showUpgrade}
               onClose={() => setShowUpgrade(false)}
               prices={billing.prices}
+              pricesError={billing.pricesError}
+              pricesUnavailable={billing.pricesUnavailable}
+              onRetryPrices={billing.retryPrices}
               billingBusy={billing.billingBusy}
               onCheckout={billing.startCheckout}
             />
@@ -606,6 +613,8 @@ const AuthenticatedApp = () => {
                 onStop={chat.stopGeneration}
                 onImageFile={acceptImageFile}
                 attachedFiles={chat.chatFiles}
+                attachedFilesError={chat.chatFilesError}
+                onRetryFiles={chat.retryChatFiles}
                 onDocSelect={(e) => {
                   const file = e.target.files?.[0];
                   // Cleared so picking the same file twice in a row still

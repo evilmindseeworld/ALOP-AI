@@ -32,6 +32,8 @@ const InputBar = memo(
     onStop,
     onImageFile,
     attachedFiles = [],
+    attachedFilesError = null,
+    onRetryFiles,
     onDocSelect = () => {},
     onRemoveFile = () => {},
   }) => {
@@ -148,6 +150,19 @@ const InputBar = memo(
               These persist for the whole conversation, unlike the image, which
               belongs to one message — so they live here as a standing list the
               council can read from on any turn. */}
+          {/* Said before the chips, because if the read failed the chips are
+              whatever the last successful load returned — possibly nothing —
+              and the user needs to know the list is not authoritative before
+              they conclude a document is gone. */}
+          {attachedFilesError && (
+            <div className="file-chips-error" role="status">
+              <span>Couldn&rsquo;t load this chat&rsquo;s files. They haven&rsquo;t been deleted.</span>
+              <button type="button" className="file-chips-retry" onClick={onRetryFiles}>
+                Try again
+              </button>
+            </div>
+          )}
+
           {attachedFiles.length > 0 && (
             <ul className="file-chips">
               {attachedFiles.map((f) => (

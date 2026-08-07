@@ -109,3 +109,39 @@ describe("AdminPanel", () => {
     expect(screen.getByText("free")).toBeInTheDocument();
   });
 });
+
+describe("UpgradePanel without prices", () => {
+  // The regression: App.jsx gated `open` on Boolean(prices), so a failed
+  // prices request turned Upgrade into a button that did nothing at all — on
+  // the one screen where someone is trying to pay.
+  it("opens and explains itself when the request failed", () => {
+    render(
+      <UpgradePanel open onClose={noop} prices={null} pricesError="HTTP 500" onRetryPrices={noop} onCheckout={noop} />
+    );
+    expect(screen.getByText("Couldn’t load the plans.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
+  });
+
+  it("offers no retry when checkout is simply not configured", () => {
+    render(<UpgradePanel open onClose={noop} prices={null} pricesUnavailable onCheckout={noop} />);
+    expect(screen.getByText("Checkout isn’t available right now.")).toBeInTheDocument();
+    // A 503 is permanent until an environment variable changes. A retry
+    // button here loops forever against the same answer.
+    expect(screen.queryByRole("button", { name: "Try again" })).not.toBeInTheDocument();
+  });
+
+  it("never shows a checkout button it cannot complete", () => {
+    render(<UpgradePanel open onClose={noop} prices={null} pricesError="HTTP 500" onCheckout={noop} />);
+    expect(screen.queryByText(/Monthly —/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Yearly —/)).not.toBeInTheDocument();
+  });
+
+  it("retries on demand", async () => {
+    const onRetryPrices = vi.fn();
+    render(
+      <UpgradePanel open onClose={noop} prices={null} pricesError="HTTP 500" onRetryPrices={onRetryPrices} onCheckout={noop} />
+    );
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(onRetryPrices).toHaveBeenCalledOnce();
+  });
+});

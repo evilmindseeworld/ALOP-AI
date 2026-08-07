@@ -465,14 +465,28 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
    */
   const [chatFiles, setChatFiles] = useState([]);
 
+  /* A FAILED LOAD IS NOT AN EMPTY ATTACHMENT LIST.
+   *
+   * Both branches here used to set []. So a user who had attached three
+   * documents to a conversation opened it after a failed request and saw
+   * none — identical on screen to the server having lost them. Nothing had
+   * happened to the files; the read failed. Same class as the chat list, and
+   * the same fix: track it, say it, offer the retry. */
+  const [chatFilesError, setChatFilesError] = useState(null);
+
   const loadChatFiles = useCallback(
     async (chatId) => {
+      setChatFilesError(null);
       if (!chatId) return setChatFiles([]);
       try {
         const res = await apiCall(`/api/chats/${chatId}/files`);
-        setChatFiles(res.ok ? await res.json() : []);
-      } catch {
-        setChatFiles([]);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        setChatFiles(await res.json());
+      } catch (e) {
+        // The list is left ALONE rather than cleared. If a previous load
+        // succeeded, those attachments are still the truth we last saw, and
+        // replacing them with nothing is the lie this exists to prevent.
+        setChatFilesError(e.message || "Request failed");
       }
     },
     [apiCall]
@@ -863,6 +877,8 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
     stopGeneration,
     regenerateLast,
     chatFiles,
+    chatFilesError,
+    retryChatFiles: () => loadChatFiles(activeChatId),
     uploadFile,
     removeFile,
   };

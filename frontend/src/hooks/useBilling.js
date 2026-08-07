@@ -10,26 +10,52 @@ import { useState, useCallback, useEffect } from "react";
  */
 export function useBilling({ apiCall, isReady, setToast }) {
   const [userPlan, setUserPlan] = useState("free");
+  const [planError, setPlanError] = useState(null);
   const [prices, setPrices] = useState(null);
   const [billingBusy, setBillingBusy] = useState(false);
+  /* Two failures worth telling apart, because they need different words.
+   *
+   * `pricesError` means the request failed and retrying may work.
+   * `pricesUnavailable` means the server answered, correctly, that this
+   * deployment has no Stripe price IDs — retrying will never help, and the
+   * honest thing is to say checkout is not configured rather than to offer a
+   * button that cannot complete. Collapsing them into one state produced a
+   * Retry that looped forever against a 503. */
+  const [pricesError, setPricesError] = useState(null);
+  const [pricesUnavailable, setPricesUnavailable] = useState(false);
 
+  /* A FAILURE HERE MUST NOT LOOK LIKE "free".
+   *
+   * This used to swallow the error and leave userPlan at its "free" initial
+   * value, so a paying customer whose plan request failed was shown the free
+   * tier and an upgrade prompt for something they had already bought. The
+   * plan is only ever downgraded by a response that actually said so. */
   const fetchPlan = useCallback(async () => {
+    setPlanError(null);
     try {
       const r = await apiCall("/api/user/plan");
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setUserPlan((await r.json()).plan || "free");
     } catch (e) {
       console.error(e.message);
+      setPlanError(e.message || "Request failed");
     }
   }, [apiCall]);
 
-  // A non-OK response is not an error worth surfacing.
   const fetchPrices = useCallback(async () => {
+    setPricesError(null);
+    setPricesUnavailable(false);
     try {
       const r = await apiCall("/api/billing/prices");
-      if (!r.ok) return;
+      // 503 is the server saying this deployment has no price IDs. That is a
+      // configuration fact, not a transport failure, and it is permanent
+      // until someone changes an environment variable.
+      if (r.status === 503) return setPricesUnavailable(true);
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
       setPrices(await r.json());
     } catch (e) {
       console.error(e.message);
+      setPricesError(e.message || "Request failed");
     }
   }, [apiCall]);
 
@@ -121,7 +147,19 @@ export function useBilling({ apiCall, isReady, setToast }) {
     };
   }, [isReady, apiCall, setToast]);
 
-  return { userPlan, setUserPlan, prices, billingBusy, startCheckout, openBillingPortal };
+  return {
+    userPlan,
+    setUserPlan,
+    planError,
+    retryPlan: fetchPlan,
+    prices,
+    pricesError,
+    pricesUnavailable,
+    retryPrices: fetchPrices,
+    billingBusy,
+    startCheckout,
+    openBillingPortal,
+  };
 }
 
 export default useBilling;

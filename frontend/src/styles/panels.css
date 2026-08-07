@@ -217,6 +217,45 @@
   border-color: var(--border-focus);
 }
 
+/* The upgrade panel's non-price states: loading, request failed, and
+ * checkout not configured. Left-aligned prose with one control, the same
+ * shape as the sidebar's failed-list block — a user meets these two in the
+ * same session and they should not look like different products. */
+.plan-state {
+  padding: var(--space-4) 0;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.plan-state-title {
+  margin: 0 0 var(--space-1);
+  color: var(--text);
+  font-weight: 600;
+}
+
+.plan-state-body {
+  margin: 0 0 var(--space-3);
+  line-height: 1.55;
+}
+
+.plan-state-retry {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.plan-state-retry:hover { background: var(--surface-3); }
+
+.plan-state-retry:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
 .plan-grid {
   display: grid;
   gap: var(--space-3);

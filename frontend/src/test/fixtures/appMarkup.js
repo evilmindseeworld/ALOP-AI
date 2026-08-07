@@ -188,7 +188,12 @@ export const appTree = (theme) => `
               <div class="admin-user-header"><span class="admin-badge free">free</span></div>
             </div>
 
-            <div class="plan-grid">
+            <div class="plan-state" role="status">
+      <p class="plan-state-title">Couldn&rsquo;t load the plans.</p>
+      <p class="plan-state-body">This request failed.</p>
+      <button class="plan-state-retry">Try again</button>
+    </div>
+    <div class="plan-grid">
               <div class="plan-col">
                 <div class="plan-name">Free</div>
                 <ul class="plan-feats"><li>4 models in the council</li></ul>
@@ -337,7 +342,11 @@ export const appTree = (theme) => `
                 <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="Attached"/>
                 <button aria-label="Remove attached image">×</button>
               </div>
-              <ul class="file-chips">
+              <div class="file-chips-error" role="status">
+      <span>Couldn&rsquo;t load this chat&rsquo;s files. They haven&rsquo;t been deleted.</span>
+      <button type="button" class="file-chips-retry">Try again</button>
+    </div>
+    <ul class="file-chips">
                 <li class="file-chip"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M0 0"/></svg><span class="file-chip-name">budget.csv</span><button aria-label="Remove budget.csv">×</button></li>
                 <li class="file-chip"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M0 0"/></svg><span class="file-chip-name">a-very-long-attachment-filename-that-must-truncate.md</span><button aria-label="Remove it">×</button></li>
               </ul>

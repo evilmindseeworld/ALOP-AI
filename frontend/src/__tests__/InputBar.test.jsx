@@ -241,3 +241,27 @@ describe("InputBar — dropping an image", () => {
     expect(onImageFile).not.toHaveBeenCalled();
   });
 });
+
+describe("a failed file load", () => {
+  const props = { onSend: () => {}, onFileSelect: () => {}, onStartCamera: () => {}, toggleListening: () => {} };
+
+  // Both branches of loadChatFiles used to set []. A user who had attached
+  // three documents opened the conversation after a failed request and saw
+  // none — identical on screen to the server losing them.
+  it("says the files were not deleted", () => {
+    render(<InputBar {...props} attachedFiles={[]} attachedFilesError="HTTP 500" onRetryFiles={() => {}} />);
+    expect(screen.getByText(/haven’t been deleted/)).toBeInTheDocument();
+  });
+
+  it("says nothing when the load succeeded and there are simply no files", () => {
+    render(<InputBar {...props} attachedFiles={[]} />);
+    expect(screen.queryByText(/haven’t been deleted/)).not.toBeInTheDocument();
+  });
+
+  it("retries on demand", async () => {
+    const onRetryFiles = vi.fn();
+    render(<InputBar {...props} attachedFiles={[]} attachedFilesError="HTTP 500" onRetryFiles={onRetryFiles} />);
+    await userEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(onRetryFiles).toHaveBeenCalledOnce();
+  });
+});

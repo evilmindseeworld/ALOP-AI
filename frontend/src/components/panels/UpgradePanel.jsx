@@ -4,11 +4,64 @@ import { formatPrice } from "../../lib/format";
 /**
  * The upgrade path.
  *
- * Only rendered when `prices` is non-null. That is deliberate: the prices
- * endpoint 503s when a deployment has no Stripe price IDs configured, and
- * showing a checkout that cannot complete is worse than showing none.
+ * THE PANEL USED TO NOT OPEN AT ALL. App.jsx gated it on
+ * `Boolean(billing.prices)`, so if the prices request failed, clicking
+ * Upgrade did nothing — no panel, no message, no error. A dead button on the
+ * one screen where the user is trying to give you money, and indistinguishable
+ * from the app being broken.
+ *
+ * It opens now and says which of the two things happened, because they are
+ * not the same and only one of them is worth retrying:
+ *
+ *   pricesUnavailable  the server answered 503 — this deployment has no
+ *                      Stripe price IDs. Permanent until someone changes an
+ *                      environment variable. No retry, because there is
+ *                      nothing to retry.
+ *   pricesError        the request failed. Retry.
+ *
+ * Showing a checkout that cannot complete is still worse than showing none,
+ * so neither state renders the buttons.
  */
-export default function UpgradePanel({ open, onClose, prices, billingBusy, onCheckout }) {
+export default function UpgradePanel({
+  open,
+  onClose,
+  prices,
+  pricesError,
+  pricesUnavailable,
+  onRetryPrices,
+  billingBusy,
+  onCheckout,
+}) {
+  if (open && !prices) {
+    return (
+      <SidePanel open title="Upgrade to Pro" onClose={onClose}>
+        <div className="plan-state" role="status">
+          {pricesUnavailable ? (
+            <>
+              <p className="plan-state-title">Checkout isn&rsquo;t available right now.</p>
+              <p className="plan-state-body">
+                Payments are not configured on this deployment. Nothing is wrong with your
+                account, and you have not been charged.
+              </p>
+            </>
+          ) : pricesError ? (
+            <>
+              <p className="plan-state-title">Couldn&rsquo;t load the plans.</p>
+              <p className="plan-state-body">
+                This request failed. Your plan and your billing are unaffected.
+              </p>
+              <button className="plan-state-retry" onClick={onRetryPrices}>
+                Try again
+              </button>
+            </>
+          ) : (
+            <p className="plan-state-body">Loading plans&hellip;</p>
+          )}
+        </div>
+      </SidePanel>
+    );
+  }
+
   return (
     <SidePanel open={open} title="Upgrade to Pro" onClose={onClose}>
       <div className="plan-grid">

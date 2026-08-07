@@ -262,6 +262,7 @@ const { checkLinks } = require('./lib/link-check');
 const { extractPageSignal } = require('./lib/page-extract');
 const { settleByDeadline } = require('./lib/deadline');
 const { createSearchCache } = require('./lib/search-cache');
+const { createTtlCache } = require('./lib/ttl-cache');
 const { detectRegion, regionHint } = require('./lib/region');
 const { firstWithResults, toolMessages, summariseProbe, UNTRUSTED_PREAMBLE } = require('./lib/council-tools');
 const { parseToolRequests } = require('./lib/tool-protocol');
@@ -552,7 +553,7 @@ app.post('/api/stripe/webhook', requireStripe, express.raw({ type: 'application/
     if (dupe) console.error('[stripe] event ledger unavailable, processing anyway:', dupe.message);
   } catch (e) { console.error('[stripe] event ledger threw, processing anyway:', e.message); }
 
-  try { if (event.type === 'checkout.session.completed') { const s = event.data.object; const email = s.customer_email || s.customer_details?.email; if (email) await supabase.from('users').update({ plan:'pro', stripe_customer_id: s.customer, stripe_subscription_id: s.subscription }).eq('email', email.toLowerCase()); } if (event.type === 'invoice.paid') await supabase.from('users').update({ plan:'pro' }).eq('stripe_customer_id', event.data.object.customer); if (['customer.subscription.deleted','customer.subscription.updated'].includes(event.type)) { const sub = event.data.object; await supabase.from('users').update({ plan: sub.status === 'active' ? 'pro' : 'free' }).eq('stripe_subscription_id', sub.id); } res.json({ received: true }); } catch (err) { Sentry.captureException(err); res.status(500).send('Webhook failed'); }
+  try { if (event.type === 'checkout.session.completed') { const s = event.data.object; const email = s.customer_email || s.customer_details?.email; if (email) await supabase.from('users').update({ plan:'pro', stripe_customer_id: s.customer, stripe_subscription_id: s.subscription }).eq('email', email.toLowerCase()); } if (event.type === 'invoice.paid') await supabase.from('users').update({ plan:'pro' }).eq('stripe_customer_id', event.data.object.customer); if (['customer.subscription.deleted','customer.subscription.updated'].includes(event.type)) { const sub = event.data.object; await supabase.from('users').update({ plan: sub.status === 'active' ? 'pro' : 'free' }).eq('stripe_subscription_id', sub.id); } invalidateUserRows(); res.json({ received: true }); } catch (err) { Sentry.captureException(err); res.status(500).send('Webhook failed'); }
 });
 
 app.use(compression());
@@ -664,7 +665,37 @@ const setCachedSearch = (q, d) => searchCache.set(q, d);
 // clerk-sdk-node@5 ignores its own `onError` option: it calls next() with a bare Error
 // that carries no status, so every rejected request used to surface as a 500 and the
 // client could not tell an expired session from a server fault. Map the status here.
-const clerkRequireAuth = ClerkExpressRequireAuth();
+/* `authorizedParties` — the check Clerk's verifier does NOT do by default.
+ *
+ * A Clerk session token carries an `azp` claim naming the origin it was minted
+ * for. Without this option the signature and expiry are verified and `azp` is
+ * ignored, so a token this instance issued to a page on some other origin is
+ * accepted here. Clerk documents setting it as the defence against that.
+ *
+ * The list is `originPolicy.exact` rather than a new variable, because it is
+ * the same question CORS already answers: which origins is this API's frontend
+ * served from. Two lists would drift, and the drift would look like a login
+ * bug rather than a config mismatch.
+ *
+ * CONSEQUENCE, and it is not subtle: origins covered only by a SUFFIX rule
+ * (`ALLOWED_ORIGIN_SUFFIXES`, i.e. Vercel preview deploys) pass CORS and now
+ * FAIL auth, because `azp` is an exact string and a suffix cannot be enumerated
+ * into one. A preview deploy that must sign in has to be named in
+ * `ALLOWED_ORIGINS`.
+ *
+ * An EMPTY list disables the check rather than refusing everything. That is
+ * deliberate: it is exactly the state a fresh deployment is in before
+ * FRONTEND_URL is set, and locking every user out of a working app to enforce
+ * a hardening measure is the wrong trade. The boot log says which state it is
+ * in, out loud, rather than leaving it to be discovered. */
+const clerkRequireAuth = ClerkExpressRequireAuth(
+  originPolicy.exact.length ? { authorizedParties: originPolicy.exact } : {},
+);
+console.log(
+  originPolicy.exact.length
+    ? `[BOOT] Clerk authorizedParties enforced: ${originPolicy.exact.join(', ')}`
+    : '[BOOT] Clerk authorizedParties NOT enforced — FRONTEND_URL/ALLOWED_ORIGINS are empty, so a token minted for another origin would be accepted.',
+);
 const requireAuth = (req, res, next) =>
   clerkRequireAuth(req, res, (err) => {
     if (!err) return next();
@@ -693,13 +724,55 @@ const requireAuth = (req, res, next) =>
  * The trade is that a name or avatar changed in Clerk shows up one request
  * late. That is the correct thing to be slightly stale about.
  */
+/* Two caches, and the reason they are two rather than one.
+ *
+ * `userRowCache` removes a Supabase select from the front of every
+ * authenticated request. It is short — a suspension or a plan change must not
+ * outlive a few seconds of staleness — and every write to the `users` table
+ * clears it explicitly, so the TTL is a backstop rather than the mechanism.
+ *
+ * `profileRefreshedAt` is a throttle, not a cache: it holds no value, only the
+ * fact that we refreshed recently. refreshProfile was calling Clerk's API and
+ * writing a row on EVERY request, in the background, to store a name and
+ * avatar that change roughly never. Fire-and-forget made it invisible in the
+ * response time; it was still a round trip to Clerk per request, against
+ * Clerk's rate limit, and a write per request against Postgres.
+ *
+ * Ten minutes is chosen against what it delays: a display name edited in
+ * Clerk. Nothing about auth, plan or suspension travels this path.
+ */
+const USER_ROW_TTL_MS = Number(process.env.USER_ROW_TTL_MS) || 15 * 1000;
+const PROFILE_REFRESH_MS = Number(process.env.PROFILE_REFRESH_MS) || 10 * 60 * 1000;
+const userRowCache = createTtlCache({ ttlMs: USER_ROW_TTL_MS });
+const profileRefreshedAt = createTtlCache({ ttlMs: PROFILE_REFRESH_MS });
+
+/* Every write to `users` routes through here.
+ *
+ * The cache is keyed by clerk_id, and the writes are not: the admin routes
+ * address a user by their Supabase `id` and the Stripe webhook addresses them
+ * by email, customer or subscription. None of those know a clerk_id without a
+ * lookup, and doing that lookup to save a few Map entries would trade a
+ * network round trip for nothing. Clearing the whole cache is correct and
+ * costs one already-cheap select per active user on their next request. These
+ * writes are rare — an admin action or a billing event — and the two that are
+ * not rare (refreshProfile, and the insert of a brand-new user) do name a
+ * clerk_id and invalidate only that key. */
+const invalidateUserRows = () => userRowCache.clear();
+
 const refreshProfile = async (userId) => {
+  if (profileRefreshedAt.get(userId) !== undefined) return;
+  profileRefreshedAt.set(userId, true);
   try {
     const clerkUser = await clerkClient.users.getUser(userId);
     const email = clerkUser?.emailAddresses?.[0]?.emailAddress || null;
     const name = clerkUser?.fullName || clerkUser?.username || (email ? email.split('@')[0] : 'User');
     await supabase.from('users').update({ email, name, avatar_url: clerkUser?.imageUrl || null }).eq('clerk_id', userId);
+    userRowCache.delete(userId);
   } catch (e) {
+    // The throttle is NOT cleared here on purpose. Retrying on the next request
+    // means a Clerk outage turns into one call per request per user, which is
+    // the load pattern this throttle exists to prevent — and the thing that
+    // failed to refresh is a display name.
     console.error('[USER] background profile refresh failed:', e.message);
   }
 };
@@ -722,10 +795,27 @@ const ensureUser = async (userId, { cached } = {}) => {
   if (insErr) throw insErr; if (!created) throw new Error('Insert returned no data'); return created;
 };
 
-// Selects the WHOLE row and stashes it, because ensureUser was fetching the
-// same row again two lines later. One select instead of two, on every
-// authenticated request that carries this middleware.
-const checkSuspended = async (req, res, next) => { try { if (!req.auth || !req.auth.userId) return res.status(401).json({ error: 'Not authenticated' }); const { data: user, error } = await supabase.from('users').select('*').eq('clerk_id', req.auth.userId).single(); if (error && error.code !== 'PGRST116') throw error; if (user && user.suspended) return res.status(403).json({ error: 'Account suspended' }); req.userRow = user || null; req.userPlan = user?.plan || 'free'; next(); } catch (err) { Sentry.captureException(err); return res.status(500).json({ error: 'Verify failed' }); } };
+/* Selects the WHOLE row and stashes it, because ensureUser was fetching the
+ * same row again two lines later. One select instead of two, on every
+ * authenticated request that carries this middleware.
+ *
+ * That select is now cached for USER_ROW_TTL_MS, which takes a Supabase round
+ * trip off the front of every authenticated request — it ran before any work
+ * started, so it was pure latency the user watched.
+ *
+ * A MISS is not cached. `null` here means no row for this clerk_id, which
+ * happens on a user's very first request and is resolved by ensureUser
+ * inserting one; caching the absence would make the request after that one
+ * still see no row. Only a real row goes in.
+ *
+ * Suspension does not wait for the TTL: the suspend route clears the cache.
+ *
+ * The generation is read BEFORE the select and the write goes through
+ * setIfCurrent, so a suspend that commits while this select is in flight
+ * cannot be undone by this request caching the row it fetched a moment before.
+ * Clearing an empty cache does nothing to a read that has not landed yet;
+ * without this the clear would be silently reverted for a full TTL. */
+const checkSuspended = async (req, res, next) => { try { if (!req.auth || !req.auth.userId) return res.status(401).json({ error: 'Not authenticated' }); let user = userRowCache.get(req.auth.userId); if (user === undefined) { const generation = userRowCache.generation; const { data, error } = await supabase.from('users').select('*').eq('clerk_id', req.auth.userId).single(); if (error && error.code !== 'PGRST116') throw error; user = data || null; if (user) userRowCache.setIfCurrent(req.auth.userId, user, generation); } if (user && user.suspended) return res.status(403).json({ error: 'Account suspended' }); req.userRow = user || null; req.userPlan = user?.plan || 'free'; next(); } catch (err) { Sentry.captureException(err); return res.status(500).json({ error: 'Verify failed' }); } };
 const requireOwnership = (table, col = 'user_id') => async (req, res, next) => { try { if (!req.auth || !req.auth.userId) return res.status(401).json({ error: 'Not authenticated' }); const user = await ensureUser(req.auth.userId); const id = req.params.id; if (!id || typeof id !== 'string') return res.status(400).json({ error: 'ID required' }); if (!/^[0-9a-fA-F-]{36}$/.test(id)) return res.status(400).json({ error: 'Invalid ID' }); const { data: resource, error } = await supabase.from(table).select(col).eq('id', id).single(); if (error || !resource) return res.status(404).json({ error: 'Not found' }); if (resource[col] !== user.id) return res.status(403).json({ error: 'No permission' }); req.resource = resource; next(); } catch (err) { Sentry.captureException(err); return res.status(500).json({ error: 'Ownership check failed' }); } };
 // Selects `id` as well as `is_admin` so downstream handlers can record WHICH
 // admin acted, and can compare against a :id param — both are Supabase user
@@ -1285,8 +1375,13 @@ app.post('/api/chats/:id/files', requireAuth, checkSuspended, requireOwnership('
     // is not actually text whatever it claims, and anything oversized.
     const prepared = prepareUpload({ name: req.body.name, mime: req.body.mime, base64: req.body.base64 });
 
+    // The owner columns are written AFTER the spread, not before it. Today
+    // prepareUpload returns a fixed six-key literal and the order makes no
+    // difference; the day it returns anything derived from req.body, spread
+    // last would let that value overwrite user_id and hand the row to another
+    // account. Ordering is the whole defence and it costs nothing.
     const { data, error } = await supabase.from('chat_files')
-      .insert({ user_id: user.id, chat_id: req.params.id, ...prepared })
+      .insert({ ...prepared, user_id: user.id, chat_id: req.params.id })
       .select('id,name,kind,bytes,truncated')
       .single();
     if (error) throw error;
@@ -1538,9 +1633,9 @@ app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => { try
 // admin routes did not.
 // (uuidParam is defined above, next to the other route guards.)
 
-app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, uuidParam(), async (req, res) => { try { const { data: t } = await supabase.from('users').select('is_admin,email').eq('id', req.params.id).single(); if (!t) return res.status(404).json({ error: 'Not found' }); if (t.is_admin) return res.status(403).json({ error: 'Cannot suspend admin' }); const { error } = await supabase.from('users').update({ suspended: true }).eq('id', req.params.id); if (error) throw error; await auditLog(req.adminUserId, 'admin.suspend', { target: req.params.id, targetEmail: t.email }, req.ip); res.json({ suspended: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, uuidParam(), async (req, res) => { try { const { data: t } = await supabase.from('users').select('is_admin,email').eq('id', req.params.id).single(); if (!t) return res.status(404).json({ error: 'Not found' }); if (t.is_admin) return res.status(403).json({ error: 'Cannot suspend admin' }); const { error } = await supabase.from('users').update({ suspended: true }).eq('id', req.params.id); if (error) throw error; invalidateUserRows(); await auditLog(req.adminUserId, 'admin.suspend', { target: req.params.id, targetEmail: t.email }, req.ip); res.json({ suspended: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 
-app.post('/api/admin/users/:id/unsuspend', requireAuth, requireAdmin, uuidParam(), async (req, res) => { try { const { error } = await supabase.from('users').update({ suspended: false }).eq('id', req.params.id); if (error) throw error; await auditLog(req.adminUserId, 'admin.unsuspend', { target: req.params.id }, req.ip); res.json({ unsuspended: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+app.post('/api/admin/users/:id/unsuspend', requireAuth, requireAdmin, uuidParam(), async (req, res) => { try { const { error } = await supabase.from('users').update({ suspended: false }).eq('id', req.params.id); if (error) throw error; invalidateUserRows(); await auditLog(req.adminUserId, 'admin.unsuspend', { target: req.params.id }, req.ip); res.json({ unsuspended: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 
 app.delete('/api/admin/users/:id', requireAuth, requireAdmin, uuidParam(), async (req, res) => { try {
   // The old self-delete guard compared req.auth.userId (a Clerk id, "user_2ab…")
@@ -1555,6 +1650,9 @@ app.delete('/api/admin/users/:id', requireAuth, requireAdmin, uuidParam(), async
   if (t.is_admin) return res.status(403).json({ error: 'Cannot delete admin' });
   const { error } = await supabase.from('users').delete().eq('id', req.params.id);
   if (error) throw error;
+  // A cached row for a deleted user would let their next request through
+  // checkSuspended as though the account still existed.
+  invalidateUserRows();
   // Written after the delete succeeds and before the reply, so a 200 always has
   // a matching audit row. audit_logs.user_id is ON DELETE SET NULL, so deleting
   // a user cannot take the record of their deletion with them.

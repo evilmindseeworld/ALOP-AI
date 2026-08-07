@@ -45,6 +45,9 @@ const EXPECTED = [
   "signin",
   "decoration",
   "code-blocks",
+  // The render-error screen. Last but one: it must not be able to disturb the
+  // app it replaces, and utilities keeps the final word.
+  "crash",
   "utilities",      // media queries, which must beat the component defaults
 ];
 

@@ -386,10 +386,29 @@ const AuthenticatedApp = () => {
       <div className="app-shell">
        <div className="app-frame">
         <header className="app-header">
-          <button className="icon-btn mobile-only" onClick={() => setMobileSidebarOpen(true)} title="Chats">
+          {/* Both of these said only `title="Chats"`, which axe accepts as an
+              accessible name but which is the weakest source there is: a title
+              is not announced by every screen reader and never appears on
+              touch. It was also inaccurate — these are two DIFFERENT controls
+              that happened to share a tooltip, one opening a drawer and one
+              collapsing a rail, and a name has to say which. aria-expanded
+              gives the state, which a name cannot. */}
+          <button
+            className="icon-btn mobile-only"
+            onClick={() => setMobileSidebarOpen(true)}
+            title="Chats"
+            aria-label="Open chat list"
+            aria-expanded={mobileSidebarOpen}
+          >
             <Icon name="menu" size={18} />
           </button>
-          <button className="icon-btn desktop-only" onClick={() => setSidebarCollapsed((c) => !c)} title="Chats">
+          <button
+            className="icon-btn desktop-only"
+            onClick={() => setSidebarCollapsed((c) => !c)}
+            title="Chats"
+            aria-label={sidebarCollapsed ? "Show chat list" : "Hide chat list"}
+            aria-expanded={!sidebarCollapsed}
+          >
             <Icon name="menu" size={18} />
           </button>
 

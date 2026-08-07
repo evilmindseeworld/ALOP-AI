@@ -1,100 +1,126 @@
 import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
 import { axe } from "vitest-axe";
-import { APP_MARKUP } from "../test/fixtures/appMarkup";
+import ChatSidebar from "../components/ChatSidebar";
+import CommandPalette from "../components/CommandPalette";
+import InputBar from "../components/InputBar";
+import { EmptyState } from "../components/MessageList";
 import AdminPanel from "../components/panels/AdminPanel";
 import SidePanel from "../components/SidePanel";
 
 /**
  * Accessibility is a legal surface, not a polish item.
  *
- * Under the ADA in the US and the EAA across the EU from June 2025, a consumer
- * web service is expected to meet WCAG 2.1 AA, and the usual first contact is
- * a complaint rather than an audit. This suite is the cheapest possible guard:
- * it will not catch everything a human tester would, but it fails the build on
- * the violations that make up the bulk of filed complaints — an input with no
- * label, a button whose only content is an icon, a broken ARIA reference, a
- * heading level skipped.
+ * Under the ADA in the US and the EAA across the EU since June 2025, a
+ * consumer service is expected to meet WCAG 2.1 AA, and the usual first
+ * contact is a complaint rather than an audit. This suite fails the build on
+ * the violation classes that make up most of those complaints: an input with
+ * no label, a button whose only content is an icon, a broken ARIA reference.
  *
- * WHAT IT CANNOT SEE, so nobody reads a green run as a clean bill of health:
- * jsdom does no layout and no real colour compositing, so contrast, focus
- * order, reflow at 320px and anything requiring a live screen reader are out
- * of scope here. Those need a browser pass.
+ * THESE ARE THE REAL COMPONENTS, and that is the whole point.
  *
- * The static fixture is checked as well as live components because it is the
- * one place every component's markup exists at once, in both themes.
+ * The first version of this file ran axe over test/fixtures/appMarkup.js and
+ * reported 38 unlabelled buttons and 6 unlabelled fields. Nearly all of it was
+ * FIXTURE DRIFT. That fixture is hand-transcribed markup kept for the CSS
+ * cascade snapshot, where only classes and structure matter, so its
+ * aria-labels were never maintained — ChatSidebar's four row actions carry
+ * aria-label and aria-pressed in the source and carried neither in the copy.
+ * An accessibility test that reads a transcription measures the transcription.
+ * Anything asserted here is rendered from the component the user gets.
+ *
+ * WHAT IT STILL CANNOT SEE, so a green run is not a clean bill of health:
+ * jsdom does no layout and no colour compositing, so contrast, focus order,
+ * reflow at 320px and real screen-reader output are out of scope and need a
+ * browser pass.
  */
 
-// Contrast is excluded EXPLICITLY rather than left to fail silently: jsdom
-// resolves every colour to transparent, so the rule reports nothing useful in
-// either direction. Naming it here keeps the gap visible.
+// Contrast is disabled EXPLICITLY rather than left to report nothing: jsdom
+// resolves every colour to transparent, so the rule is meaningless here in
+// either direction. Naming it keeps the gap visible.
 const OPTIONS = { rules: { "color-contrast": { enabled: false } } };
 
-const noViolations = async (container) => {
-  const results = await axe(container, OPTIONS);
-  const found = results.violations.map((v) => `${v.id} (${v.impact}): ${v.nodes.length} node(s) — ${v.help}`);
-  expect(found).toEqual([]);
+const expectClean = async (container) => {
+  const { violations } = await axe(container, OPTIONS);
+  expect(
+    violations.map((v) => `${v.id} (${v.impact}) x${v.nodes.length}: ${v.nodes[0]?.html?.slice(0, 100)}`)
+  ).toEqual([]);
 };
 
+const noop = () => {};
+
 describe("accessibility", () => {
-  /**
-   * A RATCHET, NOT A PASS. The fixture currently fails axe, and pretending
-   * otherwise by deleting the test would be worse than recording it.
-   *
-   * Every count below is a real violation in the transcribed markup, waiting
-   * on a browser pass to confirm against the live components — the fixture has
-   * 53 buttons where the JSX has 71, so it is a lower bound and its labels may
-   * lag the source. The test fails if any number goes UP. Drive them down and
-   * update the baseline; do not add a new key to make a failure go away.
-   *
-   * `landmark-*` is excluded because the fixture renders the dark and light
-   * trees side by side, so every landmark legitimately appears twice. That is
-   * an artefact of the fixture, not of the app.
-   */
-  const KNOWN = {
-    "button-name": 38,
-    label: 6,
-    "aria-dialog-name": 2,
-    "aria-input-field-name": 2,
-  };
-
-  it("the full app markup does not get LESS accessible", async () => {
-    const host = document.createElement("div");
-    host.innerHTML = APP_MARKUP;
-    document.body.appendChild(host);
-    try {
-      const { violations } = await axe(host, OPTIONS);
-      const counts = Object.fromEntries(
-        violations
-          .filter((v) => !v.id.startsWith("landmark-"))
-          .map((v) => [v.id, v.nodes.length])
-      );
-      for (const [id, n] of Object.entries(counts)) {
-        expect(n, `${id}: ${n} nodes, baseline ${KNOWN[id] ?? 0}`).toBeLessThanOrEqual(KNOWN[id] ?? 0);
-      }
-    } finally {
-      host.remove();
-    }
-  });
-
-  it("the admin panel has no axe violations", async () => {
-    const users = [
-      { id: "1", email: "a@example.com", name: "A", plan: "free", is_admin: false, suspended: false },
-    ];
+  it("the chat sidebar", async () => {
     const { container } = render(
-      <AdminPanel open users={users} offset={0} hasMore onClose={() => {}}
-        onPrevious={() => {}} onNext={() => {}}
-        onSuspend={() => {}} onUnsuspend={() => {}} onDelete={() => {}} />
+      <ChatSidebar
+        chats={[
+          { id: "a", title: "First chat", pinned: true },
+          { id: "b", title: "Second chat", favorite: true },
+          { id: "c", title: "" },
+        ]}
+        activeChatId="a"
+        onSelect={noop} onCreate={noop} onDelete={noop} onRename={noop}
+        onPin={noop} onFavorite={noop}
+        collapsed={false} mobileOpen setMobileOpen={noop}
+      />
     );
-    await noViolations(container);
+    await expectClean(container);
   });
 
-  it("a side panel has no axe violations", async () => {
+  it("the command palette", async () => {
     const { container } = render(
-      <SidePanel open title="Settings" onClose={() => {}}>
+      <CommandPalette
+        open
+        onClose={noop}
+        chats={[{ id: "c1", title: "Postgres vs Mongo" }, { id: "c2", title: null }]}
+        actions={[{ id: "new", label: "New chat", hint: "Ctrl N", icon: "+", run: noop }]}
+        onSelectChat={noop}
+      />
+    );
+    await expectClean(container);
+  });
+
+  it("the composer, idle and generating", async () => {
+    const idle = render(<InputBar onSend={noop} onFileSelect={noop} onStartCamera={noop} toggleListening={noop} />);
+    await expectClean(idle.container);
+    idle.unmount();
+
+    // The stop button and the attachment chip only exist in this state, and a
+    // control that appears mid-generation is exactly the kind that gets
+    // shipped unlabelled.
+    const busy = render(
+      <InputBar
+        onSend={noop} onFileSelect={noop} onStartCamera={noop} toggleListening={noop}
+        isGenerating onStop={noop} isListening
+        attachedImage="data:image/png;base64,iVBORw0KGgo=" onClearAttachment={noop}
+        attachedFiles={[{ id: "f1", name: "notes.txt", bytes: 120 }]} onRemoveFile={noop}
+      />
+    );
+    await expectClean(busy.container);
+  });
+
+  it("the empty state", async () => {
+    const { container } = render(<EmptyState onPick={noop} />);
+    await expectClean(container);
+  });
+
+  it("the admin panel", async () => {
+    const { container } = render(
+      <AdminPanel
+        open
+        users={[{ id: "1", email: "a@example.com", name: "A", plan: "free", is_admin: false, suspended: false }]}
+        offset={0} hasMore onClose={noop} onPrevious={noop} onNext={noop}
+        onSuspend={noop} onUnsuspend={noop} onDelete={noop}
+      />
+    );
+    await expectClean(container);
+  });
+
+  it("a side panel", async () => {
+    const { container } = render(
+      <SidePanel open title="Settings" onClose={noop}>
         <p>Body</p>
       </SidePanel>
     );
-    await noViolations(container);
+    await expectClean(container);
   });
 });

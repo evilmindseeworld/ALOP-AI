@@ -4,7 +4,7 @@
 # here means a refactor changed behaviour. Do not regenerate it to make a
 # test pass; fix the CSS.
 #
-# elements: 829   environments: 4   states: 6
+# elements: 839   environments: 4   states: 6
 
 === width=1400 ===
 
@@ -37516,7 +37516,491 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[775] div.initial-loader.dark
+[775] div.crash-root
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  align-items: <place-items: center>
+  background: #0a0a0a
+  background-clip: <background: #0a0a0a>
+  background-image: <background: #0a0a0a>
+  background-size: <background: #0a0a0a>
+  bottom: <inset: 0>
+  box-sizing: border-box
+  color: #f5f1ee
+  display: grid
+  font-family: 'Switzer', system-ui, sans-serif
+  inset: 0
+  justify-items: <place-items: center>
+  left: <inset: 0>
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 24px
+  padding-bottom: <padding: 24px>
+  padding-left: <padding: 24px>
+  place-items: center
+  position: fixed
+  right: <inset: 0>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  top: <inset: 0>
+  z-index: 400
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[776] div.crash-card
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  background: #101010
+  background-clip: <background: #101010>
+  background-image: <background: #101010>
+  background-size: <background: #101010>
+  border: 1px solid rgba(255, 255, 255, 0.07)
+  border-bottom-right-radius: <border-radius: 8px>
+  border-color: <border: 1px solid rgba(255, 255, 255, 0.07)>
+  border-radius: 8px
+  box-sizing: border-box
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  max-width: 34rem
+  padding: 28px
+  padding-bottom: <padding: 28px>
+  padding-left: <padding: 28px>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  width: 100%
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[777] h1.crash-title
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  font-size: 1.35rem
+  font-weight: 700
+  letter-spacing: -0.02em
+  margin: 0 0 10px
+  margin-bottom: <margin: 0 0 10px>
+  margin-left: <margin: 0 0 10px>
+  margin-top: <margin: 0 0 10px>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[778] p.crash-body
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #b8b3ae
+  line-height: 1.55
+  margin: 0 0 16px
+  margin-bottom: <margin: 0 0 16px>
+  margin-left: <margin: 0 0 16px>
+  margin-top: <margin: 0 0 16px>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[779] p.crash-detail
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  background: #161615
+  background-clip: <background: #161615>
+  background-image: <background: #161615>
+  background-size: <background: #161615>
+  border-bottom-right-radius: <border-radius: 6px>
+  border-radius: 6px
+  box-sizing: border-box
+  color: #8d8880
+  font-family: 'JetBrains Mono', ui-monospace, monospace
+  font-size: 0.8rem
+  margin: 0 0 20px
+  margin-bottom: <margin: 0 0 20px>
+  margin-left: <margin: 0 0 20px>
+  margin-top: <margin: 0 0 20px>
+  max-height: 8rem
+  overflow: auto
+  overflow-x: <overflow: auto>
+  overflow-y: <overflow: auto>
+  padding: 10px 12px
+  padding-bottom: <padding: 10px 12px>
+  padding-left: <padding: 10px 12px>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  word-break: break-word
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[780] div.crash-actions
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  display: flex
+  flex-wrap: wrap
+  gap: 10px
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[781] button.crash-btn.primary
+  -webkit-tap-highlight-color: transparent
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  background: #f08aa3
+  background-clip: <background: #f08aa3>
+  background-image: <background: #f08aa3>
+  background-size: <background: #f08aa3>
+  border: 1px solid rgba(255, 255, 255, 0.14)
+  border-bottom-right-radius: <border-radius: 6px>
+  border-color: transparent
+  border-radius: 6px
+  box-sizing: border-box
+  color: #0a0a0a
+  cursor: pointer
+  font: inherit
+  font-family: <font: inherit>
+  font-size: 0.9rem
+  font-style: <font: inherit>
+  font-weight: 600
+  line-height: <font: inherit>
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 9px 16px
+  padding-bottom: <padding: 9px 16px>
+  padding-left: <padding: 9px 16px>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+    filter: brightness(1.08)
+  :focus-visible
+    outline: 2px solid rgba(240, 138, 163, 0.55)
+    outline-offset: 2px
+
+[782] button.crash-btn
+  -webkit-tap-highlight-color: transparent
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  background: transparent
+  background-clip: <background: transparent>
+  background-image: <background: transparent>
+  background-size: <background: transparent>
+  border: 1px solid rgba(255, 255, 255, 0.14)
+  border-bottom-right-radius: <border-radius: 6px>
+  border-color: <border: 1px solid rgba(255, 255, 255, 0.14)>
+  border-radius: 6px
+  box-sizing: border-box
+  color: inherit
+  cursor: pointer
+  font: inherit
+  font-family: <font: inherit>
+  font-size: 0.9rem
+  font-style: <font: inherit>
+  font-weight: <font: inherit>
+  line-height: <font: inherit>
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 9px 16px
+  padding-bottom: <padding: 9px 16px>
+  padding-left: <padding: 9px 16px>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+    background: #1e1e1c
+    background-clip: <background: #1e1e1c>
+    background-image: <background: #1e1e1c>
+    background-size: <background: #1e1e1c>
+  :focus-visible
+    outline: 2px solid rgba(240, 138, 163, 0.55)
+    outline-offset: 2px
+
+[783] p.crash-ref
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #8d8880
+  font-size: 0.78rem
+  margin: 16px 0 0
+  margin-bottom: <margin: 16px 0 0>
+  margin-left: <margin: 16px 0 0>
+  margin-top: <margin: 16px 0 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[784] code
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #b8b3ae
+  font-family: 'JetBrains Mono', ui-monospace, monospace
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[785] div.initial-loader.dark
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -37567,7 +38051,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[776] img
+[786] img
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -37613,7 +38097,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[777] div.skeleton-block
+[787] div.skeleton-block
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -37663,7 +38147,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[778] div.overlay-root
+[788] div.overlay-root
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -37717,7 +38201,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[779] div.overlay-answer-stack
+[789] div.overlay-answer-stack
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -37764,7 +38248,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[780] div.overlay-answer-card
+[790] div.overlay-answer-card
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -37823,7 +38307,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[781] div.overlay-answer-text.markdown-body
+[791] div.overlay-answer-text.markdown-body
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -37869,7 +38353,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[782] p
+[792] p
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -37909,7 +38393,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[783] button.overlay-tts-btn
+[793] button.overlay-tts-btn
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -37973,7 +38457,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[784] div.overlay-thumb-pill
+[794] div.overlay-thumb-pill
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -38025,7 +38509,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[785] button
+[795] button
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -38076,7 +38560,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[786] form.overlay-bar
+[796] form.overlay-bar
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -38133,7 +38617,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[787] div.overlay-drag-handle
+[797] div.overlay-drag-handle
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -38183,7 +38667,7 @@
   :active
     cursor: grabbing
 
-[788] div.overlay-icon.live
+[798] div.overlay-icon.live
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -38240,7 +38724,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[789] svg
+[799] svg
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -38280,7 +38764,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[790] path
+[800] path
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -38320,7 +38804,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[791] input.overlay-input[type=text]
+[801] input.overlay-input[type=text]
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -38374,7 +38858,7 @@
     border-radius: 4px
     outline-offset: 2px
 
-[792] button.overlay-action.recording
+[802] button.overlay-action.recording
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -38440,7 +38924,7 @@
   :active
     transform: scale(0.94)
 
-[793] label.overlay-action
+[803] label.overlay-action
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -38507,7 +38991,7 @@
   :active
     transform: scale(0.94)
 
-[794] input.overlay-file-input[type=file]
+[804] input.overlay-file-input[type=file]
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -38549,7 +39033,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[795] button.overlay-submit
+[805] button.overlay-submit
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -38618,7 +39102,7 @@
     cursor: not-allowed
     opacity: 0.5
 
-[796] div.signin-root
+[806] div.signin-root
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -38673,7 +39157,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[797] div.signin-noise
+[807] div.signin-noise
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -38724,7 +39208,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[798] div.signin-orb.signin-orb-1
+[808] div.signin-orb.signin-orb-1
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -38781,7 +39265,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[799] div.signin-orb.signin-orb-2
+[809] div.signin-orb.signin-orb-2
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -38838,7 +39322,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[800] div.sakura-frame
+[810] div.sakura-frame
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -38887,7 +39371,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[801] svg.sakura-torii
+[811] svg.sakura-torii
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -38935,7 +39419,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[802] path
+[812] path
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -38975,7 +39459,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[803] svg.sakura-corner.sakura-corner-tl
+[813] svg.sakura-corner.sakura-corner-tl
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39021,7 +39505,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[804] path
+[814] path
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39061,7 +39545,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[805] div.signin-wrap
+[815] div.signin-wrap
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39110,7 +39594,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[806] div.signin-brand
+[816] div.signin-brand
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39153,7 +39637,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[807] img.signin-logo-mark
+[817] img.signin-logo-mark
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39196,7 +39680,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[808] span.signin-logo-text
+[818] span.signin-logo-text
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39241,7 +39725,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[809] div.signin-grid
+[819] div.signin-grid
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39285,7 +39769,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[810] section.signin-thesis
+[820] section.signin-thesis
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39330,7 +39814,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[811] h1.signin-title
+[821] h1.signin-title
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39378,7 +39862,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[812] span.signin-title-accent
+[822] span.signin-title-accent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39423,7 +39907,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[813] ol.council-ladder
+[823] ol.council-ladder
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39467,7 +39951,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[814] li.council-row
+[824] li.council-row
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39516,7 +40000,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[815] span.council-temp
+[825] span.council-temp
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39563,7 +40047,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[816] span.council-name
+[826] span.council-name
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39613,7 +40097,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[817] li.council-row.is-pro
+[827] li.council-row.is-pro
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39662,7 +40146,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[818] span.council-temp
+[828] span.council-temp
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39709,7 +40193,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[819] span.council-name
+[829] span.council-name
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39759,7 +40243,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[820] span.council-tag
+[830] span.council-tag
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39805,7 +40289,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[821] p.council-resolve
+[831] p.council-resolve
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39863,7 +40347,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[822] p.signin-tagline
+[832] p.signin-tagline
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39909,7 +40393,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[823] section.signin-card
+[833] section.signin-card
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39958,7 +40442,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[824] div.signin-card-inner
+[834] div.signin-card-inner
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -39998,7 +40482,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[825] p.signin-plan
+[835] p.signin-plan
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -40041,7 +40525,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[826] p.signin-legal
+[836] p.signin-legal
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -40088,7 +40572,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[827] a
+[837] a
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -40135,7 +40619,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[828] a
+[838] a
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -40272,31 +40756,31 @@
   - padding-bottom: <padding: 0 24px 20px>
   - padding-left: <padding: 0 24px 20px>
 
-[809] div.signin-grid
+[819] div.signin-grid
   gap: 24px
   grid-template-columns: minmax(0, 1fr)
   justify-items: center
   - gap: clamp(32px, 6vw, 88px)
   - grid-template-columns: minmax(0, 1fr) minmax(0, 380px)
 
-[810] section.signin-thesis
+[820] section.signin-thesis
   align-items: center
   order: 2
   - align-items: flex-start
 
-[811] h1.signin-title
+[821] h1.signin-title
   text-align: center
   - text-align: left
 
-[813] ol.council-ladder
+[823] ol.council-ladder
   max-width: 30ch
   - max-width: 34ch
 
-[822] p.signin-tagline
+[832] p.signin-tagline
   text-align: center
   - text-align: left
 
-[823] section.signin-card
+[833] section.signin-card
   order: 1
 
 === width=400 (changes vs width=1400) ===
@@ -40921,13 +41405,13 @@
   display: none
   - display: flex
 
-[803] svg.sakura-corner.sakura-corner-tl
+[813] svg.sakura-corner.sakura-corner-tl
   opacity: 0.2
   width: clamp(64px, 22vw, 100px)
   - opacity: 0.26
   - width: clamp(90px, 11vw, 150px)
 
-[805] div.signin-wrap
+[815] div.signin-wrap
   gap: 16px
   padding: 40px 16px
   padding-bottom: <padding: 40px 16px>
@@ -40937,31 +41421,31 @@
   - padding-bottom: <padding: 48px 24px>
   - padding-left: <padding: 48px 24px>
 
-[809] div.signin-grid
+[819] div.signin-grid
   gap: 24px
   grid-template-columns: minmax(0, 1fr)
   justify-items: center
   - gap: clamp(32px, 6vw, 88px)
   - grid-template-columns: minmax(0, 1fr) minmax(0, 380px)
 
-[810] section.signin-thesis
+[820] section.signin-thesis
   align-items: center
   order: 2
   - align-items: flex-start
 
-[811] h1.signin-title
+[821] h1.signin-title
   text-align: center
   - text-align: left
 
-[813] ol.council-ladder
+[823] ol.council-ladder
   max-width: 30ch
   - max-width: 34ch
 
-[822] p.signin-tagline
+[832] p.signin-tagline
   text-align: center
   - text-align: left
 
-[823] section.signin-card
+[833] section.signin-card
   order: 1
   padding: 18px
   padding-bottom: <padding: 18px>
@@ -49870,7 +50354,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[775] div.initial-loader.dark
+[775] div.crash-root
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -49881,7 +50365,117 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[776] img
+[776] div.crash-card
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[777] h1.crash-title
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[778] p.crash-body
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[779] p.crash-detail
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[780] div.crash-actions
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[781] button.crash-btn.primary
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[782] button.crash-btn
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[783] p.crash-ref
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[784] code
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[785] div.initial-loader.dark
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[786] img
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -49894,7 +50488,7 @@
   - animation-duration: <animation: logoPulse 1.8s ease-in-out infinite>
   - animation-iteration-count: <animation: logoPulse 1.8s ease-in-out infinite>
 
-[777] div.skeleton-block
+[787] div.skeleton-block
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -49907,7 +50501,7 @@
   - animation-duration: <animation: skeletonShimmer 1.6s linear infinite>
   - animation-iteration-count: <animation: skeletonShimmer 1.6s linear infinite>
 
-[778] div.overlay-root
+[788] div.overlay-root
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -49918,7 +50512,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[779] div.overlay-answer-stack
+[789] div.overlay-answer-stack
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -49929,7 +50523,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[780] div.overlay-answer-card
+[790] div.overlay-answer-card
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -49946,7 +50540,7 @@
   - animation-duration: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   - animation-iteration-count: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
 
-[781] div.overlay-answer-text.markdown-body
+[791] div.overlay-answer-text.markdown-body
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -49957,7 +50551,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[782] p
+[792] p
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -49968,7 +50562,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[783] button.overlay-tts-btn
+[793] button.overlay-tts-btn
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -49980,7 +50574,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: background 120ms ease, transform 120ms cubic-bezier(0.16, 1, 0.3, 1)>
 
-[784] div.overlay-thumb-pill
+[794] div.overlay-thumb-pill
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -49991,7 +50585,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[785] button
+[795] button
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50002,7 +50596,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[786] form.overlay-bar
+[796] form.overlay-bar
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50019,7 +50613,7 @@
   - animation-duration: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   - animation-iteration-count: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
 
-[787] div.overlay-drag-handle
+[797] div.overlay-drag-handle
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50030,7 +50624,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[788] div.overlay-icon.live
+[798] div.overlay-icon.live
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50047,7 +50641,7 @@
   - animation-duration: <animation: overlayPulse 1.6s ease-in-out infinite>
   - animation-iteration-count: <animation: overlayPulse 1.6s ease-in-out infinite>
 
-[789] svg
+[799] svg
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50058,7 +50652,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[790] path
+[800] path
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50069,7 +50663,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[791] input.overlay-input[type=text]
+[801] input.overlay-input[type=text]
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50080,7 +50674,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[792] button.overlay-action.recording
+[802] button.overlay-action.recording
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50098,7 +50692,7 @@
   - animation-iteration-count: <animation: overlayPulse 1.6s ease-in-out infinite>
   - transition-duration: <transition: background 120ms ease, color 120ms ease, transform 120ms cubic-bezier(0.16, 1, 0.3, 1)>
 
-[793] label.overlay-action
+[803] label.overlay-action
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50110,7 +50704,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: background 120ms ease, color 120ms ease, transform 120ms cubic-bezier(0.16, 1, 0.3, 1)>
 
-[794] input.overlay-file-input[type=file]
+[804] input.overlay-file-input[type=file]
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50121,7 +50715,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[795] button.overlay-submit
+[805] button.overlay-submit
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50133,7 +50727,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: transform 120ms cubic-bezier(0.34, 1.56, 0.64, 1), filter 120ms ease>
 
-[796] div.signin-root
+[806] div.signin-root
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50144,7 +50738,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[797] div.signin-noise
+[807] div.signin-noise
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50155,7 +50749,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[798] div.signin-orb.signin-orb-1
+[808] div.signin-orb.signin-orb-1
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50168,7 +50762,7 @@
   - animation-duration: <animation: orb1 18s ease-in-out infinite>
   - animation-iteration-count: <animation: orb1 18s ease-in-out infinite>
 
-[799] div.signin-orb.signin-orb-2
+[809] div.signin-orb.signin-orb-2
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50181,7 +50775,7 @@
   - animation-duration: <animation: orb2 22s ease-in-out infinite>
   - animation-iteration-count: <animation: orb2 22s ease-in-out infinite>
 
-[800] div.sakura-frame
+[810] div.sakura-frame
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50192,7 +50786,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[801] svg.sakura-torii
+[811] svg.sakura-torii
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50203,7 +50797,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[802] path
+[812] path
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50214,7 +50808,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[803] svg.sakura-corner.sakura-corner-tl
+[813] svg.sakura-corner.sakura-corner-tl
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50225,7 +50819,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[804] path
+[814] path
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50236,7 +50830,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[805] div.signin-wrap
+[815] div.signin-wrap
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50247,7 +50841,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[806] div.signin-brand
+[816] div.signin-brand
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50258,7 +50852,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[807] img.signin-logo-mark
+[817] img.signin-logo-mark
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50269,7 +50863,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[808] span.signin-logo-text
+[818] span.signin-logo-text
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50280,7 +50874,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[809] div.signin-grid
+[819] div.signin-grid
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50291,7 +50885,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[810] section.signin-thesis
+[820] section.signin-thesis
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50302,7 +50896,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[811] h1.signin-title
+[821] h1.signin-title
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50313,7 +50907,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[812] span.signin-title-accent
+[822] span.signin-title-accent
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50324,7 +50918,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[813] ol.council-ladder
+[823] ol.council-ladder
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50335,42 +50929,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[814] li.council-row
-  ::after/animation-duration: 0.01ms
-  ::after/animation-iteration-count: 1
-  ::after/transition-duration: 0.01ms
-  ::before/animation-duration: 0.01ms
-  ::before/animation-iteration-count: 1
-  ::before/transition-duration: 0.01ms
-  animation-duration: 0.01ms
-  animation-iteration-count: 1
-  transition-duration: 0.01ms
-  - animation-duration: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
-  - animation-iteration-count: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
-
-[815] span.council-temp
-  ::after/animation-duration: 0.01ms
-  ::after/animation-iteration-count: 1
-  ::after/transition-duration: 0.01ms
-  ::before/animation-duration: 0.01ms
-  ::before/animation-iteration-count: 1
-  ::before/transition-duration: 0.01ms
-  animation-duration: 0.01ms
-  animation-iteration-count: 1
-  transition-duration: 0.01ms
-
-[816] span.council-name
-  ::after/animation-duration: 0.01ms
-  ::after/animation-iteration-count: 1
-  ::after/transition-duration: 0.01ms
-  ::before/animation-duration: 0.01ms
-  ::before/animation-iteration-count: 1
-  ::before/transition-duration: 0.01ms
-  animation-duration: 0.01ms
-  animation-iteration-count: 1
-  transition-duration: 0.01ms
-
-[817] li.council-row.is-pro
+[824] li.council-row
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50383,7 +50942,7 @@
   - animation-duration: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   - animation-iteration-count: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
 
-[818] span.council-temp
+[825] span.council-temp
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50394,7 +50953,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[819] span.council-name
+[826] span.council-name
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50405,7 +50964,20 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[820] span.council-tag
+[827] li.council-row.is-pro
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+  - animation-duration: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-iteration-count: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+
+[828] span.council-temp
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50416,7 +50988,29 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[821] p.council-resolve
+[829] span.council-name
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[830] span.council-tag
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[831] p.council-resolve
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50429,7 +51023,7 @@
   - animation-duration: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
   - animation-iteration-count: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
 
-[822] p.signin-tagline
+[832] p.signin-tagline
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50440,7 +51034,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[823] section.signin-card
+[833] section.signin-card
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50451,7 +51045,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[824] div.signin-card-inner
+[834] div.signin-card-inner
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50462,7 +51056,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[825] p.signin-plan
+[835] p.signin-plan
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50473,7 +51067,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[826] p.signin-legal
+[836] p.signin-legal
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50484,7 +51078,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[827] a
+[837] a
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50496,7 +51090,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: color 0.15s>
 
-[828] a
+[838] a
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -50624,6 +51218,7 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --z-camera: 100
   --z-chat: 3
   --z-cmdk: 300
+  --z-crash: 400
   --z-earring: 4
   --z-empty-content: 1
   --z-empty-decor: 0
@@ -50722,6 +51317,7 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --z-camera: 100
   --z-chat: 3
   --z-cmdk: 300
+  --z-crash: 400
   --z-earring: 4
   --z-empty-content: 1
   --z-empty-decor: 0

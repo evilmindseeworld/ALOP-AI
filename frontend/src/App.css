@@ -42,4 +42,8 @@
 @import "./styles/signin.css";
 @import "./styles/decoration.css";
 @import "./styles/code-blocks.css";
+/* Before utilities, which must stay last. The crash screen needs no help
+   winning the cascade — it replaces the tree rather than overlaying it, and
+   its z-index token puts it above every other layer. */
+@import "./styles/crash.css";
 @import "./styles/utilities.css";

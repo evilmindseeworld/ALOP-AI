@@ -1,0 +1,105 @@
+/* The crash screen.
+ *
+ * Its own file, and deliberately the LAST import in the manifest, because it
+ * is the one screen that has to render when something else in the app is
+ * broken. It uses tokens but depends on no layout, no component class and no
+ * JavaScript beyond the two buttons — if this needed anything from the tree
+ * that just threw, it would throw with it.
+ *
+ * Everything here is a plain value or a token with a literal fallback, so the
+ * screen still reads even if tokens.css itself failed to load. */
+
+.crash-root {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg, #0a0a0a);
+  color: var(--text, #f5f1ee);
+  font-family: var(--font-body, system-ui, sans-serif);
+  z-index: var(--z-crash);
+}
+
+.crash-card {
+  max-width: 34rem;
+  width: 100%;
+  padding: 28px;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.07));
+  border-radius: var(--radius-lg, 8px);
+  background: var(--surface, #101010);
+}
+
+.crash-title {
+  margin: 0 0 10px;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.crash-body {
+  margin: 0 0 16px;
+  line-height: 1.55;
+  color: var(--text-muted, #b8b3ae);
+}
+
+/* The message, not a stack trace. Monospaced so a user can read it back
+ * accurately over the phone, and scrollable so a long one cannot push the
+ * buttons off the screen — which would strand exactly the person this screen
+ * exists to rescue. */
+.crash-detail {
+  margin: 0 0 20px;
+  padding: 10px 12px;
+  max-height: 8rem;
+  overflow: auto;
+  border-radius: var(--radius-md, 6px);
+  background: var(--surface-2, #161615);
+  color: var(--text-subtle, #8d8880);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.8rem;
+  word-break: break-word;
+}
+
+.crash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.crash-btn {
+  padding: 9px 16px;
+  border: 1px solid var(--border-strong, rgba(255, 255, 255, 0.14));
+  border-radius: var(--radius-md, 6px);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.crash-btn:hover { background: var(--surface-3, #1e1e1c); }
+
+.crash-btn:focus-visible {
+  outline: 2px solid var(--border-focus, rgba(240, 138, 163, 0.55));
+  outline-offset: 2px;
+}
+
+.crash-btn.primary {
+  border-color: transparent;
+  background: var(--primary, #f08aa3);
+  color: #0a0a0a;
+  font-weight: 600;
+}
+
+.crash-btn.primary:hover { filter: brightness(1.08); }
+
+.crash-ref {
+  margin: 16px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-subtle, #8d8880);
+}
+
+.crash-ref code {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  color: var(--text-muted, #b8b3ae);
+}

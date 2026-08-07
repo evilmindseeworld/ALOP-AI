@@ -368,6 +368,23 @@ export const appTree = (theme) => `
  * always dark, whatever the main window is set to.
  */
 export const outsideAppRoot = `
+<!-- The render-error screen. It replaces the whole tree rather than sitting
+     inside it, so it belongs here and not in appTree. Present so crash.css is
+     covered by the cascade snapshot and cannot rot unnoticed — it is the one
+     screen nobody sees until the day it matters. -->
+<div class="crash-root" role="alert">
+  <div class="crash-card">
+    <h1 class="crash-title">Something broke on our side.</h1>
+    <p class="crash-body">This screen failed to draw.</p>
+    <p class="crash-detail">TypeError: x is not a function</p>
+    <div class="crash-actions">
+      <button class="crash-btn primary">Reload</button>
+      <button class="crash-btn">Start a new chat</button>
+    </div>
+    <p class="crash-ref">Reference <code>abc123</code></p>
+  </div>
+</div>
+
 <div class="initial-loader dark">
   <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="Loading ALOP-AI"/>
   <div class="skeleton-block"></div>

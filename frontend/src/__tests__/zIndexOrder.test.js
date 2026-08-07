@@ -44,6 +44,7 @@ describe("z-index token scale", () => {
         // on top is the standard fix, and it only works from on top.
         "--z-grain",
         "--z-cmdk",
+        "--z-crash",
         "--z-earring",
         // Both scoped INSIDE .empty-state and excluded from `ascending` for the
         // same reason --z-sticky-label is: they order decoration against
@@ -109,6 +110,9 @@ describe("stacking order invariants", () => {
     "--z-camera",
     "--z-toast",
     "--z-cmdk",
+    // Nothing may sit over the render-error screen: whatever did would be
+    // drawn by the code that just threw.
+    "--z-crash",
   ];
 
   for (let i = 0; i < ascending.length - 1; i++) {

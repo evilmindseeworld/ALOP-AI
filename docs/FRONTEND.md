@@ -31,6 +31,7 @@ The scale, lowest to highest:
 | `--z-camera` | 100 | fullscreen capture |
 | `--z-toast` | 200 | must clear every panel |
 | `--z-cmdk` | 300 | command palette |
+| `--z-crash` | 400 | `.crash-root` — the render-error screen, above everything |
 
 `--z-backdrop`, `--z-fab` and `--z-quick-ask` were removed: every element they
 named had already been deleted. A scale that lists layers which do not exist is
@@ -89,7 +90,7 @@ array in the test. The test is the spec.
 ```
 fonts → tokens → base → layout → sidebar → chat → markdown → composer →
 palette → chat-controls → panels → overlay → signin → decoration →
-code-blocks → utilities
+code-blocks → crash → utilities
 ```
 
 Sixteen files sit in `src/styles/`; fifteen are in that list. The sixteenth is

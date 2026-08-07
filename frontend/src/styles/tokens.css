@@ -291,6 +291,10 @@
   --z-camera: 100;        /* .camera-overlay — fullscreen capture        */
   --z-toast: 200;         /* .toast — must clear every panel             */
   --z-cmdk: 300;          /* command palette — the top layer             */
+  /* Above the command palette because it replaces the whole tree, including
+   * an open palette. Nothing may ever sit over the crash screen: whatever
+   * did would be drawn by the code that just threw. */
+  --z-crash: 400;         /* .crash-root — the render-error screen        */
 
   /* Depth comes from a hairline rim plus a soft ambient shadow. The previous
    * pass built it from stacked inset bevels — a light line on top, a dark line

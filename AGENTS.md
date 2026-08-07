@@ -144,26 +144,37 @@ production. See the trap below.
 
 ### Open, in the order I would take them
 
-0. **SIGN-IN: clerk-js is asking for `/__clerk` and this repo never told it
-   to.** This is a live outage class and it needs the Clerk Dashboard, not
-   code. What is established, on the wire:
+0. **TURN OFF `force_organization_selection` IN THE CLERK DASHBOARD.** This
+   is the cause of the infinite loading screen after sign-in, and it is one
+   toggle. Clerk holds a session at status `"pending"` until the org task is
+   done; this app has no organization concept, so it never could be.
 
-   - The publishable key is `pk_live_Y2xlcmsuYWxvcC1haS5jb20k`, which base64
-     decodes to `clerk.alop-ai.com$`. The direct Frontend API is healthy:
-     `POST https://clerk.alop-ai.com/v1/client/sign_ins` answers **200**.
-   - Nothing in this repo sets a proxy. `ClerkProvider` passes only
-     `publishableKey`; there is no `proxyUrl`, no `<meta>`, and no
-     `CLERK_PROXY_URL` in Vercel (checked with `vercel env ls production`).
-   - A static rewrite CANNOT serve `/__clerk`. Vercel forwards the original
-     Host, so Clerk answers `host_invalid`; adding `Clerk-Proxy-Url` gets
-     `proxy_request_missing_secret_key`. Proxying needs a server function
-     that holds `CLERK_SECRET_KEY` — do not try the rewrite again, it is
-     already in the git history as a revert.
+   The trap, which cost days: Clerk's two hooks disagree about "signed in",
+   and its own shipped source is explicit —
 
-   **Fix it in the Clerk Dashboard: turn the proxy off** so clerk-js uses the
-   CNAME the key already names. Only build the proxy function if the proxy is
-   wanted deliberately, and know that it puts the instance secret key into
-   the frontend project.
+   ```
+   useAuth:  isSignedIn = session.status !== "pending" && !!session   FALSE
+   useUser:  isSignedIn = a user object exists, no session check      TRUE
+   ```
+
+   The gate used `useUser` and the app used `useAuth`, so the shell rendered
+   for a session that could never authorise a request. `isReady` stayed false,
+   the `loadChats` effect never fired, and `setIsInitialLoading(false)` lives
+   in that function's `finally` — so the skeleton stayed up forever. NOTHING
+   THREW, so Sentry had nothing and the console had nothing. If a loading
+   state ever hangs again, check which hook decided it.
+
+   Code side is done: the gate consults both hooks, `SessionPending` explains
+   a pending session, and a 60s watchdog replaces the skeleton with an error
+   rather than spinning. The toggle is still the cure.
+
+   RESOLVED AND NOT THE PROBLEM: the `/__clerk` 405. Playwright against
+   production shows clerk-js calling `clerk.alop-ai.com/v1/*` DIRECTLY and
+   getting 200s, and the shipped clerk-js contains no `/__clerk` URL at all
+   (its four `__clerk` hits are cookie names). That request came from a stale
+   cache or an extension, not from this app. `/__clerk` is excluded from the
+   SPA rewrite so it 404s honestly; do not try to proxy it with a rewrite,
+   Clerk requires a secret key and it is already in history as a revert.
 
 1. **Accessibility: the browser pass.** Everything checkable without a
    browser is now done and guarded — see the checklist below for what is

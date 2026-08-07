@@ -121,6 +121,69 @@ suggestion is a downgrade to v4. The successor is `@clerk/express`. Until that
 migration happens, `npm audit` on the backend will keep reporting three highs
 and they are all this one chain.
 
+## Handoff — 2026-08-07
+
+Read this first; it is the state of play, not history. Delete a line once it
+stops being true.
+
+**Codex is out of quota until 2026-09-06.** `codex exec` returns
+`You've hit your usage limit`. `gpt-5.1-codex-max` additionally rejects with
+*"not supported when using Codex with a ChatGPT account"* — do not retry it.
+
+**Use GLM 5.2 as the second reviewer meanwhile.** `tools/glm.mjs`, through the
+local Ollama daemon, which routes `:cloud` models to the signed-in account. No
+key in the repo.
+
+```bash
+node tools/glm.mjs --check                        # round trip, asserts 42
+git diff | node tools/glm.mjs "find real defects"
+```
+
+Treat its output as untrusted: it has not run the tests and cannot see
+production. See the trap below.
+
+### Open, in the order I would take them
+
+1. **Set `VITE_SENTRY_DSN` in Vercel.** The ErrorBoundary ships and works, but
+   with no DSN the report goes nowhere and front-end crashes stay invisible.
+   `@sentry/react` sat installed and uninitialised for months; do not let it
+   go back to that.
+2. **Accessibility needs a BROWSER pass.** jsdom does no layout and no colour
+   compositing, so contrast, focus order, 320px reflow and real screen-reader
+   output are all unchecked. `src/__tests__/a11y.test.jsx` covers structure
+   and naming on the real components and is green; that is not the same as
+   compliant.
+3. **Async states.** `AppSkeleton` and one Retry in `MessageList` exist. There
+   is no systematic loading / error / empty triple with retry across the
+   panels. This was asked for and is not done.
+4. **Custom 404.** Not done. Unknown paths render the SPA.
+5. **`users` has no index on `email`, `stripe_customer_id` or
+   `stripe_subscription_id`**, which the Stripe webhook probes. Sequential
+   scans, free at 2 rows. Watch webhook latency, not row count.
+
+### Deliberately NOT built, and why
+
+Message queues, load balancers, read replicas, a search index, a circuit
+breaker. The database holds **2 users and 5 usage rows**. Each of these adds a
+component that fails independently for no measurable gain at this size. The
+model-call path already has `settleByDeadline` and per-call timeouts, which is
+the useful part of a breaker. Revisit on evidence, not on principle.
+
+### Two findings worth not re-deriving
+
+**The scanner's "wildcard CORS on all endpoints" was false, twice over.**
+`/v1/client` and `/v1/environment` are Clerk's Frontend API at
+`clerk.alop-ai.com`. `/api/*` on `alop-ai.com` was the Vercel static host
+answering every extensionless path with `index.html` — fixed in the rewrite so
+those paths 404. The real API is `alop-ai.onrender.com` and has always been an
+exact-origin allowlist; `lib/origin-guard.js` has the proof and the reasoning.
+
+**`test/fixtures/appMarkup.js` is NOT a source of truth about accessibility.**
+It is hand-transcribed markup for the CSS cascade snapshot, where only classes
+and structure matter, so its ARIA attributes lag the components badly. An axe
+run over it reported 44 violations; the real components had 2. If you assert
+anything about labels or roles, render the component.
+
 ## Working as a duo
 
 Claude and Codex review each other's work rather than splitting it. The pattern
@@ -147,3 +210,19 @@ Not: "Sure! I'd be happy to help you with that."
 
 Write normally — full sentences — for: code, commit messages, PRs, security
 warnings, and irreversible-action confirmations.
+
+**Two more traps, learned the expensive way.**
+
+*Never propose an index from the repository alone.* Twice now — 006's
+`audit_logs_created_at` when `audit_logs_recent` already existed, and 009's
+`usage_user_recent` when `usage_user_id_date_key(user_id, date)` already
+covered it. `IF NOT EXISTS` protects the NAME, not the semantics. Read
+`pg_indexes` first, and force the planner to show you (`begin; set local
+enable_seqscan=off; explain ...; rollback;`) because these tables are too
+small for it to choose an index on its own.
+
+*Windows + Node stdin.* `process.exit()` while stdin is closing, or consuming
+`process.stdin` as an async iterable, both trip
+`Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)` in libuv and return
+127 from a run that succeeded. Use `process.exitCode` and `readFileSync(0)`.
+`tools/glm.mjs` has both, commented.

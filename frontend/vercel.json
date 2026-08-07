@@ -1,10 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "rewrites": [
-    {
-      "source": "/__clerk/:path*",
-      "destination": "https://clerk.alop-ai.com/:path*"
-    },
     { "source": "/((?!__clerk/|api/|v1/|.*\\.).*)", "destination": "/index.html" }
   ],
   "headers": [

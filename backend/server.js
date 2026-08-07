@@ -832,10 +832,25 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       acceptLanguage: req.headers['accept-language'],
     });
 
+    // convSummary and feedbackGuidance stay at system position deliberately.
+    // Both derive from this user's own turns, scoped to their own user_id, so
+    // the only thing either can inject into is the session of the person who
+    // wrote it — and that person already owns the user turn. Self-injection
+    // buys an attacker nothing. Do not "fix" these by demoting them: the
+    // summary IS context and the preferences ARE instructions.
+    //
+    // imageContext is different and does not belong up there. It is a vision
+    // model's transcription of an uploaded image, so its text was written by
+    // whoever made the image — which is not necessarily the user. Text inside a
+    // screenshot someone was sent reaches us verbatim. The instruction stays at
+    // system position; the transcription moves down and is labelled.
     const contextMsgs = [
       ...(convSummary ? [{ role: 'system', content: `CONVERSATION CONTEXT: ${convSummary}` }] : []),
       ...(feedbackGuidance ? [{ role: 'system', content: `USER PREFERENCES, learned from their past ratings. Honour these unless they conflict with accuracy:\n${feedbackGuidance}` }] : []),
-      ...(imageContext ? [{ role: 'system', content: `THE USER ATTACHED AN IMAGE. This is what it shows — treat it as something you can see, and answer with reference to it:\n${imageContext}` }] : []),
+      ...(imageContext ? [
+        { role: 'system', content: 'THE USER ATTACHED AN IMAGE. A description of it follows in a user turn — treat it as something you can see, and answer with reference to it.' },
+        { role: 'user', content: `=== IMAGE DESCRIPTION ===\n${UNTRUSTED_PREAMBLE}\n\n${imageContext}` },
+      ] : []),
       ...(region ? [{ role: 'system', content: regionHint(region) }] : []),
     ];
 
@@ -988,7 +1003,10 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       const wiki = await searchWikipedia(pv.value);
       if (wiki) {
         const wikiSys = `You are a data extraction engine. Use ONLY the Wikipedia content. No training data. If not found, say "I couldn't find this on Wikipedia." Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
-        const wikiMsgs = [{ role: 'system', content: wikiSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n=== WIKIPEDIA ===\n${wiki}` }];
+        // Its own fetch, not searchWeb's, so it needs its own label. Wikipedia is
+        // world-editable: this is the one source where an attacker does not even
+        // need a site of their own.
+        const wikiMsgs = [{ role: 'system', content: wikiSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n=== WIKIPEDIA ===\n${UNTRUSTED_PREAMBLE}\n\n${wiki}` }];
         openStream(res);
         await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0);
         if (!res.writableEnded) res.end();
@@ -1106,7 +1124,10 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     // Research and truncation reach the synthesiser, because the design's rule
     // is that a cut-short answer must be able to hedge rather than assert. A
     // truncated answer presented as a complete one is worse than a slow one.
-    const researchBlock = toolResearch ? `\n\n=== RESEARCH GATHERED THIS TURN ===\n${toolResearch}` : '';
+    // The council rounds label this content; synthesis did not, and synthesis is
+    // the step that actually writes the user's answer. Labelling only the rounds
+    // protects the deliberation and leaves the conclusion exposed.
+    const researchBlock = toolResearch ? `\n\n=== RESEARCH GATHERED THIS TURN ===\n${UNTRUSTED_PREAMBLE}\n\n${toolResearch}` : '';
     const truncationBlock = toolTruncated
       ? `\n\n=== NOTE ===\nResearch was cut short: ${toolTruncated} Where the experts' claims rest on something that was not verified, say so plainly rather than asserting it.`
       : '';

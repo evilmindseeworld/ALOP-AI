@@ -4,9 +4,16 @@
 **Repo:** `C:\Users\LENOVO\Documents\AI-Classroom` — `evilmindseeworld/ALOP-AI`
 (**PUBLIC** — never commit a secret, and treat anything already in history as
 compromised)
-**Branch:** `main`, HEAD `e31d6ad`, **committed locally and NOT pushed.**
-Seven commits above `72c4e13`, including two security fixes and a launch
-blocker. Nothing in them is live until someone pushes.
+**Branch:** `main`.
+
+> **STALE HEADER, corrected 2026-08-07.** This block used to read "HEAD
+> `e31d6ad`, committed locally and NOT pushed". Both are wrong now: everything
+> described below was pushed, and `main` has since moved on through the prompt
+> injection fixes, the router extraction and `0583cde`. `git log` is the
+> authority on what is where; this file is a record of one session's reasoning
+> and its head facts age out within a day. The blocked-on-the-owner list further
+> down has also drifted — `gh auth login` is done, and item 4's migrations are
+> partly applied. Check before acting on any line of it.
 
 **Verified against the live site, not assumed:** the Clerk key swap has NOT
 taken. `alop-ai.com`'s bundle still ships `pk_test_…`, which decodes to

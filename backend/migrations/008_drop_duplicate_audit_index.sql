@@ -47,6 +47,14 @@
 -- inside a transaction block, and the Supabase MCP `apply_migration` wraps
 -- statements in one — so drop CONCURRENTLY at apply time and record that here,
 -- exactly as 007 does. The table is small; the brief lock does not matter yet.
+--
+-- APPLIED 2026-08-07 as migration `audit_logs_single_created_at_index`, WITHOUT
+-- CONCURRENTLY, through the Supabase MCP for the reason above. Verified after
+-- the fact by reading pg_indexes: audit_logs now carries four indexes —
+-- audit_logs_pkey, audit_logs_recent, audit_logs_action and
+-- idx_audit_logs_user_id — and idx_audit_logs_created_at is gone. The CREATE
+-- was a no-op there, since audit_logs_recent already existed in production; it
+-- is not a no-op on a fresh database, which is the case it is written for.
 
 CREATE INDEX CONCURRENTLY IF NOT EXISTS audit_logs_recent
   ON audit_logs (created_at DESC);

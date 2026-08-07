@@ -148,13 +148,7 @@ production. See the trap below.
    browser is now done and guarded — see the checklist below for what is
    left. Still the largest remaining item and the only one carrying legal
    exposure.
-2. **The loading / error / empty triple, everywhere else.** Done for the chat
-   list and for transcripts (`chatsError`/`retryChats`,
-   `messageLoadError`/`retryMessages` — same shape, copy it). NOT done for the
-   admin panel, billing, or chat files. Those degrade quietly rather than
-   falsely, which is why they were left; that is a reason to defer, not a
-   reason to skip.
-3. **`users` has no index on `email`, `stripe_customer_id` or
+2. **`users` has no index on `email`, `stripe_customer_id` or
    `stripe_subscription_id`**, which the Stripe webhook probes. Sequential
    scans, free at 2 rows. Watch webhook latency, not row count.
 
@@ -206,10 +200,24 @@ themes.
   extensionless paths to the SPA, so only missing assets land there. `/api/*`
   and `/v1/*` are left on Vercel's plain 404 DELIBERATELY — an API path
   returning branded HTML is worse than one returning nothing.
-- **The chat list no longer claims you have no chats when the request
-  failed.** It rendered "No chats yet" on a caught error, which is
-  indistinguishable from data loss. Guarded by a test that asserts the string
-  is absent when an error is set.
+- **Four surfaces stopped lying on failure.** The pattern, if you add a
+  fifth: state the error, say the data is unaffected, offer the retry, and do
+  NOT clear the list you already have. Named `<thing>Error` / `retry<Thing>`
+  every time — `chatsError`, `messageLoadError`, `pricesError`,
+  `chatFilesError`. Each was showing the SUCCESS-with-no-data state on a
+  caught error, which is indistinguishable from the data being gone.
+  - The chat list rendered "No chats yet".
+  - Upgrade was a DEAD BUTTON: the panel was gated on `Boolean(prices)`, so a
+    failed prices call meant clicking it did nothing at all.
+  - `fetchPlan` swallowed its error, so a paying customer could be shown the
+    free tier and asked to buy what they already had.
+  - `loadChatFiles` set `[]` on failure, so attachments appeared deleted.
+  - One nuance worth keeping: a 503 from `/api/billing/prices` means no
+    Stripe price IDs are configured. That is permanent, so it gets NO retry
+    button. Only transport failures get one.
+- **Palette focus trap.** It declared `aria-modal` and enforced nothing.
+- **`reflow.test.js`, `contrast.test.js`** cover what can be checked without a
+  browser. The manual checklist above is what is left.
 
 ### Deliberately NOT built, and why
 

@@ -107,17 +107,45 @@ writeFileSync("public/og.png", png);
  * as a favicon it is a black tile with a four-pixel smudge in the middle. The
  * keyed crop above is the mark that actually reads at 16px.
  */
-const ICON = 128;
-const iconW = Math.round((ICON - 16) * (CROP.w / CROP.h));
-// On the DARK TILE, not transparent. The penguin is white line-art: dropped
-// on a light browser tab it disappears entirely. The tile is the same shape
-// logo.png already is, so the icon and the sign-in header agree, and it reads
-// against a light and a dark tab bar alike.
-const iconSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${ICON}" height="${ICON}">
-  <rect width="${ICON}" height="${ICON}" rx="26" fill="#0a0a0a"/>
-  <image x="${Math.round((ICON - iconW) / 2)}" y="8" width="${iconW}" height="${ICON - 16}" href="${dataUri}"/>
+/**
+ * The mark on its tile, at whatever size the consumer needs.
+ *
+ * On a DARK TILE, not transparent. The penguin is white line-art: dropped on
+ * a light browser tab, or on Google's white result row, it disappears
+ * entirely. The tile is the same shape logo.png already is, so the icon, the
+ * sign-in header and the search result agree.
+ */
+function markTile(size) {
+  const pad = Math.round(size / 8);
+  const w = Math.round((size - 2 * pad) * (CROP.w / CROP.h));
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}">
+  <rect width="${size}" height="${size}" rx="${Math.round(size / 4.9)}" fill="#0a0a0a"/>
+  <image x="${Math.round((size - w) / 2)}" y="${pad}" width="${w}" height="${size - 2 * pad}" href="${dataUri}"/>
 </svg>`;
-const icon = new Resvg(iconSvg, { fitTo: { mode: "width", value: ICON * SCALE } }).render().asPng();
-writeFileSync("public/favicon.png", PNG.sync.write(downsample(PNG.sync.read(icon), SCALE)));
+  const raw = new Resvg(svg, { fitTo: { mode: "width", value: size * SCALE } }).render().asPng();
+  return PNG.sync.write(downsample(PNG.sync.read(raw), SCALE));
+}
+
+/* 144, NOT 128, and the number is a requirement rather than a preference.
+ *
+ * Google only considers a favicon for a search result if it is a square whose
+ * side is a MULTIPLE OF 48 — 48, 96, 144, and so on. This shipped at 128,
+ * which is not one, so the result row fell back to the generic globe and the
+ * site read as nobody's. 144 is the smallest multiple that still looks right
+ * on a 2x tab strip. */
+const ICON = 144;
+writeFileSync("public/favicon.png", markTile(ICON));
 console.log(`favicon.png: ${ICON}x${ICON}`);
+
+/* The logo Google is told about in JSON-LD, and it cannot be logo.png.
+ *
+ * That file is a 721x720 square drawn at #000 on a #040404 field — to a
+ * crawler compositing it on white it is a black rectangle with a bird
+ * somewhere inside. Organization.logo is what can appear beside a brand
+ * result, so it gets the same keyed mark on the same tile as everything
+ * else. 512 because Google wants the longest side at 112px or more and
+ * resamples down; a source with room to spare survives that better. */
+const LOGO = 512;
+writeFileSync("public/logo-mark.png", markTile(LOGO));
+console.log(`logo-mark.png: ${LOGO}x${LOGO}`);
 console.log(`og.png: ${png.readUInt32BE(16)}x${png.readUInt32BE(20)}, ${(png.length / 1024).toFixed(0)} KB`);

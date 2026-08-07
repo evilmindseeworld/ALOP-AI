@@ -173,3 +173,39 @@ describe("CommandPalette", () => {
     expect(options()[0]).toHaveAttribute("aria-selected", "true");
   });
 });
+
+describe("focus management", () => {
+  // aria-modal="true" promises a screen reader that everything outside the
+  // dialog is inert. Nothing enforced it: Tab walked into the page behind,
+  // and closing dropped focus on <body> so the next Tab restarted from the
+  // top of the document.
+  it("takes focus on open and gives it back on close", async () => {
+    const opener = document.createElement("button");
+    opener.textContent = "Open palette";
+    document.body.appendChild(opener);
+    opener.focus();
+    expect(document.activeElement).toBe(opener);
+
+    const { rerender } = render(
+      <CommandPalette open onClose={() => {}} chats={[]} actions={[]} onSelectChat={() => {}} />
+    );
+    expect(document.activeElement).toBe(screen.getByPlaceholderText(/search/i));
+
+    rerender(<CommandPalette open={false} onClose={() => {}} chats={[]} actions={[]} onSelectChat={() => {}} />);
+    expect(document.activeElement).toBe(opener);
+    opener.remove();
+  });
+
+  it("does not throw when the opener is gone", () => {
+    const opener = document.createElement("button");
+    document.body.appendChild(opener);
+    opener.focus();
+    const { rerender } = render(
+      <CommandPalette open onClose={() => {}} chats={[]} actions={[]} onSelectChat={() => {}} />
+    );
+    opener.remove();
+    expect(() =>
+      rerender(<CommandPalette open={false} onClose={() => {}} chats={[]} actions={[]} onSelectChat={() => {}} />)
+    ).not.toThrow();
+  });
+});

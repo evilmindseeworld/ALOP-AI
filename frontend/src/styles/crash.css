@@ -87,7 +87,12 @@
 .crash-btn.primary {
   border-color: transparent;
   background: var(--primary, #f08aa3);
-  color: #0a0a0a;
+  /* --text-on-fill, not a literal. The crash screen renders OUTSIDE
+   * .app-root, so it always resolves the :root (dark) tokens today — but a
+   * hardcoded near-black on --primary becomes 2.1:1 the moment anything gives
+   * this screen a light ancestor, and the pair is checked in contrast.test.js
+   * only if it is written as tokens. */
+  color: var(--text-on-fill, #1a0e13);
   font-weight: 600;
 }
 

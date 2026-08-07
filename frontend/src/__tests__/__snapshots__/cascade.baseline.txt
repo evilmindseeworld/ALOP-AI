@@ -38201,7 +38201,7 @@
   border-color: transparent
   border-radius: 6px
   box-sizing: border-box
-  color: #0a0a0a
+  color: #1a0e13
   cursor: pointer
   font: inherit
   font-family: <font: inherit>

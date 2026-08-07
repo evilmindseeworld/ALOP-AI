@@ -73,6 +73,14 @@ const PAIRS = [
   ["--success", "--surface-2", AA_LARGE],
   ["--warning", "--surface-2", AA_LARGE],
   ["--info", "--surface-2", AA_LARGE],
+
+  // The crash screen. It renders outside .app-root and so resolves the dark
+  // tokens whatever the user's theme, but it is the ONE screen that appears
+  // when the app is already broken — the pairs it uses are pinned here so a
+  // palette change can never make the error unreadable.
+  ["--text", "--surface", AA_TEXT],
+  ["--text-subtle", "--surface-2", AA_TEXT],
+  ["--text-on-fill", "--primary", AA_TEXT],
 ];
 
 describe("theme-dependent tokens", () => {

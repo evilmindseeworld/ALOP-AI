@@ -20,6 +20,7 @@ export default function CommandPalette({ open, onClose, chats = [], actions = []
   const [query, setQuery] = useState("");
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef(null);
+  const dialogRef = useRef(null);
   const listRef = useRef(null);
 
   // Each entry is normalised to the same shape so keyboard handling and
@@ -43,14 +44,31 @@ export default function CommandPalette({ open, onClose, chats = [], actions = []
     return q ? [...chatItems, ...actionItems] : [...actionItems, ...chatItems];
   }, [query, chats, actions, onSelectChat]);
 
+  /**
+   * Open: remember who opened us, then take focus.
+   * Close: give it back.
+   *
+   * `aria-modal="true"` was already declared here, which PROMISES a screen
+   * reader that everything outside this element is inert. Nothing enforced
+   * it: Tab walked straight out into the page behind, and on close focus
+   * landed on <body>, so the next Tab restarted from the top of the document.
+   * A keyboard user who opened the palette and pressed Escape lost their
+   * place entirely.
+   */
   useEffect(() => {
     if (!open) return;
     setQuery("");
     setCursor(0);
+    const opener = document.activeElement;
     // Effects run after commit, so the input is already in the DOM — no rAF
     // needed. Focusing synchronously also means the first keystroke after
     // opening is never dropped.
     inputRef.current?.focus();
+    return () => {
+      // Only if it is still in the document: the opener may have been a chat
+      // row that the action just deleted.
+      if (opener instanceof HTMLElement && document.contains(opener)) opener.focus();
+    };
   }, [open]);
 
   // Clamp rather than reset, so deleting a character does not throw away a
@@ -69,6 +87,23 @@ export default function CommandPalette({ open, onClose, chats = [], actions = []
 
   const onKeyDown = (e) => {
     if (e.key === "Escape") { e.preventDefault(); onClose(); return; }
+
+    /* THE TRAP. Two focusable stops exist in practice — the input and
+     * whichever item the pointer last touched — so rather than enumerate
+     * them, Tab is simply kept inside: forward from anywhere returns to the
+     * input, and the list is driven by the arrow keys that already work.
+     * This is what aria-modal already claimed was true. */
+    if (e.key === "Tab") {
+      const focusable = dialogRef.current?.querySelectorAll(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      );
+      if (!focusable?.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      return;
+    }
     if (e.key === "ArrowDown") { e.preventDefault(); setCursor((c) => (items.length ? (c + 1) % items.length : 0)); return; }
     if (e.key === "ArrowUp") { e.preventDefault(); setCursor((c) => (items.length ? (c - 1 + items.length) % items.length : 0)); return; }
     if (e.key === "Enter") { e.preventDefault(); runItem(items[cursor]); }
@@ -79,6 +114,7 @@ export default function CommandPalette({ open, onClose, chats = [], actions = []
   return (
     <div className="cmdk-backdrop" onMouseDown={onClose} role="presentation">
       <div
+        ref={dialogRef}
         className="cmdk"
         role="dialog"
         aria-modal="true"

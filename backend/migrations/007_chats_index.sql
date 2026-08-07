@@ -19,6 +19,15 @@
 -- CONCURRENTLY so this does not take a write lock on a live table. It cannot
 -- run inside a transaction block, which is why this file contains this
 -- statement and nothing else.
+--
+-- APPLIED 2026-08-07 as migration `chats_user_recent_index`, WITHOUT
+-- CONCURRENTLY. It went in through Supabase's Management API, which wraps
+-- statements in a transaction, so CONCURRENTLY was not an option there; the
+-- table was small enough that the brief write lock did not matter. The index
+-- that exists in production is otherwise identical to the one below, and the
+-- planner confirms an Index Scan with no Sort node. This file keeps
+-- CONCURRENTLY because it is the correct form for any future rebuild on a
+-- table with real traffic.
 
 CREATE INDEX CONCURRENTLY IF NOT EXISTS chats_user_recent
   ON chats (user_id, updated_at DESC);

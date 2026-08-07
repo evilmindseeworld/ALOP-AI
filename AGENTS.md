@@ -144,12 +144,10 @@ production. See the trap below.
 
 ### Open, in the order I would take them
 
-1. **Accessibility needs a BROWSER pass.** jsdom does no layout and no colour
-   compositing, so contrast, focus order, 320px reflow and real screen-reader
-   output are all unchecked. `src/__tests__/a11y.test.jsx` covers structure
-   and naming on the real components and is green; that is not the same as
-   compliant. This is the largest remaining item and the only one with legal
-   exposure attached.
+1. **Accessibility: the browser pass.** Everything checkable without a
+   browser is now done and guarded — see the checklist below for what is
+   left. Still the largest remaining item and the only one carrying legal
+   exposure.
 2. **The loading / error / empty triple, everywhere else.** Done for the chat
    list and for transcripts (`chatsError`/`retryChats`,
    `messageLoadError`/`retryMessages` — same shape, copy it). NOT done for the
@@ -159,6 +157,45 @@ production. See the trap below.
 3. **`users` has no index on `email`, `stripe_customer_id` or
    `stripe_subscription_id`**, which the Stripe webhook probes. Sequential
    scans, free at 2 rows. Watch webhook latency, not row count.
+
+### Accessibility: what still needs a real browser
+
+Everything checkable without one is done and guarded: `a11y.test.jsx` (axe on
+the real components), `contrast.test.js` (every text/surface pair, both
+themes, 4.5:1 even for "decorative" text), `reflow.test.js` (no min-width or
+fixed width above 320px), and the palette's focus trap. None of that proves
+the list below. Work through it in a browser at 320px and at desktop, in both
+themes.
+
+- [ ] **Contrast as RENDERED, not as declared.** The tokens pass in isolation.
+      What is unverified is text over `--gradient-warm`, over the sakura
+      decoration, and the `.signin-orb` bleed — a gradient has no single
+      background colour and no static check can pick one. DevTools' contrast
+      readout on the sign-in headline, tagline and council rows.
+- [ ] **Focus visible on every interactive element.** `:focus-visible` rings
+      are declared; confirm none is clipped by an `overflow: hidden` ancestor,
+      which is how a ring silently disappears.
+- [ ] **Tab order matches reading order** through: header, sidebar, chat rows,
+      composer, panels. Especially the composer, where the buttons are
+      visually reordered on mobile.
+- [ ] **Keyboard-only run of the core flow.** Send a message, rename a chat,
+      delete a chat, open and close each panel. Anything reachable only by
+      pointer is a failure.
+- [ ] **320px reflow, in a real window.** The static guard cannot see a long
+      unbreakable string, a code block, or a flex row that refuses to wrap.
+      NOTE: `body { overflow: hidden }` means anything that does overflow is
+      CLIPPED AND UNREACHABLE rather than scrollable — the worst failure mode
+      for 1.4.10, so look for cut-off content, not for a scrollbar.
+- [ ] **200% browser zoom** — a separate criterion (1.4.4) that the 320px pass
+      does not cover.
+- [ ] **A screen reader on the transcript.** NVDA or VoiceOver. Streaming
+      answers are the risk: does new text get announced, and is it announced
+      once rather than re-reading the whole message on every token?
+- [ ] **`prefers-reduced-motion`.** Nine blocks honour it; confirm the anime.js
+      animations in App.jsx do too, since those are driven from JS and a media
+      query in CSS does not reach them.
+- [ ] **Clerk's own sign-in form.** Third-party markup inside our page, and
+      our accessibility obligation regardless of who wrote it.
 
 ### Closed since the last handoff
 

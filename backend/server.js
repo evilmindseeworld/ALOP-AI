@@ -263,7 +263,7 @@ const { extractPageSignal } = require('./lib/page-extract');
 const { settleByDeadline } = require('./lib/deadline');
 const { createSearchCache } = require('./lib/search-cache');
 const { detectRegion, regionHint } = require('./lib/region');
-const { firstWithResults, toolMessages, summariseProbe } = require('./lib/council-tools');
+const { firstWithResults, toolMessages, summariseProbe, UNTRUSTED_PREAMBLE } = require('./lib/council-tools');
 const { parseToolRequests } = require('./lib/tool-protocol');
 const { prepareUpload, UploadRejected, MAX_FILES_PER_CHAT } = require('./lib/file-intake');
 
@@ -437,7 +437,11 @@ const comprehensiveSearch = async (query, needsWiki) => {
   }
   if (allImages.length > 0) { const unique = [...new Set(allImages)].slice(0,5); ctx += `IMAGES:\n${unique.map((u,i) => `IMAGE ${i+1}: ${u}`).join('\n')}\n\n---\n\n`; }
   const found = sources.length > 0 || !!wikiContent || !!td.answer;
-  const result = { context: ctx.trim(), sources, found, images: allImages };
+  // Prepended once, here, rather than at each of the six `ctx +=` sites above:
+  // every one of them is a third party's text, and this is the single point
+  // they all pass through on the way out.
+  const context = ctx.trim() ? `${UNTRUSTED_PREAMBLE}\n\n${ctx.trim()}` : '';
+  const result = { context, sources, found, images: allImages };
   setCachedSearch(query, result); return result;
 };
 

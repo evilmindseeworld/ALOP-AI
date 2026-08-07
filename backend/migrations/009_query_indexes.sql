@@ -1,0 +1,57 @@
+-- 009_query_indexes.sql
+--
+-- NOT APPLIED. NOTHING TO APPLY. This file is kept as the record of a check,
+-- because the next person to look at /api/admin/usage/:userId will have the
+-- same idea and should not have to re-derive the answer.
+--
+-- Codex proposed:
+--
+--   CREATE INDEX CONCURRENTLY IF NOT EXISTS usage_user_recent
+--     ON usage (user_id, date DESC);
+--
+-- for the query
+--
+--   SELECT * FROM usage WHERE user_id = $1 ORDER BY date DESC LIMIT 30
+--
+-- and correctly refused to apply it, noting that `IF NOT EXISTS` protects the
+-- canonical NAME and cannot detect a semantically duplicate index under a
+-- different one. It could not reach production to look. I did.
+--
+-- WHAT PRODUCTION ALREADY HAS:
+--
+--   CREATE UNIQUE INDEX usage_user_id_date_key ON public.usage
+--     USING btree (user_id, date)
+--
+-- That is the same leading keys. The uniqueness is incidental; what matters is
+-- that (user_id, date) is exactly the seek-then-ordered-scan this query wants,
+-- and a B-tree walks backwards as cheaply as forwards. Proven, not assumed —
+-- the planner is on a 5-row table so it prefers a seq scan, and the index has
+-- to be forced into view to see it is usable at all:
+--
+--   begin; set local enable_seqscan=off;
+--   explain (costs off) select * from usage
+--     where user_id='000...'::uuid order by date desc limit 30;
+--   rollback;
+--
+--   Limit
+--     ->  Index Scan Backward using usage_user_id_date_key on usage
+--           Index Cond: (user_id = '000...'::uuid)
+--
+-- No Sort node. usage_user_recent would have been a second copy of an index
+-- Postgres already maintains on every write to the table.
+--
+-- THIS IS THE SAME TRAP 006 SET. That migration created
+-- audit_logs_created_at (created_at) while production already had
+-- audit_logs_recent (created_at DESC) — the one 008 deliberately kept when it
+-- dropped the duplicate. Running 006 verbatim would have silently undone 008.
+-- Two for two: on this database, every index proposed from the repository
+-- alone has turned out to already exist under another name. Read pg_indexes
+-- first. Every time.
+--
+-- STILL OPEN, and deliberately not guessed at here. public.users carries only
+-- users_pkey (id) and users_clerk_id_key (clerk_id). The Stripe webhook also
+-- probes email, stripe_customer_id and stripe_subscription_id, none of which
+-- are indexed — those are sequential scans today. At 2 user rows that is
+-- free and an index would be pure write cost, so nothing is being added now.
+-- Revisit when the table is large enough for a plan to change; the trigger to
+-- watch is webhook latency, not row count alone.

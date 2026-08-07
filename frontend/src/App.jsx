@@ -49,6 +49,7 @@ import { animate, createScope, spring, createDraggable } from "animejs";
 
 /** Follow the transcript only while the reader is already near the bottom. */
 const FOLLOW_THRESHOLD_PX = 150;
+const ADMIN_PAGE_SIZE = 50;
 
 const AuthenticatedApp = () => {
   const { user, isLoaded } = useUser();
@@ -81,6 +82,8 @@ const AuthenticatedApp = () => {
   const [showScrollDown, setShowScrollDown] = useState(false);
 
   const [adminUsers, setAdminUsers] = useState([]);
+  const [adminUsersOffset, setAdminUsersOffset] = useState(0);
+  const [adminUsersHasMore, setAdminUsersHasMore] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const [attachedImage, setAttachedImage] = useState(null);
 
@@ -167,10 +170,17 @@ const AuthenticatedApp = () => {
   }, []);
 
   // --- admin -------------------------------------------------------------
-  const fetchAdminUsers = useCallback(async () => {
+  const fetchAdminUsers = useCallback(async (offset = 0) => {
     try {
-      const r = await apiCall("/api/admin/users");
-      setAdminUsers((await r.json()) || []);
+      const r = await apiCall(`/api/admin/users?limit=${ADMIN_PAGE_SIZE}&offset=${offset}`);
+      const body = await r.json();
+      // Accept the old bare-array response during a rolling deploy. The new
+      // response carries page metadata so the admin panel never asks the
+      // server for every user just to render the first screen.
+      const page = Array.isArray(body) ? { users: body, hasMore: false, offset } : body;
+      setAdminUsers(Array.isArray(page?.users) ? page.users : []);
+      setAdminUsersOffset(Number.isInteger(page?.offset) ? page.offset : offset);
+      setAdminUsersHasMore(Boolean(page?.hasMore));
     } catch (e) {
       console.error(e.message);
     }
@@ -178,15 +188,16 @@ const AuthenticatedApp = () => {
 
   useEffect(() => {
     if (!isReady) return;
-    const email = user?.emailAddresses?.[0]?.emailAddress;
-    if (!email) return;
 
     (async () => {
       try {
-        const r = await apiCall("/api/admin/users");
+        // A 200 is the admin check. Do not search the first page by email: an
+        // admin created earlier could legitimately be past that page once the
+        // user table grows, which would hide the admin controls from them.
+        const r = await apiCall(`/api/admin/users?limit=1&offset=0`);
         if (!r.ok) return;
-        const users = await r.json();
-        if (users.find((u) => u.email === email)?.is_admin) setIsAdmin(true);
+        await r.json().catch(() => null);
+        setIsAdmin(true);
       } catch (e) {
         console.error(e.message);
       }
@@ -194,7 +205,7 @@ const AuthenticatedApp = () => {
   }, [isReady, user, apiCall]);
 
   useEffect(() => {
-    if (isAdmin && showAdmin) fetchAdminUsers();
+    if (isAdmin && showAdmin) fetchAdminUsers(0);
   }, [isAdmin, showAdmin, fetchAdminUsers]);
 
   const adminAction = useCallback(
@@ -202,13 +213,13 @@ const AuthenticatedApp = () => {
       try {
         if ((await apiCall(path, { method })).ok) {
           setToast(label);
-          fetchAdminUsers();
+          fetchAdminUsers(adminUsersOffset);
         }
       } catch (e) {
         console.error(e.message);
       }
     },
-    [apiCall, fetchAdminUsers]
+    [apiCall, fetchAdminUsers, adminUsersOffset]
   );
 
   // --- composer ----------------------------------------------------------
@@ -473,6 +484,10 @@ const AuthenticatedApp = () => {
               open={showAdmin && isAdmin}
               onClose={() => setShowAdmin(false)}
               users={adminUsers}
+              offset={adminUsersOffset}
+              hasMore={adminUsersHasMore}
+              onPrevious={() => fetchAdminUsers(Math.max(0, adminUsersOffset - ADMIN_PAGE_SIZE))}
+              onNext={() => fetchAdminUsers(adminUsersOffset + ADMIN_PAGE_SIZE)}
               onSuspend={(id) => adminAction(`/api/admin/users/${id}/suspend`, "POST", "Suspended")}
               onUnsuspend={(id) => adminAction(`/api/admin/users/${id}/unsuspend`, "POST", "Unsuspended")}
               onDelete={(id) => {

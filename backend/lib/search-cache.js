@@ -48,6 +48,15 @@ const DEFAULTS = {
 
 const hash = (q) => crypto.createHash("sha256").update(String(q)).digest("hex");
 
+/**
+ * Comprehensive search has two provider sets: ordinary web search and web
+ * search plus Wikipedia. They cannot share a cache row just because the text
+ * query is identical. A request that needs the encyclopedia must not inherit a
+ * result produced by the cheaper provider set before Wikipedia was consulted.
+ */
+const comprehensiveSearchKey = (query, needsWiki) =>
+  `comprehensive:${needsWiki ? "wiki" : "web"}:${String(query)}`;
+
 function createSearchCache({ supabase, log = console, ...opts } = {}) {
   const cfg = { ...DEFAULTS, ...opts };
   const now = opts.now || (() => Date.now());
@@ -199,4 +208,4 @@ function createSearchCache({ supabase, log = console, ...opts } = {}) {
   };
 }
 
-module.exports = { createSearchCache, hashQuery: hash };
+module.exports = { createSearchCache, hashQuery: hash, comprehensiveSearchKey };

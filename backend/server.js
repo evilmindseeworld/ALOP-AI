@@ -261,8 +261,10 @@ const { assertSafeUrl } = require('./lib/url-guard');
 const { checkLinks } = require('./lib/link-check');
 const { extractPageSignal } = require('./lib/page-extract');
 const { settleByDeadline } = require('./lib/deadline');
-const { createSearchCache } = require('./lib/search-cache');
+const { createSearchCache, comprehensiveSearchKey } = require('./lib/search-cache');
 const { createTtlCache } = require('./lib/ttl-cache');
+const { boundedPage, pageInfo } = require('./lib/pagination');
+const { noStoreApi } = require('./lib/http-cache');
 const { detectRegion, regionHint } = require('./lib/region');
 const { firstWithResults, toolMessages, summariseProbe, UNTRUSTED_PREAMBLE } = require('./lib/council-tools');
 const { parseToolRequests } = require('./lib/tool-protocol');
@@ -372,7 +374,8 @@ const toolSearch = async (query) => {
 
 // ===== COMPREHENSIVE SEARCH =====
 const comprehensiveSearch = async (query, needsWiki) => {
-  const cached = await getCachedSearch(query); if (cached) return cached;
+  const cacheKey = comprehensiveSearchKey(query, needsWiki);
+  const cached = await getCachedSearch(cacheKey); if (cached) return cached;
 
   /* THE SEARCH WHIP, and it is the same idea runCouncilWithWhip already uses
    * for models: take what has arrived, do not wait for stragglers.
@@ -443,7 +446,7 @@ const comprehensiveSearch = async (query, needsWiki) => {
   // they all pass through on the way out.
   const context = ctx.trim() ? `${UNTRUSTED_PREAMBLE}\n\n${ctx.trim()}` : '';
   const result = { context, sources, found, images: allImages };
-  setCachedSearch(query, result); return result;
+  setCachedSearch(cacheKey, result); return result;
 };
 
 // ===== MEMORY =====
@@ -532,6 +535,14 @@ app.use(helmet({ contentSecurityPolicy: { directives: { defaultSrc: ["'self'"], 
 // It hashed the User-Agent, so it was not an identity — it was a bucket the
 // caller could change at will. Nothing derives from a client-chosen header now.
 app.use((req, res, next) => { req.requestId = crypto.randomUUID(); next(); });
+
+// There is no public cacheable API response today. Authenticated GETs carry
+// user data, and a response without an explicit Cache-Control policy can be
+// retained by a shared intermediary under heuristic rules. Mount this before
+// the webhook and every other API handler so a new route inherits the safety
+// policy automatically; a handler that forgets a header cannot turn a proxy
+// into a cross-account read cache.
+app.use('/api', noStoreApi);
 
 app.post('/api/stripe/webhook', requireStripe, express.raw({ type: 'application/json' }), async (req, res) => {
   const sig = req.headers['stripe-signature']; if (!sig) return res.status(400).send('Missing sig');
@@ -1626,7 +1637,28 @@ app.put('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, re
 app.delete('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => { try { const user = await ensureUser(req.auth.userId); const { error } = await supabase.from('chats').delete().eq('id', req.params.id).eq('user_id', user.id); if (error) throw error; res.json({ deleted: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 
 // ===== ADMIN =====
-app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => { try { const { data, error } = await supabase.from('users').select('id,clerk_id,email,name,avatar_url,plan,is_admin,suspended,created_at,stripe_subscription_id'); if (error) throw error; res.json(data || []); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+const MAX_ADMIN_PAGE_OFFSET = 10000;
+const ADMIN_PAGE_DEFAULT_LIMIT = 50;
+const ADMIN_PAGE_MAX_LIMIT = 100;
+
+app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => { try {
+  const page = boundedPage(req.query, {
+    defaultLimit: ADMIN_PAGE_DEFAULT_LIMIT,
+    maxLimit: ADMIN_PAGE_MAX_LIMIT,
+    maxOffset: MAX_ADMIN_PAGE_OFFSET,
+  });
+  // Order by the primary key rather than inventing a created_at index without
+  // checking production first. The order is deterministic enough for the
+  // admin screen, and users_pkey already serves the scan.
+  const { data, error } = await supabase
+    .from('users')
+    .select('id,clerk_id,email,name,avatar_url,plan,is_admin,suspended,created_at,stripe_subscription_id')
+    .order('id', { ascending: true })
+    .range(page.offset, page.offset + page.limit - 1);
+  if (error) throw error;
+  const users = data || [];
+  res.json({ users, ...pageInfo(users, page, MAX_ADMIN_PAGE_OFFSET) });
+} catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 // Admin routes take a Supabase users.id in :id. Validating the shape keeps a
 // malformed value from reaching Postgres and coming back as a 500 that reads
 // like a server fault. requireOwnership already does this for user routes; the
@@ -1659,7 +1691,26 @@ app.delete('/api/admin/users/:id', requireAuth, requireAdmin, uuidParam(), async
   await auditLog(req.adminUserId, 'admin.delete_user', { target: req.params.id, targetEmail: t.email }, req.ip);
   res.json({ deleted: true });
 } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
-app.get('/api/admin/chats/:userId', requireAuth, requireAdmin, async (req, res) => { try { const { data, error } = await supabase.from('chats').select('*').eq('user_id', req.params.userId).order('updated_at', { ascending: false }); if (error) throw error; res.json(data || []); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+app.get('/api/admin/chats/:userId', requireAuth, requireAdmin, uuidParam('userId'), async (req, res) => { try {
+  const page = boundedPage(req.query, {
+    defaultLimit: ADMIN_PAGE_DEFAULT_LIMIT,
+    maxLimit: ADMIN_PAGE_MAX_LIMIT,
+    maxOffset: MAX_ADMIN_PAGE_OFFSET,
+  });
+  // Admin diagnostics only need chat metadata. `select('*')` also returned the
+  // complete messages JSON for every row, turning an unbounded list into a
+  // potentially enormous transcript export. The user-facing transcript route
+  // remains separate and lazy-loads one owned conversation at a time.
+  const { data, error } = await supabase
+    .from('chats')
+    .select('id,user_id,title,pinned,favorite,created_at,updated_at')
+    .eq('user_id', req.params.userId)
+    .order('updated_at', { ascending: false })
+    .range(page.offset, page.offset + page.limit - 1);
+  if (error) throw error;
+  const chats = data || [];
+  res.json({ chats, ...pageInfo(chats, page, MAX_ADMIN_PAGE_OFFSET) });
+} catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) => { try { const { data, error } = await supabase.from('usage').select('*').eq('user_id', req.params.userId).order('date', { ascending: false }).limit(30); if (error) throw error; res.json(data || []); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 
 // ===== STRIPE =====

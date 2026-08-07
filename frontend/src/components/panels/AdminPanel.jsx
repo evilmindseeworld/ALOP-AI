@@ -1,9 +1,26 @@
 import SidePanel from "../SidePanel";
 
-export default function AdminPanel({ open, onClose, users, onSuspend, onUnsuspend, onDelete }) {
+export default function AdminPanel({
+  open,
+  onClose,
+  users,
+  offset = 0,
+  hasMore = false,
+  onPrevious,
+  onNext,
+  onSuspend,
+  onUnsuspend,
+  onDelete,
+}) {
   return (
     <SidePanel open={open} title="Admin Dashboard" onClose={onClose}>
-      <div className="admin-title">{users.length} Users</div>
+      {/* NOT "{users.length} Users". That read as the total user count, and
+          once the list is paged it is the size of ONE PAGE — an admin looking
+          at a 50-row page of a 4,000-user table would have been told the
+          service has 50 users. The range in the pager below says exactly what
+          is on screen and claims nothing about the total, which no longer
+          costs a count query to know. */}
+      <div className="admin-title">Users</div>
 
       {users.map((u) => (
         <div key={u.id} className="admin-user-card">
@@ -35,6 +52,22 @@ export default function AdminPanel({ open, onClose, users, onSuspend, onUnsuspen
           </div>
         </div>
       ))}
+
+      <div
+        className="msg-actions"
+        style={{ justifyContent: "space-between", marginTop: 12, opacity: 1 }}
+        aria-label="User pages"
+      >
+        <button onClick={onPrevious} className="msg-action-btn" disabled={offset === 0}>
+          Previous
+        </button>
+        <span style={{ fontSize: 11, color: "var(--text-subtle)" }}>
+          {users.length ? `${offset + 1}-${offset + users.length}` : "No users"}
+        </span>
+        <button onClick={onNext} className="msg-action-btn" disabled={!hasMore}>
+          Next
+        </button>
+      </div>
     </SidePanel>
   );
 }

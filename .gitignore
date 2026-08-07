@@ -6,3 +6,10 @@ dist/
 .vercel
 .env*
 !.env.example
+
+# Agent tooling scratch — session logs, skill caches, observation dumps.
+# None of it describes the product; AGENTS.md is where durable notes live.
+.agents/
+.claude/
+skill-observations/
+skills-lock.json

@@ -54,9 +54,30 @@ describe("AdminPanel", () => {
     { id: "2", name: "Bob", email: "bob@example.com", suspended: true },
   ];
 
-  it("counts the users it was given", () => {
-    render(<AdminPanel open onClose={noop} users={users} onSuspend={noop} onUnsuspend={noop} onDelete={noop} />);
-    expect(screen.getByText("2 Users")).toBeInTheDocument();
+  // This used to assert "2 Users" from a `{users.length} Users` heading. Once
+  // the list was paged that number became the size of one page while still
+  // reading as a total, so the heading had to stop claiming it. What the panel
+  // may state is the range actually on screen.
+  it("states the range on screen, and never a total it cannot know", () => {
+    render(<AdminPanel open onClose={noop} users={users} offset={50} onSuspend={noop} onUnsuspend={noop} onDelete={noop} />);
+    expect(screen.getByText("51-52")).toBeInTheDocument();
+    expect(screen.queryByText(/\d+ Users/)).not.toBeInTheDocument();
+  });
+
+  it("says so plainly when a page is empty", () => {
+    render(<AdminPanel open onClose={noop} users={[]} onSuspend={noop} onUnsuspend={noop} onDelete={noop} />);
+    expect(screen.getByText("No users")).toBeInTheDocument();
+  });
+
+  it("cannot page past either end", () => {
+    const onPrevious = vi.fn();
+    const onNext = vi.fn();
+    render(
+      <AdminPanel open onClose={noop} users={users} offset={0} hasMore={false}
+        onPrevious={onPrevious} onNext={onNext} onSuspend={noop} onUnsuspend={noop} onDelete={noop} />
+    );
+    expect(screen.getByText("Previous")).toBeDisabled();
+    expect(screen.getByText("Next")).toBeDisabled();
   });
 
   it("offers Unsuspend for a suspended user and Suspend for an active one", () => {

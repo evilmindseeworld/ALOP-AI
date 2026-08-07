@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { createSearchCache, hashQuery } = require("./search-cache");
+const { createSearchCache, hashQuery, comprehensiveSearchKey } = require("./search-cache");
 
 /**
  * A Supabase stand-in that records what it was asked to do.
@@ -202,6 +202,18 @@ test("the memory tier stays bounded under sustained writes", async () => {
 });
 
 // ===== keying =====
+
+test("WIKI AND ORDINARY SEARCHES CANNOT SHARE A RESULT", () => {
+  // `needsWiki` changes the provider set. Without it in the cache key, an
+  // ordinary result could satisfy a Wikipedia-backed request before the
+  // encyclopedia was ever consulted.
+  assert.notEqual(
+    comprehensiveSearchKey("what is a quasar", false),
+    comprehensiveSearchKey("what is a quasar", true),
+  );
+  assert.match(comprehensiveSearchKey("q", false), /^comprehensive:web:/);
+  assert.match(comprehensiveSearchKey("q", true), /^comprehensive:wiki:/);
+});
 
 test("the key is a hash, so an enormous query cannot blow the index", () => {
   const key = hashQuery("x".repeat(100_000));

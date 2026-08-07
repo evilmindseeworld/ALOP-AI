@@ -90,6 +90,9 @@ const AuthenticatedApp = () => {
 
   const chatRef = useRef(null);
 
+  const chat = useChats({ apiCall, getToken, isReady, setToast });
+  const billing = useBilling({ apiCall, isReady, setToast });
+
   /* A SKELETON THAT NEVER RESOLVES IS THE WORST FAILURE THIS APP HAS SHIPPED.
    *
    * `isInitialLoading` is cleared in loadChats' `finally`, so it survives any
@@ -101,16 +104,20 @@ const AuthenticatedApp = () => {
    * class: whatever the reason, if the app is still skeleton after this long,
    * it says so instead of pretending to load. Deliberately longer than the
    * 45s API_TIMEOUT_MS, so a genuinely slow request finishes and reports its
-   * own error rather than being pre-empted by this. */
+   * own error rather than being pre-empted by this.
+   *
+   * IT MUST STAY BELOW `chat`. This block first shipped ABOVE that line, and
+   * the dependency array `[chat.isInitialLoading]` is evaluated during render
+   * — reading a `const` that had not been initialised yet. Every signed-in
+   * render threw `Cannot access 'chat' before initialization`, which minified
+   * to a one-letter name and reached users as a crash screen. A hook cannot
+   * be hoisted above the value it depends on. */
   const [skeletonStuck, setSkeletonStuck] = useState(false);
   useEffect(() => {
     if (!chat.isInitialLoading) return setSkeletonStuck(false);
     const t = setTimeout(() => setSkeletonStuck(true), 60_000);
     return () => clearTimeout(t);
   }, [chat.isInitialLoading]);
-
-  const chat = useChats({ apiCall, getToken, isReady, setToast });
-  const billing = useBilling({ apiCall, isReady, setToast });
 
   const camera = useCamera({ onCapture: setAttachedImage, onError: setToast });
   const speech = useSpeechRecognition({

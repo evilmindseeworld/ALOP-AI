@@ -121,7 +121,7 @@ suggestion is a downgrade to v4. The successor is `@clerk/express`. Until that
 migration happens, `npm audit` on the backend will keep reporting three highs
 and they are all this one chain.
 
-## Handoff — 2026-08-07
+## Handoff — 2026-08-07 (second pass)
 
 Read this first; it is the state of play, not history. Delete a line once it
 stops being true.
@@ -144,22 +144,35 @@ production. See the trap below.
 
 ### Open, in the order I would take them
 
-1. **Set `VITE_SENTRY_DSN` in Vercel.** The ErrorBoundary ships and works, but
-   with no DSN the report goes nowhere and front-end crashes stay invisible.
-   `@sentry/react` sat installed and uninitialised for months; do not let it
-   go back to that.
-2. **Accessibility needs a BROWSER pass.** jsdom does no layout and no colour
+1. **Accessibility needs a BROWSER pass.** jsdom does no layout and no colour
    compositing, so contrast, focus order, 320px reflow and real screen-reader
    output are all unchecked. `src/__tests__/a11y.test.jsx` covers structure
    and naming on the real components and is green; that is not the same as
-   compliant.
-3. **Async states.** `AppSkeleton` and one Retry in `MessageList` exist. There
-   is no systematic loading / error / empty triple with retry across the
-   panels. This was asked for and is not done.
-4. **Custom 404.** Not done. Unknown paths render the SPA.
-5. **`users` has no index on `email`, `stripe_customer_id` or
+   compliant. This is the largest remaining item and the only one with legal
+   exposure attached.
+2. **The loading / error / empty triple, everywhere else.** Done for the chat
+   list and for transcripts (`chatsError`/`retryChats`,
+   `messageLoadError`/`retryMessages` — same shape, copy it). NOT done for the
+   admin panel, billing, or chat files. Those degrade quietly rather than
+   falsely, which is why they were left; that is a reason to defer, not a
+   reason to skip.
+3. **`users` has no index on `email`, `stripe_customer_id` or
    `stripe_subscription_id`**, which the Stripe webhook probes. Sequential
    scans, free at 2 rows. Watch webhook latency, not row count.
+
+### Closed since the last handoff
+
+- `VITE_SENTRY_DSN` is set in Vercel and confirmed present in the deployed
+  bundle. Front-end crashes now produce a screen AND an event.
+- `ErrorBoundary` ships. Nothing may render above it — `--z-crash: 400`.
+- Custom `404.html` ships. Note what actually reaches it: the rewrite sends
+  extensionless paths to the SPA, so only missing assets land there. `/api/*`
+  and `/v1/*` are left on Vercel's plain 404 DELIBERATELY — an API path
+  returning branded HTML is worse than one returning nothing.
+- **The chat list no longer claims you have no chats when the request
+  failed.** It rendered "No chats yet" on a caught error, which is
+  indistinguishable from data loss. Guarded by a test that asserts the string
+  is absent when an error is set.
 
 ### Deliberately NOT built, and why
 
@@ -210,6 +223,19 @@ Not: "Sure! I'd be happy to help you with that."
 
 Write normally — full sentences — for: code, commit messages, PRs, security
 warnings, and irreversible-action confirmations.
+
+**`MagneticButton`'s lazy-chunk test is timing-sensitive.** It flaked once
+under parallel load and passed on re-run. If it fails alone, re-run before
+investigating.
+
+**The CSS guards will stop you, and they are right every time.** Adding a
+stylesheet means four edits, not one: the `@import` in `App.css` (before
+`utilities`, which stays last), the order list in `cssImportOrder.test.js`,
+the table in `docs/FRONTEND.md` §2, and a z-index TOKEN — never a bare
+number. Add the new component's markup to `test/fixtures/appMarkup.js` or the
+file reads as dead CSS later, then regenerate the cascade baseline with
+`UPDATE_CASCADE_BASELINE=1`. Regenerating is correct ONLY when you changed
+what renders on purpose; it is not a way to make a red test green.
 
 **Two more traps, learned the expensive way.**
 

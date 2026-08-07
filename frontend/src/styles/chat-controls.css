@@ -183,8 +183,6 @@
   font-size: var(--text-sm);
   font-weight: 500;
   box-shadow: var(--rim), var(--shadow-md);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   user-select: none;
 }
 

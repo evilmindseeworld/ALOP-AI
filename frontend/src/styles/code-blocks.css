@@ -45,14 +45,12 @@
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
   border: 1px solid var(--border-strong);
-  background: color-mix(in srgb, var(--surface-3) 85%, transparent);
+  background: var(--surface-3);
   color: var(--text-muted);
   font-family: var(--font-body);
   font-size: var(--text-2xs);
   cursor: pointer;
   opacity: 0;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   /* Inside .chat-main's stacking context — see docs/FRONTEND.md §1. */
   z-index: var(--z-in-chat-control);
   transition: opacity var(--dur-fast) ease, color var(--dur-fast) ease, background var(--dur-fast) ease;

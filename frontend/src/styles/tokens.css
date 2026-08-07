@@ -35,14 +35,31 @@
 
   /* Near-black, never #000: pure black smears on OLED during scroll and kills
    * the sense of depth that separates the surfaces below it. */
-  --bg: #0b0b10;
-  --surface: #111119;      /* the app cards: sidebar, chat, panels   */
-  --surface-2: #17171f;    /* raised inside a card: bubbles, inputs  */
-  --surface-3: #1f1f29;    /* hover                                  */
-  --surface-4: #2a2a36;    /* pressed / selected                     */
+  /* SURFACES ARE NEUTRAL. They were blue-purple: #0b0b10, #111119, #17171f —
+   * every one of them carried more blue than red, so the entire application sat
+   * on a cool cast while the brand is warm pink and the accents are wood and
+   * amber. Nothing on screen agreed with anything else, and a cool-tinted
+   * near-black is the single most common giveaway of a default template.
+   *
+   * The steps are a LUMINANCE LADDER and that is the whole elevation model.
+   * Linear stacks #08090a / #0f1011 / #161718 / #191a1b; Vercel stacks #000 /
+   * #0a0a0a / #111. Both raise a surface by making it lighter, never by putting
+   * a glow or a large shadow under it. Same idea here, with a barely-there warm
+   * bias (red one point above blue) so the neutrals belong to this palette
+   * rather than reading as grey borrowed from somewhere else. */
+  --bg: #0a0a0a;
+  --surface: #101010;      /* the app cards: sidebar, chat, panels   */
+  --surface-2: #161615;    /* raised inside a card: bubbles, inputs  */
+  --surface-3: #1e1e1c;    /* hover                                  */
+  --surface-4: #282825;    /* pressed / selected                     */
 
-  --border: rgba(244, 238, 255, 0.07);
-  --border-strong: rgba(244, 238, 255, 0.14);
+  /* Pure white at low alpha, not #f4eeff. The old value was a PURPLE white, so
+   * every hairline in the app was faintly violet against a surface that was
+   * also faintly violet. Linear's dark borders are rgba(255,255,255,0.05-0.08)
+   * for exactly this reason: on a dark surface a tinted border reads as a
+   * colour decision nobody made. */
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
   --border-focus: rgba(240, 138, 163, 0.55);
 
   /* Text ramp, lightest to dimmest. Each step is measured against --surface:
@@ -50,8 +67,18 @@
    * meaning — timestamps and hints included, because "decorative" text is
    * still text somebody has to read. */
   --text: #f5f1ee;
-  --text-muted: #bdb6c4;
-  --text-subtle: #918a9d;
+  /* THE TWO PURPLE TOKENS, and they were the only literal purple in the file.
+   * #bdb6c4 is hue 270 and #918a9d is hue 262 — both squarely violet, sitting
+   * as the muted and tertiary body text across an application whose brand is
+   * pink and whose accents are wood and amber. Warm surface, cool text: the
+   * exact mismatch that reads as a palette assembled from defaults.
+   *
+   * Replaced with warm neutrals on the same lightness steps, so contrast is
+   * preserved and only the hue moves. Linear's equivalents are #8a8f98 and
+   * #62666d — neutral, never tinted toward the brand. contrast.test.js checks
+   * both against every surface they land on. */
+  --text-muted: #b8b3ae;
+  --text-subtle: #8d8880;
 
   --primary: #f08aa3;
   --primary-soft: #f7b3c2;
@@ -148,10 +175,19 @@
   --space-8: 32px;
   --space-12: 48px;
 
-  --radius-sm: 8px;
-  --radius-md: 12px;
-  --radius-lg: 16px;
-  --radius-xl: 22px;
+  /* SMALLER. These were 8 / 12 / 16 / 22, and uniform large radii are the tell
+   * that survives after the gradients come off: every control, container and
+   * panel becomes the same soft blob, so nothing reads as a different KIND of
+   * thing. Linear ships 6px on buttons, cards and inputs alike and reserves the
+   * pill for a handful of tokens. Small radii also let a hairline border do the
+   * work of separating surfaces, which is the whole elevation model here.
+   *
+   * The ladder is kept — four steps, same names, same order — so every existing
+   * rule keeps meaning what it meant and only the sharpness changes. */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
   --radius-full: 999px;
 
   /* ===== SHELL GEOMETRY =====

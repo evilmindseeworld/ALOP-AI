@@ -8,8 +8,6 @@
   z-index: var(--z-panel-overlay);
   cursor: pointer;
   animation: fadeIn var(--dur) ease;
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
 }
 
 .app-root.light .panel-overlay { background: rgba(50, 36, 28, 0.28); }
@@ -378,8 +376,6 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
 }
 
 .app-root.light .camera-overlay { background: rgba(236, 229, 219, 0.94); }

@@ -41,8 +41,6 @@
   align-items: flex-start;
   padding: 12vh var(--space-4) var(--space-4);
   background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
   animation: fadeIn var(--dur-fast) ease;
 }
 

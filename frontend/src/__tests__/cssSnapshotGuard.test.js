@@ -54,7 +54,7 @@ describe("the cascade snapshot notices", () => {
     // because obsidian.css redeclared --surface-2 on `.dark` and shadowed the
     // root declaration on every element that rendered. That file is gone and
     // there is exactly one declaration of the token again.
-    expect(mutate("--surface-2: #17171f;", "--surface-2: #ff0000;")).not.toBe(BASELINE);
+    expect(mutate("--surface-2: #161615;", "--surface-2: #ff0000;")).not.toBe(BASELINE);
   });
 
   it("a token that stops being defined", () => {

@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from "react";
-import { ClerkProvider, useUser, useAuth } from "@clerk/react";
+import { ClerkProvider, useUser, useAuth, useSession } from "@clerk/react";
 import { Toaster, toast } from "sonner";
 import "./App.css";
 
 import SignInPage from "./SignInPage";
+import SessionPending from "./components/SessionPending";
 import clerkAppearance from "./lib/clerkAppearance";
 import MagneticButton from "./components/ui/MagneticButton";
 import { Badge } from "./components/ui/badge";
@@ -13,7 +14,7 @@ import Earring from "./components/Earring";
 import InputBar from "./components/InputBar";
 import ChatSidebar from "./components/ChatSidebar";
 import CameraOverlay from "./components/CameraOverlay";
-import { InitialLoader, AppSkeleton } from "./components/Skeletons";
+import { InitialLoader, AppSkeleton, StuckLoading } from "./components/Skeletons";
 import SettingsPanel from "./components/panels/SettingsPanel";
 import AdminPanel from "./components/panels/AdminPanel";
 import UpgradePanel from "./components/panels/UpgradePanel";
@@ -88,6 +89,25 @@ const AuthenticatedApp = () => {
   const [attachedImage, setAttachedImage] = useState(null);
 
   const chatRef = useRef(null);
+
+  /* A SKELETON THAT NEVER RESOLVES IS THE WORST FAILURE THIS APP HAS SHIPPED.
+   *
+   * `isInitialLoading` is cleared in loadChats' `finally`, so it survives any
+   * error — but only if loadChats RUNS. When a pending Clerk session held
+   * `isReady` at false it never did, and the skeleton stayed up for days with
+   * no error, no toast and nothing to click.
+   *
+   * The gate above fixes that specific cause. This is the backstop for the
+   * class: whatever the reason, if the app is still skeleton after this long,
+   * it says so instead of pretending to load. Deliberately longer than the
+   * 45s API_TIMEOUT_MS, so a genuinely slow request finishes and reports its
+   * own error rather than being pre-empted by this. */
+  const [skeletonStuck, setSkeletonStuck] = useState(false);
+  useEffect(() => {
+    if (!chat.isInitialLoading) return setSkeletonStuck(false);
+    const t = setTimeout(() => setSkeletonStuck(true), 60_000);
+    return () => clearTimeout(t);
+  }, [chat.isInitialLoading]);
 
   const chat = useChats({ apiCall, getToken, isReady, setToast });
   const billing = useBilling({ apiCall, isReady, setToast });
@@ -340,7 +360,7 @@ const AuthenticatedApp = () => {
   }, [chat]);
 
   if (!isLoaded) return null;
-  if (chat.isInitialLoading) return <AppSkeleton />;
+  if (chat.isInitialLoading) return skeletonStuck ? <StuckLoading /> : <AppSkeleton />;
 
   const showUpgradeButton = billing.userPlan !== "pro" && Boolean(billing.prices);
 
@@ -633,10 +653,35 @@ const AuthenticatedApp = () => {
   );
 };
 
+/**
+ * THE GATE ASKED ONE HOOK AND THE APP ASKED THE OTHER.
+ *
+ * This used to branch on `useUser().isSignedIn` alone, while AuthenticatedApp
+ * computes `isReady` from `useAuth().isSignedIn`. Clerk answers those two
+ * questions differently, and its own shipped source is explicit about it:
+ *
+ *   useAuth:  isSignedIn = session.status !== "pending" && !!session
+ *   useUser:  isSignedIn = a user object exists — no session check at all
+ *
+ * So a PENDING session rendered the whole application for a user whose
+ * requests could never be authorised: `isReady` stayed false, `loadChats`
+ * never ran, `isInitialLoading` was never cleared, and the skeleton stayed up
+ * forever with no error and nothing to click.
+ *
+ * Both hooks are consulted here now, and every combination has a screen. The
+ * fix is the gate, not the loader — a component further in cannot know why
+ * its data never arrives.
+ */
 const AuthenticatedAppWrapper = () => {
-  const { isSignedIn, isLoaded } = useUser();
-  if (!isLoaded) return <InitialLoader />;
-  if (!isSignedIn) return <SignInPage />;
+  const { isLoaded: userLoaded, isSignedIn: hasUser } = useUser();
+  const { isLoaded: authLoaded, isSignedIn, signOut } = useAuth();
+  const { session } = useSession();
+
+  if (!userLoaded || !authLoaded) return <InitialLoader />;
+  if (!hasUser) return <SignInPage />;
+  // A user, but no usable session. Never render the app for this: it is the
+  // exact state that produced an infinite skeleton.
+  if (!isSignedIn) return <SessionPending task={session?.currentTask} onSignOut={() => signOut()} />;
   return <AuthenticatedApp />;
 };
 

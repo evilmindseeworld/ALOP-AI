@@ -93,3 +93,28 @@ export const AppSkeleton = () => (
     </div>
   </div>
 );
+
+/**
+ * Shown when the app has been on skeletons long enough that it is not loading
+ * any more, it is stuck.
+ *
+ * Reuses the sign-in outage styles rather than inventing a third error look —
+ * a user who meets both should not think they are in two different products.
+ */
+export const StuckLoading = () => (
+  <div className="signin-root">
+    <div className="signin-down" role="alert">
+      <h1 className="signin-down-title">This is taking too long.</h1>
+      <p className="signin-down-body">
+        The app couldn&rsquo;t finish loading your conversations. They are stored on the server
+        and are not affected &mdash; nothing has been lost.
+      </p>
+      <p className="signin-down-body">
+        Reloading usually clears it. If it keeps happening, signing out and back in will.
+      </p>
+      <button className="signin-down-retry" onClick={() => window.location.reload()}>
+        Reload
+      </button>
+    </div>
+  </div>
+);

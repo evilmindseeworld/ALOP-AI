@@ -438,7 +438,13 @@ export const outsideAppRoot = `
   </div>
 
   <div class="signin-wrap">
-    <div class="signin-brand">
+    <div class="signin-down" role="alert">
+    <h1 class="signin-down-title">Sign-in isn&rsquo;t responding.</h1>
+    <p class="signin-down-body">We can&rsquo;t reach the service that signs you in.</p>
+    <button class="signin-down-retry">Reload</button>
+  </div>
+
+  <div class="signin-brand">
       <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="signin-logo-mark" alt=""/>
       <span class="signin-logo-text">ALOP-AI</span>
     </div>

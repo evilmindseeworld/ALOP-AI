@@ -4,7 +4,7 @@
 # here means a refactor changed behaviour. Do not regenerate it to make a
 # test pass; fix the CSS.
 #
-# elements: 861   environments: 4   states: 6
+# elements: 865   environments: 4   states: 6
 
 === width=1400 ===
 
@@ -40622,7 +40622,194 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[838] div.signin-brand
+[838] div.signin-down
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  margin: auto
+  margin-bottom: <margin: auto>
+  margin-left: <margin: auto>
+  margin-top: <margin: auto>
+  max-width: 32rem
+  padding: 32px 24px
+  padding-bottom: <padding: 32px 24px>
+  padding-left: <padding: 32px 24px>
+  position: relative
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  text-align: left
+  z-index: 1
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[839] h1.signin-down-title
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #f5f1ee
+  font-family: 'Clash Grotesk', system-ui, sans-serif, sans-serif
+  font-size: clamp(22px, 4vw, 28px)
+  font-weight: 700
+  letter-spacing: -0.02em
+  margin: 0 0 12px
+  margin-bottom: <margin: 0 0 12px>
+  margin-left: <margin: 0 0 12px>
+  margin-top: <margin: 0 0 12px>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[840] p.signin-down-body
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #b8b3ae
+  line-height: 1.6
+  margin: 0 0 14px
+  margin-bottom: <margin: 0 0 14px>
+  margin-left: <margin: 0 0 14px>
+  margin-top: <margin: 0 0 14px>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[841] button.signin-down-retry
+  -webkit-tap-highlight-color: transparent
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  background: #f08aa3
+  background-clip: <background: #f08aa3>
+  background-image: <background: #f08aa3>
+  background-size: <background: #f08aa3>
+  border: none
+  border-bottom-right-radius: <border-radius: 6px>
+  border-color: <border: none>
+  border-radius: 6px
+  box-sizing: border-box
+  color: #1a0e13
+  cursor: pointer
+  font: inherit
+  font-family: <font: inherit>
+  font-size: <font: inherit>
+  font-style: <font: inherit>
+  font-weight: 600
+  line-height: <font: inherit>
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: 8px
+  padding: 10px 18px
+  padding-bottom: <padding: 10px 18px>
+  padding-left: <padding: 10px 18px>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+    filter: brightness(1.08)
+  :focus-visible
+    outline: 2px solid rgba(240, 138, 163, 0.55)
+    outline-offset: 2px
+
+[842] div.signin-brand
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -40665,7 +40852,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[839] img.signin-logo-mark
+[843] img.signin-logo-mark
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -40708,7 +40895,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[840] span.signin-logo-text
+[844] span.signin-logo-text
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -40753,7 +40940,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[841] div.signin-grid
+[845] div.signin-grid
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -40797,7 +40984,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[842] section.signin-thesis
+[846] section.signin-thesis
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -40842,7 +41029,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[843] h1.signin-title
+[847] h1.signin-title
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -40890,7 +41077,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[844] span.signin-title-accent
+[848] span.signin-title-accent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -40935,7 +41122,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[845] ol.council-ladder
+[849] ol.council-ladder
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -40979,7 +41166,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[846] li.council-row
+[850] li.council-row
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -41028,7 +41215,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[847] span.council-temp
+[851] span.council-temp
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -41075,7 +41262,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[848] span.council-name
+[852] span.council-name
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -41125,7 +41312,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[849] li.council-row.is-pro
+[853] li.council-row.is-pro
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -41174,7 +41361,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[850] span.council-temp
+[854] span.council-temp
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -41221,7 +41408,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[851] span.council-name
+[855] span.council-name
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -41271,7 +41458,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[852] span.council-tag
+[856] span.council-tag
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -41317,7 +41504,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[853] p.council-resolve
+[857] p.council-resolve
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -41375,7 +41562,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[854] p.signin-tagline
+[858] p.signin-tagline
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -41421,7 +41608,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[855] section.signin-card
+[859] section.signin-card
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -41470,7 +41657,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[856] div.signin-card-inner
+[860] div.signin-card-inner
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -41510,7 +41697,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[857] p.signin-plan
+[861] p.signin-plan
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -41553,7 +41740,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[858] p.signin-legal
+[862] p.signin-legal
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -41600,7 +41787,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[859] a
+[863] a
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -41647,7 +41834,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[860] a
+[864] a
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -41784,31 +41971,31 @@
   - padding-bottom: <padding: 0 24px 20px>
   - padding-left: <padding: 0 24px 20px>
 
-[841] div.signin-grid
+[845] div.signin-grid
   gap: 24px
   grid-template-columns: minmax(0, 1fr)
   justify-items: center
   - gap: clamp(32px, 6vw, 88px)
   - grid-template-columns: minmax(0, 1fr) minmax(0, 380px)
 
-[842] section.signin-thesis
+[846] section.signin-thesis
   align-items: center
   order: 2
   - align-items: flex-start
 
-[843] h1.signin-title
+[847] h1.signin-title
   text-align: center
   - text-align: left
 
-[845] ol.council-ladder
+[849] ol.council-ladder
   max-width: 30ch
   - max-width: 34ch
 
-[854] p.signin-tagline
+[858] p.signin-tagline
   text-align: center
   - text-align: left
 
-[855] section.signin-card
+[859] section.signin-card
   order: 1
 
 === width=400 (changes vs width=1400) ===
@@ -42449,31 +42636,31 @@
   - padding-bottom: <padding: 48px 24px>
   - padding-left: <padding: 48px 24px>
 
-[841] div.signin-grid
+[845] div.signin-grid
   gap: 24px
   grid-template-columns: minmax(0, 1fr)
   justify-items: center
   - gap: clamp(32px, 6vw, 88px)
   - grid-template-columns: minmax(0, 1fr) minmax(0, 380px)
 
-[842] section.signin-thesis
+[846] section.signin-thesis
   align-items: center
   order: 2
   - align-items: flex-start
 
-[843] h1.signin-title
+[847] h1.signin-title
   text-align: center
   - text-align: left
 
-[845] ol.council-ladder
+[849] ol.council-ladder
   max-width: 30ch
   - max-width: 34ch
 
-[854] p.signin-tagline
+[858] p.signin-tagline
   text-align: center
   - text-align: left
 
-[855] section.signin-card
+[859] section.signin-card
   order: 1
   padding: 18px
   padding-bottom: <padding: 18px>
@@ -52111,7 +52298,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[838] div.signin-brand
+[838] div.signin-down
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52122,7 +52309,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[839] img.signin-logo-mark
+[839] h1.signin-down-title
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52133,7 +52320,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[840] span.signin-logo-text
+[840] p.signin-down-body
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52144,7 +52331,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[841] div.signin-grid
+[841] button.signin-down-retry
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52155,7 +52342,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[842] section.signin-thesis
+[842] div.signin-brand
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52166,7 +52353,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[843] h1.signin-title
+[843] img.signin-logo-mark
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52177,7 +52364,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[844] span.signin-title-accent
+[844] span.signin-logo-text
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52188,7 +52375,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[845] ol.council-ladder
+[845] div.signin-grid
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52199,7 +52386,51 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[846] li.council-row
+[846] section.signin-thesis
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[847] h1.signin-title
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[848] span.signin-title-accent
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[849] ol.council-ladder
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[850] li.council-row
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52212,7 +52443,7 @@
   - animation-duration: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   - animation-iteration-count: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
 
-[847] span.council-temp
+[851] span.council-temp
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52223,7 +52454,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[848] span.council-name
+[852] span.council-name
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52234,7 +52465,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[849] li.council-row.is-pro
+[853] li.council-row.is-pro
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52247,7 +52478,7 @@
   - animation-duration: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   - animation-iteration-count: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
 
-[850] span.council-temp
+[854] span.council-temp
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52258,7 +52489,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[851] span.council-name
+[855] span.council-name
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52269,7 +52500,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[852] span.council-tag
+[856] span.council-tag
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52280,7 +52511,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[853] p.council-resolve
+[857] p.council-resolve
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52293,7 +52524,7 @@
   - animation-duration: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
   - animation-iteration-count: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
 
-[854] p.signin-tagline
+[858] p.signin-tagline
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52304,7 +52535,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[855] section.signin-card
+[859] section.signin-card
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52315,7 +52546,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[856] div.signin-card-inner
+[860] div.signin-card-inner
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52326,7 +52557,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[857] p.signin-plan
+[861] p.signin-plan
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52337,7 +52568,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[858] p.signin-legal
+[862] p.signin-legal
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52348,7 +52579,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[859] a
+[863] a
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -52360,7 +52591,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: color 0.15s>
 
-[860] a
+[864] a
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { SignIn, SignUp, useUser } from "@clerk/react";
 import SakuraFrame from "./components/SakuraFrame";
 import SakuraBough from "./components/SakuraBough";
@@ -66,9 +67,52 @@ const wantsSignUp = () => {
  * line (emoji, plus reassurance about a fear nobody arrived with), and the four
  * feature cards.
  */
+/**
+ * How long Clerk gets before we admit something is wrong.
+ *
+ * `isLoaded` stays false forever when the Frontend API cannot be reached, and
+ * this page returned `null` on that — so an outage rendered a BLANK WHITE
+ * PAGE with no message, no retry and nothing in the UI to react to. That is
+ * exactly what happened when a rewrite swallowed /__clerk and every sign-in
+ * POST came back 405: the console had the error and the user had nothing.
+ *
+ * Ten seconds is long enough that a slow phone on a cold cache is not accused
+ * of being broken, and short enough that nobody sits in front of an empty
+ * screen wondering whether to reload.
+ */
+const CLERK_LOAD_TIMEOUT_MS = 10_000;
+
 export default function SignInPage() {
   const { isSignedIn, isLoaded } = useUser();
-  if (!isLoaded) return null;
+  const [timedOut, setTimedOut] = useState(false);
+
+  useEffect(() => {
+    if (isLoaded) return;
+    const t = setTimeout(() => setTimedOut(true), CLERK_LOAD_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [isLoaded]);
+
+  if (!isLoaded) {
+    if (!timedOut) return null;
+    return (
+      <div className="signin-root">
+        <div className="signin-down" role="alert">
+          <h1 className="signin-down-title">Sign-in isn&rsquo;t responding.</h1>
+          <p className="signin-down-body">
+            We can&rsquo;t reach the service that signs you in. Your account and your chats are
+            not affected &mdash; there is nothing to recover and nothing has been lost.
+          </p>
+          <p className="signin-down-body">
+            This is usually brief. If reloading doesn&rsquo;t help, it is on our side, not yours.
+          </p>
+          <button className="signin-down-retry" onClick={() => window.location.reload()}>
+            Reload
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (isSignedIn) return null;
   const signUp = wantsSignUp();
 

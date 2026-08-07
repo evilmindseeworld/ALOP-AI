@@ -85,6 +85,62 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* THE SIGN-IN OUTAGE SCREEN.
+ *
+ * Clerk's `isLoaded` never flips when its Frontend API is unreachable, and
+ * this page returned null on that — a blank white page with the error only in
+ * the console. Anything that can leave a user staring at nothing needs a
+ * state, and this is the one screen where a user cannot even get far enough
+ * to read a toast.
+ *
+ * Deliberately plain: no orbs, no sakura, no animation. Decoration on an
+ * error screen reads as an app that has not noticed it is broken. */
+.signin-down {
+  position: relative;
+  /* The same layer the sign-in content uses. It only has to clear the fixed
+     grain and orb layers behind it, which is what --z-empty-content means
+     here — see the scale in tokens.css. */
+  z-index: var(--z-empty-content);
+  max-width: 32rem;
+  margin: auto;
+  padding: 32px 24px;
+  text-align: left;
+}
+
+.signin-down-title {
+  margin: 0 0 12px;
+  font-family: var(--font-heading), sans-serif;
+  font-size: clamp(22px, 4vw, 28px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.signin-down-body {
+  margin: 0 0 14px;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
+.signin-down-retry {
+  margin-top: 8px;
+  padding: 10px 18px;
+  border: none;
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: var(--text-on-fill);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.signin-down-retry:hover { filter: brightness(1.08); }
+
+.signin-down-retry:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
 .signin-brand {
   display: flex;
   align-items: center;

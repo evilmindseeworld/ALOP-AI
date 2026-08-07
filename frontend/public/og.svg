@@ -1,64 +1,78 @@
 <!--
-  Source for og.png, the social preview card. 1200x630 — the size every
+  Source for og.png, the social preview card. 1200x630 - the size every
   platform crops to for a large summary card.
 
-  The previous og:image was logo.png at 721x720. A square in a 1.91:1 slot gets
-  letterboxed or centre-cropped depending on the platform, so a shared link
-  showed a padded logo rather than a card. Nothing was broken; it just looked
-  like nobody had thought about it.
+  THE MARK IS ON IT NOW. The first version of this card carried no logo at
+  all, so a shared link looked like a quote rather than a product. The brand
+  block here is the same one the sign-in page opens with - mark, then
+  wordmark, same order, same spacing ratio - so the image someone sees in a
+  feed and the page they land on read as one thing.
 
-  WHAT IS ON IT, and why it is not a logo on a gradient. The product's actual
-  argument is the temperature ladder: seven models at seven different
-  temperatures, which is the reason a council returns something a single model
-  does not. That is the one thing on the sign-in page worth putting in a
-  preview, and it is checkable rather than atmospheric.
+  NO EYEBROW. This card used to open with a tracked-out "THE COUNCIL" above
+  the headline. It named nothing the headline did not already say; a label
+  whose only job is to sit above a title is decoration wearing a heading's
+  clothes. The same kicker came off the sign-in page and the empty state in
+  the same pass.
+
+  WHAT IS LEFT IS WHAT IS CHECKABLE. The temperature ladder is the product's
+  actual argument - seven models at seven temperatures, which is the reason a
+  council returns something one model does not. council-roster.test.js fails
+  if the names here drift from the ones the server runs.
 
   Colours are the shipped tokens: bg #0a0a0a, primary #f08aa3,
-  text #f5f1ee, text-subtle #8d8880. Flat fills only — no gradient, no
+  text #f5f1ee, text-subtle #8d8880. Flat fills only - no gradient, no
   glow, per the design pass in baca269.
 
   Regenerate (from frontend/):
-    npm i --no-save @resvg/resvg-js
-    node -e "const{Resvg}=require('@resvg/resvg-js'),f=require('fs');f.writeFileSync('public/og.png',new Resvg(f.readFileSync('public/og.svg','utf8'),{fitTo:{mode:'width',value:1200},font:{loadSystemFonts:true}}).render().asPng())"
+    npm i (dash dash)no-save @resvg/resvg-js pngjs
+    node scripts/render-og.mjs
 
-  NOT svgexport: it drives headless Chromium and fails to spawn here. resvg
-  ships prebuilt binaries and needs no browser. And note that '--' is illegal
-  inside an XML comment, which is why the token names above lost their dashes.
+  The renderer is a script rather than a -e one-liner because the mark is an
+  <image> and has to be inlined as a data URI first; resvg does not fetch
+  relative hrefs. NOT svgexport: it drives headless Chromium and fails to
+  spawn here. And note that a doubled dash is illegal inside an XML comment,
+  which is why the token names above are written without their leading pair.
 -->
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1200" height="630" viewBox="0 0 1200 630">
   <rect width="1200" height="630" fill="#0a0a0a"/>
 
   <!-- One hairline rule, the same idea as the app's borders. -->
   <rect x="0" y="0" width="1200" height="3" fill="#f08aa3"/>
 
   <g font-family="Segoe UI, Helvetica Neue, Arial, sans-serif">
-    <text x="80" y="132" fill="#8d8880" font-size="22" letter-spacing="4.5" font-weight="600">THE COUNCIL</text>
+    <!-- The brand block: mark then wordmark, the order the sign-in page opens
+         with. The mark is the penguin ALONE and not the full logo square,
+         because the chip and brain around it are black on black and vanish
+         against this background at any size. render-og.mjs does the crop and
+         records the measurement. -->
+    <image id="mark" x="80" y="70" width="63" height="104" href="" xlink:href=""/>
+    <text x="163" y="133" fill="#f5f1ee" font-size="32" font-weight="700" letter-spacing="-0.6">ALOP-AI</text>
 
-    <text x="80" y="228" fill="#f5f1ee" font-size="76" font-weight="700" letter-spacing="-2">Seven answers.</text>
-    <text x="80" y="316" fill="#f08aa3" font-size="76" font-weight="700" letter-spacing="-2">One reply.</text>
+    <text x="80" y="272" fill="#f5f1ee" font-size="76" font-weight="700" letter-spacing="-2">Seven answers.</text>
+    <text x="80" y="352" fill="#f08aa3" font-size="76" font-weight="700" letter-spacing="-2">One reply.</text>
 
-    <text x="80" y="384" fill="#b8b3ae" font-size="26">They disagree on purpose. You get what they agreed on &#8212;</text>
-    <text x="80" y="420" fill="#b8b3ae" font-size="26">and where they didn&#8217;t.</text>
+    <text x="80" y="418" fill="#b8b3ae" font-size="26">They disagree on purpose. You get what they agreed on &#8212;</text>
+    <text x="80" y="454" fill="#b8b3ae" font-size="26">and where they didn&#8217;t.</text>
 
     <!-- The ladder, low to high, exactly as the sign-in page orders it. -->
     <g font-size="21" letter-spacing="0.5">
-      <text x="80"  y="520" fill="#8d8880">0.2</text>
-      <text x="140" y="520" fill="#f5f1ee">The Architect</text>
-      <text x="330" y="520" fill="#8d8880">0.3</text>
-      <text x="390" y="520" fill="#f5f1ee">The Engineer</text>
-      <text x="580" y="520" fill="#8d8880">0.4</text>
-      <text x="640" y="520" fill="#f5f1ee">The Analyst</text>
-      <text x="830" y="520" fill="#8d8880">0.5</text>
-      <text x="890" y="520" fill="#f5f1ee">The Strategist</text>
+      <text x="80"  y="530" fill="#8d8880">0.2</text>
+      <text x="140" y="530" fill="#f5f1ee">The Architect</text>
+      <text x="330" y="530" fill="#8d8880">0.3</text>
+      <text x="390" y="530" fill="#f5f1ee">The Engineer</text>
+      <text x="580" y="530" fill="#8d8880">0.4</text>
+      <text x="640" y="530" fill="#f5f1ee">The Analyst</text>
+      <text x="830" y="530" fill="#8d8880">0.5</text>
+      <text x="890" y="530" fill="#f5f1ee">The Strategist</text>
 
-      <text x="80"  y="562" fill="#8d8880">0.5</text>
-      <text x="140" y="562" fill="#f5f1ee">The Scholar</text>
-      <text x="330" y="562" fill="#8d8880">0.7</text>
-      <text x="390" y="562" fill="#f5f1ee">The Alchemist</text>
-      <text x="580" y="562" fill="#8d8880">0.8</text>
-      <text x="640" y="562" fill="#f5f1ee">The Explorer</text>
+      <text x="80"  y="572" fill="#8d8880">0.5</text>
+      <text x="140" y="572" fill="#f5f1ee">The Scholar</text>
+      <text x="330" y="572" fill="#8d8880">0.7</text>
+      <text x="390" y="572" fill="#f5f1ee">The Alchemist</text>
+      <text x="580" y="572" fill="#8d8880">0.8</text>
+      <text x="640" y="572" fill="#f5f1ee">The Explorer</text>
     </g>
 
-    <text x="1120" y="562" fill="#8d8880" font-size="22" text-anchor="end" letter-spacing="1">alop-ai.com</text>
+    <text x="1120" y="572" fill="#8d8880" font-size="22" text-anchor="end" letter-spacing="1">alop-ai.com</text>
   </g>
 </svg>

@@ -29,10 +29,14 @@
          logged a 404. The file was fine; the one line pointing at it was
          missing.
 
-         `sizes="any"` tells a browser that supports SVG to prefer it at every
-         size rather than continuing to hunt for a raster .ico. apple-touch-icon
-         is a PNG because iOS does not accept SVG there. -->
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+         AND IT POINTED AT THE WRONG MARK. favicon.svg was a purple lightning
+         bolt with no relation to this product — an artefact of whatever
+         scaffold this started from, in a colour the design system does not
+         contain. It has been deleted rather than left in public/ for someone
+         to re-link. favicon.png is generated from logo.png by
+         scripts/render-og.mjs: the penguin on the brand tile, because the
+         mark is white line-art and vanishes on a light tab bar without it. -->
+    <link rel="icon" href="/favicon.png" type="image/png" sizes="128x128" />
     <link rel="apple-touch-icon" href="/logo.png" />
 
     <!-- Google Search Console ownership proof.

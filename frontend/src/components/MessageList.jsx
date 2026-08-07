@@ -108,7 +108,9 @@ export const EmptyState = memo(({ onPick }) => (
         does not follow the transcript. */}
     <SakuraFrame />
     <img src="/logo.png" alt="" className="empty-logo" />
-    <p className="empty-eyebrow">The AI Council</p>
+    {/* No eyebrow. "The AI Council" sat between the mark and the title,
+        saying nothing the title and subtitle below do not — see SignInPage
+        for the same removal. */}
     {/* Two typefaces on one line: the product name in the UI sans, the thing it
         does in an italic serif. The accent is a span rather than a second
         heading so screen readers still announce one title, "ALOP-AI Assembled",

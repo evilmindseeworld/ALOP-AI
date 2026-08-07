@@ -88,7 +88,11 @@ export default function SignInPage() {
 
         <div className="signin-grid">
           <section className="signin-thesis">
-            <p className="signin-eyebrow">The Council</p>
+            {/* No eyebrow above this title. "The Council" sat here in tracked
+                uppercase and told a reader nothing the headline, the roster
+                and the tagline below it do not already say — a label whose
+                only function is to occupy the space above a heading. Same
+                kicker came off the empty state and the social card. */}
             <h1 className="signin-title">
               Seven answers.<span className="signin-title-accent">One reply.</span>
             </h1>

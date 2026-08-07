@@ -116,15 +116,8 @@
 
 
 
-/* The eyebrow, matching the app's empty state. */
-.signin-eyebrow {
-  font-size: var(--text-2xs);
-  font-weight: 600;
-  letter-spacing: var(--tracking-eyebrow);
-  text-transform: uppercase;
-  color: var(--text-subtle);
-  margin: 0;
-}
+/* `.signin-eyebrow` was here, matching the empty state's. Both are gone; the
+ * `--tracking-eyebrow` token stays because `.council-tag` still uses it. */
 
 /* Same two-typeface display line as the empty state, so the screen a user
  * signs in FROM and the screen they land ON are recognisably the same product.

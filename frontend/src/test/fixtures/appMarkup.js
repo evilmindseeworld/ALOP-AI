@@ -206,7 +206,6 @@ export const appTree = (theme) => `
             <div class="empty-state">
               <div class="sakura-frame" aria-hidden="true"><svg class="sakura-torii" viewBox="0 0 240 190"><path d="M0 0"/></svg><svg class="sakura-corner sakura-corner-tl" viewBox="0 0 120 76"><path d="M0 0"/></svg><svg class="sakura-corner sakura-corner-tr" viewBox="0 0 120 76"><path d="M0 0"/></svg><svg class="sakura-corner sakura-corner-bl" viewBox="0 0 120 76"><path d="M0 0"/></svg><svg class="sakura-corner sakura-corner-br" viewBox="0 0 120 76"><path d="M0 0"/></svg></div>
               <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="empty-logo" alt="ALOP-AI"/>
-              <p class="empty-eyebrow">The AI Council</p>
               <h2 class="empty-title text-shimmer">ALOP-AI<span class="empty-title-accent">Assembled.</span></h2>
               <p class="empty-subtitle">Ask the AI Council anything.</p>
               <div class="starter-grid">
@@ -415,7 +414,6 @@ export const outsideAppRoot = `
 
     <div class="signin-grid">
       <section class="signin-thesis">
-        <p class="signin-eyebrow">The council</p>
         <h1 class="signin-title">Seven answers.<span class="signin-title-accent">One reply.</span></h1>
         <ol class="council-ladder">
           <li class="council-row"><span class="council-temp">0.3</span><span class="council-name">kimi-k2.7-code</span></li>

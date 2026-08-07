@@ -120,8 +120,8 @@
 /* The entrance.
  *
  * The empty state used to appear all at once, which reads as a page load. A
- * short stagger in reading order — eyebrow, title, subtitle, then the cards —
- * reads as the room assembling itself, and it costs four animation-delay
+ * short stagger in reading order — title, subtitle, then the cards — reads as
+ * the room assembling itself, and it costs three animation-delay
  * declarations.
  *
  * Rules this follows, because a staggered entrance is the easiest place to
@@ -155,18 +155,8 @@
  * which is exactly the append-then-append-again habit that budget exists for.
  * It was mine, and it was two weeks old. */
 
-/* The eyebrow. Small, uppercase, tracked wide, and dimmer than the subtitle —
- * it names the room without asking to be read first. */
-.empty-eyebrow {
-  animation: emptyRise var(--dur-slow) var(--ease-out) 60ms backwards;
-  font-family: var(--font-body);
-  font-size: var(--text-2xs);
-  font-weight: 600;
-  letter-spacing: var(--tracking-eyebrow);
-  text-transform: uppercase;
-  color: var(--text-subtle);
-  user-select: none;
-}
+/* `.empty-eyebrow` was here — "The AI Council" in tracked uppercase above the
+ * title. It was removed with its markup, not left behind as an orphan rule. */
 
 /* BOTH animations, and the second name is not optional.
  *

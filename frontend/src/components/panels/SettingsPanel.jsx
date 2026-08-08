@@ -14,6 +14,12 @@ export default function SettingsPanel({
   billingBusy,
   onManageBilling,
   onUpgrade,
+  facts,
+  factsError,
+  factsBusy,
+  onRetryFacts,
+  onDeleteFact,
+  onForgetAll,
 }) {
   return (
     <SidePanel open={open} title="Settings" onClose={onClose}>
@@ -41,6 +47,66 @@ export default function SettingsPanel({
         <button onClick={onDeleteChat} className="theme-card" disabled={!canDeleteChat}>
           Delete Chat
         </button>
+      </div>
+
+      {/* WHAT THE ASSISTANT REMEMBERS.
+          These are statements about a person, written by a model, replayed into
+          every later conversation. Showing them is not a nicety: a wrong fact
+          conditions every answer that follows, and the person is the only one
+          who can tell that it is wrong.
+
+          An error never renders as an empty list — that reads as "nothing
+          stored", which is the same lie the chat list and the attachments list
+          each told once. State it, keep what we have, offer the retry. */}
+      <div className="setting-row setting-block">
+        <div className="setting-label">What I remember about you</div>
+
+        {factsError && (
+          <div className="setting-note" role="alert">
+            Couldn&apos;t load your memory. It has not been changed.{" "}
+            <button type="button" className="link-button" onClick={onRetryFacts}>
+              Retry
+            </button>
+          </div>
+        )}
+
+        {!factsError && factsBusy && facts === null && <div className="setting-note">Loading…</div>}
+
+        {!factsError && facts !== null && facts.length === 0 && (
+          <div className="setting-note">
+            Nothing yet. Tell me something about yourself and I&apos;ll keep it across chats.
+          </div>
+        )}
+
+        {facts !== null && facts.length > 0 && (
+          <>
+            <ul className="fact-list">
+              {facts.map((f) => (
+                <li key={f.id} className="fact-row">
+                  <span className="fact-text">{f.fact}</span>
+                  <button
+                    type="button"
+                    className="fact-forget"
+                    onClick={() => onDeleteFact(f.id)}
+                    aria-label={`Forget: ${f.fact}`}
+                  >
+                    Forget
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button
+              type="button"
+              className="theme-card"
+              style={{ width: "100%" }}
+              onClick={() => {
+                if (confirm("Forget everything I know about you? This cannot be undone.")) onForgetAll();
+              }}
+            >
+              Forget everything
+            </button>
+          </>
+        )}
       </div>
 
       {/* Pro users get the billing portal; everyone else gets the upgrade path,

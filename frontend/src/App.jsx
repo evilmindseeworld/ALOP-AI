@@ -44,6 +44,7 @@ import { appendToControlledInput } from "./lib/dom";
 import { isImageRequest } from "./lib/format";
 import { useChats } from "./hooks/useChats";
 import { useBilling } from "./hooks/useBilling";
+import { useUserFacts } from "./hooks/useUserFacts";
 import { useCamera } from "./hooks/useCamera";
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition";
 
@@ -93,6 +94,7 @@ const AuthenticatedApp = () => {
 
   const chat = useChats({ apiCall, getToken, isReady, setToast });
   const billing = useBilling({ apiCall, isReady, setToast });
+  const userFacts = useUserFacts({ apiCall, setToast });
 
   /* A SKELETON THAT NEVER RESOLVES IS THE WORST FAILURE THIS APP HAS SHIPPED.
    *
@@ -314,11 +316,18 @@ const AuthenticatedApp = () => {
   // --- panels and palette ------------------------------------------------
   // Only one panel is ever open: they occupy the same space, and two at once
   // renders as one panel with the wrong contents behind it.
-  const openOnly = useCallback((which) => {
-    setShowSettings(which === "settings");
-    setShowAdmin(which === "admin");
-    setShowUpgrade(which === "upgrade");
-  }, []);
+  const openOnly = useCallback(
+    (which) => {
+      setShowSettings(which === "settings");
+      setShowAdmin(which === "admin");
+      setShowUpgrade(which === "upgrade");
+      // Stored memory is fetched when the panel that shows it opens, not at
+      // startup — nothing renders it before then, and a request nobody is
+      // waiting on is latency on the path they are.
+      if (which === "settings") userFacts.loadFacts();
+    },
+    [userFacts],
+  );
 
   const paletteActions = useMemo(
     () => [
@@ -567,6 +576,12 @@ const AuthenticatedApp = () => {
               billingBusy={billing.billingBusy}
               onManageBilling={billing.openBillingPortal}
               onUpgrade={() => openOnly("upgrade")}
+              facts={userFacts.facts}
+              factsError={userFacts.factsError}
+              factsBusy={userFacts.factsBusy}
+              onRetryFacts={userFacts.loadFacts}
+              onDeleteFact={userFacts.deleteFact}
+              onForgetAll={userFacts.forgetAll}
             />
 
             <div className="chat-content">

@@ -171,6 +171,18 @@ export const appTree = (theme) => `
             <div class="setting-row"><button class="theme-card">Export chat as Markdown</button></div>
             <div class="setting-row"><button class="theme-card is-danger">Delete Chat</button></div>
 
+            <div class="setting-row setting-block">
+              <div class="setting-label">What I remember about you</div>
+              <div class="setting-note">Couldn't load your memory. <button class="link-button">Retry</button></div>
+              <ul class="fact-list">
+                <li class="fact-row">
+                  <span class="fact-text">The user is a teacher in Dubai.</span>
+                  <button class="fact-forget">Forget</button>
+                </li>
+              </ul>
+              <button class="theme-card">Forget everything</button>
+            </div>
+
             <div class="admin-title">3 Users</div>
             <div class="admin-user-card">
               <div class="admin-user-header">

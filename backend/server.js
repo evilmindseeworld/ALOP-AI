@@ -646,6 +646,77 @@ const getFeedbackGuidance = async (userId) => {
   } catch { return ''; }
 };
 
+/* CROSS-CHAT MEMORY. `conversation_summary` above remembers one conversation
+ * on purpose; these are the few statements that should outlive it.
+ *
+ * EXTRACTED FROM THE USER'S MESSAGE ONLY. Not from the answer, and the reason
+ * is not tidiness — see the header of lib/user-facts.js. An answer routinely
+ * carries text this server fetched from the open web, and a fact drawn from
+ * that would be replayed at system position in every conversation this user
+ * ever has again. That is a prompt injection with a storage layer.
+ *
+ * Runs after the user has been answered, like updateChatSummary, so its cost
+ * is never on the path the user waits on.
+ */
+const { FACTS_PROMPT, parseFacts, newFacts, factsBlock } = require('./lib/user-facts');
+/* Enough to condition an answer, small enough that it cannot crowd out the
+ * conversation itself. Newest first — see docs/MEMORY-AND-CACHE-PLAN.md for why
+ * relevance-ranking this needs an embedding provider that does not exist yet. */
+const FACTS_INJECT_LIMIT = 20;
+/* The dedupe read. A user with more facts than this gets duplicates rather than
+ * a slow write, which is the right way round. */
+const FACTS_DEDUPE_LIMIT = 200;
+
+const readUserFacts = async (userId, limit = FACTS_INJECT_LIMIT) => {
+  if (!userId) return [];
+  try {
+    const { data, error } = await supabase
+      .from('user_facts')
+      .select('fact')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    // The table predates migrations/ and has never been read before, so a
+    // missing column or table is a live possibility. Memory being unavailable
+    // must cost the user nothing but the memory.
+    if (error) { console.error('[FACTS] Unavailable, skipping:', error.message); return []; }
+    return (data || []).map((r) => r.fact).filter(Boolean);
+  } catch (e) { console.error('[FACTS] Read failed:', e.message); return []; }
+};
+
+const updateUserFacts = async (userId, userMsg) => {
+  if (!userId || !userMsg) return;
+  try {
+    const raw = await callModel(
+      FAST_MODEL,
+      [{ role: 'system', content: FACTS_PROMPT }, { role: 'user', content: String(userMsg).slice(0, 1200) }],
+      0.0, 4000, 200,
+    );
+    const candidates = parseFacts(raw);
+    if (!candidates.length) return;
+
+    const existing = await readUserFacts(userId, FACTS_DEDUPE_LIMIT);
+    const fresh = newFacts(candidates, existing);
+    if (!fresh.length) return;
+
+    // user_id comes from the server's own resolved user, never from the body.
+    const { error } = await supabase
+      .from('user_facts')
+      .insert(fresh.map((fact) => ({ user_id: userId, fact, category: 'profile' })));
+    // supabase-js resolves rather than throws, so an unchecked insert would log
+    // a save that never happened — the same trap updateChatSummary documents.
+    if (error) console.error('[FACTS] Save failed:', error.message);
+    else console.log(`[FACTS] Stored ${fresh.length}.`);
+  } catch (e) { console.error('[FACTS] Failed:', e.message); }
+};
+
+/* One funnel for everything learned from a settled turn, so a new memory does
+ * not have to be threaded through six terminal paths and miss one. */
+const rememberTurn = (chatId, userId, userMsg, assistantMsg) => {
+  updateChatSummary(chatId, userId, userMsg, assistantMsg).catch(() => {});
+  updateUserFacts(userId, userMsg).catch(() => {});
+};
+
 // ===== MIDDLEWARE =====
 // The allowlist is host-parsed, not substring-matched — see lib/origin-guard.js
 // for the two ways the previous `origin.includes('.vercel.app')` was wrong.
@@ -1019,7 +1090,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const truncatedPrompt = truncatePrompt(pv.value);
     const histArr = sanitizeHistory(history);
 
-    const [convSummary, feedbackGuidance] = await Promise.all([readChatSummary(chatId, user.id), getFeedbackGuidance(user.id)]);
+    const [convSummary, feedbackGuidance, userFacts] = await Promise.all([readChatSummary(chatId, user.id), getFeedbackGuidance(user.id), readUserFacts(user.id)]);
 
     // VISION. The council speaks to a text model, so an attached image is
     // described first and the description travels as context — the same shape
@@ -1070,8 +1141,16 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     // whoever made the image — which is not necessarily the user. Text inside a
     // screenshot someone was sent reaches us verbatim. The instruction stays at
     // system position; the transcription moves down and is labelled.
+    //
+    // userFacts belongs at system position for the same reason convSummary
+    // does, and only because of how it is built: every fact was extracted from
+    // this user's own message under their own user_id. Nothing the web said
+    // reaches this list. lib/user-facts.js is where that rule is enforced and
+    // explained; if it is ever relaxed, this line has to move down and get a
+    // preamble.
     const contextMsgs = [
       ...(convSummary ? [{ role: 'system', content: `CONVERSATION CONTEXT: ${convSummary}` }] : []),
+      ...(userFacts.length ? [{ role: 'system', content: factsBlock(userFacts) }] : []),
       ...(feedbackGuidance ? [{ role: 'system', content: `USER PREFERENCES, learned from their past ratings. Honour these unless they conflict with accuracy:\n${feedbackGuidance}` }] : []),
       ...(imageContext ? [
         { role: 'system', content: 'THE USER ATTACHED AN IMAGE. A description of it follows in a user turn — treat it as something you can see, and answer with reference to it.' },
@@ -1080,7 +1159,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       ...(region ? [{ role: 'system', content: regionHint(region) }] : []),
     ];
 
-    console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | Mem: ${convSummary ? 'Y' : 'N'} | Lang: ${lang} | Region: ${region ? `${region.country} via ${region.source}` : 'unknown'}`);
+    console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | Mem: ${convSummary ? 'Y' : 'N'} | Facts: ${userFacts.length} | Lang: ${lang} | Region: ${region ? `${region.country} via ${region.source}` : 'unknown'}`);
 
     /* THE SHADOW PROBE RUNS HERE, ABOVE THE ROUTER — and that placement is the
      * whole point of it.
@@ -1159,7 +1238,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       openStream(res);
       await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0);
       if (!res.writableEnded) res.end();
-      updateChatSummary(chatId, user.id, pv.value, 'Answered memory question.').catch(() => {});
+      rememberTurn(chatId, user.id, pv.value, 'Answered memory question.');
       await auditLog(user.id, 'council', { category: 'memory' }, req.ip);
       return;
     }
@@ -1269,7 +1348,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0);
       if (!res.writableEnded) res.end();
       const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
-      updateChatSummary(chatId, user.id, pv.value, lastA || 'Search response.').catch(() => {});
+      rememberTurn(chatId, user.id, pv.value, lastA || 'Search response.');
       await auditLog(user.id, 'council', { category: 'search', sources: sources.length }, req.ip);
       return;
     }
@@ -1288,7 +1367,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         openStream(res);
         await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0);
         if (!res.writableEnded) res.end();
-        updateChatSummary(chatId, user.id, pv.value, 'Wikipedia response.').catch(() => {});
+        rememberTurn(chatId, user.id, pv.value, 'Wikipedia response.');
         await auditLog(user.id, 'council', { category: 'wiki' }, req.ip);
         return;
       }
@@ -1391,7 +1470,7 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       openStream(res);
       await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0);
       if (!res.writableEnded) res.end();
-      updateChatSummary(chatId, user.id, pv.value, 'Fallback response.').catch(() => {});
+      rememberTurn(chatId, user.id, pv.value, 'Fallback response.');
       await auditLog(user.id, 'council', { category: 'fallback' }, req.ip);
       return;
     }
@@ -1426,7 +1505,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0);
     if (!res.writableEnded) res.end();
     const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
-    updateChatSummary(chatId, user.id, pv.value, lastA || validResponses[0]?.content?.slice(0,800) || 'Council response.').catch(() => {});
+    rememberTurn(chatId, user.id, pv.value, lastA || validResponses[0]?.content?.slice(0,800) || 'Council response.');
     /* msToFirstByte on THIS path too, not only on the tools path.
      *
      * The number that says whether a latency change worked is the wait before
@@ -1964,6 +2043,59 @@ app.get('/api/billing/prices', requireStripe, requireAuth, async (req, res) => {
 app.post('/api/create-checkout-session', requireStripe, requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); const cu = await clerkClient.users.getUser(req.auth.userId); const email = cu?.emailAddresses?.[0]?.emailAddress; const priceId = req.body.plan === 'yearly' ? process.env.STRIPE_PRICE_YEARLY : process.env.STRIPE_PRICE_MONTHLY; if (!priceId) throw new Error('Price ID not configured'); const session = await stripe.checkout.sessions.create({ customer_email: user.stripe_customer_id ? undefined : email, customer: user.stripe_customer_id || undefined, line_items: [{ price: priceId, quantity: 1 }], mode: 'subscription', success_url: `${process.env.FRONTEND_URL}/?payment=success`, cancel_url: `${process.env.FRONTEND_URL}/?payment=cancelled`, metadata: { userId: req.auth.userId } }); res.json({ url: session.url }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 app.post('/api/create-portal-session', requireStripe, requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); if (!user.stripe_customer_id) return res.status(400).json({ error: 'No subscription' }); const session = await stripe.billingPortal.sessions.create({ customer: user.stripe_customer_id, return_url: `${process.env.FRONTEND_URL}/` }); res.json({ url: session.url }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
 app.get('/api/user/plan', requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); res.json({ plan: user.plan || 'free', subscription_id: user.stripe_subscription_id }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+
+/* The user's own memory, readable and deletable by them.
+ *
+ * Not optional polish. This stores statements about a person, derived by a
+ * model, and replays them into every later conversation. Memory a user can
+ * neither see nor delete is a product that says things about them behind a
+ * door they cannot open — and the wrong fact is self-reinforcing, because it
+ * conditions the answers that produce the next fact.
+ *
+ * Both queries carry .eq('user_id', user.id). The service-role key bypasses
+ * RLS, so that filter is the entire ownership check — see AGENTS.md. */
+app.get('/api/user/facts', requireAuth, checkSuspended, async (req, res) => {
+  try {
+    const user = await ensureUser(req.auth.userId, { cached: req.userRow });
+    const { data, error } = await supabase
+      .from('user_facts')
+      .select('id,fact,created_at')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    res.json({ facts: data || [] });
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/user/facts/:id', requireAuth, checkSuspended, async (req, res) => {
+  try {
+    const user = await ensureUser(req.auth.userId, { cached: req.userRow });
+    // Scoped by BOTH id and user_id. Filtering on the id alone would let any
+    // authenticated account delete any other account's memory — the same shape
+    // as the cross-tenant write updateChatSummary documents.
+    const { data, error } = await supabase
+      .from('user_facts')
+      .delete()
+      .eq('id', req.params.id)
+      .eq('user_id', user.id)
+      .select('id');
+    if (error) throw error;
+    // Nothing deleted means it was not theirs or never existed. Same answer for
+    // both, so this cannot be used to ask whether an id exists.
+    if (!data || !data.length) return res.status(404).json({ error: 'Not found' });
+    res.json({ deleted: data[0].id });
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/user/facts', requireAuth, checkSuspended, async (req, res) => {
+  try {
+    const user = await ensureUser(req.auth.userId, { cached: req.userRow });
+    const { data, error } = await supabase.from('user_facts').delete().eq('user_id', user.id).select('id');
+    if (error) throw error;
+    res.json({ deleted: (data || []).length });
+  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+});
 
 // ===== ERRORS =====
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));

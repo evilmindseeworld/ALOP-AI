@@ -36,7 +36,7 @@ const { join } = require("node:path");
 const SRC = readFileSync(join(__dirname, "..", "server.js"), "utf8");
 
 /** Tables whose rows belong to exactly one user. */
-const OWNED = ["chats", "chat_files"];
+const OWNED = ["chats", "chat_files", "user_facts"];
 
 /**
  * A statement runs from `.from('table')` to the next semicolon, NOT to the end
@@ -109,17 +109,51 @@ test("the summary read and the summary write are both scoped", () => {
   }
 });
 
-test("updateChatSummary is called with an owner at every call site", () => {
-  // The signature changed from (chatId, userMsg, assistantMsg) to
-  // (chatId, userId, userMsg, assistantMsg). A missed call site would pass the
-  // user's message as the userId, which fails closed — the query matches no
+test("the turn-memory funnel is called with an owner at every call site", () => {
+  // updateChatSummary's signature changed from (chatId, userMsg, assistantMsg)
+  // to (chatId, userId, userMsg, assistantMsg). A missed call site would pass
+  // the user's message as the userId, which fails closed — the query matches no
   // row — but does so silently, losing memory rather than reporting anything.
-  const calls = [...SRC.matchAll(/updateChatSummary\(([^)]*)\)/g)]
+  //
+  // The terminal paths now call rememberTurn, which fans out to the summary and
+  // to fact extraction, so rememberTurn is where the owner has to be right. It
+  // is one funnel precisely so a seventh terminal path cannot be added with the
+  // arguments in the wrong order.
+  const calls = [...SRC.matchAll(/rememberTurn\(([^)]*)\)/g)]
     .map((m) => m[1])
     .filter((args) => !args.includes("=>")); // skip the declaration itself
-  assert.ok(calls.length >= 5, `found only ${calls.length} call sites`);
+  assert.ok(calls.length >= 5, `found only ${calls.length} rememberTurn call sites`);
   for (const args of calls) {
     const second = args.split(",")[1]?.trim();
     assert.equal(second, "user.id", `second argument is "${second}", not the owner`);
   }
+
+  // And that the funnel passes its owner through rather than dropping it.
+  const inner = [...SRC.matchAll(/updateChatSummary\(([^)]*)\)/g)]
+    .map((m) => m[1])
+    .filter((args) => !args.includes("=>"));
+  assert.equal(inner.length, 1, `updateChatSummary should be called once, inside rememberTurn; found ${inner.length}`);
+  assert.equal(inner[0].split(",")[1]?.trim(), "userId");
+
+  const facts = [...SRC.matchAll(/updateUserFacts\(([^)]*)\)/g)]
+    .map((m) => m[1])
+    .filter((args) => !args.includes("=>"));
+  assert.equal(facts.length, 1, `updateUserFacts should be called once, inside rememberTurn; found ${facts.length}`);
+  assert.equal(facts[0].split(",")[0]?.trim(), "userId");
+});
+
+/* Facts are read from the user's turn and never from the answer, because a
+ * stored fact is replayed at system position in every later conversation and
+ * an answer carries text fetched from the open web. lib/user-facts.js explains
+ * it; this asserts the call actually obeys it, since the argument is the whole
+ * defence and it is one edit away from being the wrong one. */
+test("fact extraction is fed the user's message, not the assistant's", () => {
+  const decl = SRC.match(/const updateUserFacts = async \(([^)]*)\)/);
+  assert.ok(decl, "updateUserFacts declaration not found — this contract has stopped reading the file");
+  const params = decl[1].split(",").map((s) => s.trim());
+  assert.deepEqual(params, ["userId", "userMsg"], "updateUserFacts takes the user's message and nothing else");
+
+  const call = SRC.match(/updateUserFacts\(userId, ([^)]*)\)/);
+  assert.ok(call, "updateUserFacts is not called with userId first");
+  assert.equal(call[1].trim(), "userMsg", "fact extraction must be fed userMsg");
 });

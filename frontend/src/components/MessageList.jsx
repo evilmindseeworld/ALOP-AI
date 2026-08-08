@@ -1,4 +1,5 @@
 import { memo, lazy, Suspense, useState, useRef, useEffect } from "react";
+import { animate, spring, createDraggable } from "animejs";
 import SakuraFrame from "./SakuraFrame";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -102,12 +103,52 @@ MessageActions.displayName = "MessageActions";
  * real reply and exercises a different capability, so the council gets shown
  * off rather than described.
  */
-export const EmptyState = memo(({ onPick }) => (
+export const EmptyState = memo(({ onPick }) => {
+  const logoRef = useRef(null);
+
+  /* THE LOGO'S MOTION IS OWNED BY THE LOGO, and bound to the element rather
+   * than to `.empty-logo`.
+   *
+   * This ran in App.jsx from an effect keyed on the message list, which is not
+   * the same thing as "the empty state is on screen". It fired twice when the
+   * element did not exist: once on mount, because MessageList is a lazy chunk
+   * and Suspense was still showing the fallback, and again the instant a
+   * message was sent, because `status` leaves "idle" before the list has a
+   * message in it and this component unmounts. Both times the selector matched
+   * nothing.
+   *
+   * animejs resolves a selector that matches nothing to `undefined`, and
+   * `new Animatable(undefined, ...)` returns early with no property methods
+   * defined. Draggable then calls the one it expects and throws
+   *
+   *   this.animate[this.xProp] is not a function
+   *
+   * which is why the crash named no element and no file. A ref cannot miss:
+   * this effect runs after the element it points at is in the document. */
+  useEffect(() => {
+    const el = logoRef.current;
+    if (!el) return;
+    const pulse = animate(el, {
+      scale: [
+        { to: 1.08, ease: "inOut(3)", duration: 400 },
+        { to: 1, ease: spring({ bounce: 0.7 }) },
+      ],
+      loop: true,
+      loopDelay: 1200,
+    });
+    const drag = createDraggable(el, { container: [0, 0, 0, 0], releaseEase: spring({ bounce: 0.8 }) });
+    return () => {
+      pulse.revert();
+      drag.revert();
+    };
+  }, []);
+
+  return (
   <div className="empty-state">
     {/* Behind everything, and only here — see SakuraFrame for why the frame
         does not follow the transcript. */}
     <SakuraFrame />
-    <img src="/logo.png" alt="" className="empty-logo" />
+    <img ref={logoRef} src="/logo.png" alt="" className="empty-logo" />
     {/* No eyebrow. "The AI Council" sat between the mark and the title,
         saying nothing the title and subtitle below do not — see SignInPage
         for the same removal. */}
@@ -133,7 +174,8 @@ export const EmptyState = memo(({ onPick }) => (
       ))}
     </div>
   </div>
-));
+  );
+});
 
 EmptyState.displayName = "EmptyState";
 

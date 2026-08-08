@@ -14,6 +14,57 @@ if (!Element.prototype.scrollTo) {
   Element.prototype.scrollTo = function scrollTo() {};
 }
 
+/* GEOMETRY, because animejs's Draggable needs it and jsdom has none of it.
+ *
+ * The empty state's logo is draggable, and that motion is now bound to the
+ * element from inside EmptyState rather than to a `.empty-logo` selector from
+ * App — the selector matched nothing on two real paths and threw
+ * `this.animate[this.xProp] is not a function` on every signed-in first paint.
+ * The consequence for tests is that mounting EmptyState now runs the REAL
+ * Draggable constructor, which reads DOMPoint, DOMMatrix, ResizeObserver and
+ * matchMedia before it does anything else.
+ *
+ * These live here rather than in the one test that introduced them because any
+ * test that renders the empty state needs them, and three already did.
+ * Deliberately dumb — an identity transform and a no-op observer. jsdom has no
+ * layout, so no assertion about motion is possible or attempted; the only thing
+ * these buy is that the code under test runs at all. */
+if (typeof globalThis.ResizeObserver === "undefined") {
+  globalThis.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
+if (typeof globalThis.matchMedia !== "function") {
+  globalThis.matchMedia = () => ({
+    matches: false,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+  });
+}
+
+if (typeof globalThis.DOMMatrix === "undefined") {
+  globalThis.DOMMatrix = class DOMMatrix {
+    constructor() {
+      this.a = 1; this.b = 0; this.c = 0; this.d = 1; this.e = 0; this.f = 0;
+      this.m41 = 0; this.m42 = 0;
+    }
+    inverse() { return new DOMMatrix(); }
+    translate() { return new DOMMatrix(); }
+  };
+}
+
+if (typeof globalThis.DOMPoint === "undefined") {
+  globalThis.DOMPoint = class DOMPoint {
+    constructor(x = 0, y = 0) { this.x = x; this.y = y; this.z = 0; this.w = 1; }
+    matrixTransform() { return new DOMPoint(this.x, this.y); }
+  };
+}
+
 // localStorage is absent in this jsdom setup — not merely empty, undefined, so
 // `localStorage.getItem` throws TypeError. The app stores the theme and the
 // sidebar state there. src/lib/storage.js already swallows that, which is why

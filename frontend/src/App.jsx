@@ -46,7 +46,7 @@ import { useBilling } from "./hooks/useBilling";
 import { useCamera } from "./hooks/useCamera";
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition";
 
-import { animate, createScope, spring, createDraggable } from "animejs";
+import { animate, spring } from "animejs";
 
 /** Follow the transcript only while the reader is already near the bottom. */
 const FOLLOW_THRESHOLD_PX = 150;
@@ -158,21 +158,13 @@ const AuthenticatedApp = () => {
   useEffect(() => {
     if (!chatRef.current) return;
 
-    if (activeMessages.length === 0) {
-      const scope = createScope({ root: chatRef.current }).add(() => {
-        animate(".empty-logo", {
-          scale: [
-            { to: 1.08, ease: "inOut(3)", duration: 400 },
-            { to: 1, ease: spring({ bounce: 0.7 }) },
-          ],
-          loop: true,
-          loopDelay: 1200,
-        });
-        createDraggable(".empty-logo", { container: [0, 0, 0, 0], releaseEase: spring({ bounce: 0.8 }) });
-      });
-      return () => scope.revert();
-    }
-
+    /* The empty state's logo used to be animated and made draggable from here,
+     * by selector, inside a createScope rooted at this element. It crashed the
+     * app: this effect is keyed on the message list, which is not the same
+     * thing as "the empty state is mounted", and on both the paths where it
+     * differs the selector matched nothing. See EmptyState in MessageList.jsx,
+     * which now owns that motion against a ref. Only the transcript's own rows
+     * are animated here, and those are queried from a live DOM. */
     const rows = chatRef.current.querySelectorAll(".msg-row");
     if (rows.length) {
       animate(rows[rows.length - 1], {

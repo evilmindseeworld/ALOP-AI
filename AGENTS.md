@@ -256,6 +256,56 @@ themes.
 
 ### Closed since the last handoff
 
+- **A CSS mask resolves against the PADDING box, and that made a fade look like
+  a bug twice.** The transcript's bottom edge had a 28px fade to dissolve the
+  line where it meets the composer. It still looked guillotined, because the
+  bottom padding was 16px — so two thirds of the fade dissolved empty padding
+  and only ~12px reached text. `--fade-bottom` is now BOTH the fade length and
+  the padding, in one token, because the geometry requires `padding >= fade`
+  and two separate numbers will drift. If you shorten one, shorten both.
+
+- **Decoration needs somewhere to be that is not behind the words.** The
+  hemp-leaf lattice was `.empty-state::after`, so it vanished the moment a
+  conversation started and the composer sat on an undecorated band. Moving it
+  to `.chat-main::after` fixed that — and introduced a mobile regression I then
+  had to fix: the mask clears the middle of the surface, which works while
+  there are GUTTERS. At 320px the transcript is 87% of the chat surface, so the
+  pattern landed under the prose. It is `display: none` below 640px. A
+  percentage mask cannot be tuned out of that; the column and the surface have
+  converged.
+
+  Note also that `.chat-content` had to be lifted to `--z-empty-content`. A
+  positioned `::after` paints in a later phase than static in-flow content
+  however small its z-index, so without it the pattern renders ON TOP of the
+  transcript. The empty state already carried the identical fix.
+
+- **Check what the SIGNED-OUT page actually downloads, not what the bundle
+  report says.** Measured in a browser against a production build: 621.7 KB, of
+  which 230 KB is Clerk's own chunks (not ours to cut) and 142 KB was fonts.
+  Two findings that no bundle analyser would have surfaced, because both are
+  runtime behaviour:
+
+  1. **JetBrains Mono, 30.7 KB, was loading to render eleven glyphs** — the
+     council temperatures `0.2`–`0.8` on the sign-in page. A webfont downloads
+     when a glyph needs it, so a single small element on the public page pulled
+     the whole file. `--font-mono-system` exists for exactly this: mono voice,
+     no download. Its nine other consumers are behind auth and keep the real
+     font.
+  2. **`logo-mark.png` is 512×512 and 28 KB, and was rendered at 34px, 22px,
+     and in the initial skeleton.** `favicon.png` is the same mark at 144px and
+     5.5 KB and is already fetched for the tab icon, so on those three it now
+     costs nothing. The empty state keeps the big file — it renders at 76px.
+
+  Total after: 573.6 KB. Re-measure the same way rather than trusting a diff.
+
+- **`copyStyle.test.js` enforces the house copy rules.** Em dashes are out of
+  interface copy by request. It reads JSX TEXT NODES only — comments and string
+  literals are exempt, because prose about code is not interface copy and a
+  string is as often a regex as a sentence. It found three em dashes and a
+  stray ellipsis character on its first run that a manual pass had missed.
+  If it fails, rewrite the sentence; do not widen the exemptions.
+
+
 - **The RLS layer had never worked. Every policy recursed.** Found by running
   the policies rather than reading them — `set local role authenticated`, set
   `request.jwt.claims` to a real user, `select count(*) from chats`:

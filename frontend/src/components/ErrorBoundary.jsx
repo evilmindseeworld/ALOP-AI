@@ -59,7 +59,7 @@ export default class ErrorBoundary extends Component {
           </div>
           {eventId && Sentry.getClient() ? (
             <p className="crash-ref">
-              Reference <code>{eventId}</code> — quote this if you contact support.
+              Reference <code>{eventId}</code>. Quote this if you contact support.
             </p>
           ) : null}
         </div>

@@ -26,8 +26,9 @@
  * even discover the font's URL until it has fetched and parsed a stylesheet
  * from another origin. Both problems went away together.
  *
- * Instrument Serif is italic-only on purpose: the roman is never used, and
- * shipping it would double the bytes for a face nothing renders. */
+ * There were four families; there are now three. Instrument Serif was shipped
+ * italic-only for two accent spans, both since removed as decoration, and the
+ * files went with them. */
 
 /* ===== DARK — SAKURA OBSIDIAN (the primary theme) ===== */
 :root {
@@ -118,7 +119,6 @@
    * display line — the "Botanic /Architecture./" move. It carries no body text
    * and no UI chrome, so if it fails to load the fallback is one italic word in
    * Georgia rather than a differently-proportioned interface. */
-  --font-display-serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
 
   /* An eyebrow: the small uppercase label that names a section without
    * competing with it. Tracked wide because at 11px letterspacing is the only
@@ -174,6 +174,12 @@
   --space-6: 24px;
   --space-8: 32px;
   --space-12: 48px;
+
+  /* The transcript's bottom fade, and its bottom padding, which must be
+   * the same number — a mask resolves against the PADDING box, so a fade
+   * longer than the padding eats live text at rest. See .scroll-wrapper in
+   * chat.css for the full reasoning. Change it here, once. */
+  --fade-bottom: 56px;
 
   /* SMALLER. These were 8 / 12 / 16 / 22, and uniform large radii are the tell
    * that survives after the gradients come off: every control, container and

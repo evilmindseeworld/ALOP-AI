@@ -191,14 +191,9 @@
   text-wrap: balance;
 }
 
-.signin-title-accent {
-  font-family: var(--font-display-serif);
-  font-style: italic;
-  font-weight: 400;
-  font-size: 1.12em;
-  letter-spacing: -0.01em;
-  margin-left: 0.26em;
-}
+/* `.signin-title-accent` was here, matching `.empty-title-accent`: an italic
+ * Instrument Serif span inside the sans headline. Its markup is gone with the
+ * rewritten hero, so the rule goes too rather than sitting as an orphan. */
 
 /* Left, flush with the ladder. Centred, it drifted out of the column the
  * temperatures establish and the whole left side stopped having an edge. */

@@ -37,23 +37,43 @@
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: var(--space-6) var(--space-6) var(--space-4);
+  /* The bottom padding and the fade below are ONE measurement, not two.
+   * See the mask note — padding shorter than the fade puts live text inside it
+   * at rest, and the transcript looks permanently half-erased. */
+  padding: var(--space-6) var(--space-6) var(--fade-bottom);
   scroll-behavior: smooth;
   /* Mid-scroll, the last line of prose was cut by a hard horizontal edge where
    * the transcript ends and the composer begins — the same "wall" the frame's
    * border used to make, relocated. Removing the frame fixed the outline and
    * left this.
    *
-   * A 28px fade at the bottom edge dissolves that line instead of slicing it,
-   * which is what makes a transcript read as continuing rather than as ending.
-   * The top is left hard on purpose: the header already draws a real boundary
+   * A fade at the bottom edge dissolves that line instead of slicing it, which
+   * is what makes a transcript read as continuing rather than as ending. The
+   * top is left hard on purpose: the header already draws a real boundary
    * there, and fading content into it would just make the header look like it
    * was floating.
    *
-   * Percentages, not pixels, because the mask is resolved against the padding
-   * box and this container's height changes with the viewport. */
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%);
+   * WHY THIS DID NOT WORK THE FIRST TIME, because the fade was already here and
+   * the edge was still ugly. THE MASK RESOLVES AGAINST THE PADDING BOX. The
+   * fade was 28px and the bottom padding was 16px, so two thirds of it was
+   * spent dissolving empty padding and only ~12px ever reached a line of text —
+   * a fade too short to read as one, which is indistinguishable from the hard
+   * cut it was meant to remove.
+   *
+   * So the two are now a single token. `--fade-bottom` is both the length of
+   * the fade AND the bottom padding, which makes the relationship the geometry
+   * actually requires impossible to break by editing one of them:
+   *
+   *   padding >= fade  ->  at rest, the last line sits BELOW the fade and is
+   *                        fully opaque; the fade only bites mid-scroll, which
+   *                        is the only time there is anything to dissolve.
+   *   padding <  fade  ->  the final line is permanently half-erased.
+   *
+   * 56px is measured, not picked: it is a little over two lines of body text at
+   * this size, which is the shortest fade that still reads as a dissolve rather
+   * than as a gradient someone applied to an edge. */
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - var(--fade-bottom)), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--fade-bottom)), transparent 100%);
 }
 
 .msg-stream {
@@ -158,23 +178,23 @@
 /* `.empty-eyebrow` was here — "The AI Council" in tracked uppercase above the
  * title. It was removed with its markup, not left behind as an orphan rule. */
 
-/* BOTH animations, and the second name is not optional.
+/* One animation now, and the note that used to be here is worth keeping in
+ * summary because it explains why this looks simpler than it was.
  *
- * The title is <h2 class="empty-title text-shimmer">. `.text-shimmer` lives in
- * base.css and `.empty-title` here, both at (0,1,0) — so this rule wins on
- * source order, and an `animation` shorthand REPLACES the shimmer rather than
- * adding to it. The first version of the stagger did exactly that and silently
- * deleted the shimmer from the one element in the app that has it; the cascade
- * snapshot is what caught it.
+ * The title was <h2 class="empty-title text-shimmer"> and carried TWO
+ * animations: the entrance rise, plus a five-second gradient sweep across the
+ * letterforms. Both had to be named in one shorthand, because `.text-shimmer`
+ * and `.empty-title` sit at the same specificity and an `animation` shorthand
+ * here REPLACES rather than adds — a trap that had already silently deleted the
+ * shimmer once.
  *
- * The per-animation delays are positional: 120ms for the rise, 0s for the
- * shimmer. If text-shimmer's timing changes, this line changes with it, and
- * the snapshot will say so. */
+ * The shimmer is gone deliberately: an infinite gradient sweep over a heading
+ * is the single most recognisable AI-generated flourish in the app, and it
+ * animated forever on a screen the user is meant to type on. Removing it also
+ * removes the coupling above, so this is now an ordinary one-animation rule. */
 .empty-title {
-  animation:
-    emptyRise var(--dur-slow) var(--ease-out) backwards,
-    shimmerMove 5s linear infinite;
-  animation-delay: 120ms, 0s;
+  animation: emptyRise var(--dur-slow) var(--ease-out) backwards;
+  animation-delay: 120ms;
   font-family: var(--font-heading);
   font-size: var(--display);
   font-weight: 700;
@@ -184,28 +204,11 @@
   user-select: none;
 }
 
-/* The accent half of the display line: same size, serif, italic.
- *
- * Two typefaces on one line only works when they agree about the baseline and
- * disagree about everything else. Instrument Serif runs small for its point
- * size next to Clash Grotesk, so it is nudged up to match x-height rather than
- * nominal size — set them at the same px and the serif reads as a size smaller,
- * which looks like a mistake instead of a contrast.
- *
- * Weight drops to 400 because an italic serif at 700 is a different voice, not
- * an emphasis of the same one. */
-.empty-title-accent {
-  font-family: var(--font-display-serif);
-  font-style: italic;
-  font-weight: 400;
-  font-size: 1.12em;
-  letter-spacing: -0.01em;
-  /* The serif's own side bearing is tighter than the sans's word space, so
-   * without this the two halves collide. Measured at the rendered size rather
-   * than guessed: 0.12em still read as one hyphenated word. */
-  margin-left: 0.26em;
-  color: var(--text);
-}
+/* `.empty-title-accent` was here: an italic Instrument Serif span set against
+ * the sans display face, nudged up to match x-height. It was carefully made and
+ * it was still decoration — two typefaces on one line to say "Assembled.", on a
+ * heading that now asks a plain question. Removed with its markup rather than
+ * left as an orphan rule, and `--font-display-serif` went with it. */
 
 .empty-subtitle {
   animation: emptyRise var(--dur-slow) var(--ease-out) 190ms backwards;

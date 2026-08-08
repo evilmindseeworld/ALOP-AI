@@ -91,10 +91,10 @@ export default function UpgradePanel({
 
       <div className="plan-buttons">
         <button className="plan-buy" disabled={billingBusy} onClick={() => onCheckout("monthly")}>
-          {billingBusy ? "Opening checkout..." : `Monthly — ${formatPrice(prices?.monthly)}`}
+          {billingBusy ? "Opening checkout..." : `Monthly ${formatPrice(prices?.monthly)}`}
         </button>
         <button className="plan-buy is-secondary" disabled={billingBusy} onClick={() => onCheckout("yearly")}>
-          {billingBusy ? "Opening checkout..." : `Yearly — ${formatPrice(prices?.yearly)}`}
+          {billingBusy ? "Opening checkout..." : `Yearly ${formatPrice(prices?.yearly)}`}
         </button>
       </div>
 

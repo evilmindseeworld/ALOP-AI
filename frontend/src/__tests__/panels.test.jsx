@@ -18,8 +18,8 @@ describe("UpgradePanel", () => {
 
   it("shows both formatted prices", () => {
     render(<UpgradePanel open onClose={noop} prices={prices} billingBusy={false} onCheckout={noop} />);
-    expect(screen.getByText(/Monthly — \$9$/)).toBeInTheDocument();
-    expect(screen.getByText(/Yearly — \$90$/)).toBeInTheDocument();
+    expect(screen.getByText(/Monthly \$9$/)).toBeInTheDocument();
+    expect(screen.getByText(/Yearly \$90$/)).toBeInTheDocument();
   });
 
   it("passes the chosen plan to checkout", async () => {
@@ -132,8 +132,8 @@ describe("UpgradePanel without prices", () => {
 
   it("never shows a checkout button it cannot complete", () => {
     render(<UpgradePanel open onClose={noop} prices={null} pricesError="HTTP 500" onCheckout={noop} />);
-    expect(screen.queryByText(/Monthly —/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Yearly —/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Monthly \$/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Yearly \$/)).not.toBeInTheDocument();
   });
 
   it("retries on demand", async () => {

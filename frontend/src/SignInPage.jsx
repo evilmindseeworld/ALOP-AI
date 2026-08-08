@@ -137,8 +137,20 @@ export default function SignInPage() {
                 and the tagline below it do not already say — a label whose
                 only function is to occupy the space above a heading. Same
                 kicker came off the empty state and the social card. */}
+            {/* "Seven answers. One reply." was replaced, and index.html already
+                explains why in the note above <title>: a count followed by a
+                contrast ("Seven X. One Y.") is a rhythm that reads as generated
+                rather than written, and the number dates the product — the
+                roster is three seats on free and seven on pro, so it was wrong
+                for most of the people reading it. That reasoning was applied to
+                the <title> and never to the heading the visitor actually sees.
+
+                This says what happens instead, in the order it happens, and
+                does not count anything. The italic-serif accent span is gone
+                with it: two typefaces on one line was the decoration, not the
+                argument. */}
             <h1 className="signin-title">
-              Seven answers.<span className="signin-title-accent">One reply.</span>
+              Ask once. Several models answer.
             </h1>
 
             {/* The roster is still the argument — seven seats, each held at its

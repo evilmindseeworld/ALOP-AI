@@ -215,7 +215,7 @@ const InputBar = memo(
                   <Icon name="image" size={17} />
                 </label>
               </TooltipTrigger>
-              <TooltipContent>Attach an image — or paste one</TooltipContent>
+              <TooltipContent>Attach an image, or paste one</TooltipContent>
             </Tooltip>
 
             {/* `accept` lists the SAME types the server allows, and is a
@@ -236,7 +236,7 @@ const InputBar = memo(
                   <Icon name="code" size={17} />
                 </label>
               </TooltipTrigger>
-              <TooltipContent>Attach a document — text, Markdown, CSV or JSON</TooltipContent>
+              <TooltipContent>Attach a document: text, Markdown, CSV or JSON</TooltipContent>
             </Tooltip>
 
             <Tooltip>
@@ -295,7 +295,7 @@ const InputBar = memo(
                     <Icon name="send" size={17} />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>Send — or press Enter</TooltipContent>
+                <TooltipContent>Send, or press Enter</TooltipContent>
               </Tooltip>
             )}
           </div>

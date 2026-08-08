@@ -243,24 +243,13 @@ body {
   background-clip: padding-box;
 }
 
-/* ===== TEXT SHIMMER ===== */
-.text-shimmer {
-  background: linear-gradient(
-    100deg,
-    var(--text) 20%,
-    var(--primary) 40%,
-    var(--emerald) 60%,
-    var(--text) 80%
-  );
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  background-clip: text;
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-  animation: shimmerMove 5s linear infinite;
-}
+/* `.text-shimmer` was here: a four-stop gradient (text, primary, emerald,
+ * text) clipped to the letterforms and swept across them forever by
+ * shimmerMove. It applied to exactly one element, the empty-state heading.
+ *
+ * Removed as decoration. An infinite animated gradient on a heading is the most
+ * recognisable AI-generated flourish there is, it never stopped moving on the
+ * one screen the user is supposed to think and type on, and it forced the
+ * heading's colour to transparent — so the careful text ramp in tokens.css did
+ * not apply to the largest text in the app. */
 
-@keyframes shimmerMove {
-  0% { background-position: 200% center; }
-  100% { background-position: -200% center; }
-}

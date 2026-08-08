@@ -152,13 +152,13 @@ export const EmptyState = memo(({ onPick }) => {
     {/* No eyebrow. "The AI Council" sat between the mark and the title,
         saying nothing the title and subtitle below do not — see SignInPage
         for the same removal. */}
-    {/* Two typefaces on one line: the product name in the UI sans, the thing it
-        does in an italic serif. The accent is a span rather than a second
-        heading so screen readers still announce one title, "ALOP-AI Assembled",
-        in one breath. */}
-    <h2 className="empty-title text-shimmer">
-      ALOP-AI<span className="empty-title-accent">Assembled.</span>
-    </h2>
+    {/* An empty screen is an invitation to act, so it asks rather than
+        announces. "ALOP-AI Assembled." named the product and its own machinery
+        to somebody who had just opened the product and can see its name in the
+        header — and it carried both the italic-serif accent and the animated
+        gradient shimmer, which were the two most decorative things in the app.
+        All three are gone; the subtitle below already explains the mechanic. */}
+    <h2 className="empty-title">What do you want to ask?</h2>
     <p className="empty-subtitle">
       Several models answer separately, read each other, then agree on one reply. Tell it when it is wrong and it remembers.
     </p>

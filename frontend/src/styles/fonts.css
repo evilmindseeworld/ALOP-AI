@@ -1,8 +1,8 @@
 /* Every font this app uses, served from this origin.
  *
- * WHY. The four families used to load from two third-party CDNs —
+ * WHY. The families used to load from two third-party CDNs —
  * api.fontshare.com for Switzer and Clash Grotesk, fonts.googleapis.com for
- * JetBrains Mono and Instrument Serif. Every visitor's IP reached both before
+ * JetBrains Mono (and Instrument Serif, since removed). Every visitor's IP reached both before
  * a pixel rendered, with no consent and no way to refuse. A German court
  * awarded damages over exactly that in 2022 (LG Munchen I, 3 O 17493/20), and
  * it is one of the few GDPR points backed by a ruling rather than an argument.
@@ -25,8 +25,9 @@
  * subsetting available; they are small enough that it does not matter.
  *
  * LICENCES. Switzer and Clash Grotesk are under the ITF Free Font Licence,
- * JetBrains Mono and Instrument Serif under the SIL Open Font Licence. All four
- * permit self-hosting. See public/fonts/LICENSES.md.
+ * JetBrains Mono under the SIL Open Font Licence. All permit self-hosting. See
+ * public/fonts/LICENSES.md, which still records Instrument Serif — the licence
+ * file is a history of what was shipped, not a list of what is.
  *
  * REGENERATING. These blocks were generated, not hand-written. If a family or
  * weight changes, re-derive them rather than editing by hand — a typo'd
@@ -105,23 +106,12 @@
   src: url('/fonts/switzer-800.woff2') format('woff2');
 }
 
-@font-face {
-  font-family: 'Instrument Serif';
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/instrument-serif-latin-ext.woff2') format('woff2');
-  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
-}
-
-@font-face {
-  font-family: 'Instrument Serif';
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/instrument-serif-latin.woff2') format('woff2');
-  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
-}
+/* The two 'Instrument Serif' faces were here, italic-only, 34 KB across two
+ * unicode ranges. Their only consumer was the italic accent span in the sign-in
+ * headline and the empty-state title; both were removed as decoration, so the
+ * files were being downloaded to render nothing. Deleted from public/fonts/ as
+ * well — an unused @font-face is dead weight, but an unused font FILE that is
+ * still shipped is dead weight nobody can see. */
 
 @font-face {
   font-family: 'JetBrains Mono';

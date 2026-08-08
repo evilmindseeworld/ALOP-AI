@@ -10514,7 +10514,7 @@
     outline-offset: 2px
 
 [216] div.scroll-wrapper
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%)
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent 100%)
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -10541,12 +10541,12 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%)
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent 100%)
   overflow-x: hidden
   overflow-y: auto
-  padding: 24px 24px 16px
-  padding-bottom: <padding: 24px 24px 16px>
-  padding-left: <padding: 24px 24px 16px>
+  padding: 24px 24px 56px
+  padding-bottom: <padding: 24px 24px 56px>
+  padding-left: <padding: 24px 24px 56px>
   scroll-behavior: smooth
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
@@ -11157,8 +11157,6 @@
     outline-offset: 2px
 
 [230] h2.empty-title.text-shimmer
-  -webkit-background-clip: text
-  -webkit-text-fill-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -11178,14 +11176,10 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite
-  animation-delay: 120ms, 0s
-  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite>
-  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite>
-  background: linear-gradient( 100deg, #f5f1ee 20%, #f08aa3 40%, #6fd3a6 60%, #f5f1ee 80% )
-  background-clip: text
-  background-image: <background: linear-gradient( 100deg, #f5f1ee 20%, #f08aa3 40%, #6fd3a6 60%, #f5f1ee 80% )>
-  background-size: 200% auto
+  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards
+  animation-delay: 120ms
+  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   box-sizing: border-box
   color: #f5f1ee
   font-family: 'Clash Grotesk', system-ui, sans-serif
@@ -11236,15 +11230,9 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  color: #f5f1ee
-  font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif
-  font-size: 1.12em
-  font-style: italic
-  font-weight: 400
-  letter-spacing: -0.01em
   margin: 0
   margin-bottom: <margin: 0>
-  margin-left: 0.26em
+  margin-left: <margin: 0>
   margin-top: <margin: 0>
   padding: 0
   padding-bottom: <padding: 0>
@@ -30161,7 +30149,7 @@
     outline-offset: 2px
 
 [622] div.scroll-wrapper
-  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%)
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent 100%)
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -30188,12 +30176,12 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  mask-image: linear-gradient(to bottom, #000 calc(100% - 28px), transparent 100%)
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 56px), transparent 100%)
   overflow-x: hidden
   overflow-y: auto
-  padding: 24px 24px 16px
-  padding-bottom: <padding: 24px 24px 16px>
-  padding-left: <padding: 24px 24px 16px>
+  padding: 24px 24px 56px
+  padding-bottom: <padding: 24px 24px 56px>
+  padding-left: <padding: 24px 24px 56px>
   scroll-behavior: smooth
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
@@ -30804,8 +30792,6 @@
     outline-offset: 2px
 
 [636] h2.empty-title.text-shimmer
-  -webkit-background-clip: text
-  -webkit-text-fill-color: transparent
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -30825,14 +30811,10 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
-  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite
-  animation-delay: 120ms, 0s
-  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite>
-  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite>
-  background: linear-gradient( 100deg, #241a16 20%, #b31a54 40%, #1f7a52 60%, #241a16 80% )
-  background-clip: text
-  background-image: <background: linear-gradient( 100deg, #241a16 20%, #b31a54 40%, #1f7a52 60%, #241a16 80% )>
-  background-size: 200% auto
+  animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards
+  animation-delay: 120ms
+  animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   box-sizing: border-box
   color: #241a16
   font-family: 'Clash Grotesk', system-ui, sans-serif
@@ -30883,15 +30865,9 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
-  color: #241a16
-  font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif
-  font-size: 1.12em
-  font-style: italic
-  font-weight: 400
-  letter-spacing: -0.01em
   margin: 0
   margin-bottom: <margin: 0>
-  margin-left: 0.26em
+  margin-left: <margin: 0>
   margin-top: <margin: 0>
   padding: 0
   padding-bottom: <padding: 0>
@@ -42002,14 +41978,9 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  font-family: 'Instrument Serif', Georgia, 'Times New Roman', serif
-  font-size: 1.12em
-  font-style: italic
-  font-weight: 400
-  letter-spacing: -0.01em
   margin: 0
   margin-bottom: <margin: 0>
-  margin-left: 0.26em
+  margin-left: <margin: 0>
   margin-top: <margin: 0>
   padding: 0
   padding-bottom: <padding: 0>
@@ -42803,9 +42774,9 @@
   padding: 20px 16px 8px
   padding-bottom: <padding: 20px 16px 8px>
   padding-left: <padding: 20px 16px 8px>
-  - padding: 24px 24px 16px
-  - padding-bottom: <padding: 24px 24px 16px>
-  - padding-left: <padding: 24px 24px 16px>
+  - padding: 24px 24px 56px
+  - padding-bottom: <padding: 24px 24px 56px>
+  - padding-left: <padding: 24px 24px 56px>
 
 [359] div.chat-toolbar
   padding: 0 16px 8px
@@ -42847,9 +42818,9 @@
   padding: 20px 16px 8px
   padding-bottom: <padding: 20px 16px 8px>
   padding-left: <padding: 20px 16px 8px>
-  - padding: 24px 24px 16px
-  - padding-bottom: <padding: 24px 24px 16px>
-  - padding-left: <padding: 24px 24px 16px>
+  - padding: 24px 24px 56px
+  - padding-bottom: <padding: 24px 24px 56px>
+  - padding-left: <padding: 24px 24px 56px>
 
 [765] div.chat-toolbar
   padding: 0 16px 8px
@@ -43063,9 +43034,9 @@
   padding: 16px 12px 8px
   padding-bottom: <padding: 16px 12px 8px>
   padding-left: <padding: 16px 12px 8px>
-  - padding: 24px 24px 16px
-  - padding-bottom: <padding: 24px 24px 16px>
-  - padding-left: <padding: 24px 24px 16px>
+  - padding: 24px 24px 56px
+  - padding-bottom: <padding: 24px 24px 56px>
+  - padding-left: <padding: 24px 24px 56px>
 
 [219] svg.sakura-torii
   display: none
@@ -43373,9 +43344,9 @@
   padding: 16px 12px 8px
   padding-bottom: <padding: 16px 12px 8px>
   padding-left: <padding: 16px 12px 8px>
-  - padding: 24px 24px 16px
-  - padding-bottom: <padding: 24px 24px 16px>
-  - padding-left: <padding: 24px 24px 16px>
+  - padding: 24px 24px 56px
+  - padding-bottom: <padding: 24px 24px 56px>
+  - padding-left: <padding: 24px 24px 56px>
 
 [625] svg.sakura-torii
   display: none
@@ -46209,8 +46180,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite>
-  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite>
+  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
 
 [231] span.empty-title-accent
   ::after/animation-duration: 0.01ms
@@ -50862,8 +50833,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite>
-  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards, shimmerMove 5s linear infinite>
+  - animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  - animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
 
 [637] span.empty-title-accent
   ::after/animation-duration: 0.01ms
@@ -53728,7 +53699,6 @@ overlayUp: from { opacity: 0; transform: translateY(14px); } to { opacity: 1; tr
 panelIn: from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity: 1; }
 petalFall: 0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(0deg) scale(var(--petal-scale)); } 12% { opacity: 0.75; } 70% { opacity: 0.4; } 100% { opacity: 0; transform: translate3d(var(--petal-drift), var(--petal-fall), 0) rotate(var(--petal-spin)) scale(var(--petal-scale)); }
 scrollDownIn: from { opacity: 0; transform: translateX(-50%) translateY(6px); } to { opacity: 1; transform: translateX(-50%) translateY(0); }
-shimmerMove: 0% { background-position: 200% center; } 100% { background-position: -200% center; }
 signinFadeIn: from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); }
 skeletonShimmer: 0% { background-position: 200% 0; } 100% { background-position: -200% 0; }
 stopPulse: 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); } 50% { box-shadow: 0 0 0 7px transparent; }
@@ -53758,8 +53728,8 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --emerald-dim: rgba(111, 211, 166, 0.12)
   --emerald-glow: rgba(111, 211, 166, 0.18)
   --emerald-soft: #94e2be
+  --fade-bottom: 56px
   --font-body: 'Switzer', system-ui, sans-serif
-  --font-display-serif: 'Instrument Serif', Georgia, 'Times New Roman', serif
   --font-heading: 'Clash Grotesk', system-ui, sans-serif
   --font-mono: 'JetBrains Mono', ui-monospace, monospace
   --frame-inset: 0px
@@ -53857,8 +53827,8 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --emerald-dim: rgba(31, 122, 82, 0.10)
   --emerald-glow: rgba(31, 122, 82, 0.14)
   --emerald-soft: #3f9670
+  --fade-bottom: 56px
   --font-body: 'Switzer', system-ui, sans-serif
-  --font-display-serif: 'Instrument Serif', Georgia, 'Times New Roman', serif
   --font-heading: 'Clash Grotesk', system-ui, sans-serif
   --font-mono: 'JetBrains Mono', ui-monospace, monospace
   --frame-inset: 0px

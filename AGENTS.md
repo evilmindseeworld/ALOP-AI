@@ -180,7 +180,12 @@ production. See the trap below.
    browser is now done and guarded — see the checklist below for what is
    left. Still the largest remaining item and the only one carrying legal
    exposure.
-2. **`users` has no index on `email`, `stripe_customer_id` or
+2. **Cross-chat memory — see `docs/MEMORY-AND-CACHE-PLAN.md`.** `user_facts`
+   is in production with a `vector(1536)` column and zero references anywhere
+   in this repo, and there is **no embedding provider in the codebase at all**
+   — no call to any embeddings endpoint exists, so that dimension is inherited,
+   not chosen. Phase 1 needs neither. Do not start with the vector part.
+3. **`users` has no index on `email`, `stripe_customer_id` or
    `stripe_subscription_id`**, which the Stripe webhook probes. Sequential
    scans, free at 2 rows. Watch webhook latency, not row count.
 

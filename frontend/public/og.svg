@@ -48,8 +48,12 @@
     <image id="mark" x="80" y="70" width="63" height="104" href="" xlink:href=""/>
     <text x="163" y="133" fill="#f5f1ee" font-size="32" font-weight="700" letter-spacing="-0.6">ALOP-AI</text>
 
-    <text x="80" y="272" fill="#f5f1ee" font-size="76" font-weight="700" letter-spacing="-2">Seven answers.</text>
-    <text x="80" y="352" fill="#f08aa3" font-size="76" font-weight="700" letter-spacing="-2">One reply.</text>
+    <!-- Not "Seven answers. One reply." The count-then-contrast rhythm reads as
+         generated, and the number was wrong for most readers anyway: the roster
+         is three seats free and seven on pro. This says what the product is
+         instead of how it is built. -->
+    <text x="80" y="272" fill="#f5f1ee" font-size="76" font-weight="700" letter-spacing="-2">All your AI</text>
+    <text x="80" y="352" fill="#f08aa3" font-size="76" font-weight="700" letter-spacing="-2">in one place.</text>
 
     <text x="80" y="418" fill="#b8b3ae" font-size="26">They disagree on purpose. You get what they agreed on &#8212;</text>
     <text x="80" y="454" fill="#b8b3ae" font-size="26">and where they didn&#8217;t.</text>

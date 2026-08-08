@@ -36,6 +36,7 @@ import UpgradePanel from "./components/panels/UpgradePanel";
 const MessageList = lazy(() => import("./components/MessageList"));
 const OverlayAssistant = lazy(() => import("./overlay/OverlayAssistant"));
 
+import { COUNCIL, FREE_COUNT } from "./constants/council";
 import { useApi } from "./lib/api";
 import { Storage } from "./lib/storage";
 import { fileToDataUrl } from "./lib/image";
@@ -447,7 +448,10 @@ const AuthenticatedApp = () => {
                 solid zero-width default that only ui-reset.css supplies here —
                 without it the badge renders with no border at all. */}
             <Badge variant="secondary" data-ui-scope="" className="hidden shrink-0 sm:inline-flex">
-              {billing.userPlan === "pro" ? "7 models" : "4 models"}
+              {/* Counted from the roster, never typed. This was a hardcoded pair of
+                  digits that claimed one more free seat than COUNCIL has, and it
+                  stayed wrong silently because nothing reads a literal. */}
+              {billing.userPlan === "pro" ? `${COUNCIL.length} models` : `${FREE_COUNT} models`}
             </Badge>
           </div>
 

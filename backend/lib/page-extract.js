@@ -96,4 +96,91 @@ function extractPageSignal(raw, { headChars = 2500, maxLines = 20, maxChars = 40
   return block.slice(0, maxChars);
 }
 
-module.exports = { extractPageSignal, hasPrice };
+/**
+ * Which of the search results are worth spending a full page read on.
+ *
+ * THE BUG THIS FIXES, from a real answer the app produced: asked for monitors
+ * under 2,500 AED it returned five monitors and no prices, and told the user to
+ * go check the shops itself. `extractPageSignal` was working; it was handed the
+ * wrong page. The one page the app read was `sources[0]`, and for a shopping
+ * question the top result is a CATEGORY listing — `carrefouruae.com/.../c/NF4070600`,
+ * `amazon.ae/b?node=...`, a PCMag roundup. Those pages carry no price in their
+ * markup at all; the prices are painted in by JavaScript after load. So the
+ * reader got nav, found no price lines, and the council answered honestly that
+ * it had none.
+ *
+ * Two changes, both here:
+ *
+ * 1. Read more than one page. The read is on a deadline and runs concurrently,
+ *    so three reads cost the same wall clock as one.
+ * 2. Prefer a PRODUCT page over a LISTING page. A product URL states a price in
+ *    server-rendered markup because that is what the page is for; a listing URL
+ *    is a query against a catalogue. The two are distinguishable from the URL
+ *    alone — `/dp/`, `/p/`, `/product/` against `/c/`, `?node=`, `/search`.
+ *
+ * A heuristic on the URL, not a fetch-and-see: deciding what to read cannot
+ * itself cost a read. It is allowed to be wrong — being wrong costs one page of
+ * the three, where before it cost the only page.
+ */
+
+/**
+ * URL shapes that mean "one thing, with a price on it" — stated explicitly by
+ * the retailer's own routing. These are worth more than any guess from the text
+ * of the URL.
+ */
+const PRODUCT_PATH = /\/(?:dp|gp\/product|p|product|products|item|itm|pd|prd|buy)\//i;
+
+/**
+ * A long hyphenated slug, which USUALLY means a single item's page — and
+ * sometimes means an article about many of them. `pcmag.com/en/monitors/13584/
+ * the-best-computer-monitors-in-the-uae` is a roundup with no prices in it, and
+ * when this scored the same as `/dp/`, that roundup won the tie and got read
+ * instead of the Amazon listing. So it is a weak signal on purpose: enough to
+ * beat a bare category page, never enough to outrank an explicit product path.
+ */
+const PRODUCT_SLUG = /\/[a-z0-9]+(?:-[a-z0-9]+){3,}(?:\/|$|\?)/i;
+
+/** URL shapes that mean "a query against a catalogue", which renders client-side. */
+const LISTING_PATH = /\/(?:c|category|categories|collections?|shop|browse|search|s|b|department|deals)(?:\/|$|\?)|[?&](?:node|category|cat|q|k|search|page|filter)=/i;
+
+/**
+ * @param {string} url
+ * @returns {number}  higher reads first
+ */
+function readPriority(url) {
+  const u = typeof url === "string" ? url : "";
+  if (!u) return -1;
+  let score = 0;
+  if (PRODUCT_PATH.test(u)) score += 3;
+  else if (PRODUCT_SLUG.test(u)) score += 1;
+  // Not `else`: a URL can carry both — `/product/x?page=2` is still a product
+  // page. The listing penalty is smaller than the product bonus on purpose, so
+  // the combination stays ahead of a bare listing.
+  if (LISTING_PATH.test(u)) score -= 1;
+  return score;
+}
+
+/**
+ * @param {Array<{url: string}>} sources
+ * @param {object} [opts]
+ * @param {number} [opts.limit]  how many pages the caller will actually read
+ * @returns {string[]}  URLs, best first, deduplicated
+ */
+function rankReadTargets(sources, { limit = 3 } = {}) {
+  const seen = new Set();
+  return (Array.isArray(sources) ? sources : [])
+    .map((s, i) => ({ url: s && s.url, i }))
+    .filter(({ url }) => {
+      if (typeof url !== "string" || !url.startsWith("http")) return false;
+      if (seen.has(url)) return false;
+      seen.add(url);
+      return true;
+    })
+    // Provider rank breaks ties, so with no price signal at all this degrades
+    // to exactly the old behaviour — the top result, first.
+    .sort((a, b) => readPriority(b.url) - readPriority(a.url) || a.i - b.i)
+    .slice(0, Math.max(0, limit))
+    .map(({ url }) => url);
+}
+
+module.exports = { extractPageSignal, hasPrice, rankReadTargets, readPriority };

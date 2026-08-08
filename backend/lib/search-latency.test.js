@@ -36,7 +36,22 @@ test("the warm read is only used for the page that would have been read anyway",
   // sorts first. Using a warm read for a DIFFERENT url would quietly swap which
   // page the answer is grounded in — a correctness change disguised as a speed
   // one.
-  assert.match(BLOCK, /warm\.url === top/);
+  // The read target is now chosen by rankReadTargets rather than being
+  // `sources[0]`, so the variable is the url under consideration — but the
+  // invariant is unchanged and is the reason the check is still here.
+  assert.match(BLOCK, /warm\.url === url/);
+});
+
+test("more than one page is read, and the reads share one deadline", () => {
+  // One page was not enough: `sources[0]` on a shopping question is a category
+  // listing whose prices are painted in by JavaScript, so the read returned
+  // navigation and the answer told the user to go and check the shops itself.
+  // Reading three costs the same wall clock ONLY while they stay inside a
+  // single settleByDeadline — a loop that awaits each read in turn would make
+  // the deep read three times as slow with no error to show for it.
+  assert.match(BLOCK, /rankReadTargets\(sources/);
+  const readBlock = BLOCK.slice(BLOCK.indexOf("rankReadTargets(sources"));
+  assert.doesNotMatch(readBlock.slice(0, 600), /for\s*\(|forEach\([^)]*await|await\s+readPageContent/);
 });
 
 test("the fan-out still stops at its deadline when a provider never answers", () => {

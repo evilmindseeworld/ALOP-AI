@@ -107,3 +107,46 @@ test("empty and malformed input returns an empty string, never throws", () => {
 test("a short page is returned whole", () => {
   assert.equal(extractPageSignal("Just this."), "Just this.");
 });
+
+/* THE URLS BELOW ARE THE REAL ONES from the answer that failed: asked for
+ * monitors under 2,500 AED, the app read `sources[0]` and `sources[0]` was a
+ * Carrefour CATEGORY page. Its prices are painted in by JavaScript, so the read
+ * came back as navigation and the answer said no price was shown. */
+const { rankReadTargets, readPriority } = require('./page-extract');
+
+test('readPriority puts product pages above the category pages that broke this', () => {
+  const category = 'https://www.carrefouruae.com/mafuae/en/c/NF4070600';
+  const amazonNode = 'https://www.amazon.ae/Desktop-and-Monitors/b?ie=UTF8&node=15387140031';
+  const product = 'https://www.amazon.ae/dp/B0CX23V2ZK';
+  const slugProduct = 'https://uae.sharafdg.com/product/lg-ultrawide-29wq600-w-monitor/';
+
+  assert.ok(readPriority(product) > readPriority(category));
+  assert.ok(readPriority(slugProduct) > readPriority(amazonNode));
+});
+
+test('rankReadTargets returns product pages first, capped, deduplicated', () => {
+  const sources = [
+    { url: 'https://www.carrefouruae.com/mafuae/en/c/NF4070600' },
+    { url: 'https://me.pcmag.com/en/monitors/13584/the-best-computer-monitors-in-the-uae' },
+    { url: 'https://www.amazon.ae/dp/B0CX23V2ZK' },
+    { url: 'https://www.amazon.ae/dp/B0CX23V2ZK' },
+    { url: 'https://uae.microless.com/monitors/' },
+  ];
+  const picked = rankReadTargets(sources, { limit: 3 });
+  assert.equal(picked.length, 3);
+  assert.equal(picked[0], 'https://www.amazon.ae/dp/B0CX23V2ZK');
+  assert.equal(new Set(picked).size, picked.length);
+});
+
+test('rankReadTargets degrades to the old behaviour when nothing scores', () => {
+  // No product URLs at all: provider order must be preserved, so this is
+  // strictly no worse than reading sources[0].
+  const sources = [{ url: 'https://a.com/news' }, { url: 'https://b.com/news' }];
+  assert.deepEqual(rankReadTargets(sources, { limit: 3 }), ['https://a.com/news', 'https://b.com/news']);
+});
+
+test('rankReadTargets refuses anything that is not an http URL', () => {
+  const sources = [{ url: 'javascript:alert(1)' }, { url: null }, {}, { url: 'https://ok.com/dp/1' }];
+  assert.deepEqual(rankReadTargets(sources, { limit: 3 }), ['https://ok.com/dp/1']);
+  assert.deepEqual(rankReadTargets(null), []);
+});

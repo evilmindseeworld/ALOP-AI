@@ -180,12 +180,12 @@ production. See the trap below.
    browser is now done and guarded — see the checklist below for what is
    left. Still the largest remaining item and the only one carrying legal
    exposure.
-2. **`PERPLEXITY_API_KEY` is not set in Render.** The provider ships and is
-   inert without it — the boot banner's `P=` says which. Sonar is the only
-   source that returns a written cited answer rather than links, so this is
-   one dashboard field between the product and materially better answers on
-   market-research and news questions. `PERPLEXITY_MODEL` is optional and
-   defaults to `sonar`.
+2. **`SERPER_API_KEY` is not set in Render, and `PERPLEXITY_API_KEY` may not
+   be either.** Both providers ship inert without their key; the boot banner's
+   `P=` and `S=` say which. Serper is the price provider — see "Prices are a
+   data problem" below — and without it the app is back to reading prices out
+   of markdown. `PERPLEXITY_MODEL` is optional and defaults to `sonar`;
+   `PAGE_READ_LIMIT` is optional and defaults to 3.
 3. **`users` has no index on `email`, `stripe_customer_id` or
    `stripe_subscription_id`**, which the Stripe webhook probes. Sequential
    scans, free at 2 rows. Watch webhook latency, not row count.
@@ -230,6 +230,44 @@ themes.
       our accessibility obligation regardless of who wrote it.
 
 ### Closed since the last handoff
+
+- **Prices are a data problem, not a reading problem.** Asked for monitors
+  under 2,500 AED, the app named five monitors, gave no price for any of them,
+  and told the user to go and check the shops. Nothing had thrown. Three causes,
+  all now fixed:
+
+  1. **One page was read, and it was the wrong one.** The deep read was
+     `sources[0]`, and on a shopping question the top web result is a CATEGORY
+     listing — `carrefouruae.com/.../c/NF4070600`, `amazon.ae/b?node=...`, a
+     PCMag roundup. Those pages hold no price in their markup at all; it is
+     painted in by JavaScript after load. `rankReadTargets` (page-extract.js)
+     now scores URLs and reads `PAGE_READ_LIMIT` (3) of them, product-shaped
+     first. The reads share ONE `settleByDeadline`, so three cost the wall
+     clock of the slowest, not the sum — a loop that awaited each in turn would
+     triple the latency of the deep read with nothing to show it.
+     A long hyphenated slug scores 1 and an explicit `/dp/`-style path scores
+     3, deliberately: the PCMag roundup has a slug, and when they scored equal
+     the roundup won the tie and got read instead of the Amazon product page.
+  2. **No provider returned a price as data.** All five web providers return
+     links and prose. Google Shopping holds the price as a field, and
+     `lib/shopping.js` reads it through Serper. Gated by `isShoppingQuery` —
+     Serper bills per query and "who won the election" needs no price check —
+     and the gate requires a product word AND a money word, because either
+     alone matches "the price of freedom" and "the monitor lizard".
+  3. **The search cache was not keyed by country.** It is now. Shopping results
+     are region-scoped, so without the country in the key whoever asked first
+     decides what everyone else is told a thing costs — and the answer looks
+     entirely normal while doing it.
+
+  Two rules in there that are not obvious and should not be "tidied":
+  **prices are never parsed into numbers** (picking a currency wrongly turns
+  1,899 dirhams into 1,899 dollars silently, and the council can read a
+  currency but cannot recover a discarded one), and **the prompt block states
+  its own coverage limits** (Google Shopping is thin outside the US and EU; a
+  model handed a short list with no caveat describes it as the market).
+  `enough` in the fan-out also refuses to resolve while a shopping lookup is
+  outstanding — on a price question the eight links are precisely the part
+  that already failed the user.
 
 - **Cross-chat memory ships.** `user_facts` was a table in production with a
   `vector(1536)` column and zero references anywhere in the repo; it is now

@@ -393,7 +393,14 @@ const { buildRegistry } = require('./lib/tool-registry');
 const { runAgentLoop } = require('./lib/agent-loop');
 const { assertSafeUrl } = require('./lib/url-guard');
 const { checkLinks } = require('./lib/link-check');
-const { extractPageSignal } = require('./lib/page-extract');
+const { extractPageSignal, rankReadTargets } = require('./lib/page-extract');
+const { searchShopping, formatShopping, isShoppingQuery } = require('./lib/shopping');
+const SERPER_API_KEY = process.env.SERPER_API_KEY || '';
+/* How many search results get a full page read. Three, because one was not
+ * enough to find a price and the reads are concurrent under a shared deadline,
+ * so the wall clock is the slowest read either way. Each read is a Jina call,
+ * which is the reason this is a number and not "all of them". */
+const PAGE_READ_LIMIT = Number(process.env.PAGE_READ_LIMIT) || 3;
 const { settleByDeadline } = require('./lib/deadline');
 const { todayLine, freshnessWindow, normalizeDate, dateLabel, BRAVE_FRESHNESS, GOOGLE_DATE_RESTRICT } = require('./lib/recency');
 const { parseSearchPlan } = require('./lib/search-plan');
@@ -510,7 +517,7 @@ const toolSearch = async (query) => {
 };
 
 // ===== COMPREHENSIVE SEARCH =====
-const comprehensiveSearch = async (query, needsWiki, fresh = null) => {
+const comprehensiveSearch = async (query, needsWiki, fresh = null, region = null) => {
   /* The freshness window is part of the cache KEY, not just the request.
    *
    * Two questions can produce the same search query text and want different
@@ -518,7 +525,14 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null) => {
    * Keying on the text alone would serve the year-wide result set to the
    * question that asked for today, which is the exact staleness this change
    * exists to remove, reintroduced by the cache. */
-  const cacheKey = `${comprehensiveSearchKey(query, needsWiki)}:${fresh ? fresh.label : 'any'}`;
+  /* THE COUNTRY IS PART OF THE KEY.
+   *
+   * Shopping results are region-scoped — the same query run for AE and US
+   * returns different merchants in different currencies. Without the country
+   * here, whoever asked first decides what everyone else is told a thing costs,
+   * and the failure is invisible because the answer looks fine. */
+  const gl = region && region.country ? String(region.country).toLowerCase() : '';
+  const cacheKey = `${comprehensiveSearchKey(query, needsWiki)}:${fresh ? fresh.label : 'any'}:${gl || 'nogeo'}`;
   const cached = await getCachedSearch(cacheKey); if (cached) return cached;
 
   /* THE SEARCH WHIP, and it is the same idea runCouncilWithWhip already uses
@@ -566,7 +580,8 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null) => {
     if (url) warm = { url, content: readPageContent(url) };
   }).catch(() => {});
 
-  const { results: [tavilyResult, braveResults, googleResults, googleImages, wikiContent, pplxResult], waited, pending } =
+  const wantsShopping = !!SERPER_API_KEY && isShoppingQuery(query);
+  const { results: [tavilyResult, braveResults, googleResults, googleImages, wikiContent, pplxResult, shopResult], waited, pending } =
     await settleByDeadline(
       [
         { promise: tavilyP, fallback: { answer: '', results: [], images: [] } },
@@ -579,6 +594,15 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null) => {
         // positions — a provider added in the middle silently reassigns every
         // result after it.
         { promise: searchPerplexity(query, fresh), fallback: { answer: '', results: [] } },
+        /* Shopping, and only when the question is about buying something.
+         * Serper bills per query, and "who won the election" does not need a
+         * price check. isShoppingQuery is the gate; see lib/shopping.js. */
+        {
+          promise: SERPER_API_KEY && isShoppingQuery(query)
+            ? searchShopping(query, { apiKey: SERPER_API_KEY, region: gl })
+            : Promise.resolve({ results: [] }),
+          fallback: { results: [] },
+        },
       ],
       {
         deadlineMs: 3500,
@@ -590,9 +614,16 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null) => {
         //
         // Requiring two providers is also what makes the results diverse, which
         // is the reason for having five of them at all.
-        enough: ([tav, brave, google]) => {
+        enough: (results) => {
+          const [tav, brave, google] = results;
           const counts = [tav && tav.results ? tav.results.length : 0, brave?.length || 0, google?.length || 0];
           const reporting = counts.filter((n) => n > 0).length;
+          /* Volume from the web providers must NOT cut off a shopping lookup
+           * that is still running. On a price question the eight links are the
+           * part that already failed the user — the listing carrying an actual
+           * number is the whole reason the query was asked. Waiting for it is
+           * bounded by the same 3.5s deadline as everything else. */
+          if (wantsShopping && !(results[6] && results[6].results && results[6].results.length)) return false;
           return reporting >= 2 && counts.reduce((a, b) => a + b, 0) >= 8;
         },
       },
@@ -628,11 +659,9 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null) => {
       pplx.results.forEach((r) => { if (r.url && !sources.find((s) => s.url === r.url)) sources.push({ title: r.title || r.url, url: r.url, date: r.date || '' }); });
     }
   }
-  // The full read of the top result, on a leash. It used to be an unbounded
-  // await after the fan-out had already finished — so a slow page added its own
-  // six seconds on top of the search, in series, for a nice-to-have. It is
-  // extra depth on one source; the snippets already carry the answer often
-  // enough that waiting is the wrong trade.
+  // The deep read, on a leash. It used to be an unbounded await after the
+  // fan-out had already finished — so a slow page added its own six seconds on
+  // top of the search, in series, for a nice-to-have.
   //
   // It is no longer serial in the common case: the read is started speculatively
   // on Tavily's top result as soon as Tavily answers, so by the time control
@@ -640,11 +669,40 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null) => {
   // remaining wait is what is left of the 2.5s rather than all of it. `warm`
   // only counts when it is the SAME page this block was going to read anyway —
   // otherwise the read happens cold, exactly as it did before.
+  /* SHOPPING GOES IN BEFORE THE PAGE READS, and that ordering is the point.
+   *
+   * Its listings are merchant PRODUCT pages — precisely the URLs the reader
+   * wants and the ones a web search buries under category pages. Pushing them
+   * into `sources` here puts them in front of rankReadTargets below, so the
+   * deep read lands on a page that states a price in its markup instead of one
+   * that paints it in with JavaScript. Placed after the other providers so it
+   * never displaces their results as the cited leaders, only joins them. */
+  const shop = shopResult && Array.isArray(shopResult.results) ? shopResult.results : [];
+  if (shop.length) {
+    ctx += `${formatShopping(shop, { asOf: new Date().toISOString().slice(0, 10) })}\n\n---\n\n`;
+    shop.forEach((r) => { if (r.url && !sources.find((s) => s.url === r.url)) sources.push({ title: r.title || r.source || r.url, url: r.url, date: '' }); });
+  }
+  //
+  // THREE pages, not one, and not necessarily the top one. `sources[0]` on a
+  // shopping question is a category listing whose prices are painted in by
+  // JavaScript, so the read returned nav and the answer said no price was
+  // shown. rankReadTargets prefers product-shaped URLs and falls back to
+  // provider order when nothing scores — see lib/page-extract.js. The reads run
+  // concurrently under ONE deadline, so three cost the wall clock of the
+  // slowest, not the sum.
   if (sources.length > 0) {
-    const top = sources[0].url;
-    const read = warm && warm.url === top ? warm.content : readPageContent(top);
-    const { results: [pc] } = await settleByDeadline([{ promise: read, fallback: '' }], { deadlineMs: 2500 });
-    if (pc && pc.length > 200) ctx += `FULL PAGE (${top}):\n${pc}\n\n---\n\n`;
+    const targets = rankReadTargets(sources, { limit: PAGE_READ_LIMIT });
+    const reads = targets.map((url) => ({
+      url,
+      promise: warm && warm.url === url ? warm.content : readPageContent(url),
+    }));
+    const { results } = await settleByDeadline(
+      reads.map((r) => ({ promise: r.promise, fallback: '' })),
+      { deadlineMs: 2500 },
+    );
+    results.forEach((pc, i) => {
+      if (typeof pc === 'string' && pc.length > 200) ctx += `FULL PAGE (${reads[i].url}):\n${pc}\n\n---\n\n`;
+    });
   }
   if (allImages.length > 0) { const unique = [...new Set(allImages)].slice(0,5); ctx += `IMAGES:\n${unique.map((u,i) => `IMAGE ${i+1}: ${u}`).join('\n')}\n\n---\n\n`; }
   const found = sources.length > 0 || !!wikiContent || !!td.answer || !!pplx.answer;
@@ -1382,7 +1440,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
        * halves of one question — asking twice pays a second round trip for the
        * same article. */
       const perQuery = await Promise.all(
-        searchQueries.map((q, i) => comprehensiveSearch(q, shouldCheckWiki && i === 0, fresh)),
+        searchQueries.map((q, i) => comprehensiveSearch(q, shouldCheckWiki && i === 0, fresh, region)),
       );
 
       /* Merged on URL, because two queries about one subject overlap heavily
@@ -2197,7 +2255,7 @@ const server = app.listen(PORT, () => {
   console.log(`\n╔════════════════════════════════════════════╗`);
   console.log(`║  ALOP-AI PRECISION BACKEND                  ║`);
   console.log(`║  Port: ${PORT} | Council: ${COUNCIL.length} pro / ${FREE_COUNCIL.length} free      ║`);
-  console.log(`║  T=${TAVILY_API_KEY?'ON':'OFF'} B=${BRAVE_API_KEY?'ON':'OFF'} G=${GOOGLE_SEARCH_API_KEY&&GOOGLE_CSE_ID?'ON':'OFF'} J=${JINA_API_KEY?'ON':'OFF'} P=${PERPLEXITY_API_KEY?'ON':'OFF'} Wiki=ON  ║`);
+  console.log(`║  T=${TAVILY_API_KEY?'ON':'OFF'} B=${BRAVE_API_KEY?'ON':'OFF'} G=${GOOGLE_SEARCH_API_KEY&&GOOGLE_CSE_ID?'ON':'OFF'} J=${JINA_API_KEY?'ON':'OFF'} P=${PERPLEXITY_API_KEY?'ON':'OFF'} S=${SERPER_API_KEY?'ON':'OFF'} Wiki=ON  ║`);
   console.log(`║  Memory: Supabase | Quick + Feedback        ║`);
   console.log(`╚════════════════════════════════════════════╝`);
   // Printed unconditionally, including when it is off. A feature flag that is

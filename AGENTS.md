@@ -212,7 +212,11 @@ fixed width above 320px), and the palette's focus trap. None of that proves
 the list below. Work through it in a browser at 320px and at desktop, in both
 themes.
 
-- [ ] **Contrast as RENDERED, not as declared.** The tokens pass in isolation.
+- [x] **Contrast as RENDERED, not as declared.** DONE 2026-08-08, by hiding
+      every string, screenshotting the live page and sampling the pixels
+      underneath. 43 of 44 pass. The one failure was Clerk's primary button —
+      white on the pink gradient, 1.86:1 — now `--text-on-fill` on a gradient
+      ending at `--primary-strong`. Guarded by `contrast.test.js`. ORIGINAL: The tokens pass in isolation.
       What is unverified is text over `--gradient-warm`, over the sakura
       decoration, and the `.signin-orb` bleed — a gradient has no single
       background colour and no static check can pick one. DevTools' contrast
@@ -223,20 +227,28 @@ themes.
 - [ ] **Tab order matches reading order** through: header, sidebar, chat rows,
       composer, panels. Especially the composer, where the buttons are
       visually reordered on mobile.
-- [ ] **Keyboard-only run of the core flow.** Send a message, rename a chat,
+- [ ] **Keyboard-only run of the core flow.** STILL OPEN — behind sign-in,
+      so it needs a real session. Send a message, rename a chat,
       delete a chat, open and close each panel. Anything reachable only by
       pointer is a failure.
-- [ ] **320px reflow, in a real window.** The static guard cannot see a long
+- [x] **320px reflow, in a real window.** DONE 2026-08-08: `scrollWidth` equals
+      the 320px viewport, no clipped text, and every element past the right
+      edge is a decorative orb or sakura path carrying no text. ORIGINAL: The static guard cannot see a long
       unbreakable string, a code block, or a flex row that refuses to wrap.
       NOTE: `body { overflow: hidden }` means anything that does overflow is
       CLIPPED AND UNREACHABLE rather than scrollable — the worst failure mode
       for 1.4.10, so look for cut-off content, not for a scrollbar.
-- [ ] **200% browser zoom** — a separate criterion (1.4.4) that the 320px pass
+- [x] **200% browser zoom** DONE 2026-08-08 at a 640px-wide viewport: zero
+      text nodes outside a reachable container. ORIGINAL: — a separate criterion (1.4.4) that the 320px pass
       does not cover.
-- [ ] **A screen reader on the transcript.** NVDA or VoiceOver. Streaming
+- [ ] **A screen reader on the transcript.** STILL OPEN — needs NVDA or
+      VoiceOver and a signed-in session; no automation substitutes for it. NVDA or VoiceOver. Streaming
       answers are the risk: does new text get announced, and is it announced
       once rather than re-reading the whole message on every token?
-- [ ] **`prefers-reduced-motion`.** Nine blocks honour it; confirm the anime.js
+- [x] **`prefers-reduced-motion`.** DONE 2026-08-08, and the suspicion in the
+      original note was correct — neither `animate()` call honoured it, because
+      anime.js writes inline styles and a media query cannot reach those. Both
+      guarded, `reducedMotion.test.js`. ORIGINAL: Nine blocks honour it; confirm the anime.js
       animations in App.jsx do too, since those are driven from JS and a media
       query in CSS does not reach them.
 - [ ] **Clerk's own sign-in form.** Third-party markup inside our page, and

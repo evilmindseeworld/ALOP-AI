@@ -280,8 +280,8 @@
    * otherwise-static children. They order the decoration against the content
    * and are not comparable with the root scale — same status as
    * --z-sticky-label above. */
-  --z-empty-decor: 0;   /* .sakura-frame, .empty-state::after            */
-  --z-empty-content: 1; /* everything else in .empty-state              */
+  --z-empty-decor: 0;   /* .sakura-frame, .chat-main::after (lattice)    */
+  --z-empty-content: 1; /* .chat-content, and .empty-state's own children */
   /* .signin-root. Not comparable with the scale above and excluded from it for
    * a different reason than the others: the sign-in page renders INSTEAD of the
    * app, never over it, so there is nothing for it to be above. The value only

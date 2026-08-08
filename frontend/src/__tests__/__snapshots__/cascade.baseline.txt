@@ -6931,6 +6931,18 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/-webkit-mask-image: radial-gradient(86% 70% at 50% 50%, transparent 42%, #000 100%)
+  ::after/background-image: repeating-linear-gradient(60deg, transparent 0 27px, color-mix(in srgb, #f08aa3 8%, transparent) 27px 28px), repeating-linear-gradient(-60deg, transparent 0 27px, color-mix(in srgb, #f08aa3 8%, transparent) 27px 28px), repeating-linear-gradient(0deg, transparent 0 47px, color-mix(in srgb, #f08aa3 6%, transparent) 47px 48px)
+  ::after/bottom: <inset: 0>
+  ::after/content: ""
+  ::after/inset: 0
+  ::after/left: <inset: 0>
+  ::after/mask-image: radial-gradient(86% 70% at 50% 50%, transparent 42%, #000 100%)
+  ::after/pointer-events: none
+  ::after/position: absolute
+  ::after/right: <inset: 0>
+  ::after/top: <inset: 0>
+  ::after/z-index: 0
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
   ::selection/background-image: <background: #f08aa3>
@@ -10501,8 +10513,10 @@
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
+  position: relative
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
+  z-index: 1
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -10575,18 +10589,6 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
-  ::after/-webkit-mask-image: radial-gradient(72% 62% at 50% 50%, transparent 28%, #000 100%)
-  ::after/background-image: repeating-linear-gradient(60deg, transparent 0 27px, color-mix(in srgb, #f08aa3 8%, transparent) 27px 28px), repeating-linear-gradient(-60deg, transparent 0 27px, color-mix(in srgb, #f08aa3 8%, transparent) 27px 28px), repeating-linear-gradient(0deg, transparent 0 47px, color-mix(in srgb, #f08aa3 6%, transparent) 47px 48px)
-  ::after/bottom: <inset: 0>
-  ::after/content: ""
-  ::after/inset: 0
-  ::after/left: <inset: 0>
-  ::after/mask-image: radial-gradient(72% 62% at 50% 50%, transparent 28%, #000 100%)
-  ::after/pointer-events: none
-  ::after/position: absolute
-  ::after/right: <inset: 0>
-  ::after/top: <inset: 0>
-  ::after/z-index: 0
   ::before/display: none
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
@@ -26566,6 +26568,18 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/-webkit-mask-image: radial-gradient(86% 70% at 50% 50%, transparent 42%, #000 100%)
+  ::after/background-image: repeating-linear-gradient(60deg, transparent 0 27px, color-mix(in srgb, #b31a54 8%, transparent) 27px 28px), repeating-linear-gradient(-60deg, transparent 0 27px, color-mix(in srgb, #b31a54 8%, transparent) 27px 28px), repeating-linear-gradient(0deg, transparent 0 47px, color-mix(in srgb, #b31a54 6%, transparent) 47px 48px)
+  ::after/bottom: <inset: 0>
+  ::after/content: ""
+  ::after/inset: 0
+  ::after/left: <inset: 0>
+  ::after/mask-image: radial-gradient(86% 70% at 50% 50%, transparent 42%, #000 100%)
+  ::after/pointer-events: none
+  ::after/position: absolute
+  ::after/right: <inset: 0>
+  ::after/top: <inset: 0>
+  ::after/z-index: 0
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>
   ::selection/background-image: <background: #b31a54>
@@ -30136,8 +30150,10 @@
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
+  position: relative
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
+  z-index: 1
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
@@ -30210,18 +30226,6 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
-  ::after/-webkit-mask-image: radial-gradient(72% 62% at 50% 50%, transparent 28%, #000 100%)
-  ::after/background-image: repeating-linear-gradient(60deg, transparent 0 27px, color-mix(in srgb, #b31a54 8%, transparent) 27px 28px), repeating-linear-gradient(-60deg, transparent 0 27px, color-mix(in srgb, #b31a54 8%, transparent) 27px 28px), repeating-linear-gradient(0deg, transparent 0 47px, color-mix(in srgb, #b31a54 6%, transparent) 47px 48px)
-  ::after/bottom: <inset: 0>
-  ::after/content: ""
-  ::after/inset: 0
-  ::after/left: <inset: 0>
-  ::after/mask-image: radial-gradient(72% 62% at 50% 50%, transparent 28%, #000 100%)
-  ::after/pointer-events: none
-  ::after/position: absolute
-  ::after/right: <inset: 0>
-  ::after/top: <inset: 0>
-  ::after/z-index: 0
   ::before/display: none
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>

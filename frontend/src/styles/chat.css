@@ -23,6 +23,19 @@
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+  /* LIFTED ABOVE THE LATTICE, and this is not optional.
+   *
+   * `.chat-main::after` is positioned with z-index 0, and a positioned element
+   * paints in a later phase than static in-flow content however small its
+   * z-index is. Without this the hemp-leaf pattern renders ON TOP of the
+   * transcript instead of behind it.
+   *
+   * The empty state already had this exact fix — see `.empty-state >
+   * :not(.sakura-frame)` in decoration.css — and it is here for the same
+   * reason, now that the lattice covers the whole surface rather than one
+   * screen. */
+  position: relative;
+  z-index: var(--z-empty-content);
 }
 
 /* The transcript column is centred and capped, rather than stretched to the

@@ -200,6 +200,33 @@ const AuthenticatedApp = () => {
     }
   }, [activeMessages]);
 
+  /* A starter SEEDS the composer; it does not send.
+   *
+   * This was `onPickStarter={handleSend}`, which fired a finished question the
+   * user had not asked — click "Generate an image" and you were committed to a
+   * jellyfish. Now the card writes its opening fragment into the composer and
+   * puts the cursor after it, so the user finishes their own sentence.
+   *
+   * It goes through appendToControlledInput for the reason that file explains:
+   * the composer owns its text state, and assigning `.value` from outside React
+   * updates the pixels but not the state, so Send would post an empty message.
+   *
+   * The composer is cleared first. Clicking a second starter should replace the
+   * first fragment, not concatenate into "Why does Help me decide between ". */
+  const handlePickStarter = useCallback((starter) => {
+    const el = document.querySelector(".input-text");
+    if (!el) return;
+    const proto = Object.getPrototypeOf(el);
+    Object.getOwnPropertyDescriptor(proto, "value").set.call(el, "");
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    appendToControlledInput(el, starter.seed);
+    el.focus();
+    // Cursor after the seed rather than before it, so typing continues the
+    // sentence instead of prefixing it.
+    const end = el.value.length;
+    el.setSelectionRange?.(end, end);
+  }, []);
+
   // Delegated press feedback, so every primary button gets it without wiring.
   useEffect(() => {
     const onClick = (e) => {
@@ -632,7 +659,7 @@ const AuthenticatedApp = () => {
                   feedback={chat.feedback}
                   onCopy={(content) => navigator.clipboard.writeText(content)}
                   onFeedback={chat.submitFeedback}
-                  onPickStarter={handleSend}
+                  onPickStarter={handlePickStarter}
                 />
                 </Suspense>
               </div>

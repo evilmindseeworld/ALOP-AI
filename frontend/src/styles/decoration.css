@@ -103,7 +103,23 @@
  * over a gradient is the banding problem from base.css again — a REGULAR
  * pattern gives the gradient's steps an edge to align to. The grain layer sits
  * above this and breaks up what little it contributes. */
-.empty-state::after {
+/* IT NOW SPANS THE WHOLE TRANSCRIPT SURFACE, not just the empty state.
+ *
+ * This was `.empty-state::after`, so the lattice existed on the welcome screen
+ * and vanished the moment a conversation started — reported as "when there's a
+ * conversation all design goes away". The composer then sat on a plain band at
+ * the bottom of a decorated page, which read as the surface being cut off
+ * rather than continuing behind it.
+ *
+ * Moving it to `.chat-main` fixes both with one rule: the ground is continuous
+ * from the header to the bottom edge, the composer sits ON that ground instead
+ * of ending it, and a conversation keeps the texture the empty state had.
+ *
+ * `.chat-main` is already positioned (it is the --z-chat stacking context), so
+ * this needs no new positioning and cannot escape it. The mask below is what
+ * keeps it off the reading column, and it matters more here than it did on the
+ * empty state, because now there is prose in the middle at all times. */
+.chat-main::after {
   content: "";
   position: absolute;
   inset: 0;
@@ -113,9 +129,15 @@
     repeating-linear-gradient(60deg, transparent 0 27px, color-mix(in srgb, var(--primary) 8%, transparent) 27px 28px),
     repeating-linear-gradient(-60deg, transparent 0 27px, color-mix(in srgb, var(--primary) 8%, transparent) 27px 28px),
     repeating-linear-gradient(0deg, transparent 0 47px, color-mix(in srgb, var(--primary) 6%, transparent) 47px 48px);
-  /* Cleared from the middle, so it is never behind the reading column. */
-  -webkit-mask-image: radial-gradient(72% 62% at 50% 50%, transparent 28%, #000 100%);
-  mask-image: radial-gradient(72% 62% at 50% 50%, transparent 28%, #000 100%);
+  /* Cleared from the middle, so it is never behind the reading column.
+   *
+   * Widened from 72%/28% now that this covers the transcript: the reading
+   * column is 860px and centred, and a lattice that reaches under body text is
+   * the one thing that would make this change a readability regression rather
+   * than a decoration. The clear zone is an ellipse wide enough to hold that
+   * column at every width the app supports. */
+  -webkit-mask-image: radial-gradient(86% 70% at 50% 50%, transparent 42%, #000 100%);
+  mask-image: radial-gradient(86% 70% at 50% 50%, transparent 42%, #000 100%);
 }
 
 /* .empty-state is a flex column of STATIC children, so they paint in the same

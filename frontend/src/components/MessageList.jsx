@@ -164,12 +164,22 @@ export const EmptyState = memo(({ onPick }) => {
     </p>
     <div className="starter-grid">
       {STARTERS.map((s) => (
-        <button key={s.prompt} className="starter-card" onClick={() => onPick(s.prompt)}>
+        /* Keyed on the label, not the seed: two seeds could legitimately share
+           an opening fragment, a label may not — starters.test asserts it. */
+        <button
+          key={s.label}
+          className="starter-card"
+          onClick={() => onPick(s)}
+          /* The card no longer sends anything, so saying "Generate an image"
+             alone would promise a result it does not deliver. The accessible
+             name says what the click actually does. */
+          aria-label={`${s.label}: start a message in the composer`}
+        >
           <span className="starter-icon">
             <Icon name={s.icon} size={15} />
           </span>
           <span className="starter-label">{s.label}</span>
-          <span className="starter-prompt">{s.prompt}</span>
+          <span className="starter-prompt">{s.hint}</span>
         </button>
       ))}
     </div>

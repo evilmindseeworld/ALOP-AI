@@ -288,7 +288,7 @@ const ChatSidebar = memo(
               <div className="chat-empty is-error" role="status">
                 <p className="chat-empty-title">Couldn&rsquo;t load your chats.</p>
                 <p className="chat-empty-body">
-                  They are safe on the server — this request failed, not your data.
+                  They are safe on the server. This request failed, not your data.
                 </p>
                 <button className="chat-empty-retry" onClick={onRetry}>
                   Try again

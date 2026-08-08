@@ -70,7 +70,7 @@ export default function SettingsPanel({
           </div>
         )}
 
-        {!factsError && factsBusy && facts === null && <div className="setting-note">Loading…</div>}
+        {!factsError && factsBusy && facts === null && <div className="setting-note">Loading...</div>}
 
         {!factsError && facts !== null && facts.length === 0 && (
           <div className="setting-note">

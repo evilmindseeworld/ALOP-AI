@@ -490,7 +490,10 @@ const AuthenticatedApp = () => {
           </button>
 
           <div className="brand">
-            <img src="/logo-mark.png" alt="" className="header-logo" />
+            {/* 22px on screen. favicon.png (144px) covers that to 6x device pixels;
+                logo-mark.png is 512px and 28 KB. The empty state keeps the big
+                one because it renders at 76px and genuinely needs the detail. */}
+            <img src="/favicon.png" alt="" className="header-logo" />
             <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
             {/* The council's size is the one fact the old subtitle carried that
                 a reader could act on — it changes with the plan. The other

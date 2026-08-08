@@ -126,7 +126,15 @@ export default function SignInPage() {
 
       <div className="signin-wrap">
         <div className="signin-brand">
-          <img src="/logo-mark.png" alt="" className="signin-logo-mark" />
+          {/* favicon.png, NOT logo-mark.png, and the reason is measurement.
+              This renders at 34x34. logo-mark.png is 512x512 and 28 KB — a
+              15x oversized image on the only page a signed-out visitor loads.
+              favicon.png is the identical mark from the same generator at
+              144px and 5.5 KB, which still covers 34px at 3x device pixels.
+
+              It is also the URL the browser is ALREADY fetching for the tab
+              icon, so on this page it costs nothing at all. */}
+          <img src="/favicon.png" alt="" className="signin-logo-mark" />
           <span className="signin-logo-text">ALOP-AI</span>
         </div>
 
@@ -184,7 +192,7 @@ export default function SignInPage() {
                 to work for everyone, so it says what the product does instead
                 of what the column means. */}
             <p className="signin-tagline">
-              They disagree on purpose. You get what they agreed on — and where they didn&rsquo;t.
+              They disagree on purpose. You get what they agreed on, and where they didn&rsquo;t.
             </p>
           </section>
 

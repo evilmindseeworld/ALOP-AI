@@ -93,6 +93,21 @@
 @media (max-width: 640px) {
   .sakura-corner { width: clamp(72px, 26vw, 120px); opacity: 0.26; }
   .sakura-torii { display: none; }
+
+  /* THE LATTICE COMES OFF ENTIRELY BELOW THIS WIDTH.
+   *
+   * It lives in the gutters either side of the reading column, and it is kept
+   * off the prose by a radial mask that clears the middle 42%. That works
+   * while there ARE gutters. Measured at 320px: the transcript is 87% of the
+   * chat surface, so the mask's clear zone no longer covers the text and the
+   * pattern lands underneath it — which is the one thing this decoration must
+   * never do.
+   *
+   * A percentage mask cannot be tuned out of this, because the problem is that
+   * the column and the surface have converged. There is nowhere for the
+   * pattern to be except behind the words, so on a phone it is simply absent.
+   * The sakura corners above still carry the identity at this size. */
+  .chat-main::after { display: none; }
 }
 
 /* Asanoha — the hemp-leaf lattice, the pattern in every one of the reference

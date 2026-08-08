@@ -115,6 +115,22 @@
   --font-heading: 'Clash Grotesk', system-ui, sans-serif;
   --font-body: 'Switzer', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* The same idea, with nothing to download.
+   *
+   * MEASURED: JetBrains Mono is 30.7 KB and it was being fetched on the
+   * SIGN-IN page — the one page a signed-out visitor sees — to render
+   * seven strings: the council temperatures 0.2 through 0.8. Eleven
+   * glyphs, one webfont, on the public surface. Its nine other consumers
+   * (code blocks, the palette, the composer's counter) are all behind
+   * authentication, where the font is genuinely earning its bytes.
+   *
+   * Mono is the right VOICE for a temperature ladder — it reads as
+   * instrumentation rather than prose — so this keeps the monospace
+   * semantics and drops only the download. Digits are the one thing every
+   * system mono renders well, and .council-temp already sets
+   * tabular-nums, so the column still aligns. */
+  --font-mono-system: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
   /* An editorial serif, used ONLY in italic and ONLY for the accent half of a
    * display line — the "Botanic /Architecture./" move. It carries no body text
    * and no UI chrome, so if it fails to load the fallback is one italic word in

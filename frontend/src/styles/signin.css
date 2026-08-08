@@ -507,7 +507,9 @@
  * it the numbers wander and the ladder reads as a list of labels rather than
  * as a scale. */
 .council-temp {
-  font-family: var(--font-mono);
+  /* System mono, NOT --font-mono. This is the only mono on the signed-out page
+   * and it was pulling a 30.7 KB webfont for eleven glyphs. See the token. */
+  font-family: var(--font-mono-system);
   font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
   color: var(--primary);

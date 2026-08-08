@@ -9,7 +9,11 @@
 
 export const InitialLoader = () => (
   <div className="initial-loader dark">
-    <img src="/logo-mark.png" alt="Loading ALOP-AI" />
+    {/* favicon.png for the same reason as the sign-in mark: this is the
+        FIRST thing painted on every visit, and it was pulling 28 KB to show
+        a small logo while the app booted. Same mark, 5.5 KB, and already in
+        cache from the tab icon. */}
+    <img src="/favicon.png" alt="Loading ALOP-AI" />
     <div className="skeleton-block" style={{ width: "120px", height: "10px", marginTop: "10px" }} />
   </div>
 );

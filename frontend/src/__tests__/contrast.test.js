@@ -217,3 +217,42 @@ describe("the Clerk primary button inherits the fill tokens", () => {
     expect(button).not.toContain("var(--primary-soft)");
   });
 });
+
+/* The hemp-leaf lattice must never end up behind body text.
+ *
+ * It sits in the gutters either side of the reading column and is kept off the
+ * prose by a radial mask clearing the middle of the surface. That reasoning
+ * holds only while gutters exist. Measured at 320px, the transcript is 87% of
+ * the chat surface — the clear zone no longer covers the text, and the pattern
+ * lands underneath it.
+ *
+ * Asserted as source because the failure is geometric rather than a resolved
+ * value: the mask is a percentage and the viewport is what changes. What can be
+ * pinned is that the suppression rule exists and is not quietly deleted, which
+ * is the realistic regression — somebody tidying a media query.
+ */
+describe("the lattice does not sit under prose on a phone", () => {
+  const raw = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "..", "styles", "decoration.css"),
+    "utf8"
+  );
+  // Comments stripped first. The initial version of this asserted against the
+  // whole file and failed on the comment that EXPLAINS the move — matching
+  // prose about a selector rather than the selector. A source assertion has to
+  // read code, not documentation about the code.
+  const decoration = raw.replace(/\/\*[\s\S]*?\*\//g, "");
+
+  it("paints on the whole chat surface, not just the empty state", () => {
+    // The bug this replaced: decoration vanished the moment a conversation
+    // started, and the composer sat on an undecorated band.
+    expect(decoration).toContain(".chat-main::after");
+    expect(decoration).not.toContain(".empty-state::after");
+  });
+
+  it("is switched off below the width where the gutters disappear", () => {
+    const mobile = decoration.slice(decoration.indexOf("@media (max-width: 640px)"));
+    const block = mobile.slice(0, mobile.indexOf("\n}") + 2);
+    expect(block, "the lattice must be suppressed in the 640px block").toContain(".chat-main::after");
+    expect(block).toMatch(/\.chat-main::after\s*\{\s*display:\s*none/);
+  });
+});

@@ -45,8 +45,8 @@ export default class ErrorBoundary extends Component {
         <div className="crash-card">
           <h1 className="crash-title">Something broke on our side.</h1>
           <p className="crash-body">
-            This screen failed to draw. Your chats are saved on the server and were not affected —
-            reloading is safe.
+            This screen failed to draw. Your chats are saved on the server and were not
+            affected, so reloading is safe.
           </p>
           <p className="crash-detail">{String(error?.message || error)}</p>
           <div className="crash-actions">

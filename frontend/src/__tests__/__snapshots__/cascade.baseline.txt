@@ -42118,7 +42118,7 @@
   color: #f08aa3
   flex: 0 0 auto
   flex-shrink: <flex: 0 0 auto>
-  font-family: 'JetBrains Mono', ui-monospace, monospace
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace
   font-size: 12px
   font-variant-numeric: tabular-nums
   margin: 0
@@ -42264,7 +42264,7 @@
   color: #f08aa3
   flex: 0 0 auto
   flex-shrink: <flex: 0 0 auto>
-  font-family: 'JetBrains Mono', ui-monospace, monospace
+  font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace
   font-size: 12px
   font-variant-numeric: tabular-nums
   margin: 0
@@ -43017,6 +43017,9 @@
   - border-bottom-right-radius: <border-radius: 4px>
   - border-radius: 4px
 
+[141] div.chat-main
+  ::after/display: none
+
 [142] div.earring-wrap.earring-left
   display: none
   - display: flex
@@ -43326,6 +43329,9 @@
   :focus-visible
   - border-bottom-right-radius: <border-radius: 4px>
   - border-radius: 4px
+
+[547] div.chat-main
+  ::after/display: none
 
 [548] div.earring-wrap.earring-left
   display: none
@@ -53736,6 +53742,7 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --font-body: 'Switzer', system-ui, sans-serif
   --font-heading: 'Clash Grotesk', system-ui, sans-serif
   --font-mono: 'JetBrains Mono', ui-monospace, monospace
+  --font-mono-system: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace
   --frame-inset: 0px
   --glow: rgba(240, 138, 163, 0.22)
   --gradient-emerald: linear-gradient(135deg, #6fd3a6 0%, #94e2be 100%)
@@ -53835,6 +53842,7 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
   --font-body: 'Switzer', system-ui, sans-serif
   --font-heading: 'Clash Grotesk', system-ui, sans-serif
   --font-mono: 'JetBrains Mono', ui-monospace, monospace
+  --font-mono-system: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace
   --frame-inset: 0px
   --glow: rgba(179, 26, 84, 0.18)
   --gradient-emerald: linear-gradient(135deg, #1f7a52 0%, #3f9670 100%)

@@ -890,7 +890,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const lang = detectLanguage(pv.value);
     // The plan decides the roster HERE, once, rather than inside the router —
     // which is what lets the router be called with a sentence and checked.
-    const selection = classifyRequest(pv.value, userPlan === 'pro' ? COUNCIL : FREE_COUNCIL);
+    const selection = classifyRequest(pv.value, userPlan === 'pro' ? COUNCIL : FREE_COUNCIL, isDetailed);
     const truncatedPrompt = truncatePrompt(pv.value);
     const histArr = sanitizeHistory(history);
 
@@ -1238,7 +1238,23 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     if (!res.writableEnded) res.end();
     const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
     updateChatSummary(chatId, user.id, pv.value, lastA || validResponses[0]?.content?.slice(0,800) || 'Council response.').catch(() => {});
-    await auditLog(user.id, 'council', { category: 'council', models: validResponses.length }, req.ip);
+    /* msToFirstByte on THIS path too, not only on the tools path.
+     *
+     * The number that says whether a latency change worked is the wait before
+     * the answer starts appearing, and it was recorded only for turns that used
+     * tools — the minority. Everything else reported `models` and nothing about
+     * time, so the plain council, which is most turns, was unmeasurable and any
+     * claim about it was a claim about a log line on somebody's laptop. `quorum`
+     * and `tokenLimit` travel with it because they are the two knobs that move
+     * this number; without them a shift in the median is unattributable. */
+    await auditLog(user.id, 'council', {
+      category: 'council',
+      models: validResponses.length,
+      msToFirstByte: (res.locals?.firstByteAt || Date.now()) - t0,
+      seats: selection.members.length,
+      quorum: selection.quorum,
+      tokenLimit: selection.tokenLimit,
+    }, req.ip);
   } catch (err) {
     console.error('Council error:', err.message);
     Sentry.captureException(err);

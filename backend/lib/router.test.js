@@ -178,12 +178,32 @@ test("a question that merely contains a greeting word is a council question", ()
 });
 
 test("quorum never exceeds the seats the user actually has", () => {
-  // A free plan has three seats. A quorum of three on a three-member council
-  // means the whip only ever resolves on the timer or on unanimity — and a
-  // quorum ABOVE the seat count would mean it could never resolve early at all.
-  assert.equal(classifyRequest("q", ROSTER).quorum, 3);
-  assert.equal(classifyRequest("q", ROSTER.slice(0, 2)).quorum, 2);
+  // A quorum ABOVE the seat count could never resolve early at all — the whip
+  // would be reduced to its timer on every single message.
+  assert.equal(classifyRequest("q", ROSTER.slice(0, 1)).quorum, 1);
   assert.equal(classifyRequest("q", []).quorum, 0);
+});
+
+test("a full free roster does NOT need unanimity", () => {
+  // The regression this guards is the one that made every free-plan message
+  // wait for the slowest of three models: at quorum 3 on a 3-seat roster the
+  // whip can only fire on unanimity or on its 30s timer, so the early-resolve
+  // path — the entire point of the whip — was dead code for that tier.
+  const s = classifyRequest("q", ROSTER);
+  assert.ok(s.quorum < ROSTER.length, `quorum ${s.quorum} of ${ROSTER.length} seats is unanimity`);
+  assert.equal(s.quorum, 2);
+});
+
+test("the council's token ceiling follows the length the user asked for", () => {
+  // A member told "Be concise" and given 2000 tokens pays for a ceiling it will
+  // not reach, on the one leg the whole request blocks on. The two decisions
+  // come from the same wantsDetailedAnswer call in the caller, so they cannot
+  // disagree — a member told to be thorough is never the one that gets cut off.
+  assert.equal(classifyRequest("q", ROSTER).tokenLimit, 1000);
+  assert.equal(classifyRequest("q", ROSTER, false).tokenLimit, 1000);
+  assert.equal(classifyRequest("q", ROSTER, true).tokenLimit, 2000);
+  // A greeting is answered by one streaming model and reads neither number.
+  assert.equal(classifyRequest("hi", ROSTER, true).tokenLimit, 200);
 });
 
 test("the roster is passed through untouched", () => {

@@ -143,26 +143,82 @@ const GREETING_RE =
   /^(hi|hello|hey|yo|sup|howdy|gm|good (morning|afternoon|evening))\b[\s!.,?]*$/i;
 
 /**
+ * How many members have to answer before synthesis may begin.
+ *
+ * TWO, and the number is the single biggest lever on how long a user waits.
+ *
+ * It was three. On a free plan the roster IS three, so the whip could only
+ * resolve on unanimity or on its 30-second timer — every message, without
+ * exception, waited for the slowest of three models to finish writing an answer
+ * the user never sees. On pro it waited for the third of seven, which is the
+ * same tail with more chances to be unlucky. The council runs in parallel, so
+ * the cost of a quorum is not the average member's latency, it is the k-th
+ * slowest; going from the 3rd to the 2nd removes an entire order statistic from
+ * the critical path and takes the whole free-plan tier off "wait for the worst
+ * one" semantics.
+ *
+ * Two is the floor rather than one because the synthesiser's whole job is to
+ * reconcile independent answers — rules 2 and 3 of its prompt are about
+ * disagreement, and one response cannot disagree with anything. At two it still
+ * has something to reconcile; at one it is an expensive passthrough.
+ *
+ * Late answers are not wasted so much as unused: runCouncilWithWhip resolves
+ * with whatever has landed, and the stragglers' `.then` still runs and pushes
+ * into an array nobody reads. That is the accepted cost of not waiting.
+ *
+ * CEILING: on a seven-seat pro roster this now synthesises the two FASTEST
+ * responses rather than the three fastest, and fast correlates with small.
+ * If pro answers start reading as thin, this is the number to raise — not the
+ * token limit below.
+ */
+const QUORUM = 2;
+
+/**
  * How much council a message gets.
  *
  * The roster is a PARAMETER rather than a module-level constant so this stays
  * pure and so the plan decision (`pro` sees seven, free sees three) stays in
  * one place in the caller instead of being made twice.
  *
+ * `detailed` likewise comes in rather than being recomputed: the caller already
+ * ran wantsDetailedAnswer to decide the council's "Be thorough"/"Be concise"
+ * instruction, and a token ceiling that disagreed with that instruction would
+ * be the worst of both — a member told to be thorough and then cut off
+ * mid-sentence. One decision, used twice.
+ *
  * @param {string} text
  * @param {Array<{model: string, temperature: number}>} members  the seats this
  *   user is entitled to.
+ * @param {boolean} [detailed]  whether the user asked for length.
  */
-function classifyRequest(text, members) {
+function classifyRequest(text, members, detailed = false) {
   const roster = Array.isArray(members) ? members : [];
   if (GREETING_RE.test((typeof text === "string" ? text : "").trim())) {
     return { members: [], quorum: 0, whipMs: 5000, tokenLimit: 200, category: "greeting" };
   }
   return {
     members: roster,
-    quorum: Math.min(3, roster.length),
+    quorum: Math.min(QUORUM, roster.length),
     whipMs: 30000,
-    tokenLimit: 2000,
+    /* 1000 unless length was actually asked for, down from a flat 2000.
+     *
+     * A council member's output is a DRAFT. Nobody reads it: the synthesiser
+     * reads all of them and writes the answer the user sees. Generation time is
+     * roughly linear in tokens produced, and this leg is the one the whole
+     * request blocks on, so a ceiling nobody's answer reaches costs nothing and
+     * one that every answer reaches costs the difference in full.
+     *
+     * 1000 is the same ceiling callModel already defaults to everywhere else in
+     * this codebase, and it pairs with the "Be concise" the council is told in
+     * the same breath. When the user did ask for depth the old 2000 stands,
+     * because there the length IS the product.
+     *
+     * CEILING: a concise-mode member with genuinely more to say is truncated,
+     * and truncation reaches the synthesiser as a confident-looking half
+     * sentence. The synthesis prompt's rule 10 is what covers that. If cut-off
+     * drafts start showing up in answers, raise this before touching the
+     * quorum. */
+    tokenLimit: detailed ? 2000 : 1000,
     category: "council",
   };
 }

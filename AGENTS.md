@@ -180,11 +180,12 @@ production. See the trap below.
    browser is now done and guarded — see the checklist below for what is
    left. Still the largest remaining item and the only one carrying legal
    exposure.
-2. **Cross-chat memory — see `docs/MEMORY-AND-CACHE-PLAN.md`.** `user_facts`
-   is in production with a `vector(1536)` column and zero references anywhere
-   in this repo, and there is **no embedding provider in the codebase at all**
-   — no call to any embeddings endpoint exists, so that dimension is inherited,
-   not chosen. Phase 1 needs neither. Do not start with the vector part.
+2. **`PERPLEXITY_API_KEY` is not set in Render.** The provider ships and is
+   inert without it — the boot banner's `P=` says which. Sonar is the only
+   source that returns a written cited answer rather than links, so this is
+   one dashboard field between the product and materially better answers on
+   market-research and news questions. `PERPLEXITY_MODEL` is optional and
+   defaults to `sonar`.
 3. **`users` has no index on `email`, `stripe_customer_id` or
    `stripe_subscription_id`**, which the Stripe webhook probes. Sequential
    scans, free at 2 rows. Watch webhook latency, not row count.
@@ -229,6 +230,19 @@ themes.
       our accessibility obligation regardless of who wrote it.
 
 ### Closed since the last handoff
+
+- **Cross-chat memory ships.** `user_facts` was a table in production with a
+  `vector(1536)` column and zero references anywhere in the repo; it is now
+  written, read, injected at system position and deletable from Settings.
+  **Facts are extracted from the USER'S message only, never the assistant's** —
+  an answer carries text fetched from the open web, and a fact drawn from that
+  would be replayed at system position in every later conversation forever.
+  That rule is the design, not a detail; `lib/user-facts.js` explains it and
+  `tenant-scope.test.js` asserts the call obeys it.
+  There is still **no embedding provider in this codebase** — no call to any
+  embeddings endpoint exists — so the `vector(1536)` dimension is inherited,
+  not chosen. Semantic recall is Phase 2 and starts with picking a provider.
+  See `docs/MEMORY-AND-CACHE-PLAN.md`.
 
 - `VITE_SENTRY_DSN` is set in Vercel and confirmed present in the deployed
   bundle. Front-end crashes now produce a screen AND an event.

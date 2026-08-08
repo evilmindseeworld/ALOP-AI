@@ -180,12 +180,15 @@ production. See the trap below.
    browser is now done and guarded — see the checklist below for what is
    left. Still the largest remaining item and the only one carrying legal
    exposure.
-2. **`SERPER_API_KEY` is not set in Render, and `PERPLEXITY_API_KEY` may not
-   be either.** Both providers ship inert without their key; the boot banner's
-   `P=` and `S=` say which. Serper is the price provider — see "Prices are a
-   data problem" below — and without it the app is back to reading prices out
-   of markdown. `PERPLEXITY_MODEL` is optional and defaults to `sonar`;
-   `PAGE_READ_LIMIT` is optional and defaults to 3.
+2. **Four search keys are unset in Render.** All four providers ship inert
+   without them; the boot banner reads `P=` `S=` `SA=` `FC=` and says which.
+   In the order they are worth setting:
+   `FIRECRAWL_API_KEY` (fixes the ROOT of the missing-price bug — Jina cannot
+   see a JavaScript-rendered price at all), `SERPER_API_KEY` (structured
+   shopping prices, cheap), `SERPAPI_API_KEY` (the ~110 specialised engines —
+   flights, hotels, scholar, finance; billed per call, 100/month free), and
+   `PERPLEXITY_API_KEY` if it is still missing. `PERPLEXITY_MODEL` defaults to
+   `sonar` and `PAGE_READ_LIMIT` to 3; neither needs setting.
 3. **`users` has no index on `email`, `stripe_customer_id` or
    `stripe_subscription_id`**, which the Stripe webhook probes. Sequential
    scans, free at 2 rows. Watch webhook latency, not row count.
@@ -230,6 +233,48 @@ themes.
       our accessibility obligation regardless of who wrote it.
 
 ### Closed since the last handoff
+
+- **SerpApi's ~110 "APIs" are one endpoint, and they are ONE council tool.**
+  The dashboard lists Google Flights API, Yelp Reviews API, YouTube Transcript
+  API and about a hundred more. They are `serpapi.com/search` with a different
+  `engine=`. So `lib/serpapi.js` is a table, and `search_specialized` is a
+  single registry entry taking an `engine` argument.
+
+  **Do not "improve" this into one tool per engine.** Every tool's name and
+  description is injected into every seat's prompt on every turn: at ~10 words
+  each, 110 tools is roughly 1,500 tokens per seat per turn — seven seats, every
+  conversation — to describe flight search to somebody asking about a monitor.
+  `tool-registry.test.js` asserts it stays one tool.
+
+  Two guards that are not decoration. The engine list is an **allowlist**,
+  because an invented `engine=google_cars` is a 400 that SerpApi still BILLS —
+  the request reached them. And the extra-parameter list is an allowlist too,
+  so a model-written argument cannot override `api_key`. Both are tested.
+
+  SerpApi bills per search on a 100/month free tier, which is a couple of
+  talkative conversations. The agent loop's 8-call ceiling is what bounds it and
+  is load-bearing here in a way it never was for the free providers.
+
+  Overlap is deliberate: Serper stays the cheap default for shopping in the
+  search fan-out, SerpApi covers the engines Serper has no equivalent for.
+  Paying both vendors for Google Shopping would be the easy mistake.
+
+- **Jina cannot see a price that JavaScript paints in, and that was the root.**
+  It fetches a document and converts it. Every large retailer ships an empty
+  product shell and fills it from an XHR, so the conversion is navigation and
+  nothing else — ranking URLs better only picks a page whose price is still
+  invisible. `FIRECRAWL_API_KEY` adds a real browser as a **fallback**, never
+  the default: it is slower and metered where Jina is neither, and most pages
+  are server-rendered.
+
+  The gate is `hasReadableSignal` in page-extract.js, and its second test is
+  conditional for a reason worth keeping. Short output always means failure. A
+  MISSING PRICE only means failure when a price was the point of the read — a
+  news article legitimately has none, and testing for one there would call every
+  successful read a failure and send every page in the app to Firecrawl. That is
+  how a free-tier allowance disappears in an afternoon. It lives in
+  page-extract.js rather than server.js purely so it can be tested; server.js
+  cannot be required in a test.
 
 - **Prices are a data problem, not a reading problem.** Asked for monitors
   under 2,500 AED, the app named five monitors, gave no price for any of them,

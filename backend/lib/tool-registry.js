@@ -194,6 +194,53 @@ function buildRegistry(deps = {}) {
     });
   }
 
+  /**
+   * ONE tool for every SerpApi engine, selected by argument.
+   *
+   * SerpApi's ~110 "APIs" are one endpoint with a different `engine=`, so this
+   * is one description in the prompt instead of 110. That matters more than it
+   * sounds: a tool's name and description are injected into EVERY seat's prompt
+   * on EVERY turn, so 110 of them would spend roughly 1,500 tokens per seat
+   * describing flight search to someone asking about a monitor.
+   *
+   * `params` arrives as a JSON string rather than an object because validateArgs
+   * handles strings and numbers, and adding an object type to it for one caller
+   * is a worse trade than parsing here. A model that writes malformed JSON gets
+   * told so and keeps its arguments — the engine and query still run.
+   */
+  if (typeof deps.searchEngine === "function" && Array.isArray(deps.engineNames) && deps.engineNames.length) {
+    tools.push({
+      name: "search_specialized",
+      description:
+        "Search ONE specialised source when general web search is the wrong shape for the question — live prices, flights, hotels, papers, reviews, job listings, share prices. " +
+        `Pick the single best "engine" for the question. Available engines: ${deps.engineMenu || deps.engineNames.join(", ")}. ` +
+        'Some engines need extra arguments, given as a JSON object string in "params" — e.g. {"departure_id":"DXB","arrival_id":"LHR","outbound_date":"2026-09-01"}. ' +
+        "Each call costs money, so choose one engine deliberately rather than trying several.",
+      schema: {
+        engine: { type: "string", required: true, maxLength: 40 },
+        query: { type: "string", required: false, maxLength: 300, default: "" },
+        params: { type: "string", required: false, maxLength: 500, default: "" },
+      },
+      run: async ({ engine, query, params }) => {
+        let parsed = {};
+        if (params) {
+          try {
+            const raw = JSON.parse(params);
+            if (raw && typeof raw === "object" && !Array.isArray(raw)) parsed = raw;
+          } catch {
+            // Not fatal. The engine and query are usually the whole request and
+            // failing the call over a malformed optional argument spends a round
+            // to punish a formatting slip.
+            parsed = {};
+          }
+        }
+        const res = await deps.searchEngine({ engine, query, params: parsed });
+        if (!res || !res.ok) return fail((res && res.error) || `${engine} returned nothing.`);
+        return ok(`${res.rows.length} result(s) from ${res.engine}`, clamp(res.text));
+      },
+    });
+  }
+
   const byName = new Map(tools.map((t) => [t.name, t]));
 
   return {

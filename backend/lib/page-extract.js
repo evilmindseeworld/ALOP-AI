@@ -183,4 +183,29 @@ function rankReadTargets(sources, { limit = 3 } = {}) {
     .map(({ url }) => url);
 }
 
-module.exports = { extractPageSignal, hasPrice, rankReadTargets, readPriority };
+/** The label extractPageSignal writes above the lines it found. */
+const SIGNAL_LABEL = "PRICE AND AVAILABILITY";
+
+/**
+ * Did a page read actually produce something worth having?
+ *
+ * This decides whether to spend a metered Firecrawl render, so both of its
+ * mistakes cost something: saying yes too easily leaves the price invisible and
+ * reproduces the original bug, saying no too easily turns the fallback into the
+ * default path and burns the allowance on pages that were fine.
+ *
+ * TWO TESTS, and the second is conditional. Short output always means failure —
+ * a page that converts to under 600 characters is a shell whose content never
+ * arrived. The missing-price test applies ONLY when a price was the point of
+ * the read: a news article legitimately has no price line, and testing for one
+ * there would call every successful read a failure.
+ *
+ * @param {string} text          what the cheap reader returned
+ * @param {boolean} [wantsPrice] was this read done to find a price?
+ */
+function hasReadableSignal(text, wantsPrice = false) {
+  if (typeof text !== "string" || text.length < 600) return false;
+  return wantsPrice ? text.includes(SIGNAL_LABEL) : true;
+}
+
+module.exports = { extractPageSignal, hasPrice, rankReadTargets, readPriority, hasReadableSignal, SIGNAL_LABEL };

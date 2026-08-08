@@ -295,3 +295,78 @@ test("a garbage call object is refused rather than crashing", async () => {
     assert.equal(r.ok, false, JSON.stringify(call));
   }
 });
+
+/* ONE tool for ~110 SerpApi engines. The thing worth protecting is that it
+ * stays one: a future change that registers a tool per engine would put ~1,500
+ * tokens of engine descriptions into every seat's prompt on every turn. */
+test('search_specialized is offered only when SerpApi is configured', () => {
+  const withKey = buildRegistry({
+    searchEngine: async () => ({ ok: true, engine: 'google_shopping', rows: [{}], text: 'x' }),
+    engineNames: ['google_shopping'],
+    engineMenu: 'google_shopping (prices)',
+  });
+  assert.ok(withKey.has('search_specialized'));
+
+  // No executor means the council is told the tool does not exist, rather than
+  // being offered one that errors every time and eats the retry budget.
+  const without = buildRegistry({ engineNames: ['google_shopping'] });
+  assert.equal(without.has('search_specialized'), false);
+  // An empty engine list is the same situation.
+  assert.equal(buildRegistry({ searchEngine: async () => ({}), engineNames: [] }).has('search_specialized'), false);
+});
+
+test('search_specialized is ONE tool, not one per engine', () => {
+  const many = Array.from({ length: 40 }, (_, i) => `engine_${i}`);
+  const registry = buildRegistry({
+    searchEngine: async () => ({ ok: true, engine: 'e', rows: [{}], text: 'x' }),
+    engineNames: many,
+    engineMenu: many.join(', '),
+  });
+  const names = registry.list().map((t) => t.name);
+  assert.equal(names.filter((n) => n.startsWith('search_')).length, 1);
+});
+
+test('search_specialized passes the engine through and reports refusals', async () => {
+  const seen = [];
+  const registry = buildRegistry({
+    searchEngine: async (args) => {
+      seen.push(args);
+      return { ok: true, engine: args.engine, rows: [{}, {}], text: 'two rows' };
+    },
+    engineNames: ['google_flights'],
+    engineMenu: 'google_flights (flights)',
+  });
+  const res = await registry.execute({
+    name: 'search_specialized',
+    args: { engine: 'google_flights', query: 'DXB to LHR', params: '{"departure_id":"DXB"}' },
+  });
+  assert.equal(res.ok, true);
+  assert.equal(seen[0].engine, 'google_flights');
+  assert.deepEqual(seen[0].params, { departure_id: 'DXB' });
+});
+
+test('malformed params do not fail the call', async () => {
+  // The engine and query are usually the whole request; spending a round to
+  // punish a formatting slip in an OPTIONAL argument is the wrong trade.
+  const registry = buildRegistry({
+    searchEngine: async (args) => ({ ok: true, engine: args.engine, rows: [{}], text: 'ok', params: args.params }),
+    engineNames: ['google_shopping'],
+    engineMenu: 'google_shopping (prices)',
+  });
+  const res = await registry.execute({
+    name: 'search_specialized',
+    args: { engine: 'google_shopping', query: 'monitor', params: 'not json at all' },
+  });
+  assert.equal(res.ok, true);
+});
+
+test('a refused engine comes back as a failed tool result, not a thrown turn', async () => {
+  const registry = buildRegistry({
+    searchEngine: async () => ({ ok: false, error: 'Unknown engine "google_cars".', rows: [], text: '' }),
+    engineNames: ['google_shopping'],
+    engineMenu: 'google_shopping (prices)',
+  });
+  const res = await registry.execute({ name: 'search_specialized', args: { engine: 'google_cars' } });
+  assert.equal(res.ok, false);
+  assert.match(res.summary, /Unknown engine/);
+});

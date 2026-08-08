@@ -344,13 +344,46 @@ const searchGoogleImages = async (query) => {
   if (!GOOGLE_SEARCH_API_KEY || !GOOGLE_CSE_ID) return [];
   try { const res = await fetch(`https://www.googleapis.com/customsearch/v1?key=${GOOGLE_SEARCH_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query.slice(0,200))}&searchType=image&num=5`, { signal: AbortSignal.timeout(8000) }); if (!res.ok) return []; const data = await res.json(); return (data.items||[]).map(r => ({ url: r.link, title: r.title?.slice(0,200)||'' })); } catch { return []; }
 };
-const readPageContent = async (url) => {
+const readPageContent = async (url, { wantsPrice = false } = {}) => {
   // extractPageSignal, not slice(0, 3000). A retail page's markdown spends its
   // first few thousand characters on nav, breadcrumbs and marketing, so a flat
   // truncation cut the price off — which produced a real answer saying three
   // UAE retailers "did not display a price" when all three did. See
   // lib/page-extract.js.
-  try { const headers = { 'Accept': 'text/markdown' }; if (JINA_API_KEY) headers['Authorization'] = `Bearer ${JINA_API_KEY}`; const res = await fetch(`https://r.jina.ai/${url}`, { method: 'GET', headers, signal: AbortSignal.timeout(6000) }); if (!res.ok) return ''; return extractPageSignal(await res.text()); } catch { return ''; }
+  try { const headers = { 'Accept': 'text/markdown' }; if (JINA_API_KEY) headers['Authorization'] = `Bearer ${JINA_API_KEY}`; const res = await fetch(`https://r.jina.ai/${url}`, { method: 'GET', headers, signal: AbortSignal.timeout(6000) }); if (!res.ok) return firecrawlPage(url); const signal = extractPageSignal(await res.text());
+    /* JINA CANNOT SEE A PRICE THAT JAVASCRIPT PAINTS IN.
+     *
+     * It fetches the document and converts it; a page that ships an empty
+     * product shell and fills it from an XHR — which is every large retailer,
+     * Carrefour and Amazon included — converts to navigation and nothing else.
+     * That is the ROOT of the "five monitors, no prices" answer: ranking the
+     * URLs better only picks a page whose price is still invisible.
+     *
+     * Firecrawl runs a real browser, so it sees the rendered page. It is second
+     * and not first because it is slower and metered where Jina is neither, and
+     * the large majority of pages are server-rendered and need none of it. The
+     * fallback fires on the two signals that mean "this read failed": nothing
+     * came back, or what came back has no price and no stock line on a page
+     * that was fetched precisely to find one. */
+    if (!hasReadableSignal(signal, wantsPrice)) { const rendered = await firecrawlPage(url); if (rendered) return rendered; }
+    return signal; } catch { return firecrawlPage(url); }
+};
+
+/** Firecrawl: a real browser, used only when the cheap reader came back blind. */
+const firecrawlPage = async (url) => {
+  if (!FIRECRAWL_API_KEY) return '';
+  try {
+    const res = await fetch('https://api.firecrawl.dev/v1/scrape', {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${FIRECRAWL_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, formats: ['markdown'], onlyMainContent: false, timeout: 15000 }),
+      signal: AbortSignal.timeout(12000),
+    });
+    if (!res.ok) return '';
+    const data = await res.json();
+    const md = data && data.data && typeof data.data.markdown === 'string' ? data.data.markdown : '';
+    return md ? extractPageSignal(md) : '';
+  } catch { return ''; }
 };
 const searchWikipedia = async (query) => {
   try { const sr = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query.slice(0,100))}&format=json&origin=*`, { signal: AbortSignal.timeout(6000) }); if (!sr.ok) return ''; const sd = await sr.json(); const titles = (sd.query?.search||[]).slice(0,2).map(s => s.title); if (titles.length === 0) return ''; const er = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=true&explaintext=true&titles=${encodeURIComponent(titles.join('|'))}&format=json&origin=*`, { signal: AbortSignal.timeout(6000) }); if (!er.ok) return ''; const ed = await er.json(); return Object.values(ed.query?.pages||{}).map(p => p.extract||'').filter(e => e.length > 100).join('\n\n').slice(0, 5000); } catch { return ''; }
@@ -393,9 +426,12 @@ const { buildRegistry } = require('./lib/tool-registry');
 const { runAgentLoop } = require('./lib/agent-loop');
 const { assertSafeUrl } = require('./lib/url-guard');
 const { checkLinks } = require('./lib/link-check');
-const { extractPageSignal, rankReadTargets } = require('./lib/page-extract');
+const { extractPageSignal, rankReadTargets, hasReadableSignal } = require('./lib/page-extract');
 const { searchShopping, formatShopping, isShoppingQuery } = require('./lib/shopping');
+const { searchSerpApi, ENGINE_NAMES, engineMenu } = require('./lib/serpapi');
 const SERPER_API_KEY = process.env.SERPER_API_KEY || '';
+const SERPAPI_API_KEY = process.env.SERPAPI_API_KEY || '';
+const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY || '';
 /* How many search results get a full page read. Three, because one was not
  * enough to find a price and the reads are concurrent under a shared deadline,
  * so the wall clock is the slowest read either way. Each read is a Jina call,
@@ -551,6 +587,11 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null, region = null
    * provider simply does not contribute to this turn. */
   const tavilyP = searchTavily(query, fresh);
 
+  /* Declared here, above the speculative read, because that read consults it.
+   * It resolves in a later microtask so the old ordering happened to work, but
+   * a hoisted-const dependency that only works by scheduling luck is a trap. */
+  const wantsShopping = !!SERPER_API_KEY && isShoppingQuery(query);
+
   /* THE FULL-PAGE READ STARTS NOW, not after the fan-out finishes.
    *
    * That read is the last serial leg on the most common path in the app: the
@@ -577,10 +618,9 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null, region = null
   let warm = null;
   tavilyP.then((t) => {
     const url = t?.results?.[0]?.url;
-    if (url) warm = { url, content: readPageContent(url) };
+    if (url) warm = { url, content: readPageContent(url, { wantsPrice: wantsShopping }) };
   }).catch(() => {});
 
-  const wantsShopping = !!SERPER_API_KEY && isShoppingQuery(query);
   const { results: [tavilyResult, braveResults, googleResults, googleImages, wikiContent, pplxResult, shopResult], waited, pending } =
     await settleByDeadline(
       [
@@ -694,7 +734,7 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null, region = null
     const targets = rankReadTargets(sources, { limit: PAGE_READ_LIMIT });
     const reads = targets.map((url) => ({
       url,
-      promise: warm && warm.url === url ? warm.content : readPageContent(url),
+      promise: warm && warm.url === url ? warm.content : readPageContent(url, { wantsPrice: wantsShopping }),
     }));
     const { results } = await settleByDeadline(
       reads.map((r) => ({ promise: r.promise, fallback: '' })),
@@ -1546,6 +1586,23 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
         readUrl: readPageContent,
         assertSafeUrl,
         checkLinks: checkSearchLinks,
+        /* The specialised engines, offered only when SerpApi has a key. Each
+         * call is billed, which is why the agent loop's 8-call ceiling matters
+         * more for this tool than for the free providers. `region` gives the
+         * engine a country so a UAE user is not quoted a US price. */
+        ...(SERPAPI_API_KEY
+          ? {
+              engineNames: ENGINE_NAMES,
+              engineMenu: engineMenu(),
+              searchEngine: ({ engine, query, params }) =>
+                searchSerpApi({
+                  engine,
+                  query,
+                  params: { ...(region && region.country ? { gl: region.country.toLowerCase() } : {}), ...params },
+                  apiKey: SERPAPI_API_KEY,
+                }),
+            }
+          : {}),
         ...(attached.length ? { files } : {}),
       });
       // Opened BEFORE the loop so tool progress can be reported as it happens.
@@ -2255,7 +2312,7 @@ const server = app.listen(PORT, () => {
   console.log(`\n╔════════════════════════════════════════════╗`);
   console.log(`║  ALOP-AI PRECISION BACKEND                  ║`);
   console.log(`║  Port: ${PORT} | Council: ${COUNCIL.length} pro / ${FREE_COUNCIL.length} free      ║`);
-  console.log(`║  T=${TAVILY_API_KEY?'ON':'OFF'} B=${BRAVE_API_KEY?'ON':'OFF'} G=${GOOGLE_SEARCH_API_KEY&&GOOGLE_CSE_ID?'ON':'OFF'} J=${JINA_API_KEY?'ON':'OFF'} P=${PERPLEXITY_API_KEY?'ON':'OFF'} S=${SERPER_API_KEY?'ON':'OFF'} Wiki=ON  ║`);
+  console.log(`║  T=${TAVILY_API_KEY?'ON':'OFF'} B=${BRAVE_API_KEY?'ON':'OFF'} G=${GOOGLE_SEARCH_API_KEY&&GOOGLE_CSE_ID?'ON':'OFF'} J=${JINA_API_KEY?'ON':'OFF'} P=${PERPLEXITY_API_KEY?'ON':'OFF'} S=${SERPER_API_KEY?'ON':'OFF'} SA=${SERPAPI_API_KEY?'ON':'OFF'} FC=${FIRECRAWL_API_KEY?'ON':'OFF'} Wiki=ON  ║`);
   console.log(`║  Memory: Supabase | Quick + Feedback        ║`);
   console.log(`╚════════════════════════════════════════════╝`);
   // Printed unconditionally, including when it is off. A feature flag that is

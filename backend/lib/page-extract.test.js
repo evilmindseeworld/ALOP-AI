@@ -150,3 +150,37 @@ test('rankReadTargets refuses anything that is not an http URL', () => {
   assert.deepEqual(rankReadTargets(sources, { limit: 3 }), ['https://ok.com/dp/1']);
   assert.deepEqual(rankReadTargets(null), []);
 });
+
+/* This gate decides whether to spend a metered browser render, so both of its
+ * mistakes cost real money or reproduce the original bug. */
+const { hasReadableSignal, SIGNAL_LABEL } = require('./page-extract');
+
+test('hasReadableSignal treats a short read as a failed one', () => {
+  assert.equal(hasReadableSignal('', false), false);
+  assert.equal(hasReadableSignal('too short', false), false);
+  assert.equal(hasReadableSignal(null, false), false);
+  // A shell page: the nav converted, the content never arrived.
+  assert.equal(hasReadableSignal('nav '.repeat(20), true), false);
+});
+
+test('the price test applies only when a price was the point of the read', () => {
+  const article = 'word '.repeat(200); // long, real content, no price
+  // A news article has no price line and must NOT trigger a paid render —
+  // otherwise the fallback becomes the default path on every page in the app.
+  assert.equal(hasReadableSignal(article, false), true);
+  // The same text, read to find a price, IS a failure worth re-rendering.
+  assert.equal(hasReadableSignal(article, true), false);
+});
+
+test('a page that did state a price needs no second render', () => {
+  const priced = 'word '.repeat(200) + `\n=== ${SIGNAL_LABEL} LINES FOUND ELSEWHERE ON THIS PAGE ===\nAED 1,199.00`;
+  assert.equal(hasReadableSignal(priced, true), true);
+});
+
+test('the label the gate looks for is the one extractPageSignal writes', () => {
+  // These two live in the same file precisely so they cannot drift, but the
+  // gate silently never fires if the label is edited on one side only.
+  const page = 'x'.repeat(2600) + '\nAED 1,199.00 in stock\n';
+  const out = extractPageSignal(page);
+  assert.ok(out.includes(SIGNAL_LABEL), 'the gate would never fire');
+});

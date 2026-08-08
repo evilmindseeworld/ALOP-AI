@@ -187,24 +187,95 @@ const getSearchQuery = async (text, convSummary, region) => {
   const locale = region
     ? ` The user appears to be in ${region.place}. If — and only if — the answer depends on where they are (prices, availability, retailers, local services, regulations), include that country in the query. Otherwise ignore it.`
     : '';
-  const response = await callModel(FAST_MODEL, [{ role: 'system', content: `Analyze the prompt. If it needs real-time web search (products, facts, reviews, specs, prices), reply ONLY with the optimal search query. If not, reply ONLY "NO". Memory/reference questions do NOT need search.${locale}` }, { role: 'user', content: userContent }], 0.0, 4000, 50);
-  const trimmed = response.trim();
-  if (trimmed.toUpperCase() === 'NO' || !trimmed) return null;
-  return trimmed;
+  /* THE DATE IS IN THIS PROMPT BECAUSE THE DECISION DEPENDS ON IT.
+   *
+   * This model was deciding whether a question needs live information while
+   * believing the present day was somewhere in its training data. Both halves
+   * of that go wrong. It under-triggers — "what's the latest version" feels
+   * answerable from memory when your memory feels current — and when it does
+   * search it writes an undated query, so a well-linked article from two years
+   * ago outranks the current one and nothing downstream can tell.
+   *
+   * The old trigger list was "products, facts, reviews, specs, prices", which
+   * omits every category that goes stale fastest: releases, versions, who holds
+   * a post, whether a thing still exists. And "Memory/reference questions do
+   * NOT need search" was read far too broadly by the model — "what is X" about
+   * a fast-moving library is a reference question whose answer changed last
+   * month. That clause now names the ONE case it was written for: a question
+   * about this conversation.
+   *
+   * The default is inverted too. It was "search only if clearly needed"; it is
+   * now "search unless the answer cannot change", because the two mistakes are
+   * not symmetrical. An unnecessary search costs about a second and some quota.
+   * A skipped one produces a confidently wrong answer the user has no way to
+   * detect. */
+  const sys = `${todayLine()}
+
+Decide what to search the web for before answering the user's question.
+
+SEARCH when the answer could have changed since your training, or when you would otherwise be recalling rather than knowing. That includes: anything current or "latest"; prices, availability and stock; software versions, releases and whether a project is still maintained; people's current roles; news and events; laws, rules and policies; company facts like ownership, funding or pricing tiers; specs, reviews and comparisons of real products; anything with a year in it.
+
+DO NOT search when the answer cannot change: mathematics, definitions, established science and history, how a well-known algorithm or protocol works, code the user pasted, creative writing, opinions, or a question about THIS conversation.
+
+If in doubt, search. A needless search costs a second; a skipped one makes you assert something stale as fact.
+
+Reply with the search queries, ONE PER LINE, at most 2. Write them as a person would type into a search engine — keywords, not a sentence, no quotes, no numbering. Use a second query only when the question genuinely has two parts that one query cannot cover; otherwise reply with exactly one line. Include the current year in a query only when recency is the point.
+
+If no search is needed, reply with exactly: NO${locale}`;
+  // 120 tokens rather than 50: two queries plus a stray word of preamble did
+  // not fit in 50, and the ceiling truncated the SECOND query mid-word, which
+  // parses as a valid short query and searches for half a phrase.
+  const response = await callModel(FAST_MODEL, [{ role: 'system', content: sys }, { role: 'user', content: userContent }], 0.0, 4000, 120);
+  return parseSearchPlan(response);
 };
 
 // ===== SEARCH FUNCTIONS =====
-const searchBrave = async (query) => {
+/* EVERY PROVIDER IS NOW ASKED FOR A DATE, AND TOLD WHEN "OLD" STARTS.
+ *
+ * Neither used to happen, and the two omissions compound. Search ranking
+ * REWARDS age — an article with three years of backlinks outranks yesterday's
+ * — so an unqualified query reliably returns the well-established stale page
+ * over the current one. Then the snippets arrived carrying no dates at all, so
+ * even a model that suspected the answer was old had nothing to check it
+ * against. The result was confidently outdated answers with real citations,
+ * which is the hardest kind to notice.
+ *
+ * `fresh` is the neutral window from lib/recency and is NULL for any question
+ * that is not about the present, because the reverse mistake is just as real:
+ * restricting "how does TCP slow start work" to the last year throws away the
+ * canonical sources and returns blog posts. See freshnessWindow for why the
+ * default window is a year rather than a month.
+ */
+const searchBrave = async (query, fresh = null) => {
   if (!BRAVE_API_KEY) return [];
-  try { const res = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query.slice(0,200))}&count=10`, { method: 'GET', headers: { 'Accept': 'application/json', 'X-Subscription-Token': BRAVE_API_KEY }, signal: AbortSignal.timeout(8000) }); if (!res.ok) return []; const data = await res.json(); return (data.web?.results || []).map(r => ({ title: r.title?.slice(0,200)||'', url: r.url, description: r.description?.slice(0,500)||'' })); } catch { return []; }
+  // Brave returns `page_age` as ISO and `age` as prose ("3 days ago"). The ISO
+  // one is preferred and the prose one is not parsed — a label that has to be
+  // guessed at is the thing normalizeDate exists to refuse.
+  const freshness = fresh ? `&freshness=${BRAVE_FRESHNESS[fresh.label] || 'py'}` : '';
+  try { const res = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query.slice(0,200))}&count=10${freshness}`, { method: 'GET', headers: { 'Accept': 'application/json', 'X-Subscription-Token': BRAVE_API_KEY }, signal: AbortSignal.timeout(8000) }); if (!res.ok) return []; const data = await res.json(); return (data.web?.results || []).map(r => ({ title: r.title?.slice(0,200)||'', url: r.url, description: r.description?.slice(0,500)||'', date: normalizeDate(r.page_age) })); } catch { return []; }
 };
-const searchTavily = async (query) => {
+const searchTavily = async (query, fresh = null) => {
   if (!TAVILY_API_KEY) return { answer: '', results: [], images: [] };
-  try { const res = await fetch('https://api.tavily.com/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ api_key: TAVILY_API_KEY, query: query.slice(0,400), search_depth: 'advanced', include_answer: true, include_raw_content: false, include_images: true, include_image_descriptions: true, max_results: 5 }), signal: AbortSignal.timeout(7000) }); if (!res.ok) return { answer: '', results: [], images: [] }; const data = await res.json(); return { answer: data.answer||'', results: (data.results||[]).map(r => ({ title: r.title?.slice(0,200)||'', url: r.url, content: (r.content||'').slice(0,3000) })), images: (data.images||[]).map(img => typeof img === 'string' ? img : (img.url||img)) }; } catch { return { answer: '', results: [], images: [] }; }
+  // `days` only applies to topic:news on Tavily, so both are set together or
+  // neither is. Sending `days` alone is silently ignored, which would look like
+  // the freshness window was applied when it was not.
+  const recency = fresh ? { topic: 'news', days: fresh.days } : {};
+  try { const res = await fetch('https://api.tavily.com/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ api_key: TAVILY_API_KEY, query: query.slice(0,400), search_depth: 'advanced', include_answer: true, include_raw_content: false, include_images: true, include_image_descriptions: true, max_results: 5, ...recency }), signal: AbortSignal.timeout(7000) }); if (!res.ok) return { answer: '', results: [], images: [] }; const data = await res.json(); return { answer: data.answer||'', results: (data.results||[]).map(r => ({ title: r.title?.slice(0,200)||'', url: r.url, content: (r.content||'').slice(0,3000), date: normalizeDate(r.published_date) })), images: (data.images||[]).map(img => typeof img === 'string' ? img : (img.url||img)) }; } catch { return { answer: '', results: [], images: [] }; }
 };
-const searchGoogleWeb = async (query) => {
+const searchGoogleWeb = async (query, fresh = null) => {
   if (!GOOGLE_SEARCH_API_KEY || !GOOGLE_CSE_ID) return [];
-  try { const res = await fetch(`https://www.googleapis.com/customsearch/v1?key=${GOOGLE_SEARCH_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query.slice(0,200))}&num=10`, { signal: AbortSignal.timeout(8000) }); if (!res.ok) return []; const data = await res.json(); return (data.items||[]).map(r => ({ title: r.title?.slice(0,200)||'', url: r.link, description: (r.snippet||'').slice(0,500) })); } catch { return []; }
+  /* dateRestrict, but NOT sort=date.
+   *
+   * `sort=date` orders strictly by recency and throws relevance away entirely,
+   * which on a slow topic returns whatever SEO page was published most recently
+   * rather than the answer. The restriction bounds the age; ranking still
+   * decides what is best within it.
+   *
+   * Google CSE has no dependable published date in its response — pagemap
+   * carries one only when the site happened to emit the right metadata — so
+   * these results stay undated rather than being labelled from a guess. */
+  const restrict = fresh ? `&dateRestrict=${GOOGLE_DATE_RESTRICT[fresh.label] || 'y1'}` : '';
+  try { const res = await fetch(`https://www.googleapis.com/customsearch/v1?key=${GOOGLE_SEARCH_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query.slice(0,200))}&num=10${restrict}`, { signal: AbortSignal.timeout(8000) }); if (!res.ok) return []; const data = await res.json(); return (data.items||[]).map(r => ({ title: r.title?.slice(0,200)||'', url: r.link, description: (r.snippet||'').slice(0,500), date: '' })); } catch { return []; }
 };
 const searchGoogleImages = async (query) => {
   if (!GOOGLE_SEARCH_API_KEY || !GOOGLE_CSE_ID) return [];
@@ -261,6 +332,8 @@ const { assertSafeUrl } = require('./lib/url-guard');
 const { checkLinks } = require('./lib/link-check');
 const { extractPageSignal } = require('./lib/page-extract');
 const { settleByDeadline } = require('./lib/deadline');
+const { todayLine, freshnessWindow, normalizeDate, dateLabel, BRAVE_FRESHNESS, GOOGLE_DATE_RESTRICT } = require('./lib/recency');
+const { parseSearchPlan } = require('./lib/search-plan');
 const { createSearchCache, comprehensiveSearchKey } = require('./lib/search-cache');
 const { createTtlCache } = require('./lib/ttl-cache');
 const { boundedPage, pageInfo } = require('./lib/pagination');
@@ -373,8 +446,15 @@ const toolSearch = async (query) => {
 };
 
 // ===== COMPREHENSIVE SEARCH =====
-const comprehensiveSearch = async (query, needsWiki) => {
-  const cacheKey = comprehensiveSearchKey(query, needsWiki);
+const comprehensiveSearch = async (query, needsWiki, fresh = null) => {
+  /* The freshness window is part of the cache KEY, not just the request.
+   *
+   * Two questions can produce the same search query text and want different
+   * windows — "iPhone 17 price" asked plainly, and "iPhone 17 price today".
+   * Keying on the text alone would serve the year-wide result set to the
+   * question that asked for today, which is the exact staleness this change
+   * exists to remove, reintroduced by the cache. */
+  const cacheKey = `${comprehensiveSearchKey(query, needsWiki)}:${fresh ? fresh.label : 'any'}`;
   const cached = await getCachedSearch(cacheKey); if (cached) return cached;
 
   /* THE SEARCH WHIP, and it is the same idea runCouncilWithWhip already uses
@@ -394,9 +474,9 @@ const comprehensiveSearch = async (query, needsWiki) => {
   const { results: [tavilyResult, braveResults, googleResults, googleImages, wikiContent], waited, pending } =
     await settleByDeadline(
       [
-        { promise: searchTavily(query), fallback: { answer: '', results: [], images: [] } },
-        { promise: searchBrave(query), fallback: [] },
-        { promise: searchGoogleWeb(query), fallback: [] },
+        { promise: searchTavily(query, fresh), fallback: { answer: '', results: [], images: [] } },
+        { promise: searchBrave(query, fresh), fallback: [] },
+        { promise: searchGoogleWeb(query, fresh), fallback: [] },
         { promise: searchGoogleImages(query), fallback: [] },
         { promise: needsWiki ? searchWikipedia(query) : Promise.resolve(''), fallback: '' },
       ],
@@ -420,11 +500,19 @@ const comprehensiveSearch = async (query, needsWiki) => {
   if (pending > 0) console.log(`[SEARCH] answered in ${waited}ms with ${pending} provider(s) still outstanding`);
   const td = Array.isArray(tavilyResult) ? { answer:'',results:[],images:[] } : tavilyResult;
   const sources = [], allImages = []; let ctx = '';
+  /* EVERY SOURCE CARRIES ITS DATE INTO THE PROMPT.
+   *
+   * The snippets used to arrive as Title/URL/Content with nothing to say when
+   * any of it was written, so "the latest version is X" from a 2024 page and
+   * the same sentence from last week were indistinguishable to the model, and
+   * it had no way to prefer one — or to tell the user which it used. Undated
+   * sources say "unknown" in words rather than being left blank; see dateLabel
+   * for why silence is the worse of the two. */
   if (td.answer) ctx += `TAVILY ANSWER: ${td.answer}\n\n---\n\n`;
-  if (td.results?.length > 0) { ctx += `TAVILY RESULTS:\n${td.results.map((r,i) => `SOURCE ${i+1}:\nTitle: ${r.title}\nURL: ${r.url}\nContent: ${r.content}`).join('\n\n---\n\n')}\n\n---\n\n`; td.results.forEach(r => sources.push({title:r.title,url:r.url})); }
+  if (td.results?.length > 0) { ctx += `TAVILY RESULTS:\n${td.results.map((r,i) => `SOURCE ${i+1}:\nTitle: ${r.title}\nURL: ${r.url}\n${dateLabel(r.date)}\nContent: ${r.content}`).join('\n\n---\n\n')}\n\n---\n\n`; td.results.forEach(r => sources.push({title:r.title,url:r.url,date:r.date||''})); }
   if (td.images?.length > 0) allImages.push(...td.images.filter(u => u && u.startsWith('http')));
-  if (braveResults.length > 0) { ctx += `BRAVE:\n${braveResults.map((r,i) => `SOURCE ${i+1}:\nTitle: ${r.title}\nURL: ${r.url}\nContent: ${r.description}`).join('\n\n---\n\n')}\n\n---\n\n`; braveResults.forEach(r => { if (!sources.find(s => s.url === r.url)) sources.push({title:r.title,url:r.url}); }); }
-  if (googleResults.length > 0) { ctx += `GOOGLE:\n${googleResults.map((r,i) => `SOURCE ${i+1}:\nTitle: ${r.title}\nURL: ${r.url}\nContent: ${r.description}`).join('\n\n---\n\n')}\n\n---\n\n`; googleResults.forEach(r => { if (!sources.find(s => s.url === r.url)) sources.push({title:r.title,url:r.url}); }); }
+  if (braveResults.length > 0) { ctx += `BRAVE:\n${braveResults.map((r,i) => `SOURCE ${i+1}:\nTitle: ${r.title}\nURL: ${r.url}\n${dateLabel(r.date)}\nContent: ${r.description}`).join('\n\n---\n\n')}\n\n---\n\n`; braveResults.forEach(r => { if (!sources.find(s => s.url === r.url)) sources.push({title:r.title,url:r.url,date:r.date||''}); }); }
+  if (googleResults.length > 0) { ctx += `GOOGLE:\n${googleResults.map((r,i) => `SOURCE ${i+1}:\nTitle: ${r.title}\nURL: ${r.url}\n${dateLabel(r.date)}\nContent: ${r.description}`).join('\n\n---\n\n')}\n\n---\n\n`; googleResults.forEach(r => { if (!sources.find(s => s.url === r.url)) sources.push({title:r.title,url:r.url,date:r.date||''}); }); }
   if (googleImages.length > 0) allImages.push(...googleImages.map(img => img.url).filter(u => u && u.startsWith('http')));
   if (wikiContent) ctx += `WIKIPEDIA:\n${wikiContent}\n\n---\n\n`;
   // The full read of the top result, on a leash. It used to be an unbounded
@@ -1053,10 +1141,18 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     // 2. SEARCH
     // Started above, alongside the memory check. By the time control reaches
     // here it has usually already resolved, so this await is free.
-    const searchQuery = await searchQueryP;
+    const searchQueries = await searchQueryP;
     const shouldCheckWiki = needsWikiCheck(pv.value);
+    /* Derived from the USER'S words, not from the query the model wrote.
+     *
+     * The model is asked to include the year "only when recency is the point",
+     * so the query text is an unreliable signal for the freshness window — a
+     * question that plainly says "right now" can produce a query with nothing
+     * time-ish in it at all. The question is the thing that knows whether the
+     * present matters. See lib/recency. */
+    const fresh = freshnessWindow(pv.value);
 
-    if (searchQuery) {
+    if (searchQueries) {
       /* THE SCREEN STOPS BEING BLANK HERE, not when the answer starts.
        *
        * The search path is the most common one and it showed nothing until the
@@ -1071,9 +1167,38 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
        * Reusing that contract rather than inventing a second progress channel
        * is also why this is four lines. */
       openStream(res);
-      sendEvent(res, { type: 'tool_start', round: 1, name: 'web_search', summary: `Searching: ${searchQuery.slice(0, 80)}` });
+      sendEvent(res, { type: 'tool_start', round: 1, name: 'web_search', summary: `Searching: ${searchQueries.join(' · ').slice(0, 80)}` });
 
-      const { context, sources, found, images } = await comprehensiveSearch(searchQuery, shouldCheckWiki);
+      /* CONCURRENT, so two queries cost the wall clock of one.
+       *
+       * Each comprehensiveSearch is its own five-provider fan-out under its own
+       * 3.5s deadline. Run in series that is seven seconds; run together it is
+       * still three and a half, because the deadlines overlap rather than
+       * queue. The extra cost is provider quota and prompt tokens, not the
+       * user's time — which is the only reason researching two angles is
+       * affordable at all. Capped at two by parseSearchPlan; see that file for
+       * why not five.
+       *
+       * Wikipedia is asked for on the FIRST query only. It is an encyclopedia
+       * lookup on the subject, and the subject does not change between the two
+       * halves of one question — asking twice pays a second round trip for the
+       * same article. */
+      const perQuery = await Promise.all(
+        searchQueries.map((q, i) => comprehensiveSearch(q, shouldCheckWiki && i === 0, fresh)),
+      );
+
+      /* Merged on URL, because two queries about one subject overlap heavily
+       * and the same page arriving twice is not corroboration — it reads to the
+       * model as two independent sources agreeing, which is exactly the wrong
+       * signal to send about a single page. */
+      const found = perQuery.some((r) => r.found);
+      const sources = [];
+      for (const r of perQuery) for (const s of r.sources) if (!sources.find((x) => x.url === s.url)) sources.push(s);
+      const images = [...new Set(perQuery.flatMap((r) => r.images))];
+      const context = perQuery
+        .map((r, i) => (r.context ? `=== SEARCH ${i + 1}: ${searchQueries[i]} ===\n${r.context}` : ''))
+        .filter(Boolean)
+        .join('\n\n');
 
       sendEvent(res, {
         type: 'tool_result', round: 1, name: 'web_search', ok: found,
@@ -1087,8 +1212,21 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
         await auditLog(user.id, 'council', { category: 'no_results' }, req.ip);
         return;
       }
-      console.log(`[COUNCIL] ${sources.length} sources, ${context.length} chars.`);
-      const extSys = `You are a precision data extraction engine. Use ONLY the provided data.\n\nRULES:\n1. Only state facts from the data.\n2. No training data.\n3. No inferring/guessing.\n4. No comparing unless both products are in data.\n5. If not in data, say "I couldn't find this in the search results."\n6. Include URLs as Markdown: [Title](URL)\n7. No inventing specs/prices.\n8. Note contradictions between sources.\n9. Format in Markdown. Match answer length to question. Be concise for simple questions.\n10. List sources at bottom under "## Sources".\n11. Embed images if provided: ![Description](url)\n12. CONVERSATION CONTEXT and history are EXEMPT from rules 1-5.${lang !== 'English' ? `\n13. Respond in ${lang}.` : ''}`;
+      console.log(`[COUNCIL] ${searchQueries.length} quer${searchQueries.length === 1 ? 'y' : 'ies'}, ${sources.length} sources, ${context.length} chars${fresh ? `, freshness=${fresh.label}` : ''}.`);
+      /* Rules 13 to 15 are the recency half, and they are separate rules rather
+       * than a clause bolted onto rule 1 because each fails on its own.
+       *
+       * Every source now arrives with a `Published:` line — see comprehensiveSearch
+       * — and without an instruction the model treats that line as decoration.
+       * It has to be told to PREFER the recent one when two disagree, because
+       * its default is to prefer whichever is more detailed, and stale pages are
+       * often the more detailed ones.
+       *
+       * Rule 15 is the one that reaches the user. A dated claim stated bare
+       * ("the price is X") is indistinguishable from a current one; the same
+       * claim with "as of" attached lets them judge for themselves, which is
+       * the whole point of having searched. */
+      const extSys = `${todayLine()}\n\nYou are a precision data extraction engine. Use ONLY the provided data.\n\nRULES:\n1. Only state facts from the data.\n2. No training data.\n3. No inferring/guessing.\n4. No comparing unless both products are in data.\n5. If not in data, say "I couldn't find this in the search results."\n6. Include URLs as Markdown: [Title](URL)\n7. No inventing specs/prices.\n8. Note contradictions between sources.\n9. Format in Markdown. Match answer length to question. Be concise for simple questions.\n10. List sources at bottom under "## Sources".\n11. Embed images if provided: ![Description](url)\n12. CONVERSATION CONTEXT and history are EXEMPT from rules 1-5.\n13. Each source carries a Published date. When sources disagree, prefer the most recent one and say that the older one is out of date — do not average them or pick the more detailed one.\n14. If every source on a time-dependent point is more than a year old, say so rather than presenting it as current.\n15. Attach the date to any fact that changes over time: "as of [date]". A price, version or ranking stated bare reads as current even when it is not.${lang !== 'English' ? `\n16. Respond in ${lang}.` : ''}`;
       const extMsgs = [{ role: 'system', content: extSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n\n=== SEARCH DATA ===\n${context}` }];
       openStream(res);
       await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0);
@@ -1103,7 +1241,9 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     if (shouldCheckWiki) {
       const wiki = await searchWikipedia(pv.value);
       if (wiki) {
-        const wikiSys = `You are a data extraction engine. Use ONLY the Wikipedia content. No training data. If not found, say "I couldn't find this on Wikipedia." Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+        const wikiSys = `${todayLine()}
+
+You are a data extraction engine. Use ONLY the Wikipedia content. No training data. If not found, say "I couldn't find this on Wikipedia." Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
         // Its own fetch, not searchWeb's, so it needs its own label. Wikipedia is
         // world-editable: this is the one source where an attacker does not even
         // need a site of their own.
@@ -1118,7 +1258,15 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     }
 
     // 4. COUNCIL
-    const councilSys = `You are an elite AI expert in the ALOP-AI Council. If outside your expertise, reply ONLY "SKIP". If you answer, be direct. Match response length to question complexity. Use Markdown. If context/history provided, use for continuity. ${isDetailed ? 'Be thorough.' : 'Be concise.'}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+    /* The date reaches the COUNCIL too, not only the search path.
+     *
+     * This branch runs when the router decided no search was needed, which is
+     * precisely the branch answering from recall — the one place a stale fact
+     * has nothing to contradict it. Leaving the date out here would have fixed
+     * staleness only where sources already existed to fix it. */
+    const councilSys = `${todayLine()}
+
+You are an elite AI expert in the ALOP-AI Council. If outside your expertise, reply ONLY "SKIP". If you answer, be direct. Match response length to question complexity. Use Markdown. If context/history provided, use for continuity. ${isDetailed ? 'Be thorough.' : 'Be concise.'}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
     const councilMsgs = [{ role: 'system', content: councilSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
 
     // The agent loop, when enabled, replaces the single-shot council with
@@ -1199,7 +1347,9 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     // 5. FALLBACK
     if (validResponses.length === 0) {
       console.log('[COUNCIL] Fallback.');
-      const fbSys = `You are a helpful AI assistant. Answer directly. Match length to question. If you don't know, say "I don't have enough information." Don't guess. Use context if provided. Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+      const fbSys = `${todayLine()}
+
+You are a helpful AI assistant. Answer directly. Match length to question. If you don't know, say "I don't have enough information." Don't guess. Use context if provided. Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
       const fbMsgs = [{ role: 'system', content: fbSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
       openStream(res);
       await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0);
@@ -1210,7 +1360,9 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     }
 
     // 6. SYNTHESIS
-    const synthSys = `You are the Chief Synthesiser for a panel of independent experts who answered the same question separately. Reconcile them — do not average them.
+    const synthSys = `${todayLine()}
+
+You are the Chief Synthesiser for a panel of independent experts who answered the same question separately. Reconcile them — do not average them.
 
 1. Where they agree, state it once, plainly.
 2. Where they disagree on a FACT, say so and give the competing claims. Do not silently pick one.
@@ -1301,7 +1453,12 @@ app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
     // Four turns is the overlay's own budget; the sanitising is shared.
     const histArr = sanitizeHistory(history, { maxMessages: 4 });
     const overlayMsgs = [
-      { role: 'system', content: 'You are ALOP-AI Overlay. Give concise answers. For coding, provide working code. If screen description provided, use it.' },
+      // The overlay answers questions like any other surface, so it gets the
+      // same date anchor. It was the last prompt in the app still asserting
+      // time-dependent facts from recall with nothing to check them against.
+      { role: 'system', content: `${todayLine()}
+
+You are ALOP-AI Overlay. Give concise answers. For coding, provide working code. If screen description provided, use it.` },
       ...histArr,
       { role: 'user', content: ctx ? `Screen: ${ctx}\n\nQuestion: ${pv.value}` : `Question: ${pv.value}` }
     ];

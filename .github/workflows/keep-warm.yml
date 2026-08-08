@@ -78,7 +78,18 @@ jobs:
       - name: Ping /health across the idle window
         run: |
           set -u
-          URL="https://alop-ai.onrender.com/health"
+          # Points at Fly (Mumbai) since the backend moved off Render.
+          #
+          # THIS CRON IS NOW OPTIONAL AND SHOULD PROBABLY BE DELETED.
+          # It exists because Render's free tier spun the service down
+          # after an idle window. fly.toml sets auto_stop_machines=false
+          # with min_machines_running=1, so there is no idle window left
+          # to keep warm. What remains is an uptime check — worth keeping
+          # only if you actually read its failures, and this one has a
+          # recorded history of false reds (GitHub drops scheduled ticks,
+          # and the concurrency group cancels merely-QUEUED runs). Keep it
+          # as monitoring or remove it; do not keep it as a warmer.
+          URL="${KEEP_WARM_URL:-https://alop-ai-backend.fly.dev/health}"
           # Five pings, five minutes apart, so one run spans a full Render idle
           # window and then some. /health is unauthenticated, does no database
           # work, and is rate limited at 120/min — this is nowhere near it.

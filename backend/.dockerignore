@@ -1,0 +1,24 @@
+# .env FIRST and non-negotiable. This directory has a real .env with the
+# Supabase service-role key in it, and `COPY . .` would bake it into an image
+# layer — readable by anyone who can pull the image, and still present even if a
+# later layer deletes it. Secrets reach the container through `fly secrets`,
+# never through the build.
+.env
+.env.*
+!.env.example
+
+# Rebuilt inside the image by `npm ci`. Copying the host's tree in would ship
+# Windows-resolved binaries to a Linux container.
+node_modules
+
+# Tests and their fixtures never run in production, and --omit=dev means their
+# dependencies are not installed anyway.
+**/*.test.js
+scripts
+
+.git
+.gitignore
+Dockerfile
+.dockerignore
+fly.toml
+npm-debug.log*

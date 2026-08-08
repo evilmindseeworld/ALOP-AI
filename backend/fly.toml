@@ -1,0 +1,74 @@
+# Mumbai, because that is where the database already is.
+#
+# THE MEASUREMENT THAT CHOSE THIS, taken from the user's machine in Dubai:
+#
+#   Mumbai     43ms      <- Supabase lives here (ap-south-1)
+#   Frankfurt  134ms     <- where the backend was
+#   Singapore  173ms
+#   Virginia   262ms
+#   Oregon     271ms
+#
+# Render sells none of Mumbai, which is the entire reason for moving hosts. It
+# is not a cost decision and it is not a dissatisfaction with Render.
+#
+# WHY THE DATABASE LEG DECIDES THIS AND NOT THE USER LEG. A turn makes roughly
+# five SEQUENTIAL database round-trips (ensureUser, the batched memory reads,
+# the search-cache read, the usage increment, the chat update) but only one
+# user connection and — because the council fans out concurrently — only one
+# round-trip's worth of model latency, seven calls deep. Latency multiplies by
+# the number of SEQUENTIAL hops, so co-locating with Postgres beats sitting
+# next to either the user or the model gateway.
+#
+# Fly's Mumbai is not the same building as AWS ap-south-1, so the database hop
+# lands around 2-8ms rather than the ~1ms an ECS task in ap-south-1 itself would
+# see. That difference is a few milliseconds against a turn measured in seconds,
+# and it costs a container platform's worth of operations to collect. Not worth
+# it at this size; revisit if the database ever becomes the measured bottleneck.
+
+app = "alop-ai-backend"
+primary_region = "bom"
+
+[build]
+
+[env]
+  NODE_ENV = "production"
+  # Matches the `process.env.PORT || 3000` default in server.js. Stated rather
+  # than inherited so that changing one without the other is a visible edit.
+  PORT = "3000"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+
+  # NO SCALE-TO-ZERO, and this is the one setting worth arguing about.
+  #
+  # A cold start on this app is not "the first request is slow" — it is a Node
+  # process booting, reconnecting to Supabase and Clerk, before a council turn
+  # that already takes seconds. Render's free tier spun down, which is the only
+  # reason the GitHub keep-warm cron exists at all; that cron has been unreliable
+  # in exactly the ways recorded in AGENTS.md (GitHub drops scheduled ticks, and
+  # a concurrency group with cancel-in-progress cancels merely-QUEUED runs).
+  #
+  # One always-on shared-cpu machine costs a couple of dollars a month and
+  # deletes that whole class of problem, including the cron that was papering
+  # over it.
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [[http_service.checks]]
+    # /health is a plain res.json — no database, no model call — so a failing
+    # check means the process is down rather than a dependency being slow.
+    # A check that touches Postgres would restart the app during a Supabase
+    # blip, which is the opposite of what you want.
+    path = "/health"
+    interval = "30s"
+    timeout = "5s"
+    grace_period = "20s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  # 512, not 256. The council holds seven in-flight model responses plus the
+  # search fan-out's page reads in memory at once; 256MB is comfortable until
+  # the one turn where it is not, and an OOM kill drops a live SSE stream.
+  memory = "512mb"

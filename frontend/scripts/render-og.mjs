@@ -137,6 +137,55 @@ const ICON = 144;
 writeFileSync("public/favicon.png", markTile(ICON));
 console.log(`favicon.png: ${ICON}x${ICON}`);
 
+/* AND /favicon.ico, because that path is requested whether it is declared or not.
+ *
+ * `<link rel="icon">` points at favicon.png and browsers honour it, so this is
+ * not for them. It is for the callers that never read the HTML: Google's
+ * favicon crawler probes /favicon.ico directly, and so do feed readers, chat
+ * link unfurlers and monitoring tools. That path returned the SPA's 404 page —
+ * served as text/html, which is a worse answer than nothing, because a client
+ * expecting an image gets a document.
+ *
+ * Multi-size on purpose. An .ico is a container, and each consumer picks the
+ * entry it wants: 16 and 32 for a tab strip and a bookmark bar, 48 because
+ * that is the size Google's crawler asks for. Shipping one 144 and letting
+ * every consumer downscale it is how a mark turns to mush at 16px.
+ *
+ * The ICO container is assembled by hand — six fields and a directory — rather
+ * than by adding an image library to devDependencies for a file that changes
+ * about once a year.
+ */
+const ICO_SIZES = [16, 32, 48, 64, 128];
+function ico(sizes) {
+  const images = sizes.map((s) => markTile(s));
+  const HEADER = 6;
+  const ENTRY = 16;
+  const dir = Buffer.alloc(HEADER + ENTRY * images.length);
+  dir.writeUInt16LE(0, 0); // reserved
+  dir.writeUInt16LE(1, 2); // 1 = icon
+  dir.writeUInt16LE(images.length, 4);
+
+  let offset = dir.length;
+  images.forEach((png, i) => {
+    const at = HEADER + ENTRY * i;
+    const s = sizes[i];
+    // 0 means 256 in this field; every size here is below that, but the rule is
+    // why the field is a single byte and worth not tripping over later.
+    dir.writeUInt8(s >= 256 ? 0 : s, at);
+    dir.writeUInt8(s >= 256 ? 0 : s, at + 1);
+    dir.writeUInt8(0, at + 2); // palette size, 0 for truecolour
+    dir.writeUInt8(0, at + 3); // reserved
+    dir.writeUInt16LE(1, at + 4); // colour planes
+    dir.writeUInt16LE(32, at + 6); // bits per pixel
+    dir.writeUInt32LE(png.length, at + 8);
+    dir.writeUInt32LE(offset, at + 12);
+    offset += png.length;
+  });
+  return Buffer.concat([dir, ...images]);
+}
+writeFileSync("public/favicon.ico", ico(ICO_SIZES));
+console.log(`favicon.ico: ${ICO_SIZES.join(", ")}`);
+
 /* The logo Google is told about in JSON-LD, and it cannot be logo.png.
  *
  * That file is a 721x720 square drawn at #000 on a #040404 field — to a

@@ -189,9 +189,19 @@ production. See the trap below.
    flights, hotels, scholar, finance; billed per call, 100/month free), and
    `PERPLEXITY_API_KEY` if it is still missing. `PERPLEXITY_MODEL` defaults to
    `sonar` and `PAGE_READ_LIMIT` to 3; neither needs setting.
-3. **`users` has no index on `email`, `stripe_customer_id` or
-   `stripe_subscription_id`**, which the Stripe webhook probes. Sequential
-   scans, free at 2 rows. Watch webhook latency, not row count.
+3. **Two `grant execute` statements at the end of `012_rls_recursion.sql` are
+   unapplied.** See the RLS entry below. No production impact, but the
+   migration is not finished until they run.
+
+4. **`@clerk/clerk-sdk-node` is deprecated and carries a high-severity
+   advisory.** `npm audit` reports `js-cookie <=3.0.5` (GHSA-qjx8-664m-686j,
+   cookie-attribute injection) reached through `@clerk/shared`. Traced before
+   panicking: the only import is `@clerk/shared/dist/cookie.js`, browser-side
+   code that this Node backend never executes, so it is **not reachable here**.
+   The real fix is migrating to `@clerk/express`, which is an auth-path change
+   worth its own session and a live Clerk to test against — not something to
+   slip into an unrelated commit. `npm audit fix --force` would downgrade to
+   `@clerk/clerk-sdk-node@4` and break the app.
 
 ### Accessibility: what still needs a real browser
 
@@ -233,6 +243,49 @@ themes.
       our accessibility obligation regardless of who wrote it.
 
 ### Closed since the last handoff
+
+- **The RLS layer had never worked. Every policy recursed.** Found by running
+  the policies rather than reading them — `set local role authenticated`, set
+  `request.jwt.claims` to a real user, `select count(*) from chats`:
+
+  ```
+  ERROR: 54001 stack depth limit exceeded
+  CONTEXT: SQL function "current_app_user_id" during startup   (x ~400)
+  ```
+
+  The cycle, in place since migration 002: policy `chats_owner` calls
+  `current_app_user_id()`, which does `SELECT id FROM users`, which triggers
+  policy `users_self_read`, which calls `current_app_user_id()`. Same for
+  `chat_files` and `usage`.
+
+  It was invisible because the backend holds the **service-role key, which
+  bypasses RLS**, and the frontend has no Supabase client at all — there is no
+  `createClient` anywhere in `frontend/src`. Nothing has ever taken the path
+  that recurses. So this was a latent bug and not an incident, and the whole
+  point of fixing it now is that the day somebody adds a direct-from-browser
+  path is the worst possible day to find out the guard rail throws instead of
+  denying.
+
+  Fix in `012_rls_recursion.sql`: an RLS helper that reads a table protected by
+  a policy that calls that helper **must be SECURITY DEFINER**, or it cannot
+  terminate. `current_app_user_id()` and the new `current_app_is_admin()` are
+  both DEFINER with a pinned `search_path`. Safe because they take no
+  arguments and derive everything from a claim the caller already proved.
+
+  **Two traps here, both of which bit during this work:**
+  1. A policy expression is evaluated AS THE CALLING ROLE, so it DOES consult
+     `EXECUTE` privilege on functions it calls. Revoking EXECUTE from
+     `authenticated` "because policies don't check grants" turned every policy
+     from denying correctly into `42501 permission denied for function`. The
+     grants are required. Do not revoke them again.
+  2. Testing this needs `set local role` plus a forged `request.jwt.claims`.
+     Reading the SQL will not show you either failure.
+
+  **STILL OPEN:** the two `grant execute` statements at the end of 012 have NOT
+  been applied — the tool that runs DDL here refused GRANT. Until they run,
+  RLS denies with an error rather than a clean false. No production impact
+  (nothing uses that path), but 012 is not finished. Run them from the Supabase
+  SQL editor.
 
 - **SerpApi's ~110 "APIs" are one endpoint, and they are ONE council tool.**
   The dashboard lists Google Flights API, Yelp Reviews API, YouTube Transcript

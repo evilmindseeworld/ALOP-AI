@@ -35,10 +35,34 @@ if (import.meta.env.VITE_SENTRY_DSN) {
   });
 }
 
+/* The annotation toolbar, and it must never reach production.
+ *
+ * `import.meta.env.DEV` is replaced with the literal `false` at build time, so
+ * this ternary folds to `null` and Rollup drops the dynamic import with it —
+ * agentation is a devDependency and a prod bundle that referenced it would
+ * fail to build the moment a deploy installed with --omit=dev. A plain
+ * top-level import would NOT be dropped; the laziness here is load-bearing.
+ *
+ * The endpoint is Agent Sync: the toolbar posts annotations to the local
+ * agentation-mcp server, which is what lets the agent read them as tool calls
+ * instead of the user pasting markdown. With the server down the toolbar still
+ * works and still copies to the clipboard, so this cannot break `npm run dev`. */
+const Agentation = import.meta.env.DEV
+  ? React.lazy(() => import('agentation').then((m) => ({ default: m.Agentation })))
+  : null;
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <ErrorBoundary>
       <App />
     </ErrorBoundary>
+    {Agentation && (
+      /* Outside the ErrorBoundary on purpose. A dev tool that crashes must not
+         take down the app it is being used to inspect, and the boundary's job
+         is to report product failures — not to swallow a toolbar's. */
+      <React.Suspense fallback={null}>
+        <Agentation endpoint="http://localhost:4747" />
+      </React.Suspense>
+    )}
   </React.StrictMode>
 );

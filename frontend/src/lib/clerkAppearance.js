@@ -113,8 +113,28 @@ export const clerkAppearance = {
 
     formButtonPrimary: {
       width: "100%",
-      background: "linear-gradient(135deg, var(--primary), var(--primary-soft))",
-      color: "#fff",
+      /* MEASURED AS RENDERED, not as declared, and it failed.
+       *
+       * White on this gradient is 1.86:1 at its light end — against a 4.5:1
+       * requirement, on the primary call-to-action of the only page a signed-out
+       * visitor can reach. Found by hiding the text, screenshotting the real
+       * page, and sampling the actual pixels under the string; no static check
+       * could have caught it, because a gradient has no single background
+       * colour to check against.
+       *
+       * `--text-on-fill` already existed for exactly this bug — its own comment
+       * says "This was #ffffff, which is 2.6:1 on the pink and failed AA
+       * everywhere it was used". The app's own buttons were fixed then. This
+       * one was missed because it is styled through Clerk's appearance object
+       * rather than through CSS, so it was not where anyone looked.
+       *
+       * The gradient ends at `--primary-strong`, NOT `--primary-soft`, and that
+       * half matters as much as the colour. In the light theme the fill is a
+       * deep rose and the text is white, so a gradient running LIGHTER drops to
+       * 3.91:1 at its far end. Running toward the strong end instead keeps both
+       * themes above AA: dark 5.61:1, light 6.35:1. */
+      background: "linear-gradient(135deg, var(--primary), var(--primary-strong))",
+      color: "var(--text-on-fill)",
       fontFamily: "'Switzer', sans-serif",
       fontWeight: 700,
       fontSize: "14px",

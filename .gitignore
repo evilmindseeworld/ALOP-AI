@@ -20,3 +20,4 @@ skills-lock.json
 
 # graphify build artifacts (regenerate with /graphify .)
 graphify-out/
+.gstack/

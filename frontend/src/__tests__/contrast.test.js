@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { readTokenFile, ratio } from "../test/contrast";
@@ -175,5 +176,44 @@ describe.each([
         `the focus ring is invisible on ${surface} in the ${themeName} theme`
       ).toBeGreaterThanOrEqual(AA_LARGE);
     }
+  });
+});
+
+/* The Clerk sign-in button, which is styled through an appearance OBJECT and
+ * not through CSS — which is exactly why it was missed.
+ *
+ * The token pairs above already prove --text-on-fill clears AA on --primary
+ * and --primary-strong. What no test proved is that this button USES them. It
+ * hardcoded `color: "#fff"` over a gradient ending at --primary-soft, measured
+ * at 1.86:1 against the rendered page, on the primary call-to-action of the
+ * only page a signed-out visitor can reach.
+ *
+ * Asserted as source because the value is a Clerk appearance object rather
+ * than a stylesheet: there is no rendered node to query without booting Clerk,
+ * and the failure is in what the object SAYS. */
+describe("the Clerk primary button inherits the fill tokens", () => {
+  const source = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "..", "lib", "clerkAppearance.js"),
+    "utf8"
+  );
+  const button = source.slice(
+    source.indexOf("formButtonPrimary:"),
+    source.indexOf("formFieldInput:") > 0 ? source.indexOf("formFieldInput:") : undefined
+  );
+
+  it("takes its text colour from --text-on-fill, never a literal", () => {
+    expect(button).toContain("var(--text-on-fill)");
+    expect(
+      /color:\s*["']#/.test(button),
+      "a literal hex here cannot follow the theme — white is 1.86:1 on the dark theme's pink"
+    ).toBe(false);
+  });
+
+  it("runs its gradient toward --primary-strong, not --primary-soft", () => {
+    // Direction, not decoration. In the light theme the fill is a deep rose
+    // under white text, so a gradient running lighter falls to 3.91:1 at its
+    // far end. --primary-strong keeps both themes above AA.
+    expect(button).toContain("var(--primary-strong)");
+    expect(button).not.toContain("var(--primary-soft)");
   });
 });

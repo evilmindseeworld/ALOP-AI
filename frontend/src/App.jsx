@@ -158,6 +158,24 @@ const AuthenticatedApp = () => {
   }, [status]);
 
   // --- animation ---------------------------------------------------------
+  /* THE ONE PLACE `prefers-reduced-motion` CANNOT REACH.
+   *
+   * The stylesheet has a reduced-motion block and nine components honour it,
+   * which is why this looked covered. It is not: anime.js writes inline styles
+   * frame by frame from JavaScript, and a CSS media query has no opinion about
+   * a value being assigned to element.style. Both calls below therefore ran at
+   * full motion for a user who had asked the whole system for less — a
+   * transcript row springing in on every single message, which is the exact
+   * repetition motion sensitivity reacts to.
+   *
+   * Read at call time, not once at module load: this is a system setting a
+   * user can change while the tab is open, and a value captured at import
+   * would keep animating until a reload. */
+  const reducedMotion = () =>
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
   useEffect(() => {
     if (!chatRef.current) return;
 
@@ -169,7 +187,9 @@ const AuthenticatedApp = () => {
      * which now owns that motion against a ref. Only the transcript's own rows
      * are animated here, and those are queried from a live DOM. */
     const rows = chatRef.current.querySelectorAll(".msg-row");
-    if (rows.length) {
+    // No animation at all rather than a faster one: the row is already in the
+    // DOM and readable, so skipping the entrance costs nothing to see.
+    if (rows.length && !reducedMotion()) {
       animate(rows[rows.length - 1], {
         opacity: [0, 1],
         translateY: [16, 0],
@@ -185,6 +205,7 @@ const AuthenticatedApp = () => {
     const onClick = (e) => {
       const button = e.target.closest(".input-btn.primary, .new-chat-btn, .overlay-submit");
       if (!button) return;
+      if (reducedMotion()) return;
       animate(button, { scale: [{ to: 0.9, duration: 80 }, { to: 1, ease: spring({ bounce: 0.6 }) }] });
     };
     document.addEventListener("click", onClick);

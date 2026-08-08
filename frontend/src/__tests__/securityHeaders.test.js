@@ -29,7 +29,17 @@ import { dirname, join } from "node:path";
 const here = dirname(fileURLToPath(import.meta.url));
 const CONFIG = JSON.parse(readFileSync(join(here, "..", "..", "vercel.json"), "utf8"));
 
-const rule = CONFIG.headers?.[0];
+/* Found by SOURCE, not by index.
+ *
+ * This read `headers[0]`, which was the security rule right up until a
+ * Cache-Control rule for /fonts/ was added above it. Every assertion in this
+ * file then went green-to-null against a block that has no CSP in it at all —
+ * twelve failures whose message was "the given combination of arguments (null
+ * and string) is invalid", which says nothing about the actual cause.
+ *
+ * The catch-all `/(.*)` rule is the one that carries these headers, and it is
+ * identified by what it matches rather than by where it sits in the array. */
+const rule = CONFIG.headers?.find((h) => h.source === "/(.*)");
 const headers = Object.fromEntries((rule?.headers || []).map((h) => [h.key, h.value]));
 const csp = headers["Content-Security-Policy"] || "";
 

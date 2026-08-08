@@ -471,10 +471,41 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null) => {
    *
    * 3.5s is the hard stop. Anything still outstanding is dropped and its
    * provider simply does not contribute to this turn. */
+  const tavilyP = searchTavily(query, fresh);
+
+  /* THE FULL-PAGE READ STARTS NOW, not after the fan-out finishes.
+   *
+   * That read is the last serial leg on the most common path in the app: the
+   * fan-out takes up to 3.5s, and only then does a 2.5s page fetch begin, so
+   * six seconds could pass before the answering model saw a single token. The
+   * two do not depend on each other — the read only needs a URL, and Tavily has
+   * one the moment it answers.
+   *
+   * Speculative, and deliberately only on Tavily. It is first in the precedence
+   * order below, so its top result IS the page that gets read in the large
+   * majority of turns. When it is not — Tavily timed out, or another provider's
+   * result sorted first — `warm` simply does not match and the read happens
+   * cold exactly as before. No behaviour changes; the page is either already in
+   * flight or it is not.
+   *
+   * Not awaited anywhere. Awaiting `tavilyP` here would reintroduce the very
+   * stall the whip exists to prevent: a Tavily that the 3.5s deadline gave up
+   * on would still hold this line until its own 7s timeout. The callback sets a
+   * variable and the code below reads it synchronously, so a Tavily that never
+   * arrives costs nothing.
+   *
+   * readPageContent swallows its own failures and resolves to '', so an
+   * abandoned warm read cannot become an unhandled rejection. */
+  let warm = null;
+  tavilyP.then((t) => {
+    const url = t?.results?.[0]?.url;
+    if (url) warm = { url, content: readPageContent(url) };
+  }).catch(() => {});
+
   const { results: [tavilyResult, braveResults, googleResults, googleImages, wikiContent], waited, pending } =
     await settleByDeadline(
       [
-        { promise: searchTavily(query, fresh), fallback: { answer: '', results: [], images: [] } },
+        { promise: tavilyP, fallback: { answer: '', results: [], images: [] } },
         { promise: searchBrave(query, fresh), fallback: [] },
         { promise: searchGoogleWeb(query, fresh), fallback: [] },
         { promise: searchGoogleImages(query), fallback: [] },
@@ -520,12 +551,18 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null) => {
   // six seconds on top of the search, in series, for a nice-to-have. It is
   // extra depth on one source; the snippets already carry the answer often
   // enough that waiting is the wrong trade.
+  //
+  // It is no longer serial in the common case: the read is started speculatively
+  // on Tavily's top result as soon as Tavily answers, so by the time control
+  // reaches here it has usually been in flight for the whole fan-out and the
+  // remaining wait is what is left of the 2.5s rather than all of it. `warm`
+  // only counts when it is the SAME page this block was going to read anyway —
+  // otherwise the read happens cold, exactly as it did before.
   if (sources.length > 0) {
-    const { results: [pc] } = await settleByDeadline(
-      [{ promise: readPageContent(sources[0].url), fallback: '' }],
-      { deadlineMs: 2500 },
-    );
-    if (pc && pc.length > 200) ctx += `FULL PAGE (${sources[0].url}):\n${pc}\n\n---\n\n`;
+    const top = sources[0].url;
+    const read = warm && warm.url === top ? warm.content : readPageContent(top);
+    const { results: [pc] } = await settleByDeadline([{ promise: read, fallback: '' }], { deadlineMs: 2500 });
+    if (pc && pc.length > 200) ctx += `FULL PAGE (${top}):\n${pc}\n\n---\n\n`;
   }
   if (allImages.length > 0) { const unique = [...new Set(allImages)].slice(0,5); ctx += `IMAGES:\n${unique.map((u,i) => `IMAGE ${i+1}: ${u}`).join('\n')}\n\n---\n\n`; }
   const found = sources.length > 0 || !!wikiContent || !!td.answer;

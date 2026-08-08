@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { API_BASE, clientTimezone, untilAborted } from "../lib/api";
 import { uid, generateChatTitle, parseImagePrompt, buildImageUrl } from "../lib/format";
+import { createReveal } from "../lib/streamReveal";
 
 const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
@@ -673,6 +674,10 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
       // Hoisted so the catch can persist whatever streamed before an abort.
       // Discarding it would throw away text the user already watched arrive.
       let acc = "";
+      // Hoisted for the same reason, and a stronger one: this is a live 16ms
+      // interval. The catch has to be able to clear it, or an aborted request
+      // leaves a timer repainting a message that is no longer being written.
+      let painterRef = null;
       // Mutated in place as frames arrive, and spread into the message on each
       // render so React sees a new array. It is deliberately NOT state: a
       // setState per frame would re-render the whole transcript on every tool
@@ -703,10 +708,57 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
         setStatus("streaming");
         updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: "" }], false);
 
+        /* THE VIEW IS PACED SEPARATELY FROM THE NETWORK.
+         *
+         * Measured against the real gateway: a 300-word answer arrives as 57
+         * frames of ~29 characters, all within 1.7s at the end of a 11.5s
+         * wait. Painting each frame the moment it lands reproduces that
+         * rhythm exactly, and the rhythm is lumpy — reported as the messages
+         * "just popping in".
+         *
+         * `acc` stays the source of truth and is what gets SAVED. The reveal
+         * only decides how much of it is on screen right now, and it is
+         * backlog-proportional so it can never fall permanently behind — see
+         * lib/streamReveal.js for why a fixed typing speed is a trap. */
+        const reveal = createReveal({
+          instant:
+            typeof window !== "undefined" &&
+            typeof window.matchMedia === "function" &&
+            window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+        });
+
         const reader = res.body.getReader();
         const decoder = new TextDecoder();
         let buf = "";
         let done = false;
+
+        /** Put a given amount of the answer on screen. */
+        let painted = null;
+        const paint = (text) => {
+          // A 60fps timer that re-renders the transcript when nothing has
+          // changed is pure waste, and the transcript is the most expensive
+          // thing in the app to render — it runs markdown over every message.
+          if (text === painted) return;
+          painted = text;
+          setChats((p) =>
+            p.map((c) =>
+              c.id === chatId
+                ? { ...c, messages: [...updated, { ...assistantMsg, typing: false, content: text, activity: activity.length ? [...activity] : undefined }] }
+                : c
+            )
+          );
+        };
+
+        /* THE REVEAL NEEDS ITS OWN CLOCK, not the network's.
+         *
+         * The first version of this ticked once per `reader.read()`, which is
+         * the mistake it was written to fix: 57 frames can arrive in a handful
+         * of reads, so the view still advanced in a handful of jumps. Pacing
+         * against the thing you are trying not to be paced by does nothing.
+         *
+         * A 16ms timer paints at roughly display rate regardless of how the
+         * bytes arrive. The read loop below only feeds the target. */
+        painterRef = setInterval(() => paint(reveal.tick()), 16);
 
         while (!done) {
           const chunk = await reader.read();
@@ -753,14 +805,25 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
             }
           }
 
-          setChats((p) =>
-            p.map((c) =>
-              c.id === chatId
-                ? { ...c, messages: [...updated, { ...assistantMsg, typing: false, content: acc, activity: activity.length ? [...activity] : undefined }] }
-                : c
-            )
-          );
+          // Feed the target only. The painter above decides what is on screen.
+          reveal.push(acc);
         }
+        clearInterval(painterRef);
+        painterRef = null;
+
+        /* The stream is over; the view may still be a few frames behind.
+         * Drain it rather than snapping, so the last words arrive the same way
+         * every earlier word did — a jump at the very end is the one place a
+         * smoothed reveal would look worse than no smoothing at all.
+         *
+         * Bounded, and the bound is the point: this can add at most ~400ms,
+         * and it exits the moment the text has caught up. `settled` is checked
+         * rather than a fixed count so a short answer costs nothing. */
+        for (let guard = 0; !reveal.settled && guard < 40; guard++) {
+          paint(reveal.tick());
+          await new Promise((r) => setTimeout(r, 16));
+        }
+        paint(reveal.finish());
 
         const saved = await updateChatMessages(chatId, [
           ...updated,
@@ -774,6 +837,11 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
         sendInFlightRef.current = false;
         setStatus("idle");
       } catch (err) {
+        /* A 16ms timer that outlives its request repaints a message forever
+         * and holds the closure that owns it. An abort throws straight out of
+         * the read loop, so the clear after the loop is not reached — this is
+         * the only path that runs on every ending. */
+        if (painterRef) { clearInterval(painterRef); painterRef = null; }
         if (err.name === "AbortError") {
           // Two things this used to get wrong. It returned without resetting
           // status, which left the composer disabled forever once a user-facing

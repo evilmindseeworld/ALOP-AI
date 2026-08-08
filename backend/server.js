@@ -66,6 +66,14 @@ if (!STRIPE_ENABLED) console.warn('[BOOT] Stripe not configured — billing rout
 const TAVILY_API_KEY = process.env.TAVILY_API_KEY || null;
 const JINA_API_KEY = process.env.JINA_API_KEY || null;
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY || null;
+const PERPLEXITY_API_KEY = process.env.PERPLEXITY_API_KEY || null;
+/* Overridable because Perplexity renames its models more often than this file
+ * changes, and a deployment should not need a code change to follow. `sonar` is
+ * the cheap tier and is the right default for search context; `sonar-pro`
+ * researches harder and costs more per call. */
+const PERPLEXITY_MODEL = process.env.PERPLEXITY_MODEL || 'sonar';
+/** Sonar's name for the four windows lib/recency.js already decides between. */
+const PERPLEXITY_RECENCY = { day: 'day', week: 'week', month: 'month', year: 'year' };
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY || null;
 const GOOGLE_SEARCH_API_KEY = process.env.GOOGLE_SEARCH_API_KEY || null;
 const GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID || null;
@@ -262,6 +270,61 @@ const searchTavily = async (query, fresh = null) => {
   const recency = fresh ? { topic: 'news', days: fresh.days } : {};
   try { const res = await fetch('https://api.tavily.com/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ api_key: TAVILY_API_KEY, query: query.slice(0,400), search_depth: 'advanced', include_answer: true, include_raw_content: false, include_images: true, include_image_descriptions: true, max_results: 5, ...recency }), signal: AbortSignal.timeout(7000) }); if (!res.ok) return { answer: '', results: [], images: [] }; const data = await res.json(); return { answer: data.answer||'', results: (data.results||[]).map(r => ({ title: r.title?.slice(0,200)||'', url: r.url, content: (r.content||'').slice(0,3000), date: normalizeDate(r.published_date) })), images: (data.images||[]).map(img => typeof img === 'string' ? img : (img.url||img)) }; } catch { return { answer: '', results: [], images: [] }; }
 };
+/**
+ * Perplexity Sonar. A sixth provider, and the only one that reasons.
+ *
+ * The other five return links and snippets; Sonar returns a written answer with
+ * the sources it used. That is worth having for the questions this app is
+ * weakest at — market research, "what happened this week", anything where the
+ * answer is spread across several pages rather than sitting on one. Tavily's
+ * synthesised `answer` is the closest existing thing and is a sentence or two;
+ * this is a paragraph with citations.
+ *
+ * NOT A COUNCIL SEAT. It contributes search CONTEXT that the council then
+ * answers from, exactly like Brave and Tavily. Making it a seat would put a
+ * model with its own web access inside a roster whose whole argument is that
+ * seven differently-tempered readings of the SAME context disagree usefully.
+ *
+ * Its output is a third party's text and reaches the prompt through the same
+ * UNTRUSTED_PREAMBLE as every other source — it is a model reading web pages,
+ * so anything a page told it, it will repeat.
+ *
+ * Absent key means absent provider, the same as Brave and Tavily: it returns
+ * empty, settleByDeadline takes the fallback, and nothing else changes. This
+ * costs a deployment without PERPLEXITY_API_KEY exactly nothing.
+ */
+const searchPerplexity = async (query, fresh = null) => {
+  if (!PERPLEXITY_API_KEY) return { answer: '', results: [] };
+  // Sonar takes the same four windows the other providers do, under its own
+  // name. Sent only when a window was actually chosen — an unasked-for filter
+  // is how a slow-topic question loses its canonical sources.
+  const recency = fresh && PERPLEXITY_RECENCY[fresh.label] ? { search_recency_filter: PERPLEXITY_RECENCY[fresh.label] } : {};
+  try {
+    const res = await fetch('https://api.perplexity.ai/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${PERPLEXITY_API_KEY}` },
+      body: JSON.stringify({
+        model: PERPLEXITY_MODEL,
+        messages: [
+          { role: 'system', content: 'Answer with current, sourced facts. Be specific: names, numbers, dates. No preamble.' },
+          { role: 'user', content: query.slice(0, 400) },
+        ],
+        max_tokens: 700,
+        temperature: 0.1,
+        ...recency,
+      }),
+      // Tighter than its own patience. The fan-out's deadline is 3500ms and
+      // this provider is additive — a Sonar that needs longer than the whip
+      // simply does not contribute to this turn.
+      signal: AbortSignal.timeout(7000),
+    });
+    if (!res.ok) return { answer: '', results: [] };
+    // Two citation shapes have shipped, and reading only one loses every source
+    // silently — see lib/perplexity.js, which is where that is handled and
+    // tested.
+    return readSonar(await res.json(), normalizeDate);
+  } catch { return { answer: '', results: [] }; }
+};
 const searchGoogleWeb = async (query, fresh = null) => {
   if (!GOOGLE_SEARCH_API_KEY || !GOOGLE_CSE_ID) return [];
   /* dateRestrict, but NOT sort=date.
@@ -334,6 +397,7 @@ const { extractPageSignal } = require('./lib/page-extract');
 const { settleByDeadline } = require('./lib/deadline');
 const { todayLine, freshnessWindow, normalizeDate, dateLabel, BRAVE_FRESHNESS, GOOGLE_DATE_RESTRICT } = require('./lib/recency');
 const { parseSearchPlan } = require('./lib/search-plan');
+const { readSonar } = require('./lib/perplexity');
 const { createSearchCache, comprehensiveSearchKey } = require('./lib/search-cache');
 const { createTtlCache } = require('./lib/ttl-cache');
 const { boundedPage, pageInfo } = require('./lib/pagination');
@@ -502,7 +566,7 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null) => {
     if (url) warm = { url, content: readPageContent(url) };
   }).catch(() => {});
 
-  const { results: [tavilyResult, braveResults, googleResults, googleImages, wikiContent], waited, pending } =
+  const { results: [tavilyResult, braveResults, googleResults, googleImages, wikiContent, pplxResult], waited, pending } =
     await settleByDeadline(
       [
         { promise: tavilyP, fallback: { answer: '', results: [], images: [] } },
@@ -510,6 +574,11 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null) => {
         { promise: searchGoogleWeb(query, fresh), fallback: [] },
         { promise: searchGoogleImages(query), fallback: [] },
         { promise: needsWiki ? searchWikipedia(query) : Promise.resolve(''), fallback: '' },
+        // Last, and additive. It is appended to the array rather than inserted
+        // so the destructuring above and `enough` below both keep their
+        // positions — a provider added in the middle silently reassigns every
+        // result after it.
+        { promise: searchPerplexity(query, fresh), fallback: { answer: '', results: [] } },
       ],
       {
         deadlineMs: 3500,
@@ -546,6 +615,19 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null) => {
   if (googleResults.length > 0) { ctx += `GOOGLE:\n${googleResults.map((r,i) => `SOURCE ${i+1}:\nTitle: ${r.title}\nURL: ${r.url}\n${dateLabel(r.date)}\nContent: ${r.description}`).join('\n\n---\n\n')}\n\n---\n\n`; googleResults.forEach(r => { if (!sources.find(s => s.url === r.url)) sources.push({title:r.title,url:r.url,date:r.date||''}); }); }
   if (googleImages.length > 0) allImages.push(...googleImages.map(img => img.url).filter(u => u && u.startsWith('http')));
   if (wikiContent) ctx += `WIKIPEDIA:\n${wikiContent}\n\n---\n\n`;
+  /* Perplexity last in the context, and that is on purpose: it is the one
+   * source that is itself a model's writing rather than a page, so the council
+   * should meet the primary sources first and read this as a summary of them.
+   * Its citations join `sources` so the answer can be traced, deduplicated
+   * against what the other providers already returned. */
+  const pplx = pplxResult && !Array.isArray(pplxResult) ? pplxResult : { answer: '', results: [] };
+  if (pplx.answer) {
+    ctx += `PERPLEXITY (a search model's own written answer, with its citations below):\n${pplx.answer}\n\n---\n\n`;
+    if (pplx.results.length) {
+      ctx += `PERPLEXITY SOURCES:\n${pplx.results.map((r, i) => `SOURCE ${i + 1}:\nTitle: ${r.title || '(untitled)'}\nURL: ${r.url}\n${dateLabel(r.date)}`).join('\n\n')}\n\n---\n\n`;
+      pplx.results.forEach((r) => { if (r.url && !sources.find((s) => s.url === r.url)) sources.push({ title: r.title || r.url, url: r.url, date: r.date || '' }); });
+    }
+  }
   // The full read of the top result, on a leash. It used to be an unbounded
   // await after the fan-out had already finished — so a slow page added its own
   // six seconds on top of the search, in series, for a nice-to-have. It is
@@ -565,7 +647,7 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null) => {
     if (pc && pc.length > 200) ctx += `FULL PAGE (${top}):\n${pc}\n\n---\n\n`;
   }
   if (allImages.length > 0) { const unique = [...new Set(allImages)].slice(0,5); ctx += `IMAGES:\n${unique.map((u,i) => `IMAGE ${i+1}: ${u}`).join('\n')}\n\n---\n\n`; }
-  const found = sources.length > 0 || !!wikiContent || !!td.answer;
+  const found = sources.length > 0 || !!wikiContent || !!td.answer || !!pplx.answer;
   // Prepended once, here, rather than at each of the six `ctx +=` sites above:
   // every one of them is a third party's text, and this is the single point
   // they all pass through on the way out.
@@ -2115,7 +2197,7 @@ const server = app.listen(PORT, () => {
   console.log(`\n╔════════════════════════════════════════════╗`);
   console.log(`║  ALOP-AI PRECISION BACKEND                  ║`);
   console.log(`║  Port: ${PORT} | Council: ${COUNCIL.length} pro / ${FREE_COUNCIL.length} free      ║`);
-  console.log(`║  T=${TAVILY_API_KEY?'ON':'OFF'} B=${BRAVE_API_KEY?'ON':'OFF'} G=${GOOGLE_SEARCH_API_KEY&&GOOGLE_CSE_ID?'ON':'OFF'} J=${JINA_API_KEY?'ON':'OFF'} Wiki=ON  ║`);
+  console.log(`║  T=${TAVILY_API_KEY?'ON':'OFF'} B=${BRAVE_API_KEY?'ON':'OFF'} G=${GOOGLE_SEARCH_API_KEY&&GOOGLE_CSE_ID?'ON':'OFF'} J=${JINA_API_KEY?'ON':'OFF'} P=${PERPLEXITY_API_KEY?'ON':'OFF'} Wiki=ON  ║`);
   console.log(`║  Memory: Supabase | Quick + Feedback        ║`);
   console.log(`╚════════════════════════════════════════════╝`);
   // Printed unconditionally, including when it is off. A feature flag that is

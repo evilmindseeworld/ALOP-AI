@@ -64,9 +64,11 @@ describe("stream reveal pacing", () => {
 });
 
 describe("stream reveal behaviour", () => {
-  it("shows everything immediately when motion is not wanted", () => {
-    // prefers-reduced-motion: animated text is precisely the thing being
-    // objected to, so there is nothing to soften.
+  it("can show everything immediately when a caller asks for it", () => {
+    // Kept for replaying a saved message. Deliberately NOT wired to
+    // prefers-reduced-motion — doing that disabled progressive text on the
+    // machines that have the setting on, which is how this shipped broken the
+    // first time. Progressive text is content delivery, not movement.
     const reveal = createReveal({ instant: true });
     reveal.push("the whole answer");
     expect(reveal.tick()).toBe("the whole answer");

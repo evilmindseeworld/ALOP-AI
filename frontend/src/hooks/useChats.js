@@ -720,12 +720,25 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
          * only decides how much of it is on screen right now, and it is
          * backlog-proportional so it can never fall permanently behind — see
          * lib/streamReveal.js for why a fixed typing speed is a trap. */
-        const reveal = createReveal({
-          instant:
-            typeof window !== "undefined" &&
-            typeof window.matchMedia === "function" &&
-            window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-        });
+        /* NOT gated on prefers-reduced-motion, and that is a correction.
+         *
+         * The first version passed `instant: true` under reduced motion, which
+         * is the reflex this codebase applies everywhere else and it was wrong
+         * here. It also silently disabled the feature on the machine that
+         * asked for it: this user's desktop has animation effects off at the OS
+         * level, so the reveal they wanted resolved to "show everything at
+         * once" — the exact behaviour being complained about.
+         *
+         * The distinction that matters: reduced motion is about MOVEMENT —
+         * things sliding, scaling, spinning, parallax — because that is what
+         * provokes vestibular symptoms. Text arriving progressively is content
+         * delivery, not decoration. Nothing translates, nothing scales; the
+         * answer simply becomes readable in the order it was written, which is
+         * how a streamed answer has to behave to be a streamed answer at all.
+         *
+         * The ambient float, the entrance rise and the press feedback remain
+         * gated, because those ARE movement. */
+        const reveal = createReveal();
 
         const reader = res.body.getReader();
         const decoder = new TextDecoder();

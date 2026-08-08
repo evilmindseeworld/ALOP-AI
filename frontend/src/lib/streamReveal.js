@@ -64,8 +64,15 @@ export function nextVisible(visible, target, factor = CATCH_UP) {
  * A reveal that walks a growing string.
  *
  * @param {object} [opts]
- * @param {boolean} [opts.instant]  reveal everything immediately — used for
- *   prefers-reduced-motion, where animated text is the thing being asked about
+ * @param {boolean} [opts.instant]  reveal everything immediately
+ *
+ *   NOT wired to prefers-reduced-motion, and that was a real bug: doing so
+ *   disabled progressive text on exactly the machines that have the setting
+ *   on, including the one that reported the problem. Reduced motion is about
+ *   MOVEMENT — translation, scale, parallax — because that is what provokes
+ *   vestibular symptoms. Text becoming readable in the order it was written is
+ *   content delivery. The option is kept for callers that genuinely want the
+ *   whole string at once, such as replaying a saved message.
  * @param {number} [opts.factor]
  */
 export function createReveal({ instant = false, factor = CATCH_UP } = {}) {

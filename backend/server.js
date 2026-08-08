@@ -369,9 +369,30 @@ const readPageContent = async (url, { wantsPrice = false } = {}) => {
     return signal; } catch { return firecrawlPage(url); }
 };
 
-/** Firecrawl: a real browser, used only when the cheap reader came back blind. */
+/**
+ * Firecrawl: a real browser, used only when the cheap reader came back blind.
+ *
+ * CACHED, because it is metered and slow — the two properties that make an
+ * uncached call a mistake. Rendering the same product page twice in fifteen
+ * minutes spends the free-tier allowance to learn a price that has not changed.
+ * The cache is the existing two-tier one, so an L2 hit also serves the OTHER
+ * instance rather than just this process.
+ */
 const firecrawlPage = async (url) => {
   if (!FIRECRAWL_API_KEY) return '';
+  const key = `firecrawl:${url}`;
+  const hit = await getCachedSearch(key);
+  // '' is a legitimate cached value — a page that rendered to nothing renders
+  // to nothing again — so the check is for null, not for falsiness.
+  if (hit !== null && hit !== undefined) return hit;
+  const out = await firecrawlFetch(url);
+  // Only a real render is worth storing. Caching a timeout would turn one bad
+  // minute into fifteen minutes of the same empty answer.
+  if (out) setCachedSearch(key, out);
+  return out;
+};
+
+const firecrawlFetch = async (url) => {
   try {
     const res = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
@@ -1594,13 +1615,26 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
           ? {
               engineNames: ENGINE_NAMES,
               engineMenu: engineMenu(),
-              searchEngine: ({ engine, query, params }) =>
-                searchSerpApi({
-                  engine,
-                  query,
-                  params: { ...(region && region.country ? { gl: region.country.toLowerCase() } : {}), ...params },
-                  apiKey: SERPAPI_API_KEY,
-                }),
+              /* CACHED, because every one of these is BILLED. Two seats of the
+               * same council reaching for google_flights with the same query is
+               * the normal case, not the odd one — seven models answering the
+               * same question converge on the same lookup — and without this
+               * the second one is simply paid for twice.
+               *
+               * The key carries the engine, the country and the extra params:
+               * a flight search differs from another only in its parameters, so
+               * keying on the query alone would serve Dubai-to-London for
+               * Dubai-to-Cairo. Only successful lookups are stored — caching a
+               * failure would keep a transient one alive for fifteen minutes. */
+              searchEngine: async ({ engine, query, params }) => {
+                const merged = { ...(region && region.country ? { gl: region.country.toLowerCase() } : {}), ...params };
+                const key = `serpapi:${engine}:${query}:${JSON.stringify(Object.entries(merged).sort())}`;
+                const hit = await getCachedSearch(key);
+                if (hit) return hit;
+                const res = await searchSerpApi({ engine, query, params: merged, apiKey: SERPAPI_API_KEY });
+                if (res && res.ok) setCachedSearch(key, res);
+                return res;
+              },
             }
           : {}),
         ...(attached.length ? { files } : {}),

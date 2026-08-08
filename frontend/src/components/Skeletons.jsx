@@ -9,7 +9,7 @@
 
 export const InitialLoader = () => (
   <div className="initial-loader dark">
-    <img src="/logo.png" alt="Loading ALOP-AI" />
+    <img src="/logo-mark.png" alt="Loading ALOP-AI" />
     <div className="skeleton-block" style={{ width: "120px", height: "10px", marginTop: "10px" }} />
   </div>
 );

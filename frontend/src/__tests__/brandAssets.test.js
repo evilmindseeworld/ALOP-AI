@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, globSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -51,6 +51,29 @@ describe("brand assets", () => {
     expect(existsSync(join(ROOT, "public", "logo-mark.png"))).toBe(true);
     expect(html).toContain('"logo": "https://alop-ai.com/logo-mark.png"');
     expect(html).not.toContain('rel="apple-touch-icon" href="/logo.png"');
+  });
+
+  /**
+   * AND NOTHING INWARD-FACING EITHER, which is the half that was missed.
+   *
+   * The test above was written when the complaint was "the search result shows
+   * no logo", so it only ever looked at index.html. Every <img> INSIDE the app
+   * still pointed at logo.png — the header mark, the empty state, the loading
+   * skeleton and the sign-in page — and on the app's own near-black background
+   * that renders as a dark square with a smudge in it. Seen on production
+   * before this was fixed, at which point the "stray website" complaint turned
+   * out to describe the product itself as much as the search result.
+   *
+   * Scanning the source rather than rendering, because these four live in four
+   * components with different mount conditions — the skeleton only exists while
+   * loading, the sign-in page only while signed out — so a render test would
+   * need four setups to assert one rule.
+   */
+  it("no component renders the black-on-black logo.png", () => {
+    const offenders = globSync("src/**/*.{jsx,js}", { cwd: ROOT })
+      .filter((f) => !f.includes("__tests__") && !f.includes("/test/"))
+      .filter((f) => /src=["']\/logo\.png["']/.test(readFileSync(join(ROOT, f), "utf8")));
+    expect(offenders).toEqual([]);
   });
 
   it("the social card is the size every platform crops to", () => {

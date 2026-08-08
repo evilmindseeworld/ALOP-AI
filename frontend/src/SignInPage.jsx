@@ -126,7 +126,7 @@ export default function SignInPage() {
 
       <div className="signin-wrap">
         <div className="signin-brand">
-          <img src="/logo.png" alt="" className="signin-logo-mark" />
+          <img src="/logo-mark.png" alt="" className="signin-logo-mark" />
           <span className="signin-logo-text">ALOP-AI</span>
         </div>
 

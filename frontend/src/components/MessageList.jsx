@@ -148,7 +148,7 @@ export const EmptyState = memo(({ onPick }) => {
     {/* Behind everything, and only here — see SakuraFrame for why the frame
         does not follow the transcript. */}
     <SakuraFrame />
-    <img ref={logoRef} src="/logo.png" alt="" className="empty-logo" />
+    <img ref={logoRef} src="/logo-mark.png" alt="" className="empty-logo" />
     {/* No eyebrow. "The AI Council" sat between the mark and the title,
         saying nothing the title and subtitle below do not — see SignInPage
         for the same removal. */}

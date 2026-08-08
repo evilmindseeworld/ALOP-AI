@@ -432,7 +432,7 @@ const AuthenticatedApp = () => {
           </button>
 
           <div className="brand">
-            <img src="/logo.png" alt="" className="header-logo" />
+            <img src="/logo-mark.png" alt="" className="header-logo" />
             <h1 className="main-title">{activeChat?.title || "ALOP-AI"}</h1>
             {/* The council's size is the one fact the old subtitle carried that
                 a reader could act on — it changes with the plan. The other

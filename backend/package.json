@@ -8,7 +8,7 @@
     "test": "node --test \"lib/**/*.test.js\""
   },
   "dependencies": {
-    "@clerk/clerk-sdk-node": "^5.1.6",
+    "@clerk/express": "^2.1.52",
     "@sentry/node": "^10.67.0",
     "@sentry/profiling-node": "^10.67.0",
     "@supabase/supabase-js": "^2.39.7",

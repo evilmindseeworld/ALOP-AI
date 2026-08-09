@@ -66,11 +66,11 @@ test("EVERY VARIABLE THE CODE READS IS DOCUMENTED", () => {
  * blanket exemption.
  *
  * The first run of this test found CLERK_SECRET_KEY, which is exactly the
- * category: @clerk/clerk-sdk-node reads it itself at import time, and the
+ * category: the Clerk SDK reads it itself out of the environment, and the
  * server would refuse to boot without it while mentioning it nowhere.
  */
 const READ_BY_DEPENDENCIES = new Set([
-  "CLERK_SECRET_KEY", // @clerk/clerk-sdk-node, at import
+  "CLERK_SECRET_KEY", // @clerk/express, read by clerkMiddleware
 ]);
 
 test("no variable is documented that nothing reads", () => {

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { SignIn, SignUp, useUser } from "@clerk/react";
-import SakuraFrame from "./components/SakuraFrame";
+import CouncilInk from "./components/CouncilInk";
 import SakuraBough from "./components/SakuraBough";
 import { COUNCIL, FREE_COUNT } from "./constants/council";
 
@@ -121,7 +121,7 @@ export default function SignInPage() {
       <div className="signin-noise" />
       <div className="signin-orb signin-orb-1" />
       <div className="signin-orb signin-orb-2" />
-      <SakuraFrame />
+      <CouncilInk />
       <SakuraBough />
 
       <div className="signin-wrap">

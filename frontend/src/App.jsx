@@ -10,8 +10,8 @@ import MagneticButton from "./components/ui/MagneticButton";
 import { Badge } from "./components/ui/badge";
 import CommandPalette from "./components/CommandPalette";
 import Icon from "./components/Icon";
-import Earring from "./components/Earring";
 import InputBar from "./components/InputBar";
+import CouncilInk from "./components/CouncilInk";
 import ChatSidebar from "./components/ChatSidebar";
 import CameraOverlay from "./components/CameraOverlay";
 import { InitialLoader, AppSkeleton, StuckLoading } from "./components/Skeletons";
@@ -592,10 +592,17 @@ const AuthenticatedApp = () => {
 
           <div className="chat-main">
             {/* Inside the transcript panel, not the window: fixed positioning
-                hung these over the sidebar and the header, which is the app's
-                own chrome. They live in the margin the centred column makes. */}
-            <Earring side="left" active={status !== "idle"} />
-            <Earring side="right" active={status !== "idle"} />
+                hung the old ornament over the sidebar and the header, which is
+                the app's own chrome.
+
+                It lives HERE rather than inside the empty state, and that is
+                what lets it keep the job the hanging crescents used to do. The
+                empty state unmounts the moment a question is sent, so an
+                ornament living there could never report that the council was
+                working. From .chat-main it survives the whole conversation,
+                dims out of the prose's way, and lights its seven strokes in
+                sequence while the models are actually answering. */}
+            <CouncilInk active={status !== "idle"} dim={activeMessages.length > 0} />
 
             <AdminPanel
               open={showAdmin && isAdmin}

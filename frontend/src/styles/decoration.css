@@ -1,146 +1,139 @@
 /* Ornament and loading states: the hanging crescents, skeletons, the splash. */
 
-/* ===== HANGING CRESCENTS =====
+/* ===== COUNCIL INK =====
  *
- * Layering, low to high: background wash 0, chat 3, earrings 4, sidebar 10,
+ * The one ornament. Seven strokes converging into one, behind the empty state
+ * and behind the sign-in page. See components/CouncilInk.jsx for what it draws
+ * and why it replaced five separate decorations.
+ *
+ * Layering, low to high: background wash 0, chat 3, ornament 4, sidebar 10,
  * mobile sidebar 50, panel overlay 60, side panel 70, camera 100, toast 200,
- * palette 300. The ornament is decorative and must sit above the background
- * but below every interactive surface. tokens.css is the source of truth —
- * do not re-declare it inline in JSX.
+ * palette 300. tokens.css is the source of truth for the scale — do not
+ * re-declare it inline in JSX. An inline style silently outranks the
+ * stylesheet, and that mismatch is what caused a long run of duelling z-index
+ * commits.
  *
- * Three things changed here, all of them visible:
- *
- *   - SIZE. It rendered at its intrinsic 110x150 — as wide as the avatar
- *     column — so decoration competed with the transcript. It is 68px on a
- *     wide screen now, and the ornament reads as a mark rather than an object.
- *   - THE SEAM. The chain met nothing: the old drawing put its stud 30px below
- *     the top of the viewBox. Crescent.jsx moved the stud to the top edge, so
- *     the chain's bottom and the stud's top are the same point at every size.
- *   - WHERE IT DISAPPEARS. It used to hide below 560px, which meant that from
- *     560px to 1200px it hung directly over the text — and only above 1200px
- *     did .scroll-wrapper add the 120px of padding that got out of its way.
- *     The transcript is centred and capped now, so the ornament lives in the
- *     margin that creates, and hides as soon as that margin is gone.
- */
-/* Anchored to the transcript panel, not to the window.
- *
- * `position: fixed` put them at the window's edges, which is where the sidebar
- * and the header are — so the ornament hung over the app's own chrome, and at
- * some widths over the text as well. They are children of .chat-main now and
- * hang in the margin the centred transcript column creates: at 1600px the chat
- * panel is ~1290px wide holding an 860px column, so there is a genuine ~200px
- * of empty surface on each side for them to live in.
- *
- * That also means they cannot escape .chat-main's stacking context or its
- * overflow, so no z-index guessing is involved — the containment does it. */
-/* ===== SAKURA FRAME =====
- *
- * Behind the empty state, and nowhere else. The transcript is the product; an
- * illustrated frame around 900 words of prose competes with the thing it
- * frames. The empty state is the one screen with nothing to compete with,
- * which is exactly why it is the one worth decorating.
- *
- * `color` is what the SVG paints with — everything inside is currentColor, so
- * the whole illustration follows the theme from one declaration and there is
- * no second palette to keep in sync.
- *
- * Positioned here and not inline, for the reason recorded in Crescent.jsx: an
- * inline style silently outranks the stylesheet, and that mismatch is what
- * caused a long run of duelling z-index commits. */
-.sakura-frame {
+ * SIZES ARE CSS SIZES, NOT SVG ONES. The drawing keeps its proportions while
+ * its container changes size; the viewBox does the scaling and the edges stay
+ * crisp at every width. An earlier ornament stretched one SVG over the panel
+ * with preserveAspectRatio="slice", which scales the whole drawing to cover its
+ * box — on a 1300px panel every unit was multiplied by ~3.3 and five-pixel
+ * details became blobs. */
+.council-ink {
   position: absolute;
-  inset: 0;
+  /* IN THE MARGIN, NOT ACROSS THE SURFACE.
+   *
+   * The transcript is a centred column with a hard max width, so on any screen
+   * wide enough to matter there is real empty surface either side of it. That
+   * gutter is where the hanging crescents lived, and it is the only place on
+   * this screen an ornament has never had to negotiate with a word. The mark
+   * sits at the top of the left one.
+   *
+   * `left` is a percentage of the chat panel rather than a fixed inset, so the
+   * mark tracks the gutter as it widens instead of drifting toward the column
+   * on a large display. */
+  top: 42px;
+  left: 3.5%;
+  width: clamp(120px, 13vw, 220px);
+  height: auto;
   pointer-events: none;
-  color: var(--primary);
   z-index: var(--z-empty-decor);
+  opacity: 0.62;
+  /* A REAL ENSŌ IS NEVER ROUND, and the arcs alone cannot fix that: they vary
+   * the radius by a couple of units, which reads as a wobble in the line rather
+   * than as a shape. Squashing the whole ring 6% and tilting it off-axis is
+   * what a wrist does, and it is the single cheapest thing that separates this
+   * from a loading spinner's circle. */
+  transform: rotate(-7deg) scaleY(0.94);
+  transition: opacity var(--dur-slow) ease;
 }
 
-/* EVERY SIZE HERE IS A CSS SIZE, NOT AN SVG ONE.
+/* Ink on paper carries further than ink on a dark surface at the same alpha,
+ * but the light theme also has no glow behind the title for the drawing to
+ * compete with. Measured rather than assumed. */
+.app-root.light .council-ink { opacity: 0.5; }
+
+/* ONCE THERE IS A CONVERSATION, IT STEPS BACK.
  *
- * The first version stretched one SVG over the whole panel with
- * preserveAspectRatio="slice", which scales the drawing to cover its box — so
- * on a 1300px panel every unit was multiplied by ~3.3, the petals became blobs
- * and the torii filled the screen. Decoration must keep its size while its
- * container changes size. clamp() gives each piece a floor, a proportion and a
- * ceiling; the viewBox keeps it crisp at all three. */
-/* ONE BOUGH, BOTTOM RIGHT, and that is the whole ornament.
+ * The mark lives in .chat-main rather than in the empty state, so it survives
+ * the whole session and can report that the council is working. It never sits
+ * behind the prose — the gutter is why — but a full-strength drawing beside a
+ * paragraph still pulls the eye off the sentence being read. A third of its
+ * weight registers in peripheral vision and competes with nothing.
  *
- * The old arrangement inset four identical sprigs at 4%/3%, which floated them
- * in the corners rather than putting them IN the corners — a branch starting in
- * mid-air has nothing to have grown from. This one is flush: the wood runs off
- * the edge, which is the only way it reads as continuing past the frame.
- *
- * WHY THE BOTTOM RIGHT AND NOT THE TOP LEFT, where it was first placed. Three
- * things already live in the top-left of the empty state: the hanging crescent,
- * the headline, and the logo mark above it. A bough there had to be capped at
- * 250px to keep its tip off the "W" of "What do you want to ask?" — measured at
- * 1440x900, tip at x=609 against a title starting at x=615. The bottom right is
- * the one region of this screen with nothing in it, so the ornament can be its
- * real size there and nothing has to be negotiated around it.
- *
- * The top-left echo is gone rather than moved. Two boughs was the four-corner
- * frame with two corners missing; one is a composition. */
-.sakura-limb {
-  position: absolute;
-  height: auto;
+ * It fades rather than vanishing, which was the complaint about the ornament
+ * this replaced: pressing enter used to make the decoration disappear. */
+.council-ink.is-dim { opacity: 0.2; }
+.app-root.light .council-ink.is-dim { opacity: 0.16; }
+
+/* Each arc at its own weight: heaviest through the middle of the stroke where
+ * the hand is committed, lightest where the brush lands and lifts. Set from JSX
+ * because the value belongs to the drawing, not to the theme. */
+.ink-arc {
+  opacity: var(--arc-opacity);
 }
 
-/* MIRRORED, NOT ROTATED, and the difference is gravity.
+/* THE DRAW-IN, and it plays once per session.
  *
- * rotate(180deg) was the first attempt and it is wrong in a way that is obvious
- * once seen: it turns the hanging blossoms upside down, so they rise off the
- * top of the branch instead of hanging under it — the exact distinction the
- * pedicels in SakuraFrame exist to draw. scaleX(-1) leaves every vertical
- * unchanged, so the wood enters from the right edge and droops down-left into
- * the corner while the blossoms still hang below it. */
-.sakura-limb-br {
-  right: 0;
-  bottom: 0;
-  /* Bounded by the starter grid, the way the top-left placement was bounded by
-   * the headline. Measured at 1440x900: the right-hand cards end at x=1146, and
-   * at 280px the limb's box began at 1111 — 35px of overlap, with hanging
-   * blossoms sitting under the corner of a clickable card. 240px starts at
-   * 1151 and clears it. */
-  width: clamp(150px, 19vw, 240px);
-  opacity: 0.38;
-  transform: scaleX(-1);
+ * A new chat is opened many times a day. An 800ms flourish on every empty state
+ * would be charming twice and tiresome after that, which is the standard
+ * frequency argument against animating anything common. CouncilInk keeps a
+ * module-scope flag so the first empty state of a tab gets the moment and every
+ * one after it renders already finished.
+ *
+ * DASH OFFSET, NOT OPACITY, and here it is worth the extra property. These are
+ * stroked arcs, so `pathLength` normalises every one of them to 100 regardless
+ * of its real radius and sweep — which means one dashoffset value draws them
+ * all at the same rate, and the ring appears to be written by a single
+ * continuous hand rather than seven fading in. It is the one place in this app
+ * where the animation IS the subject: an ensō is defined by being drawn in one
+ * breath.
+ *
+ * stroke-dashoffset animates on the main thread rather than the compositor, so
+ * this would be the wrong tool for anything frequent. Seven short paths, once
+ * per session, is affordable; the alternative was a shape that did not read. */
+.ink-arc {
+  stroke-dasharray: 100;
+  stroke-dashoffset: 100;
+  transition: stroke-dashoffset 620ms var(--ease-ink);
+  transition-delay: calc(var(--arc-index) * 90ms);
 }
 
-/* Dark ink on light paper carries further than light ink on a dark surface at
- * the same alpha, but the ornament also has less to compete with here — the
- * light theme has no glow behind the title. Measured rather than assumed: at
- * 0.38 the bough reads as a smudge on paper and as a branch on the dark. */
-.app-root.light .sakura-limb { opacity: 0.5; }
-
-/* Far fainter than the bough. It is a silhouette the eye should resolve on
- * the second look, not read as a shape sitting behind the title — which is
- * exactly what it did at 0.16. */
-.sakura-torii {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: clamp(200px, 26%, 340px);
-  height: auto;
-  transform: translate(-50%, -52%);
-  opacity: 0.06;
+.council-ink.is-drawn .ink-arc {
+  stroke-dashoffset: 0;
 }
 
-/* What a phone does not get. */
+/* WHILE THE COUNCIL IS WORKING, and this is the only motion that loops.
+ *
+ * Every guideline says the same thing about infinite decorative animation, and
+ * the ornament this replaced broke it three times over. This loops only because
+ * it reports real state: the arcs light one at a time around the ring, which
+ * reads as the circle being drawn again, and it inherits the job the swinging
+ * crescents did.
+ *
+ * Opacity only, so there is nothing travelling in the corner of the eye while
+ * someone reads. */
+.council-ink.is-active .ink-arc {
+  animation: inkBreath 2.8s ease-in-out infinite;
+  animation-delay: calc(var(--arc-index) * 240ms);
+}
+
+@keyframes inkBreath {
+  0%, 72%, 100% { opacity: var(--arc-opacity); }
+  24% { opacity: 1; }
+}
+
+/* The gutter narrows before it disappears. The mark narrows with it and pulls
+ * tighter into the corner, rather than holding a width that would start to
+ * overlap the column. */
+@media (max-width: 1180px) {
+  .council-ink { left: 2%; top: 28px; opacity: 0.45; }
+  .council-ink.is-dim { opacity: 0.15; }
+}
+
+/* Below this there is no margin left at any width, for either of them. */
 @media (max-width: 640px) {
-  /* THE BOUGH COMES OFF ENTIRELY ON A PHONE, and shrinking it is not the fix.
-   *
-   * Re-measured at 390x844 after the move to the bottom right, because the
-   * reason had to be checked again and not assumed: the starter cards go
-   * full-width there and stack from y=347 to y=756, while the empty state ends
-   * at y=710. The bottom-right corner is entirely card. The top-left is no
-   * better — 38 pixels of clearance between the frame at y=134 and the headline
-   * at y=172, for an ornament 105 tall at its smallest useful size.
-   *
-   * Every corner on a phone is doing a job, so there is no placement left and
-   * no width that helps. Same call as the torii below and the lattice further
-   * down: a phone gets the product without the atmosphere. */
-  .sakura-limb { display: none; }
-  .sakura-torii { display: none; }
+  .council-ink { display: none; }
 
   /* THE LATTICE COMES OFF ENTIRELY BELOW THIS WIDTH.
    *
@@ -154,167 +147,17 @@
    * A percentage mask cannot be tuned out of this, because the problem is that
    * the column and the surface have converged. There is nowhere for the
    * pattern to be except behind the words, so on a phone it is simply absent.
-   * Nothing above carries it at this size either — the bough is hidden too,
-   * for the reason recorded there. A phone gets the product plain. */
+   * Nothing above carries it at this size either — the council ink is hidden
+   * too, for the reason recorded there. A phone gets the product plain. */
   .chat-main::after { display: none; }
 }
 
-/* Asanoha — the hemp-leaf lattice, the pattern in every one of the reference
- * frames. Three crossing line families rather than an image: it is pure
- * geometry, so gradients draw it exactly and it costs no request.
- *
- * The alpha is deliberately near-invisible. A lattice at any real strength
- * over a gradient is the banding problem from base.css again — a REGULAR
- * pattern gives the gradient's steps an edge to align to. The grain layer sits
- * above this and breaks up what little it contributes. */
-/* IT NOW SPANS THE WHOLE TRANSCRIPT SURFACE, not just the empty state.
- *
- * This was `.empty-state::after`, so the lattice existed on the welcome screen
- * and vanished the moment a conversation started — reported as "when there's a
- * conversation all design goes away". The composer then sat on a plain band at
- * the bottom of a decorated page, which read as the surface being cut off
- * rather than continuing behind it.
- *
- * Moving it to `.chat-main` fixes both with one rule: the ground is continuous
- * from the header to the bottom edge, the composer sits ON that ground instead
- * of ending it, and a conversation keeps the texture the empty state had.
- *
- * `.chat-main` is already positioned (it is the --z-chat stacking context), so
- * this needs no new positioning and cannot escape it. The mask below is what
- * keeps it off the reading column, and it matters more here than it did on the
- * empty state, because now there is prose in the middle at all times. */
-.chat-main::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: var(--z-empty-decor);
-  background-image:
-    repeating-linear-gradient(60deg, transparent 0 27px, color-mix(in srgb, var(--primary) 8%, transparent) 27px 28px),
-    repeating-linear-gradient(-60deg, transparent 0 27px, color-mix(in srgb, var(--primary) 8%, transparent) 27px 28px),
-    repeating-linear-gradient(0deg, transparent 0 47px, color-mix(in srgb, var(--primary) 6%, transparent) 47px 48px);
-  /* Cleared from the middle, so it is never behind the reading column.
-   *
-   * Widened from 72%/28% now that this covers the transcript: the reading
-   * column is 860px and centred, and a lattice that reaches under body text is
-   * the one thing that would make this change a readability regression rather
-   * than a decoration. The clear zone is an ellipse wide enough to hold that
-   * column at every width the app supports. */
-  -webkit-mask-image: radial-gradient(86% 70% at 50% 50%, transparent 42%, #000 100%);
-  mask-image: radial-gradient(86% 70% at 50% 50%, transparent 42%, #000 100%);
-}
-
 /* .empty-state is a flex column of STATIC children, so they paint in the same
- * layer as the decoration above and DOM order alone would decide the result.
- * Lifting them makes the order explicit instead of accidental. */
-.empty-state > :not(.sakura-frame) {
+ * layer as any decoration behind them and DOM order alone would decide the
+ * result. Lifting them makes the order explicit instead of accidental. */
+.empty-state > * {
   position: relative;
   z-index: var(--z-empty-content);
-}
-
-.earring-wrap {
-  position: absolute;
-  top: 0;
-  z-index: var(--z-earring);
-  /* Clicks pass through to the UI behind it. */
-  pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  opacity: 0.5;
-}
-
-.earring-left { left: 22px; right: auto; }
-.earring-right { right: 22px; left: auto; }
-
-/* Mirrored so the pair reads as a matching set rather than two identical
- * ornaments. Was previously an inline transform on <model-viewer>, which is
- * precisely the inline-vs-stylesheet mismatch that made the earlier z-index
- * commits so hard to reason about. */
-.earring-right .crescent { transform: scaleX(-1); }
-
-.earring-chain {
-  width: 1px;
-  height: 42px;
-  background: linear-gradient(to bottom, transparent, var(--primary-soft));
-  opacity: 0.5;
-}
-
-.earring-pivot {
-  transform-origin: top center;
-  animation: earringSwing 7s ease-in-out infinite;
-  filter: drop-shadow(0 8px 22px var(--primary-glow));
-}
-
-.earring-right .earring-pivot { animation-delay: -3.5s; }
-
-@keyframes earringSwing {
-  0%, 100% { transform: rotate(-3.5deg); }
-  50% { transform: rotate(3.5deg); }
-}
-
-/* THE ONE DELIBERATE FLOURISH.
- *
- * The ornament is the only thing on this screen that could not be mistaken for
- * any other chat client, so under "spend your boldness in one place" it gets
- * the moment and everything else stays quiet.
- *
- * It also carries information rather than decorating: the swing widens and
- * quickens while the council is working, so the periphery reports that
- * something is happening without a second spinner in the middle of the page.
- * The chain brightens with it, because a chain that stays dim while the
- * ornament swings reads as the drawing coming apart. */
-/* The full shorthand, not `animation-name` plus `animation-duration`. The
- * cascade snapshot expands shorthands into longhands and only tracks a
- * longhand once something declares it, so introducing animation-name here made
- * it start recording animation-name for every animated element in the app —
- * the same bookkeeping blow-up border-style caused in composer.css. It also
- * resets animation-delay to 0, which is what we want: both ornaments swing in
- * step while the council works, and a synchronised pair reads as one system
- * doing something where an offset pair reads as two decorations. */
-.earring-wrap.is-active .earring-pivot {
-  animation: earringSwingActive 1.9s ease-in-out infinite;
-}
-
-.earring-wrap.is-active .earring-chain {
-  opacity: 0.85;
-  transition: opacity var(--dur-slow) ease;
-}
-
-@keyframes earringSwingActive {
-  0%, 100% { transform: rotate(-8deg); }
-  50% { transform: rotate(8deg); }
-}
-
-/* The intrinsic drawing is 96x132; every rendered size is set here so the
- * viewBox does the scaling and the edges stay crisp. */
-.earring-pivot .crescent {
-  width: 68px;
-  height: 94px;
-  display: block;
-}
-
-.light .earring-wrap { opacity: 0.5; }
-
-@media (max-width: 1400px) {
-  .earring-pivot .crescent { width: 56px; height: 77px; }
-  .earring-chain { height: 34px; }
-  .earring-left { left: 12px; }
-  .earring-right { right: 12px; }
-}
-
-/* Below this the transcript column reaches the window edge and the ornament
- * would hang over the text rather than beside it. */
-@media (max-width: 1180px) {
-  .earring-wrap { display: none; }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  /* Both the idle swing and the working swing. The active one is the more
-   * important of the two to silence: it is faster, wider, and it starts
-   * without warning. */
-  .earring-pivot,
-  .earring-wrap.is-active .earring-pivot { animation: none; }
 }
 
 /* ===== SKELETON SHIMMER ===== */

@@ -1,7 +1,13 @@
 import { memo } from "react";
 
 /**
- * A blossoming bough across the top of the sign-in page, dropping petals.
+ * Falling petals across the top of the sign-in page.
+ *
+ * The bough they used to hang from is gone: it was one of the branches the
+ * council ink replaced, and a branch drawn beside seven converging ink strokes
+ * read as two unrelated pictures sharing a corner. The petals stayed because
+ * they are weather rather than ornament — they say what season the product is
+ * in without drawing a second subject.
  *
  * WHY IT IS INLINE SVG AND CSS AND NOTHING ELSE. The same reason recorded in
  * SakuraFrame.jsx, which this follows: the ornament in this app was once a
@@ -11,7 +17,7 @@ import { memo } from "react";
  * look at a login form. Adding one back for falling petals would undo that
  * work for the same reason it was done.
  *
- * So: one SVG bough, and petals that are CSS keyframes on a handful of spans.
+ * So: petals that are CSS keyframes on a handful of spans, and nothing else.
  * No JS runs per frame, nothing is measured, nothing is scheduled. It costs
  * about two kilobytes and it renders on a phone with a dead battery.
  *
@@ -40,63 +46,6 @@ import { memo } from "react";
  * the one screen where that is measured. Eight in a band still read as weather;
  * they just no longer compete with the form.
  */
-
-/** One five-petal blossom, matching SakuraFrame's so the two read as one tree. */
-const Blossom = ({ x, y, r = 1, o = 1 }) => (
-  <g transform={`translate(${x} ${y}) scale(${r})`} opacity={o}>
-    {[0, 72, 144, 216, 288].map((a) => (
-      <ellipse key={a} cx="0" cy="-5.2" rx="3.1" ry="4.8" transform={`rotate(${a})`} />
-    ))}
-    <circle cx="0" cy="0" r="1.4" opacity="0.5" />
-  </g>
-);
-
-/**
- * The bough hangs from the TOP EDGE, so its stem starts above the viewBox and
- * the blossoms hang below it. Drawn left-to-right with the thickest stroke at
- * the origin and thinner offshoots, because a branch of uniform width reads as
- * a pipe.
- */
-const Bough = () => (
-  <svg
-    className="sakura-bough-svg"
-    viewBox="0 0 900 220"
-    aria-hidden="true"
-    focusable="false"
-    fill="currentColor"
-    preserveAspectRatio="xMidYMin slice"
-  >
-    {/* Main limb, entering top-left and sweeping right and down. */}
-    <path
-      d="M-10 6 C 120 26, 250 44, 372 74 C 470 98, 560 118, 668 128 C 762 137, 840 132, 910 118"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="4.5"
-      strokeLinecap="round"
-      opacity="0.5"
-    />
-    {/* Offshoots. Each leaves the limb and turns DOWNWARD — a twig that rises
-        reads as a separate plant. */}
-    <path d="M150 30 C 168 58, 178 76, 182 100" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.38" />
-    <path d="M372 74 C 388 100, 396 120, 398 146" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" opacity="0.38" />
-    <path d="M560 118 C 572 140, 578 156, 578 178" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" opacity="0.32" />
-    <path d="M760 133 C 772 152, 776 166, 774 186" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" opacity="0.32" />
-
-    {/* Blossoms sit ON the limb and at the tips of the offshoots. */}
-    <Blossom x={72} y={18} r={1.05} o={0.85} />
-    <Blossom x={182} y={102} r={1.15} o={0.9} />
-    <Blossom x={150} y={31} r={0.8} o={0.6} />
-    <Blossom x={268} y={50} r={0.95} o={0.75} />
-    <Blossom x={398} y={148} r={1.2} o={0.92} />
-    <Blossom x={372} y={75} r={0.75} o={0.55} />
-    <Blossom x={470} y={99} r={0.9} o={0.7} />
-    <Blossom x={578} y={180} r={1.05} o={0.85} />
-    <Blossom x={668} y={129} r={0.85} o={0.65} />
-    <Blossom x={774} y={188} r={1} o={0.8} />
-    <Blossom x={760} y={134} r={0.7} o={0.5} />
-    <Blossom x={868} y={124} r={0.9} o={0.7} />
-  </svg>
-);
 
 /**
  * Fourteen petals. Position, delay, duration and drift are per-petal custom
@@ -141,7 +90,6 @@ const Petal = ({ p }) => (
 
 const SakuraBough = memo(() => (
   <div className="sakura-bough" aria-hidden="true">
-    <Bough />
     <div className="sakura-petals">
       {PETALS.map((p, i) => (
         <Petal key={i} p={p} />

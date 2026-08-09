@@ -1,6 +1,5 @@
 import { memo, lazy, Suspense, useState, useRef, useEffect } from "react";
 import { animate, spring, createDraggable } from "animejs";
-import SakuraFrame from "./SakuraFrame";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Icon from "./Icon";
@@ -179,9 +178,6 @@ export const EmptyState = memo(({ onPick }) => {
 
   return (
   <div className="empty-state">
-    {/* Behind everything, and only here — see SakuraFrame for why the frame
-        does not follow the transcript. */}
-    <SakuraFrame />
     <img ref={logoRef} src="/logo-mark.png" alt="" className="empty-logo" />
     {/* No eyebrow. "The AI Council" sat between the mark and the title,
         saying nothing the title and subtitle below do not — see SignInPage

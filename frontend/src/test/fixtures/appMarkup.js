@@ -145,14 +145,8 @@ export const appTree = (theme) => `
         <!-- The ornament hangs inside the transcript panel, in the margin the
              centred column creates. It used to be fixed to the window, which
              is where the sidebar and header are. -->
-        <div class="earring-wrap earring-left" aria-hidden="true">
-          <div class="earring-chain"></div>
-          <div class="earring-pivot"><svg class="crescent" width="96" height="132" viewBox="0 0 96 132"><defs><linearGradient><stop/></linearGradient></defs><path d="M0 0"/></svg></div>
-        </div>
-        <div class="earring-wrap earring-right is-active" aria-hidden="true">
-          <div class="earring-chain"></div>
-          <div class="earring-pivot"><svg class="crescent" width="96" height="132" viewBox="0 0 96 132"><path d="M0 0"/></svg></div>
-        </div>
+        
+        
 
         <div class="panel-overlay"></div>
         <div class="side-panel">
@@ -226,7 +220,7 @@ export const appTree = (theme) => `
         <div class="chat-content">
           <div class="scroll-wrapper">
             <div class="empty-state">
-              <div class="sakura-frame" aria-hidden="true"><svg class="sakura-torii" viewBox="0 0 240 190"><path d="M0 0"/></svg><svg class="sakura-limb sakura-limb-br" viewBox="0 0 180 122"><path d="M0 0"/></svg></div>
+              <svg class="council-ink is-drawn" viewBox="0 0 156 156"><path class="ink-arc" d="M0 0"/></svg>
               <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="empty-logo" alt="ALOP-AI"/>
               <h2 class="empty-title text-shimmer">ALOP-AI<span class="empty-title-accent">Assembled.</span></h2>
               <p class="empty-subtitle">Ask the AI Council anything.</p>
@@ -444,10 +438,7 @@ export const outsideAppRoot = `
   <div class="signin-noise"></div>
   <div class="signin-orb signin-orb-1"></div>
   <div class="signin-orb signin-orb-2"></div>
-  <div class="sakura-frame">
-    <svg class="sakura-torii" viewBox="0 0 240 190"><path d="M0 0"/></svg>
-    <svg class="sakura-limb sakura-limb-br" viewBox="0 0 180 122"><path d="M0 0"/></svg>
-  </div>
+  <svg class="council-ink is-drawn" viewBox="0 0 156 156"><path class="ink-arc" d="M0 0"/></svg>
 
   <div class="signin-wrap">
     <div class="signin-down" role="alert">

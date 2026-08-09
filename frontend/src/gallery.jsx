@@ -14,8 +14,8 @@ import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import MagneticButton from "@/components/ui/MagneticButton";
-import Earring from "./components/Earring";
 import Icon, { ICON_NAMES } from "./components/Icon";
+import CouncilInk from "./components/CouncilInk";
 import MessageList from "./components/MessageList";
 import InputBar from "./components/InputBar";
 import ChatSidebar from "./components/ChatSidebar";
@@ -122,10 +122,18 @@ const Primitives = () => (
       ))}
     </Section>
 
-    <Section title="Ornament" note="The real Crescent and chain — the pair, mirrored, as they hang in the app.">
-      <div style={{ position: "relative", height: 190, width: 280 }}>
-        <Earring side="left" active />
-        <Earring side="right" active />
+    <Section
+      title="Ornament"
+      note="Seven strokes converging into one. The reply is the only stroke in --primary, because it is the only thing the product returns."
+    >
+      <div style={{ position: "relative", height: 150, width: 620 }}>
+        <CouncilInk />
+      </div>
+    </Section>
+
+    <Section title="Ornament, while the council is working" note="The one loop in the app: the voices light in sequence because they are reporting real state.">
+      <div style={{ position: "relative", height: 150, width: 620 }}>
+        <CouncilInk active />
       </div>
     </Section>
 
@@ -417,8 +425,7 @@ const LiveChrome = ({ theme, empty = false, streaming = false, loaded = false, c
           />
 
           <div className="chat-main">
-            <Earring side="left" active={streaming} />
-            <Earring side="right" active={streaming} />
+            <CouncilInk active={streaming} dim={loaded} />
 
             <div className="chat-content">
               <div className="scroll-wrapper">

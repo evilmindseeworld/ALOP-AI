@@ -174,6 +174,7 @@
   ::after/animation-delay: <animation: bgBreath 24s ease-in-out infinite alternate>
   ::after/animation-duration: <animation: bgBreath 24s ease-in-out infinite alternate>
   ::after/animation-iteration-count: <animation: bgBreath 24s ease-in-out infinite alternate>
+  ::after/animation-name: <animation: bgBreath 24s ease-in-out infinite alternate>
   ::after/background: radial-gradient(36% 28% at 12% -4%, rgba(240, 138, 163, 0.20) 0%, transparent 68%), radial-gradient(70% 56% at 18% 2%, rgba(240, 138, 163, 0.09) 0%, transparent 72%), radial-gradient(60% 50% at 92% 104%, rgba(111, 211, 166, 0.08) 0%, transparent 70%), radial-gradient(120% 100% at 50% 45%, transparent 46%, rgba(120, 92, 64, 0.09) 100%)
   ::after/background-clip: <background: radial-gradient(36% 28% at 12% -4%, rgba(240, 138, 163, 0.20) 0%, transparent 68%), radial-gradient(70% 56% at 18% 2%, rgba(240, 138, 163, 0.09) 0%, transparent 72%), radial-gradient(60% 50% at 92% 104%, rgba(111, 211, 166, 0.08) 0%, transparent 70%), radial-gradient(120% 100% at 50% 45%, transparent 46%, rgba(120, 92, 64, 0.09) 100%)>
   ::after/background-image: <background: radial-gradient(36% 28% at 12% -4%, rgba(240, 138, 163, 0.20) 0%, transparent 68%), radial-gradient(70% 56% at 18% 2%, rgba(240, 138, 163, 0.09) 0%, transparent 72%), radial-gradient(60% 50% at 92% 104%, rgba(111, 211, 166, 0.08) 0%, transparent 70%), radial-gradient(120% 100% at 50% 45%, transparent 46%, rgba(120, 92, 64, 0.09) 100%)>
@@ -411,7 +412,6 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 30px rgba(0, 0, 0, 0.45)
   box-sizing: border-box
   color: #f5f1ee
-  column-gap: <gap: 12px>
   display: flex
   font-family: 'Switzer', system-ui, sans-serif
   font-size: 13px
@@ -596,7 +596,6 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -761,6 +760,7 @@
   animation-delay: <animation: fadeIn 120ms ease>
   animation-duration: <animation: fadeIn 120ms ease>
   animation-iteration-count: <animation: fadeIn 120ms ease>
+  animation-name: <animation: fadeIn 120ms ease>
   background: rgba(0, 0, 0, 0.5)
   background-clip: <background: rgba(0, 0, 0, 0.5)>
   background-image: <background: rgba(0, 0, 0, 0.5)>
@@ -818,6 +818,7 @@
   animation-delay: <animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   animation-duration: <animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   animation-iteration-count: <animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
+  animation-name: <animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   background: #101010
   background-clip: <background: #101010>
   background-image: <background: #101010>
@@ -876,7 +877,6 @@
   align-items: center
   border-bottom: 1px solid rgba(255, 255, 255, 0.07)
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -1067,7 +1067,6 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  column-gap: <gap: 2px>
   display: flex
   flex-direction: column
   gap: 2px
@@ -1166,7 +1165,6 @@
   border-radius: 6px
   box-sizing: border-box
   color: #f5f1ee
-  column-gap: <gap: 12px>
   cursor: pointer
   display: flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -1364,7 +1362,6 @@
   border-radius: 6px
   box-sizing: border-box
   color: #b8b3ae
-  column-gap: <gap: 12px>
   cursor: pointer
   display: flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -1554,7 +1551,6 @@
   border-top: 1px solid rgba(255, 255, 255, 0.07)
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 16px>
   display: flex
   font-size: 11px
   gap: 16px
@@ -1599,7 +1595,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 4px>
   display: inline-flex
   gap: 4px
   margin: 0
@@ -1741,7 +1736,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 4px>
   display: inline-flex
   gap: 4px
   margin: 0
@@ -1834,7 +1828,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 4px>
   display: inline-flex
   gap: 4px
   margin: 0
@@ -1972,7 +1965,6 @@
   align-items: center
   border-bottom: 1px solid rgba(255, 255, 255, 0.07)
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex-shrink: 0
   gap: 8px
@@ -2313,7 +2305,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex: 1
   flex-shrink: <flex: 1>
@@ -2459,7 +2450,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex-direction: row
   flex-shrink: 0
@@ -2516,7 +2506,6 @@
   border-radius: 6px
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 8px>
   cursor: pointer
   display: flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -2748,7 +2737,6 @@
   border-radius: 6px
   box-sizing: border-box
   color: #f08aa3
-  column-gap: <gap: 8px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -3315,7 +3303,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: none
   flex: 1
   flex-direction: column
@@ -3699,7 +3686,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 4px>
   display: flex
   flex-direction: column
   gap: 4px
@@ -3924,7 +3910,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -3979,7 +3964,6 @@
   box-shadow: 0 2px 12px rgba(240, 138, 163, 0.22)
   box-sizing: border-box
   color: #1a0e13
-  column-gap: <gap: 8px>
   cursor: pointer
   display: flex
   flex: 1
@@ -4275,7 +4259,6 @@
   border-radius: 6px
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   height: 32px
@@ -4913,7 +4896,6 @@
   background-size: <background: #101010>
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-weight: 700
@@ -4987,7 +4969,6 @@
   border-radius: 6px
   box-sizing: border-box
   color: #f5f1ee
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -5101,7 +5082,6 @@
   border-bottom-right-radius: <border-radius: 6px>
   border-radius: 6px
   box-sizing: border-box
-  column-gap: <gap: 2px>
   display: flex
   gap: 2px
   margin: 0
@@ -5623,7 +5603,6 @@
   background-size: <background: #101010>
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-weight: 700
@@ -5680,7 +5659,6 @@
   border-radius: 6px
   box-sizing: border-box
   color: #b8b3ae
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -5796,7 +5774,6 @@
   border-bottom-right-radius: <border-radius: 6px>
   border-radius: 6px
   box-sizing: border-box
-  column-gap: <gap: 2px>
   display: flex
   gap: 2px
   margin: 0
@@ -6038,7 +6015,6 @@
   background-size: <background: #101010>
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-weight: 700
@@ -6095,7 +6071,6 @@
   border-radius: 6px
   box-sizing: border-box
   color: #b8b3ae
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -6210,7 +6185,6 @@
   align-items: center
   border-top: 1px solid rgba(255, 255, 255, 0.07)
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -6643,7 +6617,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex: 1
   flex-direction: column
@@ -6691,7 +6664,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 4px>
   display: flex
   flex-direction: column
   gap: 4px
@@ -7022,6 +6994,7 @@
   animation-delay: <animation: fadeIn 200ms ease>
   animation-duration: <animation: fadeIn 200ms ease>
   animation-iteration-count: <animation: fadeIn 200ms ease>
+  animation-name: <animation: fadeIn 200ms ease>
   background: rgba(0, 0, 0, 0.5)
   background-clip: <background: rgba(0, 0, 0, 0.5)>
   background-image: <background: rgba(0, 0, 0, 0.5)>
@@ -7078,6 +7051,7 @@
   animation-delay: <animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)>
   animation-duration: <animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)>
   animation-iteration-count: <animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)>
+  animation-name: <animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)>
   background: #101010
   background-clip: <background: #101010>
   background-image: <background: #101010>
@@ -7135,7 +7109,6 @@
   align-items: center
   border-bottom: 1px solid rgba(255, 255, 255, 0.07)
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   flex-shrink: 0
   gap: 12px
@@ -7417,7 +7390,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   flex-direction: row
   gap: 12px
@@ -7518,7 +7490,6 @@
   border-color: <border: 1px solid rgba(255, 255, 255, 0.07)>
   border-radius: 999px
   box-sizing: border-box
-  column-gap: <gap: 12px>
   cursor: pointer
   display: flex
   gap: 12px
@@ -7676,7 +7647,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   flex-direction: row
   gap: 12px
@@ -7787,7 +7757,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   flex-direction: row
   gap: 12px
@@ -7898,7 +7867,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: block
   flex-direction: row
   gap: 12px
@@ -8089,7 +8057,6 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -8143,7 +8110,6 @@
   border-color: <border: 1px solid rgba(255, 255, 255, 0.07)>
   border-radius: 6px
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   justify-content: space-between
@@ -8448,7 +8414,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -8756,7 +8721,6 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  column-gap: <gap: 4px>
   display: flex
   gap: 4px
   margin: 0
@@ -8813,7 +8777,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -8878,7 +8841,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -8982,7 +8944,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -9259,7 +9220,6 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: grid
   gap: 12px
   margin: 0
@@ -9350,7 +9310,6 @@
   align-items: center
   box-sizing: border-box
   color: #f5f1ee
-  column-gap: <gap: 8px>
   display: flex
   font-family: 'Clash Grotesk', system-ui, sans-serif
   font-size: 16px
@@ -9527,7 +9486,6 @@
   align-items: center
   box-sizing: border-box
   color: #f5f1ee
-  column-gap: <gap: 8px>
   display: flex
   font-family: 'Clash Grotesk', system-ui, sans-serif
   font-size: 16px
@@ -9745,7 +9703,6 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -10058,10 +10015,9 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: clamp(20px, 4vw, var(--space-7))>
   display: grid
-  gap: clamp(20px, 4vw, var(--space-7))
-  grid-template-columns: minmax(0, 1fr) 210px
+  gap: 16px
+  grid-template-columns: minmax(0, 1fr)
   height: 100%
   margin: 0
   margin-bottom: <margin: 0>
@@ -10110,6 +10066,7 @@
   animation-delay: <animation: emptyFloat 6s ease-in-out infinite>
   animation-duration: <animation: emptyFloat 6s ease-in-out infinite>
   animation-iteration-count: <animation: emptyFloat 6s ease-in-out infinite>
+  animation-name: <animation: emptyFloat 6s ease-in-out infinite>
   border-bottom-right-radius: <border-radius: 12px>
   border-radius: 12px
   box-shadow: 0 18px 50px rgba(240, 138, 163, 0.22), 0 0 70px rgba(111, 211, 166, 0.18)
@@ -10162,6 +10119,7 @@
   animation-delay: 120ms
   animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation-name: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   box-sizing: border-box
   color: #f5f1ee
   font-family: 'Clash Grotesk', system-ui, sans-serif
@@ -10255,6 +10213,7 @@
   animation-delay: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
   animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
   animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
+  animation-name: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
   box-sizing: border-box
   color: #b8b3ae
   font-size: 16px
@@ -10888,10 +10847,10 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  animation-name: <animation: none>
   border-bottom-right-radius: <border-radius: 8px>
   border-radius: 8px
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   flex-direction: row-reverse
   gap: 12px
@@ -11146,7 +11105,6 @@
   align-items: center
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-variant-numeric: tabular-nums
@@ -11279,11 +11237,11 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  animation-name: <animation: none>
   border-bottom-right-radius: <border-radius: 8px>
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -11483,7 +11441,6 @@
   align-items: center
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 8px>
   cursor: pointer
   display: inline-flex
   font-size: 12px
@@ -11655,7 +11612,6 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  column-gap: <gap: 4px>
   display: flex
   flex-direction: column
   gap: 4px
@@ -11702,7 +11658,6 @@
   align-items: flex-start
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 8px>
   display: flex
   font-size: 12px
   gap: 8px
@@ -11874,7 +11829,6 @@
   align-items: flex-start
   box-sizing: border-box
   color: #b8b3ae
-  column-gap: <gap: 8px>
   display: flex
   font-size: 12px
   gap: 8px
@@ -11923,6 +11877,7 @@
   animation-delay: <animation: toolPending 1.6s ease-in-out infinite>
   animation-duration: <animation: toolPending 1.6s ease-in-out infinite>
   animation-iteration-count: <animation: toolPending 1.6s ease-in-out infinite>
+  animation-name: <animation: toolPending 1.6s ease-in-out infinite>
   box-sizing: border-box
   flex: 0 0 auto
   flex-shrink: <flex: 0 0 auto>
@@ -12050,7 +12005,6 @@
   align-items: flex-start
   box-sizing: border-box
   color: #f0808f
-  column-gap: <gap: 8px>
   display: flex
   font-size: 12px
   gap: 8px
@@ -12230,7 +12184,6 @@
   border-radius: 999px
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 8px>
   display: inline-flex
   font-size: 12px
   gap: 8px
@@ -12733,7 +12686,6 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -12859,7 +12811,6 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -13575,7 +13526,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #b8b3ae
-  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -13836,7 +13786,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #6fd3a6
-  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -14186,7 +14135,6 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  column-gap: <gap: 4px>
   display: flex
   gap: 4px
   margin: 0
@@ -14243,7 +14191,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -14308,7 +14255,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #6fd3a6
-  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -14367,7 +14313,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #6fd3a6
-  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -14506,7 +14451,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #f0808f
-  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -14636,7 +14580,6 @@
   align-items: center
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-variant-numeric: tabular-nums
@@ -14769,11 +14712,11 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  animation-name: <animation: none>
   border-bottom-right-radius: <border-radius: 8px>
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -14926,6 +14869,7 @@
   ::after/animation-delay: <animation: caretBlink 1s steps(2, start) infinite>
   ::after/animation-duration: <animation: caretBlink 1s steps(2, start) infinite>
   ::after/animation-iteration-count: <animation: caretBlink 1s steps(2, start) infinite>
+  ::after/animation-name: <animation: caretBlink 1s steps(2, start) infinite>
   ::after/background: #f08aa3
   ::after/background-clip: <background: #f08aa3>
   ::after/background-image: <background: #f08aa3>
@@ -15090,11 +15034,11 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  animation-name: <animation: none>
   border-bottom-right-radius: <border-radius: 8px>
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -15348,7 +15292,6 @@
   align-items: center
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 4px>
   display: inline-flex
   font-size: 12px
   gap: 4px
@@ -15475,11 +15418,11 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  animation-name: <animation: none>
   border-bottom-right-radius: <border-radius: 8px>
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -15813,11 +15756,11 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  animation-name: <animation: none>
   border-bottom-right-radius: <border-radius: 8px>
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -15975,6 +15918,7 @@
   animation-delay: <animation: skeletonShimmer 1.6s linear infinite>
   animation-duration: <animation: skeletonShimmer 1.6s linear infinite>
   animation-iteration-count: <animation: skeletonShimmer 1.6s linear infinite>
+  animation-name: <animation: skeletonShimmer 1.6s linear infinite>
   background: linear-gradient( 90deg, #161615 25%, #1e1e1c 50%, #161615 75% )
   background-clip: <background: linear-gradient( 90deg, #161615 25%, #1e1e1c 50%, #161615 75% )>
   background-image: <background: linear-gradient( 90deg, #161615 25%, #1e1e1c 50%, #161615 75% )>
@@ -16072,28 +16016,7 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  align-items: <place-items: center>
-  animation: scrollDownIn 200ms cubic-bezier(0.16, 1, 0.3, 1)
-  animation-delay: <animation: scrollDownIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
-  animation-duration: <animation: scrollDownIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
-  animation-iteration-count: <animation: scrollDownIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
-  background: #1e1e1c
-  background-clip: <background: #1e1e1c>
-  background-image: <background: #1e1e1c>
-  background-size: <background: #1e1e1c>
-  border: 1px solid rgba(255, 255, 255, 0.14)
-  border-bottom-right-radius: <border-radius: 999px>
-  border-color: <border: 1px solid rgba(255, 255, 255, 0.14)>
-  border-radius: 999px
-  bottom: 108px
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45)
   box-sizing: border-box
-  color: #b8b3ae
-  cursor: pointer
-  display: grid
-  height: 34px
-  justify-items: <place-items: center>
-  left: 50%
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -16101,25 +16024,15 @@
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
-  place-items: center
-  position: absolute
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
-  transform: translateX(-50%)
-  transition: background 120ms ease, color 120ms ease
-  transition-duration: <transition: background 120ms ease, color 120ms ease>
-  width: 34px
-  z-index: 80
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
-    background: #282825
-    background-clip: <background: #282825>
-    background-image: <background: #282825>
-    background-size: <background: #282825>
-    color: #f5f1ee
   :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
@@ -16224,7 +16137,6 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   justify-content: center
@@ -16279,7 +16191,6 @@
   border-radius: 999px
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 8px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -16423,7 +16334,6 @@
   border-radius: 999px
   box-sizing: border-box
   color: #8d8880
-  column-gap: <gap: 8px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -16607,7 +16517,6 @@
   border-radius: 12px
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 4px rgba(240, 138, 163, 0.12)
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex: 1
   flex-direction: column
@@ -16765,7 +16674,6 @@
   border-radius: 12px
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 24px 60px rgba(0, 0, 0, 0.55)
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex: 1
   flex-direction: column
@@ -16969,7 +16877,6 @@
   align-items: center
   box-sizing: border-box
   color: #b8b3ae
-  column-gap: <gap: 8px>
   display: flex
   flex-wrap: wrap
   font-size: 12px
@@ -17113,7 +17020,6 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex-wrap: wrap
   gap: 8px
@@ -17168,7 +17074,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #b8b3ae
-  column-gap: <gap: 8px>
   display: inline-flex
   font-size: 12px
   gap: 8px
@@ -17403,7 +17308,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #b8b3ae
-  column-gap: <gap: 8px>
   display: inline-flex
   font-size: 12px
   gap: 8px
@@ -17689,7 +17593,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -17930,6 +17833,7 @@
   animation-delay: <animation: micPulse 1.6s ease-in-out infinite>
   animation-duration: <animation: micPulse 1.6s ease-in-out infinite>
   animation-iteration-count: <animation: micPulse 1.6s ease-in-out infinite>
+  animation-name: <animation: micPulse 1.6s ease-in-out infinite>
   background: color-mix(in srgb, #f0808f 18%, transparent)
   background-clip: <background: color-mix(in srgb, #f0808f 18%, transparent)>
   background-image: <background: color-mix(in srgb, #f0808f 18%, transparent)>
@@ -18520,6 +18424,7 @@
   animation-delay: <animation: stopPulse 1.8s ease-in-out infinite>
   animation-duration: <animation: stopPulse 1.8s ease-in-out infinite>
   animation-iteration-count: <animation: stopPulse 1.8s ease-in-out infinite>
+  animation-name: <animation: stopPulse 1.8s ease-in-out infinite>
   background: #f0808f
   background-clip: <background: #f0808f>
   background-image: <background: #f0808f>
@@ -18666,6 +18571,7 @@
   ::after/animation-delay: <animation: bgBreath 24s ease-in-out infinite alternate>
   ::after/animation-duration: <animation: bgBreath 24s ease-in-out infinite alternate>
   ::after/animation-iteration-count: <animation: bgBreath 24s ease-in-out infinite alternate>
+  ::after/animation-name: <animation: bgBreath 24s ease-in-out infinite alternate>
   ::after/background: radial-gradient(38% 30% at 12% -4%, rgba(179, 26, 84, 0.14) 0%, transparent 68%), radial-gradient(72% 58% at 18% 2%, rgba(179, 26, 84, 0.07) 0%, transparent 72%), radial-gradient(62% 52% at 92% 104%, rgba(31, 122, 82, 0.06) 0%, transparent 70%), radial-gradient(120% 100% at 50% 50%, transparent 42%, rgba(0, 0, 0, 0.34) 100%)
   ::after/background-clip: <background: radial-gradient(38% 30% at 12% -4%, rgba(179, 26, 84, 0.14) 0%, transparent 68%), radial-gradient(72% 58% at 18% 2%, rgba(179, 26, 84, 0.07) 0%, transparent 72%), radial-gradient(62% 52% at 92% 104%, rgba(31, 122, 82, 0.06) 0%, transparent 70%), radial-gradient(120% 100% at 50% 50%, transparent 42%, rgba(0, 0, 0, 0.34) 100%)>
   ::after/background-image: <background: radial-gradient(38% 30% at 12% -4%, rgba(179, 26, 84, 0.14) 0%, transparent 68%), radial-gradient(72% 58% at 18% 2%, rgba(179, 26, 84, 0.07) 0%, transparent 72%), radial-gradient(62% 52% at 92% 104%, rgba(31, 122, 82, 0.06) 0%, transparent 70%), radial-gradient(120% 100% at 50% 50%, transparent 42%, rgba(0, 0, 0, 0.34) 100%)>
@@ -18904,7 +18810,6 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 8px 30px rgba(50, 36, 28, 0.10)
   box-sizing: border-box
   color: #241a16
-  column-gap: <gap: 12px>
   display: flex
   font-family: 'Switzer', system-ui, sans-serif
   font-size: 13px
@@ -19089,7 +18994,6 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -19254,6 +19158,7 @@
   animation-delay: <animation: fadeIn 120ms ease>
   animation-duration: <animation: fadeIn 120ms ease>
   animation-iteration-count: <animation: fadeIn 120ms ease>
+  animation-name: <animation: fadeIn 120ms ease>
   background: rgba(0, 0, 0, 0.5)
   background-clip: <background: rgba(0, 0, 0, 0.5)>
   background-image: <background: rgba(0, 0, 0, 0.5)>
@@ -19311,6 +19216,7 @@
   animation-delay: <animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   animation-duration: <animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   animation-iteration-count: <animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
+  animation-name: <animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   background: #f8f4ed
   background-clip: <background: #f8f4ed>
   background-image: <background: #f8f4ed>
@@ -19369,7 +19275,6 @@
   align-items: center
   border-bottom: 1px solid rgba(50, 36, 28, 0.12)
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -19560,7 +19465,6 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
-  column-gap: <gap: 2px>
   display: flex
   flex-direction: column
   gap: 2px
@@ -19659,7 +19563,6 @@
   border-radius: 6px
   box-sizing: border-box
   color: #241a16
-  column-gap: <gap: 12px>
   cursor: pointer
   display: flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -19857,7 +19760,6 @@
   border-radius: 6px
   box-sizing: border-box
   color: #5c4b40
-  column-gap: <gap: 12px>
   cursor: pointer
   display: flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -20047,7 +19949,6 @@
   border-top: 1px solid rgba(50, 36, 28, 0.12)
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 16px>
   display: flex
   font-size: 11px
   gap: 16px
@@ -20092,7 +19993,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 4px>
   display: inline-flex
   gap: 4px
   margin: 0
@@ -20234,7 +20134,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 4px>
   display: inline-flex
   gap: 4px
   margin: 0
@@ -20327,7 +20226,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 4px>
   display: inline-flex
   gap: 4px
   margin: 0
@@ -20465,7 +20363,6 @@
   align-items: center
   border-bottom: 1px solid rgba(50, 36, 28, 0.12)
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex-shrink: 0
   gap: 8px
@@ -20806,7 +20703,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex: 1
   flex-shrink: <flex: 1>
@@ -20952,7 +20848,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex-direction: row
   flex-shrink: 0
@@ -21009,7 +20904,6 @@
   border-radius: 6px
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 8px>
   cursor: pointer
   display: flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -21241,7 +21135,6 @@
   border-radius: 6px
   box-sizing: border-box
   color: #b31a54
-  column-gap: <gap: 8px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -21808,7 +21701,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: none
   flex: 1
   flex-direction: column
@@ -22192,7 +22084,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 4px>
   display: flex
   flex-direction: column
   gap: 4px
@@ -22417,7 +22308,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -22472,7 +22362,6 @@
   box-shadow: 0 2px 12px rgba(179, 26, 84, 0.18)
   box-sizing: border-box
   color: #fffaf7
-  column-gap: <gap: 8px>
   cursor: pointer
   display: flex
   flex: 1
@@ -22768,7 +22657,6 @@
   border-radius: 6px
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   height: 32px
@@ -23406,7 +23294,6 @@
   background-size: <background: #f8f4ed>
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-weight: 700
@@ -23480,7 +23367,6 @@
   border-radius: 6px
   box-sizing: border-box
   color: #241a16
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -23594,7 +23480,6 @@
   border-bottom-right-radius: <border-radius: 6px>
   border-radius: 6px
   box-sizing: border-box
-  column-gap: <gap: 2px>
   display: flex
   gap: 2px
   margin: 0
@@ -24116,7 +24001,6 @@
   background-size: <background: #f8f4ed>
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-weight: 700
@@ -24173,7 +24057,6 @@
   border-radius: 6px
   box-sizing: border-box
   color: #5c4b40
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -24289,7 +24172,6 @@
   border-bottom-right-radius: <border-radius: 6px>
   border-radius: 6px
   box-sizing: border-box
-  column-gap: <gap: 2px>
   display: flex
   gap: 2px
   margin: 0
@@ -24531,7 +24413,6 @@
   background-size: <background: #f8f4ed>
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-weight: 700
@@ -24588,7 +24469,6 @@
   border-radius: 6px
   box-sizing: border-box
   color: #5c4b40
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -24703,7 +24583,6 @@
   align-items: center
   border-top: 1px solid rgba(50, 36, 28, 0.12)
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -25136,7 +25015,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex: 1
   flex-direction: column
@@ -25184,7 +25062,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 4px>
   display: flex
   flex-direction: column
   gap: 4px
@@ -25515,6 +25392,7 @@
   animation-delay: <animation: fadeIn 200ms ease>
   animation-duration: <animation: fadeIn 200ms ease>
   animation-iteration-count: <animation: fadeIn 200ms ease>
+  animation-name: <animation: fadeIn 200ms ease>
   background: rgba(50, 36, 28, 0.28)
   background-clip: <background: rgba(50, 36, 28, 0.28)>
   background-image: <background: rgba(50, 36, 28, 0.28)>
@@ -25571,6 +25449,7 @@
   animation-delay: <animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)>
   animation-duration: <animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)>
   animation-iteration-count: <animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)>
+  animation-name: <animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)>
   background: #f8f4ed
   background-clip: <background: #f8f4ed>
   background-image: <background: #f8f4ed>
@@ -25628,7 +25507,6 @@
   align-items: center
   border-bottom: 1px solid rgba(50, 36, 28, 0.12)
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   flex-shrink: 0
   gap: 12px
@@ -25910,7 +25788,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   flex-direction: row
   gap: 12px
@@ -26011,7 +25888,6 @@
   border-color: <border: 1px solid rgba(50, 36, 28, 0.12)>
   border-radius: 999px
   box-sizing: border-box
-  column-gap: <gap: 12px>
   cursor: pointer
   display: flex
   gap: 12px
@@ -26169,7 +26045,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   flex-direction: row
   gap: 12px
@@ -26280,7 +26155,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   flex-direction: row
   gap: 12px
@@ -26391,7 +26265,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: block
   flex-direction: row
   gap: 12px
@@ -26582,7 +26455,6 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -26636,7 +26508,6 @@
   border-color: <border: 1px solid rgba(50, 36, 28, 0.12)>
   border-radius: 6px
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   justify-content: space-between
@@ -26941,7 +26812,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -27249,7 +27119,6 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
-  column-gap: <gap: 4px>
   display: flex
   gap: 4px
   margin: 0
@@ -27306,7 +27175,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -27371,7 +27239,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -27475,7 +27342,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -27752,7 +27618,6 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: grid
   gap: 12px
   margin: 0
@@ -27843,7 +27708,6 @@
   align-items: center
   box-sizing: border-box
   color: #241a16
-  column-gap: <gap: 8px>
   display: flex
   font-family: 'Clash Grotesk', system-ui, sans-serif
   font-size: 16px
@@ -28020,7 +27884,6 @@
   align-items: center
   box-sizing: border-box
   color: #241a16
-  column-gap: <gap: 8px>
   display: flex
   font-family: 'Clash Grotesk', system-ui, sans-serif
   font-size: 16px
@@ -28238,7 +28101,6 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -28551,10 +28413,9 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: clamp(20px, 4vw, var(--space-7))>
   display: grid
-  gap: clamp(20px, 4vw, var(--space-7))
-  grid-template-columns: minmax(0, 1fr) 210px
+  gap: 16px
+  grid-template-columns: minmax(0, 1fr)
   height: 100%
   margin: 0
   margin-bottom: <margin: 0>
@@ -28603,6 +28464,7 @@
   animation-delay: <animation: emptyFloat 6s ease-in-out infinite>
   animation-duration: <animation: emptyFloat 6s ease-in-out infinite>
   animation-iteration-count: <animation: emptyFloat 6s ease-in-out infinite>
+  animation-name: <animation: emptyFloat 6s ease-in-out infinite>
   border-bottom-right-radius: <border-radius: 12px>
   border-radius: 12px
   box-shadow: 0 18px 50px rgba(179, 26, 84, 0.18), 0 0 70px rgba(31, 122, 82, 0.14)
@@ -28655,6 +28517,7 @@
   animation-delay: 120ms
   animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation-name: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   box-sizing: border-box
   color: #241a16
   font-family: 'Clash Grotesk', system-ui, sans-serif
@@ -28748,6 +28611,7 @@
   animation-delay: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
   animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
   animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
+  animation-name: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 190ms backwards>
   box-sizing: border-box
   color: #5c4b40
   font-size: 16px
@@ -29381,10 +29245,10 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  animation-name: <animation: none>
   border-bottom-right-radius: <border-radius: 8px>
   border-radius: 8px
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   flex-direction: row-reverse
   gap: 12px
@@ -29639,7 +29503,6 @@
   align-items: center
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-variant-numeric: tabular-nums
@@ -29772,11 +29635,11 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  animation-name: <animation: none>
   border-bottom-right-radius: <border-radius: 8px>
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -29976,7 +29839,6 @@
   align-items: center
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 8px>
   cursor: pointer
   display: inline-flex
   font-size: 12px
@@ -30148,7 +30010,6 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
-  column-gap: <gap: 4px>
   display: flex
   flex-direction: column
   gap: 4px
@@ -30195,7 +30056,6 @@
   align-items: flex-start
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 8px>
   display: flex
   font-size: 12px
   gap: 8px
@@ -30367,7 +30227,6 @@
   align-items: flex-start
   box-sizing: border-box
   color: #5c4b40
-  column-gap: <gap: 8px>
   display: flex
   font-size: 12px
   gap: 8px
@@ -30416,6 +30275,7 @@
   animation-delay: <animation: toolPending 1.6s ease-in-out infinite>
   animation-duration: <animation: toolPending 1.6s ease-in-out infinite>
   animation-iteration-count: <animation: toolPending 1.6s ease-in-out infinite>
+  animation-name: <animation: toolPending 1.6s ease-in-out infinite>
   box-sizing: border-box
   flex: 0 0 auto
   flex-shrink: <flex: 0 0 auto>
@@ -30543,7 +30403,6 @@
   align-items: flex-start
   box-sizing: border-box
   color: #a3172b
-  column-gap: <gap: 8px>
   display: flex
   font-size: 12px
   gap: 8px
@@ -30723,7 +30582,6 @@
   border-radius: 999px
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 8px>
   display: inline-flex
   font-size: 12px
   gap: 8px
@@ -31226,7 +31084,6 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -31352,7 +31209,6 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -32068,7 +31924,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #5c4b40
-  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -32329,7 +32184,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #1f7a52
-  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -32679,7 +32533,6 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
-  column-gap: <gap: 4px>
   display: flex
   gap: 4px
   margin: 0
@@ -32736,7 +32589,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -32801,7 +32653,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #1f7a52
-  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -32860,7 +32711,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #1f7a52
-  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -32999,7 +32849,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #a3172b
-  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -33129,7 +32978,6 @@
   align-items: center
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-variant-numeric: tabular-nums
@@ -33262,11 +33110,11 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  animation-name: <animation: none>
   border-bottom-right-radius: <border-radius: 8px>
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -33419,6 +33267,7 @@
   ::after/animation-delay: <animation: caretBlink 1s steps(2, start) infinite>
   ::after/animation-duration: <animation: caretBlink 1s steps(2, start) infinite>
   ::after/animation-iteration-count: <animation: caretBlink 1s steps(2, start) infinite>
+  ::after/animation-name: <animation: caretBlink 1s steps(2, start) infinite>
   ::after/background: #b31a54
   ::after/background-clip: <background: #b31a54>
   ::after/background-image: <background: #b31a54>
@@ -33583,11 +33432,11 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  animation-name: <animation: none>
   border-bottom-right-radius: <border-radius: 8px>
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -33841,7 +33690,6 @@
   align-items: center
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 4px>
   display: inline-flex
   font-size: 12px
   gap: 4px
@@ -33968,11 +33816,11 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  animation-name: <animation: none>
   border-bottom-right-radius: <border-radius: 8px>
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -34306,11 +34154,11 @@
   animation-delay: <animation: none>
   animation-duration: <animation: none>
   animation-iteration-count: <animation: none>
+  animation-name: <animation: none>
   border-bottom-right-radius: <border-radius: 8px>
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -34468,6 +34316,7 @@
   animation-delay: <animation: skeletonShimmer 1.6s linear infinite>
   animation-duration: <animation: skeletonShimmer 1.6s linear infinite>
   animation-iteration-count: <animation: skeletonShimmer 1.6s linear infinite>
+  animation-name: <animation: skeletonShimmer 1.6s linear infinite>
   background: linear-gradient( 90deg, #f1ebe1 25%, #e7dfd2 50%, #f1ebe1 75% )
   background-clip: <background: linear-gradient( 90deg, #f1ebe1 25%, #e7dfd2 50%, #f1ebe1 75% )>
   background-image: <background: linear-gradient( 90deg, #f1ebe1 25%, #e7dfd2 50%, #f1ebe1 75% )>
@@ -34565,28 +34414,7 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
-  align-items: <place-items: center>
-  animation: scrollDownIn 200ms cubic-bezier(0.16, 1, 0.3, 1)
-  animation-delay: <animation: scrollDownIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
-  animation-duration: <animation: scrollDownIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
-  animation-iteration-count: <animation: scrollDownIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
-  background: #e7dfd2
-  background-clip: <background: #e7dfd2>
-  background-image: <background: #e7dfd2>
-  background-size: <background: #e7dfd2>
-  border: 1px solid rgba(50, 36, 28, 0.22)
-  border-bottom-right-radius: <border-radius: 999px>
-  border-color: <border: 1px solid rgba(50, 36, 28, 0.22)>
-  border-radius: 999px
-  bottom: 108px
-  box-shadow: 0 8px 30px rgba(50, 36, 28, 0.10)
   box-sizing: border-box
-  color: #5c4b40
-  cursor: pointer
-  display: grid
-  height: 34px
-  justify-items: <place-items: center>
-  left: 50%
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -34594,25 +34422,15 @@
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
-  place-items: center
-  position: absolute
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
-  transform: translateX(-50%)
-  transition: background 120ms ease, color 120ms ease
-  transition-duration: <transition: background 120ms ease, color 120ms ease>
-  width: 34px
-  z-index: 80
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
-    background: #d9cfbe
-    background-clip: <background: #d9cfbe>
-    background-image: <background: #d9cfbe>
-    background-size: <background: #d9cfbe>
-    color: #241a16
   :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
     outline: 2px solid #b31a54
     outline-offset: 2px
 
@@ -34717,7 +34535,6 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   justify-content: center
@@ -34772,7 +34589,6 @@
   border-radius: 999px
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 8px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -34916,7 +34732,6 @@
   border-radius: 999px
   box-sizing: border-box
   color: #6e5a4d
-  column-gap: <gap: 8px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -35100,7 +34915,6 @@
   border-radius: 12px
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 24px 60px rgba(50, 36, 28, 0.14), 0 0 0 4px rgba(179, 26, 84, 0.10)
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex: 1
   flex-direction: column
@@ -35258,7 +35072,6 @@
   border-radius: 12px
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 24px 60px rgba(50, 36, 28, 0.14)
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex: 1
   flex-direction: column
@@ -35462,7 +35275,6 @@
   align-items: center
   box-sizing: border-box
   color: #5c4b40
-  column-gap: <gap: 8px>
   display: flex
   flex-wrap: wrap
   font-size: 12px
@@ -35606,7 +35418,6 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex-wrap: wrap
   gap: 8px
@@ -35661,7 +35472,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #5c4b40
-  column-gap: <gap: 8px>
   display: inline-flex
   font-size: 12px
   gap: 8px
@@ -35896,7 +35706,6 @@
   border-radius: 4px
   box-sizing: border-box
   color: #5c4b40
-  column-gap: <gap: 8px>
   display: inline-flex
   font-size: 12px
   gap: 8px
@@ -36182,7 +35991,6 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -36423,6 +36231,7 @@
   animation-delay: <animation: micPulse 1.6s ease-in-out infinite>
   animation-duration: <animation: micPulse 1.6s ease-in-out infinite>
   animation-iteration-count: <animation: micPulse 1.6s ease-in-out infinite>
+  animation-name: <animation: micPulse 1.6s ease-in-out infinite>
   background: color-mix(in srgb, #a3172b 18%, transparent)
   background-clip: <background: color-mix(in srgb, #a3172b 18%, transparent)>
   background-image: <background: color-mix(in srgb, #a3172b 18%, transparent)>
@@ -37013,6 +36822,7 @@
   animation-delay: <animation: stopPulse 1.8s ease-in-out infinite>
   animation-duration: <animation: stopPulse 1.8s ease-in-out infinite>
   animation-iteration-count: <animation: stopPulse 1.8s ease-in-out infinite>
+  animation-name: <animation: stopPulse 1.8s ease-in-out infinite>
   background: #a3172b
   background-clip: <background: #a3172b>
   background-image: <background: #a3172b>
@@ -37403,7 +37213,6 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  column-gap: <gap: 10px>
   display: flex
   flex-wrap: wrap
   gap: 10px
@@ -37651,7 +37460,6 @@
   background-image: radial-gradient(36% 28% at 12% -4%, rgba(240, 138, 163, 0.20) 0%, transparent 68%), radial-gradient(70% 56% at 18% 2%, rgba(240, 138, 163, 0.09) 0%, transparent 72%), radial-gradient(60% 50% at 92% 104%, rgba(111, 211, 166, 0.08) 0%, transparent 70%), radial-gradient(120% 100% at 50% 45%, transparent 46%, rgba(120, 92, 64, 0.09) 100%)
   background-size: <background: #0a0a0a>
   box-sizing: border-box
-  column-gap: <gap: 20px>
   display: flex
   flex-direction: column
   gap: 20px
@@ -37701,6 +37509,7 @@
   animation-delay: <animation: logoPulse 1.8s ease-in-out infinite>
   animation-duration: <animation: logoPulse 1.8s ease-in-out infinite>
   animation-iteration-count: <animation: logoPulse 1.8s ease-in-out infinite>
+  animation-name: <animation: logoPulse 1.8s ease-in-out infinite>
   border-bottom-right-radius: <border-radius: 12px>
   border-radius: 12px
   box-sizing: border-box
@@ -37747,6 +37556,7 @@
   animation-delay: <animation: skeletonShimmer 1.6s linear infinite>
   animation-duration: <animation: skeletonShimmer 1.6s linear infinite>
   animation-iteration-count: <animation: skeletonShimmer 1.6s linear infinite>
+  animation-name: <animation: skeletonShimmer 1.6s linear infinite>
   background: linear-gradient( 90deg, #161615 25%, #1e1e1c 50%, #161615 75% )
   background-clip: <background: linear-gradient( 90deg, #161615 25%, #1e1e1c 50%, #161615 75% )>
   background-image: <background: linear-gradient( 90deg, #161615 25%, #1e1e1c 50%, #161615 75% )>
@@ -37849,7 +37659,6 @@
   ::selection/color: #1a0e13
   align-items: flex-end
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -37901,6 +37710,7 @@
   animation-delay: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   animation-duration: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   animation-iteration-count: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
+  animation-name: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   background: #101010
   background-clip: <background: #101010>
   background-image: <background: #101010>
@@ -37912,7 +37722,6 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 30px rgba(0, 0, 0, 0.45)
   box-sizing: border-box
   color: #f5f1ee
-  column-gap: <gap: 12px>
   display: flex
   font-size: 13px
   gap: 12px
@@ -38116,7 +37925,6 @@
   border-radius: 999px
   box-sizing: border-box
   color: #b8b3ae
-  column-gap: <gap: 8px>
   display: inline-flex
   font-size: 12px
   gap: 8px
@@ -38214,6 +38022,7 @@
   animation-delay: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   animation-duration: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   animation-iteration-count: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
+  animation-name: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   background: #101010
   background-clip: <background: #101010>
   background-image: <background: #101010>
@@ -38224,7 +38033,6 @@
   border-radius: 999px
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 30px rgba(0, 0, 0, 0.45)
   box-sizing: border-box
-  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -38322,6 +38130,7 @@
   animation-delay: <animation: overlayPulse 1.6s ease-in-out infinite>
   animation-duration: <animation: overlayPulse 1.6s ease-in-out infinite>
   animation-iteration-count: <animation: overlayPulse 1.6s ease-in-out infinite>
+  animation-name: <animation: overlayPulse 1.6s ease-in-out infinite>
   background: #f0808f
   background-clip: <background: #f0808f>
   background-image: <background: #f0808f>
@@ -38514,6 +38323,7 @@
   animation-delay: <animation: overlayPulse 1.6s ease-in-out infinite>
   animation-duration: <animation: overlayPulse 1.6s ease-in-out infinite>
   animation-iteration-count: <animation: overlayPulse 1.6s ease-in-out infinite>
+  animation-name: <animation: overlayPulse 1.6s ease-in-out infinite>
   background: #f0808f
   background-clip: <background: #f0808f>
   background-image: <background: #f0808f>
@@ -38862,6 +38672,7 @@
   animation-delay: <animation: orb1 18s ease-in-out infinite>
   animation-duration: <animation: orb1 18s ease-in-out infinite>
   animation-iteration-count: <animation: orb1 18s ease-in-out infinite>
+  animation-name: <animation: orb1 18s ease-in-out infinite>
   background: #f08aa3
   background-clip: <background: #f08aa3>
   background-image: <background: #f08aa3>
@@ -38919,6 +38730,7 @@
   animation-delay: <animation: orb2 22s ease-in-out infinite>
   animation-duration: <animation: orb2 22s ease-in-out infinite>
   animation-iteration-count: <animation: orb2 22s ease-in-out infinite>
+  animation-name: <animation: orb2 22s ease-in-out infinite>
   background: #6fd3a6
   background-clip: <background: #6fd3a6>
   background-image: <background: #6fd3a6>
@@ -38973,7 +38785,6 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  column-gap: <gap: 24px>
   display: flex
   flex-direction: column
   gap: 24px
@@ -39211,7 +39022,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -39343,7 +39153,6 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
-  column-gap: <gap: clamp(32px, 6vw, 88px)>
   display: grid
   gap: clamp(32px, 6vw, 88px)
   grid-template-columns: minmax(0, 1fr) minmax(0, 380px)
@@ -39388,7 +39197,6 @@
   ::selection/color: #1a0e13
   align-items: flex-start
   box-sizing: border-box
-  column-gap: <gap: 16px>
   display: flex
   flex-direction: column
   gap: 16px
@@ -39569,9 +39377,9 @@
   animation-delay: 120ms
   animation-duration: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   animation-iteration-count: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation-name: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   box-sizing: border-box
   color: #b8b3ae
-  column-gap: <gap: 12px>
   display: flex
   font-size: 13px
   gap: 12px
@@ -39716,9 +39524,9 @@
   animation-delay: 180ms
   animation-duration: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   animation-iteration-count: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
+  animation-name: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   box-sizing: border-box
   color: #b8b3ae
-  column-gap: <gap: 12px>
   display: flex
   font-size: 13px
   gap: 12px
@@ -39918,6 +39726,7 @@
   animation-delay: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
   animation-duration: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
   animation-iteration-count: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
+  animation-name: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
   box-sizing: border-box
   color: #f5f1ee
   font-size: 16px
@@ -40336,11 +40145,9 @@
   - padding-left: <padding: 0 24px 20px>
 
 [810] div.signin-grid
-  column-gap: <gap: 24px>
   gap: 24px
   grid-template-columns: minmax(0, 1fr)
   justify-items: center
-  - column-gap: <gap: clamp(32px, 6vw, 88px)>
   - gap: clamp(32px, 6vw, 88px)
   - grid-template-columns: minmax(0, 1fr) minmax(0, 380px)
 
@@ -40526,9 +40333,7 @@
 
 [204] div.empty-state
   align-content: center
-  grid-template-columns: 1fr
   width: 100%
-  - grid-template-columns: minmax(0, 1fr) 210px
   - width: min(100%, 860px)
 
 [205] img.empty-logo
@@ -40542,12 +40347,10 @@
   - font-size: 16px
 
 [223] div.msg-row.user
-  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
-  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
@@ -40558,60 +40361,50 @@
   - max-width: min(78%, 60ch)
 
 [231] div.msg-row.assistant
-  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
-  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
 
 [306] div.msg-row.assistant
-  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
-  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
 
 [312] div.msg-row.assistant
-  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
-  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
 
 [320] div.msg-row.assistant
-  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
-  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
 
 [327] div.msg-row.assistant
-  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
-  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
@@ -40817,9 +40610,7 @@
 
 [586] div.empty-state
   align-content: center
-  grid-template-columns: 1fr
   width: 100%
-  - grid-template-columns: minmax(0, 1fr) 210px
   - width: min(100%, 860px)
 
 [587] img.empty-logo
@@ -40833,12 +40624,10 @@
   - font-size: 16px
 
 [605] div.msg-row.user
-  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
-  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
@@ -40849,60 +40638,50 @@
   - max-width: min(78%, 60ch)
 
 [613] div.msg-row.assistant
-  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
-  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
 
 [688] div.msg-row.assistant
-  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
-  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
 
 [694] div.msg-row.assistant
-  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
-  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
 
 [702] div.msg-row.assistant
-  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
-  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
 
 [709] div.msg-row.assistant
-  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
-  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
@@ -40949,23 +40728,19 @@
   - display: flex
 
 [802] div.signin-wrap
-  column-gap: <gap: 16px>
   gap: 16px
   padding: 40px 16px
   padding-bottom: <padding: 40px 16px>
   padding-left: <padding: 40px 16px>
-  - column-gap: <gap: 24px>
   - gap: 24px
   - padding: 48px 24px
   - padding-bottom: <padding: 48px 24px>
   - padding-left: <padding: 48px 24px>
 
 [810] div.signin-grid
-  column-gap: <gap: 24px>
   gap: 24px
   grid-template-columns: minmax(0, 1fr)
   justify-items: center
-  - column-gap: <gap: clamp(32px, 6vw, 88px)>
   - gap: clamp(32px, 6vw, 88px)
   - grid-template-columns: minmax(0, 1fr) minmax(0, 380px)
 
@@ -41169,11 +40944,13 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
   - animation: fadeIn 120ms ease
   - animation-delay: <animation: fadeIn 120ms ease>
   - animation-duration: <animation: fadeIn 120ms ease>
   - animation-iteration-count: <animation: fadeIn 120ms ease>
+  - animation-name: <animation: fadeIn 120ms ease>
 
 [15] div.cmdk
   ::after/animation-duration: 0.01ms
@@ -41186,11 +40963,13 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
   - animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)
   - animation-delay: <animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   - animation-duration: <animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   - animation-iteration-count: <animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
+  - animation-name: <animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
 
 [16] div.cmdk-search
   ::after/animation-duration: 0.01ms
@@ -42621,11 +42400,13 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
   - animation: fadeIn 200ms ease
   - animation-delay: <animation: fadeIn 200ms ease>
   - animation-duration: <animation: fadeIn 200ms ease>
   - animation-iteration-count: <animation: fadeIn 200ms ease>
+  - animation-name: <animation: fadeIn 200ms ease>
 
 [143] div.side-panel
   ::after/animation-duration: 0.01ms
@@ -42638,11 +42419,13 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
   - animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)
   - animation-delay: <animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)>
   - animation-duration: <animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)>
   - animation-iteration-count: <animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)>
+  - animation-name: <animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)>
 
 [144] div.panel-header
   ::after/animation-duration: 0.01ms
@@ -43796,11 +43579,13 @@
   animation-delay: <animation: reducedPulse 1.8s ease-in-out infinite>
   animation-duration: <animation: reducedPulse 1.8s ease-in-out infinite>
   animation-iteration-count: <animation: reducedPulse 1.8s ease-in-out infinite>
+  animation-name: <animation: reducedPulse 1.8s ease-in-out infinite>
   transition-duration: 0.01ms
   - animation: toolPending 1.6s ease-in-out infinite
   - animation-delay: <animation: toolPending 1.6s ease-in-out infinite>
   - animation-duration: <animation: toolPending 1.6s ease-in-out infinite>
   - animation-iteration-count: <animation: toolPending 1.6s ease-in-out infinite>
+  - animation-name: <animation: toolPending 1.6s ease-in-out infinite>
 
 [246] path
   ::after/animation-duration: 0.01ms
@@ -44512,6 +44297,7 @@
   ::after/animation-delay: <animation: reducedPulse 1.8s ease-in-out infinite>
   ::after/animation-duration: <animation: reducedPulse 1.8s ease-in-out infinite>
   ::after/animation-iteration-count: <animation: reducedPulse 1.8s ease-in-out infinite>
+  ::after/animation-name: <animation: reducedPulse 1.8s ease-in-out infinite>
   ::after/transition-duration: 0.01ms
   ::before/animation-duration: 0.01ms
   ::before/animation-iteration-count: 1
@@ -44523,6 +44309,7 @@
   - ::after/animation-delay: <animation: caretBlink 1s steps(2, start) infinite>
   - ::after/animation-duration: <animation: caretBlink 1s steps(2, start) infinite>
   - ::after/animation-iteration-count: <animation: caretBlink 1s steps(2, start) infinite>
+  - ::after/animation-name: <animation: caretBlink 1s steps(2, start) infinite>
 
 [310] p
   ::after/animation-duration: 0.01ms
@@ -44768,11 +44555,13 @@
   animation-delay: <animation: reducedPulse 1.8s ease-in-out infinite>
   animation-duration: <animation: reducedPulse 1.8s ease-in-out infinite>
   animation-iteration-count: <animation: reducedPulse 1.8s ease-in-out infinite>
+  animation-name: <animation: reducedPulse 1.8s ease-in-out infinite>
   transition-duration: 0.01ms
   - animation: skeletonShimmer 1.6s linear infinite
   - animation-delay: <animation: skeletonShimmer 1.6s linear infinite>
   - animation-duration: <animation: skeletonShimmer 1.6s linear infinite>
   - animation-iteration-count: <animation: skeletonShimmer 1.6s linear infinite>
+  - animation-name: <animation: skeletonShimmer 1.6s linear infinite>
 
 [331] p.sr-only
   ::after/animation-duration: 0.01ms
@@ -44796,12 +44585,8 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
-  - animation: scrollDownIn 200ms cubic-bezier(0.16, 1, 0.3, 1)
-  - animation-delay: <animation: scrollDownIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
-  - animation-duration: <animation: scrollDownIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
-  - animation-iteration-count: <animation: scrollDownIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
-  - transition-duration: <transition: background 120ms ease, color 120ms ease>
 
 [333] svg
   ::after/animation-duration: 0.01ms
@@ -45229,11 +45014,13 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
   - animation: micPulse 1.6s ease-in-out infinite
   - animation-delay: <animation: micPulse 1.6s ease-in-out infinite>
   - animation-duration: <animation: micPulse 1.6s ease-in-out infinite>
   - animation-iteration-count: <animation: micPulse 1.6s ease-in-out infinite>
+  - animation-name: <animation: micPulse 1.6s ease-in-out infinite>
   - transition-duration: <transition: background 120ms ease, color 120ms ease, border-color 120ms ease, transform 120ms cubic-bezier(0.16, 1, 0.3, 1)>
 
 [371] svg
@@ -45370,11 +45157,13 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
   - animation: stopPulse 1.8s ease-in-out infinite
   - animation-delay: <animation: stopPulse 1.8s ease-in-out infinite>
   - animation-duration: <animation: stopPulse 1.8s ease-in-out infinite>
   - animation-iteration-count: <animation: stopPulse 1.8s ease-in-out infinite>
+  - animation-name: <animation: stopPulse 1.8s ease-in-out infinite>
   - transition-duration: <transition: background 120ms ease, color 120ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease>
 
 [383] svg
@@ -45537,11 +45326,13 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
   - animation: fadeIn 120ms ease
   - animation-delay: <animation: fadeIn 120ms ease>
   - animation-duration: <animation: fadeIn 120ms ease>
   - animation-iteration-count: <animation: fadeIn 120ms ease>
+  - animation-name: <animation: fadeIn 120ms ease>
 
 [397] div.cmdk
   ::after/animation-duration: 0.01ms
@@ -45554,11 +45345,13 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
   - animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)
   - animation-delay: <animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   - animation-duration: <animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   - animation-iteration-count: <animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
+  - animation-name: <animation: cmdkIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
 
 [398] div.cmdk-search
   ::after/animation-duration: 0.01ms
@@ -46989,11 +46782,13 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
   - animation: fadeIn 200ms ease
   - animation-delay: <animation: fadeIn 200ms ease>
   - animation-duration: <animation: fadeIn 200ms ease>
   - animation-iteration-count: <animation: fadeIn 200ms ease>
+  - animation-name: <animation: fadeIn 200ms ease>
 
 [525] div.side-panel
   ::after/animation-duration: 0.01ms
@@ -47006,11 +46801,13 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
   - animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)
   - animation-delay: <animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)>
   - animation-duration: <animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)>
   - animation-iteration-count: <animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)>
+  - animation-name: <animation: panelIn 320ms cubic-bezier(0.16, 1, 0.3, 1)>
 
 [526] div.panel-header
   ::after/animation-duration: 0.01ms
@@ -48164,11 +47961,13 @@
   animation-delay: <animation: reducedPulse 1.8s ease-in-out infinite>
   animation-duration: <animation: reducedPulse 1.8s ease-in-out infinite>
   animation-iteration-count: <animation: reducedPulse 1.8s ease-in-out infinite>
+  animation-name: <animation: reducedPulse 1.8s ease-in-out infinite>
   transition-duration: 0.01ms
   - animation: toolPending 1.6s ease-in-out infinite
   - animation-delay: <animation: toolPending 1.6s ease-in-out infinite>
   - animation-duration: <animation: toolPending 1.6s ease-in-out infinite>
   - animation-iteration-count: <animation: toolPending 1.6s ease-in-out infinite>
+  - animation-name: <animation: toolPending 1.6s ease-in-out infinite>
 
 [628] path
   ::after/animation-duration: 0.01ms
@@ -48880,6 +48679,7 @@
   ::after/animation-delay: <animation: reducedPulse 1.8s ease-in-out infinite>
   ::after/animation-duration: <animation: reducedPulse 1.8s ease-in-out infinite>
   ::after/animation-iteration-count: <animation: reducedPulse 1.8s ease-in-out infinite>
+  ::after/animation-name: <animation: reducedPulse 1.8s ease-in-out infinite>
   ::after/transition-duration: 0.01ms
   ::before/animation-duration: 0.01ms
   ::before/animation-iteration-count: 1
@@ -48891,6 +48691,7 @@
   - ::after/animation-delay: <animation: caretBlink 1s steps(2, start) infinite>
   - ::after/animation-duration: <animation: caretBlink 1s steps(2, start) infinite>
   - ::after/animation-iteration-count: <animation: caretBlink 1s steps(2, start) infinite>
+  - ::after/animation-name: <animation: caretBlink 1s steps(2, start) infinite>
 
 [692] p
   ::after/animation-duration: 0.01ms
@@ -49136,11 +48937,13 @@
   animation-delay: <animation: reducedPulse 1.8s ease-in-out infinite>
   animation-duration: <animation: reducedPulse 1.8s ease-in-out infinite>
   animation-iteration-count: <animation: reducedPulse 1.8s ease-in-out infinite>
+  animation-name: <animation: reducedPulse 1.8s ease-in-out infinite>
   transition-duration: 0.01ms
   - animation: skeletonShimmer 1.6s linear infinite
   - animation-delay: <animation: skeletonShimmer 1.6s linear infinite>
   - animation-duration: <animation: skeletonShimmer 1.6s linear infinite>
   - animation-iteration-count: <animation: skeletonShimmer 1.6s linear infinite>
+  - animation-name: <animation: skeletonShimmer 1.6s linear infinite>
 
 [713] p.sr-only
   ::after/animation-duration: 0.01ms
@@ -49164,12 +48967,8 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
-  - animation: scrollDownIn 200ms cubic-bezier(0.16, 1, 0.3, 1)
-  - animation-delay: <animation: scrollDownIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
-  - animation-duration: <animation: scrollDownIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
-  - animation-iteration-count: <animation: scrollDownIn 200ms cubic-bezier(0.16, 1, 0.3, 1)>
-  - transition-duration: <transition: background 120ms ease, color 120ms ease>
 
 [715] svg
   ::after/animation-duration: 0.01ms
@@ -49597,11 +49396,13 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
   - animation: micPulse 1.6s ease-in-out infinite
   - animation-delay: <animation: micPulse 1.6s ease-in-out infinite>
   - animation-duration: <animation: micPulse 1.6s ease-in-out infinite>
   - animation-iteration-count: <animation: micPulse 1.6s ease-in-out infinite>
+  - animation-name: <animation: micPulse 1.6s ease-in-out infinite>
   - transition-duration: <transition: background 120ms ease, color 120ms ease, border-color 120ms ease, transform 120ms cubic-bezier(0.16, 1, 0.3, 1)>
 
 [753] svg
@@ -49738,11 +49539,13 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
   - animation: stopPulse 1.8s ease-in-out infinite
   - animation-delay: <animation: stopPulse 1.8s ease-in-out infinite>
   - animation-duration: <animation: stopPulse 1.8s ease-in-out infinite>
   - animation-iteration-count: <animation: stopPulse 1.8s ease-in-out infinite>
+  - animation-name: <animation: stopPulse 1.8s ease-in-out infinite>
   - transition-duration: <transition: background 120ms ease, color 120ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease>
 
 [765] svg
@@ -49912,11 +49715,13 @@
   animation-delay: <animation: reducedPulse 1.8s ease-in-out infinite>
   animation-duration: <animation: reducedPulse 1.8s ease-in-out infinite>
   animation-iteration-count: <animation: reducedPulse 1.8s ease-in-out infinite>
+  animation-name: <animation: reducedPulse 1.8s ease-in-out infinite>
   transition-duration: 0.01ms
   - animation: skeletonShimmer 1.6s linear infinite
   - animation-delay: <animation: skeletonShimmer 1.6s linear infinite>
   - animation-duration: <animation: skeletonShimmer 1.6s linear infinite>
   - animation-iteration-count: <animation: skeletonShimmer 1.6s linear infinite>
+  - animation-name: <animation: skeletonShimmer 1.6s linear infinite>
 
 [780] div.overlay-root
   ::after/animation-duration: 0.01ms
@@ -49951,11 +49756,13 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
   - animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)
   - animation-delay: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   - animation-duration: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   - animation-iteration-count: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
+  - animation-name: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
 
 [783] div.overlay-answer-text.markdown-body
   ::after/animation-duration: 0.01ms
@@ -50024,11 +49831,13 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
   - animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)
   - animation-delay: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   - animation-duration: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   - animation-iteration-count: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
+  - animation-name: <animation: overlayUp 200ms cubic-bezier(0.16, 1, 0.3, 1)>
 
 [789] div.overlay-drag-handle
   ::after/animation-duration: 0.01ms
@@ -50052,11 +49861,13 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
   - animation: overlayPulse 1.6s ease-in-out infinite
   - animation-delay: <animation: overlayPulse 1.6s ease-in-out infinite>
   - animation-duration: <animation: overlayPulse 1.6s ease-in-out infinite>
   - animation-iteration-count: <animation: overlayPulse 1.6s ease-in-out infinite>
+  - animation-name: <animation: overlayPulse 1.6s ease-in-out infinite>
 
 [791] svg
   ::after/animation-duration: 0.01ms
@@ -50102,11 +49913,13 @@
   animation-delay: <animation: none>
   animation-duration: 0.01ms
   animation-iteration-count: 1
+  animation-name: <animation: none>
   transition-duration: 0.01ms
   - animation: overlayPulse 1.6s ease-in-out infinite
   - animation-delay: <animation: overlayPulse 1.6s ease-in-out infinite>
   - animation-duration: <animation: overlayPulse 1.6s ease-in-out infinite>
   - animation-iteration-count: <animation: overlayPulse 1.6s ease-in-out infinite>
+  - animation-name: <animation: overlayPulse 1.6s ease-in-out infinite>
   - transition-duration: <transition: background 120ms ease, color 120ms ease, transform 120ms cubic-bezier(0.16, 1, 0.3, 1)>
 
 [795] label.overlay-action
@@ -50528,9 +50341,11 @@ panelIn: from { transform: translateX(24px); opacity: 0; } to { transform: trans
 petalFall: 0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(0deg) scale(var(--petal-scale)); } 12% { opacity: 0.75; } 70% { opacity: 0.4; } 100% { opacity: 0; transform: translate3d(var(--petal-drift), var(--petal-fall), 0) rotate(var(--petal-spin)) scale(var(--petal-scale)); }
 pricePulse: 0%, 100% { opacity: 0.22; } 50% { opacity: 0.45; }
 reducedPulse: 0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
-scrollDownIn: from { opacity: 0; transform: translateX(-50%) translateY(6px); } to { opacity: 1; transform: translateX(-50%) translateY(0); }
 signinFadeIn: from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); }
 skeletonShimmer: 0% { background-position: 200% 0; } 100% { background-position: -200% 0; }
+skyFade: 0% { filter: opacity(0); } 100% { filter: opacity(1); }
+skyRise: 0% { filter: opacity(0); transform: translateY(-10px) scale(0.985); } 100% { filter: opacity(1); transform: none; }
+starBreathe: 0%, 100% { opacity: var(--star-opacity); } 50% { opacity: calc(var(--star-opacity) * 0.42); }
 stopPulse: 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); } 50% { box-shadow: 0 0 0 7px transparent; }
 toastIn: from { opacity: 0; transform: translateY(-14px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); }
 toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
@@ -50571,8 +50386,10 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
   --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E")
   --grain-opacity: 0.055
   --info: #8fc9d6
-  --ink: #7d7368
   --measure: 66ch
+  --moon-dim: #9a9185
+  --moon-halo: rgba(232, 224, 212, 0.09)
+  --moon-lit: #e8e0d4
   --primary: #f08aa3
   --primary-dim: rgba(240, 138, 163, 0.12)
   --primary-glow: rgba(240, 138, 163, 0.22)
@@ -50600,7 +50417,12 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
   --space-5: 20px
   --space-6: 24px
   --space-8: 32px
+  --star: #d8d2c6
   --success: #6fd3a6
+  --sun-core: #ffd9a8
+  --sun-edge: #f5b673
+  --sun-halo: rgba(240, 176, 106, 0.16)
+  --sun-rim: #e08c4a
   --surface: #101010
   --surface-2: #161615
   --surface-3: #1e1e1c
@@ -50673,8 +50495,10 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
   --grain-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23g)'/%3E%3C/svg%3E")
   --grain-opacity: 0.03
   --info: #1f6675
-  --ink: #241a12
   --measure: 66ch
+  --moon-dim: #a5998a
+  --moon-halo: rgba(120, 96, 64, 0.07)
+  --moon-lit: #cfc4b2
   --primary: #b31a54
   --primary-dim: rgba(179, 26, 84, 0.10)
   --primary-glow: rgba(179, 26, 84, 0.18)
@@ -50702,7 +50526,12 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
   --space-5: 20px
   --space-6: 24px
   --space-8: 32px
+  --star: #b8ab98
   --success: #1f7a52
+  --sun-core: #ffd08a
+  --sun-edge: #f0a44e
+  --sun-halo: rgba(217, 123, 46, 0.14)
+  --sun-rim: #d97b2e
   --surface: #f8f4ed
   --surface-2: #f1ebe1
   --surface-3: #e7dfd2
@@ -50748,17 +50577,18 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
 
 #transcript
 .answer-skeleton
+.app-root.light .sky-halo
+.app-root.light .sky-moon
+.app-root.light .sky-stars
+.app-root.light .sky-sun
 .chat-toolbar-btn span
 .council-blurb
-.council-board
-.council-board-head
 .council-row:nth-child(3)
 .council-row:nth-child(4)
 .council-row:nth-child(5)
 .council-row:nth-child(6)
 .council-row:nth-child(7)
 .council-seat
-.council-seats
 .empty-ask
 .fact-text-pending
 .markdown-body > * + h1
@@ -50775,12 +50605,15 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
 .sakura-petal
 .sakura-petal svg
 .sakura-petals
-.seat-company
-.seat-temp
-.seat-title
 .signin-dot
 .signin-root .sakura-limb
 .signin-root .sakura-torii
+.sky
+.sky-halo
+.sky-moon
+.sky-star
+.sky-stars
+.sky-sun
 .starter-list
 .starter-list li
 .starter-row

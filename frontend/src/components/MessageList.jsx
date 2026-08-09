@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Icon from "./Icon";
 import { STARTERS } from "../constants/starters";
-import { COUNCIL } from "../constants/council";
+import Sky from "./Sky";
 import { MessageSkeleton, AnswerSkeleton } from "./Skeletons";
 import { stopSpeaking, isSpeechSupported } from "../lib/speak";
 
@@ -179,18 +179,12 @@ export const EmptyState = memo(({ onPick }) => {
 
   return (
   <div className="empty-state">
-    {/* ASYMMETRIC, NOT CENTRED, and the roster is why.
+    {/* ASYMMETRIC, NOT CENTRED.
      *
      * This was a centred hero over a 2x2 grid of equal cards: the two most
-     * templated layouts there are, and between them they said nothing about
-     * what this product is. Seven models answering separately and reconciling
-     * is the entire differentiator, and it appeared on the main screen only as
-     * one sentence of subtitle.
-     *
-     * So the screen is split. The left column asks. The right column IS the
-     * council: seven real seats, in temperature order, from the same COUNCIL
-     * constant the sign-in page and the server share. A visitor now learns the
-     * mechanic by looking rather than by reading a claim about it. */}
+     * templated layouts there are. The ask sits left and the sky occupies the
+     * space to its right, which is what gives the screen a direction to read
+     * in. Decoration earns the other half rather than a column of data. */}
     <div className="empty-ask">
       <img ref={logoRef} src="/logo-mark.png" alt="" className="empty-logo" />
       <h2 className="empty-title">What do you want to ask?</h2>
@@ -224,29 +218,9 @@ export const EmptyState = memo(({ onPick }) => {
       </ul>
     </div>
 
-    {/* The council, as it actually is.
-     *
-     * Temperature ascending is a REAL sequence, which is the only thing that
-     * justifies showing it as an ordered ladder: The Architect holds to what is
-     * literally there, The Explorer is furthest from it, and the five between
-     * move along that line in order. The number is the argument. Seven
-     * identical models would return one answer seven times.
-     *
-     * `aria-hidden` because this is the same claim the subtitle already makes,
-     * and a screen reader should hear it once, as a sentence, not as a
-     * fourteen-cell table of titles and decimals. */}
-    <aside className="council-board" aria-hidden="true">
-      <div className="council-board-head">In the room</div>
-      <ol className="council-seats">
-        {COUNCIL.map((seat, i) => (
-          <li key={seat.model} className="council-seat" style={{ "--row": i }}>
-            <span className="seat-temp">{seat.temperature.toFixed(1)}</span>
-            <span className="seat-title">{seat.title}</span>
-            <span className="seat-company">{seat.company}</span>
-          </li>
-        ))}
-      </ol>
-    </aside>
+    {/* The sky. See components/Sky.jsx: it is the one ornament, and which body
+        hangs in it is the theme, not a decoration picked at random. */}
+    <Sky />
   </div>
   );
 });

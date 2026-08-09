@@ -149,17 +149,19 @@ const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'imag
 };
 
 // ===== COUNCIL =====
-// `members` is a list of { model, temperature } seats — each speaks at its own
-// temperature so the council produces genuinely different takes to synthesise.
-const runCouncilWithWhip = async (members, messages, whipMs, quorum, tokenLimit) => {
-  const results = [];
-  let settledCount = 0, validCount = 0, resolved = false;
-  return new Promise((resolve) => {
-    const whipTimer = setTimeout(() => { if (!resolved) { resolved = true; resolve(results); } }, whipMs);
-    const checkDone = () => { if (resolved) return; if (validCount >= quorum) { resolved = true; clearTimeout(whipTimer); resolve(results); return; } if (settledCount >= members.length) { resolved = true; clearTimeout(whipTimer); resolve(results); } };
-    members.forEach(({ model, temperature }) => { callModel(model, messages, temperature, whipMs, tokenLimit).then((content) => { settledCount++; const trimmed = (content || '').trim(); const isSkip = /^skip[.!]?$/i.test(trimmed); if (isSkip) { console.log(`[COUNCIL] ${model} SKIP`); } else if (trimmed.length > 3) { validCount++; results.push({ model, content }); } checkDone(); }).catch((e) => { console.error(`[COUNCIL] ${model} failed: ${e.message}`); settledCount++; checkDone(); }); });
-  });
-};
+// The runner lives in lib/council-run.js so it can be tested: server.js calls
+// process.exit(1) at import time on a missing env var, so nothing defined here
+// is reachable from a test file. It is the most intricate concurrency in the
+// product and it had no coverage at all until it moved.
+const { runCouncil } = require('./lib/council-run');
+
+/**
+ * `members` is a list of { model, temperature } seats. Each speaks at its own
+ * temperature, which is what makes the council produce genuinely different
+ * takes to synthesise rather than one answer seven times.
+ */
+const runCouncilWithWhip = (members, messages, whipMs, quorum, tokenLimit, onSeat) =>
+  runCouncil(members, messages, whipMs, quorum, tokenLimit, { callModel, onSeat });
 
 // ===== ROUTER =====
 // Moved to lib/router.js, where it can be called with a sentence and checked.

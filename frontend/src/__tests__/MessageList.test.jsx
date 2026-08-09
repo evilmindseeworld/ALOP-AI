@@ -28,31 +28,13 @@ describe("MessageList", () => {
     expect(document.querySelector(".starter-list")).toBeInTheDocument();
   });
 
-  /* The empty state's whole argument, asserted so it cannot quietly regress to
-   * a centred hero over a card grid.
-   *
-   * The seven seats are the product's differentiator and they used to appear
-   * here only as one clause of subtitle. They are read from the same COUNCIL
-   * constant the server and the sign-in page share, so this also fails if the
-   * roster is ever hard-coded into the markup. */
-  it("puts the whole council on the empty state, in temperature order", () => {
+  it("hangs the sky behind it", () => {
+    // The one ornament. Both bodies are always in the markup; the stylesheet
+    // picks. Asserting the markup rather than the visible one is deliberate:
+    // which is shown is a cascade decision and jsdom does not apply the theme.
     renderList({ messages: [] });
-    const seats = [...document.querySelectorAll(".council-seat")];
-    expect(seats).toHaveLength(7);
-
-    const temps = seats.map((s) => Number(s.querySelector(".seat-temp").textContent));
-    expect(temps, "the ladder is the argument; unordered it is just a list").toEqual(
-      [...temps].sort((a, b) => a - b)
-    );
-    expect(document.querySelector(".council-seat .seat-title").textContent).toBe("The Architect");
-  });
-
-  it("says the council claim once to a screen reader, not fourteen times", () => {
-    // The subtitle already makes this claim as a sentence. The board is the
-    // same claim drawn, and a reader should not hear seven titles and seven
-    // decimals read out as a table.
-    renderList({ messages: [] });
-    expect(document.querySelector(".council-board").getAttribute("aria-hidden")).toBe("true");
+    expect(document.querySelector(".sky-moon")).toBeInTheDocument();
+    expect(document.querySelector(".sky-sun")).toBeInTheDocument();
   });
 
   it("shows retry instead of treating a failed transcript fetch as empty", async () => {

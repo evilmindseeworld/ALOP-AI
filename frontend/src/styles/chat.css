@@ -133,9 +133,11 @@
    * fraction of the surface stranded it against the far edge with a void
    * between the two columns, which read as a layout that had failed rather than
    * as deliberate asymmetry. */
-  grid-template-columns: minmax(0, 1fr) 210px;
+  /* One content column, left. The sky owns the space to its right and is
+   * positioned rather than laid out, so it never pushes the ask around. */
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: clamp(var(--space-5), 4vw, var(--space-7));
+  gap: var(--space-4);
   height: 100%;
   width: min(100%, 860px);
   margin-inline: auto;

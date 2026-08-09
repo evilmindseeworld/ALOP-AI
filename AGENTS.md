@@ -134,6 +134,58 @@ And the write is driven by a *signature* of the cached fields, not by `chats`
 itself: `chats` gets a new identity on every painted frame of a streaming
 answer, so an effect on it would write to `localStorage` sixty times a second.
 
+**The empty state is a layout, not a decorated hero.** It was a centred hero
+over a 2x2 grid of equal cards, and every ornament pass before this one was
+decoration painted around those two shapes. Both are named as anti-patterns by
+the design skills this repo is worked on with: centred heroes above design
+variance 4, and grids of equal feature cards outright. The starters are rows
+with hairlines now, because a card implies elevation and four peers have no
+hierarchy to elevate. If you find yourself adding a card container back, that is
+the signal to re-read this paragraph.
+
+**Decoration is one component, `Sky.jsx`, and the theme decides what is in it.**
+Sakura Night gets a crescent and stars, Bamboo Day gets the sun. Both bodies are
+always in the markup and the stylesheet picks: rendering the right one from a
+`darkMode` prop would thread the theme through two components for a picture, and
+would flash the wrong body for a frame because the class lands on `.app-root`
+before React re-renders a child that reads it.
+
+Four traps are recorded in that file and in `decoration.css`, all of them found
+by looking at a screenshot rather than by reasoning:
+
+- An absolutely positioned child of a **grid** container resolves its offsets
+  against its own grid AREA, not the container. Left implicit, the sky anchored
+  to the row below the ask and hung off the bottom of the panel. It spans every
+  track for that reason.
+- `.empty-state > *` in `decoration.css` sets `position: relative`, which beat
+  `.sky`'s `position: absolute` on source order. The `:not(.sky)` is load
+  bearing, and this is the second time the same bug has been introduced by
+  renaming the ornament's class.
+- A radial gradient's `r` is a fraction of the element's BOUNDING BOX, not of
+  the shape. At `r="76%"` the sun's transparent stop landed outside the circle
+  and was clipped, so the disc rendered with a hard edge and read as a peach
+  ball. `r="50%"` puts the last stop exactly on the rim.
+- The entrance animates `filter: opacity()`, not `opacity`. The narrow
+  breakpoint dims `.sky` itself, and an entrance animating `opacity` to 1 would
+  snap back to that value the frame it ended. Filter multiplies instead of
+  replacing.
+
+**`cssHygiene.test.js` counted keyframe steps as selectors.** `from`, `to` and
+percentage steps leaked out of `@keyframes` blocks and were counted as top-level
+rules, so the duplicate budget was partly measuring how many animations the app
+has, and adding a second one failed a test whose purpose is catching duplicate
+RULES. Fixed by shape rather than by rewriting the brace walker, and the budget
+came down 10 to 9 as a result. If that test blocks you, check whether it is
+counting something real before you edit CSS to satisfy it.
+
+**The council runner lives in `lib/council-run.js`.** It moved out of
+`server.js` so it could be tested at all, and it is the most intricate
+concurrency in the product: seats race in parallel and it resolves on the first
+of quorum, all-settled, or the whip timer. It also takes an optional `onSeat`
+reporter, which is best-effort by construction and wrapped so a dead client
+socket cannot lose an answer a model call was already paid for. Nothing renders
+those events yet.
+
 **`@clerk/clerk-sdk-node` is deprecated at its final version, 5.1.6.** It pulls
 `@clerk/shared@2.22.1`, which pulls `js-cookie@3.0.5`, which has an unpatched
 prototype-hijack advisory. No `npm audit fix` clears it — the only non-breaking

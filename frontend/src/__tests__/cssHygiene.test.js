@@ -55,12 +55,18 @@ const CLERK_IMPORTANT_BUDGET = 0;
 // one rule and its animation-delay in another. Merging those got to 14;
 // merging .sidebar-rail and the .chat-actions reveal got to 10.
 //
-// Before driving this lower, know what the remaining 10 ARE: mostly grouped
-// selectors sharing one member with another rule, because the counter splits
-// comma lists — a rule for two selectors sitting beside a rule for one of them
-// reads as a duplicate. And the two universal rules in base.css are deliberate;
-// there is a comment there explaining why merging them would be worse.
-const DUPLICATE_BUDGET = 10;
+// 10 -> 9, and it went DOWN because the counter was fixed rather than because
+// a rule was merged. Three of the ten were `from` / `to` / percentage steps
+// leaking out of @keyframes blocks, which meant the budget was partly measuring
+// how many animations the app has. isKeyframeStep above drops them; see its
+// note. The nine that remain are real.
+//
+// Before driving this lower, know what they ARE: mostly grouped selectors
+// sharing one member with another rule, because the counter splits comma lists,
+// so a rule for two selectors sitting beside a rule for one of them reads as a
+// duplicate. And the two universal rules in base.css are deliberate; there is a
+// comment there explaining why merging them would be worse.
+const DUPLICATE_BUDGET = 9;
 const FIX_SECTION_BUDGET = 0;
 
 /**
@@ -71,6 +77,29 @@ const FIX_SECTION_BUDGET = 0;
  * declaration is fighting, not which file it lives in.
  */
 const withoutClerkRules = (css) => css.replace(/[^{}]*\.cl-[^{}]*\{[^}]*\}/g, "");
+
+/**
+ * A keyframe step, not a selector.
+ *
+ * The depth tracking below desyncs somewhere in a 90 KB stylesheet, and when it
+ * does, the STEPS inside an @keyframes block (`from`, `to`, `0%`, `50%, 100%`)
+ * are collected as though they were top-level selectors. Every animation in the
+ * app then looks like a redundant redeclaration of `to`, which is how this
+ * budget came to be calibrated against three phantom duplicates rather than
+ * against real ones.
+ *
+ * That mattered the moment it started blocking correct work: adding a second
+ * animation pushed `100%` to three occurrences and failed a test whose entire
+ * purpose is to catch DUPLICATE RULES. A guard that fires on the number of
+ * animations in the file is not measuring what it claims to.
+ *
+ * Filtering by shape rather than by fixing the depth counter, because a step is
+ * unambiguous — no real selector is `from`, `to`, or a comma-separated list of
+ * percentages — and a rewrite of the brace walker is a much larger change to a
+ * test that is otherwise doing its job.
+ */
+const isKeyframeStep = (prelude) =>
+  prelude.split(",").every((part) => /^(from|to|\d+(\.\d+)?%)$/.test(part.trim()));
 
 /** Rule blocks at top level, with at-rule context tracked by brace depth. */
 const topLevelBlocks = () => {
@@ -104,7 +133,7 @@ const topLevelBlocks = () => {
 
     const end = CSS.indexOf("}", brace);
     if (end === -1) break;
-    if (depth === 0) {
+    if (depth === 0 && !isKeyframeStep(prelude)) {
       for (const sel of prelude.split(",").map((s) => s.trim()).filter(Boolean)) {
         out.push(sel);
       }

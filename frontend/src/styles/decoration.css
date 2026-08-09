@@ -1,7 +1,172 @@
 /* Ornament and loading states: the hanging crescents, skeletons, the splash. */
 
+/* ===== THE SKY =====
+ *
+ * The one ornament on the empty state. Which body hangs in it is the theme, not
+ * a decoration chosen at random: Sakura Night gets a crescent and stars, Bamboo
+ * Day gets the sun. Both are in the markup and the cascade picks, so there is
+ * no frame where the wrong one is painted while React catches up with a class
+ * on .app-root. See components/Sky.jsx.
+ *
+ * IT OCCUPIES THE RIGHT HALF and bleeds off the top. A celestial body fully
+ * inside its box reads as a sticker; one cropped by the edge reads as being
+ * further away than the frame, which is the entire trick and costs nothing. */
+.sky {
+  position: absolute;
+  /* SPANS THE WHOLE GRID, and this is not cosmetic. An absolutely positioned
+   * child of a grid container resolves its offsets against its own GRID AREA,
+   * not against the container. Left in the implicit second row, the sky
+   * anchored to the row below the ask and hung off the bottom of the panel,
+   * behind the composer. Spanning every track makes the containing block the
+   * whole empty state, which is what `top` and `right` below assume. */
+  grid-area: 1 / 1 / -1 / -1;
+  /* Negative top so the body is cut by the panel edge. `right` rather than a
+   * grid cell, because the sky is not laid out with the content: it is behind
+   * it, and it should not move when the ask column reflows. */
+  top: -14%;
+  right: -6%;
+  width: clamp(240px, 34%, 420px);
+  aspect-ratio: 1;
+  pointer-events: none;
+  z-index: var(--z-empty-decor);
+  /* The sky arrives after the words, and is the slowest thing on the screen on
+   * purpose: the headline and the starters are what the user came for, and an
+   * ornament fading up underneath them reads as the room settling rather than
+   * as a picture loading. */
+  animation: skyRise 1100ms var(--ease-out) 140ms backwards;
+}
+
+/* The light the body casts. A sibling rather than a shadow on the disc: a
+ * box-shadow at this radius is clipped by the SVG's own box, and the falloff
+ * has to be wider than the thing casting it. */
+.sky-halo {
+  position: absolute;
+  inset: -30%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 52% 48%, var(--moon-halo) 0%, transparent 62%);
+}
+
+.app-root.light .sky-halo {
+  background: radial-gradient(circle at 52% 48%, var(--sun-halo) 0%, transparent 62%);
+}
+
+/* ONE BLOCK PER SELECTOR, and the four repeated declarations are the price.
+ *
+ * The obvious way to write this groups `.sky-moon, .sky-sun` for the shared
+ * box and then names each again for the day/night swap. That puts both
+ * selectors in two top-level blocks, which is the append-and-duplicate pattern
+ * cssHygiene.test.js has a ratchet against, and the ratchet is right: a rule
+ * whose selector appears twice is a rule somebody will edit in one place. Four
+ * repeated lines are cheaper to read than a second block to keep in sync. */
+.sky-moon {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* Deliberately quiet. At 0.5 the moon was the brightest object on the screen,
+   * brighter than the primary button, and the eye went to it before the
+   * headline. Atmosphere is what you notice second. */
+  opacity: 0.34;
+}
+
+.sky-sun {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.5;
+  /* Night is the default theme, so the sun is the one that starts hidden. */
+  display: none;
+}
+
+/* THE SWAP. Three rules, no JavaScript, and no frame where the wrong body is
+ * painted while React catches up with a class on .app-root. */
+.app-root.light .sky-moon { display: none; }
+.app-root.light .sky-stars { display: none; }
+.app-root.light .sky-sun { display: block; }
+
+.sky-stars { position: absolute; inset: 0; }
+
+.sky-star {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--star);
+  opacity: var(--star-opacity);
+  /* Each star gets its own offset so the field breathes rather than blinking in
+   * unison, which is the difference between a sky and a string of fairy
+   * lights. Opacity only: nothing here moves, so there is no travelling object
+   * in the corner of the eye while somebody reads. */
+  /* A star is one to four pixels. Below about 0.5 base opacity on this surface
+   * it is not faint, it is absent, and the field reads as an empty sky with a
+   * moon in it. */
+  animation: starBreathe 7s ease-in-out infinite;
+  animation-delay: var(--star-delay);
+}
+
+@keyframes starBreathe {
+  0%, 100% { opacity: var(--star-opacity); }
+  50% { opacity: calc(var(--star-opacity) * 0.42); }
+}
+
+/* FILTER, NOT OPACITY, and the reason is the narrow-screen rule above.
+ *
+ * `.sky` carries its own opacity there (0.76). An entrance that animated
+ * `opacity` to 1 would fade the sky in to full strength and then snap back to
+ * 0.76 the frame the animation ended, because the fill is `backwards` and the
+ * declared value takes over at the end. `filter: opacity()` MULTIPLIES with the
+ * element's own opacity instead of replacing it, so the entrance lands exactly
+ * on whatever the breakpoint asked for. It composites on the GPU either way. */
+@keyframes skyRise {
+  0% { filter: opacity(0); transform: translateY(-10px) scale(0.985); }
+  100% { filter: opacity(1); transform: none; }
+}
+
+/* The same arrival with the travel taken out.
+ *
+ * A SECOND NAMED KEYFRAME, not a redefinition of the first inside the media
+ * query. Redefining @keyframes of the same name under @media works, and it is
+ * the obvious way to write this, and it is worse: the later definition wins
+ * globally rather than only inside the query in some engines, it reads as two
+ * animations sharing a name, and it nests an at-rule inside an at-rule for no
+ * gain. Two names and one property swap say the same thing and cannot be
+ * misread.
+ *
+ * The sky still ARRIVES under reduced motion. Fading in is content delivery;
+ * the 10px drift is the only part that is movement. */
+@keyframes skyFade {
+  0% { filter: opacity(0); }
+  100% { filter: opacity(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sky { animation-name: skyFade; }
+}
+
+/* Narrow: the sky loses the room the ask needs, so it shrinks and climbs into
+ * the corner rather than sitting behind the headline. */
+@media (max-width: 1100px) {
+  /* Quieter, and dimmed on the CONTAINER rather than on each body.
+   *
+   * Opacity multiplies down the tree, so one declaration here takes the moon
+   * from 0.34 to 0.26 and the sun from 0.5 to 0.38 — the two values this
+   * previously spelled out as separate rules. Naming each body again would put
+   * `.app-root.light .sky-sun` in a second block, which is the duplicate the
+   * hygiene ratchet exists to catch, and the ratchet is right. */
+  .sky {
+    width: clamp(180px, 30%, 260px);
+    top: -10%;
+    right: -8%;
+    opacity: 0.76;
+  }
+}
+
 /* What a phone does not get. */
 @media (max-width: 640px) {
+  /* The sky goes with the lattice: the empty state on a phone is headline,
+   * subtitle and four rows filling the whole width, and there is no corner for
+   * a body to hang in that is not already carrying text. */
+  .sky { display: none; }
+
   /* THE LATTICE COMES OFF ENTIRELY BELOW THIS WIDTH.
    *
    * It lives in the gutters either side of the reading column, and it is kept
@@ -18,10 +183,16 @@
   .chat-main::after { display: none; }
 }
 
-/* .empty-state is a flex column of STATIC children, so they paint in the same
- * layer as any decoration behind them and DOM order alone would decide the
- * result. Lifting them makes the order explicit instead of accidental. */
-.empty-state > * {
+/* The empty state's children are STATIC, so they paint in the same layer as the
+ * decoration behind them and DOM order alone would decide the result. Lifting
+ * them makes the order explicit instead of accidental.
+ *
+ * `:not(.sky)` IS LOAD-BEARING. Without it this rule sets the sky back to
+ * position: relative — same specificity, later file in the manifest, so it wins
+ * — and the ornament silently drops out of the corner and into the document
+ * flow. That is exactly the bug the earlier `:not(.sakura-frame)` form existed
+ * to prevent, reintroduced the moment the class was renamed. */
+.empty-state > :not(.sky) {
   position: relative;
   z-index: var(--z-empty-content);
 }

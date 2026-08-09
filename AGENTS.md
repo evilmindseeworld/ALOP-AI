@@ -203,15 +203,24 @@ production. See the trap below.
    browser is now done and guarded — see the checklist below for what is
    left. Still the largest remaining item and the only one carrying legal
    exposure.
-2. **Four search keys are unset in Render.** All four providers ship inert
-   without them; the boot banner reads `P=` `S=` `SA=` `FC=` and says which.
-   In the order they are worth setting:
-   `FIRECRAWL_API_KEY` (fixes the ROOT of the missing-price bug — Jina cannot
-   see a JavaScript-rendered price at all), `SERPER_API_KEY` (structured
-   shopping prices, cheap), `SERPAPI_API_KEY` (the ~110 specialised engines —
-   flights, hotels, scholar, finance; billed per call, 100/month free), and
-   `PERPLEXITY_API_KEY` if it is still missing. `PERPLEXITY_MODEL` defaults to
-   `sonar` and `PAGE_READ_LIMIT` to 3; neither needs setting.
+2. **Optional search keys — CHECK THE BANNER BEFORE CLAIMING ANY ARE UNSET.**
+   The owner confirmed on 2026-08-10 that `FIRECRAWL_API_KEY` is set and that
+   prices are not missing. This entry previously listed four keys as unset and
+   called Firecrawl "the ROOT of the missing-price bug"; both halves were
+   stale, and the second contradicted this file's own entry below, which
+   records that bug's three causes as fixed by `rankReadTargets`. Firecrawl was
+   never the fix — it is a fallback for JavaScript-painted pages.
+
+   Nothing here can be probed from outside: `/health` returns only
+   `{status, time}`, so the boot banner in the Render logs
+   (`T= B= G= J= P= S= SA= FC=`) is the only source of truth. Read it before
+   writing anything down about which keys are set.
+
+   Still genuinely optional, each inert without its key: `SERPER_API_KEY`
+   (structured shopping prices, cheap), `SERPAPI_API_KEY` (~110 specialised
+   engines — flights, hotels, scholar, finance; billed per call, 100/month
+   free), `PERPLEXITY_API_KEY`. `PERPLEXITY_MODEL` defaults to `sonar` and
+   `PAGE_READ_LIMIT` to 3; neither needs setting.
 3. **`@clerk/clerk-sdk-node` is deprecated and carries a high-severity
    advisory.** `npm audit` reports `js-cookie <=3.0.5` (GHSA-qjx8-664m-686j,
    cookie-attribute injection) reached through `@clerk/shared`. Traced before

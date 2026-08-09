@@ -293,7 +293,7 @@
  * Corners only, and smaller. The sign-in card occupies the middle of this
  * screen; there is nothing for a centred ornament to be behind except the
  * thing the user came here to use. */
-.signin-root .sakura-torii { display: none; }
+.signin-root .council-rosette { display: none; }
 
 .signin-root .sakura-corner {
   width: clamp(90px, 11vw, 150px);

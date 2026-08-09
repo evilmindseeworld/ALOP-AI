@@ -1,4 +1,5 @@
 import { memo } from "react";
+import CouncilRosette from "./CouncilRosette";
 
 /**
  * The decorative sakura frame behind the empty state.
@@ -62,37 +63,109 @@ const Sprig = () => (
   </g>
 );
 
-const Corner = ({ className }) => (
+/**
+ * Exported because the BOTTOM PAIR CANNOT LIVE IN THIS FRAME.
+ *
+ * The frame is inside `.scroll-wrapper`, which has `overflow: auto` — so a
+ * child of it cannot paint outside it, however it is positioned. The bottom
+ * sprigs were therefore stuck at the bottom of the SCROLLING BOX, floating in
+ * the margins beside the starter cards, while the composer sat below in a
+ * different box entirely. Insetting the frame further only moved them within
+ * the same clip.
+ *
+ * `SakuraBaseCorners` renders the same drawing as a sibling of the scroller,
+ * in `.chat-content`, where the bottom of the box really is the bottom of the
+ * chat surface. See decoration.css.
+ */
+export const Corner = ({ className }) => (
   <svg className={className} viewBox="0 0 120 76" aria-hidden="true" focusable="false" fill="currentColor">
     <Sprig />
   </svg>
 );
 
 /**
- * The torii.
+ * The keystone: the mark that closes the frame.
  *
- * Proportions are the whole job or it reads as a table: the kasagi (top lintel)
- * overhangs the pillars and sweeps up at the ends, the nuki (second beam) is
- * shorter than it, the pillars taper and lean inward, and the gakuzuka is the
- * small plaque between them.
+ * Two sprigs in two corners read as two decorations. One centred mark between
+ * them reads as a frame, because the eye completes the line — the same reason a
+ * printer sets a fleuron at the foot of a page rather than two ornaments in the
+ * corners and nothing between.
+ *
+ * WHAT IT DRAWS is the rosette's convergence point at small scale: separate
+ * arcs arriving at one dot. The seal above the empty state says the council
+ * converges; this says it again in three strokes, at the exact place the user
+ * is about to ask the question that starts it. Same idea, same visual language,
+ * a twentieth the size.
+ *
+ * NO HORIZONTAL RULE, deliberately. A line spanning corner to corner here would
+ * read as a wall between the transcript and the composer, which is the exact
+ * effect `--fade-bottom` exists to dissolve — see base.css. The mark floats
+ * unsupported; the corners are what imply the line.
  */
-const Torii = () => (
-  <svg className="sakura-torii" viewBox="0 0 240 190" aria-hidden="true" focusable="false" fill="currentColor">
-    <path d="M14 30 C 76 12, 164 12, 226 30 L 226 41 C 164 24, 76 24, 14 41 Z" />
-    <rect x="34" y="60" width="172" height="8" rx="2" />
-    <path d="M62 41 L 78 41 L 86 186 L 68 186 Z" />
-    <path d="M178 41 L 162 41 L 154 186 L 172 186 Z" />
-    <rect x="112" y="70" width="16" height="26" rx="2" opacity="0.75" />
+const Keystone = () => (
+  <svg
+    className="sakura-keystone"
+    viewBox="0 0 48 24"
+    aria-hidden="true"
+    focusable="false"
+    fill="none"
+    stroke="currentColor"
+    strokeLinecap="round"
+  >
+    {/* NO VERTICAL STROKE. The first version had one, and with the dot beneath
+        it the whole mark read as a downward ARROW — a scroll-to-bottom
+        affordance sitting above the composer, which is a control this app
+        actually has elsewhere. Ornament that looks clickable is a bug. The two
+        arcs alone read as a flourish; the stem read as an instruction. */}
+    <path d="M3 7 C 11 7, 18 11, 22.4 15.4" strokeWidth="1.1" opacity="0.5" />
+    <path d="M45 7 C 37 7, 30 11, 25.6 15.4" strokeWidth="1.1" opacity="0.5" />
+    {/* Blossoms at the outer ends, so the mark is visibly the same hand that
+        drew the sprigs either side of it rather than a stray glyph.
+        `fill`/`stroke` are set here because this svg is stroke-only: Blossom
+        draws filled ellipses and would render invisible inheriting fill="none",
+        and would grow a 1.1px outline inheriting the stroke. */}
+    <g fill="currentColor" stroke="none">
+      <Blossom x={3} y={7} r={0.42} o={0.5} />
+      <Blossom x={45} y={7} r={0.42} o={0.5} />
+    </g>
+    {/* The point the two arcs agree on — the one filled mark, as in the
+        rosette's centre. */}
+    <circle cx="24" cy="16.6" r="2" fill="currentColor" stroke="none" opacity="0.75" />
   </svg>
 );
 
+/**
+ * The two lower sprigs and the keystone, anchored to the chat surface rather
+ * than the scroller, so they sit in the real bottom corners either side of the
+ * composer with the mark centred between them.
+ *
+ * `pointer-events: none` is on the wrapper in CSS: these overlap the composer's
+ * outer corners by design, and decoration must never eat a click meant for the
+ * prompt bar.
+ */
+export const SakuraBaseCorners = memo(() => (
+  <div className="sakura-base" aria-hidden="true">
+    <Corner className="sakura-corner sakura-corner-bl" />
+    <Keystone />
+    <Corner className="sakura-corner sakura-corner-br" />
+  </div>
+));
+
+SakuraBaseCorners.displayName = "SakuraBaseCorners";
+
+/**
+ * The torii is gone, replaced by CouncilRosette.
+ *
+ * It was atmosphere borrowed from a theme: it said "Japanese" and said nothing
+ * about a product where several models answer separately and converge on one
+ * reply. The rosette is built out of that mechanic — see CouncilRosette.jsx.
+ * The sprigs stay because they frame without asserting a subject.
+ */
 const SakuraFrame = memo(() => (
   <div className="sakura-frame" aria-hidden="true">
-    <Torii />
+    <CouncilRosette />
     <Corner className="sakura-corner sakura-corner-tl" />
     <Corner className="sakura-corner sakura-corner-tr" />
-    <Corner className="sakura-corner sakura-corner-bl" />
-    <Corner className="sakura-corner sakura-corner-br" />
   </div>
 ));
 

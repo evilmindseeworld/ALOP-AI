@@ -35,6 +35,10 @@ import UpgradePanel from "./components/panels/UpgradePanel";
  * reach the tests. */
 const MessageList = lazy(() => import("./components/MessageList"));
 const OverlayAssistant = lazy(() => import("./overlay/OverlayAssistant"));
+/* Not lazy, and not inside MessageList: these two sprigs have to render as a
+ * sibling of the scroller to reach the real bottom corners. See
+ * SakuraBaseCorners in SakuraFrame.jsx. */
+import { SakuraBaseCorners } from "./components/SakuraFrame";
 
 import { COUNCIL, FREE_COUNT } from "./constants/council";
 import { useApi } from "./lib/api";
@@ -649,6 +653,9 @@ const AuthenticatedApp = () => {
             />
 
             <div className="chat-content">
+              {/* Only on the empty state, matching SakuraFrame: an illustrated
+                  frame around a transcript competes with the thing it frames. */}
+              {activeMessages.length === 0 && <SakuraBaseCorners />}
               <div
                 className="scroll-wrapper"
                 id="transcript"

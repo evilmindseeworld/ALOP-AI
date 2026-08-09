@@ -91,27 +91,100 @@
 
 .sakura-corner-tl { top: 4%; left: 3%; }
 .sakura-corner-tr { top: 4%; right: 3%; transform: scaleX(-1); }
-.sakura-corner-bl { bottom: 4%; left: 3%; transform: scaleY(-1); }
-.sakura-corner-br { bottom: 4%; right: 3%; transform: scale(-1); }
 
-/* Far fainter than the corners. It is a silhouette the eye should resolve on
- * the second look, not read as a shape sitting behind the title — which is
- * exactly what it did at 0.16. */
-.sakura-torii {
+/* THE LOWER PAIR LIVES OUTSIDE THE SCROLLER, and that is the whole fix.
+ *
+ * `.sakura-frame` is inside `.scroll-wrapper`, which scrolls — so nothing in it
+ * can paint past its edge, whatever the inset says. The bottom sprigs were
+ * pinned to the bottom of the SCROLLING BOX and read as floating in the
+ * margins beside the starter cards, because the composer is in a different box
+ * below. Extending the frame only moved them inside the same clip.
+ *
+ * `.sakura-base` is a sibling of the scroller in `.chat-content`, so `bottom`
+ * here means the bottom of the chat surface: the real corners, either side of
+ * the prompt bar.
+ *
+ * It deliberately OVERLAPS the composer's outer corners — that is what makes
+ * them read as framing the prompt rather than sitting above it — so
+ * `pointer-events: none` is not optional. Without it the sprigs would swallow
+ * clicks aimed at the ends of the composer. */
+.sakura-base {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  width: clamp(200px, 26%, 340px);
-  height: auto;
-  transform: translate(-50%, -52%);
-  opacity: 0.06;
+  inset: auto 0 0 0;
+  height: clamp(96px, 18vh, 180px);
+  pointer-events: none;
+  color: var(--primary);
+  z-index: var(--z-empty-decor);
 }
 
-/* On a phone the corners are all that fit, and a torii behind six starter
- * cards is clutter rather than atmosphere. */
+.sakura-base .sakura-corner-bl { bottom: 6px; left: 3%; transform: scaleY(-1); }
+.sakura-base .sakura-corner-br { bottom: 6px; right: 3%; transform: scale(-1); }
+
+/* The keystone sits at the TOP of the base band, which is the one anchor here
+ * that does not move.
+ *
+ * The obvious placement — a fixed distance above the composer — is wrong,
+ * because the composer grows: it is a textarea that adds rows as you type, and
+ * a mark pinned to its edge would walk up the screen while someone writes a
+ * long question. The band's top edge is set by `.sakura-base`'s own height, so
+ * the mark stays put no matter what the composer does underneath it.
+ *
+ * Fainter than the corners on purpose. It sits closer to the centre of the
+ * screen, where the eye already is, and matching their 0.34 made it read as a
+ * UI affordance — something you might try to click — rather than as ornament. */
+.sakura-keystone {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: clamp(34px, 4vw, 52px);
+  height: auto;
+  transform: translate(-50%, -50%);
+  opacity: 0.22;
+}
+
+/* The rosette sits BEHIND THE LOGO MARK, not behind the prose, and the first
+ * attempt got that wrong in a way worth recording.
+ *
+ * Centred on the panel it landed under the title and subtitle — a lattice of
+ * 0.6px curves directly beneath 17px body text. Two things were wrong at once:
+ * it was too faint to read as a figure, and raising the opacity to fix that
+ * would have put visible linework under the words. Decoration under body copy
+ * has no good opacity; the answer is to move it, not to tune it.
+ *
+ * Behind the mark it has a job: the council's seal, sitting where the identity
+ * already is. The type below it stays on a clean surface, so the alpha can go
+ * up far enough to actually be seen.
+ *
+ * 0.16 because this is LINEWORK. A 0.6px stroke at the torii's old 0.06 is
+ * invisible on a dim screen where a filled silhouette at the same value still
+ * reads. Sized in `min()` against the viewport height too — a width percentage
+ * alone overflows a short landscape window, which is where centred ornaments
+ * fail first. */
+.council-rosette {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: min(clamp(190px, 22%, 280px), 34vh);
+  height: auto;
+  /* -46% centres the figure on the logo mark rather than on its own box: the
+   * mark sits just below the top of the panel, not at its edge. */
+  transform: translate(-50%, -46%);
+  opacity: 0.16;
+}
+
+/* No grain layer here on purpose: the app already has one. `.grain` lives in
+ * base.css, driven by --grain-image and --grain-opacity, and signin.css reuses
+ * the same two tokens so the two surfaces cannot drift. A second layer would
+ * have doubled the effective opacity and been invisible as a cause. */
+
+/* On a phone the corners are all that fit, and a rosette behind six starter
+ * cards is clutter rather than atmosphere. The lower pair shrinks with the
+ * rest and its band shortens, so the sprigs stay tucked into the corners
+ * beside the composer instead of climbing up the starter grid. */
 @media (max-width: 640px) {
   .sakura-corner { width: clamp(72px, 26vw, 120px); opacity: 0.26; }
-  .sakura-torii { display: none; }
+  .council-rosette { display: none; }
+  .sakura-base { height: clamp(72px, 12vh, 110px); }
 
   /* THE LATTICE COMES OFF ENTIRELY BELOW THIS WIDTH.
    *

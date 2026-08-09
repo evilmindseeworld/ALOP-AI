@@ -1,0 +1,14 @@
+# The cascade baseline is BYTE-COMPARED by a test, so its line endings cannot
+# be left to the checkout.
+#
+# cssSnapshot.test.js builds a snapshot in memory (LF-joined) and compares it to
+# this file read as UTF-8. With core.autocrlf=true — the Windows default, and
+# what this machine has — git rewrites the file to CRLF on checkout, so every
+# line differs and the test fails. It passes immediately after the baseline is
+# regenerated, because the test writes it with LF, and then fails the moment
+# anyone checks the branch out again. That is exactly the shape of bug that
+# looks flaky and is not.
+#
+# Pinned narrowly rather than repo-wide: `* text=auto eol=lf` would renormalise
+# every file in the project in one commit and bury this change in the noise.
+frontend/src/__tests__/__snapshots__/*.txt text eol=lf

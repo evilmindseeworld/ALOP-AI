@@ -10643,11 +10643,11 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  bottom: <inset: 0>
+  bottom: <inset: 0 0 calc((56px - 24px) * -1) 0>
   box-sizing: border-box
   color: #f08aa3
-  inset: 0
-  left: <inset: 0>
+  inset: 0 0 calc((56px - 24px) * -1) 0
+  left: <inset: 0 0 calc((56px - 24px) * -1) 0>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -10657,10 +10657,10 @@
   padding-left: <padding: 0>
   pointer-events: none
   position: absolute
-  right: <inset: 0>
+  right: <inset: 0 0 calc((56px - 24px) * -1) 0>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
-  top: <inset: 0>
+  top: <inset: 0 0 calc((56px - 24px) * -1) 0>
   z-index: 0
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
@@ -30243,11 +30243,11 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
-  bottom: <inset: 0>
+  bottom: <inset: 0 0 calc((56px - 24px) * -1) 0>
   box-sizing: border-box
   color: #b31a54
-  inset: 0
-  left: <inset: 0>
+  inset: 0 0 calc((56px - 24px) * -1) 0
+  left: <inset: 0 0 calc((56px - 24px) * -1) 0>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -30257,10 +30257,10 @@
   padding-left: <padding: 0>
   pointer-events: none
   position: absolute
-  right: <inset: 0>
+  right: <inset: 0 0 calc((56px - 24px) * -1) 0>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
-  top: <inset: 0>
+  top: <inset: 0 0 calc((56px - 24px) * -1) 0>
   z-index: 0
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
@@ -41180,11 +41180,11 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  bottom: <inset: 0>
+  bottom: <inset: 0 0 calc((56px - 24px) * -1) 0>
   box-sizing: border-box
   color: #f08aa3
-  inset: 0
-  left: <inset: 0>
+  inset: 0 0 calc((56px - 24px) * -1) 0
+  left: <inset: 0 0 calc((56px - 24px) * -1) 0>
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -41194,10 +41194,10 @@
   padding-left: <padding: 0>
   pointer-events: none
   position: absolute
-  right: <inset: 0>
+  right: <inset: 0 0 calc((56px - 24px) * -1) 0>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
-  top: <inset: 0>
+  top: <inset: 0 0 calc((56px - 24px) * -1) 0>
   z-index: 0
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)

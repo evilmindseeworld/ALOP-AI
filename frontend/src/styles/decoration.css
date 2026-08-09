@@ -49,7 +49,26 @@
  * caused a long run of duelling z-index commits. */
 .sakura-frame {
   position: absolute;
-  inset: 0;
+  /* THE BOTTOM IS PULLED DOWN, and the number is a measurement rather than a
+   * nudge.
+   *
+   * The frame spans .empty-state, whose box is the scroll wrapper's CONTENT
+   * box, and that wrapper's padding is deliberately asymmetric: --space-6 (24px)
+   * at the top against --fade-bottom (56px) at the bottom, because the bottom
+   * padding has to be at least as long as the mask that dissolves the last line
+   * of a transcript into the composer.
+   *
+   * So two sprigs inset by the same 4% were landing 47px from the top of the
+   * panel and 78px from the bottom of it. Both were "in the corner" of the box
+   * they were positioned against, and only the top pair looked it. The bottom
+   * pair read as floating in the left and right margins beside the starter
+   * cards, which is what it was reported as.
+   *
+   * Extending the frame by exactly the difference between the two paddings puts
+   * the bottom corners the same distance from the panel edge as the top ones.
+   * It cannot introduce a scrollbar: 32px of overflow into 56px of existing
+   * padding still ends inside the wrapper's padding box. */
+  inset: 0 0 calc((var(--fade-bottom) - var(--space-6)) * -1) 0;
   pointer-events: none;
   color: var(--primary);
   z-index: var(--z-empty-decor);

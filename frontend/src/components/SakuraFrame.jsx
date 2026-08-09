@@ -169,10 +169,9 @@ const Torii = () => (
 const SakuraFrame = memo(() => (
   <div className="sakura-frame" aria-hidden="true">
     <Torii />
-    <Limb className="sakura-limb sakura-limb-tl" />
-    {/* The counterweight, not the mirror. Smaller and fainter on purpose: two
-        boughs of equal weight is the four-corner frame again with two of the
-        corners missing. */}
+    {/* Bottom right, because it is the only corner of this screen with nothing
+        already in it. See decoration.css for the measurement that moved it
+        there, and for why it is mirrored rather than rotated. */}
     <Limb className="sakura-limb sakura-limb-br" />
   </div>
 ));

@@ -63,42 +63,47 @@
  * and the torii filled the screen. Decoration must keep its size while its
  * container changes size. clamp() gives each piece a floor, a proportion and a
  * ceiling; the viewBox keeps it crisp at all three. */
-/* ONE BOUGH AND ONE ECHO, not four corners.
+/* ONE BOUGH, BOTTOM RIGHT, and that is the whole ornament.
  *
  * The old arrangement inset four identical sprigs at 4%/3%, which floated them
- * in the corners rather than putting them IN the corners — a branch that starts
- * in mid-air has nothing to have grown from. These are flush: the wood runs off
- * the edge, which is the only way it reads as continuing past the frame. */
-/* THE WIDTH IS BOUNDED BY THE HEADLINE, not by taste.
+ * in the corners rather than putting them IN the corners — a branch starting in
+ * mid-air has nothing to have grown from. This one is flush: the wood runs off
+ * the edge, which is the only way it reads as continuing past the frame.
  *
- * At 300px the limb's tip landed on the "W" of "What do you want to ask?" —
- * measured at 1440x900, tip at x=609 against a title starting at x=615. A
- * blossom touching the first letter of the one sentence on the screen is
- * decoration competing with content, which is the only rule this ornament
- * has. 250px leaves the gap. */
+ * WHY THE BOTTOM RIGHT AND NOT THE TOP LEFT, where it was first placed. Three
+ * things already live in the top-left of the empty state: the hanging crescent,
+ * the headline, and the logo mark above it. A bough there had to be capped at
+ * 250px to keep its tip off the "W" of "What do you want to ask?" — measured at
+ * 1440x900, tip at x=609 against a title starting at x=615. The bottom right is
+ * the one region of this screen with nothing in it, so the ornament can be its
+ * real size there and nothing has to be negotiated around it.
+ *
+ * The top-left echo is gone rather than moved. Two boughs was the four-corner
+ * frame with two corners missing; one is a composition. */
 .sakura-limb {
   position: absolute;
-  width: clamp(150px, 20vw, 250px);
   height: auto;
-  opacity: 0.38;
 }
 
-.sakura-limb-tl {
-  top: 0;
-  left: 0;
-}
-
-/* Rotated a half-turn rather than mirrored. A branch is not symmetrical about
- * either axis, so scale(-1) on one axis alone gives wood that grows backwards;
- * 180deg is the one transform that keeps the taper pointing away from the
- * corner it enters from. Smaller and fainter, so it settles the composition
- * without answering the top-left as an equal. */
+/* MIRRORED, NOT ROTATED, and the difference is gravity.
+ *
+ * rotate(180deg) was the first attempt and it is wrong in a way that is obvious
+ * once seen: it turns the hanging blossoms upside down, so they rise off the
+ * top of the branch instead of hanging under it — the exact distinction the
+ * pedicels in SakuraFrame exist to draw. scaleX(-1) leaves every vertical
+ * unchanged, so the wood enters from the right edge and droops down-left into
+ * the corner while the blossoms still hang below it. */
 .sakura-limb-br {
   right: 0;
   bottom: 0;
-  width: clamp(96px, 15vw, 190px);
-  opacity: 0.26;
-  transform: rotate(180deg);
+  /* Bounded by the starter grid, the way the top-left placement was bounded by
+   * the headline. Measured at 1440x900: the right-hand cards end at x=1146, and
+   * at 280px the limb's box began at 1111 — 35px of overlap, with hanging
+   * blossoms sitting under the corner of a clickable card. 240px starts at
+   * 1151 and clears it. */
+  width: clamp(150px, 19vw, 240px);
+  opacity: 0.38;
+  transform: scaleX(-1);
 }
 
 /* Dark ink on light paper carries further than light ink on a dark surface at
@@ -106,9 +111,8 @@
  * light theme has no glow behind the title. Measured rather than assumed: at
  * 0.38 the bough reads as a smudge on paper and as a branch on the dark. */
 .app-root.light .sakura-limb { opacity: 0.5; }
-.app-root.light .sakura-limb-br { opacity: 0.34; }
 
-/* Far fainter than the corners. It is a silhouette the eye should resolve on
+/* Far fainter than the bough. It is a silhouette the eye should resolve on
  * the second look, not read as a shape sitting behind the title — which is
  * exactly what it did at 0.16. */
 .sakura-torii {
@@ -121,20 +125,20 @@
   opacity: 0.06;
 }
 
-/* On a phone the corners are all that fit, and a torii behind six starter
- * cards is clutter rather than atmosphere. */
+/* What a phone does not get. */
 @media (max-width: 640px) {
   /* THE BOUGH COMES OFF ENTIRELY ON A PHONE, and shrinking it is not the fix.
    *
-   * Measured at 390x844: the empty state's frame starts at y=134 and the
-   * headline at y=172, so there are 38 vertical pixels of clearance for an
-   * ornament that is 105 tall at its smallest useful size. Every width that
-   * still reads as a branch overlaps the one sentence on the screen, and the
-   * bottom-right echo lands under the composer. There is no placement left,
-   * because the empty state on a phone has no space that is not doing a job.
+   * Re-measured at 390x844 after the move to the bottom right, because the
+   * reason had to be checked again and not assumed: the starter cards go
+   * full-width there and stack from y=347 to y=756, while the empty state ends
+   * at y=710. The bottom-right corner is entirely card. The top-left is no
+   * better — 38 pixels of clearance between the frame at y=134 and the headline
+   * at y=172, for an ornament 105 tall at its smallest useful size.
    *
-   * Same call as the torii below and the lattice further down: a phone gets the
-   * product without the atmosphere. */
+   * Every corner on a phone is doing a job, so there is no placement left and
+   * no width that helps. Same call as the torii below and the lattice further
+   * down: a phone gets the product without the atmosphere. */
   .sakura-limb { display: none; }
   .sakura-torii { display: none; }
 
@@ -150,7 +154,8 @@
    * A percentage mask cannot be tuned out of this, because the problem is that
    * the column and the surface have converged. There is nowhere for the
    * pattern to be except behind the words, so on a phone it is simply absent.
-   * The sakura corners above still carry the identity at this size. */
+   * Nothing above carries it at this size either — the bough is hidden too,
+   * for the reason recorded there. A phone gets the product plain. */
   .chat-main::after { display: none; }
 }
 

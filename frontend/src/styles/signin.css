@@ -295,14 +295,12 @@
  * thing the user came here to use. */
 .signin-root .sakura-torii { display: none; }
 
+/* Smaller here than in the app. The sign-in window is the whole viewport
+ * rather than a panel inside a shell, so the same clamp() resolves against a
+ * much larger box and the bough arrives correspondingly oversized. */
 .signin-root .sakura-limb {
-  width: clamp(140px, 18vw, 240px);
+  width: clamp(140px, 16vw, 220px);
   opacity: 0.3;
-}
-
-.signin-root .sakura-limb-br {
-  width: clamp(90px, 11vw, 150px);
-  opacity: 0.2;
 }
 
 /* No mobile rule here on purpose: decoration.css hides .sakura-limb entirely

@@ -1,398 +1,157 @@
-# ALOP-AI — Session Handoff
+# Handoff — 2026-08-09
 
-**Written:** 2026-08-06
-**Repo:** `C:\Users\LENOVO\Documents\AI-Classroom` — `evilmindseeworld/ALOP-AI`
-(**PUBLIC** — never commit a secret, and treat anything already in history as
-compromised)
-**Branch:** `main`.
+State of play at `5f17c03`. Read `AGENTS.md` first; this file is what changed in
+this session and what is still open, not a description of the project.
 
-> **STALE HEADER, corrected 2026-08-07.** This block used to read "HEAD
-> `e31d6ad`, committed locally and NOT pushed". Both are wrong now: everything
-> described below was pushed, and `main` has since moved on through the prompt
-> injection fixes, the router extraction and `0583cde`. `git log` is the
-> authority on what is where; this file is a record of one session's reasoning
-> and its head facts age out within a day. The blocked-on-the-owner list further
-> down has also drifted — `gh auth login` is done, and item 4's migrations are
-> partly applied. Check before acting on any line of it.
-
-**Verified against the live site, not assumed:** the Clerk key swap has NOT
-taken. `alop-ai.com`'s bundle still ships `pk_test_…`, which decodes to
-`relaxing-impala-5.clerk.accounts.dev`; `window.Clerk.frontendApi` confirms it
-at runtime and the sign-in page renders a **"Development mode"** badge. The
-production instance itself is fine — `clerk.alop-ai.com` returns 200 — so this
-is the Vercel variable or the redeploy, exactly the trap below.
-
-**Owner:** Mohamed Fateh Douba, Style Tower 2603, Sharjah, UAE.
-Now named as data controller in both legal documents — public information on
-the site, not a secret, but also the answer to "what goes in the [FILL IN]",
-which cost a round trip last time.
-
-**Verified this session, not assumed:**
-
-| | |
-|---|---|
-| Frontend tests | **417 passing**, 31 files |
-| Backend tests | **389 passing** (was 337) |
-| Server boot | starts, `/health` 200, roster still 7 pro / 3 free |
-| Live site | **`https://alop-ai.com`** → 200, valid cert |
-| `www` | 307 → apex. Apex is canonical |
-| Clerk production | **certs issued** — `clerk.alop-ai.com` 200, `tls_verify=0` |
-| CORS on the new domain | 204 for `alop-ai.com`, **403** for attacker origins |
-| Third-party font CDNs | **zero requests**, checked in a browser |
+Everything below is pushed. 602 frontend tests, 565 backend, build clean,
+working tree clean.
 
 ---
 
-## Unpushed, and one of them matters more than the Clerk swap
+## The one thing to read before touching the frontend
 
-Four commits sit on `main` locally. **`git push`, then let Render and Vercel
-redeploy.** Two are security fixes and neither is live.
+**The empty-state ornament set is the specification, and it has now been
+reverted to twice.** Two hanging crescents in the gutters, four sakura corner
+sprigs and a faint torii behind the empty state, the asanoha lattice across the
+chat surface, a centred hero, and the starters as a 2x2 card grid.
 
-**`aa6f59f` — one account could overwrite another account's conversation
-memory.** `updateChatSummary` read and wrote the `chats` table addressed by row
-id alone:
+Five redesigns were tried this session and all five were rejected:
 
-```js
-supabase.from('chats').select('conversation_summary').eq('id', chatId)
-supabase.from('chats').update({ conversation_summary: … }).eq('id', chatId)
-```
+1. one wooden bough replacing the four sprigs
+2. that bough moved to the bottom right
+3. an ensō drawn as seven overlapping arcs
+4. a split layout with the council roster as the right column
+5. a day/night sky, crescent and stars against a sun
 
-`chatId` comes from the request body of `/api/council`. `readChatSummary`, three
-lines below, filtered on `user_id` all along — so the read path was scoped and
-the write path was not. Any signed-in account could pass any chat's id and have
-that conversation's summary replaced with a summary of its own exchange. The
-victim's per-chat memory then shapes every later answer in that chat, and
-nothing surfaces it: no error, no audit row, and the victim's own reads keep
-working.
+Several of those were argued for by the design skills this repo is worked on
+with, which name centred heroes and grids of equal cards as anti-patterns. That
+did not settle it and should not next time. This is a personal product with one
+owner and his taste is the specification. **Do not "fix" the centred hero or the
+card grid on the strength of a general design rule.** If a redesign is wanted it
+will be asked for, and it will be asked for in terms of this ornament family
+rather than in place of it.
 
-**RLS does not cover this and never would.** The server holds
-`SUPABASE_SERVICE_ROLE_KEY`, which bypasses row-level security by design, so
-migration 002's policies are not consulted for this client at all. Every
-ownership check has to be in the query. `tenant-scope.test.js` now asserts that
-for every `chats` and `chat_files` query.
-
-**`3433557` — a client could put a system message in the model's context.**
-`/api/overlay` spread client-supplied objects straight into the message array
-with no check on role, content type or size, and `/api/council` listed `system`
-among the roles a caller could send. A caller-supplied system message lands
-*after* the server's own, which is how you override one — putting "use ONLY the
-provided data" and "introduce no fact that appears in none of the responses"
-inside the request body. Those rules are the groundedness claim. Also closed:
-history had no *total* size cap, so one request could carry 2,000,000 characters
-to seven models; the real frontend sends at most 8 × 4,000.
-
-The other two are smaller. `818286c` fixes a router that answered German
-questions in French; `f90a4c1` deletes a 50 MB body limit granted to two routes
-that do not exist.
+The revert was done by restoring the design-owned files from `c513df7` rather
+than by reverting the five commits, because non-design work landed in the same
+files in between. `App.jsx`, `MessageList.jsx` and `utilities.css` were
+reconciled by hand for that reason. If you ever need to do this again, that is
+the shape of it: check `git log c513df7..HEAD -- <file>` per file to see whether
+a file is design-only before restoring it wholesale.
 
 ---
 
-## The one thing to do first *after* pushing
+## What shipped and stayed
 
-**The Clerk key swap is half-done and the app is still on development keys.**
+**Streaming cadence** (`de5dca8`, `5e7d87e`). Answers reveal against a 16ms
+clock at a rate proportional to the backlog, not once per network read. The
+second commit is the important one: the reveal had been gated on
+`prefers-reduced-motion`, which disabled it on exactly the machines that set the
+preference, including the owner's. That is the origin of the rule now applied
+across the app — reduced motion is about MOVEMENT, and content arriving is not
+movement.
 
-The certificates exist. The keys have not been switched. Until they are, the
-app is capped at 100 users and the sign-in page reads "Development mode".
+**Skeletons, not spinners** (`93b9efa`). The three-dot typing indicator is an
+answer-shaped skeleton at the prose column's width. The rotating icon on pending
+tool rows breathes instead of spinning. Deleting a chat is optimistic and puts
+the chat back with a toast if the server refuses. New chat no longer posts at
+all: every send path already creates the row when there is something to put in
+it.
 
-```
-Render →  CLERK_SECRET_KEY = sk_live_…              (do this FIRST)
-Vercel →  VITE_CLERK_PUBLISHABLE_KEY = pk_live_…    then REDEPLOY
-```
+**Voice out** (`c513df7`). Every assistant answer has a Listen button. Markdown
+is stripped before speaking. `/api/speech` proxies Fish Audio and answers 501
+when `FISH_AUDIO_API_KEY` is unset, at which point the client falls through to
+the browser's own voice. Defaults to `s2.1-pro-free`; Fish Audio selects the
+model in a HEADER and defaults to the paid one, so omitting it is a silent bill
+and there is a test pinning that.
 
-Order matters. If the frontend goes live on `pk_live_` while the backend still
-validates against `sk_test_`, every request fails auth for the gap between the
-two.
+**Sidebar cache** (`e52b11d`). `frontend/src/lib/chatCache.js` persists the chat
+list to localStorage so a reload paints instantly. Four security rules, all
+tested: messages are never written, entries are keyed by Clerk user id and read
+back only for the same id, the cache clears whenever the app renders with no
+user, and anything older than seven days is ignored. See `AGENTS.md` for the two
+merge consequences (`fromCache`, and the signature-driven write).
 
-**The redeploy is not optional.** Vite bakes env vars into the bundle at build
-time. Changing the variable without redeploying leaves the old `pk_test_` in
-the shipped JS and looks like the change silently failed.
+**Upgrade panel** (`28a5efe`). It used to replace the whole panel with "Loading
+plans" while waiting for two price strings, even though the plan comparison is
+compiled into the component. It renders for real now with the figures
+placeholdered and the checkout buttons disabled until the price is known.
 
-Confirm the bundle actually carries the live key:
+**Reduced-motion exceptions** (`3f74ff6`). The global rule collapsed every
+animation, which turned skeletons into static grey boxes and stopped the
+streaming caret. Five loading signals are now reduced rather than removed via a
+`reducedPulse` opacity-only keyframe. Verified in a browser with the preference
+forced on, not inferred from the stylesheet.
 
-```bash
-js=$(curl -s https://alop-ai.com | grep -oE '/assets/index-[A-Za-z0-9_-]+\.js' | head -1)
-curl -s "https://alop-ai.com$js" | grep -oE 'pk_(test|live)_[A-Za-z0-9]{6}' | head -1
-```
+**Council runner extraction** (`9e2e05a`, survived the revert).
+`backend/lib/council-run.js` with 11 tests. It could not have any before:
+`server.js` exits at import time on a missing env var, so the most intricate
+concurrency in the product was untested. It also takes an optional `onSeat`
+reporter, best-effort by construction and wrapped so a dead client socket cannot
+lose an answer a model call was already paid for. **Nothing renders those events
+yet** — that reporter is the seam if a live council view is ever wanted, and the
+owner has said the council table on the main chat screen is not wanted, so do
+not build one unprompted.
 
-**The three existing accounts do not migrate.** Production is a separate user
-store. Everyone re-registers. That is why this was done before launch.
+**`cssHygiene.test.js` counter fix** (`9e2e05a`, survived the revert). `from`,
+`to` and percentage steps were leaking out of `@keyframes` blocks and counting
+as top-level selectors, so the duplicate budget was partly measuring how many
+animations the app has. Budget came down 10 to 9. If that test blocks you, check
+whether it is counting something real before editing CSS to satisfy it.
 
----
-
-## Blocked on the owner — this is the critical path
-
-None of it is engineering. Every item needs a login.
-
-1. **ICANN contact verification.** Namecheap's domain row shows an **ALERT /
-   VERIFY CONTACTS** badge. Miss the 15-day window and `alop-ai.com` stops
-   resolving, which makes everything else here irrelevant. Highest priority and
-   it is not close.
-
-2. **The Clerk key swap** above.
-
-3. **Stripe price IDs.** `STRIPE_PRICE_MONTHLY` and `STRIPE_PRICE_YEARLY` must
-   point at **AED 30/month** and **AED 280/year**. If they do not,
-   `/api/billing/prices` returns 503 and the upgrade path hides itself — a
-   product nobody can pay for. **The Terms now state both prices publicly**, so
-   Stripe has to match the page.
-
-4. **Migrations** `004_rate_limits.sql`, `005_search_cache.sql`,
-   `006_audit_retention.sql`.
-
-   ```bash
-   node scripts/run-migration.mjs 006_audit_retention.sql
-   ```
-
-   006 is the one with teeth. **The published privacy policy says IP addresses
-   are deleted after 90 days. Until that migration runs, they are not.** A
-   retention period the database does not honour is a false public statement,
-   not a missing feature.
-
-5. **`privacy@alop-ai.com` forwarder.** Namecheap → Advanced DNS → Mail
-   Settings → ADD FORWARDER. Free. Both legal documents route rights requests
-   there and it currently goes nowhere.
-
-6. `TERMINAL_ADMINS` + `TERMINAL_SECRET` — admin console is disabled until both
-   are set, and the boot log says so.
-7. `GOOGLE_API_KEY` — unset means attaching an image returns a clear 503.
-8. `ALLOWED_ORIGIN_SUFFIXES=-evilmindseeworlds-projects.vercel.app` — without
-   it, Vercel *preview* deploys cannot call the API. Production is unaffected.
-9. `gh auth login` — `gh pr create` still fails.
-10. Decide `alop-desktop`'s repo. It has none, and Smart App Control blocks the
-    Rust build here, so the F9 overlay fix is unverified.
+**Corner fix** (`5f17c03`). The bottom sprigs sat 78px above the panel edge
+while the top pair sat 47px below its top. Not an inset problem: all four were
+correctly in the corners of the box they were positioned against, and the box
+was the wrong one, because the scroll wrapper's padding is asymmetric by design.
+The frame is extended downward by exactly the difference. Measured 48/48 after.
 
 ---
 
-## What this session did
+## Open, and needing the owner
 
-### There was no way to sign up
+- **`FISH_AUDIO_API_KEY` in Render.** Voice works without it using the browser
+  voice; the key upgrades it with no UI change.
+- **Two `grant execute` statements in `backend/migrations/012_rls_recursion.sql`
+  are unapplied.** Classifier-blocked from this side. They must be run in the
+  Supabase SQL editor. RLS helper functions are otherwise reachable.
+- **Rotate the Perplexity API key.** It was printed into a transcript earlier in
+  this project's history.
+- **Google Search Console indexing request** for the favicon/front-page listing.
 
-`ClerkProvider` had `signUpUrl="/"`, `/` renders the sign-in page, and that page
-rendered `<SignIn>` unconditionally — so Clerk's own "Sign up" link led back to
-the sign-in form. Clicked on the live site to confirm. Email registration was
-unreachable; only the Google button could make an account, because OAuth signs
-up and signs in through one flow, **which is why this survived: the path the
-owner uses works.** It is a launch blocker specifically because a production
-Clerk instance is a separate user store, so everyone re-registers — through a
-loop. Fixed, plus the `vercel.json` that was missing entirely (every deep link
-404'd, so `/sign-up` would have died on refresh).
+## Open, and not blocked
 
-### Clerk is no longer styled through its internal DOM
+- **`@clerk/clerk-sdk-node` is deprecated at 5.1.6** and carries three high
+  advisories through `js-cookie`. The successor is `@clerk/express`. Deliberately
+  NOT attempted this session: `req.auth` has 23 call sites and changed from a
+  property to a function between majors, and there is no way to verify auth
+  end-to-end here without a live Clerk instance. Real exposure is low — the
+  advisory is a prototype hijack in a cookie parser on a backend that
+  authenticates with bearer tokens. Worth doing with the owner present.
+- **Mumbai migration** is prepared and not executed. `backend/Dockerfile`,
+  `fly.toml` with `primary_region = "bom"`, `scripts/verify-migration.sh` and
+  `docs/MUMBAI-MIGRATION.md` all exist. Fly wants payment to deploy; Cloud Run
+  `asia-south1` is the free alternative.
 
-21 CSS rules named `.cl-*` classes, and Clerk warned about it on every page
-load: those selectors break when it ships a component update. On the one screen
-every new user sees. Now `appearance.elements`.
+## Deliberately not done
 
-The useful measurement: the 52 `!important` declarations were not sloppiness.
-Clerk styles its button at specificity 0,3,0 and our selectors sat at 0,2,0, so
-they lost the cascade outright. Through the API most become unnecessary — but
-**three properties still need pinning**, because `box-shadow` and `border` are
-set at Clerk's variant level. The first attempt claimed zero and was wrong;
-diffing computed styles against a pre-change baseline caught the button silently
-losing its inset highlights. Every property and rect now matches that baseline
-exactly.
-
-### The later half — four commits, all unpushed
-
-**One root cause produced nine of the bugs: asking overlapping sets in order
-and taking the first hit.** `detectLanguage` checked French before German and
-Spanish, and French shares `ü` with one and `é` with the other — so "Grüße aus
-München" and "El café está más frío" were both reported as French, and the
-council was told to answer in it. The same mistake checked Chinese before
-Japanese, and Japanese is written with Han characters as well as kana, so nearly
-every real Japanese sentence was reported as Chinese. Now every alphabet is
-counted and the highest total wins, which makes a shared character decide
-nothing — correct, because it carries no information.
-
-**None of that produced an error.** The council still ran, still streamed, and
-still returned a fluent answer. There is nothing to grep for. That is the
-argument for the move: the four router decisions now live in `lib/router.js`
-where a test can call them with a sentence and look at what comes back.
-
-**The security findings are in the section at the top.** Both were found the
-same way — reading what a route does with input the client controls, rather
-than what it looks like it does.
-
-**Two guards were written to catch classes rather than incidents**, because in
-both cases the sibling was already correct and only one caller was wrong:
-`tenant-scope.test.js` (every `chats` / `chat_files` query names an owner) and
-`route-config.test.js` (every limiter and every 50 MB exemption names a route
-that exists). Both are mutation-tested, and both carry a guard on the guard —
-the failure mode of a source contract is passing on zero matches.
-
-`council-roster.test.js` closes the drift the frontend file already admitted to
-in a comment: the sign-in page duplicates the roster deliberately, and the
-comment said "it is wrong until someone updates it". The roster is that page's
-entire argument, so it is the one claim on it that must not be false.
-
-**A false positive is worth recording.** The first version of
-`tenant-scope.test.js` read one line per statement and reported the file-upload
-insert as unscoped. The insert carries `user_id` — on the next line. The code
-was right and the check was wrong. A contract that cries wolf is one the next
-person loosens, so it now reads to the semicolon.
-
-### The earlier half
-
-**The domain went live.** `alop-ai.com`, apex canonical, `www` redirecting.
-Clerk production instance created, all five of its CNAMEs added at Namecheap.
-
-**Clerk sat at 0/5 for over an hour and the records were never wrong.** Worth
-recording because it looks exactly like a misconfiguration. The zone's SOA
-negative-cache TTL is **3601 seconds**. Clerk queried `clerk.alop-ai.com` when
-the instance was created, before any records existed, got NXDOMAIN, and cached
-that for an hour. Every press of "Verify configuration" inside that window
-re-read the cached negative. Two tells: **0/5 rather than 3/5** — slow
-propagation trickles in, a negative cache blocks all five identically — and the
-message saying it "could not determine the current DNS value" rather than
-naming a wrong one. It cleared once the TTL expired.
-
-**Speed.** Six awaited round trips before the first token became two
-(`7aef5a3`). Search fan-out **8014ms → 608ms** (`3e7ffaa`). A search cache that
-survives a deploy (`73694b5`). Cold start fixed **for free** — a GitHub Actions
-cron pings `/health` every 10 minutes, so Render's 22.5s spin-up never lands on
-a user (`d8f8d28`).
-
-**Sign-in page 267 KB → 167 KB gzipped** (`9646d47`).
-
-**Legal documents rewritten against the actual code** (`00daf6a`). They were
-live and wrong: the contact address was `alopai@example.com`, the subprocessor
-list named seven services where the code sends user content to **fourteen**
-(Ollama, which receives every message, was absent), and IP addresses were
-stored and undisclosed. Now includes legal bases, transfers, retention, GDPR
-rights, a full CCPA/CPRA section, and a **13+ minimum (16 in EEA/UK) stated at
-sign-up**, not only inside a linked page.
-
-**All four font families self-hosted** (`94dda0c`), removing two third-party
-CDNs from the critical path and the GDPR exposure with them.
-
-**Audit retention** — 90 days, swept every 200 writes.
+- **More API keys / more tools.** The public-apis list was surveyed. Almost
+  nothing there is worth wiring: search, Firecrawl and Perplexity already cover
+  the general case, and each extra tool costs roughly 1,500 tokens per seat per
+  turn. That is the same lesson that cut SerpApi's ~110 engines down to one
+  `search_specialized` tool.
+- **Tooltips.** Already exist in the composer. Nothing to build.
+- **A live council view.** See the runner note above.
 
 ---
 
-## Four traps this repo will set for you
+## Environment notes
 
-**The local preview serves a stale build, not your source.**
-`~/.claude/launch.json` defines `alop-frontend` as `vite preview`, which serves
-`dist/`. Edit a component, reload, and you are looking at the last `npm run
-build` — with no warning, because the page renders perfectly. This cost real
-time this session: a sign-up fix was verified as *not working* three times
-before the served `index.html` turned out to reference a hashed production
-bundle. **`npm run build` first, every time.** Which is also the rule below.
-
-
-**Read the built output, not the source.** Three separate things this session
-read as correct and shipped the opposite. The CORS fix looked right and broke
-every preview deploy. Lazy-loading the magnetic button looked right and still
-shipped framer-motion on the critical path, because `manualChunks` had bundled
-it with `animejs`, which is imported eagerly — the only symptom was one
-`modulepreload` line in the built HTML. "Self-host the Google font" read as one
-`<link>` and was actually four families across two CDNs. Each time the source
-was persuasive and the artefact was the truth.
-
-**Do not scale Render past one instance** without `RATE_LIMIT_STORE=postgres`.
-The in-memory store is per-process, so every limit multiplies by the instance
-count, and scaling is a dropdown — no deploy, no review, nothing that flags it.
-
-**Do not add a second free Render service** while the keep-warm cron runs. The
-free tier gives 750 instance-hours against a ~730-hour month. One service awake
-continuously fits; two exhaust it mid-month, quietly.
-
----
-
-## Reference
-
-```bash
-# Is Clerk production live?
-curl -s -o /dev/null -w "%{http_code}\n" https://clerk.alop-ai.com/v1/environment
-
-# Tests
-cd backend  && node --test "lib/**/*.test.js"
-cd frontend && npm test -- --run
-
-# Regenerate the cascade baseline ONLY when a rendering change is intended,
-# and say what moved in the commit message:
-UPDATE_CASCADE_BASELINE=1 npx vitest run src/__tests__/cssSnapshot.test.js
-```
-
-- **`node --test lib/`** fails on Node 26 with `MODULE_NOT_FOUND`. Use the
-  quoted glob: `node --test "lib/**/*.test.js"`.
-
-**Reading a cascade diff:** strip `[0-9]+` element indices from both sides
-first. A raw diff that does NOT shrink when indices are stripped means
-something structural moved rather than renumbered. That check has now caught
-two real regressions — a stagger that silently deleted the app's only shimmer,
-and a font change that would have stopped the guard covering the sign-in card.
-
-**Docs worth reading before changing anything:** `docs/ROADMAP-2026-08-31.md`
-(rewritten this session), `docs/DOMAIN-CUTOVER.md`, `docs/ADMIN-CONSOLE.md`,
-`docs/FRONTEND.md` §1 (z-index) and §2 (the stylesheet manifest — its order is
-asserted by a test *and* printed in the doc, so changing one means changing
-both).
-
----
-
-## Left to build — none of it blocks launch
-
-1. **Watch the live council for a day.** `COUNCIL_TOOLS=1` has never been read
-   against real traffic. Watch **unique calls vs members**: seven members
-   producing seven unique calls every round means the dedupe is not earning its
-   place. The `council` admin command reports this from the database now.
-2. **Re-tune the whip deadlines.** 3500ms and 2500ms were reasoned, not
-   measured. Needs `msToFirstByte` percentiles, which need real traffic.
-3. **`run_code` sandbox.** Blocked on a vendor key that does not exist.
-   `node:worker_threads` stays rejected — it shares the process, so the
-   isolation boundary would be V8's rather than the OS's, and on the other side
-   of it is a live Stripe secret key.
-4. **Slice B and D were never specified.** Three specs reference them — always
-   as "out of scope", never with a definition — so "do slice B" is not an
-   instruction anyone can follow. The router work below is what "AI smartness"
-   turned out to mean once someone read the code instead of the label; sign-in
-   polish is largely spent, since that page was rewritten in `9646d47`. If more
-   is wanted from either, they need a spec first.
-
-5. **Give `server.js` the same treatment as the router.** It is ~1,400 lines and
-   nothing tests it directly; `lib/` has 389 tests and `server.js` has none. Two
-   security bugs and nine correctness bugs were found this session simply by
-   moving pure decisions into `lib/` and calling them. The remaining candidates
-   are `getSearchQuery`, `isMemoryOrReferenceQuestion` and the prompt-assembly
-   in the council route. **This is now the highest-yield work left**, and the
-   yield is measured, not assumed.
-
-6. **`core.autocrlf` is on and there is no `.gitattributes`.** Every commit this
-   session warned "LF will be replaced by CRLF". Nothing is broken yet, but the
-   failure mode is a one-line edit surfacing as a whole-file diff, which hides
-   the real change in review. Fixing it means one `.gitattributes` and one
-   normalising commit that touches every file, so it wants to be its own commit
-   on a quiet day — not bundled with anything.
-
----
-
-## Closed since the last handoff — do not reopen
-
-- **The domain.** Live, HTTPS valid, apex canonical.
-- **CORS for the new domain.** Verified against the running backend: 204 for
-  `alop-ai.com` and `www`, 204 for the old `.vercel.app` alias (rollback path
-  intact), **403** for attacker origins.
-- **The cmdk swap.** Attempted, rejected on evidence, dependency deleted
-  (`64dccce`). `ui/command.jsx` was imported by nobody, and cmdk's input is
-  `role="combobox"` where six tests use `getByRole("textbox")` — overriding
-  that would have been an accessibility downgrade to adopt a library nothing
-  used.
-- **`SignInPage.css` outside the guards.** Folded into the manifest
-  (`088386d`); it immediately surfaced six duplicates that had always existed
-  and were never counted.
-- **Duplicate CSS selectors.** Counted this session: **two** remain, both
-  deliberate and documented in place (`:root` across two files, `*` twice in
-  `base.css`). `DUPLICATE_BUDGET = 10` measures something else — that counter
-  splits comma lists — and should not be driven to zero.
-- **Google Fonts / Fontshare.** All self-hosted. Zero third-party font requests,
-  confirmed in a browser.
-
----
-
-## Not legal advice
-
-The privacy policy and terms were written against the real data flows, which is
-the part templates get wrong and the part that creates exposure. They have
-**not** been reviewed by a lawyer. Before taking real money, have someone
-qualified in the UAE read them — particularly the liability cap and the
-governing-law clause.
+- `jq` is not installed. Use `node -e` for JSON work.
+- The frontend dev server for screenshots: `npx vite --port 5199 --strictPort`,
+  then drive it with the Playwright MCP. `gallery.html` renders every component
+  state without needing auth, which is the fastest way to look at the empty
+  state, both themes, and the loading states.
+- `UPDATE_CASCADE_BASELINE=1 npx vitest run src/__tests__/cssSnapshot.test.js`
+  after any deliberate CSS change, and say in the commit message that rendering
+  changed on purpose.
+- Screenshots written by the Playwright MCP land in the user's home directory,
+  not the repo. Delete them when finished.

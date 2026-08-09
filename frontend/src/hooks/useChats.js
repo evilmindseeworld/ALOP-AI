@@ -91,6 +91,23 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
   }, [apiCall, setToast]);
 
   /**
+   * What the New chat button should do, which is not what it was doing.
+   *
+   * It called createChat(), so pressing it opened a request to the server and
+   * waited for a row to come back before the empty state appeared. Both halves
+   * of that are wrong. The wait is unnecessary — every send path already calls
+   * createChat() itself when there is no active chat, so the row gets made at
+   * the moment there is finally something to put in it. And the row itself was
+   * often wrong: a user who opens a new chat and changes their mind left an
+   * empty "New Chat" behind in the sidebar, which is the litter the lazy-create
+   * path was introduced to stop.
+   *
+   * Clearing the selection is the whole operation. Nothing to await, nothing to
+   * roll back, nothing on the server to regret.
+   */
+  const newChat = useCallback(() => setActiveChatId(null), []);
+
+  /**
    * Load existing chats only.
    *
    * The row is created lazily on the first message, so opening the app no
@@ -299,8 +316,32 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
     [apiCall, loadMessages, setToast]
   );
 
+  /**
+   * Optimistic, like rename and pin above it, and for a stronger reason than
+   * either: deleting was the one destructive action in the sidebar that made
+   * the user watch a round trip to find out whether it had worked. The row sat
+   * there for the length of a request to Mumbai and back, which invites a
+   * second click on a row that is already being deleted.
+   *
+   * The failure path is the part worth getting right. The chat is put back and
+   * the user is told, rather than the row quietly staying gone while the
+   * conversation still exists on the server — an optimistic delete that hides
+   * its own failure is worse than a slow one, because the next reload
+   * resurrects a conversation the user believes they deleted.
+   *
+   * Version and load-state bookkeeping is only cleared once the server has
+   * confirmed: throwing away the CAS token for a chat that turns out to still
+   * exist would make its next message unsaveable.
+   */
   const deleteChat = useCallback(
     async (id) => {
+      const removed = chatsRef.current.find((c) => c.id === id);
+      if (!removed) return;
+      const wasActive = activeChatId === id;
+
+      setChats((p) => p.filter((c) => c.id !== id));
+      setActiveChatId((current) => (current === id ? null : current));
+
       try {
         const res = await apiCall(`/api/chats/${id}`, { method: "DELETE" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -311,13 +352,16 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
           delete next[id];
           return next;
         });
-        setChats((p) => p.filter((c) => c.id !== id));
-        setActiveChatId((current) => (current === id ? null : current));
       } catch (e) {
         console.error(e.message);
+        // Sorting is derived, so re-appending restores the row to its own
+        // place without having to remember an index.
+        setChats((p) => (p.some((c) => c.id === id) ? p : [...p, removed]));
+        if (wasActive) setActiveChatId(id);
+        setToast("Couldn't delete that chat.");
       }
     },
-    [apiCall]
+    [activeChatId, apiCall, setToast]
   );
 
   const renameChat = useCallback(
@@ -948,6 +992,7 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
     messageLoadError,
     retryMessages,
     createChat,
+    newChat,
     deleteChat,
     renameChat,
     togglePinChat,

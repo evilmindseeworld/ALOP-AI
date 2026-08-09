@@ -47,6 +47,27 @@ export const MessageSkeleton = () => (
   </>
 );
 
+/**
+ * The shape of the answer that has not arrived yet.
+ *
+ * This replaces three bouncing dots. Dots are a spinner with extra steps: they
+ * say "wait" and nothing else, they occupy a box the wrong size, and the moment
+ * the first token lands the whole row jumps as a 40px pill becomes a paragraph.
+ * Ragged lines at the prose column's real width say the same "wait" while
+ * reserving roughly the space the first sentences will take, so the transcript
+ * settles instead of snapping.
+ *
+ * Three lines, not six: over-reserving is its own jump, in the other direction.
+ * The last line is short because a paragraph's last line is.
+ */
+export const AnswerSkeleton = () => (
+  <div className="answer-skeleton" role="status" aria-label="The council is thinking">
+    <div className="skeleton-block" style={{ height: "14px", width: "92%" }} />
+    <div className="skeleton-block" style={{ height: "14px", width: "97%" }} />
+    <div className="skeleton-block" style={{ height: "14px", width: "58%" }} />
+  </div>
+);
+
 export const AppSkeleton = () => (
   <div className="app-root dark">
     <div className="bg-layer" />

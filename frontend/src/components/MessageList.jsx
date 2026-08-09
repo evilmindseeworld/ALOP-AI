@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Icon from "./Icon";
 import { STARTERS } from "../constants/starters";
-import { MessageSkeleton } from "./Skeletons";
+import { MessageSkeleton, AnswerSkeleton } from "./Skeletons";
 
 // react-syntax-highlighter is ~4.9MB installed and carries a grammar for every
 // language it supports. Loading it lazily keeps it off the critical path for
@@ -279,11 +279,7 @@ export const Message = memo(({ msg, isStreaming, onCopy, onFeedback, feedback })
           ))}
 
         {msg.typing ? (
-          <div className="bubble typing-bubble" role="status" aria-label="The council is thinking">
-            <span className="typing-dot" />
-            <span className="typing-dot" />
-            <span className="typing-dot" />
-          </div>
+          <AnswerSkeleton />
         ) : msg.content ? (
           <div
             className={`bubble markdown-body ${isStreaming ? "is-streaming" : ""} ${

@@ -379,7 +379,7 @@ const AuthenticatedApp = () => {
 
   const paletteActions = useMemo(
     () => [
-      { id: "new", label: "New chat", hint: "Ctrl N", icon: "✚", run: () => chat.createChat() },
+      { id: "new", label: "New chat", hint: "Ctrl N", icon: "✚", run: chat.newChat },
       { id: "regen", label: "Regenerate last answer", hint: "Chat", icon: "↻", run: chat.regenerateLast },
       { id: "export", label: "Export chat as Markdown", hint: "Chat", icon: "⭳", run: exportChat },
       {
@@ -409,7 +409,7 @@ const AuthenticatedApp = () => {
       }
       if (key === "n") {
         e.preventDefault();
-        chat.createChat();
+        chat.newChat();
       }
     };
     window.addEventListener("keydown", onKey, true);
@@ -560,7 +560,7 @@ const AuthenticatedApp = () => {
             chats={chat.sortedChats}
             activeChatId={chat.activeChatId}
             onSelect={chat.setActiveChatId}
-            onCreate={chat.createChat}
+            onCreate={chat.newChat}
             onDelete={chat.deleteChat}
             onRename={chat.renameChat}
             onPin={chat.togglePinChat}

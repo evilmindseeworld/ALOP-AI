@@ -100,6 +100,12 @@ describe("the cascade snapshot notices", () => {
   it("the wrong duplicate @keyframes being deleted", () => {
     // The stylesheet no longer contains a duplicate @keyframes to borrow —
     // floatGentle, typingBounce and emptyFloat were each defined twice, and the
+    // UI overhaul removed the second copies. typingBounce itself is gone now
+    // too, along with the three-dot typing indicator it drove, so the fixture
+    // borrows toolPending — any two-block keyframe in the sheet will do, which
+    // is the point of the drift assertion below.
+    //
+    // Original note, still the reason this is constructed rather than found: the
     // UI overhaul removed the second copies along with the design passes that
     // introduced them. So the duplicate is constructed here, for the same
     // reason the !important case below constructs its own: a guard anchored on
@@ -109,15 +115,15 @@ describe("the cascade snapshot notices", () => {
     // The property under test is that the LAST definition of a name is the one
     // that renders, so deleting the later duplicate changes the app and
     // deleting the earlier one does not.
-    const later = "@keyframes typingBounce { 0%, 80%, 100% { transform: scale(0.9); opacity: 0.9; } 40% { transform: scale(1); opacity: 1; } }";
+    const later = "@keyframes toolPending { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.95; } }";
     const withDuplicate = buildSnapshot(`${CSS}\n${later}`);
 
     // Appending a second definition renders differently: the later one wins.
     expect(withDuplicate, "a later @keyframes of the same name must win").not.toBe(BASELINE);
 
     // Delete the EARLIER one and the app is unchanged — the later still wins.
-    const earlierDeleted = CSS.replace(/@keyframes typingBounce \{[^}]*\}[^}]*\}/, "");
-    expect(earlierDeleted, "fixture drift: typingBounce is no longer declared").not.toBe(CSS);
+    const earlierDeleted = CSS.replace(/@keyframes toolPending \{[^}]*\}[^}]*\}/, "");
+    expect(earlierDeleted, "fixture drift: toolPending is no longer declared").not.toBe(CSS);
     expect(buildSnapshot(`${earlierDeleted}\n${later}`)).toBe(withDuplicate);
   });
 

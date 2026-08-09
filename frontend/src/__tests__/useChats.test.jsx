@@ -494,3 +494,72 @@ describe("useChats", () => {
     expect(consumed).toHaveBeenCalled();
   });
 });
+
+/* Optimistic sidebar actions.
+ *
+ * The property worth pinning is not that the row disappears — that is the easy
+ * half and the half that cannot silently rot. It is that a FAILED delete puts
+ * the conversation back and says so. An optimistic delete that swallows its own
+ * failure looks perfect until a reload resurrects a chat the user believes they
+ * deleted, and nothing in the interface ever admitted it had not worked.
+ */
+describe("deleting a chat", () => {
+  const oneChat = [{ id: "doomed", title: "Doomed", updated_at: "v1" }];
+
+  it("removes the row before the server answers", async () => {
+    const del = deferred();
+    const apiCallImpl = vi.fn(async (path, options = {}) => {
+      if (path === "/api/chats" && !options.method) return { ok: true, json: async () => oneChat };
+      if (options.method === "DELETE") return del.promise;
+      return { ok: true, json: async () => ({}) };
+    });
+    const { result } = setup({ apiCallImpl });
+    await waitFor(() => expect(result.current.chats).toHaveLength(1));
+
+    act(() => {
+      result.current.deleteChat("doomed");
+    });
+
+    // The DELETE has not resolved. The row is already gone.
+    expect(result.current.chats).toHaveLength(0);
+    await act(async () => {
+      del.resolve({ ok: true, json: async () => ({}) });
+      await del.promise;
+    });
+    expect(result.current.chats).toHaveLength(0);
+  });
+
+  it("puts the chat back and tells the user when the delete fails", async () => {
+    const apiCallImpl = vi.fn(async (path, options = {}) => {
+      if (path === "/api/chats" && !options.method) return { ok: true, json: async () => oneChat };
+      if (options.method === "DELETE") return { ok: false, status: 500 };
+      return { ok: true, json: async () => ({}) };
+    });
+    const { result, setToast } = setup({ apiCallImpl });
+    await waitFor(() => expect(result.current.chats).toHaveLength(1));
+
+    await act(async () => {
+      await result.current.deleteChat("doomed");
+    });
+
+    expect(result.current.chats.map((c) => c.id)).toEqual(["doomed"]);
+    expect(setToast).toHaveBeenCalledWith("Couldn't delete that chat.");
+  });
+});
+
+describe("starting a new chat", () => {
+  it("clears the selection without touching the server", async () => {
+    // The row is created on the first message. Creating one here is what left
+    // empty "New Chat" rows in the sidebar whenever a user changed their mind.
+    const { result, apiCall } = setup();
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+    apiCall.mockClear();
+
+    act(() => {
+      result.current.newChat();
+    });
+
+    expect(result.current.activeChatId).toBe(null);
+    expect(apiCall).not.toHaveBeenCalled();
+  });
+});

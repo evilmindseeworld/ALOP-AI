@@ -264,10 +264,7 @@
 .tool-trail-summary::-webkit-details-marker { display: none; }
 .tool-trail-summary:hover { color: var(--text-muted); }
 
-/* The spinner only turns while something is actually pending. A permanently
- * rotating icon next to finished work is a lie the eye keeps checking. */
-.tool-trail[open] .tool-trail-summary svg,
-.tool-trail .tool-trail-summary svg { transform-origin: center; }
+.tool-trail-summary svg { transform-origin: center; }
 
 .tool-trail-list {
   margin: var(--space-2) 0 0;
@@ -299,8 +296,16 @@
  * text does. */
 .tool-trail-row svg { flex: 0 0 auto; margin-top: 0.15em; }
 
+/* A pending row breathes rather than spins.
+ *
+ * The rotating icon here was the last spinner in the product, and it was the
+ * least defensible one: the trail is already a live list that grows a row per
+ * search and rewrites each row when it resolves. Progress was being reported
+ * twice, once truthfully and once as a wheel that says nothing about how far
+ * along anything is. Opacity carries "still working" without competing with
+ * the text it sits beside. */
 .tool-trail-row.is-pending { color: var(--text-muted); }
-.tool-trail-row.is-pending svg { animation: toolSpin 1.1s linear infinite; }
+.tool-trail-row.is-pending svg { animation: toolPending 1.6s ease-in-out infinite; }
 .tool-trail-row.is-failed { color: var(--danger); }
 
 /* A long search query must wrap rather than push the transcript sideways: the
@@ -310,8 +315,9 @@
   overflow-wrap: anywhere;
 }
 
-@keyframes toolSpin {
-  to { transform: rotate(360deg); }
+@keyframes toolPending {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
 }
 
 /* ===== MESSAGES =====
@@ -509,38 +515,19 @@
   color: var(--text-subtle);
 }
 
-/* `.bubble.typing-bubble`, not `.typing-bubble`: both single-class forms match
- * the same element at equal specificity, so source order would decide. Two
- * classes put this above every `.bubble` rule regardless of position. */
-.bubble.typing-bubble {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: var(--space-3) var(--space-4);
-  border-radius: var(--radius-lg);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  white-space: nowrap;
-}
-
-.typing-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--emerald);
-  display: inline-block;
-  animation: typingBounce 1.4s infinite ease-in-out both;
-}
-
-/* The stagger was dead for the life of the app: a forced `animation` shorthand
- * reset animation-delay with force, so all three dots bounced in unison. */
-.typing-dot:nth-child(1) { animation-delay: -0.32s; }
-.typing-dot:nth-child(2) { animation-delay: -0.16s; }
-.typing-dot:nth-child(3) { animation-delay: 0s; }
-
-@keyframes typingBounce {
-  0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; }
-  40% { transform: scale(1); opacity: 1; }
+/* The waiting state, shaped like the answer rather than like a loader.
+ *
+ * No border and no background of its own: the bars ARE the placeholder, and a
+ * container around them would draw a box the real answer never draws, so the
+ * chrome would vanish the instant the first token landed. */
+.answer-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  /* Matches the prose column so the bars sit exactly where the first lines of
+   * the answer will, instead of hinting at a different measure. */
+  max-width: min(var(--measure), 100%);
+  padding: var(--space-1) 0;
 }
 
 /* ===== META & ACTIONS ===== */

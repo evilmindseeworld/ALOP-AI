@@ -13053,10 +13053,10 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  animation: toolSpin 1.1s linear infinite
-  animation-delay: <animation: toolSpin 1.1s linear infinite>
-  animation-duration: <animation: toolSpin 1.1s linear infinite>
-  animation-iteration-count: <animation: toolSpin 1.1s linear infinite>
+  animation: toolPending 1.6s ease-in-out infinite
+  animation-delay: <animation: toolPending 1.6s ease-in-out infinite>
+  animation-duration: <animation: toolPending 1.6s ease-in-out infinite>
+  animation-iteration-count: <animation: toolPending 1.6s ease-in-out infinite>
   box-sizing: border-box
   flex: 0 0 auto
   flex-shrink: <flex: 0 0 auto>
@@ -16751,21 +16751,16 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  align-items: center
   background: none
   background-clip: <background: none>
   background-image: <background: none>
   background-size: <background: none>
   border: none
-  border-bottom-right-radius: <border-radius: 8px>
   border-color: <border: none>
-  border-radius: 8px
   box-shadow: none
   box-sizing: border-box
   color: #f5f1ee
-  display: inline-flex
   font-size: 17px
-  gap: 5px
   line-height: 1.6
   margin: 0
   margin-bottom: <margin: 0>
@@ -16781,13 +16776,14 @@
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   text-wrap: pretty
-  white-space: nowrap
   word-break: break-word
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
   :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
@@ -16811,19 +16807,7 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  animation: typingBounce 1.4s infinite ease-in-out both
-  animation-delay: -0.32s
-  animation-duration: <animation: typingBounce 1.4s infinite ease-in-out both>
-  animation-iteration-count: <animation: typingBounce 1.4s infinite ease-in-out both>
-  background: #6fd3a6
-  background-clip: <background: #6fd3a6>
-  background-image: <background: #6fd3a6>
-  background-size: <background: #6fd3a6>
-  border-bottom-right-radius: <border-radius: 50%>
-  border-radius: 50%
   box-sizing: border-box
-  display: inline-block
-  height: 6px
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -16833,12 +16817,13 @@
   padding-left: <padding: 0>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
-  width: 6px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
   :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
@@ -16862,19 +16847,7 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  animation: typingBounce 1.4s infinite ease-in-out both
-  animation-delay: -0.16s
-  animation-duration: <animation: typingBounce 1.4s infinite ease-in-out both>
-  animation-iteration-count: <animation: typingBounce 1.4s infinite ease-in-out both>
-  background: #6fd3a6
-  background-clip: <background: #6fd3a6>
-  background-image: <background: #6fd3a6>
-  background-size: <background: #6fd3a6>
-  border-bottom-right-radius: <border-radius: 50%>
-  border-radius: 50%
   box-sizing: border-box
-  display: inline-block
-  height: 6px
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -16884,12 +16857,13 @@
   padding-left: <padding: 0>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
-  width: 6px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
   :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
@@ -16913,19 +16887,7 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  animation: typingBounce 1.4s infinite ease-in-out both
-  animation-delay: 0s
-  animation-duration: <animation: typingBounce 1.4s infinite ease-in-out both>
-  animation-iteration-count: <animation: typingBounce 1.4s infinite ease-in-out both>
-  background: #6fd3a6
-  background-clip: <background: #6fd3a6>
-  background-image: <background: #6fd3a6>
-  background-size: <background: #6fd3a6>
-  border-bottom-right-radius: <border-radius: 50%>
-  border-radius: 50%
   box-sizing: border-box
-  display: inline-block
-  height: 6px
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -16935,12 +16897,13 @@
   padding-left: <padding: 0>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
-  width: 6px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
   :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
@@ -32690,10 +32653,10 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
-  animation: toolSpin 1.1s linear infinite
-  animation-delay: <animation: toolSpin 1.1s linear infinite>
-  animation-duration: <animation: toolSpin 1.1s linear infinite>
-  animation-iteration-count: <animation: toolSpin 1.1s linear infinite>
+  animation: toolPending 1.6s ease-in-out infinite
+  animation-delay: <animation: toolPending 1.6s ease-in-out infinite>
+  animation-duration: <animation: toolPending 1.6s ease-in-out infinite>
+  animation-iteration-count: <animation: toolPending 1.6s ease-in-out infinite>
   box-sizing: border-box
   flex: 0 0 auto
   flex-shrink: <flex: 0 0 auto>
@@ -36388,21 +36351,16 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
-  align-items: center
   background: none
   background-clip: <background: none>
   background-image: <background: none>
   background-size: <background: none>
   border: none
-  border-bottom-right-radius: <border-radius: 8px>
   border-color: <border: none>
-  border-radius: 8px
   box-shadow: none
   box-sizing: border-box
   color: #241a16
-  display: inline-flex
   font-size: 17px
-  gap: 5px
   line-height: 1.6
   margin: 0
   margin-bottom: <margin: 0>
@@ -36418,13 +36376,14 @@
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   text-wrap: pretty
-  white-space: nowrap
   word-break: break-word
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
   :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
     outline: 2px solid #b31a54
     outline-offset: 2px
 
@@ -36448,19 +36407,7 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
-  animation: typingBounce 1.4s infinite ease-in-out both
-  animation-delay: -0.32s
-  animation-duration: <animation: typingBounce 1.4s infinite ease-in-out both>
-  animation-iteration-count: <animation: typingBounce 1.4s infinite ease-in-out both>
-  background: #1f7a52
-  background-clip: <background: #1f7a52>
-  background-image: <background: #1f7a52>
-  background-size: <background: #1f7a52>
-  border-bottom-right-radius: <border-radius: 50%>
-  border-radius: 50%
   box-sizing: border-box
-  display: inline-block
-  height: 6px
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -36470,12 +36417,13 @@
   padding-left: <padding: 0>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
-  width: 6px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
   :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
     outline: 2px solid #b31a54
     outline-offset: 2px
 
@@ -36499,19 +36447,7 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
-  animation: typingBounce 1.4s infinite ease-in-out both
-  animation-delay: -0.16s
-  animation-duration: <animation: typingBounce 1.4s infinite ease-in-out both>
-  animation-iteration-count: <animation: typingBounce 1.4s infinite ease-in-out both>
-  background: #1f7a52
-  background-clip: <background: #1f7a52>
-  background-image: <background: #1f7a52>
-  background-size: <background: #1f7a52>
-  border-bottom-right-radius: <border-radius: 50%>
-  border-radius: 50%
   box-sizing: border-box
-  display: inline-block
-  height: 6px
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -36521,12 +36457,13 @@
   padding-left: <padding: 0>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
-  width: 6px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
   :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
     outline: 2px solid #b31a54
     outline-offset: 2px
 
@@ -36550,19 +36487,7 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
-  animation: typingBounce 1.4s infinite ease-in-out both
-  animation-delay: 0s
-  animation-duration: <animation: typingBounce 1.4s infinite ease-in-out both>
-  animation-iteration-count: <animation: typingBounce 1.4s infinite ease-in-out both>
-  background: #1f7a52
-  background-clip: <background: #1f7a52>
-  background-image: <background: #1f7a52>
-  background-size: <background: #1f7a52>
-  border-bottom-right-radius: <border-radius: 50%>
-  border-radius: 50%
   box-sizing: border-box
-  display: inline-block
-  height: 6px
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -36572,12 +36497,13 @@
   padding-left: <padding: 0>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
-  width: 6px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
     ::-webkit-scrollbar-thumb/background-size: <background: rgba(179, 26, 84, 0.10)>
   :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
     outline: 2px solid #b31a54
     outline-offset: 2px
 
@@ -46645,8 +46571,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: toolSpin 1.1s linear infinite>
-  - animation-iteration-count: <animation: toolSpin 1.1s linear infinite>
+  - animation-duration: <animation: toolPending 1.6s ease-in-out infinite>
+  - animation-iteration-count: <animation: toolPending 1.6s ease-in-out infinite>
 
 [270] path
   ::after/animation-duration: 0.01ms
@@ -47539,8 +47465,6 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: typingBounce 1.4s infinite ease-in-out both>
-  - animation-iteration-count: <animation: typingBounce 1.4s infinite ease-in-out both>
 
 [349] span.typing-dot
   ::after/animation-duration: 0.01ms
@@ -47552,8 +47476,6 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: typingBounce 1.4s infinite ease-in-out both>
-  - animation-iteration-count: <animation: typingBounce 1.4s infinite ease-in-out both>
 
 [350] span.typing-dot
   ::after/animation-duration: 0.01ms
@@ -47565,8 +47487,6 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: typingBounce 1.4s infinite ease-in-out both>
-  - animation-iteration-count: <animation: typingBounce 1.4s infinite ease-in-out both>
 
 [351] div.msg-row.assistant
   ::after/animation-duration: 0.01ms
@@ -51298,8 +51218,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: toolSpin 1.1s linear infinite>
-  - animation-iteration-count: <animation: toolSpin 1.1s linear infinite>
+  - animation-duration: <animation: toolPending 1.6s ease-in-out infinite>
+  - animation-iteration-count: <animation: toolPending 1.6s ease-in-out infinite>
 
 [676] path
   ::after/animation-duration: 0.01ms
@@ -52192,8 +52112,6 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: typingBounce 1.4s infinite ease-in-out both>
-  - animation-iteration-count: <animation: typingBounce 1.4s infinite ease-in-out both>
 
 [755] span.typing-dot
   ::after/animation-duration: 0.01ms
@@ -52205,8 +52123,6 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: typingBounce 1.4s infinite ease-in-out both>
-  - animation-iteration-count: <animation: typingBounce 1.4s infinite ease-in-out both>
 
 [756] span.typing-dot
   ::after/animation-duration: 0.01ms
@@ -52218,8 +52134,6 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - animation-duration: <animation: typingBounce 1.4s infinite ease-in-out both>
-  - animation-iteration-count: <animation: typingBounce 1.4s infinite ease-in-out both>
 
 [757] div.msg-row.assistant
   ::after/animation-duration: 0.01ms
@@ -53713,8 +53627,7 @@ signinFadeIn: from { opacity: 0; transform: translateY(24px); } to { opacity: 1;
 skeletonShimmer: 0% { background-position: 200% 0; } 100% { background-position: -200% 0; }
 stopPulse: 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); } 50% { box-shadow: 0 0 0 7px transparent; }
 toastIn: from { opacity: 0; transform: translateY(-14px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); }
-toolSpin: to { transform: rotate(360deg); }
-typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { transform: scale(1); opacity: 1; }
+toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
 
 === effective tokens per theme root ===
 
@@ -53924,6 +53837,7 @@ typingBounce: 0%, 80%, 100% { transform: scale(0.4); opacity: 0.3; } 40% { trans
 # knowing, and a change to this list is a change to the stylesheet's reach.
 
 #transcript
+.answer-skeleton
 .chat-toolbar-btn span
 .council-blurb
 .council-row:nth-child(3)

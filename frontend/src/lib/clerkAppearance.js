@@ -106,7 +106,18 @@ export const clerkAppearance = {
   },
   elements: {
     rootBox: RESET,
-    cardBox: RESET,
+    /* `overflow: visible` is a FOCUS FIX, not styling.
+     *
+     * Clerk's cardBox is `overflow: hidden`. The email input is full-bleed to it
+     * — measured 1px OUTSIDE its left edge — and the focus ring is a 3px
+     * box-shadow spread, so the ring had nowhere to draw and was sliced flat on
+     * both sides. Keyboard users lost the left and right of the indicator on the
+     * only control a signed-out visitor starts on.
+     *
+     * Safe to turn off here specifically: RESET already makes this element
+     * transparent with `borderRadius: 0`, so the clipping was not rounding a
+     * corner or containing a background. It was only cutting the ring. */
+    cardBox: { ...RESET, overflow: "visible" },
     card: RESET,
     footer: RESET,
     main: RESET,

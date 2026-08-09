@@ -36,7 +36,7 @@ const rateLimit = require('express-rate-limit');
 const timeout = require('connect-timeout');
 const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
-const { ClerkExpressRequireAuth, clerkClient } = require('@clerk/clerk-sdk-node');
+const { clerkMiddleware, getAuth, clerkClient } = require('@clerk/express');
 const Stripe = require('stripe');
 
 const app = express();
@@ -51,9 +51,10 @@ const requiredEnv = ['SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','CLERK_SECRET_KE
 const missingEnv = requiredEnv.filter((k) => !process.env[k]);
 if (missingEnv.length > 0) { console.error(`Missing required env: ${missingEnv.join(', ')}`); process.exit(1); }
 
-// clerk-sdk-node reads this at import time and throws on every authenticated request
-// without it. Not fatal here on purpose: refusing to boot would turn a misconfigured
-// deploy into a full outage, and this warning names the cause in the very first log line.
+// @clerk/express refuses to build its middleware without this. Not fatal here on
+// purpose: refusing to boot would turn a misconfigured deploy into a full outage, and
+// this warning names the cause in the very first log line. Authenticated routes answer
+// 500 while it is missing; unauthenticated ones, /health included, keep working.
 if (!process.env.CLERK_PUBLISHABLE_KEY) {
   console.warn('[BOOT] CLERK_PUBLISHABLE_KEY not set — every authenticated route will fail with 500.');
 }
@@ -1076,9 +1077,11 @@ const searchCache = createSearchCache({
 });
 const getCachedSearch = (q) => searchCache.get(q);
 const setCachedSearch = (q, d) => searchCache.set(q, d);
-// clerk-sdk-node@5 ignores its own `onError` option: it calls next() with a bare Error
-// that carries no status, so every rejected request used to surface as a 500 and the
-// client could not tell an expired session from a server fault. Map the status here.
+// Rejected requests must carry a 401, not a 500, or the client cannot tell an expired
+// session from a server fault. clerk-sdk-node@5 made that our problem by ignoring its
+// own `onError` option and calling next() with a bare, status-less Error. @clerk/express
+// does not have that bug, but the requireAuth below still sets the status explicitly
+// rather than inheriting whatever the library decides — the distinction is ours to keep.
 /* `authorizedParties` — the check Clerk's verifier does NOT do by default.
  *
  * A Clerk session token carries an `azp` claim naming the origin it was minted
@@ -1102,21 +1105,63 @@ const setCachedSearch = (q, d) => searchCache.set(q, d);
  * FRONTEND_URL is set, and locking every user out of a working app to enforce
  * a hardening measure is the wrong trade. The boot log says which state it is
  * in, out loud, rather than leaving it to be discovered. */
-const clerkRequireAuth = ClerkExpressRequireAuth(
-  originPolicy.exact.length ? { authorizedParties: originPolicy.exact } : {},
-);
+/* Mounted CONDITIONALLY, and that condition is the whole point.
+ *
+ * @clerk/express's clerkMiddleware throws "Publishable key is missing" when
+ * CLERK_PUBLISHABLE_KEY is unset. Mounted globally and unguarded, that turns one
+ * missing environment variable into a 500 on EVERY route — `/health` included,
+ * which needs no authentication and is what a platform polls to decide whether the
+ * service is alive. A misconfigured deploy would then look like a dead one.
+ *
+ * clerk-sdk-node failed narrower: only authenticated routes broke. Keeping that
+ * blast radius is deliberate, so the middleware goes on only when it can work, and
+ * requireAuth below answers for the misconfiguration instead. */
+if (process.env.CLERK_PUBLISHABLE_KEY) {
+  app.use(clerkMiddleware(
+    originPolicy.exact.length ? { authorizedParties: originPolicy.exact } : {},
+  ));
+}
 console.log(
   originPolicy.exact.length
     ? `[BOOT] Clerk authorizedParties enforced: ${originPolicy.exact.join(', ')}`
     : '[BOOT] Clerk authorizedParties NOT enforced — FRONTEND_URL/ALLOWED_ORIGINS are empty, so a token minted for another origin would be accepted.',
 );
-const requireAuth = (req, res, next) =>
-  clerkRequireAuth(req, res, (err) => {
-    if (!err) return next();
-    // A missing/!invalid key is our misconfiguration, not the caller's problem — keep it a 500.
-    if (/publishable key|secret key/i.test(err.message || '')) return next(err);
+
+/**
+ * `req.auth` is written here and nowhere else.
+ *
+ * @clerk/express v2 REMOVED direct property access to `req.auth` — reading
+ * `req.auth.userId` off the request is undefined behaviour there, and `getAuth(req)`
+ * is the only supported accessor. Roughly forty call sites in this file read
+ * `req.auth.userId`, so this middleware assigns the resolved object back onto the
+ * request once, and every one of those sites keeps working unchanged. Do not
+ * "clean this up" by deleting the assignment without also rewriting all of them.
+ *
+ * A thrown getAuth is our misconfiguration (missing or invalid secret key), not the
+ * caller's problem, so it stays a 500 — same split the previous implementation made.
+ */
+const requireAuth = (req, res, next) => {
+  // Without the publishable key clerkMiddleware was never mounted, so getAuth would
+  // report "signed out" for a perfectly valid token. Answering 401 there would be a
+  // lie that sends the user to re-authenticate forever. This is our fault: say 500.
+  if (!process.env.CLERK_PUBLISHABLE_KEY) {
+    return next(Object.assign(
+      new Error('Clerk is not configured: CLERK_PUBLISHABLE_KEY is unset'),
+      { status: 500 },
+    ));
+  }
+  let auth;
+  try {
+    auth = getAuth(req);
+  } catch (err) {
+    return next(err);
+  }
+  if (!auth || !auth.userId) {
     return next(Object.assign(new Error('Authentication required'), { status: 401 }));
-  });
+  }
+  req.auth = auth;
+  return next();
+};
 
 /**
  * The user row, off the critical path wherever possible.

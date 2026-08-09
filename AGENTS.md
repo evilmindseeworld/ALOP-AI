@@ -106,13 +106,29 @@ select, not after. Any future cache in front of a permission check needs the
 same treatment — the TTL is not the bound on staleness, the race is.
 
 **Clerk's verifier does not check `azp` unless you ask it to.**
-`ClerkExpressRequireAuth()` with no options validates the signature and expiry
+`clerkMiddleware()` with no options validates the signature and expiry
 and ignores the origin the token was minted for. `authorizedParties` is set
 from `originPolicy.exact` so it cannot drift from the CORS list. The
 consequence to remember before debugging a mystery 401: an origin allowed only
 by `ALLOWED_ORIGIN_SUFFIXES` passes CORS and fails auth, because `azp` is an
 exact string. Preview deploys that need to sign in must be named in
 `ALLOWED_ORIGINS`. The boot log prints which mode it is in.
+
+**`req.auth` is written by our own middleware, not by Clerk.** `@clerk/express`
+v2 removed direct property access to `req.auth`; `getAuth(req)` is the only
+supported accessor there. About forty call sites in `server.js` read
+`req.auth.userId`, so `requireAuth` assigns the resolved object back onto the
+request once and they all keep working. Deleting that assignment as redundant
+breaks every one of them, silently, with `undefined` rather than a throw.
+
+**`clerkMiddleware()` is mounted only when `CLERK_PUBLISHABLE_KEY` is set, on
+purpose.** It throws "Publishable key is missing" without one, and mounted
+globally that turns a single missing variable into a 500 on every route
+including `/health` — a misconfigured deploy then looks like a dead one to
+whatever polls it. The guard keeps the failure where `clerk-sdk-node` had it:
+authenticated routes 500, everything else keeps serving. Both states are
+covered by boot smoke tests; if you remove the guard, check `/health` without
+the key before believing it is fine.
 
 **The sidebar is cached in `localStorage`, and that is user data in shared
 storage.** `frontend/src/lib/chatCache.js` persists the chat list so a reload

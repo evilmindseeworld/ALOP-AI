@@ -240,12 +240,24 @@ themes.
       decoration, and the `.signin-orb` bleed — a gradient has no single
       background colour and no static check can pick one. DevTools' contrast
       readout on the sign-in headline, tagline and council rows.
-- [ ] **Focus visible on every interactive element.** `:focus-visible` rings
-      are declared; confirm none is clipped by an `overflow: hidden` ancestor,
-      which is how a ring silently disappears.
-- [ ] **Tab order matches reading order** through: header, sidebar, chat rows,
-      composer, panels. Especially the composer, where the buttons are
-      visually reordered on mobile.
+- [~] **Focus visible on every interactive element.** SIGN-IN PAGE DONE
+      2026-08-09, and it found a real one: Clerk's `cardBox` is
+      `overflow: hidden` and the email input is full-bleed to it, so the 3px
+      box-shadow ring was sliced flat on both sides. Fixed by
+      `cardBox: { ...RESET, overflow: "visible" }`, guarded by
+      `clerkFocusRing.test.js`. Note that axe passed the whole time — it checks
+      that a focus style EXISTS, not that it survives its ancestors' geometry.
+      STILL OPEN: the signed-in shell (header, sidebar, composer, panels),
+      which needs a session.
+- [x] **Tab order matches reading order** on the sign-in page. DONE 2026-08-09
+      by real keyboard walk: identifier → Continue → Sign up → Terms → Privacy,
+      tops 348/394/446/555/555, no positive `tabindex` anywhere. A first
+      automated pass reported three mismatches and all three were the harness's
+      fault — the selector had swept in `password-field` and `Show password`,
+      both `tabindex="-1"` and correctly outside the tab sequence. Check
+      `tabindex` before believing a tab-order failure.
+      STILL OPEN: the signed-in shell, especially the composer, where the
+      buttons are visually reordered on mobile.
 - [ ] **Keyboard-only run of the core flow.** STILL OPEN — behind sign-in,
       so it needs a real session. Send a message, rename a chat,
       delete a chat, open and close each panel. Anything reachable only by

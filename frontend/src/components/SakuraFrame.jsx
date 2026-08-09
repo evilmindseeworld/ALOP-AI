@@ -38,33 +38,113 @@ const Blossom = ({ x, y, r = 1, o = 1 }) => (
 );
 
 /**
- * A corner branch. Drawn once for the top-left and mirrored for the rest —
- * authoring four by hand is four chances for one to be subtly wrong.
+ * A blossom hanging off the wood, on its own stem.
  *
- * Mirrored with scale(-1), never rotated: a rotated branch grows the wrong way
- * and the blossoms end up hanging underneath it on two of the four corners.
+ * The pedicel is the whole difference between a branch with flowers on it and a
+ * branch with flowers NEAR it. Without the short stem connecting the two, the
+ * blossoms read as a separate scatter layer that happens to overlap a stick.
+ *
+ * @param x,y   where it leaves the wood
+ * @param drop  how far it hangs. Longer stems near the tips, where a real
+ *              branch is thinnest and the weight actually pulls.
+ * @param sway  sideways drift of the hang, so no two fall on the same plumb line
  */
-const Sprig = () => (
-  <g>
-    <path d="M2 4 C 28 10, 50 20, 70 36 C 82 45, 94 51, 108 54" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.55" />
-    <path d="M42 17 C 48 28, 54 34, 64 39" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.4" />
-    <path d="M72 38 C 76 30, 82 25, 90 22" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.4" />
-    <Blossom x={16} y={7} r={1} o={0.9} />
-    <Blossom x={40} y={16} r={0.75} o={0.6} />
-    <Blossom x={63} y={39} r={1.1} o={0.95} />
-    <Blossom x={90} y={21} r={0.85} o={0.7} />
-    <Blossom x={106} y={53} r={0.7} o={0.55} />
-    {/* Loose petals falling away from the branch. Every reference image has
-        these, and they are what stops a sprig reading as a diagram. */}
-    <Blossom x={28} y={38} r={0.5} o={0.4} />
-    <Blossom x={82} y={66} r={0.45} o={0.3} />
-    <Blossom x={54} y={62} r={0.38} o={0.25} />
+const Hanger = ({ x, y, drop, sway = 0, r = 1, o = 1 }) => (
+  <g opacity={o}>
+    <path
+      d={`M${x} ${y} q ${sway * 0.3} ${drop * 0.65}, ${sway} ${drop}`}
+      fill="none"
+      stroke="var(--bark)"
+      strokeWidth="0.8"
+      strokeLinecap="round"
+      opacity="0.75"
+    />
+    <Blossom x={x + sway} y={y + drop + r * 4} r={r} />
   </g>
 );
 
-const Corner = ({ className }) => (
-  <svg className={className} viewBox="0 0 120 76" aria-hidden="true" focusable="false" fill="currentColor">
-    <Sprig />
+/**
+ * THE BOUGH. One piece of wood, entering from a corner.
+ *
+ * WHAT THIS REPLACED, and why the replacement is smaller rather than larger:
+ * four identical flowering sprigs, one per corner, mirrored from a single
+ * drawing. Four corners of the same shape is a FRAME, and a frame is wallpaper —
+ * the eye reads it as border stock and stops looking. It also fought the one
+ * aesthetic the app is named after: symmetry is the opposite of what a sakura
+ * arrangement does. Asymmetry is the point of the reference, not a liberty
+ * taken with it.
+ *
+ * So: one bough, top-left, flush into the corner, and a much smaller echo at
+ * the bottom-right that balances the weight without answering it. Two elements
+ * where there were four, and the composition now has a direction.
+ *
+ * WOOD, NOT WIRE. The old branch was a 1.5px stroke of the same pink as the
+ * flowers, which is a line drawing of a branch. This is a filled path that is
+ * thick where it enters and tapers to nothing at the tips, in its own bark
+ * colour — so the blossoms are the only pink and are the brightest thing in the
+ * ornament, which is the correct hierarchy for a cherry branch.
+ *
+ * The blossoms HANG. They are attached by short stems that drop from the
+ * underside of the limbs, which is what they do on a real tree and what the
+ * old version, with flowers sitting on top of the line, did not.
+ */
+const Bough = () => (
+  <g>
+    {/* Main limb. Outline traced out along the top edge and back along the
+        bottom, the two converging at the tip — that convergence is the taper,
+        and it is why this cannot be a stroke.
+        NINE UNITS AT THE BASE, THREE AT THE TIP. The first attempt was sixteen
+        and five, which at the rendered 300px is a 26px slab: it read as a grey
+        bar with flowers near it, not as wood. A branch is mostly thin. */}
+    <path
+      d="M0 5 C 34 11, 70 25, 104 49 C 122 61, 143 71, 173 79 L 173 82
+         C 142 75, 119 66, 100 53 C 68 31, 33 18, 0 14 Z"
+      fill="var(--bark)"
+      opacity="0.62"
+    />
+    {/* Each fork STARTS INSIDE the limb, not against it. Beginning at the
+        outline leaves a hairline of background between the two shapes at some
+        zoom levels, and a fork that does not visibly join reads as a second
+        stick lying across the first. */}
+    <path
+      d="M46 17 C 64 12, 86 8, 108 7 L 108 10 C 87 12, 66 17, 50 22 Z"
+      fill="var(--bark)"
+      opacity="0.52"
+    />
+    {/* Dropping away. This one carries the heaviest blossoms, because weight is
+        what bends a branch down in the first place. */}
+    <path
+      d="M82 39 C 94 51, 105 66, 113 84 L 110 86 C 101 69, 90 55, 79 44 Z"
+      fill="var(--bark)"
+      opacity="0.52"
+    />
+
+    {/* Clustered where the forks leave the limb, which is where buds crowd on a
+        real tree, and thinning toward the tips.
+        THE DROPS ARE LONG ON PURPOSE. At a drop of 6 the blossom overlaps the
+        wood it hangs from and the stem is invisible, which is the whole
+        difference between a branch with flowers ON it and one with flowers
+        hanging OFF it. */}
+    <Hanger x={22} y={12} drop={16} sway={-3} r={0.9} o={0.95} />
+    <Hanger x={48} y={19} drop={22} sway={4} r={0.75} o={0.8} />
+    <Hanger x={86} y={42} drop={18} sway={-4} r={1} o={1} />
+    <Hanger x={104} y={9} drop={14} sway={3} r={0.65} o={0.65} />
+    <Hanger x={112} y={84} drop={13} sway={-3} r={0.8} o={0.75} />
+    <Hanger x={144} y={72} drop={20} sway={5} r={0.7} o={0.6} />
+    <Hanger x={172} y={81} drop={12} sway={-4} r={0.55} o={0.45} />
+
+    {/* Loose petals, already fallen and attached to nothing. Every reference
+        image has these, and they are what stops the whole thing reading as a
+        botanical diagram. */}
+    <Blossom x={64} y={72} r={0.4} o={0.26} />
+    <Blossom x={132} y={110} r={0.34} o={0.2} />
+    <Blossom x={98} y={100} r={0.28} o={0.16} />
+  </g>
+);
+
+const Limb = ({ className }) => (
+  <svg className={className} viewBox="0 0 180 122" aria-hidden="true" focusable="false" fill="currentColor">
+    <Bough />
   </svg>
 );
 
@@ -89,10 +169,11 @@ const Torii = () => (
 const SakuraFrame = memo(() => (
   <div className="sakura-frame" aria-hidden="true">
     <Torii />
-    <Corner className="sakura-corner sakura-corner-tl" />
-    <Corner className="sakura-corner sakura-corner-tr" />
-    <Corner className="sakura-corner sakura-corner-bl" />
-    <Corner className="sakura-corner sakura-corner-br" />
+    <Limb className="sakura-limb sakura-limb-tl" />
+    {/* The counterweight, not the mirror. Smaller and fainter on purpose: two
+        boughs of equal weight is the four-corner frame again with two of the
+        corners missing. */}
+    <Limb className="sakura-limb sakura-limb-br" />
   </div>
 ));
 

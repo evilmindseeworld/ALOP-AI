@@ -107,6 +107,14 @@
   --accent: #d3b184;
   --accent-dim: rgba(211, 177, 132, 0.12);
 
+  /* Bark, for the bough behind the empty state.
+   *
+   * Its own token rather than --accent, because it has one job and a taste
+   * decision behind it: the wood must sit BELOW the blossoms in contrast so
+   * the only bright thing in the ornament is the flowers. Reusing --accent
+   * would tie the branch to whatever a future accent becomes. */
+  --bark: #7a6555;
+
   --success: #6fd3a6;
   --warning: #e0b878;
   --danger: #f0808f;
@@ -403,6 +411,12 @@
 
   --accent: #6b5433;
   --accent-dim: rgba(107, 84, 51, 0.10);
+
+  /* Darker AND warmer than the dark theme's bark. Going darker alone was not
+     enough: at the ornament's combined alpha (0.38 on the element, 0.62 on the
+     fill) a low-saturation brown lands on a warm paper background as flat grey,
+     which is a pencil line, not wood. The chroma is what survives the alpha. */
+  --bark: #4d3220;
 
   --success: #1f7a52;
   --warning: #855017;

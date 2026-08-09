@@ -290,19 +290,25 @@
  * relative to the content, and the torii sits directly behind the tagline —
  * where it reads as a shape competing with the text rather than atmosphere.
  *
- * Corners only, and smaller. The sign-in card occupies the middle of this
+ * The bough only, and smaller. The sign-in card occupies the middle of this
  * screen; there is nothing for a centred ornament to be behind except the
  * thing the user came here to use. */
 .signin-root .sakura-torii { display: none; }
 
-.signin-root .sakura-corner {
-  width: clamp(90px, 11vw, 150px);
-  opacity: 0.26;
+.signin-root .sakura-limb {
+  width: clamp(140px, 18vw, 240px);
+  opacity: 0.3;
 }
 
-@media (max-width: 640px) {
-  .signin-root .sakura-corner { width: clamp(64px, 22vw, 100px); opacity: 0.2; }
+.signin-root .sakura-limb-br {
+  width: clamp(90px, 11vw, 150px);
+  opacity: 0.2;
 }
+
+/* No mobile rule here on purpose: decoration.css hides .sakura-limb entirely
+ * below 640px and is imported after this file, so anything written here would
+ * be dead. The sign-in page keeps its own SakuraBough and falling petals on a
+ * phone, which is the section below. */
 
 /* ===== THE BOUGH, AND WHAT FALLS FROM IT =====
  *

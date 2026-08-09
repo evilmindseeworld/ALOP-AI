@@ -199,38 +199,6 @@ production. See the trap below.
 
 ### Open, in the order I would take them
 
-0. **TURN OFF `force_organization_selection` IN THE CLERK DASHBOARD.** This
-   is the cause of the infinite loading screen after sign-in, and it is one
-   toggle. Clerk holds a session at status `"pending"` until the org task is
-   done; this app has no organization concept, so it never could be.
-
-   The trap, which cost days: Clerk's two hooks disagree about "signed in",
-   and its own shipped source is explicit —
-
-   ```
-   useAuth:  isSignedIn = session.status !== "pending" && !!session   FALSE
-   useUser:  isSignedIn = a user object exists, no session check      TRUE
-   ```
-
-   The gate used `useUser` and the app used `useAuth`, so the shell rendered
-   for a session that could never authorise a request. `isReady` stayed false,
-   the `loadChats` effect never fired, and `setIsInitialLoading(false)` lives
-   in that function's `finally` — so the skeleton stayed up forever. NOTHING
-   THREW, so Sentry had nothing and the console had nothing. If a loading
-   state ever hangs again, check which hook decided it.
-
-   Code side is done: the gate consults both hooks, `SessionPending` explains
-   a pending session, and a 60s watchdog replaces the skeleton with an error
-   rather than spinning. The toggle is still the cure.
-
-   RESOLVED AND NOT THE PROBLEM: the `/__clerk` 405. Playwright against
-   production shows clerk-js calling `clerk.alop-ai.com/v1/*` DIRECTLY and
-   getting 200s, and the shipped clerk-js contains no `/__clerk` URL at all
-   (its four `__clerk` hits are cookie names). That request came from a stale
-   cache or an extension, not from this app. `/__clerk` is excluded from the
-   SPA rewrite so it 404s honestly; do not try to proxy it with a rewrite,
-   Clerk requires a secret key and it is already in history as a revert.
-
 1. **Accessibility: the browser pass.** Everything checkable without a
    browser is now done and guarded — see the checklist below for what is
    left. Still the largest remaining item and the only one carrying legal
@@ -244,11 +212,7 @@ production. See the trap below.
    flights, hotels, scholar, finance; billed per call, 100/month free), and
    `PERPLEXITY_API_KEY` if it is still missing. `PERPLEXITY_MODEL` defaults to
    `sonar` and `PAGE_READ_LIMIT` to 3; neither needs setting.
-3. **Two `grant execute` statements at the end of `012_rls_recursion.sql` are
-   unapplied.** See the RLS entry below. No production impact, but the
-   migration is not finished until they run.
-
-4. **`@clerk/clerk-sdk-node` is deprecated and carries a high-severity
+3. **`@clerk/clerk-sdk-node` is deprecated and carries a high-severity
    advisory.** `npm audit` reports `js-cookie <=3.0.5` (GHSA-qjx8-664m-686j,
    cookie-attribute injection) reached through `@clerk/shared`. Traced before
    panicking: the only import is `@clerk/shared/dist/cookie.js`, browser-side
@@ -310,6 +274,45 @@ themes.
       our accessibility obligation regardless of who wrote it.
 
 ### Closed since the last handoff
+
+- **`012_rls_recursion.sql` is fully applied**, grants included. Verified
+  2026-08-09: both helpers are `prosecdef = true`, and all five policies match
+  the migration text.
+
+  **Do not verify a grant with `has_function_privilege` alone.** Postgres grants
+  EXECUTE to PUBLIC by default on every new function, so that check returns true
+  whether or not the `grant` statement ever ran — it would have said "applied"
+  here even if nothing had been. Read `pg_proc.proacl` instead: a NULL acl is
+  the default, and the grant is proven only by seeing the roles listed
+  explicitly with PUBLIC absent (`anon=X/postgres | authenticated=X/postgres`).
+
+- **The infinite loading screen after sign-in is fixed.**
+  `force_organization_selection` was turned off in the Clerk dashboard, which
+  was the cure; the code side had already landed. Keep the trap, because it
+  cost days and nothing threw: Clerk's two hooks disagree about "signed in",
+  and its own shipped source is explicit —
+
+  ```
+  useAuth:  isSignedIn = session.status !== "pending" && !!session   FALSE
+  useUser:  isSignedIn = a user object exists, no session check      TRUE
+  ```
+
+  The gate used `useUser` and the app used `useAuth`, so the shell rendered for
+  a session that could never authorise a request. `isReady` stayed false, the
+  `loadChats` effect never fired, and `setIsInitialLoading(false)` lives in
+  that function's `finally` — so the skeleton stayed up forever. Sentry had
+  nothing and the console had nothing. If a loading state ever hangs again,
+  check which hook decided it. The gate now consults both hooks,
+  `SessionPending` explains a pending session, and a 60s watchdog replaces the
+  skeleton with an error rather than spinning.
+
+  RESOLVED AND NOT THE PROBLEM: the `/__clerk` 405. Playwright against
+  production shows clerk-js calling `clerk.alop-ai.com/v1/*` DIRECTLY and
+  getting 200s, and the shipped clerk-js contains no `/__clerk` URL at all
+  (its four `__clerk` hits are cookie names). That request came from a stale
+  cache or an extension, not from this app. `/__clerk` is excluded from the
+  SPA rewrite so it 404s honestly; do not try to proxy it with a rewrite,
+  Clerk requires a secret key and it is already in history as a revert.
 
 - **A CSS mask resolves against the PADDING box, and that made a fade look like
   a bug twice.** The transcript's bottom edge had a 28px fade to dissolve the

@@ -110,6 +110,48 @@ describe("AdminPanel", () => {
   });
 });
 
+/* Waiting is not the same as failing, and it used to be rendered as if it were.
+ *
+ * The plan comparison is compiled into the component — only the two figures
+ * come from Stripe — so replacing the whole panel with "Loading plans" hid
+ * everything the app already knew in order to wait for a price. Someone opening
+ * Upgrade to find out what Pro includes should get that answer immediately.
+ */
+describe("UpgradePanel while the prices are still coming", () => {
+  const waiting = () =>
+    render(<UpgradePanel open onClose={noop} prices={null} billingBusy={false} onCheckout={noop} />);
+
+  it("shows the plan comparison rather than a loading message", () => {
+    waiting();
+    expect(screen.getByText(/All 7 models/)).toBeInTheDocument();
+    expect(screen.getByText("4 models in the council")).toBeInTheDocument();
+    expect(screen.queryByText(/Loading plans/)).not.toBeInTheDocument();
+  });
+
+  it("keeps the buttons in place but refuses to open a checkout", async () => {
+    // The one control here that must NOT be optimistic. A checkout button
+    // clickable before the app knows what it charges is a purchase at an
+    // unknown price.
+    const onCheckout = vi.fn();
+    render(<UpgradePanel open onClose={noop} prices={null} billingBusy={false} onCheckout={onCheckout} />);
+
+    const monthly = screen.getByText(/Monthly/).closest("button");
+    expect(monthly).toBeDisabled();
+    await userEvent.click(monthly);
+    expect(onCheckout).not.toHaveBeenCalled();
+  });
+
+  it("shows no price until there is one", () => {
+    waiting();
+    expect(screen.queryByText(/\$/)).not.toBeInTheDocument();
+  });
+
+  it("says so to a screen reader, which cannot see the placeholder", () => {
+    waiting();
+    expect(screen.getByRole("status")).toHaveTextContent("Loading prices");
+  });
+});
+
 describe("UpgradePanel without prices", () => {
   // The regression: App.jsx gated `open` on Boolean(prices), so a failed
   // prices request turned Upgrade into a button that did nothing at all — on

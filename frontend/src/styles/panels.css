@@ -152,6 +152,15 @@
   overflow-wrap: anywhere;
 }
 
+/* A fact row before its fact. The bar takes the height a single line of
+ * .fact-text occupies, so the three placeholder rows and the three real rows
+ * that replace them are the same size and the panel holds still. */
+.fact-text-pending {
+  display: block;
+  height: calc(var(--text-sm) * 1.5);
+  border-radius: var(--radius-sm);
+}
+
 .fact-forget {
   flex-shrink: 0;
   background: none;
@@ -411,6 +420,32 @@
   opacity: 0.55;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+/* The price, before it is known.
+ *
+ * Sized in `ch` against the label it replaces, so "Monthly [        ]" occupies
+ * roughly what "Monthly $9.00" will and the button does not resize under the
+ * pointer when Stripe answers. Inline-block because it sits inside the button's
+ * own line of text rather than being a row of its own. */
+.price-pending {
+  display: inline-block;
+  width: 4.5ch;
+  height: 0.85em;
+  vertical-align: baseline;
+  border-radius: var(--radius-sm);
+  /* Over a filled button the skeleton's surface tokens are invisible. This
+   * reads against the fill instead, and against the secondary button's
+   * surface. */
+  background: currentColor;
+  opacity: 0.35;
+  border: none;
+  animation: pricePulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pricePulse {
+  0%, 100% { opacity: 0.22; }
+  50% { opacity: 0.45; }
 }
 
 .plan-buy.is-secondary {

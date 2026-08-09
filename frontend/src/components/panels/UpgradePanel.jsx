@@ -21,6 +21,18 @@ import { formatPrice } from "../../lib/format";
  *
  * Showing a checkout that cannot complete is still worse than showing none,
  * so neither state renders the buttons.
+ *
+ * THE THIRD STATE, plain waiting, used to be handled the same way as those two
+ * and should never have been. It replaced the entire panel with the words
+ * "Loading plans" while the request was out — but the plan comparison is
+ * STATIC. Which models each tier gets is compiled into this file. The only
+ * thing the server contributes is two price strings, and the panel was hiding
+ * everything it already knew in order to wait for them.
+ *
+ * So waiting now renders the real panel with the two figures placeholdered.
+ * Nothing moves when they land, because the shape was right from the first
+ * frame, and a user who opened this to find out what Pro includes gets that
+ * answer immediately whatever Stripe is doing.
  */
 export default function UpgradePanel({
   open,
@@ -32,7 +44,9 @@ export default function UpgradePanel({
   billingBusy,
   onCheckout,
 }) {
-  if (open && !prices) {
+  // Only the two states where checkout genuinely cannot happen take over the
+  // panel. Plain waiting falls through to the real one below.
+  if (open && !prices && (pricesUnavailable || pricesError)) {
     return (
       <SidePanel open title="Upgrade to Pro" onClose={onClose}>
         <div className="plan-state" role="status">
@@ -44,7 +58,7 @@ export default function UpgradePanel({
                 account, and you have not been charged.
               </p>
             </>
-          ) : pricesError ? (
+          ) : (
             <>
               <p className="plan-state-title">Couldn&rsquo;t load the plans.</p>
               <p className="plan-state-body">
@@ -54,13 +68,13 @@ export default function UpgradePanel({
                 Try again
               </button>
             </>
-          ) : (
-            <p className="plan-state-body">Loading plans&hellip;</p>
           )}
         </div>
       </SidePanel>
     );
   }
+
+  const awaitingPrices = !prices;
 
   return (
     <SidePanel open={open} title="Upgrade to Pro" onClose={onClose}>
@@ -89,14 +103,43 @@ export default function UpgradePanel({
         </div>
       </div>
 
-      <div className="plan-buttons">
-        <button className="plan-buy" disabled={billingBusy} onClick={() => onCheckout("monthly")}>
-          {billingBusy ? "Opening checkout..." : `Monthly ${formatPrice(prices?.monthly)}`}
+      {/* Disabled while the price is unknown, not merely placeholdered: a
+          checkout button that can be clicked before the app knows what it
+          charges is the one control here that must not be optimistic. */}
+      <div className="plan-buttons" aria-busy={awaitingPrices}>
+        <button className="plan-buy" disabled={billingBusy || awaitingPrices} onClick={() => onCheckout("monthly")}>
+          {billingBusy ? (
+            "Opening checkout..."
+          ) : awaitingPrices ? (
+            <>
+              Monthly <span className="price-pending" />
+            </>
+          ) : (
+            `Monthly ${formatPrice(prices.monthly)}`
+          )}
         </button>
-        <button className="plan-buy is-secondary" disabled={billingBusy} onClick={() => onCheckout("yearly")}>
-          {billingBusy ? "Opening checkout..." : `Yearly ${formatPrice(prices?.yearly)}`}
+        <button
+          className="plan-buy is-secondary"
+          disabled={billingBusy || awaitingPrices}
+          onClick={() => onCheckout("yearly")}
+        >
+          {billingBusy ? (
+            "Opening checkout..."
+          ) : awaitingPrices ? (
+            <>
+              Yearly <span className="price-pending" />
+            </>
+          ) : (
+            `Yearly ${formatPrice(prices.yearly)}`
+          )}
         </button>
       </div>
+
+      {/* Announced, because the visual placeholder says nothing to a screen
+          reader and the buttons are disabled for a reason worth stating. */}
+      <span className="sr-only" role="status" aria-live="polite">
+        {awaitingPrices ? "Loading prices" : ""}
+      </span>
 
       <div className="plan-note">Secure checkout by Stripe. Cancel any time.</div>
     </SidePanel>

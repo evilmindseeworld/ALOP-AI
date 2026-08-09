@@ -70,7 +70,19 @@ export default function SettingsPanel({
           </div>
         )}
 
-        {!factsError && factsBusy && facts === null && <div className="setting-note">Loading...</div>}
+        {/* Three rows the shape of a remembered fact, rather than the word
+            "Loading". The list that replaces this is short and its rows are a
+            fixed height, so the panel does not resize when it arrives — which
+            is the whole reason to draw a placeholder instead of a message. */}
+        {!factsError && factsBusy && facts === null && (
+          <ul className="fact-list" role="status" aria-label="Loading what I remember">
+            {[80, 64, 72].map((width, i) => (
+              <li key={i} className="fact-row is-pending">
+                <span className="skeleton-block fact-text-pending" style={{ width: `${width}%` }} />
+              </li>
+            ))}
+          </ul>
+        )}
 
         {!factsError && facts !== null && facts.length === 0 && (
           <div className="setting-note">

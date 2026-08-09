@@ -306,30 +306,51 @@ themes.
   `SessionPending` explains a pending session, and a 60s watchdog replaces the
   skeleton with an error rather than spinning.
 
-  THE `/__clerk` FAILURE IS REAL, AND THIS FILE SAID IT WAS NOT. Measured
-  2026-08-09 in a clean headless Chromium — no extensions, no profile, no cache
-  — against production: clerk-js 6.26.0 requests `/__clerk/v1/environment` and
-  `/__clerk/v1/client` and gets 404 on all three, on every page load.
-  `window.Clerk.proxyUrl` reads `https://alop-ai-omega.vercel.app/__clerk`, so
-  the proxy is configured and nothing serves it.
+  THE `/__clerk` 404 IS REAL, IT IS CLERK-JS DOING IT TO ITSELF, AND IT ONLY
+  HAPPENS ON `*.vercel.app`. Nothing in this repo configures a proxy. clerk-js
+  6.26.0 synthesises one, in `get proxyUrl()`:
 
-  The previous entry concluded "a stale cache or an extension made that
-  request" from two observations that are both TRUE, which is why it was
-  convincing. Grepping the frontend source finds no `/__clerk` because
-  `proxyUrl` is injected at build time from a Vercel environment variable and
-  is not in the source. Direct calls to `clerk.alop-ai.com/v1/*` do return 200
-  because clerk-js FALLS BACK to the frontend API once the proxy fails. Sign-in
-  works, so nothing ever surfaced; the cost is three failed requests and their
-  latency on every load, paid by every user.
+  ```js
+  // e8 = [".vercel.app"]
+  if (!domain && instanceType === "production" &&
+      e8.some(s => window.location.hostname?.endsWith(s)))
+    return `${window.location.origin}/__clerk`;
+  ```
 
-  The lesson worth more than the bug: "I could not find it in the source" is
-  not evidence when the value can arrive from the environment at build time.
-  Ask the running page — `window.Clerk.proxyUrl` answered this in one call.
+  A production publishable key on a hostname ending `.vercel.app`, with no
+  `domain` option, makes clerk-js route every API call through
+  `${origin}/__clerk` — a path nothing serves, so `/v1/environment` and
+  `/v1/client` 404. It then falls back to `clerk.alop-ai.com` and sign-in
+  works, which is why this never surfaced.
 
-  Fix by unsetting the proxy variable in Vercel so clerk-js talks to
-  `clerk.alop-ai.com` directly. Do NOT add a rewrite for `/__clerk`: proxying
-  it needs the Clerk secret key at the edge, and that is already in this repo's
-  history as a revert.
+  Measured 2026-08-09, clean headless Chromium, both hosts:
+
+  | Host | `Clerk.proxyUrl` | `/v1/environment` |
+  |---|---|---|
+  | `alop-ai-omega.vercel.app` | `https://alop-ai-omega.vercel.app/__clerk` | 404, then fallback |
+  | `alop-ai.com` | `""` | 200, direct |
+
+  SO THERE IS NOTHING TO FIX FOR REAL USERS. `alop-ai.com` never takes this
+  path. The cost falls only on the `*.vercel.app` URL, which is preview and QA
+  traffic. Do NOT add a `/__clerk` rewrite to chase it: proxying needs the
+  Clerk secret key at the edge and is already in this repo's history as a
+  revert. If a preview URL ever needs a clean network log, the lever is the
+  `domain` prop on `ClerkProvider` — setting it skips the branch above — but
+  `domain` is satellite-domain machinery, so do not reach for it casually.
+
+  Two corrections this entry has now survived, both from confident wrong
+  reasoning about the same three requests:
+
+  - "A stale cache or an extension made that request." Wrong, but built on two
+    true facts: the source really contains no `/__clerk`, and direct calls
+    really do return 200 (that is the fallback).
+  - "`proxyUrl` is injected from a Vercel environment variable." Also wrong —
+    invented to explain the first fact. The only Vercel variables set are
+    `VITE_SENTRY_DSN`, `VITE_CLERK_PUBLISHABLE_KEY` and `VITE_API_BASE`.
+
+  The lesson both times: absence from the source is not evidence of absence,
+  and "it must come from config" is a guess wearing a mechanism's clothes. The
+  answer was in the library's own compiled source. Read the dependency.
 
 - **A CSS mask resolves against the PADDING box, and that made a fade look like
   a bug twice.** The transcript's bottom edge had a 28px fade to dissolve the

@@ -45938,9 +45938,13 @@
   ::before/animation-duration: 0.01ms
   ::before/animation-iteration-count: 1
   ::before/transition-duration: 0.01ms
-  animation-duration: 0.01ms
-  animation-iteration-count: 1
+  animation: reducedPulse 1.8s ease-in-out infinite
+  animation-delay: <animation: reducedPulse 1.8s ease-in-out infinite>
+  animation-duration: <animation: reducedPulse 1.8s ease-in-out infinite>
+  animation-iteration-count: <animation: reducedPulse 1.8s ease-in-out infinite>
   transition-duration: 0.01ms
+  - animation: toolPending 1.6s ease-in-out infinite
+  - animation-delay: <animation: toolPending 1.6s ease-in-out infinite>
   - animation-duration: <animation: toolPending 1.6s ease-in-out infinite>
   - animation-iteration-count: <animation: toolPending 1.6s ease-in-out infinite>
 
@@ -46650,8 +46654,10 @@
   transition-duration: 0.01ms
 
 [327] div.bubble.markdown-body.is-streaming
-  ::after/animation-duration: 0.01ms
-  ::after/animation-iteration-count: 1
+  ::after/animation: reducedPulse 1.8s ease-in-out infinite
+  ::after/animation-delay: <animation: reducedPulse 1.8s ease-in-out infinite>
+  ::after/animation-duration: <animation: reducedPulse 1.8s ease-in-out infinite>
+  ::after/animation-iteration-count: <animation: reducedPulse 1.8s ease-in-out infinite>
   ::after/transition-duration: 0.01ms
   ::before/animation-duration: 0.01ms
   ::before/animation-iteration-count: 1
@@ -46659,6 +46665,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
+  - ::after/animation: caretBlink 1s steps(2, start) infinite
+  - ::after/animation-delay: <animation: caretBlink 1s steps(2, start) infinite>
   - ::after/animation-duration: <animation: caretBlink 1s steps(2, start) infinite>
   - ::after/animation-iteration-count: <animation: caretBlink 1s steps(2, start) infinite>
 
@@ -46902,9 +46910,13 @@
   ::before/animation-duration: 0.01ms
   ::before/animation-iteration-count: 1
   ::before/transition-duration: 0.01ms
-  animation-duration: 0.01ms
-  animation-iteration-count: 1
+  animation: reducedPulse 1.8s ease-in-out infinite
+  animation-delay: <animation: reducedPulse 1.8s ease-in-out infinite>
+  animation-duration: <animation: reducedPulse 1.8s ease-in-out infinite>
+  animation-iteration-count: <animation: reducedPulse 1.8s ease-in-out infinite>
   transition-duration: 0.01ms
+  - animation: skeletonShimmer 1.6s linear infinite
+  - animation-delay: <animation: skeletonShimmer 1.6s linear infinite>
   - animation-duration: <animation: skeletonShimmer 1.6s linear infinite>
   - animation-iteration-count: <animation: skeletonShimmer 1.6s linear infinite>
 
@@ -50519,9 +50531,13 @@
   ::before/animation-duration: 0.01ms
   ::before/animation-iteration-count: 1
   ::before/transition-duration: 0.01ms
-  animation-duration: 0.01ms
-  animation-iteration-count: 1
+  animation: reducedPulse 1.8s ease-in-out infinite
+  animation-delay: <animation: reducedPulse 1.8s ease-in-out infinite>
+  animation-duration: <animation: reducedPulse 1.8s ease-in-out infinite>
+  animation-iteration-count: <animation: reducedPulse 1.8s ease-in-out infinite>
   transition-duration: 0.01ms
+  - animation: toolPending 1.6s ease-in-out infinite
+  - animation-delay: <animation: toolPending 1.6s ease-in-out infinite>
   - animation-duration: <animation: toolPending 1.6s ease-in-out infinite>
   - animation-iteration-count: <animation: toolPending 1.6s ease-in-out infinite>
 
@@ -51231,8 +51247,10 @@
   transition-duration: 0.01ms
 
 [727] div.bubble.markdown-body.is-streaming
-  ::after/animation-duration: 0.01ms
-  ::after/animation-iteration-count: 1
+  ::after/animation: reducedPulse 1.8s ease-in-out infinite
+  ::after/animation-delay: <animation: reducedPulse 1.8s ease-in-out infinite>
+  ::after/animation-duration: <animation: reducedPulse 1.8s ease-in-out infinite>
+  ::after/animation-iteration-count: <animation: reducedPulse 1.8s ease-in-out infinite>
   ::after/transition-duration: 0.01ms
   ::before/animation-duration: 0.01ms
   ::before/animation-iteration-count: 1
@@ -51240,6 +51258,8 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
+  - ::after/animation: caretBlink 1s steps(2, start) infinite
+  - ::after/animation-delay: <animation: caretBlink 1s steps(2, start) infinite>
   - ::after/animation-duration: <animation: caretBlink 1s steps(2, start) infinite>
   - ::after/animation-iteration-count: <animation: caretBlink 1s steps(2, start) infinite>
 
@@ -51483,9 +51503,13 @@
   ::before/animation-duration: 0.01ms
   ::before/animation-iteration-count: 1
   ::before/transition-duration: 0.01ms
-  animation-duration: 0.01ms
-  animation-iteration-count: 1
+  animation: reducedPulse 1.8s ease-in-out infinite
+  animation-delay: <animation: reducedPulse 1.8s ease-in-out infinite>
+  animation-duration: <animation: reducedPulse 1.8s ease-in-out infinite>
+  animation-iteration-count: <animation: reducedPulse 1.8s ease-in-out infinite>
   transition-duration: 0.01ms
+  - animation: skeletonShimmer 1.6s linear infinite
+  - animation-delay: <animation: skeletonShimmer 1.6s linear infinite>
   - animation-duration: <animation: skeletonShimmer 1.6s linear infinite>
   - animation-iteration-count: <animation: skeletonShimmer 1.6s linear infinite>
 
@@ -52255,9 +52279,13 @@
   ::before/animation-duration: 0.01ms
   ::before/animation-iteration-count: 1
   ::before/transition-duration: 0.01ms
-  animation-duration: 0.01ms
-  animation-iteration-count: 1
+  animation: reducedPulse 1.8s ease-in-out infinite
+  animation-delay: <animation: reducedPulse 1.8s ease-in-out infinite>
+  animation-duration: <animation: reducedPulse 1.8s ease-in-out infinite>
+  animation-iteration-count: <animation: reducedPulse 1.8s ease-in-out infinite>
   transition-duration: 0.01ms
+  - animation: skeletonShimmer 1.6s linear infinite
+  - animation-delay: <animation: skeletonShimmer 1.6s linear infinite>
   - animation-duration: <animation: skeletonShimmer 1.6s linear infinite>
   - animation-iteration-count: <animation: skeletonShimmer 1.6s linear infinite>
 
@@ -52927,6 +52955,7 @@ overlayUp: from { opacity: 0; transform: translateY(14px); } to { opacity: 1; tr
 panelIn: from { transform: translateX(24px); opacity: 0; } to { transform: translateX(0); opacity: 1; }
 petalFall: 0% { opacity: 0; transform: translate3d(0, 0, 0) rotate(0deg) scale(var(--petal-scale)); } 12% { opacity: 0.75; } 70% { opacity: 0.4; } 100% { opacity: 0; transform: translate3d(var(--petal-drift), var(--petal-fall), 0) rotate(var(--petal-spin)) scale(var(--petal-scale)); }
 pricePulse: 0%, 100% { opacity: 0.22; } 50% { opacity: 0.45; }
+reducedPulse: 0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
 scrollDownIn: from { opacity: 0; transform: translateX(-50%) translateY(6px); } to { opacity: 1; transform: translateX(-50%) translateY(0); }
 signinFadeIn: from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); }
 skeletonShimmer: 0% { background-position: 200% 0; } 100% { background-position: -200% 0; }

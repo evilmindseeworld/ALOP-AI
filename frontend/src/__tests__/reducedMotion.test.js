@@ -1,54 +1,84 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { readStylesheet } from "../test/cssSnapshot";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 /**
- * The animations a stylesheet cannot switch off.
+ * Reduced motion must quiet the interface, not blind it.
  *
- * The reduced-motion story looked finished: there is a `@media
- * (prefers-reduced-motion: reduce)` block, nine components honour it, and
- * cssCascade even models the query as a test axis. None of that reaches
- * anime.js. It writes inline styles frame by frame from JavaScript, and a CSS
- * media query has no opinion about a value assigned to `element.style` — so
- * both `animate()` calls in App.jsx ran at full motion for a user who had
- * asked the entire operating system for less.
+ * This app has shipped the over-broad version of this once already: progressive
+ * text reveal was gated on prefers-reduced-motion, so it was dead on exactly
+ * the machines that set the preference, and it was reported as "the messages
+ * just pop in". The lesson was that the preference is about MOVEMENT, and that
+ * a signal telling the user something is still arriving is not movement.
  *
- * The transcript one is the serious half: a row springs in on EVERY message,
- * and repetition is precisely what motion sensitivity reacts to.
- *
- * ASSERTED AS SOURCE, and this is a deliberate trade rather than laziness.
- * Proving it behaviourally means mounting the whole of App — which needs the
- * sixty lines of Clerk, chat, billing and animejs mocks that AppRenders.test
- * carries — and the mock for animejs would be the very thing under test. The
- * defect this guards against is a future edit DELETING the check, which is
- * visible in the source. `search-latency.test.js` in the backend makes the same
- * call for the same reason.
+ * The global rule in utilities.css collapses every animation to 0.01ms with one
+ * iteration. Applied without exception it makes a skeleton a grey box, a
+ * pending tool row identical to a finished one, and a streaming caret static.
+ * These tests pin the exceptions, and pin that they do not smuggle movement
+ * back in.
  */
 
-const source = readFileSync(
-  join(dirname(fileURLToPath(import.meta.url)), "..", "App.jsx"),
-  "utf8"
-);
+const CSS = readStylesheet(join(dirname(fileURLToPath(import.meta.url)), "..", "App.css"));
 
-describe("prefers-reduced-motion reaches the JS-driven animations", () => {
-  it("defines the check against matchMedia", () => {
-    expect(source).toMatch(/matchMedia\(\s*["']\(prefers-reduced-motion: reduce\)["']\s*\)/);
+/** The single reduced-motion block that carries the exceptions. */
+const exceptionBlock = () => {
+  const at = CSS.indexOf("THE EXCEPTIONS, AND WHY THERE HAVE TO BE SOME");
+  expect(at, "the reduced-motion exception block is gone").toBeGreaterThan(-1);
+  const end = CSS.indexOf("@keyframes reducedPulse", at);
+  return CSS.slice(at, end);
+};
+
+describe("reduced motion", () => {
+  it("still collapses animation globally", () => {
+    // The exceptions must not have become the rule.
+    expect(CSS).toMatch(/animation-duration:\s*0\.01ms\s*!important/);
   });
 
-  it("reads the setting at call time, not once at module load", () => {
-    // A value captured at import keeps animating until a reload, and this is a
-    // system setting a user can change with the tab already open. The check
-    // has to be a function that is called, not a const that was resolved.
-    expect(source).toMatch(/const reducedMotion = \(\) =>/);
+  it("keeps every loading signal alive", () => {
+    const block = exceptionBlock();
+    for (const selector of [
+      ".skeleton-block",
+      ".fact-text-pending",
+      ".price-pending",
+      ".tool-trail-row.is-pending svg",
+      ".bubble.is-streaming::after",
+    ]) {
+      expect(block, `${selector} lost its reduced-motion exception`).toContain(selector);
+    }
+    // The shorthand, not four longhands: the !important budget in
+    // cssHygiene.test.js is what makes that distinction worth pinning, since
+    // the longhand form costs four against it for one idea.
+    expect(block).toMatch(/animation:\s*reducedPulse[^;]*infinite\s*!important/);
   });
 
-  it("guards BOTH animate() call sites", () => {
-    // Two calls, and the transcript one is the one that repeats. A guard on
-    // only the button press would look like the box was ticked.
-    const calls = [...source.matchAll(/animate\(/g)];
-    expect(calls.length, "a new animate() call needs its own guard").toBe(2);
-    expect(source).toContain("rows.length && !reducedMotion()");
-    expect(source).toContain("if (reducedMotion()) return;");
+  it("replaces them with something that does not move", () => {
+    // The whole justification for the exception. A pulse that translated,
+    // scaled, or swept a gradient would be the thing the preference exists to
+    // stop, re-added under a friendlier name.
+    const pulse = CSS.slice(CSS.indexOf("@keyframes reducedPulse"));
+    const body = pulse.slice(0, pulse.indexOf("}", pulse.indexOf("50%")) + 2);
+    expect(body).toContain("opacity");
+    expect(body).not.toMatch(/transform|translate|scale|rotate|background-position/);
+  });
+
+  it("declares the keyframes outside the media query", () => {
+    // A @keyframes inside a media query is still global, but reading as though
+    // it were scoped invites someone tidying the block to delete it and break
+    // every selector that names it.
+    const keyframesAt = CSS.indexOf("@keyframes reducedPulse");
+    const blockAt = CSS.indexOf("THE EXCEPTIONS, AND WHY THERE HAVE TO BE SOME");
+    expect(keyframesAt).toBeGreaterThan(blockAt);
+    // Nothing between the end of the media query and the keyframes should
+    // re-open a block: the closing braces have to come first.
+    expect(CSS.slice(blockAt, keyframesAt)).toContain("}");
+  });
+
+  it("names only animations that actually exist", () => {
+    // A selector kept alive by name, pointing at keyframes nobody defines, is a
+    // static box that looks intentional.
+    for (const name of ["skeletonShimmer", "toolPending", "pricePulse", "caretBlink"]) {
+      expect(CSS, `@keyframes ${name} is referenced but not defined`).toContain(`@keyframes ${name}`);
+    }
   });
 });

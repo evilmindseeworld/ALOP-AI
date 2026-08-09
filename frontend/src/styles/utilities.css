@@ -182,4 +182,53 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
+
+  /* THE EXCEPTIONS, AND WHY THERE HAVE TO BE SOME.
+   *
+   * The blanket rule above is right about movement and wrong about these five,
+   * because they are not decoration — they are the only thing on screen saying
+   * "this has not arrived yet". Stopping them does not calm the interface down,
+   * it removes information: a skeleton that never shimmers is a grey box, a
+   * pending tool row becomes indistinguishable from a finished one, and the
+   * streaming caret stops telling anyone that an answer is still being written.
+   *
+   * This app has already shipped that mistake once, in the other direction:
+   * progressive text reveal was gated on prefers-reduced-motion and so was dead
+   * on exactly the machines that set it, which is how "the messages just pop
+   * in" was reported. See lib/streamReveal.js. The rule learned there is that
+   * reduced motion is about MOVEMENT — translation, scale, parallax, a sweeping
+   * gradient — because that is what provokes vestibular symptoms. Content
+   * arriving, and the sign that it has not, are neither.
+   *
+   * So they are reduced rather than removed. `reducedPulse` changes opacity and
+   * nothing else: no transform, no background-position sweep, nothing that
+   * moves across the screen. It is still alive, and it is still still.
+   *
+   * !important is unavoidable: an !important declaration can only be beaten by
+   * another one, and the blanket rule needs its own because `*` has zero
+   * specificity and would otherwise lose to every class-based animation in the
+   * app — which is the entire set it exists to stop.
+   *
+   * ONE SHORTHAND RATHER THAN FOUR LONGHANDS, deliberately. The longhand form
+   * spends four !important declarations against a budget that exists to stop
+   * this file's old append-and-!important habit, for one idea. The shorthand
+   * says the same thing once. Specificity then settles it in this rule's
+   * favour without any further help: every selector here carries at least one
+   * class against the universal selector above. */
+  .skeleton-block,
+  .fact-text-pending,
+  .price-pending,
+  .tool-trail-row.is-pending svg,
+  .bubble.is-streaming::after {
+    animation: reducedPulse 1.8s ease-in-out infinite !important;
+  }
+}
+
+/* Deliberately declared OUTSIDE the media query. A @keyframes inside one is
+ * still globally scoped, but putting it there reads as though it only exists
+ * under reduced motion, and the next person to tidy the block would take it
+ * with them and silently break every selector above. */
+@keyframes reducedPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }

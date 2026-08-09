@@ -27,10 +27,24 @@ const DECLARATIONS = CSS.replace(/\/\*[\s\S]*?\*\//g, "");
 // that improves it, never raised. They were committed at 193/5 against an older
 // revision of App.css and were already failing at 195/7 when this work started.
 //
-// The floor for IMPORTANT_BUDGET is 3, not 0. The prefers-reduced-motion block
-// keeps its !important because overriding an author's animation for a user with
-// a vestibular disorder is the one thing the keyword is actually for.
-const IMPORTANT_BUDGET = 3;
+// The floor for IMPORTANT_BUDGET is 4, not 0, and every one of the four is in
+// the prefers-reduced-motion block — overriding an author's animation for a user
+// with a vestibular disorder is the one thing the keyword is actually for.
+//
+// RAISED FROM 3 TO 4, which a ratchet is not supposed to allow, so the reason is
+// here rather than in a commit message. The blanket rule's three are unchanged.
+// The fourth is the exception list that keeps the loading signals alive under
+// reduced motion: skeletons, the pending tool row, the streaming caret. Without
+// it the preference does not calm the interface, it removes the only thing on
+// screen saying content has not arrived yet, which this app has already shipped
+// once in the other direction (see lib/streamReveal.js).
+//
+// An !important can only be overridden by another !important, so there was no
+// version of that fix costing zero. It costs ONE because the four longhands it
+// started as were folded into a single shorthand specifically to keep this
+// number down. Anything above 4 is the old append-and-!important habit
+// returning, and should be refused.
+const IMPORTANT_BUDGET = 4;
 // Restyling Clerk's shipped components. Was 52, and is now 0 — see the test,
 // which no longer measures a budget because there is nothing left to measure.
 const CLERK_IMPORTANT_BUDGET = 0;

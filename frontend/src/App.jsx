@@ -48,6 +48,7 @@ import { useUserFacts } from "./hooks/useUserFacts";
 import { useCamera } from "./hooks/useCamera";
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition";
 import { speak } from "./lib/speak";
+import { clearChats } from "./lib/chatCache";
 
 import { animate, spring } from "animejs";
 
@@ -93,7 +94,7 @@ const AuthenticatedApp = () => {
 
   const chatRef = useRef(null);
 
-  const chat = useChats({ apiCall, getToken, isReady, setToast });
+  const chat = useChats({ apiCall, getToken, isReady, setToast, userId: user?.id });
   const billing = useBilling({ apiCall, isReady, setToast });
   const userFacts = useUserFacts({ apiCall, setToast });
 
@@ -758,6 +759,23 @@ const AuthenticatedAppWrapper = () => {
   const { isLoaded: userLoaded, isSignedIn: hasUser } = useUser();
   const { isLoaded: authLoaded, isSignedIn, signOut } = useAuth();
   const { session } = useSession();
+
+  /**
+   * Signing out has to actually remove the cached sidebar, not merely stop
+   * reading it.
+   *
+   * Hung off "there is no user" rather than off a sign-out button, because most
+   * sign-outs do not go through a button this app owns — Clerk's own UserButton
+   * menu is the usual route and there is nothing to wrap. Whatever path was
+   * taken, the app arrives here with no user, and that is the moment the
+   * browser should stop holding anybody's conversation titles.
+   *
+   * Above the early returns because hooks cannot be conditional; the guard is
+   * inside instead.
+   */
+  useEffect(() => {
+    if (userLoaded && !hasUser) clearChats();
+  }, [userLoaded, hasUser]);
 
   if (!userLoaded || !authLoaded) return <InitialLoader />;
   if (!hasUser) return <SignInPage />;

@@ -2,6 +2,7 @@ import { useState, useRef, useCallback, useMemo, useEffect } from "react";
 import { API_BASE, clientTimezone, untilAborted } from "../lib/api";
 import { uid, generateChatTitle, parseImagePrompt, buildImageUrl } from "../lib/format";
 import { createReveal } from "../lib/streamReveal";
+import { readChats, writeChats } from "../lib/chatCache";
 
 const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
@@ -16,7 +17,7 @@ const HISTORY_CHARS = 4000;
  * is where three separate bugs lived. Each has a note at the point that fixes
  * it — read those before changing the abort path in particular.
  */
-export function useChats({ apiCall, getToken, isReady, setToast }) {
+export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [status, setStatus] = useState("idle");
@@ -147,7 +148,12 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
             ? { ...chat, messages: previous.messages, updated_at: previous.updated_at || chat.updated_at }
             : chat;
         });
-        const localOnly = current.filter((chat) => !listedIds.has(chat.id));
+        /* A row the server did not list is either a chat this tab just made, or
+         * one restored from localStorage that has since been deleted — possibly
+         * on another device. Only the first deserves to survive, which is what
+         * `fromCache` distinguishes. Without that test, deleting a conversation
+         * anywhere else brings it back on the next reload here, forever. */
+        const localOnly = current.filter((chat) => !listedIds.has(chat.id) && !chat.fromCache);
         return [...loaded, ...localOnly];
       });
     } catch (e) {
@@ -157,11 +163,66 @@ export function useChats({ apiCall, getToken, isReady, setToast }) {
     } finally {
       setIsInitialLoading(false);
     }
-  }, [apiCall, setToast]);
+  }, [apiCall, setToast, userId]);
+
+  /**
+   * Paint the last known sidebar before the request that replaces it.
+   *
+   * Runs before loadChats rather than instead of it: this is
+   * stale-while-revalidate, not a cache the app trusts. The list request still
+   * goes out on every mount and its answer wins.
+   *
+   * `isInitialLoading` goes false here on a hit, which is the whole point —
+   * that flag is what puts the full app skeleton on screen, and there is no
+   * reason to show a placeholder for a list already on screen.
+   *
+   * Guarded on chats being empty so a revalidation that has already landed is
+   * never overwritten by an older cached copy.
+   */
+  useEffect(() => {
+    if (!isReady || !userId) return;
+    if (chatsRef.current.length > 0) return;
+    const cached = readChats(userId);
+    if (!cached) return;
+    setChats(cached);
+    setIsInitialLoading(false);
+  }, [isReady, userId]);
 
   useEffect(() => {
     if (isReady) loadChats();
   }, [isReady, loadChats]);
+
+  /**
+   * Keep the cache current, from ONE place rather than from every mutation.
+   *
+   * Rename, pin, favourite, delete and create all change the sidebar, and
+   * writing from each of them is five call sites and five chances for the sixth
+   * to be forgotten. Watching the state they all end up in cannot be forgotten.
+   *
+   * KEYED ON A SIGNATURE, NOT ON `chats`, and that is not a micro-optimisation.
+   * `chats` gets a new identity on every painted frame of a streaming answer,
+   * roughly sixty times a second, and an effect on it would serialise and write
+   * to localStorage at that rate for a payload that has not changed. The
+   * signature covers only the fields the cache actually stores, so it stays
+   * still while a message streams.
+   */
+  const chatsSignature = useMemo(
+    () => chats.map((c) => `${c.id} ${c.title} ${c.pinned} ${c.favorite}`).join(""),
+    [chats]
+  );
+
+  useEffect(() => {
+    if (!isReady || !userId) return;
+    // Not while the first list request is still out. Writing here would persist
+    // the hydrated copy back over itself, and on a failed load it would persist
+    // an empty list over a good one.
+    if (isInitialLoading || chatsError) return;
+    writeChats(userId, chatsRef.current);
+    // chatsRef is read rather than `chats` so this depends on the signature
+    // alone; adding `chats` would restore the per-frame writes the signature
+    // exists to prevent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatsSignature, isReady, userId, isInitialLoading, chatsError]);
 
   /**
    * Messages arrive per conversation, not with the list.

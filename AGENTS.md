@@ -114,6 +114,26 @@ by `ALLOWED_ORIGIN_SUFFIXES` passes CORS and fails auth, because `azp` is an
 exact string. Preview deploys that need to sign in must be named in
 `ALLOWED_ORIGINS`. The boot log prints which mode it is in.
 
+**The sidebar is cached in `localStorage`, and that is user data in shared
+storage.** `frontend/src/lib/chatCache.js` persists the chat list so a reload
+paints instantly instead of showing the app skeleton. Four rules keep it from
+becoming a leak, all of them enforced in `chatCache.test.js`: messages are never
+written (the stored fields are an *allowlist*, not a delete-list, so a new
+column on the server cannot start being persisted by accident); entries are
+keyed by Clerk user id and read back only for the same id; the cache is cleared
+whenever the app renders with no user, which is the only hook that catches a
+sign-out through Clerk's own `UserButton`; and anything older than seven days is
+ignored. If you add a field to the sidebar, add it to `pick` deliberately and
+ask whether it should be on disk at all.
+
+Two consequences worth knowing before debugging it. Restored rows carry
+`fromCache: true`, and `loadChats` uses that to tell a chat deleted on another
+device (drop it) from one this tab just created that the list response predates
+(keep it) — without the flag, deleted conversations resurrect on every reload.
+And the write is driven by a *signature* of the cached fields, not by `chats`
+itself: `chats` gets a new identity on every painted frame of a streaming
+answer, so an effect on it would write to `localStorage` sixty times a second.
+
 **`@clerk/clerk-sdk-node` is deprecated at its final version, 5.1.6.** It pulls
 `@clerk/shared@2.22.1`, which pulls `js-cookie@3.0.5`, which has an unpatched
 prototype-hijack advisory. No `npm audit fix` clears it — the only non-breaking

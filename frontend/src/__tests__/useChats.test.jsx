@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { useChats } from "../hooks/useChats";
+import { writeChats, readChats } from "../lib/chatCache";
 
 /**
  * The council streaming loop is the one genuinely intricate piece of the app,
@@ -44,7 +45,7 @@ const deferred = () => {
   return { promise, resolve, reject };
 };
 
-const setup = ({ fetchImpl, apiCallImpl, chatsResponse = [] } = {}) => {
+const setup = ({ fetchImpl, apiCallImpl, chatsResponse = [], userId = "user_1" } = {}) => {
   const setToast = vi.fn();
   const apiCall =
     apiCallImpl ||
@@ -58,7 +59,9 @@ const setup = ({ fetchImpl, apiCallImpl, chatsResponse = [] } = {}) => {
 
   global.fetch = fetchImpl || vi.fn();
 
-  const hook = renderHook(() => useChats({ apiCall, getToken: async () => "token", isReady: true, setToast }));
+  const hook = renderHook(() =>
+    useChats({ apiCall, getToken: async () => "token", isReady: true, setToast, userId })
+  );
   return { ...hook, apiCall, setToast };
 };
 
@@ -544,6 +547,112 @@ describe("deleting a chat", () => {
 
     expect(result.current.chats.map((c) => c.id)).toEqual(["doomed"]);
     expect(setToast).toHaveBeenCalledWith("Couldn't delete that chat.");
+  });
+});
+
+/* The cached sidebar, at the hook level.
+ *
+ * lib/chatCache is tested on its own. What is left here is the merge, and it
+ * has one trap worth a test of its own: a cached row the server does not list
+ * has been DELETED, while an uncached local row is one this tab just created.
+ * Treating them alike either resurrects deleted conversations on every reload
+ * or throws away a chat the moment it is made.
+ */
+describe("the cached sidebar", () => {
+  const CACHED = [{ id: "old", title: "From last visit", pinned: false, favorite: false }];
+
+  beforeEach(() => localStorage.clear());
+
+  it("paints the cached list before the request lands, and skips the skeleton", async () => {
+    writeChats("user_1", CACHED);
+    const chats = deferred();
+    const apiCallImpl = vi.fn(async (path, options = {}) => {
+      if (path === "/api/chats" && !options.method) return chats.promise;
+      return { ok: true, json: async () => ({}) };
+    });
+    const { result } = setup({ apiCallImpl, userId: "user_1" });
+
+    await waitFor(() => expect(result.current.chats).toHaveLength(1));
+    // The list request has not resolved. There is already a sidebar.
+    expect(result.current.chats[0].title).toBe("From last visit");
+    expect(result.current.isInitialLoading, "a list already on screen needs no skeleton").toBe(false);
+
+    await act(async () => {
+      chats.resolve({ ok: true, json: async () => [{ id: "old", title: "Renamed on another device" }] });
+      await chats.promise;
+    });
+    expect(result.current.chats[0].title).toBe("Renamed on another device");
+  });
+
+  it("drops a cached chat the server no longer lists", async () => {
+    // Deleted on another device. Without the fromCache test it comes back on
+    // every reload, forever.
+    writeChats("user_1", CACHED);
+    const apiCallImpl = vi.fn(async (path, options = {}) => {
+      if (path === "/api/chats" && !options.method) return { ok: true, json: async () => [] };
+      return { ok: true, json: async () => ({}) };
+    });
+    const { result } = setup({ apiCallImpl, userId: "user_1" });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+    await waitFor(() => expect(result.current.chats).toHaveLength(0));
+  });
+
+  it("keeps a chat this tab made that the list response predates", async () => {
+    // The other half of the same branch: a POST that landed after the list
+    // request went out is NOT a deletion.
+    const apiCallImpl = vi.fn(async (path, options = {}) => {
+      if (path === "/api/chats" && options.method === "POST") {
+        return { ok: true, json: async () => ({ id: "fresh", title: "New Chat", messages: [] }) };
+      }
+      if (path === "/api/chats" && !options.method) return { ok: true, json: async () => [] };
+      return { ok: true, json: async () => ({}) };
+    });
+    const { result } = setup({ apiCallImpl, userId: "user_1" });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.createChat();
+    });
+    expect(result.current.chats.map((c) => c.id)).toContain("fresh");
+  });
+
+  it("does not hydrate from another user's cache", async () => {
+    writeChats("user_1", CACHED);
+    const chats = deferred();
+    const apiCallImpl = vi.fn(async (path, options = {}) => {
+      if (path === "/api/chats" && !options.method) return chats.promise;
+      return { ok: true, json: async () => ({}) };
+    });
+    const { result } = setup({ apiCallImpl, userId: "user_2" });
+    // Give the hydration effect every chance to run before asserting it did not.
+    await act(async () => {});
+    expect(result.current.chats).toHaveLength(0);
+    chats.resolve({ ok: true, json: async () => [] });
+  });
+
+  it("writes the list back so the next visit has one", async () => {
+    const apiCallImpl = vi.fn(async (path, options = {}) => {
+      if (path === "/api/chats" && !options.method) {
+        return { ok: true, json: async () => [{ id: "x", title: "Saved" }] };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    const { result } = setup({ apiCallImpl, userId: "user_1" });
+    await waitFor(() => expect(result.current.chats).toHaveLength(1));
+    await waitFor(() => expect(readChats("user_1")?.[0]?.title).toBe("Saved"));
+  });
+
+  it("does not persist an empty list over a good one when the load fails", async () => {
+    // A failed request must not look like "this user has no chats".
+    writeChats("user_1", CACHED);
+    const apiCallImpl = vi.fn(async (path, options = {}) => {
+      if (path === "/api/chats" && !options.method) return { ok: false, status: 500 };
+      return { ok: true, json: async () => ({}) };
+    });
+    const { result } = setup({ apiCallImpl, userId: "user_1" });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+    await act(async () => {});
+    expect(readChats("user_1")).toHaveLength(1);
   });
 });
 

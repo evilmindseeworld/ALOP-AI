@@ -10,6 +10,7 @@ import MagneticButton from "./components/ui/MagneticButton";
 import { Badge } from "./components/ui/badge";
 import CommandPalette from "./components/CommandPalette";
 import Icon from "./components/Icon";
+import Earring from "./components/Earring";
 import InputBar from "./components/InputBar";
 import ChatSidebar from "./components/ChatSidebar";
 import CameraOverlay from "./components/CameraOverlay";
@@ -590,6 +591,12 @@ const AuthenticatedApp = () => {
           />
 
           <div className="chat-main">
+            {/* Inside the transcript panel, not the window: fixed positioning
+                hung these over the sidebar and the header, which is the app's
+                own chrome. They live in the margin the centred column makes. */}
+            <Earring side="left" active={status !== "idle"} />
+            <Earring side="right" active={status !== "idle"} />
+
             <AdminPanel
               open={showAdmin && isAdmin}
               onClose={() => setShowAdmin(false)}

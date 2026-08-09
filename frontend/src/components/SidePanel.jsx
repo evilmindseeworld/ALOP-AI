@@ -13,7 +13,7 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
  * and is positioned, so it creates a stacking context. Everything inside it is
  * composited within that context, which means the panel's --z-panel (70) was
  * effectively "3.70" in the root context — below the earring ornament at
- * --z-ornament (4). The decoration visibly overlapped the settings menu.
+ * --z-earring (4). The earrings visibly overlapped the settings menu.
  *
  * Comparing 70 > 4 and concluding the panel wins is exactly the mistake that
  * kept that bug alive: z-index values in different stacking contexts are not

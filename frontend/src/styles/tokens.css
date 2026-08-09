@@ -107,27 +107,6 @@
   --accent: #d3b184;
   --accent-dim: rgba(211, 177, 132, 0.12);
 
-  /* THE SKY, and both bodies are declared in both themes.
-   *
-   * Only one is ever visible, but a token that exists in one theme and not the
-   * other is a token that renders as `unset` the moment somebody reuses it, and
-   * the failure is invisible in the theme they were working in.
-   *
-   * The moon is not white. A pure-white crescent on a near-black surface is the
-   * brightest thing in the app by a wide margin, brighter than the primary
-   * button, and the eye goes to it before the headline. Warm bone at 78%
-   * lightness reads as moonlight and loses that fight on purpose. */
-  --moon-lit: #e8e0d4;
-  --moon-dim: #9a9185;
-  --moon-halo: rgba(232, 224, 212, 0.09);
-  --star: #d8d2c6;
-
-  /* Unused at night, declared anyway. See above. */
-  --sun-core: #ffd9a8;
-  --sun-edge: #f5b673;
-  --sun-rim: #e08c4a;
-  --sun-halo: rgba(240, 176, 106, 0.16);
-
   --success: #6fd3a6;
   --warning: #e0b878;
   --danger: #f0808f;
@@ -278,7 +257,7 @@
    * IMPORTANT — stacking contexts. `.chat-main` sits at --z-chat and is
    * positioned, so it creates a stacking context. Everything inside it
    * (including .code-copy-btn at --z-in-chat-control, which looks alarmingly
-   * high) is trapped below --z-ornament no matter how large its number is.
+   * high) is trapped below --z-earring no matter how large its number is.
    * That containment is why a copy button at 80 does not cover a panel at 70.
    */
   --z-behind: 0;        /* .app-root::after — background wash            */
@@ -326,7 +305,7 @@
   --z-signin: 300;
   --z-chat: 3;          /* .chat-main — creates a stacking context       */
   --z-in-chat-control: 80; /* .code-copy-btn — scoped INSIDE --z-chat    */
-  --z-ornament: 4;      /* decoration: above the chat, below all menus    */
+  --z-earring: 4;       /* decoration: above the chat, below all menus   */
   --z-sidebar: 10;      /* .sidebar (desktop)                            */
   --z-sidebar-mobile: 50; /* .sidebar.mobile — overlays content          */
   --z-panel-overlay: 60;  /* .panel-overlay — click-away scrim           */
@@ -360,12 +339,6 @@
   --dur-slow: 320ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  /* The ornament's own curve: harder out than --ease-out, so the strokes are
-   * already most of the way across before the eye settles on them and the
-   * arrival reads as a brush laid down rather than a shape sliding in. Only the
-   * council ink uses it; a UI control on this curve would overshoot its
-   * meaning. */
-  --ease-ink: cubic-bezier(0.23, 1, 0.32, 1);
 
   /* Two ambient blooms, pink top-left and emerald bottom-right, at the opacity
    * where you notice the room is lit but not where the light is coming from. */
@@ -430,20 +403,6 @@
 
   --accent: #6b5433;
   --accent-dim: rgba(107, 84, 51, 0.10);
-
-  /* Bamboo Day. The sun is warm but never saturated: a fully saturated orange
-     disc on warm paper is a traffic cone, and this sits behind a headline. */
-  --sun-core: #ffd08a;
-  --sun-edge: #f0a44e;
-  --sun-rim: #d97b2e;
-  --sun-halo: rgba(217, 123, 46, 0.14);
-
-  /* Unused by day, declared anyway, and dimmer than the night values so a
-     mistaken render is quiet rather than a white hole in the paper. */
-  --moon-lit: #cfc4b2;
-  --moon-dim: #a5998a;
-  --moon-halo: rgba(120, 96, 64, 0.07);
-  --star: #b8ab98;
 
   --success: #1f7a52;
   --warning: #855017;

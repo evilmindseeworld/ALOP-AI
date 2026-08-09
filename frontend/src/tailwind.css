@@ -113,7 +113,7 @@
    * disagree with App.css. zIndexOrder.test.js governs both.
    */
   --z-index-chat: var(--z-chat);
-  --z-index-ornament: var(--z-ornament);
+  --z-index-earring: var(--z-earring);
   --z-index-sidebar: var(--z-sidebar);
   --z-index-panel-overlay: var(--z-panel-overlay);
   --z-index-panel: var(--z-panel);

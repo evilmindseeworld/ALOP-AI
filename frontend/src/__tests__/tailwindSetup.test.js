@@ -71,7 +71,7 @@ describe("the token bridge", () => {
   it("bridges the stacking scale so Tailwind cannot disagree with App.css", () => {
     // z-index utilities resolve to the same variables zIndexOrder.test.js guards.
     expect(TAILWIND_CSS).toMatch(/--z-index-panel:\s*var\(--z-panel\)/);
-    expect(TAILWIND_CSS).toMatch(/--z-index-ornament:\s*var\(--z-ornament\)/);
+    expect(TAILWIND_CSS).toMatch(/--z-index-earring:\s*var\(--z-earring\)/);
   });
 
   it("only bridges tokens that App.css actually defines", () => {

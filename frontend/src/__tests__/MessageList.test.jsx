@@ -25,16 +25,7 @@ const renderList = (props = {}) =>
 describe("MessageList", () => {
   it("shows the starters when there is nothing to show yet", () => {
     renderList({ messages: [] });
-    expect(document.querySelector(".starter-list")).toBeInTheDocument();
-  });
-
-  it("hangs the sky behind it", () => {
-    // The one ornament. Both bodies are always in the markup; the stylesheet
-    // picks. Asserting the markup rather than the visible one is deliberate:
-    // which is shown is a cascade decision and jsdom does not apply the theme.
-    renderList({ messages: [] });
-    expect(document.querySelector(".sky-moon")).toBeInTheDocument();
-    expect(document.querySelector(".sky-sun")).toBeInTheDocument();
+    expect(document.querySelector(".starter-grid")).toBeInTheDocument();
   });
 
   it("shows retry instead of treating a failed transcript fetch as empty", async () => {
@@ -43,7 +34,7 @@ describe("MessageList", () => {
     expect(screen.getByRole("alert")).toHaveTextContent("Couldn't load this conversation");
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
     expect(onRetryMessages).toHaveBeenCalled();
-    expect(document.querySelector(".starter-list")).not.toBeInTheDocument();
+    expect(document.querySelector(".starter-grid")).not.toBeInTheDocument();
   });
 
   it("gives only the assistant an avatar", () => {

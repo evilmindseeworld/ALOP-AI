@@ -8,7 +8,7 @@ import SidePanel from "../components/SidePanel";
  *
  * That suite reads source; this one renders. A panel that ends up nested
  * inside .chat-main is trapped in that element's stacking context, where its
- * --z-panel (70) is composited beneath the ornament's --z-ornament (4) no matter
+ * --z-panel (70) is composited beneath the earring's --z-earring (4) no matter
  * what the numbers say. Nine commits were spent on that bug. Asserting the DOM
  * position is the only check that actually catches it.
  */

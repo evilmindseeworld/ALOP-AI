@@ -114,48 +114,22 @@
  * accessibility regression in a restyle. */
 
 /* ===== EMPTY STATE ===== */
-/* ===== THE EMPTY STATE =====
- *
- * A SPLIT, NOT A CENTRED STACK. It was a centred hero over a 2x2 grid of equal
- * cards, which is the most templated arrangement available and said nothing
- * about the product. The left column asks; the right column is the council
- * itself. Layout carries the argument now instead of decoration sitting beside
- * it.
- *
- * The transcript column is capped at --measure for reading, and that cap is
- * correct for prose and wrong for this: two columns inside 66ch is two narrow
- * columns. The empty state escapes the cap on wide screens and only the ask
- * column stays measured. */
 .empty-state {
-  display: grid;
-  /* A FIXED SECOND TRACK, not a fraction. The roster is a list of seven short
-   * strings: it needs the width its longest line needs and no more. Giving it a
-   * fraction of the surface stranded it against the far edge with a void
-   * between the two columns, which read as a layout that had failed rather than
-   * as deliberate asymmetry. */
-  /* One content column, left. The sky owns the space to its right and is
-   * positioned rather than laid out, so it never pushes the ask around. */
-  grid-template-columns: minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: var(--space-4);
+  justify-content: center;
   height: 100%;
-  width: min(100%, 860px);
-  margin-inline: auto;
+  /* The positioning context for the sakura frame and the asanoha lattice, both
+   * declared in styles/decoration.css. Without it they escape to .chat-main
+   * and paint across the whole panel. */
   position: relative;
+  gap: var(--space-3);
   padding: var(--space-6) 0;
-  text-align: left;
+  text-align: center;
 }
 
 .empty-state::before { display: none; }
-
-.empty-ask {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-3);
-  /* The measure applies to the sentence, not to the layout. */
-  max-width: 46ch;
-}
 
 .empty-logo {
   width: 76px;

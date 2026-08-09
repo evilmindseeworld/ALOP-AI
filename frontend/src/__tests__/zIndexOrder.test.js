@@ -45,7 +45,7 @@ describe("z-index token scale", () => {
         "--z-grain",
         "--z-cmdk",
         "--z-crash",
-        "--z-ornament",
+        "--z-earring",
         // Both scoped INSIDE .empty-state and excluded from `ascending` for the
         // same reason --z-sticky-label is: they order decoration against
         // content within one positioned flex column, and are not comparable
@@ -102,7 +102,7 @@ describe("stacking order invariants", () => {
     "--z-behind",
     "--z-grain",
     "--z-chat",
-    "--z-ornament",
+    "--z-earring",
     "--z-sidebar",
     "--z-sidebar-mobile",
     "--z-panel-overlay",
@@ -126,13 +126,13 @@ describe("stacking order invariants", () => {
   // The specific invariant that nine commits kept breaking, stated outright so
   // its intent survives even if someone rewrites the loop above.
   it("earrings sit ABOVE the chat window", () => {
-    expect(tokens["--z-ornament"]).toBeGreaterThan(tokens["--z-chat"]);
+    expect(tokens["--z-earring"]).toBeGreaterThan(tokens["--z-chat"]);
   });
 
   it("earrings sit BELOW every menu and panel", () => {
-    expect(tokens["--z-ornament"]).toBeLessThan(tokens["--z-sidebar"]);
-    expect(tokens["--z-ornament"]).toBeLessThan(tokens["--z-panel-overlay"]);
-    expect(tokens["--z-ornament"]).toBeLessThan(tokens["--z-panel"]);
+    expect(tokens["--z-earring"]).toBeLessThan(tokens["--z-sidebar"]);
+    expect(tokens["--z-earring"]).toBeLessThan(tokens["--z-panel-overlay"]);
+    expect(tokens["--z-earring"]).toBeLessThan(tokens["--z-panel"]);
   });
 
   it("a toast clears every panel, because it can appear while one is open", () => {
@@ -148,7 +148,7 @@ describe("stacking order invariants", () => {
 /**
  * The hole this suite originally had.
  *
- * It asserted --z-ornament (4) < --z-panel (70) and called the ordering safe.
+ * It asserted --z-earring (4) < --z-panel (70) and called the ordering safe.
  * But .side-panel was rendered INSIDE .chat-main, which is positioned at
  * --z-chat (3) and therefore creates a stacking context. The panel's 70 was
  * scoped inside that context — effectively "3.70" in the root context — while
@@ -202,8 +202,8 @@ describe("panels escape the chat stacking context", () => {
   // Now that panels are siblings of the earring in the root context, the
   // numeric comparison finally means what it claims to.
   it("panel outranks the earring once both are in the same context", () => {
-    expect(tokens["--z-panel"]).toBeGreaterThan(tokens["--z-ornament"]);
-    expect(tokens["--z-panel-overlay"]).toBeGreaterThan(tokens["--z-ornament"]);
+    expect(tokens["--z-panel"]).toBeGreaterThan(tokens["--z-earring"]);
+    expect(tokens["--z-panel-overlay"]).toBeGreaterThan(tokens["--z-earring"]);
   });
 });
 
@@ -211,7 +211,7 @@ describe("in-chat controls are contained by a stacking context", () => {
   // --z-in-chat-control (80) is numerically higher than --z-panel (70), which
   // looks like a bug and has been "fixed" before. It is not one: .chat-main is
   // positioned at --z-chat, creating a stacking context that traps its
-  // children below --z-ornament regardless of their number. This test documents
+  // children below --z-earring regardless of their number. This test documents
   // that so the next reader does not "correct" it.
   it("keeps .chat-main positioned, which is what provides the containment", () => {
     const block = CSS.match(/\.chat-main\s*\{[^}]*\}/s)?.[0] ?? "";

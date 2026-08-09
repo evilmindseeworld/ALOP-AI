@@ -1,10 +1,10 @@
 import { memo, lazy, Suspense, useState, useRef, useEffect } from "react";
 import { animate, spring, createDraggable } from "animejs";
+import SakuraFrame from "./SakuraFrame";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Icon from "./Icon";
 import { STARTERS } from "../constants/starters";
-import Sky from "./Sky";
 import { MessageSkeleton, AnswerSkeleton } from "./Skeletons";
 import { stopSpeaking, isSpeechSupported } from "../lib/speak";
 
@@ -179,48 +179,44 @@ export const EmptyState = memo(({ onPick }) => {
 
   return (
   <div className="empty-state">
-    {/* ASYMMETRIC, NOT CENTRED.
-     *
-     * This was a centred hero over a 2x2 grid of equal cards: the two most
-     * templated layouts there are. The ask sits left and the sky occupies the
-     * space to its right, which is what gives the screen a direction to read
-     * in. Decoration earns the other half rather than a column of data. */}
-    <div className="empty-ask">
-      <img ref={logoRef} src="/logo-mark.png" alt="" className="empty-logo" />
-      <h2 className="empty-title">What do you want to ask?</h2>
-      <p className="empty-subtitle">
-        Seven models answer separately, read each other, then agree on one reply.
-      </p>
-
-      {/* Rows with hairlines between them, not cards. A card implies elevation
-       * and there is no hierarchy here to elevate: four peers. The divider is
-       * the cheapest thing that groups them and it leaves the type to do the
-       * work. */}
-      <ul className="starter-list">
-        {STARTERS.map((s, i) => (
-          /* Keyed on the label, not the seed: two seeds could legitimately share
-             an opening fragment, a label may not. starters.test asserts it. */
-          <li key={s.label} style={{ "--row": i }}>
-            <button
-              className="starter-row"
-              onClick={() => onPick(s)}
-              /* The row no longer sends anything, so "Generate an image" alone
-                 would promise a result it does not deliver. The accessible name
-                 says what the click actually does. */
-              aria-label={`${s.label}: start a message in the composer`}
-            >
-              <Icon name={s.icon} size={15} />
-              <span className="starter-label">{s.label}</span>
-              <span className="starter-prompt">{s.hint}</span>
-            </button>
-          </li>
-        ))}
-      </ul>
+    {/* Behind everything, and only here — see SakuraFrame for why the frame
+        does not follow the transcript. */}
+    <SakuraFrame />
+    <img ref={logoRef} src="/logo-mark.png" alt="" className="empty-logo" />
+    {/* No eyebrow. "The AI Council" sat between the mark and the title,
+        saying nothing the title and subtitle below do not — see SignInPage
+        for the same removal. */}
+    {/* An empty screen is an invitation to act, so it asks rather than
+        announces. "ALOP-AI Assembled." named the product and its own machinery
+        to somebody who had just opened the product and can see its name in the
+        header — and it carried both the italic-serif accent and the animated
+        gradient shimmer, which were the two most decorative things in the app.
+        All three are gone; the subtitle below already explains the mechanic. */}
+    <h2 className="empty-title">What do you want to ask?</h2>
+    <p className="empty-subtitle">
+      Several models answer separately, read each other, then agree on one reply. Tell it when it is wrong and it remembers.
+    </p>
+    <div className="starter-grid">
+      {STARTERS.map((s) => (
+        /* Keyed on the label, not the seed: two seeds could legitimately share
+           an opening fragment, a label may not — starters.test asserts it. */
+        <button
+          key={s.label}
+          className="starter-card"
+          onClick={() => onPick(s)}
+          /* The card no longer sends anything, so saying "Generate an image"
+             alone would promise a result it does not deliver. The accessible
+             name says what the click actually does. */
+          aria-label={`${s.label}: start a message in the composer`}
+        >
+          <span className="starter-icon">
+            <Icon name={s.icon} size={15} />
+          </span>
+          <span className="starter-label">{s.label}</span>
+          <span className="starter-prompt">{s.hint}</span>
+        </button>
+      ))}
     </div>
-
-    {/* The sky. See components/Sky.jsx: it is the one ornament, and which body
-        hangs in it is the theme, not a decoration picked at random. */}
-    <Sky />
   </div>
   );
 });

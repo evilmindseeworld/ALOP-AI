@@ -111,8 +111,7 @@
   .input-wrapper { border-radius: var(--radius-lg); }
 
   .side-panel { width: 100vw; border-radius: 0; }
-  .empty-state { align-content: center; width: 100%; }
-  .empty-ask { max-width: none; }
+  .starter-grid { grid-template-columns: 1fr; max-width: none; }
   .cmdk-backdrop { padding: 8vh var(--space-3) var(--space-3); }
 
   /* THE SIDEBAR GOES OFF-CANVAS ON WIDTH, NOT ON A JAVASCRIPT MEASUREMENT.

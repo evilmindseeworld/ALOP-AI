@@ -15,6 +15,15 @@
   display: flex;
   padding: 0 var(--space-6) var(--space-5);
   flex-shrink: 0;
+  /* LIFTED ABOVE THE CORNER SPRIGS — the third instance of this exact fix, see
+   * `.chat-content` in chat.css and `.empty-state > :not(.sakura-frame)` in
+   * decoration.css. `.sakura-base` is absolutely positioned and overlaps the
+   * composer's outer corners on purpose; a positioned element paints after
+   * static in-flow content whatever its z-index, so without this the sprigs
+   * render ON TOP of the prompt. They are pointer-events: none, so this is
+   * about legibility rather than clicks. */
+  position: relative;
+  z-index: var(--z-empty-content);
 }
 
 .input-wrapper {

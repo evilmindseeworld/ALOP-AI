@@ -1,4 +1,5 @@
 import { memo } from "react";
+import CouncilRosette from "./CouncilRosette";
 
 /**
  * The decorative sakura frame behind the empty state.
@@ -62,37 +63,56 @@ const Sprig = () => (
   </g>
 );
 
-const Corner = ({ className }) => (
+/**
+ * Exported because the BOTTOM PAIR CANNOT LIVE IN THIS FRAME.
+ *
+ * The frame is inside `.scroll-wrapper`, which has `overflow: auto` — so a
+ * child of it cannot paint outside it, however it is positioned. The bottom
+ * sprigs were therefore stuck at the bottom of the SCROLLING BOX, floating in
+ * the margins beside the starter cards, while the composer sat below in a
+ * different box entirely. Insetting the frame further only moved them within
+ * the same clip.
+ *
+ * `SakuraBaseCorners` renders the same drawing as a sibling of the scroller,
+ * in `.chat-content`, where the bottom of the box really is the bottom of the
+ * chat surface. See decoration.css.
+ */
+export const Corner = ({ className }) => (
   <svg className={className} viewBox="0 0 120 76" aria-hidden="true" focusable="false" fill="currentColor">
     <Sprig />
   </svg>
 );
 
 /**
- * The torii.
+ * The two lower sprigs, anchored to the chat surface rather than the scroller,
+ * so they sit in the real bottom corners either side of the composer.
  *
- * Proportions are the whole job or it reads as a table: the kasagi (top lintel)
- * overhangs the pillars and sweeps up at the ends, the nuki (second beam) is
- * shorter than it, the pillars taper and lean inward, and the gakuzuka is the
- * small plaque between them.
+ * `pointer-events: none` is on the wrapper in CSS: these overlap the composer's
+ * outer corners by design, and decoration must never eat a click meant for the
+ * prompt bar.
  */
-const Torii = () => (
-  <svg className="sakura-torii" viewBox="0 0 240 190" aria-hidden="true" focusable="false" fill="currentColor">
-    <path d="M14 30 C 76 12, 164 12, 226 30 L 226 41 C 164 24, 76 24, 14 41 Z" />
-    <rect x="34" y="60" width="172" height="8" rx="2" />
-    <path d="M62 41 L 78 41 L 86 186 L 68 186 Z" />
-    <path d="M178 41 L 162 41 L 154 186 L 172 186 Z" />
-    <rect x="112" y="70" width="16" height="26" rx="2" opacity="0.75" />
-  </svg>
-);
-
-const SakuraFrame = memo(() => (
-  <div className="sakura-frame" aria-hidden="true">
-    <Torii />
-    <Corner className="sakura-corner sakura-corner-tl" />
-    <Corner className="sakura-corner sakura-corner-tr" />
+export const SakuraBaseCorners = memo(() => (
+  <div className="sakura-base" aria-hidden="true">
     <Corner className="sakura-corner sakura-corner-bl" />
     <Corner className="sakura-corner sakura-corner-br" />
+  </div>
+));
+
+SakuraBaseCorners.displayName = "SakuraBaseCorners";
+
+/**
+ * The torii is gone, replaced by CouncilRosette.
+ *
+ * It was atmosphere borrowed from a theme: it said "Japanese" and said nothing
+ * about a product where several models answer separately and converge on one
+ * reply. The rosette is built out of that mechanic — see CouncilRosette.jsx.
+ * The sprigs stay because they frame without asserting a subject.
+ */
+const SakuraFrame = memo(() => (
+  <div className="sakura-frame" aria-hidden="true">
+    <CouncilRosette />
+    <Corner className="sakura-corner sakura-corner-tl" />
+    <Corner className="sakura-corner sakura-corner-tr" />
   </div>
 ));
 

@@ -15,6 +15,8 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import MagneticButton from "@/components/ui/MagneticButton";
 import Earring from "./components/Earring";
+import CouncilRosette from "./components/CouncilRosette";
+import { SakuraBaseCorners } from "./components/SakuraFrame";
 import Icon, { ICON_NAMES } from "./components/Icon";
 import MessageList from "./components/MessageList";
 import InputBar from "./components/InputBar";
@@ -126,6 +128,37 @@ const Primitives = () => (
       <div style={{ position: "relative", height: 190, width: 280 }}>
         <Earring side="left" active />
         <Earring side="right" active />
+      </div>
+    </Section>
+
+    {/* These two only exist correctly in App's `.chat-content`, which the empty
+     * state below cannot show: the lower sprigs are a SIBLING of the scroller,
+     * not a child of it, precisely so they can reach the real bottom corners.
+     * Without this section the only way to see them is to sign in. */}
+    <Section
+      title="Base corners"
+      note="The lower sprigs, as they sit either side of the composer. They overlap the prompt bar on purpose and are pointer-events: none, so clicks pass through."
+    >
+      <div
+        className="app-root dark"
+        style={{ position: "relative", height: 200, borderRadius: 12, border: "1px solid rgba(255,255,255,0.12)", overflow: "hidden" }}
+      >
+        <div className="chat-content" style={{ position: "relative", height: "100%" }}>
+          <SakuraBaseCorners />
+          <div className="input-bar" style={{ position: "absolute", insetInline: 0, bottom: 0 }}>
+            <div className="input-wrapper">
+              <span style={{ color: "var(--text-dim)", padding: "4px 2px" }}>Ask the AI Council anything…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Section>
+
+    <Section title="Council rosette" note="Seven traces, one per model in the pro council, superimposed until they resolve into one figure. Shown at full strength; it renders at 0.16 in the app.">
+      <div className="app-root dark" style={{ position: "relative", height: 300, display: "grid", placeItems: "center", borderRadius: 12, border: "1px solid rgba(255,255,255,0.12)" }}>
+        <div style={{ position: "relative", width: 300, height: 300, color: "var(--primary)", opacity: 0.5 }}>
+          <CouncilRosette />
+        </div>
       </div>
     </Section>
 

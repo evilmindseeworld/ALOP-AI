@@ -47,6 +47,7 @@ import { useBilling } from "./hooks/useBilling";
 import { useUserFacts } from "./hooks/useUserFacts";
 import { useCamera } from "./hooks/useCamera";
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition";
+import { speak } from "./lib/speak";
 
 import { animate, spring } from "animejs";
 
@@ -129,6 +130,17 @@ const AuthenticatedApp = () => {
     // the DOM. It has to go through the native setter — see lib/dom.js.
     onTranscript: (text) => appendToControlledInput(document.querySelector(".input-text"), text),
   });
+
+  /**
+   * The other direction of voice: dictation above puts speech IN, this reads
+   * an answer OUT.
+   *
+   * `apiCall` is threaded in from here rather than reached for inside the
+   * message row, so the authenticated fetch keeps one owner. Without a Fish
+   * Audio key on the server the request comes back 501 and lib/speak falls
+   * through to the browser's own voice, so this is never a control that fails.
+   */
+  const speakAnswer = useCallback((text, opts) => speak(text, { apiCall, ...opts }), [apiCall]);
 
   const { activeChat, activeMessages, status } = chat;
 
@@ -661,6 +673,7 @@ const AuthenticatedApp = () => {
                   status={status}
                   feedback={chat.feedback}
                   onCopy={(content) => navigator.clipboard.writeText(content)}
+                  onSpeak={speakAnswer}
                   onFeedback={chat.submitFeedback}
                   onPickStarter={handlePickStarter}
                 />

@@ -1013,6 +1013,9 @@ app.use('/api/feedback', createLimiter(60000, 30, 'Too many feedback requests.')
 // One model call each. Generous, because the client fires exactly one per new
 // conversation and a user who hits 30 in a minute is not typing them.
 app.use('/api/chat-title', createLimiter(60000, 30, 'Too many title requests.'));
+// Tighter than the rest, because this is the only route where a single request
+// bills a third party per character. Nobody listens to twenty answers a minute.
+app.use('/api/speech', createLimiter(60000, 20, 'Too many speech requests.'));
 app.use('/api/create-checkout-session', createLimiter(300000, 5, 'Too many billing requests.'));
 app.use('/api/create-portal-session', createLimiter(300000, 5, 'Too many billing requests.'));
 app.use('/api/admin/', createLimiter(60000, 60, 'Too many admin requests.'));
@@ -1052,6 +1055,7 @@ const { parseDataUrl } = require('./lib/data-url');
 // server's own prompt. See lib/history.js for the three things that fixed.
 const { sanitizeHistory } = require('./lib/history');
 const { TITLE_PROMPT, sanitizeTitle } = require('./lib/chat-title');
+const { synthesize, boundText } = require('./lib/tts');
 const truncatePrompt = (text, maxChars = 90000) => { if (text.length <= maxChars) return text; const h = Math.floor(maxChars/2); return text.slice(0,h) + '\n\n[...truncated...]\n\n' + text.slice(-h); };
 const validatePrompt = (p) => { if (!p || typeof p !== 'string') return { valid: false, error: 'Prompt required' }; const t = p.trim(); if (!t) return { valid: false, error: 'Prompt empty' }; if (t.length > MAX_PROMPT) return { valid: false, error: `Exceeds ${MAX_PROMPT}` }; return { valid: true, value: t }; };
 
@@ -1982,6 +1986,35 @@ app.post('/api/chat-title', requireAuth, checkSuspended, async (req, res) => {
     // Not Sentry-worthy and not a 500: the caller already has a usable title.
     console.error('[TITLE] Failed:', err.message);
     res.json({ title: null });
+  }
+});
+
+/**
+ * Read an answer out loud.
+ *
+ * Optional by construction: unconfigured it answers 501 and the client falls
+ * back to the browser's own voice, which is why this is an upgrade rather than
+ * a feature that can be down. See lib/tts.js for why the key cannot simply be
+ * shipped to the browser.
+ *
+ * `no-store`, not a long cache: the same answer is rarely replayed, an mp3 of a
+ * council answer is a user's private conversation, and any shared cache in
+ * front of this must not hold one.
+ */
+app.post('/api/speech', requireAuth, checkSuspended, async (req, res) => {
+  const text = boundText(req.body?.text);
+  if (!text) return res.status(400).json({ error: 'Nothing to speak.' });
+  try {
+    const out = await synthesize(text);
+    if (!out.ok) return res.status(out.status).json({ error: out.error });
+    res.set('Content-Type', out.contentType);
+    res.set('Cache-Control', 'no-store');
+    res.send(Buffer.from(out.body));
+  } catch (err) {
+    // Not Sentry-worthy: the client has a working voice either way, and a
+    // provider outage would otherwise page for something no user notices.
+    console.error('[SPEECH] Failed:', err.message);
+    res.status(502).json({ error: 'Speech provider failed.' });
   }
 });
 

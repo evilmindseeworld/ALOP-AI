@@ -6,6 +6,7 @@ import remarkGfm from "remark-gfm";
 import Icon from "./Icon";
 import { STARTERS } from "../constants/starters";
 import { MessageSkeleton, AnswerSkeleton } from "./Skeletons";
+import { stopSpeaking, isSpeechSupported } from "../lib/speak";
 
 // react-syntax-highlighter is ~4.9MB installed and carries a grammar for every
 // language it supports. Loading it lazily keeps it off the critical path for
@@ -47,7 +48,7 @@ export const markdownComponents = {
 /** How long the copy button stays confirmed. */
 const COPIED_MS = 1600;
 
-export const MessageActions = memo(({ content, onCopy, msgId, onFeedback, feedback }) => {
+export const MessageActions = memo(({ content, onCopy, onSpeak, msgId, onFeedback, feedback }) => {
   /**
    * Copy said nothing at all.
    *
@@ -56,17 +57,39 @@ export const MessageActions = memo(({ content, onCopy, msgId, onFeedback, feedba
    * whether it had worked was to paste somewhere else and look.
    */
   const [copied, setCopied] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
   const timer = useRef(null);
 
   // The transcript unmounts rows constantly — switching chats does it — and a
   // timer that outlives its component calls setState on nothing.
   useEffect(() => () => clearTimeout(timer.current), []);
 
+  // A voice that keeps reading a message that is no longer on screen is the
+  // worst version of this feature. Switching chats unmounts the row, so this
+  // is where it has to stop.
+  useEffect(() => () => stopSpeaking(), []);
+
   const copy = () => {
     onCopy();
     setCopied(true);
     clearTimeout(timer.current);
     timer.current = setTimeout(() => setCopied(false), COPIED_MS);
+  };
+
+  /**
+   * One voice at a time is enforced in lib/speak, so pressing Listen on a
+   * second answer cuts the first off rather than talking over it — and the
+   * interrupted row's onEnd fires, so its button goes back to "Listen" instead
+   * of sitting on "Stop" for an utterance that is no longer playing.
+   */
+  const toggleSpeak = () => {
+    if (speaking) {
+      stopSpeaking();
+      setSpeaking(false);
+      return;
+    }
+    setSpeaking(true);
+    onSpeak(content, { onEnd: () => setSpeaking(false) });
   };
 
   return (
@@ -76,6 +99,17 @@ export const MessageActions = memo(({ content, onCopy, msgId, onFeedback, feedba
     <button className={`msg-action-btn ${copied ? "is-copied" : ""}`} onClick={copy}>
       <Icon name={copied ? "check" : "copy"} size={13} /> {copied ? "Copied" : "Copy"}
     </button>
+    {/* Only where a voice exists. jsdom has neither, and so does a browser old
+        enough that offering the control would be a button that does nothing. */}
+    {isSpeechSupported() && (
+      <button
+        className={`msg-action-btn ${speaking ? "is-speaking" : ""}`}
+        onClick={toggleSpeak}
+        aria-pressed={speaking}
+      >
+        <Icon name={speaking ? "stop" : "speaker"} size={13} /> {speaking ? "Stop" : "Listen"}
+      </button>
+    )}
     <button
       className={`msg-action-btn ${feedback === "up" ? "active" : ""}`}
       onClick={() => onFeedback(msgId, "up")}
@@ -253,7 +287,7 @@ export const ToolTrail = memo(({ activity }) => {
 
 ToolTrail.displayName = "ToolTrail";
 
-export const Message = memo(({ msg, isStreaming, onCopy, onFeedback, feedback }) => {
+export const Message = memo(({ msg, isStreaming, onCopy, onSpeak, onFeedback, feedback }) => {
   const isUser = msg.role === "user";
 
   return (
@@ -311,6 +345,7 @@ export const Message = memo(({ msg, isStreaming, onCopy, onFeedback, feedback })
           <MessageActions
             content={msg.content}
             onCopy={() => onCopy(msg.content)}
+            onSpeak={onSpeak}
             msgId={msg.id}
             onFeedback={onFeedback}
             feedback={feedback}
@@ -333,6 +368,7 @@ export default function MessageList({
   status,
   feedback,
   onCopy,
+  onSpeak,
   onFeedback,
   onPickStarter,
   isLoadingMessages,
@@ -372,6 +408,7 @@ export default function MessageList({
           msg={msg}
           isStreaming={status === "streaming" && i === lastIndex && msg.role === "assistant"}
           onCopy={onCopy}
+          onSpeak={onSpeak}
           onFeedback={onFeedback}
           feedback={feedback[msg.id]}
         />

@@ -53852,6 +53852,7 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
 .markdown-body li > ol
 .markdown-body li > ul
 .markdown-body tbody tr:nth-child(even) td
+.msg-action-btn.is-speaking
 .msg-row + .msg-row.user
 .sakura-bough
 .sakura-bough-svg

@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Icon from "./Icon";
 import { STARTERS } from "../constants/starters";
+import { COUNCIL } from "../constants/council";
 import { MessageSkeleton, AnswerSkeleton } from "./Skeletons";
 import { stopSpeaking, isSpeechSupported } from "../lib/speak";
 
@@ -178,41 +179,74 @@ export const EmptyState = memo(({ onPick }) => {
 
   return (
   <div className="empty-state">
-    <img ref={logoRef} src="/logo-mark.png" alt="" className="empty-logo" />
-    {/* No eyebrow. "The AI Council" sat between the mark and the title,
-        saying nothing the title and subtitle below do not — see SignInPage
-        for the same removal. */}
-    {/* An empty screen is an invitation to act, so it asks rather than
-        announces. "ALOP-AI Assembled." named the product and its own machinery
-        to somebody who had just opened the product and can see its name in the
-        header — and it carried both the italic-serif accent and the animated
-        gradient shimmer, which were the two most decorative things in the app.
-        All three are gone; the subtitle below already explains the mechanic. */}
-    <h2 className="empty-title">What do you want to ask?</h2>
-    <p className="empty-subtitle">
-      Several models answer separately, read each other, then agree on one reply. Tell it when it is wrong and it remembers.
-    </p>
-    <div className="starter-grid">
-      {STARTERS.map((s) => (
-        /* Keyed on the label, not the seed: two seeds could legitimately share
-           an opening fragment, a label may not — starters.test asserts it. */
-        <button
-          key={s.label}
-          className="starter-card"
-          onClick={() => onPick(s)}
-          /* The card no longer sends anything, so saying "Generate an image"
-             alone would promise a result it does not deliver. The accessible
-             name says what the click actually does. */
-          aria-label={`${s.label}: start a message in the composer`}
-        >
-          <span className="starter-icon">
-            <Icon name={s.icon} size={15} />
-          </span>
-          <span className="starter-label">{s.label}</span>
-          <span className="starter-prompt">{s.hint}</span>
-        </button>
-      ))}
+    {/* ASYMMETRIC, NOT CENTRED, and the roster is why.
+     *
+     * This was a centred hero over a 2x2 grid of equal cards: the two most
+     * templated layouts there are, and between them they said nothing about
+     * what this product is. Seven models answering separately and reconciling
+     * is the entire differentiator, and it appeared on the main screen only as
+     * one sentence of subtitle.
+     *
+     * So the screen is split. The left column asks. The right column IS the
+     * council: seven real seats, in temperature order, from the same COUNCIL
+     * constant the sign-in page and the server share. A visitor now learns the
+     * mechanic by looking rather than by reading a claim about it. */}
+    <div className="empty-ask">
+      <img ref={logoRef} src="/logo-mark.png" alt="" className="empty-logo" />
+      <h2 className="empty-title">What do you want to ask?</h2>
+      <p className="empty-subtitle">
+        Seven models answer separately, read each other, then agree on one reply.
+      </p>
+
+      {/* Rows with hairlines between them, not cards. A card implies elevation
+       * and there is no hierarchy here to elevate: four peers. The divider is
+       * the cheapest thing that groups them and it leaves the type to do the
+       * work. */}
+      <ul className="starter-list">
+        {STARTERS.map((s, i) => (
+          /* Keyed on the label, not the seed: two seeds could legitimately share
+             an opening fragment, a label may not. starters.test asserts it. */
+          <li key={s.label} style={{ "--row": i }}>
+            <button
+              className="starter-row"
+              onClick={() => onPick(s)}
+              /* The row no longer sends anything, so "Generate an image" alone
+                 would promise a result it does not deliver. The accessible name
+                 says what the click actually does. */
+              aria-label={`${s.label}: start a message in the composer`}
+            >
+              <Icon name={s.icon} size={15} />
+              <span className="starter-label">{s.label}</span>
+              <span className="starter-prompt">{s.hint}</span>
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
+
+    {/* The council, as it actually is.
+     *
+     * Temperature ascending is a REAL sequence, which is the only thing that
+     * justifies showing it as an ordered ladder: The Architect holds to what is
+     * literally there, The Explorer is furthest from it, and the five between
+     * move along that line in order. The number is the argument. Seven
+     * identical models would return one answer seven times.
+     *
+     * `aria-hidden` because this is the same claim the subtitle already makes,
+     * and a screen reader should hear it once, as a sentence, not as a
+     * fourteen-cell table of titles and decimals. */}
+    <aside className="council-board" aria-hidden="true">
+      <div className="council-board-head">In the room</div>
+      <ol className="council-seats">
+        {COUNCIL.map((seat, i) => (
+          <li key={seat.model} className="council-seat" style={{ "--row": i }}>
+            <span className="seat-temp">{seat.temperature.toFixed(1)}</span>
+            <span className="seat-title">{seat.title}</span>
+            <span className="seat-company">{seat.company}</span>
+          </li>
+        ))}
+      </ol>
+    </aside>
   </div>
   );
 });

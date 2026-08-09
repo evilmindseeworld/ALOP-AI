@@ -111,7 +111,20 @@
   .input-wrapper { border-radius: var(--radius-lg); }
 
   .side-panel { width: 100vw; border-radius: 0; }
-  .starter-grid { grid-template-columns: 1fr; max-width: none; }
+  /* THE SPLIT COLLAPSES, AND THE ROSTER GOES WITH IT.
+   *
+   * Two columns inside a phone's reading width is two unreadable columns. The
+   * ask stacks to full width; the council board is not shrunk to fit, it is
+   * dropped. It is the supporting argument, and the subtitle already makes the
+   * same claim in a sentence, so a phone loses nothing it needs in order to
+   * type a question. */
+  .empty-state {
+    grid-template-columns: 1fr;
+    align-content: center;
+    width: 100%;
+  }
+  .empty-ask { max-width: none; }
+  .council-board { display: none; }
   .cmdk-backdrop { padding: 8vh var(--space-3) var(--space-3); }
 
   /* THE SIDEBAR GOES OFF-CANVAS ON WIDTH, NOT ON A JAVASCRIPT MEASUREMENT.

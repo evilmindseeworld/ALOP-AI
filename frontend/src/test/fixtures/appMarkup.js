@@ -220,7 +220,6 @@ export const appTree = (theme) => `
         <div class="chat-content">
           <div class="scroll-wrapper">
             <div class="empty-state">
-              <svg class="council-ink is-drawn" viewBox="0 0 156 156"><path class="ink-arc" d="M0 0"/></svg>
               <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="empty-logo" alt="ALOP-AI"/>
               <h2 class="empty-title text-shimmer">ALOP-AI<span class="empty-title-accent">Assembled.</span></h2>
               <p class="empty-subtitle">Ask the AI Council anything.</p>
@@ -438,7 +437,6 @@ export const outsideAppRoot = `
   <div class="signin-noise"></div>
   <div class="signin-orb signin-orb-1"></div>
   <div class="signin-orb signin-orb-2"></div>
-  <svg class="council-ink is-drawn" viewBox="0 0 156 156"><path class="ink-arc" d="M0 0"/></svg>
 
   <div class="signin-wrap">
     <div class="signin-down" role="alert">

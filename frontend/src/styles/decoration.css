@@ -1,140 +1,7 @@
 /* Ornament and loading states: the hanging crescents, skeletons, the splash. */
 
-/* ===== COUNCIL INK =====
- *
- * The one ornament. Seven strokes converging into one, behind the empty state
- * and behind the sign-in page. See components/CouncilInk.jsx for what it draws
- * and why it replaced five separate decorations.
- *
- * Layering, low to high: background wash 0, chat 3, ornament 4, sidebar 10,
- * mobile sidebar 50, panel overlay 60, side panel 70, camera 100, toast 200,
- * palette 300. tokens.css is the source of truth for the scale — do not
- * re-declare it inline in JSX. An inline style silently outranks the
- * stylesheet, and that mismatch is what caused a long run of duelling z-index
- * commits.
- *
- * SIZES ARE CSS SIZES, NOT SVG ONES. The drawing keeps its proportions while
- * its container changes size; the viewBox does the scaling and the edges stay
- * crisp at every width. An earlier ornament stretched one SVG over the panel
- * with preserveAspectRatio="slice", which scales the whole drawing to cover its
- * box — on a 1300px panel every unit was multiplied by ~3.3 and five-pixel
- * details became blobs. */
-.council-ink {
-  position: absolute;
-  /* IN THE MARGIN, NOT ACROSS THE SURFACE.
-   *
-   * The transcript is a centred column with a hard max width, so on any screen
-   * wide enough to matter there is real empty surface either side of it. That
-   * gutter is where the hanging crescents lived, and it is the only place on
-   * this screen an ornament has never had to negotiate with a word. The mark
-   * sits at the top of the left one.
-   *
-   * `left` is a percentage of the chat panel rather than a fixed inset, so the
-   * mark tracks the gutter as it widens instead of drifting toward the column
-   * on a large display. */
-  top: 42px;
-  left: 3.5%;
-  width: clamp(120px, 13vw, 220px);
-  height: auto;
-  pointer-events: none;
-  z-index: var(--z-empty-decor);
-  opacity: 0.62;
-  /* A REAL ENSŌ IS NEVER ROUND, and the arcs alone cannot fix that: they vary
-   * the radius by a couple of units, which reads as a wobble in the line rather
-   * than as a shape. Squashing the whole ring 6% and tilting it off-axis is
-   * what a wrist does, and it is the single cheapest thing that separates this
-   * from a loading spinner's circle. */
-  transform: rotate(-7deg) scaleY(0.94);
-  transition: opacity var(--dur-slow) ease;
-}
-
-/* Ink on paper carries further than ink on a dark surface at the same alpha,
- * but the light theme also has no glow behind the title for the drawing to
- * compete with. Measured rather than assumed. */
-.app-root.light .council-ink { opacity: 0.5; }
-
-/* ONCE THERE IS A CONVERSATION, IT STEPS BACK.
- *
- * The mark lives in .chat-main rather than in the empty state, so it survives
- * the whole session and can report that the council is working. It never sits
- * behind the prose — the gutter is why — but a full-strength drawing beside a
- * paragraph still pulls the eye off the sentence being read. A third of its
- * weight registers in peripheral vision and competes with nothing.
- *
- * It fades rather than vanishing, which was the complaint about the ornament
- * this replaced: pressing enter used to make the decoration disappear. */
-.council-ink.is-dim { opacity: 0.2; }
-.app-root.light .council-ink.is-dim { opacity: 0.16; }
-
-/* Each arc at its own weight: heaviest through the middle of the stroke where
- * the hand is committed, lightest where the brush lands and lifts. Set from JSX
- * because the value belongs to the drawing, not to the theme. */
-.ink-arc {
-  opacity: var(--arc-opacity);
-}
-
-/* THE DRAW-IN, and it plays once per session.
- *
- * A new chat is opened many times a day. An 800ms flourish on every empty state
- * would be charming twice and tiresome after that, which is the standard
- * frequency argument against animating anything common. CouncilInk keeps a
- * module-scope flag so the first empty state of a tab gets the moment and every
- * one after it renders already finished.
- *
- * DASH OFFSET, NOT OPACITY, and here it is worth the extra property. These are
- * stroked arcs, so `pathLength` normalises every one of them to 100 regardless
- * of its real radius and sweep — which means one dashoffset value draws them
- * all at the same rate, and the ring appears to be written by a single
- * continuous hand rather than seven fading in. It is the one place in this app
- * where the animation IS the subject: an ensō is defined by being drawn in one
- * breath.
- *
- * stroke-dashoffset animates on the main thread rather than the compositor, so
- * this would be the wrong tool for anything frequent. Seven short paths, once
- * per session, is affordable; the alternative was a shape that did not read. */
-.ink-arc {
-  stroke-dasharray: 100;
-  stroke-dashoffset: 100;
-  transition: stroke-dashoffset 620ms var(--ease-ink);
-  transition-delay: calc(var(--arc-index) * 90ms);
-}
-
-.council-ink.is-drawn .ink-arc {
-  stroke-dashoffset: 0;
-}
-
-/* WHILE THE COUNCIL IS WORKING, and this is the only motion that loops.
- *
- * Every guideline says the same thing about infinite decorative animation, and
- * the ornament this replaced broke it three times over. This loops only because
- * it reports real state: the arcs light one at a time around the ring, which
- * reads as the circle being drawn again, and it inherits the job the swinging
- * crescents did.
- *
- * Opacity only, so there is nothing travelling in the corner of the eye while
- * someone reads. */
-.council-ink.is-active .ink-arc {
-  animation: inkBreath 2.8s ease-in-out infinite;
-  animation-delay: calc(var(--arc-index) * 240ms);
-}
-
-@keyframes inkBreath {
-  0%, 72%, 100% { opacity: var(--arc-opacity); }
-  24% { opacity: 1; }
-}
-
-/* The gutter narrows before it disappears. The mark narrows with it and pulls
- * tighter into the corner, rather than holding a width that would start to
- * overlap the column. */
-@media (max-width: 1180px) {
-  .council-ink { left: 2%; top: 28px; opacity: 0.45; }
-  .council-ink.is-dim { opacity: 0.15; }
-}
-
-/* Below this there is no margin left at any width, for either of them. */
+/* What a phone does not get. */
 @media (max-width: 640px) {
-  .council-ink { display: none; }
-
   /* THE LATTICE COMES OFF ENTIRELY BELOW THIS WIDTH.
    *
    * It lives in the gutters either side of the reading column, and it is kept
@@ -147,8 +14,7 @@
    * A percentage mask cannot be tuned out of this, because the problem is that
    * the column and the surface have converged. There is nowhere for the
    * pattern to be except behind the words, so on a phone it is simply absent.
-   * Nothing above carries it at this size either — the council ink is hidden
-   * too, for the reason recorded there. A phone gets the product plain. */
+   * A phone gets the product plain. */
   .chat-main::after { display: none; }
 }
 

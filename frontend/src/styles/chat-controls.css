@@ -1,99 +1,160 @@
 /* Empty-state starters, the transcript toolbar, jump-to-latest, and toasts. */
 
-/* ===== EMPTY-STATE STARTERS ===== */
-/* Two by two, not auto-fit.
+/* ===== EMPTY-STATE STARTERS =====
  *
- * `auto-fit` with a 220px minimum laid the four starters out as three across
- * and one orphan below, which reads as a card that failed to load. There are
- * exactly four of them and there is no width at which 2x2 looks wrong. */
-.starter-grid {
-  animation: emptyRise var(--dur-slow) var(--ease-out) 260ms backwards;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2);
+ * ROWS WITH HAIRLINES, NOT A GRID OF CARDS.
+ *
+ * This was a 2x2 grid of bordered cards. A card implies elevation, and there is
+ * no hierarchy here to elevate: four peers, all doing the same job. The grid of
+ * equal cards is also the single most templated feature layout there is, and it
+ * was sitting under a centred hero, which is the second. Between them they made
+ * the one screen that should sell the product look like every other chat app.
+ *
+ * A divider is the cheapest thing that groups four peers, and it leaves the
+ * type to carry them. */
+.starter-list {
+  list-style: none;
+  margin: var(--space-4) 0 0;
+  padding: 0;
   width: 100%;
-  max-width: 580px;
-  margin: var(--space-6) auto 0;
+  border-top: 1px solid var(--border);
 }
 
-.starter-card {
-  /* Positioned for the ::before highlight below — it needs a containing block,
-   * and this rule is where .starter-card is defined. */
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-1);
-  padding: var(--space-3) var(--space-4);
+.starter-list li {
+  border-bottom: 1px solid var(--border);
+  /* Staggered from the row index rather than :nth-child, so the delay is data
+   * and not a hand-written ladder that breaks when a starter is added. */
+  animation: emptyRise var(--dur-slow) var(--ease-out) backwards;
+  animation-delay: calc(260ms + var(--row) * 55ms);
+}
+
+.starter-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  width: 100%;
+  padding: var(--space-3) var(--space-2);
   text-align: left;
-  border-radius: var(--radius-lg);
-  border: 1px solid var(--border);
-  background: color-mix(in srgb, var(--surface-2) 70%, transparent);
+  background: none;
+  border: 0;
+  border-radius: var(--radius-md);
   color: var(--text);
   cursor: pointer;
   transition:
-    border-color var(--dur-fast) var(--ease-out),
-    transform var(--dur-fast) var(--ease-out),
-    background var(--dur-fast) ease;
+    background var(--dur-fast) ease,
+    transform var(--dur-fast) var(--ease-out);
 }
 
-/* A highlight along the top edge, as if the card caught the light source the
- * background wash establishes top-left. It is a ::before rather than a
- * border-top, because a border changes the box and would shift the text by a
- * pixel on hover — the single most common way a hover effect reads as broken. */
-.starter-card::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 12%;
-  right: 12%;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--primary), transparent);
-  opacity: 0;
-  transition: opacity var(--dur-fast) var(--ease-out);
-}
-
-.starter-card:hover {
-  border-color: var(--border-focus);
-  background: var(--surface-3);
-  transform: translateY(-2px);
-  /* Lifted, so it casts. Without the shadow the translate reads as the card
-   * having jumped rather than risen. */
-  box-shadow: var(--shadow-md);
-}
-
-.starter-card:hover::before,
-.starter-card:focus-visible::before {
-  opacity: 1;
-}
-
-.starter-icon {
-  display: grid;
-  place-items: center;
-  width: 26px;
-  height: 26px;
-  margin-bottom: var(--space-1);
-  border-radius: var(--radius-sm);
-  background: var(--primary-dim);
-  color: var(--primary);
+.starter-row svg {
+  grid-row: span 2;
+  color: var(--text-subtle);
+  transition: color var(--dur-fast) ease;
 }
 
 .starter-label {
-  font-size: var(--text-sm);
-  font-weight: 650;
+  font-size: var(--text-base);
+  font-weight: 600;
+  line-height: 1.3;
 }
 
 .starter-prompt {
+  grid-column: 2;
   font-size: var(--text-xs);
   line-height: 1.45;
   color: var(--text-subtle);
-  /* Two lines keeps every card the same height regardless of prompt length. */
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
 }
+
+/* The row slides toward the reader rather than lifting. A lift needs a shadow
+ * to read as a lift, and a shadow on a borderless row in a list of borderless
+ * rows is a card creeping back in. */
+@media (hover: hover) and (pointer: fine) {
+  .starter-row:hover {
+    background: var(--surface-2);
+    transform: translateX(3px);
+  }
+  .starter-row:hover svg { color: var(--primary); }
+}
+
+/* Tactile: the row acknowledges the press before anything else happens. */
+.starter-row:active { transform: translateX(3px) scale(0.995); }
+
+.starter-row:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: -2px;
+}
+
+/* ===== THE COUNCIL, ON THE EMPTY STATE =====
+ *
+ * The seven seats, in temperature order, from the same COUNCIL constant the
+ * server and the sign-in page share. This is the product's whole argument and
+ * it used to appear on this screen as one clause of subtitle.
+ *
+ * It is a LADDER, and the ordering is load-bearing: The Architect holds to what
+ * is literally there, The Explorer is furthest from it, and the five between
+ * move along that line in order. Numbering content that is not a sequence is a
+ * tell; this one genuinely is a sequence, and the number is the argument. */
+.council-board {
+  align-self: center;
+  padding-left: clamp(var(--space-4), 3vw, var(--space-6));
+  border-left: 1px solid var(--border);
+}
+
+.council-board-head {
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--text-subtle);
+  margin-bottom: var(--space-3);
+}
+
+.council-seats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* Two columns and two rows: the temperature owns a fixed gutter so the decimals
+ * form a true column, and the title and company stack beside it. */
+.council-seat {
+  display: grid;
+  grid-template-columns: 3.2ch 1fr;
+  align-items: baseline;
+  column-gap: var(--space-3);
+  animation: emptyRise var(--dur-slow) var(--ease-out) backwards;
+  animation-delay: calc(300ms + var(--row) * 55ms);
+}
+
+/* Mono and tabular so seven decimals line up as a column rather than jittering
+ * with the digit widths. The system stack, not the webfont: eleven glyphs is
+ * not worth 30 KB, and digits are the one thing every system mono renders
+ * well. */
+.seat-temp {
+  font-family: var(--font-mono-system);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-xs);
+  color: var(--primary);
+  opacity: 0.85;
+}
+
+.seat-title {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.seat-company {
+  grid-column: 2;
+  font-size: var(--text-2xs);
+  color: var(--text-subtle);
+  line-height: 1.4;
+}
+
 
 /* ===== JUMP TO LATEST ===== */
 .scroll-down-btn {
@@ -192,6 +253,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .starter-card:hover { transform: none; }
+  .starter-row:hover { transform: none; }
   .scroll-down-btn { animation: none; }
 }

@@ -224,7 +224,7 @@ export const appTree = (theme) => `
         </div>
 
         <div class="chat-content">
-          <div class="sakura-base" aria-hidden="true"><svg class="sakura-corner sakura-corner-bl" viewBox="0 0 120 76"><path d="M0 0"/></svg><svg class="sakura-corner sakura-corner-br" viewBox="0 0 120 76"><path d="M0 0"/></svg></div>
+          <div class="sakura-base" aria-hidden="true"><svg class="sakura-corner sakura-corner-bl" viewBox="0 0 120 76"><path d="M0 0"/></svg><svg class="sakura-keystone" viewBox="0 0 48 24"><path d="M0 0"/></svg><svg class="sakura-corner sakura-corner-br" viewBox="0 0 120 76"><path d="M0 0"/></svg></div>
           <div class="scroll-wrapper">
             <div class="empty-state">
               <div class="sakura-frame" aria-hidden="true"><svg class="council-rosette" viewBox="0 0 320 320"><path d="M0 0"/></svg><svg class="sakura-corner sakura-corner-tl" viewBox="0 0 120 76"><path d="M0 0"/></svg><svg class="sakura-corner sakura-corner-tr" viewBox="0 0 120 76"><path d="M0 0"/></svg></div>

@@ -120,6 +120,28 @@
 .sakura-base .sakura-corner-bl { bottom: 6px; left: 3%; transform: scaleY(-1); }
 .sakura-base .sakura-corner-br { bottom: 6px; right: 3%; transform: scale(-1); }
 
+/* The keystone sits at the TOP of the base band, which is the one anchor here
+ * that does not move.
+ *
+ * The obvious placement — a fixed distance above the composer — is wrong,
+ * because the composer grows: it is a textarea that adds rows as you type, and
+ * a mark pinned to its edge would walk up the screen while someone writes a
+ * long question. The band's top edge is set by `.sakura-base`'s own height, so
+ * the mark stays put no matter what the composer does underneath it.
+ *
+ * Fainter than the corners on purpose. It sits closer to the centre of the
+ * screen, where the eye already is, and matching their 0.34 made it read as a
+ * UI affordance — something you might try to click — rather than as ornament. */
+.sakura-keystone {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: clamp(34px, 4vw, 52px);
+  height: auto;
+  transform: translate(-50%, -50%);
+  opacity: 0.22;
+}
+
 /* The rosette sits BEHIND THE LOGO MARK, not behind the prose, and the first
  * attempt got that wrong in a way worth recording.
  *

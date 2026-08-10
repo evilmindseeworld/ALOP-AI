@@ -221,3 +221,34 @@ describe("the wait before the placeholder exists", () => {
     expect(screen.getByText("The council is working")).toBeInTheDocument();
   });
 });
+
+describe("the stage line under the skeleton", () => {
+  const renderTyping = (stage) =>
+    render(
+      <MessageList
+        messages={[
+          { id: "u1", role: "user", content: "Best air fryer?", ts: "10:04" },
+          { id: "a1", role: "assistant", content: "", typing: true, stage },
+        ]}
+        status="loading"
+        feedback={{}}
+        onCopy={noop}
+        onFeedback={noop}
+        onPickStarter={noop}
+      />
+    );
+
+  it("says what the council is doing when the server has said so", () => {
+    renderTyping("4 of 7 answered");
+    expect(screen.getByText("4 of 7 answered")).toBeInTheDocument();
+    // And to a screen reader, which otherwise hears only "The council is
+    // thinking" for the whole turn.
+    expect(screen.getByRole("status", { name: "4 of 7 answered" })).toBeInTheDocument();
+  });
+
+  it("reserves no space for a line it has nothing to put in", () => {
+    renderTyping(undefined);
+    expect(document.querySelector(".answer-stage")).not.toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "The council is thinking" })).toBeInTheDocument();
+  });
+});

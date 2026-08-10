@@ -533,6 +533,29 @@
   padding: var(--space-1) 0;
 }
 
+/* What the council is doing, under the bars it is doing it behind.
+ *
+ * Sits BELOW the skeleton, not above it: the bars are where the answer will
+ * be, and pushing them down by a line means everything shifts up again the
+ * moment the first token lands. Below, the line simply disappears.
+ *
+ * The text is replaced in place as the work progresses, so it cross-fades
+ * rather than cutting — one line changing three times reads as one thing
+ * making progress, where three hard cuts read as three separate messages.
+ * `--dur` and `ease` match the rest of the transcript's state changes. */
+.answer-stage {
+  margin: var(--space-1) 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-subtle);
+  font-variant-numeric: tabular-nums;
+  animation: stageIn var(--dur) ease both;
+}
+
+@keyframes stageIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 /* ===== META & ACTIONS ===== */
 /* tabular-nums so a column of timestamps down the transcript lines up instead
  * of jittering as the digits change width. */

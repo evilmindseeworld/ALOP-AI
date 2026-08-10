@@ -135,7 +135,13 @@ const streamModel = async (res, modelName, messages, temperature = 0.0) => {
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
     buffer = lines.pop() || '';
-    for (const line of lines) { const t = line.trim(); if (!t) continue; try { const p = JSON.parse(t); const d = p.message?.content || p.response || ''; if (d) res.write(`data: ${JSON.stringify({ type: 'chunk', text: d })}\n\n`); if (p.done) res.write('data: [DONE]\n\n'); } catch {} }
+    for (const line of lines) { const t = line.trim(); if (!t) continue; try { const p = JSON.parse(t); const d = p.message?.content || p.response || ''; if (d) { /* The moment the ANSWER starts, which stopped being the same moment
+           * the response opens once progress events were added. msToFirstByte
+           * is the number every latency change is judged by; leaving it stamped
+           * at openStream would have made this feature look like a 15-second
+           * improvement while the user waited exactly as long. */
+          if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
+          res.write(`data: ${JSON.stringify({ type: 'chunk', text: d })}\n\n`); } if (p.done) res.write('data: [DONE]\n\n'); } catch {} }
   }
 };
 
@@ -443,6 +449,23 @@ const sendEvent = (res, payload) => {
   if (res.writableEnded) return;
   try { res.write(`data: ${JSON.stringify(payload)}\n\n`); } catch { /* client went away */ }
 };
+
+/**
+ * What the system is doing right now, in the user's words.
+ *
+ * The council path used to send NOTHING between the request and the finished
+ * synthesis. Seats are polled with `stream: false`, so the first answer token
+ * cannot exist until every seat has settled — which is most of the wait, and
+ * all of it was silent. A skeleton says "wait"; this says what for.
+ *
+ * EVERY STAGE HERE IS A REAL EVENT. The text is written from what actually
+ * happened — the query that was really searched, the number of seats that have
+ * really answered — and not from a rotating list of plausible-sounding
+ * activities. A progress indicator that invents its own progress is a spinner
+ * that lies, and the first time the "searching" line appears on a turn that ran
+ * no search, nothing else this product says about its own work is believable.
+ */
+const sendStage = (res, key, text) => sendEvent(res, { type: 'stage', key, text });
 
 // ===== COUNCIL TOOL CALLING =====
 // docs/superpowers/specs/2026-07-31-council-tool-calling-design.md
@@ -1738,6 +1761,28 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
     // so this ships dark and a bad turn is one env var from being reverted
     // without a deploy.
     let validResponses, toolResearch = '', toolTruncated = null;
+
+    /* OPENED HERE, not at synthesis. Everything above this line can still fail
+     * with a status code; from here the work is long, so the wait is narrated
+     * instead of silent. The tools branch already opened early for exactly this
+     * reason and the plain council — which is most turns — did not.
+     *
+     * `sendSeatProgress` reports the room filling up. runCouncil has always
+     * known when each seat starts and settles and has always accepted an
+     * `onSeat`; nothing in production ever passed one, so the information
+     * existed and went nowhere. Counts only, never model names: which models
+     * sit on the council is not the user's business and is one string away from
+     * being in a screenshot. */
+    openStream(res);
+    const seatCount = selection.members.length;
+    let seatsAnswered = 0;
+    const sendSeatProgress = ({ state }) => {
+      if (state === 'thinking') return;
+      seatsAnswered++;
+      sendStage(res, 'council', `${seatsAnswered} of ${seatCount} answered`);
+    };
+    sendStage(res, 'council', seatCount === 1 ? 'Asking one seat' : `Asking ${seatCount} seats`);
+
     if (TOOLS_ENABLED && !imageContext) {
       // read_file is offered only when this conversation actually has files.
       // A tool that can only ever answer "no files" is a tool the council
@@ -1808,7 +1853,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       const fellBack = validResponses.length === 0;
       if (fellBack) {
         console.log('[TOOLS] no usable answers, falling back to the plain council.');
-        validResponses = await runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit);
+        validResponses = await runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit, sendSeatProgress);
       }
 
       // Recorded, not just logged. The numbers that say whether this feature is
@@ -1818,7 +1863,8 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       // In audit_logs they survive log rotation, they aggregate, and the admin
       // console can answer "is the dedupe earning its place" from a phone.
       await auditLog(user.id, 'council.tools', {
-        msToFirstByte: (res.locals?.firstByteAt || Date.now()) - t0,
+        msToFirstByte: (res.locals?.firstChunkAt || Date.now()) - t0,
+        msToFirstProgress: (res.locals?.firstByteAt || Date.now()) - t0,
         rounds: loop.rounds,
         uniqueCalls: loop.uniqueCallsUsed,
         members: selection.members.length,
@@ -1830,7 +1876,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
         tools: loop.toolResults.reduce((acc, { call }) => ({ ...acc, [call.name]: (acc[call.name] || 0) + 1 }), {}),
       }, req.ip);
     } else {
-      validResponses = await runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit);
+      validResponses = await runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit, sendSeatProgress);
     }
 
     // 5. FALLBACK
@@ -1874,6 +1920,9 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
       ? `\n\n=== NOTE ===\nResearch was cut short: ${toolTruncated} Where the experts' claims rest on something that was not verified, say so plainly rather than asserting it.`
       : '';
     const synthMsgs = [{ role: 'system', content: synthSys }, { role: 'user', content: `Question: ${truncatedPrompt}\n\nResponses:\n${validResponses.map((r,i) => `[Expert ${i+1}]: ${r.content}`).join('\n\n')}${researchBlock}${truncationBlock}` }];
+    // The last thing that happens before words appear, and the longest single
+    // step on a turn where the seats came back quickly.
+    sendStage(res, 'synthesis', validResponses.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
     openStream(res);
     await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0);
     if (!res.writableEnded) res.end();
@@ -1891,7 +1940,8 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     await auditLog(user.id, 'council', {
       category: 'council',
       models: validResponses.length,
-      msToFirstByte: (res.locals?.firstByteAt || Date.now()) - t0,
+      msToFirstByte: (res.locals?.firstChunkAt || Date.now()) - t0,
+      msToFirstProgress: (res.locals?.firstByteAt || Date.now()) - t0,
       seats: selection.members.length,
       quorum: selection.quorum,
       tokenLimit: selection.tokenLimit,

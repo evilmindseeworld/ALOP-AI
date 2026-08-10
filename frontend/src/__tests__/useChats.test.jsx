@@ -672,3 +672,60 @@ describe("starting a new chat", () => {
     expect(apiCall).not.toHaveBeenCalled();
   });
 });
+
+/* The backend now opens the response BEFORE the council runs, so it can report
+ * what it is doing while it does it. That moved the moment headers arrive from
+ * "just before the first word" to "seconds before it", and the placeholder used
+ * to be cleared on headers. */
+describe("progress while the council is working", () => {
+  it("keeps the skeleton up through stage frames and clears it on the first chunk", async () => {
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      body: sseStream([
+        'data: {"type":"stage","key":"council","text":"Asking 7 seats"}\n',
+        'data: {"type":"stage","key":"council","text":"4 of 7 answered"}\n',
+        'data: {"type":"chunk","text":"The answer"}\n',
+        "data: [DONE]\n",
+      ]),
+    }));
+
+    const { result } = setup({ fetchImpl });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.send("hi");
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("idle"));
+    const messages = result.current.chats[0].messages;
+    const last = messages[messages.length - 1];
+    // The answer replaced the placeholder rather than arriving beside it.
+    expect(last.content).toBe("The answer");
+    expect(last.typing).toBeFalsy();
+    expect(messages.filter((m) => m.typing)).toHaveLength(0);
+  });
+
+  it("does not save a stage line as the answer when the stream carries no chunk", async () => {
+    // A turn that dies after reporting progress must not persist "4 of 7
+    // answered" as the assistant's reply.
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      body: sseStream([
+        'data: {"type":"stage","key":"council","text":"4 of 7 answered"}\n',
+        "data: [DONE]\n",
+      ]),
+    }));
+
+    const { result } = setup({ fetchImpl });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.send("hi");
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("idle"));
+    const messages = result.current.chats[0].messages;
+    const last = messages[messages.length - 1];
+    expect(last.content).not.toContain("4 of 7");
+  });
+});

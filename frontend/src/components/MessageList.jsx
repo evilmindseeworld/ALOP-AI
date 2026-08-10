@@ -333,7 +333,7 @@ export const Message = memo(({ msg, isStreaming, onCopy, onSpeak, onFeedback, fe
           ))}
 
         {msg.typing ? (
-          <AnswerSkeleton />
+          <AnswerSkeleton stage={msg.stage} />
         ) : msg.content ? (
           <div
             className={`bubble markdown-body ${isStreaming ? "is-streaming" : ""} ${

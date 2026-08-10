@@ -60,11 +60,26 @@ export const MessageSkeleton = () => (
  * Three lines, not six: over-reserving is its own jump, in the other direction.
  * The last line is short because a paragraph's last line is.
  */
-export const AnswerSkeleton = () => (
-  <div className="answer-skeleton" role="status" aria-label="The council is thinking">
+export const AnswerSkeleton = ({ stage }) => (
+  <div className="answer-skeleton" role="status" aria-label={stage || "The council is thinking"}>
     <div className="skeleton-block" style={{ height: "14px", width: "92%" }} />
     <div className="skeleton-block" style={{ height: "14px", width: "97%" }} />
     <div className="skeleton-block" style={{ height: "14px", width: "58%" }} />
+    {/* WHAT IT IS DOING, NOT THAT IT IS DOING SOMETHING.
+        The skeleton reserves the answer's space and says "wait". On the
+        council path the wait is most of the turn — seats are polled without
+        streaming, so no word can exist until the last one settles — and until
+        now the whole of it looked identical to a hung request.
+
+        Only ever real work: the count of seats that have actually answered,
+        the query that was actually searched. There is no rotating list of
+        plausible activities here, because the first time it claims to be
+        searching on a turn that ran no search, nothing else this product
+        reports about itself is worth believing.
+
+        Rendered only when there is something true to say — an empty line
+        would reserve space that jumps when the first stage arrives. */}
+    {stage && <p className="answer-stage">{stage}</p>}
   </div>
 );
 

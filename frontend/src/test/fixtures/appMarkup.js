@@ -311,6 +311,18 @@ export const appTree = (theme) => `
             <div class="msg-row assistant"><span class="sr-only">The council answered:</span>
               <div class="avatar" aria-hidden="true">AI</div>
               <div class="msg-content">
+                <div class="answer-skeleton" role="status" aria-label="4 of 7 answered">
+                  <div class="skeleton-block"></div>
+                  <div class="skeleton-block"></div>
+                  <div class="skeleton-block"></div>
+                  <p class="answer-stage">4 of 7 answered</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="msg-row assistant"><span class="sr-only">The council answered:</span>
+              <div class="avatar" aria-hidden="true">AI</div>
+              <div class="msg-content">
                 <div class="bubble markdown-body is-stopped"><p>Interrupted</p></div>
                 <span class="msg-stopped-note"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg> Stopped</span>
               </div>

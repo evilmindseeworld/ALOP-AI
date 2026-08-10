@@ -810,8 +810,27 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
         }
         if (!res.body) throw new Error("No stream");
 
-        setStatus("streaming");
-        updateChatMessages(chatId, [...updated, { ...assistantMsg, typing: false, content: "" }], false);
+        /* NOT "streaming" yet, and this is the half of the progress feature
+         * that has to move with the other half.
+         *
+         * The backend now opens the response before the council runs, so that
+         * it can report what it is doing. Headers therefore arrive almost
+         * immediately, seconds before the first word. Clearing `typing` here —
+         * which is what this line used to do — would swap the skeleton for an
+         * empty bubble at the exact moment the long wait BEGINS, and the
+         * feature meant to fill that wait would have emptied it instead.
+         *
+         * The state changes on the first CHUNK now. Until then the placeholder
+         * stays and carries whatever the server last said it was doing. */
+        let started = false;
+        let stage = null;
+        const paintPending = () =>
+          updateChatMessages(
+            chatId,
+            [...updated, { ...assistantMsg, typing: true, content: "", stage, activity: activity.length ? [...activity] : undefined }],
+            false,
+          );
+        paintPending();
 
         /* THE VIEW IS PACED SEPARATELY FROM THE NETWORK.
          *
@@ -857,6 +876,12 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
           // changed is pure waste, and the transcript is the most expensive
           // thing in the app to render — it runs markdown over every message.
           if (text === painted) return;
+          // Nothing revealed yet means the answer has not started. Painting an
+          // empty string here would clear `typing` and put an empty bubble
+          // where the skeleton was — the painter runs on its own 16ms clock
+          // from before the first frame arrives, so without this it wins the
+          // race against the first chunk on every single turn.
+          if (!text) return;
           painted = text;
           setChats((p) =>
             p.map((c) =>
@@ -902,8 +927,27 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
             } catch {
               continue;
             }
-            if (frame.type === "chunk") acc += frame.text;
+            if (frame.type === "chunk") {
+              // The real start of the answer, and the only honest place to
+              // call it: headers now arrive long before words do.
+              if (!started) {
+                started = true;
+                setStatus("streaming");
+              }
+              acc += frame.text;
+            }
             else if (frame.type === "error") throw new Error(frame.text);
+            // What the council is doing while it is doing it. Latest wins —
+            // this is a status line, not a log; the tool trail below is the
+            // part that keeps its history because a search that ran is a fact
+            // about the answer, where "3 of 7 answered" stops being true one
+            // second later.
+            else if (frame.type === "stage") {
+              if (!started) {
+                stage = frame.text;
+                paintPending();
+              }
+            }
             // The council's tool loop reports what it is doing while it does
             // it. These arrive BEFORE any chunk — the loop runs to completion
             // before synthesis starts — so without them the user watches a
@@ -921,6 +965,12 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
               if (row) Object.assign(row, { ok: frame.ok, summary: frame.summary, pending: false });
               else activity.push({ round: frame.round, name: frame.name, summary: frame.summary, ok: frame.ok });
             }
+            // The trail used to reach the screen because the painter repainted
+            // the message on every tick regardless of content. It does not any
+            // more — an empty paint is what put an empty bubble where the
+            // skeleton belongs — so tool progress has to ask for its own
+            // repaint while the answer has not started.
+            if (!started && (frame.type === "tool_start" || frame.type === "tool_result")) paintPending();
           }
 
           // Feed the target only. The painter above decides what is on screen.

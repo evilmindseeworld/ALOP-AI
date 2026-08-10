@@ -6,6 +6,14 @@ this session and what is still open, not a description of the project.
 Everything below is pushed. 602 frontend tests, 565 backend, build clean,
 working tree clean.
 
+**Updated 2026-08-10 at `dfa654f`.** 609 frontend tests pass, working tree
+clean. What landed since: the Clerk migration (`7ff4c32`), the sign-in
+focus-ring and tab-order passes (`1ae0402`, `f7a3811`), the button press/hover
+rework (`da727cc`), and the ornament work on the empty state and prompt bar
+(`0adbd36`, `dfa654f`). The open lists below are corrected for that; the
+narrative sections above them describe the 08-09 session and are left as
+written.
+
 ---
 
 ## The one thing to read before touching the frontend
@@ -119,13 +127,11 @@ The frame is extended downward by exactly the difference. Measured 48/48 after.
 
 ## Open, and not blocked
 
-- **`@clerk/clerk-sdk-node` is deprecated at 5.1.6** and carries three high
-  advisories through `js-cookie`. The successor is `@clerk/express`. Deliberately
-  NOT attempted this session: `req.auth` has 23 call sites and changed from a
-  property to a function between majors, and there is no way to verify auth
-  end-to-end here without a live Clerk instance. Real exposure is low — the
-  advisory is a prototype hijack in a cookie parser on a backend that
-  authenticates with bearer tokens. Worth doing with the owner present.
+- ~~`@clerk/clerk-sdk-node` is deprecated at 5.1.6~~ **Done** (`7ff4c32`, merged
+  2026-08-09). Now `@clerk/express@2.1.52`, zero advisories, 565 backend tests
+  pass. The `req.auth` call sites were kept working by a shim rather than
+  rewritten; both that and the conditional `clerkMiddleware()` mount are written
+  up as traps in `AGENTS.md`. Read those before touching auth wiring.
 - **Mumbai migration** is prepared and not executed. `backend/Dockerfile`,
   `fly.toml` with `primary_region = "bom"`, `scripts/verify-migration.sh` and
   `docs/MUMBAI-MIGRATION.md` all exist. Fly wants payment to deploy; Cloud Run

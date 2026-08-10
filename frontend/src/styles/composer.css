@@ -30,6 +30,10 @@
   flex: 1;
   max-width: 860px;
   margin: 0 auto;
+  /* The positioning context for .composer-sprigs, which straddle this card's
+   * top edge and therefore paint outside its padding box. Nothing here clips,
+   * so they hang over the border as intended. */
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
@@ -60,6 +64,74 @@
   border-color: var(--border-focus);
   box-shadow: var(--rim), var(--shadow-lg), 0 0 0 3px var(--primary-dim);
   transform: translateY(-1px);
+}
+
+/* ===== THE SPRIGS ON THE PROMPT BAR =====
+ *
+ * The branch reached every surface in this app except the one the user
+ * actually touches, and the only one that is always on screen — the base
+ * corners frame the composer but unmount with the empty state.
+ *
+ * THEY SIT ON THE EDGE, NOT INSIDE THE CARD. Half above the border and half
+ * below it, so they read as resting on the bar. Anything drawn inside would be
+ * over the words someone is typing, and decoration over body copy has no good
+ * opacity — the same conclusion decoration.css reached about the rosette and
+ * the prose beneath it.
+ *
+ * 0.18, against the rosette's 0.16 and the corner sprigs' 0.26. The composer
+ * is the app's one elevated surface and the brightest thing on screen, so the
+ * same ink needs a little more alpha here to read at all, and much more would
+ * turn the one control that matters into an illustration. */
+.composer-sprigs {
+  position: absolute;
+  inset: 0;
+  /* Decoration must never eat a click meant for the prompt — the same rule
+   * .sakura-base follows where it overlaps this card's outer corners. */
+  pointer-events: none;
+}
+
+.composer-sprig {
+  position: absolute;
+  /* Two thirds of the width above the card's edge: the blossoms on this
+   * branch sit along its upper side, so hanging it level would bury them
+   * behind the border instead of resting them on it. */
+  top: -19px;
+  width: 104px;
+  height: auto;
+  color: var(--primary);
+  opacity: 0.18;
+  transition:
+    opacity var(--dur) var(--ease-out),
+    transform var(--dur) var(--ease-spring);
+}
+
+.composer-sprig-l { left: -10px; }
+
+/* Mirrored, never rotated — see the Sprig comment in SakuraFrame.jsx: a
+ * rotated branch grows the wrong way and hangs its blossoms underneath. */
+.composer-sprig-r { right: -10px; transform: scaleX(-1); }
+
+/* THE BRANCH ANSWERS THE CARET.
+ *
+ * The card already lifts 1px and changes border colour on focus, and the
+ * sprigs are its children so they come along. This is 2px MORE, which is what
+ * makes it read as the ornament noticing rather than the whole card moving:
+ * the branch arrives slightly ahead of the surface it rests on, on the spring
+ * easing, while the border does its own thing on ease-out. */
+.input-wrapper:focus-within .composer-sprig {
+  opacity: 0.3;
+  transform: translateY(-2px);
+}
+
+.input-wrapper:focus-within .composer-sprig-r {
+  transform: scaleX(-1) translateY(-2px);
+}
+
+/* On a phone the composer is nearly the full width and its icon row is tight
+ * under it; a full-size branch at each corner turns the one control that
+ * matters into an illustration. */
+@media (max-width: 640px) {
+  .composer-sprig { width: 72px; top: -13px; opacity: 0.14; }
 }
 
 /* A file is over the composer. Dashed, because the border is briefly a target

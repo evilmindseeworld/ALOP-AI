@@ -162,15 +162,11 @@
  * fail first. */
 .council-rosette {
   position: absolute;
-  top: 0;
   left: 50%;
-  width: min(clamp(190px, 22%, 280px), 34vh);
   height: auto;
-  /* -46% centres the figure on the sign-in card's mark rather than on its own
-   * box: there the mark sits just below the top of a fixed frame. */
-  transform: translate(-50%, -46%);
   opacity: 0.16;
 }
+
 
 /* THE EMPTY STATE'S SEAL IS POSITIONED AGAINST THE MARK, NOT THE PANEL.
  *
@@ -208,6 +204,12 @@
   /* The mark is draggable. The ring must never be what the pointer grabs. */
   pointer-events: none;
 }
+
+/* The empty state is the only place this renders. It used to hang at the top
+ * of .sakura-frame as well, which put a copy on the sign-in page — where
+ * signin.css had been hiding it with `display: none` for long enough that the
+ * frame-mounted rosette was drawing nothing on either screen. Both the second
+ * copy and the rule hiding it are gone. */
 
 /* No grain layer here on purpose: the app already has one. `.grain` lives in
  * base.css, driven by --grain-image and --grain-opacity, and signin.css reuses

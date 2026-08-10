@@ -340,6 +340,31 @@
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
+  /* THE POINTER.
+   *
+   * ONE CURSOR FOR BOTH THEMES, and that is the whole design constraint. A
+   * pink arrow is invisible on the light paper and a dark arrow disappears
+   * into the dark surface, so a themed cursor would need two of them and a
+   * swap — which is one more thing that can be forgotten. Dark fill with a
+   * bright outline is how every operating system solves this: on the dark
+   * theme you read the pink edge, on the light theme you read the dark body.
+   * Neither ever vanishes, and there is one declaration.
+   *
+   * THE SILHOUETTE IS UNTOUCHED. It is the standard arrow, at the standard
+   * size, with the hotspot at its actual tip. A cursor is not somewhere to be
+   * inventive with shape: people aim with the tip and find the pointer by its
+   * outline, and both of those are muscle memory older than this product. The
+   * colour is the only thing that is ours.
+   *
+   * `, auto` is not optional. Safari's support for SVG cursors has been
+   * patchy for years, and a cursor that fails to load with no fallback leaves
+   * the pointer as nothing at all.
+   *
+   * `#` MUST STAY AS %23 in the data URI — unencoded it starts a fragment and
+   * the whole declaration is dropped, which looks exactly like "custom cursors
+   * do not work here". */
+  --cursor-arrow: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M2.4 1.8 L2.4 17.6 L6.6 13.6 L9.2 19.9 L12.1 18.7 L9.5 12.5 L15.2 12.3 Z" fill="%2318181a" stroke="%23f08aa3" stroke-width="1.5" stroke-linejoin="round"/></svg>') 2 2, auto;
+
   /* Two ambient blooms, pink top-left and emerald bottom-right, at the opacity
    * where you notice the room is lit but not where the light is coming from. */
   /* The same four-layer build as dark — source, wash, counterlight, vignette —

@@ -1,5 +1,4 @@
 import { memo } from "react";
-import CouncilRosette from "./CouncilRosette";
 
 /**
  * The decorative sakura frame behind the empty state.
@@ -135,6 +134,37 @@ const Keystone = () => (
 );
 
 /**
+ * Two sprigs resting on the prompt bar's top edge.
+ *
+ * The tree reached every part of this app except the one object the user
+ * actually touches. `SakuraBaseCorners` frames the composer, but only on the
+ * empty state — the moment a conversation starts it unmounts, and from then on
+ * the prompt bar is the single undecorated surface on screen. It is also the
+ * only one that is always there.
+ *
+ * THE SAME `Sprig`, NOT A NEW DRAWING. A second hand drawing the same flower
+ * is how a house style comes apart; this is the corner branch at a smaller
+ * size, straddling the card's own edge so the blossoms sit half on the border
+ * and half off it — resting on the bar rather than pasted inside it.
+ *
+ * IT ANSWERS THE CARET. On focus the pair lifts and warms slightly. The border
+ * already changes colour when the composer is focused, which is a form field
+ * reporting state; the branch moving is the object noticing you. Both changes
+ * are on the same element and the same easing, so they read as one gesture.
+ * Positioned outside the text box on purpose — decoration over the words
+ * someone is typing has no acceptable opacity, which is the same conclusion
+ * decoration.css reached about the rosette and the prose beneath it.
+ */
+export const ComposerSprigs = memo(() => (
+  <div className="composer-sprigs" aria-hidden="true">
+    <Corner className="composer-sprig composer-sprig-l" />
+    <Corner className="composer-sprig composer-sprig-r" />
+  </div>
+));
+
+ComposerSprigs.displayName = "ComposerSprigs";
+
+/**
  * The two lower sprigs and the keystone, anchored to the chat surface rather
  * than the scroller, so they sit in the real bottom corners either side of the
  * composer with the mark centred between them.
@@ -161,18 +191,16 @@ SakuraBaseCorners.displayName = "SakuraBaseCorners";
  * reply. The rosette is built out of that mechanic — see CouncilRosette.jsx.
  * The sprigs stay because they frame without asserting a subject.
  *
- * `rosette` is off for the empty state and on for sign-in, and the difference
- * is which element the figure has to stay concentric with. The sign-in card is
- * a fixed block in a fixed frame, so the frame can hold the seal. The empty
- * state is a centred flex column: the mark's y depends on how tall the title,
- * subtitle and starter grid come out at that viewport, so anything positioned
- * against the FRAME drifts off the mark the moment the column's height
- * changes. There it is rendered inside the mark's own box instead — see
- * EmptyState in MessageList.jsx.
+ * THE ROSETTE IS NOT IN HERE ANY MORE. It hung at the frame's top edge, which
+ * is concentric with nothing: `.empty-state` centres its whole column, so the
+ * mark's y is a function of how tall the title, subtitle and starter grid come
+ * out at that viewport. It now renders inside the mark's own box — see
+ * EmptyState in MessageList.jsx. Sign-in never showed it: this frame renders
+ * there too, and signin.css had been hiding it with `display: none` since
+ * before the move, so the copy here was drawing nothing on either screen.
  */
-const SakuraFrame = memo(({ rosette = true }) => (
+const SakuraFrame = memo(() => (
   <div className="sakura-frame" aria-hidden="true">
-    {rosette && <CouncilRosette />}
     <Corner className="sakura-corner sakura-corner-tl" />
     <Corner className="sakura-corner sakura-corner-tr" />
   </div>

@@ -1,5 +1,6 @@
 import { memo, useState, useEffect, useRef, useCallback } from "react";
 import Icon from "./Icon";
+import { ComposerSprigs } from "./SakuraFrame";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "./ui/tooltip";
 
 /** The first image in a clipboard or drop payload, or null. */
@@ -166,6 +167,7 @@ const InputBar = memo(
           // dropped file instead of firing drop.
           onDragOver={(e) => e.preventDefault()}
         >
+          <ComposerSprigs />
           {attachedImage && (
             <div className="attachment-preview">
               <img src={attachedImage} alt="Attached" />

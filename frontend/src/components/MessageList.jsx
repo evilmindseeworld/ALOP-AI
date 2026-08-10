@@ -182,7 +182,7 @@ export const EmptyState = memo(({ onPick }) => {
   <div className="empty-state">
     {/* Behind everything, and only here — see SakuraFrame for why the frame
         does not follow the transcript. */}
-    <SakuraFrame rosette={false} />
+    <SakuraFrame />
     {/* The seal goes round the mark, not round the panel.
         The rosette's traces all pass through one centre and leave a clear disc
         there — the figure is a ring, and the mark is exactly what that ring is

@@ -86,6 +86,13 @@ body {
   position: relative;
   overflow: hidden;
   color: var(--text);
+  /* INHERITED, NOT FORCED. Set once at the root and left to cascade, so every
+   * `cursor: pointer`, `cursor: text` and `cursor: not-allowed` already in the
+   * stylesheet still wins where it is declared — and so does the UA's own
+   * I-beam on a textarea, which is applied directly to the element and
+   * therefore beats an inherited value. The custom arrow only ever appears
+   * where the arrow was going to appear anyway. */
+  cursor: var(--cursor-arrow);
   background: var(--bg);
   background-image: var(--texture);
   transition: background var(--dur-slow) ease, color var(--dur-slow) ease;

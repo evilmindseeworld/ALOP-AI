@@ -350,7 +350,7 @@ export const appTree = (theme) => `
           </div>
 
           <div class="input-bar">
-            <div class="input-wrapper">
+            <div class="input-wrapper"><div class="composer-sprigs" aria-hidden="true"><svg class="composer-sprig composer-sprig-l" viewBox="0 0 120 76"><path d="M0 0"/></svg><svg class="composer-sprig composer-sprig-r" viewBox="0 0 120 76"><path d="M0 0"/></svg></div>
               <div class="attachment-preview">
                 <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="Attached"/>
                 <button aria-label="Remove attached image">×</button>
@@ -446,7 +446,6 @@ export const outsideAppRoot = `
   <div class="signin-orb signin-orb-1"></div>
   <div class="signin-orb signin-orb-2"></div>
   <div class="sakura-frame">
-    <svg class="council-rosette" viewBox="0 0 320 320"><path d="M0 0"/></svg>
     <svg class="sakura-corner sakura-corner-tl" viewBox="0 0 120 76"><path d="M0 0"/></svg>
   </div>
 

@@ -173,6 +173,17 @@
   .empty-state { gap: var(--space-2); }
 }
 
+/* GIVE THE POINTER BACK IN FORCED COLOURS.
+ *
+ * Someone running a forced-colours mode has told the operating system to
+ * decide what things look like, and the pointer they use is very often an
+ * enlarged high-contrast one they chose on purpose. A custom cursor image
+ * ignores all of that — it is one of the few author styles forced-colours does
+ * not override for you, so it has to be handed back by hand. */
+@media (forced-colors: active) {
+  .app-root { cursor: auto; }
+}
+
 /* ===== MOTION =====
  *
  * The only !important in the stylesheet, and the one thing the keyword is

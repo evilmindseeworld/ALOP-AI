@@ -862,30 +862,111 @@ const getFeedbackGuidance = async (userId) => {
  * Runs after the user has been answered, like updateChatSummary, so its cost
  * is never on the path the user waits on.
  */
-const { FACTS_PROMPT, parseFacts, newFacts, factsBlock } = require('./lib/user-facts');
+const { FACTS_PROMPT, parseFacts, newFacts, factsBlock, factKey } = require('./lib/user-facts');
+const { EMBED_MODEL, embedRequestBody, parseEmbedding, toVectorLiteral } = require('./lib/embeddings');
 /* Enough to condition an answer, small enough that it cannot crowd out the
- * conversation itself. Newest first — see docs/MEMORY-AND-CACHE-PLAN.md for why
- * relevance-ranking this needs an embedding provider that does not exist yet. */
+ * conversation itself. See docs/MEMORY-AND-CACHE-PLAN.md Phase 2 — this is no
+ * longer "newest first"; it is what this turn is ABOUT first, then newest. */
 const FACTS_INJECT_LIMIT = 20;
 /* The dedupe read. A user with more facts than this gets duplicates rather than
  * a slow write, which is the right way round. */
 const FACTS_DEDUPE_LIMIT = 200;
+/* The read path is the one the user waits on, and the embedding call is a
+ * network round trip in the middle of it. Past this, the turn goes out with
+ * recency-ranked memory rather than late relevance-ranked memory — the same
+ * trade `settleByDeadline` exists for on the search fan-out. Nothing on the
+ * WRITE path has a deadline; it runs after the user has been answered. */
+const EMBED_DEADLINE_MS = 600;
 
-const readUserFacts = async (userId, limit = FACTS_INJECT_LIMIT) => {
-  if (!userId) return [];
+/**
+ * One string to one vector, or null.
+ *
+ * Never throws and never rethrows. Every caller's fallback is "this fact has no
+ * vector" or "this turn ranks by recency", both of which are working states.
+ * See lib/embeddings.js for why a *malformed* vector has to read as null too.
+ */
+const embedText = async (text) => {
+  if (!GOOGLE_API_KEY || !text) return null;
   try {
-    const { data, error } = await supabase
-      .from('user_facts')
-      .select('fact')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(limit);
-    // The table predates migrations/ and has never been read before, so a
-    // missing column or table is a live possibility. Memory being unavailable
-    // must cost the user nothing but the memory.
-    if (error) { console.error('[FACTS] Unavailable, skipping:', error.message); return []; }
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${EMBED_MODEL}:embedContent?key=${GOOGLE_API_KEY}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(embedRequestBody(text)),
+    });
+    if (!res.ok) { console.error(`[EMBED] ${res.status} ${(await res.text()).slice(0, 200)}`); return null; }
+    return parseEmbedding(await res.json());
+  } catch (e) { console.error('[EMBED] Failed:', e.message); return null; }
+};
+
+/** This user's facts, nearest first, by cosine distance. [] on any failure. */
+const readUserFactsByMeaning = async (userId, limit, queryText) => {
+  const { results: [vec] } = await settleByDeadline(
+    [{ promise: embedText(queryText), fallback: null }],
+    { deadlineMs: EMBED_DEADLINE_MS },
+  );
+  const literal = toVectorLiteral(vec);
+  if (!literal) return [];
+  try {
+    // p_user_id is the server's own resolved user. The service-role connection
+    // bypasses RLS, so this argument IS the tenant boundary — 013 says the same
+    // thing at the SQL layer and tenant-scope.test.js holds it here.
+    const { data, error } = await supabase.rpc('match_user_facts', {
+      p_user_id: userId,
+      p_query: literal,
+      p_limit: limit,
+    });
+    if (error) { console.error('[FACTS] Semantic recall unavailable:', error.message); return []; }
     return (data || []).map((r) => r.fact).filter(Boolean);
-  } catch (e) { console.error('[FACTS] Read failed:', e.message); return []; }
+  } catch (e) { console.error('[FACTS] Semantic recall failed:', e.message); return []; }
+};
+
+/**
+ * @param {string} userId
+ * @param {number} limit
+ * @param {string|null} queryText the current user turn. Given one, facts are
+ *   ranked by what this turn is about; without one, by recency.
+ *
+ * BOTH READS RUN, and the reason is a hole that only appears in the mixed case.
+ * A row written while GOOGLE_API_KEY was unset, or while the endpoint was
+ * refusing, has a null embedding and is invisible to `match_user_facts`
+ * forever. Returning semantic results alone would silently drop those facts for
+ * every user who has any — not degrade them, drop them. So the nearest facts go
+ * first and the newest fill whatever slots are left, deduplicated on the same
+ * key the write path dedupes on.
+ */
+const readUserFacts = async (userId, limit = FACTS_INJECT_LIMIT, queryText = null) => {
+  if (!userId) return [];
+
+  const [semantic, recent] = await Promise.all([
+    queryText ? readUserFactsByMeaning(userId, limit, queryText) : Promise.resolve([]),
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from('user_facts')
+          .select('fact')
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(limit);
+        // The table predates migrations/, so a missing column or table is a
+        // live possibility. Memory being unavailable must cost the user nothing
+        // but the memory.
+        if (error) { console.error('[FACTS] Unavailable, skipping:', error.message); return []; }
+        return (data || []).map((r) => r.fact).filter(Boolean);
+      } catch (e) { console.error('[FACTS] Read failed:', e.message); return []; }
+    })(),
+  ]);
+
+  const seen = new Set();
+  const out = [];
+  for (const fact of [...semantic, ...recent]) {
+    const k = factKey(fact);
+    if (!k || seen.has(k)) continue;
+    seen.add(k);
+    out.push(fact);
+    if (out.length >= limit) break;
+  }
+  return out;
 };
 
 const updateUserFacts = async (userId, userMsg) => {
@@ -903,10 +984,20 @@ const updateUserFacts = async (userId, userMsg) => {
     const fresh = newFacts(candidates, existing);
     if (!fresh.length) return;
 
+    // Embed on write, so the read path never pays for a backfill. At most
+    // MAX_FACTS_PER_TURN of these, off the response path, and a null is a fact
+    // stored without semantic recall rather than a fact not stored.
+    const vectors = await Promise.all(fresh.map((fact) => embedText(fact)));
+
     // user_id comes from the server's own resolved user, never from the body.
     const { error } = await supabase
       .from('user_facts')
-      .insert(fresh.map((fact) => ({ user_id: userId, fact, category: 'profile' })));
+      .insert(fresh.map((fact, i) => ({
+        user_id: userId,
+        fact,
+        category: 'profile',
+        embedding: toVectorLiteral(vectors[i]),
+      })));
     // supabase-js resolves rather than throws, so an unchecked insert would log
     // a save that never happened — the same trap updateChatSummary documents.
     if (error) console.error('[FACTS] Save failed:', error.message);
@@ -1342,7 +1433,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const truncatedPrompt = truncatePrompt(pv.value);
     const histArr = sanitizeHistory(history);
 
-    const [convSummary, feedbackGuidance, userFacts] = await Promise.all([readChatSummary(chatId, user.id), getFeedbackGuidance(user.id), readUserFacts(user.id)]);
+    const [convSummary, feedbackGuidance, userFacts] = await Promise.all([readChatSummary(chatId, user.id), getFeedbackGuidance(user.id), readUserFacts(user.id, FACTS_INJECT_LIMIT, pv.value)]);
 
     // VISION. The council speaks to a text model, so an attached image is
     // described first and the description travels as context — the same shape

@@ -88,6 +88,26 @@ BOTH states — `008` creates the index it is about to deduplicate for exactly
 this reason, which reads as redundant until you know a fresh database would
 otherwise end up with no index at all.
 
+**`user_facts.embedding` is `vector(768)` and every row in it must come from
+the same model.** `013` narrowed it from the `vector(1536)` the ad-hoc schema
+shipped, which matched OpenAI on a project with no OpenAI key. The provider is
+Google `text-embedding-004` through `GOOGLE_API_KEY`, named once in
+`lib/embeddings.js`. Changing that constant without re-embedding every stored
+row leaves two incomparable geometries in one column, and `<=>` will rank
+across them without erroring — the failure is bad memory, not a stack trace.
+`013`'s ALTER is a plain one and will fail loudly against a populated table,
+which is correct: 1536 numbers do not truncate to 768.
+
+Two consequences worth knowing before touching that path. **Semantic recall
+reaches the table through `supabase.rpc('match_user_facts', ...)`, which the
+`.from('user_facts')` sweep in `tenant-scope.test.js` cannot see** — the RPC
+has its own contract in that file, and `p_user_id` is the whole tenant boundary
+because the service-role connection bypasses RLS. And **the recency read still
+runs on every turn alongside the semantic one, on purpose**: a fact written
+while the key was unset has a null embedding and is invisible to the RPC
+forever, so semantic-only retrieval would drop it silently rather than rank it
+low.
+
 **The Supabase performance advisor is worth running and not worth obeying.**
 It flagged two "unindexed foreign keys" on 2026-08-07; both were wrong to act
 on. `chat_files.user_id` is already covered by `chat_files_scope

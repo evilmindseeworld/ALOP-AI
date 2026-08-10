@@ -79,21 +79,42 @@ Rules this must not break:
 Verifiable success criterion: tell it something in chat A, start chat B, and it
 knows. Nothing in Phase 1 requires the embedding column.
 
-## Phase 2 — semantic retrieval, only if Phase 1's recall is too blunt
+## Phase 2 — semantic retrieval — SHIPPED 2026-08-11
 
 "Newest N" fails once a user has a few hundred facts, because the relevant one
-is not the recent one. That is when the `embedding` column earns its place.
+is not the recent one. That is what the `embedding` column is now for.
 
-Blocker to resolve first: **there is no embedding provider in this codebase.**
-No call to any embeddings endpoint exists. The column is `vector(1536)`, which
-matches OpenAI's dimensions, not Google's `text-embedding-004` (768) and not
-Jina v3 (1024 default). `JINA_API_KEY` and `GOOGLE_API_KEY` are both set. So
-this phase starts by picking a provider and either matching 1536 or altering the
-column — do not assume the existing dimension is a decision anyone made.
+The blocker was **no embedding provider in this codebase**, and a column of
+`vector(1536)` — OpenAI's width, on a project with no OpenAI key. Resolved by
+picking Google `text-embedding-004` (768) against the `GOOGLE_API_KEY` that
+already pays for vision, and narrowing the column to match. pgvector confirmed
+enabled first (0.8.2, in `public`, so the type is `public.vector`).
 
-Then: embed on write, `ORDER BY embedding <=> query_embedding LIMIT k` on read,
-an ivfflat or hnsw index once the row count justifies one. Confirm `pgvector` is
-actually enabled with `list_extensions` before writing any of it.
+What shipped:
+
+- `013_facts_embedding_768.sql` — the ALTER, plus `match_user_facts(uuid,
+  vector(768), int)`. A plain ALTER was safe only because the table was empty;
+  the file says so and says what to do instead if it ever is not.
+- `lib/embeddings.js` — request body, response parse, width check. A vector of
+  the wrong width or holding a non-finite number reads as *no* vector, never as
+  a usable one, because `<=>` will rank against nonsense without complaining.
+- Write path embeds each new fact off the response path. A null embedding is a
+  fact stored without semantic recall, not a fact lost.
+- Read path embeds the current turn behind a 600ms `settleByDeadline`, then
+  merges nearest-first with newest-first and deduplicates.
+
+**Both reads run, and that is deliberate.** Any row written while the key was
+unset has a null embedding and is invisible to `match_user_facts` forever, so
+semantic-only retrieval would silently drop those facts rather than degrade
+them. Nearest first, newest filling the remaining slots.
+
+**No vector index.** ivfflat and hnsw earn their cost at thousands of rows;
+every query filters by `user_id` first and that index already exists. Revisit
+when one user's fact count reaches four figures.
+
+Left undone on purpose: **semantic dedupe on write.** Recall and dedupe fail in
+opposite directions — a wrong ranking costs one turn, a wrong merge destroys a
+statement the user made. `factKey` stays exact-match.
 
 ## Phase 3 — warm the search cache, do not crawl
 
@@ -121,4 +142,11 @@ optimisation of Phase 1 that cannot be evaluated until Phase 1 has data. Phase 3
 is a latency optimisation of a path that is already cached and already fast
 relative to the council fan-out.
 
-Do not start Phase 2 or 3 because they are more interesting.
+Do not start Phase 3 because it is more interesting.
+
+Phase 2 was built before Phase 1 had produced data — `user_facts` was still
+empty the day it shipped — so it was built to cost nothing when it is wrong
+rather than to be justified by measurement: the recency read still runs, the
+deadline is 600ms, and every failure lands back on Phase 1's behaviour. The
+evaluation is still owed. Once real facts accumulate, the question to answer is
+whether the nearest-first half ever surfaces something recency missed.

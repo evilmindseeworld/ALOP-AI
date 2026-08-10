@@ -93,10 +93,11 @@ test("a genuinely new fact goes through", () => {
   ]);
 });
 
-/* Paraphrase is NOT deduplicated, and that is a decision rather than a gap:
- * catching it needs embeddings, this codebase has no embedding provider, and a
- * wrong merge deletes something the user actually said. Asserted so the next
- * person meets the decision instead of filing it as a bug. */
+/* Paraphrase is NOT deduplicated, and that is a decision rather than a gap. It
+ * survived the arrival of embeddings on purpose — a wrong merge deletes
+ * something the user actually said, where a wrong ranking only costs one turn.
+ * Asserted so the next person meets the decision instead of filing it as a
+ * bug. See factKey's header. */
 test("a paraphrase is stored separately, deliberately", () => {
   assert.deepEqual(newFacts(["The user is based in Dubai."], ["The user works in Dubai."]), [
     "The user is based in Dubai.",

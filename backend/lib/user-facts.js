@@ -130,9 +130,14 @@ function parseFacts(raw) {
  *
  * Case, surrounding punctuation and internal whitespace only. Deliberately NOT
  * semantic: "I work in Dubai" and "I am based in Dubai" are two rows under this
- * and that is the correct trade at this size. Semantic dedupe needs embeddings,
- * embeddings need a provider this codebase does not have yet, and a wrong
- * merge silently destroys a fact the user stated.
+ * and that is the correct trade at this size.
+ *
+ * There IS an embedding provider now — 013 and lib/embeddings.js — so semantic
+ * dedupe has become possible and is still not done. Recall and dedupe fail in
+ * opposite directions: ranking the wrong fact first costs a turn, merging two
+ * facts that only looked alike destroys something the user said, permanently,
+ * with no way to notice. Retrieval got the vectors; the write path keeps the
+ * comparison it can be wrong about cheaply.
  */
 const factKey = (f) =>
   String(f)

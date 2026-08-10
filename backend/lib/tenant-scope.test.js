@@ -157,3 +157,28 @@ test("fact extraction is fed the user's message, not the assistant's", () => {
   assert.ok(call, "updateUserFacts is not called with userId first");
   assert.equal(call[1].trim(), "userMsg", "fact extraction must be fed userMsg");
 });
+
+/* Semantic recall reaches the table through an RPC, which the sweep above
+ * cannot see: `supabase.rpc('match_user_facts', ...)` contains no
+ * `.from('user_facts')` to match on. The function is SECURITY INVOKER and the
+ * server connects as service role, which bypasses RLS — so p_user_id is not a
+ * filter, it is the entire tenant boundary, and an RPC that took the id from a
+ * request body would read another account's memory into this account's prompt.
+ * Migration 013 says the same thing at the SQL layer; this is the half of it
+ * that can be checked. */
+test("every semantic-recall RPC names an owner the server resolved", () => {
+  const calls = [...SRC.matchAll(/supabase\.rpc\(\s*'match_user_facts'[\s\S]{0,400}?\}\)/g)].map((m) => m[0]);
+  assert.ok(calls.length >= 1, "no match_user_facts call parsed — this contract has stopped reading the file");
+  for (const call of calls) {
+    assert.match(call, /p_user_id:\s*userId\b/, `match_user_facts called without the server's userId:\n${call.slice(0, 200)}`);
+  }
+
+  // And that the id reaching it is the route's authenticated user rather than
+  // anything that travelled in the body.
+  const decl = SRC.match(/const readUserFactsByMeaning = async \(([^)]*)\)/);
+  assert.ok(decl, "readUserFactsByMeaning declaration not found");
+  assert.equal(decl[1].split(",")[0].trim(), "userId");
+
+  const injected = SRC.match(/readUserFacts\(user\.id, FACTS_INJECT_LIMIT, ([^)]*)\)/);
+  assert.ok(injected, "the council's fact read no longer passes user.id and the turn text");
+});

@@ -101,9 +101,9 @@ export const Corner = ({ className }) => (
  * effect `--fade-bottom` exists to dissolve — see base.css. The mark floats
  * unsupported; the corners are what imply the line.
  */
-const Keystone = () => (
+export const Keystone = ({ className = "sakura-keystone" }) => (
   <svg
-    className="sakura-keystone"
+    className={className}
     viewBox="0 0 48 24"
     aria-hidden="true"
     focusable="false"

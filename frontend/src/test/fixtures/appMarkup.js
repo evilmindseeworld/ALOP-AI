@@ -79,6 +79,9 @@ export const appTree = (theme) => `
             <button class="rail-chat active" aria-label="Pinned chat">P</button>
             <button class="rail-chat" aria-label="Plain chat">P</button>
           </div>
+          <div class="rail-foot is-active" aria-hidden="true">
+            <svg class="rail-keystone" viewBox="0 0 48 24"><path d="M0 0"/></svg>
+          </div>
         </div>
 
         <div class="sidebar-full">

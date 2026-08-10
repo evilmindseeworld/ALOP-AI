@@ -592,6 +592,7 @@ const AuthenticatedApp = () => {
             userImageUrl={user?.imageUrl}
             userPlan={billing.userPlan}
             onUpgrade={showUpgradeButton ? () => openOnly("upgrade") : undefined}
+            busy={status !== "idle"}
           />
 
           {/* THE PAGE HAD NO MAIN LANDMARK AT ALL — header and nav, then a run

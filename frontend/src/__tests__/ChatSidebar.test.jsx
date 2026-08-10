@@ -363,3 +363,30 @@ describe("a failed chat list", () => {
     expect(screen.getByText("No chats yet")).toBeInTheDocument();
   });
 });
+
+/* The rail's closing mark. It is decoration AND a status light — the earrings
+ * either side of the transcript already work this way, and the collapsed rail
+ * is the state where the transcript is furthest from the eye. */
+describe("the foot of the collapsed rail", () => {
+  const foot = () => document.querySelector(".rail-foot");
+
+  it("closes the column with the keystone", () => {
+    renderSidebar({ collapsed: true });
+    expect(foot()).toBeInTheDocument();
+    expect(foot().querySelector(".rail-keystone")).toBeInTheDocument();
+  });
+
+  it("is decoration, so it stays out of the accessibility tree", () => {
+    renderSidebar({ collapsed: true });
+    expect(foot()).toHaveAttribute("aria-hidden", "true");
+  });
+
+  it("lights only while the council is working", () => {
+    renderSidebar({ collapsed: true });
+    expect(foot().className).not.toMatch(/is-active/);
+
+    document.body.innerHTML = "";
+    renderSidebar({ collapsed: true, busy: true });
+    expect(document.querySelector(".rail-foot").className).toMatch(/is-active/);
+  });
+});

@@ -552,3 +552,46 @@
   background: color-mix(in srgb, var(--accent) 22%, transparent);
   color: var(--text);
 }
+
+/* ===== THE FOOT OF THE RAIL =====
+ *
+ * The collapsed rail ended wherever the chat glyphs ran out, which is a list
+ * stopping rather than a column closing. The keystone is the mark this app
+ * already uses for that job — see its comment in SakuraFrame.jsx, which is
+ * about a printer setting a fleuron at the foot of a page for the same reason.
+ *
+ * `margin-top: auto` rather than a fixed offset: .rail-chats scrolls, so any
+ * measured gap would be wrong at every list length but one.
+ *
+ * Half-opacity at rest. It is the quietest thing in the column by design — a
+ * rail is peripheral vision, and an ornament competing with the New chat
+ * button there would be a second entry point that does nothing. */
+.rail-foot {
+  margin-top: auto;
+  padding-top: var(--space-3);
+  flex-shrink: 0;
+  display: flex;
+  justify-content: center;
+  color: var(--text-subtle);
+  opacity: 0.55;
+  transition: opacity var(--dur-slow) ease, color var(--dur-slow) ease;
+}
+
+.rail-keystone {
+  width: 30px;
+  height: 15px;
+}
+
+/* It reports work, the way the earrings either side of the transcript already
+ * do — see decoration.css. Collapsed is the state where the transcript is
+ * furthest from the eye, which is exactly where a peripheral signal earns its
+ * place; the same mark in an open sidebar would be a third thing saying what
+ * the skeleton and the stage line already say.
+ *
+ * Opacity and colour only. The earrings swing because they hang from a chain;
+ * this sits on the floor of a column and a moving fleuron would read as a
+ * loose element rather than a working one. */
+.rail-foot.is-active {
+  opacity: 1;
+  color: var(--primary);
+}

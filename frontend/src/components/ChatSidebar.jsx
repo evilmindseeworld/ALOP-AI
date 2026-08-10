@@ -1,6 +1,7 @@
 import { memo, useState, useMemo, useCallback, useRef } from "react";
 import Icon from "./Icon";
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "./ui/tooltip";
+import { Keystone } from "./SakuraFrame";
 
 /** One name for the untitled case, used by the row, the rail and the filter.
  *
@@ -148,6 +149,7 @@ const ChatSidebar = memo(
     userPlan,
     userImageUrl,
     onUpgrade,
+    busy = false,
   }) => {
     const [query, setQuery] = useState("");
     const searchRef = useRef(null);
@@ -236,6 +238,23 @@ const ChatSidebar = memo(
                   <TooltipContent side="right">{displayTitle(chat)}</TooltipContent>
                 </Tooltip>
               ))}
+            </div>
+
+            {/* THE FOOT OF THE COLUMN.
+                The rail ended on whatever chat glyph happened to be last, which
+                is not an ending — it is a list running out. The keystone is the
+                mark this app already uses to close a run of ornament, for the
+                reason its own comment gives: a printer sets a fleuron at the
+                foot of a page rather than leaving the column to stop.
+
+                It reports work, like the earrings either side of the transcript
+                do. Collapsed is the state where the transcript is furthest from
+                the eye — a wide window with the list open needs no second
+                signal — so this is precisely where a peripheral one earns its
+                place. Decoration that is also a status light, rather than
+                decoration. */}
+            <div className={`rail-foot ${busy ? "is-active" : ""}`} aria-hidden="true">
+              <Keystone className="rail-keystone" />
             </div>
           </div>
         </TooltipProvider>

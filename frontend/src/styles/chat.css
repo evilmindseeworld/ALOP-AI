@@ -136,7 +136,10 @@
   height: 76px;
   border-radius: var(--radius-xl);
   object-fit: cover;
-  margin-bottom: var(--space-2);
+  /* The gap below the mark is on .empty-mark, not here. It has to be OUTSIDE
+   * the box the rosette is centred in: with the margin on the image, the
+   * wrapper was 8px taller than the mark and `top: 50%` put the ring 4px low —
+   * measured, not guessed. */
   box-shadow: 0 18px 50px var(--primary-glow), 0 0 70px var(--emerald-glow);
   animation: emptyFloat 6s ease-in-out infinite;
   /* anime.js scales and drags this element; touch-action keeps the drag from

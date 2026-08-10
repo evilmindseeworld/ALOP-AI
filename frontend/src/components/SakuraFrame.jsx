@@ -160,10 +160,19 @@ SakuraBaseCorners.displayName = "SakuraBaseCorners";
  * about a product where several models answer separately and converge on one
  * reply. The rosette is built out of that mechanic — see CouncilRosette.jsx.
  * The sprigs stay because they frame without asserting a subject.
+ *
+ * `rosette` is off for the empty state and on for sign-in, and the difference
+ * is which element the figure has to stay concentric with. The sign-in card is
+ * a fixed block in a fixed frame, so the frame can hold the seal. The empty
+ * state is a centred flex column: the mark's y depends on how tall the title,
+ * subtitle and starter grid come out at that viewport, so anything positioned
+ * against the FRAME drifts off the mark the moment the column's height
+ * changes. There it is rendered inside the mark's own box instead — see
+ * EmptyState in MessageList.jsx.
  */
-const SakuraFrame = memo(() => (
+const SakuraFrame = memo(({ rosette = true }) => (
   <div className="sakura-frame" aria-hidden="true">
-    <CouncilRosette />
+    {rosette && <CouncilRosette />}
     <Corner className="sakura-corner sakura-corner-tl" />
     <Corner className="sakura-corner sakura-corner-tr" />
   </div>

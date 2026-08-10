@@ -1,6 +1,7 @@
 import { memo, lazy, Suspense, useState, useRef, useEffect } from "react";
 import { animate, spring, createDraggable } from "animejs";
 import SakuraFrame from "./SakuraFrame";
+import CouncilRosette from "./CouncilRosette";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import Icon from "./Icon";
@@ -181,8 +182,19 @@ export const EmptyState = memo(({ onPick }) => {
   <div className="empty-state">
     {/* Behind everything, and only here — see SakuraFrame for why the frame
         does not follow the transcript. */}
-    <SakuraFrame />
-    <img ref={logoRef} src="/logo-mark.png" alt="" className="empty-logo" />
+    <SakuraFrame rosette={false} />
+    {/* The seal goes round the mark, not round the panel.
+        The rosette's traces all pass through one centre and leave a clear disc
+        there — the figure is a ring, and the mark is exactly what that ring is
+        the right size to hold. Sitting in the frame it was concentric with
+        nothing: .empty-state centres its whole column, so the mark's y moves
+        with the height of the title, subtitle and starter grid, and the ring
+        floated 42px above it with its top half clipped off the panel. Inside
+        the mark's own box it cannot come apart, at any viewport. */}
+    <span className="empty-mark">
+      <CouncilRosette />
+      <img ref={logoRef} src="/logo-mark.png" alt="" className="empty-logo" />
+    </span>
     {/* No eyebrow. "The AI Council" sat between the mark and the title,
         saying nothing the title and subtitle below do not — see SignInPage
         for the same removal. */}

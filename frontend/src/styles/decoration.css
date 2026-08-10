@@ -166,10 +166,47 @@
   left: 50%;
   width: min(clamp(190px, 22%, 280px), 34vh);
   height: auto;
-  /* -46% centres the figure on the logo mark rather than on its own box: the
-   * mark sits just below the top of the panel, not at its edge. */
+  /* -46% centres the figure on the sign-in card's mark rather than on its own
+   * box: there the mark sits just below the top of a fixed frame. */
   transform: translate(-50%, -46%);
   opacity: 0.16;
+}
+
+/* THE EMPTY STATE'S SEAL IS POSITIONED AGAINST THE MARK, NOT THE PANEL.
+ *
+ * It used to be the frame's centre ornament here too, at the same `top: 0`
+ * and -46%, and it was concentric with nothing. `.empty-state` centres its
+ * whole column, so the mark's y is a function of how tall the title, subtitle
+ * and starter grid come out at that viewport — a percentage measured from the
+ * top of the panel cannot track it. Measured on the live site it sat 42px high
+ * with its top third clipped off the scroller, which reads as a stray arc
+ * rather than a ring.
+ *
+ * Wrapped round the mark it is concentric by construction, at every viewport
+ * and both mark sizes, with no number to keep in sync.
+ *
+ * THE WIDTH IS THE ONE NUMBER HERE, and it is derived, not chosen. Every trace
+ * runs from R=96 down to 86.4 with d=34 on a 320 viewBox, so the innermost
+ * point any trace reaches is 86.4 - 34 = 52.4 units from centre: a clear disc
+ * of 104.8/320 of whatever width this is set to. At 260px that disc is 85px
+ * across, which holds the 76px mark with 4px of air a side. Change the trace
+ * radii or `d` in CouncilRosette.jsx and this stops being true — the ring will
+ * either cut the mark's corners or float away from it. */
+.empty-mark {
+  position: relative;
+  display: inline-flex;
+  margin-bottom: var(--space-2);
+  /* No line box of its own: the mark's own margin-bottom is what spaces the
+   * column below it, and an inline wrapper would add leading on top of that. */
+  line-height: 0;
+}
+
+.empty-mark .council-rosette {
+  top: 50%;
+  width: 260px;
+  transform: translate(-50%, -50%);
+  /* The mark is draggable. The ring must never be what the pointer grabs. */
+  pointer-events: none;
 }
 
 /* No grain layer here on purpose: the app already has one. `.grain` lives in

@@ -167,7 +167,9 @@
 /* Short viewports — a phone in landscape, or a desktop window dragged flat.
  * The empty state's logo and float are the first things to go. */
 @media (max-height: 620px) {
-  .empty-logo { display: none; }
+  /* The whole mark, seal included — hiding only the image would leave the
+   * ring behind, centred on nothing. */
+  .empty-mark { display: none; }
   .empty-state { gap: var(--space-2); }
 }
 

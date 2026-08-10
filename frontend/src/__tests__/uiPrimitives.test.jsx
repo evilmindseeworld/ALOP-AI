@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -59,6 +59,25 @@ describe("Button", () => {
       </Button>
     );
     expect(screen.getByRole("link", { name: "Link" })).toBeInTheDocument();
+  });
+
+  it("scales less the larger it gets, and not at all under reduced motion", () => {
+    // The press scale is per-size on purpose: one ratio for every size reads as
+    // a different-sized press. And every motion rule in this app has to have a
+    // reduced-motion counterpart — an instant snap with no easing is the worst
+    // of both. reducedMotion.test.js enforces that for the stylesheets; the
+    // button's motion lives in class names, so it is enforced here.
+    const scaleOf = (size) => buttonVariants({ size }).match(/active:scale-\[([\d.]+)\]/)[1];
+    expect(Number(scaleOf("sm"))).toBeGreaterThan(Number(scaleOf("default")));
+    expect(Number(scaleOf("default"))).toBeGreaterThan(Number(scaleOf("lg")));
+    expect(buttonVariants({})).toContain("motion-reduce:active:scale-100");
+    expect(buttonVariants({})).toContain("motion-reduce:transition-none");
+  });
+
+  it("stretches only when asked", () => {
+    render(<Button fullWidth>Wide</Button>);
+    expect(screen.getByRole("button").className).toContain("w-full");
+    expect(buttonVariants({})).not.toContain("w-full");
   });
 
   it("does not fire while disabled", async () => {

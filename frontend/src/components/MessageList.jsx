@@ -304,11 +304,19 @@ export const Message = memo(({ msg, isStreaming, onCopy, onSpeak, onFeedback, fe
 
   return (
     <div className={`msg-row ${msg.role}`}>
+      {/* WHO IS SPEAKING WAS A VISUAL FACT ONLY.
+          Alignment and a filled pill say "yours" to someone who can see the
+          transcript; in the accessibility tree the two roles were a div with a
+          class name apiece, so a screen reader read a question and an answer
+          as one undifferentiated run of text. The avatar was the only marker
+          of either, and it marked one side. */}
+      <span className="sr-only">{isUser ? "You asked:" : "The council answered:"}</span>
       {/* Only the assistant gets an avatar. A right-aligned filled pill is
           already unmistakably yours — an avatar, a "YOU" label and the
           alignment were three ways of saying the same thing, in the corner
-          where the eye lands first. */}
-      {!isUser && <div className="avatar">AI</div>}
+          where the eye lands first. It is decoration now that the line above
+          carries the same fact: read out, it would say "AI" twice. */}
+      {!isUser && <div className="avatar" aria-hidden="true">AI</div>}
       <div className="msg-content">
         {/* Above the answer, because it happened before the answer. */}
         {!isUser && msg.activity?.length > 0 && <ToolTrail activity={msg.activity} />}

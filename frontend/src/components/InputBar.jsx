@@ -60,8 +60,39 @@ const InputBar = memo(
       el.style.height = `${el.scrollHeight}px`;
     }, [text]);
 
+    /**
+     * GIVE THE COMPOSER ITS FOCUS BACK WHEN IT RE-ENABLES.
+     *
+     * Sending disables the composer while the council answers, and the browser
+     * blurs a control the moment it becomes disabled — focus lands on <body>.
+     * Nothing handed it back, so a keyboard user typed a question, pressed
+     * Enter, waited, and found the next Tab starting again from the top of the
+     * document. Measured on the live site: activeElement was BODY from the
+     * instant of send until the page was next clicked.
+     *
+     * THE FLAG IS SET IN `submit`, NOT WHEN `disabled` FLIPS, and the first
+     * attempt got that wrong. React writes `disabled` to the DOM during commit
+     * and the browser blurs there and then, so by the time any effect runs —
+     * layout effects included — activeElement is already <body> and there is
+     * nothing left to observe. Submitting is the moment we actually know the
+     * composer had the user's attention.
+     *
+     * Restored only if nothing else has claimed focus since: moving focus out
+     * from under someone who deliberately tabbed away is the worse of the two
+     * bugs, so <body> — the browser's own "nobody" — is the only state that
+     * gets overwritten.
+     */
+    const refocusOnEnable = useRef(false);
+    useEffect(() => {
+      const el = textareaRef.current;
+      if (disabled || !refocusOnEnable.current) return;
+      refocusOnEnable.current = false;
+      if (el && document.activeElement === document.body) el.focus();
+    }, [disabled]);
+
     const submit = () => {
       if (disabled || !text.trim()) return;
+      refocusOnEnable.current = true;
       onSend(text);
       setText("");
     };

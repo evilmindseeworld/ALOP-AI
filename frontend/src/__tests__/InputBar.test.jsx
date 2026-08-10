@@ -28,6 +28,20 @@ const setup = (props = {}) => {
   return { onSend, onClearAttachment, onStop, container };
 };
 
+// The same props as `setup`, for the tests that need to re-render the same
+// component with one prop changed rather than mount a fresh one.
+const baseProps = () => ({
+  onSend: vi.fn(),
+  onFileSelect: vi.fn(),
+  onStartCamera: vi.fn(),
+  isListening: false,
+  toggleListening: vi.fn(),
+  attachedImage: null,
+  onClearAttachment: vi.fn(),
+  isGenerating: false,
+  onStop: vi.fn(),
+});
+
 const PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUg==";
 
 describe("InputBar", () => {
@@ -263,5 +277,58 @@ describe("a failed file load", () => {
     render(<InputBar {...props} attachedFiles={[]} attachedFilesError="HTTP 500" onRetryFiles={onRetryFiles} />);
     await userEvent.click(screen.getByRole("button", { name: "Try again" }));
     expect(onRetryFiles).toHaveBeenCalledOnce();
+  });
+});
+
+describe("focus across a send", () => {
+  /* Sending disables the textarea while the council answers, and the browser
+   * blurs a control the moment it is disabled. Nothing gave the focus back, so
+   * a keyboard user pressed Enter and found the next Tab starting again from
+   * the top of the document — measured on the live site, activeElement was
+   * BODY from the send until the page was clicked. */
+  it("returns focus to the composer when it re-enables after a send", async () => {
+    const props = baseProps();
+    const { rerender } = render(<InputBar {...props} disabled={false} />);
+    const textarea = screen.getByRole("textbox");
+    textarea.focus();
+    await userEvent.type(textarea, "a question");
+    await userEvent.keyboard("{Enter}");
+    expect(props.onSend).toHaveBeenCalled();
+
+    // What the browser does to a control it has just disabled.
+    rerender(<InputBar {...props} disabled={true} />);
+    textarea.blur();
+
+    rerender(<InputBar {...props} disabled={false} />);
+    expect(document.activeElement).toBe(screen.getByRole("textbox"));
+  });
+
+  it("does not steal focus back from wherever the user has moved to", async () => {
+    const props = baseProps();
+    const tree = (disabled) => (
+      <>
+        <button type="button">Elsewhere</button>
+        <InputBar {...props} disabled={disabled} />
+      </>
+    );
+    const { rerender } = render(tree(false));
+    const textarea = screen.getByRole("textbox");
+    textarea.focus();
+    await userEvent.type(textarea, "a question");
+    await userEvent.keyboard("{Enter}");
+
+    rerender(tree(true));
+    textarea.blur();
+    screen.getByRole("button", { name: "Elsewhere" }).focus(); // tabbed away
+
+    rerender(tree(false));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Elsewhere" }));
+  });
+
+  it("leaves focus alone when nothing was sent", async () => {
+    const props = baseProps();
+    const { rerender } = render(<InputBar {...props} disabled={true} />);
+    rerender(<InputBar {...props} disabled={false} />);
+    expect(document.activeElement).toBe(document.body);
   });
 });

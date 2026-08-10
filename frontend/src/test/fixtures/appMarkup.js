@@ -141,7 +141,7 @@ export const appTree = (theme) => `
       <div class="sidebar collapsed"><div class="sidebar-rail"><div class="rail-chats"></div></div><div class="sidebar-full"><div class="chat-list"></div></div></div>
       <div class="sidebar mobileOpen"><div class="sidebar-full"><div class="chat-list"></div></div></div>
 
-      <div class="chat-main">
+      <main class="chat-main">
         <!-- The ornament hangs inside the transcript panel, in the margin the
              centred column creates. It used to be fixed to the window, which
              is where the sidebar and header are. -->
@@ -246,7 +246,7 @@ export const appTree = (theme) => `
             </div>
 
             <div class="msg-stream">
-            <div class="msg-row user">
+            <div class="msg-row user"><span class="sr-only">You asked:</span>
               <div class="msg-content">
                 <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="msg-attachment" alt="Attached"/>
                 <div class="bubble markdown-body"><p>What is this?</p></div>
@@ -254,8 +254,8 @@ export const appTree = (theme) => `
               </div>
             </div>
 
-            <div class="msg-row assistant">
-              <div class="avatar">AI</div>
+            <div class="msg-row assistant"><span class="sr-only">The council answered:</span>
+              <div class="avatar" aria-hidden="true">AI</div>
               <div class="msg-content">
                 <details class="tool-trail" open>
                   <summary class="tool-trail-summary"><svg width="13" height="13" viewBox="0 0 24 24"><path d="M0 0"/></svg><span>Checked 2 sources</span></summary>
@@ -300,24 +300,24 @@ export const appTree = (theme) => `
               </div>
             </div>
 
-            <div class="msg-row assistant">
-              <div class="avatar">AI</div>
+            <div class="msg-row assistant"><span class="sr-only">The council answered:</span>
+              <div class="avatar" aria-hidden="true">AI</div>
               <div class="msg-content">
                 <div class="bubble markdown-body is-streaming"><p>Half an answ</p></div>
                 <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="msg-image" alt="Generated"/>
               </div>
             </div>
 
-            <div class="msg-row assistant">
-              <div class="avatar">AI</div>
+            <div class="msg-row assistant"><span class="sr-only">The council answered:</span>
+              <div class="avatar" aria-hidden="true">AI</div>
               <div class="msg-content">
                 <div class="bubble markdown-body is-stopped"><p>Interrupted</p></div>
                 <span class="msg-stopped-note"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M0 0"/></svg> Stopped</span>
               </div>
             </div>
 
-            <div class="msg-row assistant">
-              <div class="avatar">AI</div>
+            <div class="msg-row assistant"><span class="sr-only">The council answered:</span>
+              <div class="avatar" aria-hidden="true">AI</div>
               <div class="msg-content">
                 <div class="bubble typing-bubble" role="status">
                   <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
@@ -325,8 +325,8 @@ export const appTree = (theme) => `
               </div>
             </div>
 
-            <div class="msg-row assistant">
-              <div class="avatar">AI</div>
+            <div class="msg-row assistant"><span class="sr-only">The council answered:</span>
+              <div class="avatar" aria-hidden="true">AI</div>
               <div class="msg-content">
                 <div class="skeleton-block"></div>
               </div>
@@ -376,7 +376,7 @@ export const appTree = (theme) => `
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
    </div>
   </div>

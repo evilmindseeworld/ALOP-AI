@@ -594,7 +594,12 @@ const AuthenticatedApp = () => {
             onUpgrade={showUpgradeButton ? () => openOnly("upgrade") : undefined}
           />
 
-          <div className="chat-main">
+          {/* THE PAGE HAD NO MAIN LANDMARK AT ALL — header and nav, then a run
+              of anonymous divs. A screen reader user's first move on an unknown
+              page is the landmark list, and the transcript and composer were
+              not in it. This is the same box it always was; only the tag
+              changed, so every `.chat-main` rule still applies. */}
+          <main className="chat-main">
             {/* Inside the transcript panel, not the window: fixed positioning
                 hung these over the sidebar and the header, which is the app's
                 own chrome. They live in the margin the centred column makes. */}
@@ -663,6 +668,12 @@ const AuthenticatedApp = () => {
                 // jump moves the viewport but not focus, so the next Tab
                 // continues from the sidebar as though nothing happened.
                 tabIndex={-1}
+                // aria-label on a plain div is discarded. Without a role there
+                // is nothing for the name to name, so the skip link landed on
+                // an anonymous container and the transcript appeared in no
+                // landmark list. `region` is what makes "Conversation" a name
+                // a screen reader will ever say.
+                role="region"
                 aria-label="Conversation"
                 ref={chatRef}
                 onScroll={(e) => {
@@ -735,7 +746,7 @@ const AuthenticatedApp = () => {
                 onRemoveFile={chat.removeFile}
               />
             </div>
-          </div>
+          </main>
         </div>
        </div>
       </div>

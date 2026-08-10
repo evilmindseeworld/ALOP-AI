@@ -146,16 +146,54 @@ const PRODUCT_RE = new RegExp(
 );
 
 /**
+ * Signals that are about buying and cannot be about much else.
+ *
+ * THE LIST OF NOUNS WAS THE BUG. Requiring PRODUCT_RE on every shopping
+ * question meant this provider ran only for products somebody had thought to
+ * enumerate. "air fryer" was not on the list, so "best air fryers in the UAE
+ * under 700 AED" — a question that is nothing but buying intent — never
+ * reached Google Shopping at all. The council got SEO listicles, and the
+ * answer quoted a price range invented by a content farm. That is precisely
+ * the failure this file's header describes itself as existing to fix,
+ * reappearing for every product nobody added.
+ *
+ * A closed list of things people buy cannot be completed. There is no version
+ * of it that contains air fryers, cat litter, a kayak and whatever is invented
+ * next year, and every gap fails silently and looks like a normal answer.
+ *
+ * So the strong signals stand alone. This module's own trade decides it: a
+ * false positive costs a fraction of a cent, a false negative costs the user
+ * the exact wrong number. "Price of freedom" buys a wasted lookup whose empty
+ * result changes no answer; "air fryer price" was buying a fabricated one.
+ *
+ * A bare currency code is NOT strong on its own — "the USD is falling" is
+ * economics — so it counts only next to a figure, which is the shape a budget
+ * takes ("under 700 AED", "2,500 AED").
+ */
+const STRONG_SHOPPING_RE = new RegExp(
+  "\\b(?:price|prices|pricing|cheapest|cheaper|discount|discounts|deal|deals|on sale|" +
+    "buy|buying|purchase|purchasing|shop for|order online|in stock|" +
+    "how much (?:is|are|does|do|would)|worth buying|value for money)\\b" +
+    "|[$€£¥₹₩₦₱﷼]\\s*\\d" +
+    "|\\d[\\d,.]*\\s*(?:AED|SAR|QAR|KWD|OMR|BHD|USD|EUR|GBP|INR|PKR|EGP|dirhams?|riyals?|rupees?|dollars?|euros?|pounds?)\\b" +
+    "|\\b(?:under|below|less than|around|up to|between|budget of|max)\\s+(?:[$€£¥₹₩₦₱﷼]\\s*)?\\d",
+  "i",
+);
+
+/**
  * @param {string} query
  * @returns {boolean}
  */
 function isShoppingQuery(query) {
   const q = typeof query === "string" ? query : "";
   if (!q.trim()) return false;
-  // BOTH halves, because either alone is far too loose. "price of freedom"
-  // matches the first; "the monitor lizard" matches the second. A shopping
-  // question names a thing AND says something about what it costs.
+  // Unmistakable buying intent needs no noun to vouch for it.
+  if (STRONG_SHOPPING_RE.test(q)) return true;
+  // The weak signals still do. "Best" and "recommend" attach to restaurants,
+  // films and advice as readily as to hardware, and "the monitor lizard"
+  // matches a product noun while asking nothing about buying one — so the
+  // loose half of SHOPPING_RE keeps needing something to buy in the sentence.
   return SHOPPING_RE.test(q) && PRODUCT_RE.test(q);
 }
 
-module.exports = { searchShopping, formatShopping, shoppingParams, isShoppingQuery, SHOPPING_RE, PRODUCT_RE };
+module.exports = { searchShopping, formatShopping, shoppingParams, isShoppingQuery, SHOPPING_RE, PRODUCT_RE, STRONG_SHOPPING_RE };

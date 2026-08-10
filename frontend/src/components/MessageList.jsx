@@ -434,10 +434,39 @@ export default function MessageList({
         />
       ))}
 
+      {/* THE WAIT BEFORE THE WAIT.
+          `send` sets status to "loading" immediately, but the assistant
+          placeholder that carries `typing: true` is only inserted after up to
+          three round trips — createChat, ensureMessagesLoaded, and the awaited
+          message PUT. The question painted optimistically and then nothing
+          happened underneath it, for one round trip on a warm chat and for the
+          whole cold-start on a new one. It read as a dead app, which is exactly
+          what it looked like.
+
+          A synthetic message rather than repeated row markup, so the skeleton
+          sits in a real `.msg-row.assistant` with the same avatar and the same
+          "The council answered:" cue a real answer gets. The guard is against
+          the moment both exist: once the real placeholder lands, it renders the
+          skeleton itself and this one must go, or the transcript grows a second
+          empty answer.
+
+          Covers image generation too, which never had any in-transcript
+          feedback at all — it sets the same status and inserts no placeholder
+          of its own. */}
+      {status === "loading" && !messages[lastIndex]?.typing && (
+        <Message msg={{ role: "assistant", content: "", typing: true, id: "pending" }} />
+      )}
+
       {/* Announced, not just animated. A screen reader had no way to know an
           answer had finished arriving — the only signal was a caret stopping. */}
       <p className="sr-only" role="status" aria-live="polite">
-        {status === "streaming" ? "Answer in progress" : status === "idle" ? "Answer complete" : ""}
+        {status === "loading"
+          ? "The council is working"
+          : status === "streaming"
+            ? "Answer in progress"
+            : status === "idle"
+              ? "Answer complete"
+              : ""}
       </p>
     </div>
   );

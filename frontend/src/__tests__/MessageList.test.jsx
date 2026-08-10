@@ -147,3 +147,77 @@ describe("MessageActions — copy confirms", () => {
     expect(container.querySelector(".msg-actions").className).toContain("is-voted");
   });
 });
+
+/* The gap between pressing send and the placeholder arriving. `send` sets
+ * status to "loading" first and inserts the `typing: true` message only after
+ * up to three round trips, so the transcript sat on the question with nothing
+ * underneath it — the whole cold start, on a new chat. */
+describe("the wait before the placeholder exists", () => {
+  const skeletons = () => document.querySelectorAll(".answer-skeleton");
+
+  it("shows an answer skeleton while loading, before any typing message exists", () => {
+    render(
+      <MessageList
+        messages={[{ id: "u1", role: "user", content: "What is this?", ts: "10:04" }]}
+        status="loading"
+        feedback={{}}
+        onCopy={noop}
+        onFeedback={noop}
+        onPickStarter={noop}
+      />
+    );
+    expect(skeletons()).toHaveLength(1);
+    // In a real assistant row, not floating loose: it carries the same avatar
+    // and the same screen-reader cue a real answer gets.
+    expect(document.querySelectorAll(".msg-row.assistant")).toHaveLength(1);
+    expect(screen.getByText("The council answered:")).toBeInTheDocument();
+  });
+
+  it("does NOT double up once the real typing placeholder lands", () => {
+    render(
+      <MessageList
+        messages={[
+          { id: "u1", role: "user", content: "What is this?", ts: "10:04" },
+          { id: "a1", role: "assistant", content: "", typing: true },
+        ]}
+        status="loading"
+        feedback={{}}
+        onCopy={noop}
+        onFeedback={noop}
+        onPickStarter={noop}
+      />
+    );
+    expect(skeletons()).toHaveLength(1);
+  });
+
+  it("stops once the answer starts arriving", () => {
+    render(
+      <MessageList
+        messages={[
+          { id: "u1", role: "user", content: "What is this?", ts: "10:04" },
+          { id: "a1", role: "assistant", content: "The first tokens." },
+        ]}
+        status="streaming"
+        feedback={{}}
+        onCopy={noop}
+        onFeedback={noop}
+        onPickStarter={noop}
+      />
+    );
+    expect(skeletons()).toHaveLength(0);
+  });
+
+  it("announces the wait, which used to be silent", () => {
+    render(
+      <MessageList
+        messages={[{ id: "u1", role: "user", content: "Hi", ts: "10:04" }]}
+        status="loading"
+        feedback={{}}
+        onCopy={noop}
+        onFeedback={noop}
+        onPickStarter={noop}
+      />
+    );
+    expect(screen.getByText("The council is working")).toBeInTheDocument();
+  });
+});

@@ -194,7 +194,14 @@
   transition: transform var(--dur-fast) var(--ease-spring), filter var(--dur-fast) ease;
 }
 
-.overlay-submit:hover:not(:disabled) { transform: scale(1.08); filter: brightness(1.06); }
+/* Gated. The :active below is NOT, and the difference is the point: a press is
+ * a real event on every device and its feedback must never be withheld, where a
+ * hover on a touchscreen is an after-image of the last thing tapped. Left
+ * ungated this button sat 8% oversized until something else was touched, which
+ * on the overlay's small surface reads as the control having jammed. */
+@media (hover: hover) and (pointer: fine) {
+  .overlay-submit:hover:not(:disabled) { transform: scale(1.08); filter: brightness(1.06); }
+}
 .overlay-submit:active:not(:disabled) { transform: scale(0.95); }
 .overlay-submit:disabled { opacity: 0.5; cursor: not-allowed; }
 

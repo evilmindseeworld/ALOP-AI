@@ -55,7 +55,14 @@
   transition: transform var(--dur) var(--ease-spring);
 }
 
-.header-logo:hover { transform: scale(1.08) rotate(-4deg); }
+/* Gated: a touch device fires :hover on tap and leaves it on, so the mark sat
+ * permanently scaled and rotated 4 degrees off true after any tap near it —
+ * the app's own wordmark, crooked, for the rest of the session. See the longer
+ * note on .starter-card in chat-controls.css for why both halves of this query
+ * are needed. */
+@media (hover: hover) and (pointer: fine) {
+  .header-logo:hover { transform: scale(1.08) rotate(-4deg); }
+}
 
 /* The chat title. Truncates rather than wrapping: a two-line title pushes the
  * bar taller and shifts the whole transcript down mid-conversation.

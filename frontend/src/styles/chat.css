@@ -700,4 +700,9 @@
   transition: transform var(--dur) var(--ease-out);
 }
 
-.msg-image:hover { transform: scale(1.01); }
+/* Gated — on touch this stuck the image 1% larger after any tap, which is
+ * small enough that it never looked like a hover state and only ever looked
+ * like a rendering fault. See .starter-card in chat-controls.css. */
+@media (hover: hover) and (pointer: fine) {
+  .msg-image:hover { transform: scale(1.01); }
+}

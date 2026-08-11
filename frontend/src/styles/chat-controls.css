@@ -54,13 +54,36 @@
   transition: opacity var(--dur-fast) var(--ease-out);
 }
 
+/* Colour only, on every device. A border and a background that answer the
+ * pointer are feedback; they are also harmless if a touch leaves them on. */
 .starter-card:hover {
   border-color: var(--border-focus);
   background: var(--surface-3);
-  transform: translateY(-2px);
-  /* Lifted, so it casts. Without the shadow the translate reads as the card
-   * having jumped rather than risen. */
-  box-shadow: var(--shadow-md);
+}
+
+/* THE LIFT IS GATED, AND THE BUG IT FIXES IS A PHONE ONE.
+ *
+ * A touch device fires :hover on tap and LEAVES IT ON until something else is
+ * tapped. So the lift and its shadow were sticking: tap a starter, and the card
+ * stayed 2px up with a cast shadow behind the answer you had just asked for,
+ * looking like a stuck button. These are the four cards a phone user touches
+ * first, which is the worst place in the app to have it.
+ *
+ * `pointer: fine` is the half that matters — `hover: hover` alone is true on a
+ * stylus and on some hybrids that also take touch. Together they mean a real
+ * pointer that can rest on a thing without pressing it, which is the only
+ * device where a hover state is a state rather than an after-image.
+ *
+ * The colour change above stays ungated on purpose: it costs nothing if it
+ * lingers, and on a hybrid laptop with a touchscreen it is still the right
+ * feedback for the mouse. */
+@media (hover: hover) and (pointer: fine) {
+  .starter-card:hover {
+    transform: translateY(-2px);
+    /* Lifted, so it casts. Without the shadow the translate reads as the card
+     * having jumped rather than risen. */
+    box-shadow: var(--shadow-md);
+  }
 }
 
 .starter-card:hover::before,

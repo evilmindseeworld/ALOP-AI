@@ -528,7 +528,10 @@ export function parseStylesheet(css) {
 
 // --- media queries --------------------------------------------------------
 
-const DEFAULT_ENV = { width: 1400, height: 900, reducedMotion: false, scheme: "dark" };
+/* `hover` and `pointer` default to a real mouse, which is what every
+ * environment in the matrix was implicitly getting before they were understood
+ * at all — so adding them changes no existing row. */
+const DEFAULT_ENV = { width: 1400, height: 900, reducedMotion: false, scheme: "dark", hover: "hover", pointer: "fine" };
 
 const matchFeature = (feature, env) => {
   const [rawName, rawValue] = splitTopLevel(feature, ":");
@@ -548,6 +551,22 @@ const matchFeature = (feature, env) => {
       return value === "reduce" ? env.reducedMotion === true : env.reducedMotion !== true;
     case "prefers-color-scheme":
       return value === env.scheme;
+    /* HOVER AND POINTER, so the matrix can tell a phone from a desktop.
+     *
+     * These fell to the default below and were therefore treated as ALWAYS
+     * MATCHING, which meant `@media (hover: hover) and (pointer: fine)` was
+     * invisible to the snapshot: the harness computed the hover styles for
+     * every environment including the narrow ones, so gating a hover effect
+     * behind a pointer query produced no diff and deleting that gate would
+     * produce none either. The one class of bug the query exists to prevent
+     * was the one class the guard could not see.
+     *
+     * Bare `(hover)` and `(pointer)` — no value — are the boolean forms, true
+     * for any capability that is not "none". */
+    case "hover":
+      return value === "" ? env.hover !== "none" : value === env.hover;
+    case "pointer":
+      return value === "" ? env.pointer !== "none" : value === env.pointer;
     default:
       // An unknown feature is treated as matching. Dropping the rule instead
       // would hide its declarations from the snapshot entirely, which is the

@@ -4,7 +4,7 @@
 # here means a refactor changed behaviour. Do not regenerate it to make a
 # test pass; fix the CSS.
 #
-# elements: 936   environments: 4   states: 6
+# elements: 936   environments: 5   states: 6
 
 === width=1400 ===
 
@@ -58015,6 +58015,796 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
   - transition-duration: <transition: color 0.15s>
+
+=== width=400 touch (changes vs width=1400) ===
+
+[14] div.cmdk-backdrop
+  padding: 8vh 12px 12px
+  padding-bottom: <padding: 8vh 12px 12px>
+  padding-left: <padding: 8vh 12px 12px>
+  padding-top: <padding: 8vh 12px 12px>
+  - padding: 12vh 16px 16px
+  - padding-bottom: <padding: 12vh 16px 16px>
+  - padding-left: <padding: 12vh 16px 16px>
+  - padding-top: <padding: 12vh 16px 16px>
+
+[39] header.app-header
+  height: 56px
+  padding: 0 8px
+  padding-bottom: <padding: 0 8px>
+  padding-left: <padding: 0 8px>
+  padding-top: <padding: 0 8px>
+  - height: 48px
+  - padding: 0 12px
+  - padding-bottom: <padding: 0 12px>
+  - padding-left: <padding: 0 12px>
+  - padding-top: <padding: 0 12px>
+
+[40] button.icon-btn.mobile-only
+  display: flex
+  height: 40px
+  width: 40px
+  - display: none
+  - height: 34px
+  - width: 34px
+
+[43] button.icon-btn.desktop-only
+  display: none
+  height: 40px
+  width: 40px
+  - display: flex
+  - height: 34px
+  - width: 34px
+
+[47] img.header-logo
+  :hover
+  - transform: scale(1.08) rotate(-4deg)
+
+[48] h1.main-title
+  font-size: 13px
+  - font-size: 16px
+
+[50] button.cmdk-trigger.desktop-only
+  display: none
+  - display: flex
+
+[55] button.upgrade-btn
+  justify-content: center
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  padding-top: <padding: 0>
+  width: 40px
+  - padding: 0 12px
+  - padding-bottom: <padding: 0 12px>
+  - padding-left: <padding: 0 12px>
+  - padding-top: <padding: 0 12px>
+
+[58] span.upgrade-label
+  display: none
+
+[59] button.icon-btn.admin-btn.active
+  height: 40px
+  width: 40px
+  - height: 34px
+  - width: 34px
+
+[62] button.icon-btn
+  height: 40px
+  width: 40px
+  - height: 34px
+  - width: 34px
+
+[66] nav.sidebar
+  background: #101010
+  background-clip: <background: #101010>
+  background-image: <background: #101010>
+  background-size: <background: #101010>
+  border-bottom-right-radius: <border-radius: 0 8px 8px 0>
+  border-radius: 0 8px 8px 0
+  bottom: 0
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55)
+  left: 0
+  position: absolute
+  top: 0
+  transform: translateX(-110%)
+  width: min(300px, 86vw)
+  z-index: 50
+  - position: relative
+  - width: 272px
+  - z-index: 10
+  :focus-visible
+  - border-bottom-right-radius: <border-radius: 4px>
+  - border-radius: 4px
+
+[136] div.sidebar.collapsed
+  background: #101010
+  background-clip: <background: #101010>
+  background-image: <background: #101010>
+  background-size: <background: #101010>
+  border-bottom-right-radius: <border-radius: 0 8px 8px 0>
+  border-radius: 0 8px 8px 0
+  bottom: 0
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55)
+  left: 0
+  opacity: 1
+  position: absolute
+  top: 0
+  transform: translateX(-110%)
+  width: min(300px, 86vw)
+  z-index: 50
+  - position: relative
+  - width: 56px
+  - z-index: 10
+  :focus-visible
+  - border-bottom-right-radius: <border-radius: 4px>
+  - border-radius: 4px
+
+[137] div.sidebar-rail
+  display: none
+  - display: flex
+
+[139] div.sidebar-full
+  display: flex
+  - display: none
+
+[141] div.sidebar.mobileOpen
+  background: #101010
+  background-clip: <background: #101010>
+  background-image: <background: #101010>
+  background-size: <background: #101010>
+  border-bottom-right-radius: <border-radius: 0 8px 8px 0>
+  border-radius: 0 8px 8px 0
+  bottom: 0
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55)
+  left: 0
+  position: absolute
+  top: 0
+  width: min(300px, 86vw)
+  z-index: 50
+  - position: relative
+  - width: 272px
+  - z-index: 10
+  :focus-visible
+  - border-bottom-right-radius: <border-radius: 4px>
+  - border-radius: 4px
+
+[144] main.chat-main
+  ::after/display: none
+
+[145] div.earring-wrap.earring-left
+  display: none
+  - display: flex
+
+[153] div.earring-wrap.earring-right.is-active
+  display: none
+  - display: flex
+
+[159] div.side-panel
+  border-bottom-right-radius: <border-radius: 0>
+  border-radius: 0
+  width: 100vw
+  - width: min(420px, 100vw)
+  :focus-visible
+  - border-bottom-right-radius: <border-radius: 4px>
+  - border-radius: 4px
+
+[219] div.sakura-base
+  height: clamp(72px, 12vh, 110px)
+  - height: clamp(96px, 18vh, 180px)
+
+[222] div.scroll-wrapper
+  padding: 16px 12px 8px
+  padding-bottom: <padding: 16px 12px 8px>
+  padding-left: <padding: 16px 12px 8px>
+  padding-top: <padding: 16px 12px 8px>
+  - padding: 24px 24px 56px
+  - padding-bottom: <padding: 24px 24px 56px>
+  - padding-left: <padding: 24px 24px 56px>
+  - padding-top: <padding: 24px 24px 56px>
+
+[225] svg.council-rosette
+  display: none
+
+[227] img.empty-logo
+  height: 64px
+  width: 64px
+  - height: 76px
+  - width: 76px
+
+[230] p.empty-subtitle
+  font-size: 13px
+  - font-size: 16px
+
+[231] div.starter-grid
+  grid-template-columns: 1fr
+  max-width: none
+  - grid-template-columns: repeat(2, minmax(0, 1fr))
+  - max-width: 580px
+
+[232] button.starter-card
+  :hover
+  - box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45)
+  - transform: translateY(-2px)
+
+[238] button.starter-card
+  :hover
+  - box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45)
+  - transform: translateY(-2px)
+
+[245] div.msg-row.user
+  gap: 8px
+  padding: 12px 0
+  padding-bottom: <padding: 12px 0>
+  padding-left: <padding: 12px 0>
+  padding-top: <padding: 12px 0>
+  - gap: 12px
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
+  - padding-top: <padding: 16px 12px>
+
+[249] div.bubble.markdown-body
+  max-width: 92%
+  - max-width: min(78%, 60ch)
+
+[254] div.msg-row.assistant
+  gap: 8px
+  padding: 12px 0
+  padding-bottom: <padding: 12px 0>
+  padding-left: <padding: 12px 0>
+  padding-top: <padding: 12px 0>
+  - gap: 12px
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
+  - padding-top: <padding: 16px 12px>
+
+[330] div.msg-row.assistant
+  gap: 8px
+  padding: 12px 0
+  padding-bottom: <padding: 12px 0>
+  padding-left: <padding: 12px 0>
+  padding-top: <padding: 12px 0>
+  - gap: 12px
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
+  - padding-top: <padding: 16px 12px>
+
+[336] img.msg-image
+  :hover
+  - transform: scale(1.01)
+
+[337] div.msg-row.assistant
+  gap: 8px
+  padding: 12px 0
+  padding-bottom: <padding: 12px 0>
+  padding-left: <padding: 12px 0>
+  padding-top: <padding: 12px 0>
+  - gap: 12px
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
+  - padding-top: <padding: 16px 12px>
+
+[346] div.msg-row.assistant
+  gap: 8px
+  padding: 12px 0
+  padding-bottom: <padding: 12px 0>
+  padding-left: <padding: 12px 0>
+  padding-top: <padding: 12px 0>
+  - gap: 12px
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
+  - padding-top: <padding: 16px 12px>
+
+[355] div.msg-row.assistant
+  gap: 8px
+  padding: 12px 0
+  padding-bottom: <padding: 12px 0>
+  padding-left: <padding: 12px 0>
+  padding-top: <padding: 12px 0>
+  - gap: 12px
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
+  - padding-top: <padding: 16px 12px>
+
+[363] div.msg-row.assistant
+  gap: 8px
+  padding: 12px 0
+  padding-bottom: <padding: 12px 0>
+  padding-left: <padding: 12px 0>
+  padding-top: <padding: 12px 0>
+  - gap: 12px
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
+  - padding-top: <padding: 16px 12px>
+
+[372] div.chat-toolbar
+  padding: 0 16px 8px
+  padding-bottom: <padding: 0 16px 8px>
+  padding-left: <padding: 0 16px 8px>
+  padding-top: <padding: 0 16px 8px>
+  - padding: 4px 24px 12px
+  - padding-bottom: <padding: 4px 24px 12px>
+  - padding-left: <padding: 4px 24px 12px>
+  - padding-top: <padding: 4px 24px 12px>
+
+[379] div.input-bar
+  padding: 0 12px 12px
+  padding-bottom: <padding: 0 12px 12px>
+  padding-left: <padding: 0 12px 12px>
+  padding-top: <padding: 0 12px 12px>
+  - padding: 0 24px 20px
+  - padding-bottom: <padding: 0 24px 20px>
+  - padding-left: <padding: 0 24px 20px>
+  - padding-top: <padding: 0 24px 20px>
+
+[380] div.input-wrapper.is-dropping
+  border-bottom-right-radius: <border-radius: 8px>
+  border-radius: 8px
+  - border-bottom-right-radius: <border-radius: 12px>
+  - border-radius: 12px
+
+[382] div.input-bar
+  padding: 0 12px 12px
+  padding-bottom: <padding: 0 12px 12px>
+  padding-left: <padding: 0 12px 12px>
+  padding-top: <padding: 0 12px 12px>
+  - padding: 0 24px 20px
+  - padding-bottom: <padding: 0 24px 20px>
+  - padding-left: <padding: 0 24px 20px>
+  - padding-top: <padding: 0 24px 20px>
+
+[383] div.input-wrapper
+  border-bottom-right-radius: <border-radius: 8px>
+  border-radius: 8px
+  - border-bottom-right-radius: <border-radius: 12px>
+  - border-radius: 12px
+
+[392] svg.sakura-seal.composer-seal
+  height: 20px
+  right: 8px
+  top: -11px
+  width: 20px
+  - height: 26px
+  - right: 12px
+  - top: -14px
+  - width: 26px
+
+[424] span.input-hint.desktop-only
+  display: none
+  - display: flex
+
+[443] div.cmdk-backdrop
+  padding: 8vh 12px 12px
+  padding-bottom: <padding: 8vh 12px 12px>
+  padding-left: <padding: 8vh 12px 12px>
+  padding-top: <padding: 8vh 12px 12px>
+  - padding: 12vh 16px 16px
+  - padding-bottom: <padding: 12vh 16px 16px>
+  - padding-left: <padding: 12vh 16px 16px>
+  - padding-top: <padding: 12vh 16px 16px>
+
+[468] header.app-header
+  height: 56px
+  padding: 0 8px
+  padding-bottom: <padding: 0 8px>
+  padding-left: <padding: 0 8px>
+  padding-top: <padding: 0 8px>
+  - height: 48px
+  - padding: 0 12px
+  - padding-bottom: <padding: 0 12px>
+  - padding-left: <padding: 0 12px>
+  - padding-top: <padding: 0 12px>
+
+[469] button.icon-btn.mobile-only
+  display: flex
+  height: 40px
+  width: 40px
+  - display: none
+  - height: 34px
+  - width: 34px
+
+[472] button.icon-btn.desktop-only
+  display: none
+  height: 40px
+  width: 40px
+  - display: flex
+  - height: 34px
+  - width: 34px
+
+[476] img.header-logo
+  :hover
+  - transform: scale(1.08) rotate(-4deg)
+
+[477] h1.main-title
+  font-size: 13px
+  - font-size: 16px
+
+[479] button.cmdk-trigger.desktop-only
+  display: none
+  - display: flex
+
+[484] button.upgrade-btn
+  justify-content: center
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  padding-top: <padding: 0>
+  width: 40px
+  - padding: 0 12px
+  - padding-bottom: <padding: 0 12px>
+  - padding-left: <padding: 0 12px>
+  - padding-top: <padding: 0 12px>
+
+[487] span.upgrade-label
+  display: none
+
+[488] button.icon-btn.admin-btn.active
+  height: 40px
+  width: 40px
+  - height: 34px
+  - width: 34px
+
+[491] button.icon-btn
+  height: 40px
+  width: 40px
+  - height: 34px
+  - width: 34px
+
+[495] nav.sidebar
+  background: #f8f4ed
+  background-clip: <background: #f8f4ed>
+  background-image: <background: #f8f4ed>
+  background-size: <background: #f8f4ed>
+  border-bottom-right-radius: <border-radius: 0 8px 8px 0>
+  border-radius: 0 8px 8px 0
+  bottom: 0
+  box-shadow: 0 24px 60px rgba(50, 36, 28, 0.14)
+  left: 0
+  position: absolute
+  top: 0
+  transform: translateX(-110%)
+  width: min(300px, 86vw)
+  z-index: 50
+  - position: relative
+  - width: 272px
+  - z-index: 10
+  :focus-visible
+  - border-bottom-right-radius: <border-radius: 4px>
+  - border-radius: 4px
+
+[565] div.sidebar.collapsed
+  background: #f8f4ed
+  background-clip: <background: #f8f4ed>
+  background-image: <background: #f8f4ed>
+  background-size: <background: #f8f4ed>
+  border-bottom-right-radius: <border-radius: 0 8px 8px 0>
+  border-radius: 0 8px 8px 0
+  bottom: 0
+  box-shadow: 0 24px 60px rgba(50, 36, 28, 0.14)
+  left: 0
+  opacity: 1
+  position: absolute
+  top: 0
+  transform: translateX(-110%)
+  width: min(300px, 86vw)
+  z-index: 50
+  - position: relative
+  - width: 56px
+  - z-index: 10
+  :focus-visible
+  - border-bottom-right-radius: <border-radius: 4px>
+  - border-radius: 4px
+
+[566] div.sidebar-rail
+  display: none
+  - display: flex
+
+[568] div.sidebar-full
+  display: flex
+  - display: none
+
+[570] div.sidebar.mobileOpen
+  background: #f8f4ed
+  background-clip: <background: #f8f4ed>
+  background-image: <background: #f8f4ed>
+  background-size: <background: #f8f4ed>
+  border-bottom-right-radius: <border-radius: 0 8px 8px 0>
+  border-radius: 0 8px 8px 0
+  bottom: 0
+  box-shadow: 0 24px 60px rgba(50, 36, 28, 0.14)
+  left: 0
+  position: absolute
+  top: 0
+  width: min(300px, 86vw)
+  z-index: 50
+  - position: relative
+  - width: 272px
+  - z-index: 10
+  :focus-visible
+  - border-bottom-right-radius: <border-radius: 4px>
+  - border-radius: 4px
+
+[573] main.chat-main
+  ::after/display: none
+
+[574] div.earring-wrap.earring-left
+  display: none
+  - display: flex
+
+[582] div.earring-wrap.earring-right.is-active
+  display: none
+  - display: flex
+
+[588] div.side-panel
+  border-bottom-right-radius: <border-radius: 0>
+  border-radius: 0
+  width: 100vw
+  - width: min(420px, 100vw)
+  :focus-visible
+  - border-bottom-right-radius: <border-radius: 4px>
+  - border-radius: 4px
+
+[648] div.sakura-base
+  height: clamp(72px, 12vh, 110px)
+  - height: clamp(96px, 18vh, 180px)
+
+[651] div.scroll-wrapper
+  padding: 16px 12px 8px
+  padding-bottom: <padding: 16px 12px 8px>
+  padding-left: <padding: 16px 12px 8px>
+  padding-top: <padding: 16px 12px 8px>
+  - padding: 24px 24px 56px
+  - padding-bottom: <padding: 24px 24px 56px>
+  - padding-left: <padding: 24px 24px 56px>
+  - padding-top: <padding: 24px 24px 56px>
+
+[654] svg.council-rosette
+  display: none
+
+[656] img.empty-logo
+  height: 64px
+  width: 64px
+  - height: 76px
+  - width: 76px
+
+[659] p.empty-subtitle
+  font-size: 13px
+  - font-size: 16px
+
+[660] div.starter-grid
+  grid-template-columns: 1fr
+  max-width: none
+  - grid-template-columns: repeat(2, minmax(0, 1fr))
+  - max-width: 580px
+
+[661] button.starter-card
+  :hover
+  - box-shadow: 0 8px 30px rgba(50, 36, 28, 0.10)
+  - transform: translateY(-2px)
+
+[667] button.starter-card
+  :hover
+  - box-shadow: 0 8px 30px rgba(50, 36, 28, 0.10)
+  - transform: translateY(-2px)
+
+[674] div.msg-row.user
+  gap: 8px
+  padding: 12px 0
+  padding-bottom: <padding: 12px 0>
+  padding-left: <padding: 12px 0>
+  padding-top: <padding: 12px 0>
+  - gap: 12px
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
+  - padding-top: <padding: 16px 12px>
+
+[678] div.bubble.markdown-body
+  max-width: 92%
+  - max-width: min(78%, 60ch)
+
+[683] div.msg-row.assistant
+  gap: 8px
+  padding: 12px 0
+  padding-bottom: <padding: 12px 0>
+  padding-left: <padding: 12px 0>
+  padding-top: <padding: 12px 0>
+  - gap: 12px
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
+  - padding-top: <padding: 16px 12px>
+
+[759] div.msg-row.assistant
+  gap: 8px
+  padding: 12px 0
+  padding-bottom: <padding: 12px 0>
+  padding-left: <padding: 12px 0>
+  padding-top: <padding: 12px 0>
+  - gap: 12px
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
+  - padding-top: <padding: 16px 12px>
+
+[765] img.msg-image
+  :hover
+  - transform: scale(1.01)
+
+[766] div.msg-row.assistant
+  gap: 8px
+  padding: 12px 0
+  padding-bottom: <padding: 12px 0>
+  padding-left: <padding: 12px 0>
+  padding-top: <padding: 12px 0>
+  - gap: 12px
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
+  - padding-top: <padding: 16px 12px>
+
+[775] div.msg-row.assistant
+  gap: 8px
+  padding: 12px 0
+  padding-bottom: <padding: 12px 0>
+  padding-left: <padding: 12px 0>
+  padding-top: <padding: 12px 0>
+  - gap: 12px
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
+  - padding-top: <padding: 16px 12px>
+
+[784] div.msg-row.assistant
+  gap: 8px
+  padding: 12px 0
+  padding-bottom: <padding: 12px 0>
+  padding-left: <padding: 12px 0>
+  padding-top: <padding: 12px 0>
+  - gap: 12px
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
+  - padding-top: <padding: 16px 12px>
+
+[792] div.msg-row.assistant
+  gap: 8px
+  padding: 12px 0
+  padding-bottom: <padding: 12px 0>
+  padding-left: <padding: 12px 0>
+  padding-top: <padding: 12px 0>
+  - gap: 12px
+  - padding: 16px 12px
+  - padding-bottom: <padding: 16px 12px>
+  - padding-left: <padding: 16px 12px>
+  - padding-top: <padding: 16px 12px>
+
+[801] div.chat-toolbar
+  padding: 0 16px 8px
+  padding-bottom: <padding: 0 16px 8px>
+  padding-left: <padding: 0 16px 8px>
+  padding-top: <padding: 0 16px 8px>
+  - padding: 4px 24px 12px
+  - padding-bottom: <padding: 4px 24px 12px>
+  - padding-left: <padding: 4px 24px 12px>
+  - padding-top: <padding: 4px 24px 12px>
+
+[808] div.input-bar
+  padding: 0 12px 12px
+  padding-bottom: <padding: 0 12px 12px>
+  padding-left: <padding: 0 12px 12px>
+  padding-top: <padding: 0 12px 12px>
+  - padding: 0 24px 20px
+  - padding-bottom: <padding: 0 24px 20px>
+  - padding-left: <padding: 0 24px 20px>
+  - padding-top: <padding: 0 24px 20px>
+
+[809] div.input-wrapper.is-dropping
+  border-bottom-right-radius: <border-radius: 8px>
+  border-radius: 8px
+  - border-bottom-right-radius: <border-radius: 12px>
+  - border-radius: 12px
+
+[811] div.input-bar
+  padding: 0 12px 12px
+  padding-bottom: <padding: 0 12px 12px>
+  padding-left: <padding: 0 12px 12px>
+  padding-top: <padding: 0 12px 12px>
+  - padding: 0 24px 20px
+  - padding-bottom: <padding: 0 24px 20px>
+  - padding-left: <padding: 0 24px 20px>
+  - padding-top: <padding: 0 24px 20px>
+
+[812] div.input-wrapper
+  border-bottom-right-radius: <border-radius: 8px>
+  border-radius: 8px
+  - border-bottom-right-radius: <border-radius: 12px>
+  - border-radius: 12px
+
+[821] svg.sakura-seal.composer-seal
+  height: 20px
+  right: 8px
+  top: -11px
+  width: 20px
+  - height: 26px
+  - right: 12px
+  - top: -14px
+  - width: 26px
+
+[853] span.input-hint.desktop-only
+  display: none
+  - display: flex
+
+[891] button.overlay-submit
+  :hover
+  - filter: brightness(1.06)
+  - transform: scale(1.08)
+
+[895] div.earring-wrap.earring-left
+  display: none
+  - display: flex
+
+[900] div.earring-wrap.earring-right
+  display: none
+  - display: flex
+
+[905] div.signin-wrap
+  gap: 16px
+  padding: 40px 16px
+  padding-bottom: <padding: 40px 16px>
+  padding-left: <padding: 40px 16px>
+  padding-top: <padding: 40px 16px>
+  - gap: 24px
+  - padding: 48px 24px
+  - padding-bottom: <padding: 48px 24px>
+  - padding-left: <padding: 48px 24px>
+  - padding-top: <padding: 48px 24px>
+
+[913] div.signin-grid
+  gap: 24px
+  grid-template-columns: minmax(0, 1fr)
+  justify-items: center
+  - gap: clamp(32px, 6vw, 88px)
+  - grid-template-columns: minmax(0, 1fr) minmax(0, 380px)
+
+[914] section.signin-thesis
+  align-items: center
+  order: 2
+  - align-items: flex-start
+
+[915] h1.signin-title
+  text-align: center
+  - text-align: left
+
+[917] ol.council-ladder
+  max-width: 30ch
+  - max-width: 34ch
+
+[928] p.signin-tagline
+  text-align: center
+  - text-align: left
+
+[929] section.signin-card
+  order: 1
+  padding: 18px
+  padding-bottom: <padding: 18px>
+  padding-left: <padding: 18px>
+  padding-top: <padding: 18px>
+  - padding: 20px
+  - padding-bottom: <padding: 20px>
+  - padding-left: <padding: 20px>
+  - padding-top: <padding: 20px>
+
+[931] div.signin-card-loading
+  min-height: 306px
+  - min-height: 342px
 
 === keyframes (last definition wins) ===
 

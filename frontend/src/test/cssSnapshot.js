@@ -46,15 +46,26 @@ export function readStylesheet(entryPath) {
 }
 
 /**
- * Only three widths and one reduced-motion pass. The theme is not an axis here
- * because it lives on an `.app-root` class rather than a media query — the
- * fixture renders both themes, so one pass covers them.
+ * Three widths, one reduced-motion pass, and one touch pass. The theme is not
+ * an axis here because it lives on an `.app-root` class rather than a media
+ * query — the fixture renders both themes, so one pass covers them.
+ *
+ * THE TOUCH ROW EXISTS BECAUSE THE MATRIX COULD NOT SEE A PHONE. Width is not
+ * the same axis as pointer type: a narrow window on a laptop still has a
+ * mouse, and a tablet at 1024px does not. Every hover effect in the app is
+ * gated on `(hover: hover) and (pointer: fine)` precisely because a touch
+ * device fires :hover on tap and leaves it on — and without this row, deleting
+ * one of those gates produces no diff in this snapshot at any width.
+ *
+ * It pairs with the `hover` / `pointer` cases in cssCascade.js, which used to
+ * fall through to "unknown feature, treat as matching".
  */
 export const ENVS = [
   { label: "width=1400", width: 1400, reducedMotion: false },
   { label: "width=900", width: 900, reducedMotion: false },
   { label: "width=400", width: 400, reducedMotion: false },
   { label: "width=1400 reduced-motion", width: 1400, reducedMotion: true },
+  { label: "width=400 touch", width: 400, reducedMotion: false, hover: "none", pointer: "coarse" },
 ];
 
 export const STATES = [[], ["hover"], ["focus"], ["focus-visible"], ["active"], ["disabled"]];

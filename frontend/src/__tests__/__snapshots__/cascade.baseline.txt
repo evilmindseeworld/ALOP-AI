@@ -10961,11 +10961,6 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  background: #1b1417
-  background-clip: <background: #1b1417>
-  background-image: <background: #1b1417>
-  background-size: <background: #1b1417>
-  border-top: 1px solid rgba(240, 138, 163, 0.42)
   bottom: <inset: auto 0 0 0>
   box-sizing: border-box
   color: #f08aa3
@@ -19267,10 +19262,10 @@
   margin-left: <margin: 0 auto>
   margin-top: <margin: 0 auto>
   max-width: 860px
-  padding: 12px 12px 32px
-  padding-bottom: <padding: 12px 12px 32px>
-  padding-left: <padding: 12px 12px 32px>
-  padding-top: <padding: 12px 12px 32px>
+  padding: 12px 12px calc(32px + 4px)
+  padding-bottom: <padding: 12px 12px calc(32px + 4px)>
+  padding-left: <padding: 12px 12px calc(32px + 4px)>
+  padding-top: <padding: 12px 12px calc(32px + 4px)>
   position: relative
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
@@ -19445,10 +19440,10 @@
   margin-left: <margin: 0 auto>
   margin-top: <margin: 0 auto>
   max-width: 860px
-  padding: 12px 12px 32px
-  padding-bottom: <padding: 12px 12px 32px>
-  padding-left: <padding: 12px 12px 32px>
-  padding-top: <padding: 12px 12px 32px>
+  padding: 12px 12px calc(32px + 4px)
+  padding-bottom: <padding: 12px 12px calc(32px + 4px)>
+  padding-left: <padding: 12px 12px calc(32px + 4px)>
+  padding-top: <padding: 12px 12px calc(32px + 4px)>
   position: relative
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
@@ -19534,7 +19529,7 @@
   bottom: 5px
   box-sizing: border-box
   display: flex
-  height: 26px
+  height: 30px
   justify-content: center
   left: 5px
   margin: 0
@@ -19585,7 +19580,7 @@
   box-sizing: border-box
   display: block
   flex-shrink: 0
-  height: 26px
+  height: 30px
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -32516,11 +32511,6 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
-  background: #ecdde0
-  background-clip: <background: #ecdde0>
-  background-image: <background: #ecdde0>
-  background-size: <background: #ecdde0>
-  border-top: 1px solid rgba(179, 26, 84, 0.34)
   bottom: <inset: auto 0 0 0>
   box-sizing: border-box
   color: #b31a54
@@ -40822,10 +40812,10 @@
   margin-left: <margin: 0 auto>
   margin-top: <margin: 0 auto>
   max-width: 860px
-  padding: 12px 12px 32px
-  padding-bottom: <padding: 12px 12px 32px>
-  padding-left: <padding: 12px 12px 32px>
-  padding-top: <padding: 12px 12px 32px>
+  padding: 12px 12px calc(32px + 4px)
+  padding-bottom: <padding: 12px 12px calc(32px + 4px)>
+  padding-left: <padding: 12px 12px calc(32px + 4px)>
+  padding-top: <padding: 12px 12px calc(32px + 4px)>
   position: relative
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
@@ -41000,10 +40990,10 @@
   margin-left: <margin: 0 auto>
   margin-top: <margin: 0 auto>
   max-width: 860px
-  padding: 12px 12px 32px
-  padding-bottom: <padding: 12px 12px 32px>
-  padding-left: <padding: 12px 12px 32px>
-  padding-top: <padding: 12px 12px 32px>
+  padding: 12px 12px calc(32px + 4px)
+  padding-bottom: <padding: 12px 12px calc(32px + 4px)>
+  padding-left: <padding: 12px 12px calc(32px + 4px)>
+  padding-top: <padding: 12px 12px calc(32px + 4px)>
   position: relative
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
@@ -41089,7 +41079,7 @@
   bottom: 5px
   box-sizing: border-box
   display: flex
-  height: 26px
+  height: 30px
   justify-content: center
   left: 5px
   margin: 0
@@ -41140,7 +41130,7 @@
   box-sizing: border-box
   display: block
   flex-shrink: 0
-  height: 26px
+  height: 30px
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -58413,8 +58403,6 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
   --ornament-a-faint: 0.15
   --ornament-a-mid: 0.26
   --ornament-a-strong: 0.40
-  --ornament-band: #1b1417
-  --ornament-band-edge: rgba(240, 138, 163, 0.42)
   --ornament-ink: #f08aa3
   --ornament-leaf: #79c6a2
   --ornament-seal: #e2503c
@@ -58523,8 +58511,6 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
   --ornament-a-faint: 0.22
   --ornament-a-mid: 0.38
   --ornament-a-strong: 0.55
-  --ornament-band: #ecdde0
-  --ornament-band-edge: rgba(179, 26, 84, 0.34)
   --ornament-ink: #b31a54
   --ornament-leaf: #3f7d5c
   --ornament-seal: #b3241a

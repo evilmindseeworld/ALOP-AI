@@ -138,20 +138,26 @@
   pointer-events: none;
   color: var(--ornament-ink);
   z-index: var(--z-empty-decor);
-  /* THE ONE HARD EDGE IN THE APP.
+  /* THE BAND IS GONE, AND THE SKYLINE IS WHY.
    *
-   * Everything else here is a wash, a mask or a 7% hairline, and softness
-   * everywhere is half of why this surface read as unfinished — nothing had a
-   * boundary the eye could land on. The reference this family comes from hangs
-   * its whole composition off a single solid block with the branch crossing in
-   * front of it. This is that block: a flat fill, a 1px top edge, no gradient.
+   * This carried `background: var(--ornament-band)` and a 1px
+   * `--ornament-band-edge` top rule: a filled block up to 180px tall across the
+   * full width of the chat surface. In Bamboo Day that fill is #ecdde0 — a
+   * dusty rose — so the bottom sixth of the page was pink, which is exactly
+   * what it was reported as. It is the same mistake the town made at the foot
+   * of the composer, one element out: a MASS painted in a brand hue reads as a
+   * band of that hue, however carefully the hue was chosen.
    *
-   * It is the base band that already existed, so it costs no new element and no
-   * new geometry, and the two lower sprigs and the keystone already sit on it.
-   * The composer sits on it too, which is what stops the prompt bar reading as
-   * the point where the decorated page stops. */
-  background: var(--ornament-band);
-  border-top: 1px solid var(--ornament-band-edge);
+   * Its stated job was to be the one hard edge in an app of washes, so the
+   * prompt bar did not read as the point where the decorated page stops. The
+   * skyline does that job now, and does it better — a horizon IS an edge, and
+   * it is drawn where the eye already is instead of 180px below it. Two
+   * competing bands at the bottom of the same screen was the real defect.
+   *
+   * The element stays: it is the positioning box for the two lower sprigs and
+   * the keystone, which are line work and were never the problem. It just
+   * paints nothing now. --ornament-band and --ornament-band-edge have no
+   * consumers left and are deleted from tokens.css with it. */
 }
 
 /* No transforms — see the block on .sakura-corner-tl. `bl` rises out of the

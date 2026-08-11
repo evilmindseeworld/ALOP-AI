@@ -166,16 +166,11 @@
   --ornament-a-mid: 0.26;
   --ornament-a-faint: 0.15;
 
-  /* The band. A SOLID fill with a hard edge, and the only one in the app.
-   *
-   * Everything here was soft: washes, masks, low-alpha gradients, hairline
-   * borders at 7% white. Softness everywhere is the other half of why this read
-   * as unfinished, because nothing had a boundary the eye could land on. The
-   * reference's spine is a hard-edged block of colour running the full height of
-   * the paper with the branch crossing in front of it, and that single hard edge
-   * is what the whole composition hangs off. */
-  --ornament-band: #1b1417;
-  --ornament-band-edge: rgba(240, 138, 163, 0.42);
+  /* The band's two tokens were here — a solid fill and a hard top edge for
+   * `.sakura-base`. Both are gone rather than left unused: in the light theme
+   * that fill was a dusty rose across the bottom sixth of the page, and the
+   * hard edge it existed to provide is the skyline's roofline now. See the
+   * block on `.sakura-base` in decoration.css for the whole argument. */
 
   --font-heading: 'Clash Grotesk', system-ui, sans-serif;
   --font-body: 'Switzer', system-ui, sans-serif;
@@ -523,9 +518,6 @@
   --ornament-a-strong: 0.55;
   --ornament-a-mid: 0.38;
   --ornament-a-faint: 0.22;
-
-  --ornament-band: #ecdde0;
-  --ornament-band-edge: rgba(179, 26, 84, 0.34);
 
   --shadow-xs: 0 1px 2px rgba(50, 36, 28, 0.08);
   --shadow-sm: 0 2px 8px rgba(50, 36, 28, 0.08);

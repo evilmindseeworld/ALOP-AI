@@ -321,12 +321,23 @@ export const ComposerSkyline = memo(() => (
         stops at, and the only way to draw one is to run it past both edges.
         The profile is AUTHORED longer rather than scaled: stretching 320 units
         to full width would shear every gable. */}
-    <svg viewBox="0 0 1040 22" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false">
+    {/* 26 UNITS TALL, WHERE THE TOWN IS 22 OF THEM. The first version had no
+        sky at all: the viewBox ended at the tallest roof, so the sun could not
+        be drawn above the roofline without being clipped by the top of its own
+        box, and it sat half-buried in the town. Four units of sky is what a
+        rising sun needs to be rising. */}
+    <svg viewBox="0 0 1040 26" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false">
       {/* Left of centre, opposite the hanko at the card's top right. Two
           vermilion marks on one diagonal is a composition; two stacked down
-          the same edge is a collision. */}
-      <circle className="composer-sun" cx="330" cy="11" r="10" />
-      <g className="composer-town">
+          the same edge is a collision.
+          It clears the roofline it stands behind by about two thirds of its
+          diameter — it was a fifth. A sun that only peeps over the roofs reads
+          as setting behind them, or as a dot. */}
+      <circle className="composer-sun" cx="330" cy="11" r="11" />
+      {/* The town keeps its own coordinates and is dropped 4 units into the
+          taller box, so the profile below is the same drawing it always was and
+          none of its numbers had to be re-derived. */}
+      <g className="composer-town" transform="translate(0 4)">
         <path d="M0 22 V15 H16 V10 H24 V15 H38 L46 7 L54 15 H68 V5 H80 V15 H100 V17 H136 V12 H150 L158 6 L166 12 H180 V16 H196 V9 H208 V16 H228 L236 8 L244 16 H258 V13 H272 V17 H292 V14 H320 V16 H340 V8 H352 V16 H372 V12 H392 L401 6 L410 12 H430 V17 H452 V11 H470 V15 H486 V17 H520 V13 H536 L546 7 L556 13 H574 V16 H590 V9 H604 V16 H624 V13 H648 V17 H666 V10 H684 V15 H704 L713 8 L722 15 H740 V12 H762 V17 H780 V14 H800 V6 H816 V14 H836 V16 H860 V11 H884 V16 H904 L915 7 L926 16 H944 V13 H962 V17 H984 V10 H1000 V15 H1018 V17 H1040 V22 Z" />
         {/* Two pagodas, each rising out of a low run the profile leaves for it —
             x 100–136 and x 486–520. Two flared eaves apiece: the flare is the

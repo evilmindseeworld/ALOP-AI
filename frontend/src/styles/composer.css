@@ -41,8 +41,9 @@
    * skyline's floor. The town stands inside the inner rule at the foot of the
    * card; without its own strip it would paint across the icon row, which is
    * the mistake the branch above the top edge was making in the other
-   * direction. 32px clears the 26px horizon plus the 4px rule inset. */
-  padding: var(--space-3) var(--space-3) var(--space-8);
+   * direction. 36px clears the 30px horizon plus the 4px rule inset, and this
+   * number moves with `.composer-skyline`'s height — change one, change both. */
+  padding: var(--space-3) var(--space-3) calc(var(--space-8) + var(--space-1));
   background: var(--surface-2);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-xl);
@@ -139,11 +140,13 @@
   left: 5px;
   right: 5px;
   bottom: 5px;
-  /* 26px, not 18px. At 18 the tallest building was 15px and the sun 16px
-   * across — small enough that both were guessed at rather than seen, and the
-   * whole strip read as a texture along the bottom edge. The drawing has a
-   * subject in it; it has to be big enough to be that subject. */
-  height: 26px;
+  /* 30px, from 18 by way of 26. At 18 the tallest building was 15px and the sun
+   * 16px across — small enough that both were guessed at rather than seen. 26
+   * fixed the town and not the sun, because the viewBox ended at the tallest
+   * roof: there was no sky for the sun to be in, so it sat half-buried whatever
+   * its radius. The extra 4px is sky, and it is the whole reason the sun now
+   * clears the roofs by two thirds of its diameter instead of a fifth. */
+  height: 30px;
   display: flex;
   justify-content: center;
   align-items: flex-end;
@@ -155,7 +158,7 @@
 }
 
 .composer-skyline svg {
-  height: 26px;
+  height: 30px;
   width: auto;
   flex-shrink: 0;
   display: block;

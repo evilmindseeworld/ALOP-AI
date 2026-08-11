@@ -125,3 +125,34 @@ test("a non-promise value is accepted as already settled", async () => {
   const { results } = await settleByDeadline([{ promise: "plain", fallback: null }], { deadlineMs: 100 });
   assert.deepEqual(results, ["plain"]);
 });
+
+test("A PREDICATE THAT THROWS DOES NOT CRASH THE PROCESS EITHER", async () => {
+  // The `enough` call sits inside a `then` whose promise nobody holds, so a
+  // throw from the caller's predicate became the same process-level event the
+  // straggler test above exists to prevent — arriving by the one route the
+  // fallbacks did not cover.
+  const seen = [];
+  const onUnhandled = (e) => seen.push(e);
+  process.on("unhandledRejection", onUnhandled);
+
+  const { results } = await settleByDeadline(
+    [
+      { promise: after(5, "fast"), fallback: null },
+      { promise: new Promise(() => {}), fallback: "never" },
+    ],
+    {
+      deadlineMs: 40,
+      enough: (r) => {
+        if (r[0] === "fast") throw new Error("predicate blew up");
+        return false;
+      },
+    },
+  );
+  await new Promise((r) => setTimeout(r, 100));
+
+  process.off("unhandledRejection", onUnhandled);
+  assert.deepEqual(seen, []);
+  // A predicate that cannot answer has not said "enough": the deadline still
+  // governs, and what had landed by then is returned.
+  assert.deepEqual(results, ["fast", "never"]);
+});

@@ -169,6 +169,30 @@ test("the per-call timeout is clamped to what is left of the total budget", asyn
   assert.ok(seen.every((t) => t <= 8000));
 });
 
+/**
+ * The clamp had a `Math.max(250, ...)` floor on the outside of it, so a budget
+ * with less than 250ms left handed the registry a timeout LARGER than the
+ * budget that had just clamped it — the overrun the clamp exists to prevent,
+ * reintroduced by the floor meant to keep calls worth making.
+ */
+test("the per-call floor cannot hand out more time than the budget has left", async () => {
+  const seen = [];
+  const registry = {
+    list: () => [],
+    execute: async (_c, opts) => { seen.push(opts.timeoutMs); return { ok: true, summary: "s", content: "" }; },
+  };
+  const r = await runAgentLoop({
+    members: ["a"],
+    askMember: async () => toolCall("x"),
+    registry,
+    perCallMs: 8000,
+    // Less than the 250ms a call is considered worth making.
+    totalToolMs: 100,
+  });
+  assert.deepEqual(seen, [], "no call may be issued with a timeout the budget cannot cover");
+  assert.match(r.truncated, /100ms tool budget/);
+});
+
 // ===== truncation is reported, never hidden =====
 
 test("truncated is null only when the loop ended because everyone was done", async () => {
@@ -468,9 +492,11 @@ test("a final round whose quorum is already met does not wait on a member that n
   let finalRoundAsks = 0;
   const registry = fakeRegistry({
     execute: async () => {
-      // Spend the whole request wall budget during the research round. The
-      // cumulative quorum must still release before the next round's asks.
-      clock = 100;
+      // Spend all but a sliver of the wall budget during the research round.
+      // Too little is left for the final round to be worth starting, so the
+      // cumulative quorum must release before the wall check reports a
+      // truncation for a turn that was not actually short of anything.
+      clock = 295;
       return { ok: true, summary: "ran web_search", content: "result" };
     },
   });
@@ -489,10 +515,64 @@ test("a final round whose quorum is already met does not wait on a member that n
     maxRounds: 2,
     quorum: 1,
     roundMs: 4000,
-    totalWallMs: 50,
+    totalWallMs: 300,
     now: () => clock,
   });
   assert.equal(finalRoundAsks, 0, "cumulative quorum must release before starting final-round model calls");
   assert.deepEqual(Object.keys(r.answers), ["early"]);
   assert.equal(r.truncated, null);
+});
+
+/**
+ * The wall ceiling was checked against zero, so a round could start with a few
+ * milliseconds left: every member was asked, every model call was paid for, and
+ * every one of them was then dropped at a whip that had already expired. Worse,
+ * the truncation blamed `roundMs` for a whip the wall had clamped.
+ */
+test("a round is not started with a sliver of wall left", async () => {
+  let clock = 0;
+  let asks = 0;
+  const r = await runAgentLoop({
+    members: ["a", "b"],
+    askMember: async () => { asks++; clock += 10; return toolCall("x"); },
+    registry: fakeRegistry(),
+    now: () => clock,
+    maxRounds: 10,
+    roundMs: 4000,
+    // Round one is affordable; it leaves 240ms, which is not a round.
+    totalWallMs: 260,
+  });
+  assert.equal(asks, 2, "one round of two members, and no second round bought with 240ms");
+  assert.match(r.truncated, /260ms ceiling/);
+});
+
+test("a wall-clamped whip is reported as the wall ceiling, not as a slow round", async () => {
+  const r = await runAgentLoop({
+    members: ["hung"],
+    askMember: () => new Promise(() => {}), // never settles
+    registry: fakeRegistry(),
+    maxRounds: 4,
+    roundMs: 30000,
+    // Below roundMs, so the whip that fires is the wall's, not the round's.
+    totalWallMs: 300,
+  });
+  assert.match(r.truncated, /300ms ceiling/);
+  assert.doesNotMatch(r.truncated, /did not reply within/);
+});
+
+test("entry construction cannot extend the wall ceiling", async () => {
+  const r = await runAgentLoop({
+    members: ["slow"],
+    askMember: () => {
+      const endsAt = Date.now() + 220;
+      while (Date.now() < endsAt) {}
+      return new Promise((resolve) => setTimeout(() => resolve("late final"), 160));
+    },
+    registry: fakeRegistry(),
+    maxRounds: 1,
+    roundMs: 5000,
+    totalWallMs: 300,
+  });
+  assert.deepEqual(r.answers, {});
+  assert.match(r.truncated, /300ms ceiling/);
 });

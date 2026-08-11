@@ -44,6 +44,20 @@ function settleByDeadline(entries, { deadlineMs = 3000, enough } = {}) {
     let settled = 0;
     let done = false;
 
+    /* `enough` is the caller's code, and the call below it lives inside a
+     * `then` whose promise nobody holds. A predicate that throws therefore
+     * produces the unhandled rejection this whole file exists to avoid, through
+     * the one path the fallbacks above do not cover. A predicate that cannot
+     * answer has not said "enough" — the deadline still applies. */
+    const enoughNow = () => {
+      if (typeof enough !== "function") return false;
+      try {
+        return enough(results);
+      } catch {
+        return false;
+      }
+    };
+
     const finish = () => {
       if (done) return;
       done = true;
@@ -64,7 +78,7 @@ function settleByDeadline(entries, { deadlineMs = 3000, enough } = {}) {
           if (done) return;
           results[i] = value;
           if (settled === list.length) return finish();
-          if (enough && enough(results)) return finish();
+          if (enoughNow()) return finish();
         },
         () => {
           // Rejection is indistinguishable from a timeout here: the fallback
@@ -90,7 +104,7 @@ function settleByDeadline(entries, { deadlineMs = 3000, enough } = {}) {
      * this file exists to avoid. Nothing can have settled between the two
      * statements — `then` never runs synchronously — so `results` here is still
      * every fallback, which is what the caller's predicate expects. */
-    if (enough && enough(results)) finish();
+    if (enoughNow()) finish();
   });
 }
 

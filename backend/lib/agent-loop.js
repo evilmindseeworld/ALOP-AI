@@ -72,6 +72,13 @@ const DEFAULTS = {
   quorum: 0,
 };
 
+/* The least wall time a round may be started with. A sliver left on the wall
+ * ceiling is not a round: every active member would be asked, every model call
+ * would be paid for, and every one of them would be dropped at a whip that had
+ * already expired. Clamped against cfg.roundMs at the call site so a test (or a
+ * caller) that deliberately sets a tiny round is not floored out of existence. */
+const MIN_ROUND_MS = 250;
+
 /** Tool results, rendered for the next round's prompt. */
 const renderResults = (executed) =>
   executed
@@ -133,7 +140,13 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     // Checked BEFORE the members are asked, not only before the tools run. A
     // ceiling tested halfway through the step it is meant to bound is a ceiling
     // one whole step of slack above where it claims to be.
-    if (wallLeft() <= 0) {
+    //
+    // Against a floor rather than zero: see MIN_ROUND_MS. Stopping here leaves
+    // up to that much of the ceiling unspent, which is the point — the
+    // alternative spends a full round of model calls to buy nothing.
+    const roundStartedAt = now();
+    const roundDeadlineMs = Math.min(cfg.roundMs, cfg.totalWallMs - (roundStartedAt - startedAt));
+    if (roundDeadlineMs < Math.min(cfg.roundMs, MIN_ROUND_MS)) {
       truncated = truncated || `Reached the ${cfg.totalWallMs}ms ceiling for this turn.`;
       break;
     }
@@ -160,8 +173,11 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
       {
         // Never longer than what is left of the whole loop: a round that
         // outlives its own hard stop is the hang the hard stop exists to
-        // prevent.
-        deadlineMs: Math.max(0, Math.min(cfg.roundMs, wallLeft())),
+        // prevent. Computed above, at the gate that decided this round was
+        // worth starting at all. Entry construction already consumed part of
+        // that duration, so do not grant it twice when the helper starts its
+        // own timer.
+        deadlineMs: Math.max(0, roundDeadlineMs - (now() - roundStartedAt)),
         /* QUORUM RELEASE, the council's own trade applied to the round.
          *
          * A round costs the SLOWEST member even after the whip caps it, and the
@@ -195,7 +211,14 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     const usableAnswers = [...answers.values()].filter(isUsableAnswer).length;
     const releasedAtQuorum = isFinalRound && cfg.quorum > 0 && usableAnswers >= cfg.quorum;
     if (lateCount > 0 && !releasedAtQuorum) {
-      truncated = truncated || `${lateCount} member(s) did not reply within the ${cfg.roundMs}ms round.`;
+      // Name the whip that actually fired. When the wall clamped the round, the
+      // members were not slow against the round they were given — reporting
+      // cfg.roundMs there sends whoever reads the log looking at the wrong knob.
+      truncated =
+        truncated ||
+        (roundDeadlineMs < cfg.roundMs
+          ? `Reached the ${cfg.totalWallMs}ms ceiling for this turn.`
+          : `${lateCount} member(s) did not reply within the ${cfg.roundMs}ms round.`);
     }
 
     // A member that gave a final answer is done. One that errored, or missed
@@ -226,7 +249,10 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
       break;
     }
 
-    const { unique, dropped } = dedupeCalls(stillAsking, remaining);
+    // Deduped on the canonical form, not on what the model wrote: see
+    // registry.normalize. A registry without one (a test double) still dedupes
+    // on the raw arguments, exactly as before.
+    const { unique, dropped } = dedupeCalls(stillAsking, remaining, registry.normalize);
     if (unique.length === 0) break;
     if (dropped > 0) truncated = `Dropped ${dropped} call(s) at the ${cfg.maxUniqueCalls}-call ceiling.`;
     uniqueCallsUsed += unique.length;
@@ -234,7 +260,19 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     // Executed in parallel, once each, with the per-call ceiling additionally
     // clamped to whatever is left of the total budget — otherwise eight 8s
     // calls could run to 64s inside a 25s budget.
-    const perCall = Math.max(250, Math.min(cfg.perCallMs, budgetLeft(), wallLeft()));
+    //
+    // The 250ms minimum is a floor on what is worth ASKING FOR, not a floor the
+    // budget has to honour: a `Math.max` here would hand the registry a timeout
+    // larger than the budget that just clamped it, which is the overrun this
+    // line exists to prevent. Too little left to be worth a call is a stop.
+    const perCall = Math.min(cfg.perCallMs, budgetLeft(), wallLeft());
+    if (perCall < 250) {
+      truncated =
+        budgetLeft() <= wallLeft()
+          ? `Reached the ${cfg.totalToolMs}ms tool budget for this turn.`
+          : `Reached the ${cfg.totalWallMs}ms ceiling for this turn.`;
+      break;
+    }
     const toolsStartedAt = now();
     const executed = await Promise.all(
       unique.map(async (call) => {

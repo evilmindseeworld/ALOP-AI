@@ -68,9 +68,16 @@ function toolMessages(baseMsgs, registry, ctx) {
   const head = base[0] && base[0].role === "system" ? base[0].content : "";
   const rest = base[0] && base[0].role === "system" ? base.slice(1) : base;
 
-  const catalogue = (registry.list() || [])
-    .map((t) => `- ${t.name}(${Object.keys(t.schema || {}).join(", ")}) — ${t.description}`)
-    .join("\n");
+  /* THE FINAL ROUND IS ANSWER-ONLY. It cannot request a tool, and anything it
+   * asks for cannot run, so serialising every description into every member's
+   * last prompt is pure input latency. This is especially expensive when the
+   * optional SerpApi tool carries its full engine menu: the measured catalogue
+   * is about 566 tokens before history or results, multiplied by every seat. */
+  const catalogue = isFinalRound
+    ? "No tools may be requested in this final round."
+    : (registry.list() || [])
+        .map((t) => `- ${t.name}(${Object.keys(t.schema || {}).join(", ")}) — ${t.description}`)
+        .join("\n");
 
   // The final-round instruction is the load-bearing part. Without it a member
   // spends the last round requesting a tool that can never run, and so

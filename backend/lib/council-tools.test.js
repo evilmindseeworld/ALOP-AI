@@ -80,6 +80,14 @@ test("THE FINAL ROUND FORBIDS TOOL REQUESTS", () => {
   assert.equal(m[0].content.includes("INSTEAD of answering"), false);
 });
 
+test("the final round does not pay for a catalogue it cannot use", () => {
+  const normal = toolMessages(BASE, registry, { round: 1, isFinalRound: false })[0].content;
+  const final = toolMessages(BASE, registry, { round: 3, isFinalRound: true })[0].content;
+  assert.ok(normal.includes("web_search(query)"));
+  assert.equal(final.includes("web_search(query)"), false);
+  assert.ok(final.includes("No tools may be requested"));
+});
+
 test("the round number is stated, so a member knows where it is", () => {
   assert.ok(toolMessages(BASE, registry, { round: 2 })[0].content.includes("round 2"));
 });

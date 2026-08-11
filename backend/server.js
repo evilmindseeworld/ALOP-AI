@@ -1457,8 +1457,6 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const truncatedPrompt = truncatePrompt(pv.value);
     const histArr = sanitizeHistory(history);
 
-    const [convSummary, feedbackGuidance, userFacts] = await Promise.all([readChatSummary(chatId, user.id), getFeedbackGuidance(user.id), readUserFacts(user.id, FACTS_INJECT_LIMIT, pv.value)]);
-
     // VISION. The council speaks to a text model, so an attached image is
     // described first and the description travels as context — the same shape
     // /api/overlay uses.
@@ -1469,19 +1467,37 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     // the user cannot tell the difference between "didn't look" and "looked and
     // saw nothing".
     let imageContext = '';
+    let parsedImage = null;
+    let visionP = Promise.resolve(null);
     if (image) {
-      const parsed = parseDataUrl(image);
-      if (!parsed) return res.status(400).json({ error: 'Attached image must be a base64-encoded PNG, JPEG, WebP or GIF under 8 MB.' });
+      parsedImage = parseDataUrl(image);
+      if (!parsedImage) return res.status(400).json({ error: 'Attached image must be a base64-encoded PNG, JPEG, WebP or GIF under 8 MB.' });
       if (!GOOGLE_API_KEY) return res.status(503).json({ error: 'Image analysis is not configured on this server.' });
-      try {
-        const visionModel = userPlan === 'pro' ? 'gemini-2.5-pro-preview-05-06' : 'gemini-2.5-flash-preview-05-06';
-        imageContext = await callGeminiVision(visionModel, 'Describe this image thoroughly. Include any text, code, UI elements, data and errors visible in it.', parsed.base64, parsed.mime, 1024);
-      } catch (e) {
-        console.error('[COUNCIL] Vision failed:', e.message);
+      /* START VISION BEFORE THE CONTEXT READS. Summary, feedback and facts do
+       * not depend on the image, so waiting for all three Supabase queries
+       * before calling Gemini added their full round-trip to every image turn.
+       * The result is still awaited before prompt assembly; only the idle time
+       * is removed. */
+      const visionModel = userPlan === 'pro' ? 'gemini-2.5-pro-preview-05-06' : 'gemini-2.5-flash-preview-05-06';
+      visionP = callGeminiVision(visionModel, 'Describe this image thoroughly. Include any text, code, UI elements, data and errors visible in it.', parsedImage.base64, parsedImage.mime, 1024)
+        .then((text) => ({ text }))
+        .catch((error) => ({ error }));
+    }
+
+    const [contextResult, visionResult] = await Promise.all([
+      Promise.all([readChatSummary(chatId, user.id), getFeedbackGuidance(user.id), readUserFacts(user.id, FACTS_INJECT_LIMIT, pv.value)]),
+      visionP,
+    ]);
+    const [convSummary, feedbackGuidance, userFacts] = contextResult;
+
+    if (parsedImage) {
+      if (visionResult?.error) {
+        console.error('[COUNCIL] Vision failed:', visionResult.error.message);
         return res.status(502).json({ error: "Couldn't analyse the attached image. Try again, or send the message without it." });
       }
+      imageContext = visionResult?.text || '';
       if (!imageContext.trim()) return res.status(502).json({ error: "Couldn't read anything from the attached image." });
-      console.log(`[COUNCIL] Vision: ${parsed.mime}, ${Math.round(parsed.bytes / 1024)}KB`);
+      console.log(`[COUNCIL] Vision: ${parsedImage.mime}, ${Math.round(parsedImage.bytes / 1024)}KB`);
     }
 
     // Injected into every prompt path below, so memory and learned preferences

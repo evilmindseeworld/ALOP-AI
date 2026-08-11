@@ -71,6 +71,19 @@ test("the 50 MB body is granted only where an image can legitimately arrive", ()
   assert.deepEqual([...bigBody].sort(), ["/api/council", "/api/overlay"]);
 });
 
+test("council vision starts before its independent context reads", () => {
+  // An image description and the summary/feedback/facts reads do not depend on
+  // each other. The source test is the reachable seam because server.js exits
+  // during import when deployment env is absent; it guards the critical-path
+  // ordering without pretending to call Gemini or Supabase in a unit test.
+  const vision = SRC.indexOf("visionP = callGeminiVision");
+  const context = SRC.indexOf("Promise.all([readChatSummary");
+  assert.ok(vision >= 0, "the vision request vanished");
+  assert.ok(context >= 0, "the context reads vanished");
+  assert.ok(vision < context, "vision is back behind the context round-trip");
+  assert.match(SRC.slice(vision, context + 140), /visionP[\s\S]*Promise\.all\(\[/);
+});
+
 test("the routes that accept an image are rate limited", () => {
   // A 50 MB body under only the /api/ floor of 120/min is 6 GB a minute.
   for (const p of bigBody) {

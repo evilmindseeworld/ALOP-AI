@@ -28,42 +28,49 @@
   z-index: var(--z-empty-decor);
 }
 
-.signin-orb {
+/* THE ASANOHA LATTICE, the same ground the signed-in app stands on.
+ *
+ * Two blurred gradient orbs used to drift here on 18s and 22s loops. They were
+ * the most generic thing in the repository — that background ships with every
+ * starter template — and they were doing the work this pattern should do:
+ * giving the surface a texture so the form is not floating on a flat wash.
+ *
+ * Copied in geometry from `.chat-main::after` in decoration.css, deliberately
+ * and not by accident of taste. Signing in should be the same room as the app,
+ * not an entrance hall decorated in a different style. Read the note there for
+ * why this is three line families rather than an image, and why the alpha is
+ * near-invisible: a regular pattern at any real strength gives the gradient
+ * underneath it an edge to band along.
+ *
+ * The mask clears the centre so nothing crosses the form or the roster. The
+ * ellipse is tighter than the app's because this column is narrower. */
+.signin-lattice {
   position: fixed;
-  border-radius: 50%;
-  filter: blur(140px);
+  inset: 0;
   pointer-events: none;
   z-index: var(--z-empty-decor);
+  background-image:
+    repeating-linear-gradient(60deg, transparent 0 27px, color-mix(in srgb, var(--ornament-ink) 8%, transparent) 27px 28px),
+    repeating-linear-gradient(-60deg, transparent 0 27px, color-mix(in srgb, var(--ornament-ink) 8%, transparent) 27px 28px),
+    repeating-linear-gradient(0deg, transparent 0 47px, color-mix(in srgb, var(--ornament-ink) 6%, transparent) 47px 48px);
+  -webkit-mask-image: radial-gradient(76% 66% at 50% 50%, transparent 38%, #000 100%);
+  mask-image: radial-gradient(76% 66% at 50% 50%, transparent 38%, #000 100%);
 }
 
-.signin-orb-1 {
-  width: 600px;
-  height: 600px;
-  background: var(--primary);
-  top: -200px;
-  right: -150px;
-  opacity: 0.14;
-  animation: orb1 18s ease-in-out infinite;
-}
+/* The crescents hang from the top of the viewport rather than from a panel,
+ * because on this screen there is no panel — `.signin-root` is the fixed,
+ * full-bleed surface and is already a positioning context, which is all
+ * `.earring-wrap { position: absolute }` in decoration.css needs.
+ *
+ * Pulled further into the margins than the app's 22px: the sign-in column is
+ * narrower than the transcript, so the same inset would hang them over the
+ * roster instead of beside it. Hidden entirely below 900px, where the grid
+ * collapses to one column and there is no margin left to hang anything in. */
+.signin-root .earring-left { left: 40px; }
+.signin-root .earring-right { right: 40px; }
 
-.signin-orb-2 {
-  width: 500px;
-  height: 500px;
-  background: var(--emerald);
-  bottom: -180px;
-  left: -120px;
-  opacity: 0.10;
-  animation: orb2 22s ease-in-out infinite;
-}
-
-@keyframes orb1 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-30px, 50px) scale(1.1); }
-}
-
-@keyframes orb2 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(40px, -30px) scale(1.05); }
+@media (max-width: 900px) {
+  .signin-root .earring-wrap { display: none; }
 }
 
 .signin-wrap {
@@ -93,13 +100,13 @@
  * state, and this is the one screen where a user cannot even get far enough
  * to read a toast.
  *
- * Deliberately plain: no orbs, no sakura, no animation. Decoration on an
+ * Deliberately plain: no lattice, no crescents, no animation. Decoration on an
  * error screen reads as an app that has not noticed it is broken. */
 .signin-down {
   position: relative;
   /* The same layer the sign-in content uses. It only has to clear the fixed
-     grain and orb layers behind it, which is what --z-empty-content means
-     here — see the scale in tokens.css. */
+     grain layer behind it, which is what --z-empty-content means here — see
+     the scale in tokens.css. */
   z-index: var(--z-empty-content);
   max-width: 32rem;
   margin: auto;
@@ -283,151 +290,6 @@
   .signin-wrap { gap: 16px; padding: 40px 16px; }
 }
 
-/* ===== THE SAKURA FRAME, ON A FULL VIEWPORT =====
- *
- * The frame was sized for .empty-state, which is a panel inside the app shell.
- * Here the container is the whole window, so the same clamp() lands much larger
- * relative to the content, and the torii sits directly behind the tagline —
- * where it reads as a shape competing with the text rather than atmosphere.
- *
- * Corners only, and smaller. The sign-in card occupies the middle of this
- * screen; there is nothing for a centred ornament to be behind except the
- * thing the user came here to use. */
-.signin-root .sakura-corner {
-  width: clamp(90px, 11vw, 150px);
-  opacity: 0.26;
-}
-
-@media (max-width: 640px) {
-  .signin-root .sakura-corner { width: clamp(64px, 22vw, 100px); opacity: 0.2; }
-}
-
-/* ===== THE BOUGH, AND WHAT FALLS FROM IT =====
- *
- * A blossoming branch across the top of the page with petals drifting below it.
- *
- * THE PETALS ARE CONFINED TO THIS BOX, AND THAT IS AN ACCESSIBILITY DECISION.
- *
- * The first version ran them down the whole viewport — `position: fixed;
- * inset: 0` — so they crossed the sign-in card and the roster. That is the
- * exact pattern WCAG 2.1 and WebAIM name as a vestibular trigger: moving images
- * beneath static text, large-field continuous motion in the reading area.
- * Reported symptoms are dizziness, nausea and headache, not annoyance.
- *
- * `prefers-reduced-motion` alone is not enough of an answer. One published
- * dataset puts adoption at 25-30%, which means most people who would be
- * affected never set it and get the motion anyway. The guidance is to keep
- * motion out of the reading area OR provide a visible control; confining it is
- * the cheaper of the two and costs nothing visually, because the petals were
- * always meant to read as weather at the top of the frame rather than as
- * something falling across the form.
- *
- * There is a second reason. Visual complexity is the strongest measured
- * predictor of first-impression appeal, and low complexity wins — an effect
- * detectable at 17ms. Fourteen moving objects over the whole page worked
- * against the one screen where that is measured. Eight, in a band, do not.
- *
- * TRANSFORM AND OPACITY ONLY, on every animated property. Both composite
- * without touching layout or paint. Animating `top` would relayout the page
- * sixty times a second behind a form somebody is typing into, which is how
- * decoration turns into a dropped keystroke. */
-.sakura-bough {
-  --bough-h: min(46vh, 340px);
-  /* The petals fall a SHORTER distance than the branch is tall, and the gap
-   * between the two numbers is the accessibility fix.
-   *
-   * There is no band of this page with no text in it — the brand wordmark sits
-   * 48px from the top — so "keep the motion above the content" is not
-   * achievable on a centred full-bleed layout. What IS achievable is keeping it
-   * clear of everything anyone actually READS. Measured at 1280x720: the
-   * headline starts at 139px, the sign-in card at 120px, the first roster row
-   * at 212px, and the form fields below that. A 150px fall with the fade below
-   * puts every meaningfully visible petal above all of them; only the brand
-   * mark shares the band, and a logo is not reading content.
-   *
-   * The BRANCH still spans the full 340px. It is static, and static art behind
-   * text is not what the vestibular guidance is about. */
-  --petal-fall: min(20vh, 150px);
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: var(--bough-h);
-  z-index: var(--z-empty-decor);
-  pointer-events: none;
-  color: var(--primary);
-  /* Clipped on BOTH axes now. Vertical used to be visible so petals could fall
-   * out of the box; that is precisely what is no longer wanted. */
-  overflow: hidden;
-}
-
-.sakura-bough-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-  opacity: 0.3;
-}
-
-/* The petals share the bough's box rather than the viewport, which is what
- * keeps them out of the reading area. `absolute`, not `fixed`. */
-.sakura-petals {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.sakura-petal {
-  position: absolute;
-  top: -20px;
-  left: var(--petal-left);
-  width: 12px;
-  height: 14px;
-  opacity: 0;
-  color: var(--primary-soft);
-  animation: petalFall var(--petal-duration) linear var(--petal-delay) infinite;
-}
-
-.sakura-petal svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-/* One keyframe rule for all fourteen. Everything that differs between them is a
- * custom property set on the element, so there is one definition of what
- * falling means rather than fourteen near-copies to keep in sync. */
-@keyframes petalFall {
-  0% {
-    opacity: 0;
-    transform: translate3d(0, 0, 0) rotate(0deg) scale(var(--petal-scale));
-  }
-  /* Fades in and back out INSIDE the box. The old version ran to opacity 0 only
-   * at the very end of a full-viewport fall, so a petal was still visible as it
-   * crossed the form. Now it is gone before it reaches the bottom edge, and the
-   * `overflow: hidden` above is a backstop rather than the thing doing the
-   * work — a petal cut off mid-flight by a clip reads as a glitch. */
-  12% { opacity: 0.75; }
-  70% { opacity: 0.4; }
-  100% {
-    opacity: 0;
-    transform: translate3d(var(--petal-drift), var(--petal-fall), 0) rotate(var(--petal-spin))
-      scale(var(--petal-scale));
-  }
-}
-
-@media (max-width: 640px) {
-  .sakura-bough { --bough-h: min(32vh, 220px); --petal-fall: min(16vh, 110px); }
-  .sakura-bough-svg { opacity: 0.22; }
-}
-
-/* Reduced motion removes the petals ENTIRELY rather than freezing them.
- *
- * A stopped petal halfway down the screen is not a calmer animation, it is a
- * pink shape stuck in the middle of a login form — it reads as a rendering bug,
- * which is worse than the motion it was meant to spare. The bough stays,
- * because a still branch is a finished picture. */
-@media (prefers-reduced-motion: reduce) {
-  .sakura-petals { display: none; }
-}
 
 /* ===== THE COUNCIL LADDER =====
  *

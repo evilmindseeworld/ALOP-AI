@@ -37,7 +37,6 @@ vi.mock("@clerk/react", () => ({
   },
 }));
 
-vi.mock("../components/SakuraFrame", () => ({ default: () => <div data-testid="sakura" /> }));
 
 const at = (pathname) => {
   window.history.replaceState({}, "", pathname);

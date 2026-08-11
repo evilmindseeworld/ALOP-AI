@@ -227,10 +227,9 @@ export const appTree = (theme) => `
         </div>
 
         <div class="chat-content">
-          <div class="sakura-base" aria-hidden="true"><svg class="sakura-corner sakura-corner-bl" viewBox="0 0 120 76"><path d="M0 0"/></svg><svg class="sakura-keystone" viewBox="0 0 48 24"><path d="M0 0"/></svg><svg class="sakura-corner sakura-corner-br" viewBox="0 0 120 76"><path d="M0 0"/></svg></div>
+          <div class="sakura-base" aria-hidden="true"><svg class="sakura-keystone" viewBox="0 0 48 24"><path d="M0 0"/></svg></div>
           <div class="scroll-wrapper">
             <div class="empty-state">
-              <div class="sakura-frame" aria-hidden="true"><svg class="sakura-corner sakura-corner-tl" viewBox="0 0 120 76"><path d="M0 0"/></svg><svg class="sakura-corner sakura-corner-tr" viewBox="0 0 120 76"><path d="M0 0"/></svg></div>
               <span class="empty-mark"><svg class="council-rosette" viewBox="0 0 320 320"><path d="M0 0"/></svg><img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="empty-logo" alt="ALOP-AI"/></span>
               <h2 class="empty-title text-shimmer">ALOP-AI<span class="empty-title-accent">Assembled.</span></h2>
               <p class="empty-subtitle">Ask the AI Council anything.</p>
@@ -458,11 +457,9 @@ export const outsideAppRoot = `
      schedule. -->
 <div class="signin-root">
   <div class="signin-noise"></div>
-  <div class="signin-orb signin-orb-1"></div>
-  <div class="signin-orb signin-orb-2"></div>
-  <div class="sakura-frame">
-    <svg class="sakura-corner sakura-corner-tl" viewBox="0 0 120 76"><path d="M0 0"/></svg>
-  </div>
+  <div class="signin-lattice" aria-hidden="true"></div>
+  <div class="earring-wrap earring-left" aria-hidden="true"><div class="earring-chain"></div><div class="earring-pivot"><svg class="crescent" width="96" height="132" viewBox="0 0 96 132"><path d="M0 0"/></svg></div></div>
+  <div class="earring-wrap earring-right" aria-hidden="true"><div class="earring-chain"></div><div class="earring-pivot"><svg class="crescent" width="96" height="132" viewBox="0 0 96 132"><path d="M0 0"/></svg></div></div>
 
   <div class="signin-wrap">
     <div class="signin-down" role="alert">

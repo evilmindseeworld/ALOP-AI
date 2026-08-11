@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { SignIn, SignUp, useUser } from "@clerk/react";
-import SakuraFrame from "./components/SakuraFrame";
-import SakuraBough from "./components/SakuraBough";
+import Earring from "./components/Earring";
 import { COUNCIL, FREE_COUNT } from "./constants/council";
 
 /**
@@ -119,10 +118,33 @@ export default function SignInPage() {
   return (
     <div className="signin-root">
       <div className="signin-noise" />
-      <div className="signin-orb signin-orb-1" />
-      <div className="signin-orb signin-orb-2" />
-      <SakuraFrame />
-      <SakuraBough />
+
+      {/* THE ORBS ARE GONE, and so is the branch that hung above them.
+          Two blurred gradient circles drifting on a loop behind a form is the
+          single most reproduced background on the web right now; it arrives
+          with the framework and it is on ten thousand other pages. Nothing
+          about it was this product. The grain above stays — it is the app's own
+          asset from the app's own token, which is the opposite argument.
+
+          What replaces them is what the signed-in app is already made of, so
+          that signing in is a continuation rather than a doorway into a
+          different design: the asanoha lattice as ground, and the pair of
+          crescents hanging in the gutters. */}
+      <div className="signin-lattice" aria-hidden="true" />
+
+      {/* THE OWNER'S QUESTION, and it was fair: "the earrings swing, but when I
+          log in nothing's swinging."
+
+          They were mounted in `.chat-main`, which is behind the sign-in wall,
+          so the one piece of motion in this app was invisible until after you
+          had already committed to it. It now runs on the first screen.
+
+          Not `active` here: the wide, quick swing means the council is working,
+          and nothing is working yet. This is the resting 7s arc — see
+          decoration.css, which owns both and explains why the pair is two
+          phases of one moon rather than a mirrored copy. */}
+      <Earring side="left" />
+      <Earring side="right" />
 
       <div className="signin-wrap">
         <div className="signin-brand">

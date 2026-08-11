@@ -18,8 +18,6 @@ vi.mock("@clerk/react", () => ({
   SignUp: () => <div data-testid="clerk-sign-up" />,
 }));
 
-vi.mock("../components/SakuraFrame", () => ({ default: () => <div /> }));
-vi.mock("../components/SakuraBough", () => ({ default: () => <div /> }));
 
 let SignInPage;
 beforeEach(async () => {

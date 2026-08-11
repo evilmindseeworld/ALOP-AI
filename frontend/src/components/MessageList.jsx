@@ -179,16 +179,15 @@ export const EmptyState = memo(({ onPick }) => {
 
   return (
   <div className="empty-state">
-    {/* THE TOP TWO SPRIGS ARE GONE FROM THIS SCREEN, on the owner's call
-        (2026-08-11): the empty state was reading as cluttered and the top pair
-        was what to cut. `SakuraFrame` IS that pair — the bottom corners and the
-        keystone come from `SakuraBaseCorners`, which App.jsx still renders — so
-        removing the element is the whole change and nothing else moves.
+    {/* THE BRANCHES ARE GONE, on the owner's instruction (2026-08-11): "leave
+        the earrings, just delete the branches." The top pair went first as a
+        declutter and the rest followed — all four corner sprigs, and the bough
+        and falling petals that were on sign-in.
 
-        This is a cut WITHIN the ornament family, not a redesign of it: the
-        crescents, the lattice, the centred hero, the 2x2 starter grid and the
-        base corners are untouched. Do not read it as licence to take more.
-        Sign-in still renders the frame; the request was about this screen. */}
+        What stays is the family's harder half: the crescents, the keystone
+        above the composer, the seal, the skyline on the prompt bar and the
+        asanoha lattice. The centred hero and the 2x2 starter grid below are
+        untouched and remain the specification. See SakuraFrame.jsx. */}
     {/* The seal goes round the mark, not round the panel.
         The rosette's traces all pass through one centre and leave a clear disc
         there — the figure is a ring, and the mark is exactly what that ring is

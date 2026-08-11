@@ -33,104 +33,29 @@
  *
  * That also means they cannot escape .chat-main's stacking context or its
  * overflow, so no z-index guessing is involved — the containment does it. */
-/* ===== SAKURA FRAME =====
+/* ===== THE BASE BAND =====
  *
- * Behind the empty state, and nowhere else. The transcript is the product; an
- * illustrated frame around 900 words of prose competes with the thing it
- * frames. The empty state is the one screen with nothing to compete with,
- * which is exactly why it is the one worth decorating.
+ * THE FOUR CORNER SPRIGS AND `.sakura-frame` ARE GONE, cut on the owner's
+ * instruction (2026-08-11): "leave the earrings, just delete the branches."
+ * With them went `.sakura-corner`, its four per-corner positions, the mobile
+ * width overrides, and the frame element itself. `SakuraFrame.jsx` records why
+ * the drawing is not coming back — it took four hand-authored variants to stop
+ * reading as a CSS frame and still only decorated.
  *
- * `color` is what the SVG paints with — everything inside is currentColor, so
- * the whole illustration follows the theme from one declaration and there is
- * no second palette to keep in sync.
+ * What survives here is the line work: the keystone above the composer, the
+ * seal, the crescents, and the asanoha lattice further down this file.
  *
- * Positioned here and not inline, for the reason recorded in Crescent.jsx: an
- * inline style silently outranks the stylesheet, and that mismatch is what
- * caused a long run of duelling z-index commits. */
-.sakura-frame {
-  position: absolute;
-  /* THE BOTTOM IS PULLED DOWN, and the number is a measurement rather than a
-   * nudge.
-   *
-   * The frame spans .empty-state, whose box is the scroll wrapper's CONTENT
-   * box, and that wrapper's padding is deliberately asymmetric: --space-6 (24px)
-   * at the top against --fade-bottom (56px) at the bottom, because the bottom
-   * padding has to be at least as long as the mask that dissolves the last line
-   * of a transcript into the composer.
-   *
-   * So two sprigs inset by the same 4% were landing 47px from the top of the
-   * panel and 78px from the bottom of it. Both were "in the corner" of the box
-   * they were positioned against, and only the top pair looked it. The bottom
-   * pair read as floating in the left and right margins beside the starter
-   * cards, which is what it was reported as.
-   *
-   * Extending the frame by exactly the difference between the two paddings puts
-   * the bottom corners the same distance from the panel edge as the top ones.
-   * It cannot introduce a scrollbar: 32px of overflow into 56px of existing
-   * padding still ends inside the wrapper's padding box. */
-  inset: 0 0 calc((var(--fade-bottom) - var(--space-6)) * -1) 0;
-  pointer-events: none;
-  /* --ornament-ink, not --primary. The ornament family is its own three-colour
-   * set now (ink, leaf, seal) declared per theme in tokens.css; --primary is the
-   * UI's accent and the two had been the same value at five alphas, which is
-   * what made the whole illustration read as a watermark of the button colour. */
-  color: var(--ornament-ink);
-  z-index: var(--z-empty-decor);
-}
-
-/* EVERY SIZE HERE IS A CSS SIZE, NOT AN SVG ONE.
+ * `.sakura-base` remains as the keystone's positioning box, and it must stay a
+ * SIBLING OF THE SCROLLER rather than a child of it. `.scroll-wrapper` has
+ * `overflow: auto`, so nothing inside it can paint past its edge whatever the
+ * inset says; anchored there, a mark meant for the bottom of the chat surface
+ * lands at the bottom of the scrolling box instead, floating in the margin
+ * beside the starter cards. In `.chat-content` `bottom` means what it says.
  *
- * The first version stretched one SVG over the whole panel with
- * preserveAspectRatio="slice", which scales the drawing to cover its box — so
- * on a 1300px panel every unit was multiplied by ~3.3, the petals became blobs
- * and the torii filled the screen. Decoration must keep its size while its
- * container changes size. clamp() gives each piece a floor, a proportion and a
- * ceiling; the viewBox keeps it crisp at all three. */
-.sakura-corner {
-  position: absolute;
-  width: clamp(96px, 15vw, 190px);
-  height: auto;
-  opacity: var(--ornament-a-strong);
-}
-
-/* NO MIRRORING ANYWHERE IN THIS BLOCK, and it is not coming back.
- *
- * All four corners used to be one drawing under scaleX(-1) / scaleY(-1) /
- * scale(-1), which is a perfect bilateral frame — the one thing no hand-drawn
- * branch has ever been, and the reason the ornament read as a CSS frame instead
- * of a painting. SakuraFrame.jsx now holds four separately authored variants,
- * each already growing the right way, so a transform here would flip a branch
- * back into the wrong direction rather than save a drawing.
- *
- * The sizes and alphas differ per corner on top of that. Equal corners are the
- * same symmetry problem one level up: the top left is the heaviest and the eye
- * lands there, the right-hand pair is larger and fainter, which pulls the
- * composition's mass off the centre line without moving anything. */
-.sakura-corner-tl { top: 4%; left: 3%; }
-
-.sakura-corner-tr {
-  top: 6%;
-  right: 3%;
-  width: clamp(104px, 16.5vw, 208px);
-  opacity: var(--ornament-a-mid);
-}
-
-/* THE LOWER PAIR LIVES OUTSIDE THE SCROLLER, and that is the whole fix.
- *
- * `.sakura-frame` is inside `.scroll-wrapper`, which scrolls — so nothing in it
- * can paint past its edge, whatever the inset says. The bottom sprigs were
- * pinned to the bottom of the SCROLLING BOX and read as floating in the
- * margins beside the starter cards, because the composer is in a different box
- * below. Extending the frame only moved them inside the same clip.
- *
- * `.sakura-base` is a sibling of the scroller in `.chat-content`, so `bottom`
- * here means the bottom of the chat surface: the real corners, either side of
- * the prompt bar.
- *
- * It deliberately OVERLAPS the composer's outer corners — that is what makes
- * them read as framing the prompt rather than sitting above it — so
- * `pointer-events: none` is not optional. Without it the sprigs would swallow
- * clicks aimed at the ends of the composer. */
+ * It deliberately OVERLAPS the composer's top edge — that is what makes the
+ * mark read as framing the prompt rather than sitting above it — so
+ * `pointer-events: none` is not optional. Without it the decoration would
+ * swallow clicks aimed at the prompt bar. */
 .sakura-base {
   position: absolute;
   inset: auto 0 0 0;
@@ -158,17 +83,6 @@
    * the keystone, which are line work and were never the problem. It just
    * paints nothing now. --ornament-band and --ornament-band-edge have no
    * consumers left and are deleted from tokens.css with it. */
-}
-
-/* No transforms — see the block on .sakura-corner-tl. `bl` rises out of the
- * corner and `br` rises left out of the right one, both as drawn. */
-.sakura-base .sakura-corner-bl { bottom: 6px; left: 3%; }
-
-.sakura-base .sakura-corner-br {
-  bottom: 6px;
-  right: 3%;
-  width: clamp(104px, 16.5vw, 208px);
-  opacity: var(--ornament-a-mid);
 }
 
 /* The keystone sits at the TOP of the base band, which is the one anchor here
@@ -267,17 +181,10 @@
  * the same two tokens so the two surfaces cannot drift. A second layer would
  * have doubled the effective opacity and been invisible as a cause. */
 
-/* On a phone the corners are all that fit, and a rosette behind six starter
- * cards is clutter rather than atmosphere. The lower pair shrinks with the
- * rest and its band shortens, so the sprigs stay tucked into the corners
- * beside the composer instead of climbing up the starter grid. */
+/* A rosette behind six starter cards is clutter rather than atmosphere, so it
+ * comes off. The base band shortens with the viewport, which keeps the keystone
+ * tucked above the composer instead of climbing into the starter grid. */
 @media (max-width: 640px) {
-  /* One width for all four here, and the per-corner overrides above go with it:
-   * the asymmetry earns its keep across a 1600px composition, and at 320px it
-   * only makes one branch collide with the starter grid before the other. */
-  .sakura-corner,
-  .sakura-corner-tr,
-  .sakura-base .sakura-corner-br { width: clamp(72px, 26vw, 120px); opacity: var(--ornament-a-mid); }
   .council-rosette { display: none; }
   .sakura-base { height: clamp(72px, 12vh, 110px); }
 
@@ -349,7 +256,7 @@
 /* .empty-state is a flex column of STATIC children, so they paint in the same
  * layer as the decoration above and DOM order alone would decide the result.
  * Lifting them makes the order explicit instead of accidental. */
-.empty-state > :not(.sakura-frame) {
+.empty-state > * {
   position: relative;
   z-index: var(--z-empty-content);
 }

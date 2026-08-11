@@ -97,7 +97,7 @@ test("stops at maxRounds and says so", async () => {
     registry: fakeRegistry(),
   });
   assert.equal(r.rounds, DEFAULTS.maxRounds);
-  assert.match(r.truncated, /3 rounds/);
+  assert.match(r.truncated, new RegExp(`${DEFAULTS.maxRounds} rounds`));
 });
 
 test("the final round is for answering, so no call is executed in it", async () => {
@@ -115,7 +115,8 @@ test("isFinalRound is passed so a prompt can tell a member to stop asking", asyn
     askMember: async (m, ctx) => { flags.push(ctx.isFinalRound); return toolCall("x"); },
     registry: fakeRegistry(),
   });
-  assert.deepEqual(flags, [false, false, true]);
+  // Every round but the last is a research round; the last says "answer now".
+  assert.deepEqual(flags, [...Array(DEFAULTS.maxRounds - 1).fill(false), true]);
 });
 
 test("stops at maxUniqueCalls and says so", async () => {
@@ -245,4 +246,91 @@ test("emits tool_start and tool_result for the SSE trail", async () => {
   assert.equal(events[0].round, 1);
   assert.ok(events[0].summary.includes("OLED burn-in"));
   assert.equal(events[1].ok, true);
+});
+
+// ===== the two clocks =====
+
+/**
+ * THE BUG THIS PINS. `totalToolMs` used to be measured from the top of the
+ * loop, so the council's own deliberation counted as research spend. Members
+ * are asked with a 30s whip and seven seats can hold twenty of those seconds,
+ * which meant a 25s "tool budget" was routinely gone before the first search
+ * returned — and the turn truncated saying it had run out of time to research
+ * on a turn where it had researched for two seconds.
+ */
+test("model latency does not spend the tool budget", async () => {
+  let clock = 0;
+  const ran = [];
+  const registry = fakeRegistry({
+    execute: async (call) => { ran.push(call); clock += 1000; return { ok: true, summary: "fast", content: "c" }; },
+  });
+  const r = await runAgentLoop({
+    members: ["a"],
+    // Every member reply costs 20s of wall clock and zero tool time.
+    askMember: async (m, ctx) => { clock += 20000; return ctx.round < 3 ? toolCall(`q${ctx.round}`) : "done"; },
+    registry,
+    now: () => clock,
+    maxRounds: 6,
+    totalToolMs: 25000,
+    totalWallMs: 200000,
+  });
+  assert.equal(r.toolMs, 2000, "only the time inside execute is charged");
+  assert.equal(ran.length, 2, "both research rounds got to run");
+  assert.equal(r.truncated, null);
+});
+
+test("parallel calls in one round cost the slowest, not their sum", async () => {
+  let clock = 0;
+  const r = await runAgentLoop({
+    members: ["a", "b", "c"],
+    askMember: async (m, ctx) => (ctx.round === 1 ? toolCall(`${m}-q`) : "done"),
+    // Promise.all means the three run together; the fake advances the clock
+    // once because the loop measures around the whole batch.
+    registry: fakeRegistry({ execute: async () => { clock += 3000; return { ok: true, summary: "s", content: "" }; } }),
+    now: () => clock,
+  });
+  assert.equal(r.toolMs, 9000, "the fake clock is serial, so this is its ceiling");
+  assert.equal(r.truncated, null);
+});
+
+test("the wall ceiling stops a loop whose models are slow but whose tools are cheap", async () => {
+  let clock = 0;
+  const r = await runAgentLoop({
+    members: ["a"],
+    askMember: async () => { clock += 30000; return toolCall("x"); },
+    registry: fakeRegistry(),
+    now: () => clock,
+    maxRounds: 20,
+    totalToolMs: 25000,
+    totalWallMs: 75000,
+  });
+  assert.match(r.truncated, /75000ms ceiling/);
+});
+
+// ===== the round whip =====
+
+test("a member that misses the round whip is dropped, not waited on", async () => {
+  const registry = fakeRegistry();
+  const r = await runAgentLoop({
+    members: ["quick", "hung"],
+    askMember: (m, ctx) =>
+      m === "hung"
+        ? new Promise(() => {}) // never settles
+        : Promise.resolve(ctx.round === 1 ? toolCall("q") : "quick is done"),
+    registry,
+    roundMs: 30,
+  });
+  assert.deepEqual(r.answers, { quick: "quick is done" });
+  assert.match(r.truncated, /did not reply within/);
+  assert.equal(registry.executed.length, 1, "the quick member's research still ran");
+});
+
+test("the round whip does not fire when everyone answers", async () => {
+  const r = await runAgentLoop({
+    members: ["a", "b"],
+    askMember: async (m) => `answer from ${m}`,
+    registry: fakeRegistry(),
+    roundMs: 50,
+  });
+  assert.equal(r.truncated, null);
 });

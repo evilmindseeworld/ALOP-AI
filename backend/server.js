@@ -1827,8 +1827,9 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
         ...(attached.length ? { files } : {}),
       });
       // Opened BEFORE the loop so tool progress can be reported as it happens.
-      // The loop can run for 25s, and a spinner for 25s is worse than the
-      // router path it replaced. From here on every failure is an SSE frame,
+      // The loop can run for the best part of a minute — 25s of tool work plus
+      // the council's own deliberation, under a 75s ceiling — and a silent
+      // spinner for that long is worse than the router path it replaced. From here on every failure is an SSE frame,
       // never a 500 — see the catch at the end of this route.
       openStream(res);
       const loop = await runAgentLoop({
@@ -1879,6 +1880,9 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
         msToFirstProgress: (res.locals?.firstByteAt || Date.now()) - t0,
         rounds: loop.rounds,
         uniqueCalls: loop.uniqueCallsUsed,
+        // Time actually spent inside tools, which is the only number that says
+        // whether a turn that reported running out of research time really did.
+        toolMs: loop.toolMs,
         members: selection.members.length,
         answered: Object.keys(loop.answers).length,
         usable: validResponses.length,

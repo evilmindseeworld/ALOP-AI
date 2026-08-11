@@ -11,15 +11,36 @@
  * can call tools can call them forever, and this loop is inside an HTTP request
  * that a user is waiting on, holding a streaming connection open:
  *
- *     maxRounds        3     search → read → refine covers nearly every question
- *     maxUniqueCalls   8     per turn, across all rounds
+ *     maxRounds        4     search → read → refine, and a round to answer in
+ *     maxUniqueCalls   12    per turn, across all rounds
  *     perCallMs        8000
- *     totalToolMs      25000 wall clock for tool work, all rounds together
+ *     totalToolMs      25000 time spent INSIDE tools, all rounds together
+ *     roundMs          18000 how long one round may wait on its members
+ *     totalWallMs      75000 hard stop on the whole loop, model time included
  *
  * On hitting any of them the loop stops, hands back what it has, and SAYS SO in
  * `truncated`. A truncated answer presented as a complete one is worse than a
  * slow one — the caller must be able to tell the synthesiser that the research
  * was cut short, so the answer can hedge instead of asserting.
+ *
+ * WHY THERE ARE TWO CLOCKS, and it is the fix for the commonest complaint this
+ * feature had: "I couldn't research deeply enough before running out of time"
+ * on questions where barely a tool had run. `totalToolMs` used to be measured
+ * from the top of the loop, so it counted MODEL latency as tool spend. The
+ * members are asked with the council's whip (30s), and a single round of seven
+ * seats deliberating can take twenty of those seconds on its own — so the 25s
+ * "tool budget" was routinely exhausted before the first search returned, and
+ * the loop truncated blaming a budget it had never spent. It now accrues only
+ * the wall time inside `registry.execute`, which is what the name always said,
+ * and a separate `totalWallMs` is what stops the whole thing running forever.
+ * The user gets the full 25 seconds of actual research they were promised.
+ *
+ * AND WHY A ROUND HAS A WHIP. `Promise.all` over the members made every round
+ * exactly as slow as its slowest seat — the problem runCouncilWithWhip exists
+ * to solve for the plain council, unsolved here. A member that has not replied
+ * by `roundMs` is dropped exactly as an erroring one is: a council of seven
+ * does not need all seven, and the seat that is having a bad minute must not
+ * spend the research budget of the six that are not.
  *
  * Nothing here touches the network. `askMember` and `registry` are injected, so
  * the whole loop is tested against fakes.
@@ -27,12 +48,15 @@
 
 const { parseToolRequests } = require("./tool-protocol");
 const { dedupeCalls } = require("./tool-dedupe");
+const { settleByDeadline } = require("./deadline");
 
 const DEFAULTS = {
-  maxRounds: 3,
-  maxUniqueCalls: 8,
+  maxRounds: 4,
+  maxUniqueCalls: 12,
   perCallMs: 8000,
   totalToolMs: 25000,
+  roundMs: 18000,
+  totalWallMs: 75000,
 };
 
 /** Tool results, rendered for the next round's prompt. */
@@ -70,7 +94,12 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
   let uniqueCallsUsed = 0;
   let truncated = null;
 
-  const budgetLeft = () => cfg.totalToolMs - (now() - startedAt);
+  // Only the time actually spent inside registry.execute. See the note at the
+  // top: measuring this from the top of the loop counted the council's own
+  // deliberation as research spend, and truncated turns that had not searched.
+  let toolMsUsed = 0;
+  const budgetLeft = () => cfg.totalToolMs - toolMsUsed;
+  const wallLeft = () => cfg.totalWallMs - (now() - startedAt);
   let active = [...(members || [])];
 
   while (active.length > 0 && round < cfg.maxRounds) {
@@ -80,25 +109,37 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     // Every still-active member is asked concurrently. A member that throws is
     // dropped from the round rather than failing the turn: a council of seven
     // does not need all seven, and one gateway hiccup must not lose the answer.
-    const replies = await Promise.all(
-      active.map(async (member) => {
-        try {
-          const raw = await askMember(member, { round, toolResults: transcript, isFinalRound });
-          return { member, ...parseToolRequests(raw) };
-        } catch (err) {
-          return { member, calls: [], text: "", isFinal: true, error: err.message };
-        }
-      }),
+    // A member that is merely SLOW is dropped the same way, at the round whip —
+    // `settleByDeadline` never rejects and ignores stragglers rather than
+    // cancelling them, so a late reply cannot become an unhandled rejection.
+    const { results: replies } = await settleByDeadline(
+      active.map((member) => ({
+        fallback: { member, calls: [], text: "", isFinal: false, timedOut: true },
+        promise: (async () => {
+          try {
+            const raw = await askMember(member, { round, toolResults: transcript, isFinalRound });
+            return { member, ...parseToolRequests(raw) };
+          } catch (err) {
+            return { member, calls: [], text: "", isFinal: true, error: err.message };
+          }
+        })(),
+      })),
+      // Never longer than what is left of the whole loop: a round that outlives
+      // its own hard stop is the hang the hard stop exists to prevent.
+      { deadlineMs: Math.max(250, Math.min(cfg.roundMs, wallLeft())) },
     );
 
     for (const reply of replies) {
       if (reply.isFinal && reply.text) answers.set(reply.member, reply.text);
     }
 
-    // A member that gave a final answer is done. One that errored is dropped —
-    // it has nothing to contribute and asking it again next round would just
-    // spend the budget on the same failure.
-    const stillAsking = replies.filter((r) => !r.isFinal);
+    const lateCount = replies.filter((r) => r.timedOut).length;
+    if (lateCount > 0) truncated = truncated || `${lateCount} member(s) did not reply within the ${cfg.roundMs}ms round.`;
+
+    // A member that gave a final answer is done. One that errored, or missed
+    // the whip, is dropped — it has nothing to contribute and asking it again
+    // next round would just spend the budget on the same failure.
+    const stillAsking = replies.filter((r) => !r.isFinal && !r.timedOut);
     active = stillAsking.map((r) => r.member);
     if (active.length === 0) break;
 
@@ -118,6 +159,10 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
       truncated = `Reached the ${cfg.totalToolMs}ms tool budget for this turn.`;
       break;
     }
+    if (wallLeft() <= 0) {
+      truncated = `Reached the ${cfg.totalWallMs}ms ceiling for this turn.`;
+      break;
+    }
 
     const { unique, dropped } = dedupeCalls(stillAsking, remaining);
     if (unique.length === 0) break;
@@ -127,7 +172,8 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     // Executed in parallel, once each, with the per-call ceiling additionally
     // clamped to whatever is left of the total budget — otherwise eight 8s
     // calls could run to 64s inside a 25s budget.
-    const perCall = Math.max(250, Math.min(cfg.perCallMs, budgetLeft()));
+    const perCall = Math.max(250, Math.min(cfg.perCallMs, budgetLeft(), wallLeft()));
+    const toolsStartedAt = now();
     const executed = await Promise.all(
       unique.map(async (call) => {
         onEvent({ type: "tool_start", round, name: call.name, summary: describe(call) });
@@ -136,6 +182,10 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
         return { call, result };
       }),
     );
+    // The calls ran in parallel, so the round costs the SLOWEST of them, not
+    // their sum — charging the budget the sum would bill eight parallel 2s
+    // searches as sixteen seconds of a twenty-five second budget.
+    toolMsUsed += now() - toolsStartedAt;
 
     transcript.push(...executed);
 
@@ -155,6 +205,8 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     answers: Object.fromEntries(answers),
     rounds: round,
     uniqueCallsUsed,
+    /** Milliseconds actually spent inside tools, for the audit row. */
+    toolMs: toolMsUsed,
     toolResults: transcript,
     /** Ready to paste into the synthesis prompt; empty when no tool ran. */
     research: transcript.length ? renderResults(transcript) : "",

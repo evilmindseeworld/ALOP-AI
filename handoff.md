@@ -63,6 +63,41 @@ files. If you ever need to do it again, that is the shape of it: check
 
 ---
 
+## How the three of us split the work (2026-08-11)
+
+Recorded because it was got wrong twice in one session, and because the wrong
+version leaves a precedent that looks like practice by the next reading.
+
+- **Claude and sol plan, design and code.** Sol is the senior peer on
+  substantive work and is not to be spent on petty jobs.
+- **Luna executes**: pushing, committing, bug-hunting, the smaller tasks, and
+  reviewing. It may pitch in on bigger work, but that is the exception. Luna
+  has push authority — do not sit on a green branch waiting to push it yourself.
+- **Bug-hunting and reviewing belong to everyone.** That list is who OWNS a
+  beat, never who is allowed on it. The deepest finds this session came from the
+  design pair, not the executor: sol found two synchronous-throw crash paths, a
+  money leak in the dedupe, and five hover rules Claude had missed; Claude found
+  a duplicate-render race in a peer's split. Never answer "that is luna's job"
+  about a bug or a review.
+- Review cannot come from the author, so when luna wrote the code, sol reviews
+  it. That is the three-eyes rule breaking a tie, not sol changing seats.
+
+**THE MISALLOCATION, so the precedent does not survive this file.** The
+AbortSignal propagation and turn-telemetry work was given to LUNA, and it should
+not have been: threading cancellation through five layers and designing a
+telemetry system is architectural work, which belongs to sol and Claude. It was
+assigned before the split above was set, and it was allowed to finish because it
+was healthy and nearly done — killing it would have burned real work to make a
+point. **From the next dispatch forward, architectural work goes to sol and
+Claude.** If you are reading this and about to hand luna a cross-layer refactor
+because "that is what happened last time": that is the precedent this paragraph
+exists to kill.
+
+The full protocol — invocation, the ~23k dispatch floor, file partitioning —
+lives in `~/CLAUDE.md` rule 15 and the `codex-duo-protocol` memory file.
+
+---
+
 ## This session (2026-08-11), latest — response times, measured at last
 
 The owner's report was "AI response times are quite slow". Both peers profiled

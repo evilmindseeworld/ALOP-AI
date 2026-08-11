@@ -76,7 +76,6 @@
 
 .overlay-tts-btn:hover {
   background: var(--surface-4);
-  transform: scale(1.08);
 }
 
 .overlay-bar {
@@ -161,10 +160,15 @@
     transform var(--dur-fast) var(--ease-out);
 }
 
-.overlay-action:hover {
-  background: var(--surface-4);
-  color: var(--text);
-  transform: scale(1.06);
+/* Scaling is pointer-only. Touch can latch :hover after a tap, leaving these
+ * compact controls visibly oversized until another element is touched. */
+@media (hover: hover) and (pointer: fine) {
+  .overlay-tts-btn:hover { transform: scale(1.08); }
+  .overlay-action:hover {
+    background: var(--surface-4);
+    color: var(--text);
+    transform: scale(1.06);
+  }
 }
 
 .overlay-action:active { transform: scale(0.94); }

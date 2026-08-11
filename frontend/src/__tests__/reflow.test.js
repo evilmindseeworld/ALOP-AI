@@ -23,12 +23,6 @@ const FILES = readdirSync(STYLES).filter((f) => f.endsWith(".css"));
  */
 const VIEWPORT = 320;
 
-// Decorative absolutes are exempt BY NAME, not by pattern. Each one is
-// position:absolute or fixed, sits behind content, and is clipped by
-// `body { overflow: hidden }` — it cannot push a layout wider. Adding a name
-// here is a decision someone has to make deliberately.
-const DECORATIVE = [".signin-orb-1", ".signin-orb-2"];
-
 const rules = FILES.flatMap((file) => {
   const css = readFileSync(join(STYLES, file), "utf8")
     // Comments hold example values and measurements; they are not declarations.
@@ -51,7 +45,6 @@ describe("320px reflow", () => {
 
   it("pins no element to a fixed px width wider than the viewport", () => {
     const offenders = rules.flatMap(({ file, selector, body }) => {
-      if (DECORATIVE.some((d) => selector.includes(d))) return [];
       // `max-width` is fine — that is the correct way to cap a measure. Only a
       // bare `width` forces a box to stay wide.
       const m = body.match(/(?:^|[;\s])width:\s*(\d+)px/);

@@ -277,8 +277,15 @@
 
 .new-chat-btn:hover {
   filter: brightness(1.06);
-  box-shadow: 0 6px 22px var(--primary-glow);
-  transform: translateY(-1px);
+}
+
+/* Keep brightness as touch feedback, but do not leave the button lifted after
+ * a tap on the mobile sidebar. */
+@media (hover: hover) and (pointer: fine) {
+  .new-chat-btn:hover {
+    box-shadow: 0 6px 22px var(--primary-glow);
+    transform: translateY(-1px);
+  }
 }
 
 .new-chat-btn:active { transform: translateY(0) scale(0.98); }

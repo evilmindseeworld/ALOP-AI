@@ -90,10 +90,8 @@ export const Seal = ({ className = "sakura-seal", id = "seal" }) => (
 /**
  * The keystone: the mark that closes the frame.
  *
- * Two sprigs in two corners read as two decorations. One centred mark between
- * them reads as a frame, because the eye completes the line — the same reason a
- * printer sets a fleuron at the foot of a page rather than two ornaments in the
- * corners and nothing between.
+ * A centred mark at the foot of the surface closes the composition, for the
+ * same reason a printer sets a fleuron at the foot of a page.
  *
  * WHAT IT DRAWS is the rosette's convergence point at small scale: separate
  * arcs arriving at one dot. The seal above the empty state says the council
@@ -101,10 +99,9 @@ export const Seal = ({ className = "sakura-seal", id = "seal" }) => (
  * is about to ask the question that starts it. Same idea, same visual language,
  * a twentieth the size.
  *
- * NO HORIZONTAL RULE, deliberately. A line spanning corner to corner here would
- * read as a wall between the transcript and the composer, which is the exact
- * effect `--fade-bottom` exists to dissolve — see base.css. The mark floats
- * unsupported; the corners are what imply the line.
+ * NO HORIZONTAL RULE, deliberately. A line across the surface would read as a
+ * wall between transcript and composer, the exact effect `--fade-bottom`
+ * exists to dissolve — see base.css. The mark floats unsupported.
  */
 export const Keystone = ({ className = "sakura-keystone" }) => (
   <svg

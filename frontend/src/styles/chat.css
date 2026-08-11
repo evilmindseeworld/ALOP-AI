@@ -30,10 +30,9 @@
    * z-index is. Without this the hemp-leaf pattern renders ON TOP of the
    * transcript instead of behind it.
    *
-   * The empty state already had this exact fix — see `.empty-state >
-   * :not(.sakura-frame)` in decoration.css — and it is here for the same
-   * reason, now that the lattice covers the whole surface rather than one
-   * screen. */
+   * The empty-state children use the same explicit content layer in
+   * decoration.css. It is here for the same reason now that the lattice covers
+   * the whole surface rather than one screen. */
   position: relative;
   z-index: var(--z-empty-content);
 }

@@ -131,13 +131,12 @@ const Primitives = () => (
       </div>
     </Section>
 
-    {/* These two only exist correctly in App's `.chat-content`, which the empty
-     * state below cannot show: the lower sprigs are a SIBLING of the scroller,
-     * not a child of it, precisely so they can reach the real bottom corners.
-     * Without this section the only way to see them is to sign in. */}
+    {/* The keystone is positioned against App's `.chat-content`, as a sibling
+     * of the scroller rather than a child of it. This section preserves that
+     * positioning contract without requiring a signed-in session. */}
     <Section
-      title="Base corners"
-      note="The lower sprigs, as they sit either side of the composer. They overlap the prompt bar on purpose and are pointer-events: none, so clicks pass through."
+      title="Composer keystone"
+      note="The convergence mark above the composer. Its positioning layer overlaps the prompt bar and is pointer-events: none, so clicks pass through."
     >
       <div
         className="app-root dark"

@@ -35,9 +35,8 @@ import UpgradePanel from "./components/panels/UpgradePanel";
  * reach the tests. */
 const MessageList = lazy(() => import("./components/MessageList"));
 const OverlayAssistant = lazy(() => import("./overlay/OverlayAssistant"));
-/* Not lazy, and not inside MessageList: these two sprigs have to render as a
- * sibling of the scroller to reach the real bottom corners. See
- * SakuraBaseCorners in SakuraFrame.jsx. */
+/* Not lazy, and not inside MessageList: the keystone must render as a sibling
+ * of the scroller so its bottom anchor is the chat surface, not scroll content. */
 import { SakuraBaseCorners } from "./components/SakuraFrame";
 
 import { COUNCIL, FREE_COUNT } from "./constants/council";

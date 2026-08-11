@@ -120,10 +120,9 @@
    * turned up and down. Nothing in it ever committed, and an ornament that
    * never commits reads as placeholder texture rather than as a drawing.
    *
-   * The reference this family comes from is ink on paper and carries three
-   * colour families: pink blossom, sage leaf, and one vermilion seal that is the
-   * only saturated thing on the page. All three are here, and the seal is drawn
-   * at alpha 1 — see `Seal` in SakuraFrame.jsx.
+   * The remaining family uses pink ink plus one vermilion seal that is the only
+   * saturated thing on the page. The former sage leaf token left with the
+   * branches, and the seal is drawn at alpha 1 — see `Seal` in SakuraFrame.jsx.
    *
    * THE ALPHA LADDER IS PER THEME, and that is a correction rather than a
    * refinement. 0.34 pink over the Bamboo Day paper (#f8f4ed) is a smaller
@@ -137,7 +136,6 @@
    * bare opacity number; if a piece needs a value between two steps, the
    * question is which step it belongs to. */
   --ornament-ink: #f08aa3;
-  --ornament-leaf: #79c6a2;
   --ornament-seal: #e2503c;
 
   /* THE SILHOUETTE. Darker than every surface, in both themes, and that is the
@@ -356,7 +354,7 @@
    * otherwise-static children. They order the decoration against the content
    * and are not comparable with the root scale — same status as
    * --z-sticky-label above. */
-  --z-empty-decor: 0;   /* .sakura-frame, .chat-main::after (lattice)    */
+  --z-empty-decor: 0;   /* crescents, keystone, .chat-main::after         */
   --z-empty-content: 1; /* .chat-content, and .empty-state's own children */
   /* .signin-root. Not comparable with the scale above and excluded from it for
    * a different reason than the others: the sign-in page renders INSTEAD of the
@@ -503,7 +501,6 @@
    * reference does — its spine is a different MATERIAL from the sheet, not a
    * darker patch of it. A tint of --surface would read as a shadow. */
   --ornament-ink: #b31a54;
-  --ornament-leaf: #3f7d5c;
   --ornament-seal: #b3241a;
 
   /* A warm mid-dark rather than the ink, and NOT a near-black. See the block on

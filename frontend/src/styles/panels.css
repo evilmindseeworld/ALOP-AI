@@ -413,7 +413,13 @@
 
 .plan-buy:hover:not(:disabled) {
   filter: brightness(1.06);
-  box-shadow: 0 6px 20px var(--primary-glow);
+}
+
+/* The plan button's larger cast shadow reads as elevation and can latch on touch. */
+@media (hover: hover) and (pointer: fine) {
+  .plan-buy:hover:not(:disabled) {
+    box-shadow: 0 6px 20px var(--primary-glow);
+  }
 }
 
 .plan-buy:disabled {

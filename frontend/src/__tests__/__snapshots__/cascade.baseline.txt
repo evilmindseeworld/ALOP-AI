@@ -58117,6 +58117,11 @@
   - border-bottom-right-radius: <border-radius: 4px>
   - border-radius: 4px
 
+[83] button.new-chat-btn
+  :hover
+  - box-shadow: 0 6px 22px rgba(240, 138, 163, 0.22)
+  - transform: translateY(-1px)
+
 [136] div.sidebar.collapsed
   background: #101010
   background-clip: <background: #101010>
@@ -58188,6 +58193,14 @@
   :focus-visible
   - border-bottom-right-radius: <border-radius: 4px>
   - border-radius: 4px
+
+[215] button.plan-buy
+  :hover
+  - box-shadow: 0 6px 20px rgba(240, 138, 163, 0.22)
+
+[216] button.plan-buy.is-secondary
+  :hover
+  - box-shadow: 0 6px 20px rgba(240, 138, 163, 0.22)
 
 [219] div.sakura-base
   height: clamp(72px, 12vh, 110px)
@@ -58380,6 +58393,14 @@
   display: none
   - display: flex
 
+[426] button.input-btn.primary
+  :hover
+  - box-shadow: 0 6px 20px rgba(240, 138, 163, 0.22)
+
+[429] button.input-btn.primary.is-stop
+  :hover
+  - box-shadow: 0 6px 20px rgba(240, 138, 163, 0.22)
+
 [443] div.cmdk-backdrop
   padding: 8vh 12px 12px
   padding-bottom: <padding: 8vh 12px 12px>
@@ -58479,6 +58500,11 @@
   - border-bottom-right-radius: <border-radius: 4px>
   - border-radius: 4px
 
+[512] button.new-chat-btn
+  :hover
+  - box-shadow: 0 6px 22px rgba(179, 26, 84, 0.18)
+  - transform: translateY(-1px)
+
 [565] div.sidebar.collapsed
   background: #f8f4ed
   background-clip: <background: #f8f4ed>
@@ -58550,6 +58576,14 @@
   :focus-visible
   - border-bottom-right-radius: <border-radius: 4px>
   - border-radius: 4px
+
+[644] button.plan-buy
+  :hover
+  - box-shadow: 0 6px 20px rgba(179, 26, 84, 0.18)
+
+[645] button.plan-buy.is-secondary
+  :hover
+  - box-shadow: 0 6px 20px rgba(179, 26, 84, 0.18)
 
 [648] div.sakura-base
   height: clamp(72px, 12vh, 110px)
@@ -58742,6 +58776,31 @@
   display: none
   - display: flex
 
+[855] button.input-btn.primary
+  :hover
+  - box-shadow: 0 6px 20px rgba(179, 26, 84, 0.18)
+
+[858] button.input-btn.primary.is-stop
+  :hover
+  - box-shadow: 0 6px 20px rgba(179, 26, 84, 0.18)
+
+[879] button.overlay-tts-btn
+  :hover
+  - transform: scale(1.08)
+
+[888] button.overlay-action.recording
+  :hover
+  - transform: scale(1.06)
+
+[889] label.overlay-action
+  :hover
+  - background: #282825
+  - background-clip: <background: #282825>
+  - background-image: <background: #282825>
+  - background-size: <background: #282825>
+  - color: #f5f1ee
+  - transform: scale(1.06)
+
 [891] button.overlay-submit
   :hover
   - filter: brightness(1.06)
@@ -58875,7 +58934,6 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
   --ornament-a-mid: 0.26
   --ornament-a-strong: 0.40
   --ornament-ink: #f08aa3
-  --ornament-leaf: #79c6a2
   --ornament-seal: #e2503c
   --ornament-silhouette: #0a0a0a
   --primary: #f08aa3
@@ -58983,7 +59041,6 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
   --ornament-a-mid: 0.38
   --ornament-a-strong: 0.55
   --ornament-ink: #b31a54
-  --ornament-leaf: #3f7d5c
   --ornament-seal: #b3241a
   --ornament-silhouette: #5a4a40
   --primary: #b31a54

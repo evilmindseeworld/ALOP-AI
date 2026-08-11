@@ -15,13 +15,11 @@
   display: flex;
   padding: 0 var(--space-6) var(--space-5);
   flex-shrink: 0;
-  /* LIFTED ABOVE THE CORNER SPRIGS — the third instance of this exact fix, see
-   * `.chat-content` in chat.css and `.empty-state > :not(.sakura-frame)` in
-   * decoration.css. `.sakura-base` is absolutely positioned and overlaps the
-   * composer's outer corners on purpose; a positioned element paints after
-   * static in-flow content whatever its z-index, so without this the sprigs
-   * render ON TOP of the prompt. They are pointer-events: none, so this is
-   * about legibility rather than clicks. */
+  /* LIFTED ABOVE THE KEYSTONE LAYER — see `.chat-content` in chat.css and the
+   * empty-state content layer in decoration.css. `.sakura-base` is absolutely
+   * positioned and overlaps the composer; a positioned element paints after
+   * static in-flow content whatever its z-index. It is pointer-events: none,
+   * so this is about legibility rather than clicks. */
   position: relative;
   z-index: var(--z-empty-content);
 }
@@ -197,8 +195,8 @@
  * town is dark and this is the one colour: the round thing among straight
  * edges, and the only lit thing among dark ones.
  *
- * Drawn before the town in document order, so the roofline occludes its lower
- * half and it reads as rising rather than as sitting on top. */
+ * Drawn before the town in document order, though the high disc is now fully
+ * clear of the roofline rather than occluded by it. */
 .composer-sun {
   fill: var(--ornament-seal);
   transition: transform var(--dur-slow) var(--ease-spring);
@@ -265,9 +263,8 @@
 }
 
 /* On a phone the composer is nearly the full width and the screen is mostly
- * keyboard. The horizon keeps its full height — it is the same 18px strip at
- * any width and the drawing is centred, so a narrow card simply shows less
- * town on either side, which is what a horizon does. */
+ * keyboard. The horizon keeps its 44px height and its left alignment, so a
+ * narrow card simply shows less town at the right edge. */
 @media (max-width: 640px) {
   /* The seal shrinks but stays at full opacity. It is 20px of the one saturated
    * colour on the screen, and it is the piece worth keeping at this width. */
@@ -502,7 +499,13 @@
 
 .input-btn.primary:hover:not(:disabled) {
   filter: brightness(1.06);
-  box-shadow: 0 6px 20px var(--primary-glow);
+}
+
+/* The send button's larger cast shadow reads as elevation and can latch on touch. */
+@media (hover: hover) and (pointer: fine) {
+  .input-btn.primary:hover:not(:disabled) {
+    box-shadow: 0 6px 20px var(--primary-glow);
+  }
 }
 
 /* Disabled Send is a ghost of itself, not a greyed-out copy: it also shrinks

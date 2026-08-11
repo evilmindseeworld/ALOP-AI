@@ -173,6 +173,26 @@ describe("mediaMatches", () => {
     expect(mediaMatches("(prefers-reduced-motion: reduce)", { reducedMotion: false })).toBe(false);
   });
 
+  it("evaluates hover and pointer capabilities, including their boolean forms", () => {
+    const mouse = { hover: "hover", pointer: "fine" };
+    const touch = { hover: "none", pointer: "coarse" };
+    const noPointer = { hover: "none", pointer: "none" };
+
+    expect(mediaMatches("(hover: hover) and (pointer: fine)", mouse)).toBe(true);
+    expect(mediaMatches("(hover: hover) and (pointer: fine)", touch)).toBe(false);
+    expect(mediaMatches("(hover)", mouse)).toBe(true);
+    expect(mediaMatches("(hover)", touch)).toBe(false);
+    expect(mediaMatches("(pointer)", touch)).toBe(true);
+    expect(mediaMatches("(pointer)", noPointer)).toBe(false);
+    expect(mediaMatches("(hover: coarse)", mouse)).toBe(false);
+    expect(mediaMatches("(pointer: hover)", mouse)).toBe(false);
+  });
+
+  it("keeps any-hover and any-pointer on the unknown-feature coverage path", () => {
+    expect(mediaMatches("(any-hover: none)", { hover: "hover" })).toBe(true);
+    expect(mediaMatches("(any-pointer: coarse)", { pointer: "fine" })).toBe(true);
+  });
+
   it("ands compound conditions", () => {
     expect(mediaMatches("(min-width: 700px) and (max-width: 900px)", { width: 800 })).toBe(true);
     expect(mediaMatches("(min-width: 700px) and (max-width: 900px)", { width: 1000 })).toBe(false);

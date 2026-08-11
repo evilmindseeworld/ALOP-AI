@@ -321,23 +321,44 @@ export const ComposerSkyline = memo(() => (
         stops at, and the only way to draw one is to run it past both edges.
         The profile is AUTHORED longer rather than scaled: stretching 320 units
         to full width would shear every gable. */}
-    {/* 26 UNITS TALL, WHERE THE TOWN IS 22 OF THEM. The first version had no
+    {/* 38 UNITS TALL, WHERE THE TOWN IS 22 OF THEM. The first version had no
         sky at all: the viewBox ended at the tallest roof, so the sun could not
         be drawn above the roofline without being clipped by the top of its own
-        box, and it sat half-buried in the town. Four units of sky is what a
-        rising sun needs to be rising. */}
-    <svg viewBox="0 0 1040 26" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false">
-      {/* Left of centre, opposite the hanko at the card's top right. Two
-          vermilion marks on one diagonal is a composition; two stacked down
-          the same edge is a collision.
-          It clears the roofline it stands behind by about two thirds of its
-          diameter — it was a fifth. A sun that only peeps over the roofs reads
-          as setting behind them, or as a dot. */}
-      <circle className="composer-sun" cx="330" cy="11" r="11" />
-      {/* The town keeps its own coordinates and is dropped 4 units into the
+        box, and it sat half-buried in the town. Then four units of sky, which
+        got the sun clear of the roofs but left it hugging them. Sixteen is what
+        it takes for a sun to be UP: the disc now sits a full radius clear of
+        the tallest gable near it, with room either side for the cloud bars. */}
+    <svg viewBox="0 0 1040 38" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false">
+      {/* WHY x=170 AND NOT A FRACTION OF THE DRAWING.
+          The sun used to sit at 330 of 1040 with the strip CENTRING the
+          drawing, which meant its distance from the card's left edge was a
+          function of the card's width — at a phone width the visible window is
+          the middle 350px of a 1200px drawing and the sun was outside it
+          entirely. The strip now aligns the drawing to its left edge (see
+          composer.css), so this coordinate is a fixed offset from the card's
+          left edge at every viewport. The clip that makes this a horizon rather
+          than a motif moved to the right end, where the town runs off. */}
+      <circle className="composer-sun" cx="170" cy="12" r="10" />
+      {/* KASUMI BARS, which is the only cloud this drawing can carry.
+          A rendered cloud is a soft mass and everything else in the strip is a
+          hard edge — the two do not read as one hand. Japanese screens solve it
+          with flat banded cloud, and a rounded bar is that at 3 units tall.
+          They are ORNAMENT INK at the faint step, not silhouette: the town is a
+          mass and these are line work, and a second solid shape in the sky
+          would compete with the one thing in the strip that is meant to be
+          looked at. None of them touches the disc — a bar across the sun is a
+          handsome drawing at poster size and a smudge at 44px. */}
+      <g className="composer-clouds">
+        <rect x="92" y="3.4" width="30" height="4" rx="2" />
+        <rect x="66" y="11" width="18" height="3.4" rx="1.7" />
+        <rect x="202" y="5" width="22" height="3.6" rx="1.8" />
+        <rect x="210" y="12.4" width="34" height="4" rx="2" />
+        <rect x="262" y="8.4" width="16" height="3.2" rx="1.6" />
+      </g>
+      {/* The town keeps its own coordinates and is dropped 16 units into the
           taller box, so the profile below is the same drawing it always was and
           none of its numbers had to be re-derived. */}
-      <g className="composer-town" transform="translate(0 4)">
+      <g className="composer-town" transform="translate(0 16)">
         <path d="M0 22 V15 H16 V10 H24 V15 H38 L46 7 L54 15 H68 V5 H80 V15 H100 V17 H136 V12 H150 L158 6 L166 12 H180 V16 H196 V9 H208 V16 H228 L236 8 L244 16 H258 V13 H272 V17 H292 V14 H320 V16 H340 V8 H352 V16 H372 V12 H392 L401 6 L410 12 H430 V17 H452 V11 H470 V15 H486 V17 H520 V13 H536 L546 7 L556 13 H574 V16 H590 V9 H604 V16 H624 V13 H648 V17 H666 V10 H684 V15 H704 L713 8 L722 15 H740 V12 H762 V17 H780 V14 H800 V6 H816 V14 H836 V16 H860 V11 H884 V16 H904 L915 7 L926 16 H944 V13 H962 V17 H984 V10 H1000 V15 H1018 V17 H1040 V22 Z" />
         {/* Two pagodas, each rising out of a low run the profile leaves for it —
             x 100–136 and x 486–520. Two flared eaves apiece: the flare is the

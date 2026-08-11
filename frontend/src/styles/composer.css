@@ -41,9 +41,9 @@
    * skyline's floor. The town stands inside the inner rule at the foot of the
    * card; without its own strip it would paint across the icon row, which is
    * the mistake the branch above the top edge was making in the other
-   * direction. 36px clears the 30px horizon plus the 4px rule inset, and this
+   * direction. 52px clears the 44px horizon plus the 4px rule inset, and this
    * number moves with `.composer-skyline`'s height — change one, change both. */
-  padding: var(--space-3) var(--space-3) calc(var(--space-8) + var(--space-1));
+  padding: var(--space-3) var(--space-3) calc(var(--space-8) + var(--space-5));
   background: var(--surface-2);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-xl);
@@ -140,25 +140,33 @@
   left: 5px;
   right: 5px;
   bottom: 5px;
-  /* 30px, from 18 by way of 26. At 18 the tallest building was 15px and the sun
-   * 16px across — small enough that both were guessed at rather than seen. 26
-   * fixed the town and not the sun, because the viewBox ended at the tallest
-   * roof: there was no sky for the sun to be in, so it sat half-buried whatever
-   * its radius. The extra 4px is sky, and it is the whole reason the sun now
-   * clears the roofs by two thirds of its diameter instead of a fifth. */
-  height: 30px;
+  /* 44px, from 18 by way of 26 and 30. At 18 the tallest building was 15px and
+   * the sun 16px across — small enough that both were guessed at rather than
+   * seen. 26 fixed the town and not the sun, because the viewBox ended at the
+   * tallest roof: there was no sky for the sun to be in, so it sat half-buried
+   * whatever its radius. Every px past the town's 25 is SKY, and the sky is the
+   * subject now — the sun is up in it with cloud bars either side, and neither
+   * of those exists in a 4px strip of it. */
+  height: 44px;
   display: flex;
-  justify-content: center;
+  /* LEFT-ALIGNED, NOT CENTRED, and that is a positioning decision rather than a
+   * taste one. Centring a 1200px drawing in a variable-width window means every
+   * coordinate in it lands at a different place on a phone than on a desktop —
+   * the sun was outside the visible window entirely below about 700px. Aligning
+   * the drawing's origin to the card's left edge makes each x a fixed offset
+   * from that edge at every viewport, which is the only way to place the one
+   * mark in the strip that has to be seen. */
+  justify-content: flex-start;
   align-items: flex-end;
-  /* THE CLIP IS THE POINT, not a safety net. The drawing is 1229px — wider than
-   * the widest this card ever gets — so the town runs off both ends at every
-   * viewport and the strip decides how much of it you see. That is what makes
-   * it a horizon rather than a motif placed in the middle of a bar. */
+  /* THE CLIP IS THE POINT, not a safety net. The drawing is ~1200px — wider
+   * than the widest this card ever gets — so the town runs off the right at
+   * every viewport and the strip decides how much of it you see. That is what
+   * makes it a horizon rather than a motif placed in the middle of a bar. */
   overflow: hidden;
 }
 
 .composer-skyline svg {
-  height: 30px;
+  height: 44px;
   width: auto;
   flex-shrink: 0;
   display: block;
@@ -194,6 +202,20 @@
 .composer-sun {
   fill: var(--ornament-seal);
   transition: transform var(--dur-slow) var(--ease-spring);
+}
+
+/* LINE WORK, SO INK AND SO THE LADDER.
+ *
+ * The town is the one thing in this strip that gets a solid fill, for the
+ * reason above: it is a mass, and a mass in brand pink is a pink band. Cloud
+ * bars are the opposite case — five small shapes totalling under 400 square
+ * units — so they take the same ink at the same faint step as every other line
+ * in the app, and they sit a step below the sun rather than beside it. No bare
+ * opacity here: the light theme needs about 1.4x the alpha of the dark one to
+ * read at all on paper, which is exactly what the ladder encodes. */
+.composer-clouds {
+  fill: var(--ornament-ink);
+  opacity: var(--ornament-a-faint);
 }
 
 /* THE RIGHT END IS A SEAL NOW, NOT A SECOND BRANCH.

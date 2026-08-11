@@ -218,7 +218,7 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
         cancel: (endedBy) => report(endedBy === "enough" ? "quorum" : endedBy === "aborted" ? "aborted" : "timed_out"),
       };
     });
-    const { results: replies } = await settleByDeadline(
+    const { results: replies, endedBy } = await settleByDeadline(
       entries,
       {
         // Never longer than what is left of the whole loop: a round that
@@ -249,7 +249,7 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
             : undefined,
       },
     );
-
+    if (endedBy === "enough") stopReason = stopReason || "quorum";
     if (turnSignal.aborted) {
       if (wallDeadlineReached) setTruncated(`Reached the ${cfg.totalWallMs}ms ceiling for this turn.`, "wall");
       else stopReason = stopReason || "aborted";

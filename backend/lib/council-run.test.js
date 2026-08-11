@@ -79,6 +79,36 @@ test("quorum aborts model calls that were left outside the answer", async () => 
   assert.ok(timings.some((row) => row.model === "slow" && row.outcome === "quorum"));
 });
 
+test("a seat that ignores quorum cancellation cannot mutate the released answer", async () => {
+  let releaseLate;
+  const results = await runCouncil([seat("fast"), seat("late")], [], 5000, 1, 500, {
+    callModel: (model) => model === "fast"
+      ? Promise.resolve("answer fast")
+      : new Promise((resolve) => { releaseLate = resolve; }),
+  });
+
+  assert.deepEqual(results, [{ model: "fast", content: "answer fast" }]);
+  releaseLate("answer that quorum dropped");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(results, [{ model: "fast", content: "answer fast" }]);
+});
+
+test("a seat that resolves after a parent abort cannot resurrect the council", async () => {
+  const controller = new AbortController();
+  let releaseLate;
+  const pending = runCouncil([seat("late")], [], 5000, 1, 500, {
+    signal: controller.signal,
+    callModel: () => new Promise((resolve) => { releaseLate = resolve; }),
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+
+  controller.abort();
+  const results = await pending;
+  releaseLate("answer after disconnect");
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.deepEqual(results, []);
+});
+
 test("the whip aborts a model call and reports its bounded duration", async () => {
   let aborted = false;
   const timings = [];

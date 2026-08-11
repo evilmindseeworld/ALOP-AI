@@ -130,6 +130,7 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal) 
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
+  let completed = false;
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -142,8 +143,9 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal) 
            * at openStream would have made this feature look like a 15-second
            * improvement while the user waited exactly as long. */
           if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
-          res.write(`data: ${JSON.stringify({ type: 'chunk', text: d })}\n\n`); } if (p.done) res.write('data: [DONE]\n\n'); } catch {} }
+          res.write(`data: ${JSON.stringify({ type: 'chunk', text: d })}\n\n`); } if (p.done) { completed = true; res.write('data: [DONE]\n\n'); } } catch {} }
   }
+  if (!completed) throw new Error('Stream ended before provider completion');
 };
 
 const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'image/png', maxTokens = 2048, parentSignal) => {

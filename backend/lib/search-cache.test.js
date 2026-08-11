@@ -143,6 +143,29 @@ test("A SLOW READ IS ABANDONED RATHER THAN WAITED ON", async () => {
   assert.ok(Date.now() - started < 250, "should not have waited for the slow read");
 });
 
+test("the cache deadline aborts the Supabase query even with a live parent signal", async () => {
+  const parent = new AbortController();
+  let queryAborted = false;
+  const query = {
+    select: () => query,
+    eq: () => query,
+    abortSignal: (signal) => {
+      signal.addEventListener("abort", () => { queryAborted = true; }, { once: true });
+      return query;
+    },
+    maybeSingle: () => new Promise(() => {}),
+  };
+  const cache = createSearchCache({
+    supabase: { from: () => query },
+    readDeadlineMs: 20,
+    log: silent,
+  });
+
+  assert.equal(await cache.get("q", { signal: parent.signal }), null);
+  assert.equal(queryAborted, true);
+  assert.equal(parent.signal.aborted, false);
+});
+
 test("set() returns without waiting for the write", () => {
   const db = fakeDb({ writeRejects: false });
   const cache = createSearchCache({ supabase: db, log: silent });

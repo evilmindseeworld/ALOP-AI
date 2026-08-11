@@ -145,8 +145,7 @@ function createSearchCache({ supabase, log = console, ...opts } = {}) {
                 .from("search_cache")
                 .select("payload, expires_at")
                 .eq("query_hash", key);
-              const joined = signal || settleSignal;
-              if (joined && typeof queryBuilder.abortSignal === "function") queryBuilder = queryBuilder.abortSignal(joined);
+              if (settleSignal && typeof queryBuilder.abortSignal === "function") queryBuilder = queryBuilder.abortSignal(settleSignal);
               return queryBuilder.maybeSingle();
             },
             fallback: null,

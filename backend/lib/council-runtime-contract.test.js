@@ -8,6 +8,7 @@ const { join } = require("node:path");
 const SOURCE = readFileSync(join(__dirname, "..", "server.js"), "utf8");
 const ROUTE = SOURCE.slice(SOURCE.indexOf("app.post('/api/council'"), SOURCE.indexOf("// ===== OVERLAY"));
 const LOOP = readFileSync(join(__dirname, "agent-loop.js"), "utf8");
+const STREAM_MODEL = SOURCE.slice(SOURCE.indexOf("const streamModel"), SOURCE.indexOf("const callGeminiVision"));
 
 test("council turns write one structured telemetry row through auditLog", () => {
   assert.match(ROUTE, /createTurnTelemetry\(\{ startedAt: t0 \}\)/);
@@ -36,4 +37,9 @@ test("the council request aborts every long-running layer on disconnect", () => 
 test("aborted tool results are not cached", () => {
   const toolSearch = SOURCE.slice(SOURCE.indexOf("const toolSearch"), SOURCE.indexOf("// ===== COMPREHENSIVE SEARCH ====="));
   assert.match(toolSearch, /if \(results\.length && !signal\?\.aborted\) setCachedSearch/);
+});
+
+test("a provider stream must reach its completion frame before the turn can succeed", () => {
+  assert.match(STREAM_MODEL, /if \(p\.done\) \{ completed = true;/);
+  assert.match(STREAM_MODEL, /if \(!completed\) throw new Error\('Stream ended before provider completion'\)/);
 });

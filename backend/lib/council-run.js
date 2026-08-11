@@ -159,6 +159,7 @@ async function runCouncil(members, messages, whipMs, quorum, tokenLimit, deps = 
       Promise.resolve()
         .then(() => callModel(model, messages, temperature, whipMs, tokenLimit, councilSignal))
         .then((content) => {
+          if (resolved) return;
           settledCount++;
           const trimmed = (content || "").trim();
           // A bare "skip" is the model declining, and the regex is anchored so
@@ -183,6 +184,7 @@ async function runCouncil(members, messages, whipMs, quorum, tokenLimit, deps = 
           checkDone();
         })
         .catch(() => {
+          if (resolved) return;
           settledCount++;
           report(model, SEAT_STATES.FAILED);
           if (!record.timingDone) {

@@ -399,6 +399,7 @@ test("the last round is released as soon as quorum answers are in", async () => 
   // Released, not cut short. Telling the synthesiser the research was truncated
   // would have it hedge an answer that was never short of anything.
   assert.equal(r.truncated, null);
+  assert.equal(r.stopReason, "quorum");
   assert.equal(slowAborted, true);
 });
 

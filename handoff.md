@@ -61,7 +61,75 @@ files. If you ever need to do it again, that is the shape of it: check
 
 ---
 
-## This session (2026-08-11), latest — sign-in rebuilt, branches cut
+## This session (2026-08-11), latest — response times, measured at last
+
+The owner's report was "AI response times are quite slow". Both peers profiled
+rather than guessed, and the answer is not what the phrasing suggests.
+
+**IT IS THE TAIL, NOT THE MEDIAN. p50 first answer 1.71s. p90 71.42s.** The
+wall ceiling is 75s, so the slow turns are turns running to the ceiling and
+stopping there. Anyone optimising the typical turn is optimising the wrong
+thing. Supporting numbers: warm Supabase reads ~200ms and the batch is already
+concurrent, so the database is not it; a live Render cold start measured
+22.55s, which is an infrastructure floor no prompt change touches.
+
+**The real gap is telemetry, and it is the next thing to fix.** Per-seat model
+duration and synthesis duration are not recorded separately anywhere. The
+numbers that would settle where the tail actually goes DO NOT EXIST. Luna
+refused to invent them, which is why this section is short.
+
+Note for the owner, not a re-litigation: the decision to keep the
+post-truncation fallback council is part of why the p90 is what it is — a
+blown 75s ceiling then buys another 30s whip. The decision stands and is
+recorded under "Deliberately not done". It now has a measurement attached to
+it that it did not have when it was made.
+
+Shipped on the backend: the final council round no longer carries the tool
+catalogue (~596 input tokens per seat, ~4.2k across seven, on the round the
+user is actually waiting through — it is answer-only and cannot request a tool
+anyway), and vision now starts before the independent context reads instead of
+after them.
+
+Shipped on the frontend: **animejs was on the critical path while the chunk
+config claimed it was not.** A static import in App.jsx pinned it, and because
+framer-motion was grouped with it, lazily importing framer-motion's only
+consumer loaded it eagerly too. Initial JS is ~20.12 kB gzip lighter. The
+message entrance effect keyed on the messages ARRAY, so a 700ms animation
+restarted on every reveal tick.
+
+**And the live region was announcing a lie**: an idle transcript that had never
+streamed anything announced "Answer complete" on arrival, so a screen reader
+user opening an old chat was told an answer had just finished. It now
+announces lifecycle transitions only, and only after something was actually
+responding.
+
+Deliberately left, with reasons: `MessageList` still reconciles O(message
+count) per token paint — fixing it means separating the streaming draft from
+the persisted `chats` tree, which is not a small patch; the 224ms reveal tail,
+which smooths bursty output and is a cadence decision, not a bug; and the null
+Suspense fallback, which can flash a blank transcript on a slow chunk.
+
+**A real NVDA or VoiceOver run is still owed.** Unit semantics and axe pass,
+which is not the same thing, and the peer declined to call screen-reader
+behaviour cleared without running one. Do not mark it done from the test count.
+
+**Seat streaming is written up as a staged plan and is NOT started.** Stage
+one is worth shipping for progress telemetry and perceived waiting, but it is
+not by itself a final-answer TTFB win, because synthesis still waits for
+complete seat answers. Do not let anyone sell it as one. The plan runs:
+provider stream parser → progressive disclosure through explicit `seat_delta`
+events that must never be merged into `chunk` or persisted as the answer →
+`AbortSignal` → streaming tool rounds last, because tool results have to
+re-enter still-running conversations without corrupting round ordering.
+
+Rejected on the way, and worth not re-proposing: lowering quorum to one (trades
+synthesis quality for a misleading first-token metric), sending the first
+seat's prose as the final answer, speculative synthesis before quorum, and
+provider prompt-caching without any cache-hit telemetry to show it works.
+
+---
+
+## This session (2026-08-11), earlier — sign-in rebuilt, branches cut
 
 **Sign-in was the screen nobody had improved.** Three things were wrong with it
 and all three are fixed.

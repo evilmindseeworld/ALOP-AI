@@ -464,20 +464,35 @@ test("the wall ceiling is checked before the members are asked, not only before 
  * for a member that never answered.
  */
 test("a final round whose quorum is already met does not wait on a member that never replies", async () => {
-  const started = Date.now();
+  let clock = 0;
+  let finalRoundAsks = 0;
+  const registry = fakeRegistry({
+    execute: async () => {
+      // Spend the whole request wall budget during the research round. The
+      // cumulative quorum must still release before the next round's asks.
+      clock = 100;
+      return { ok: true, summary: "ran web_search", content: "result" };
+    },
+  });
   const r = await runAgentLoop({
     members: ["early", "digger"],
     askMember: (m, ctx) => {
       if (m === "early") return Promise.resolve("early answer, and it is a long one");
       // The digger researches in round one and then hangs forever.
-      return ctx.isFinalRound ? new Promise(() => {}) : Promise.resolve(toolCall("dig"));
+      if (ctx.isFinalRound) {
+        finalRoundAsks++;
+        return new Promise(() => {});
+      }
+      return Promise.resolve(toolCall("dig"));
     },
-    registry: fakeRegistry(),
+    registry,
     maxRounds: 2,
     quorum: 1,
     roundMs: 4000,
+    totalWallMs: 50,
+    now: () => clock,
   });
-  assert.ok(Date.now() - started < 1000, `waited ${Date.now() - started}ms for a round it did not need`);
+  assert.equal(finalRoundAsks, 0, "cumulative quorum must release before starting final-round model calls");
   assert.deepEqual(Object.keys(r.answers), ["early"]);
   assert.equal(r.truncated, null);
 });

@@ -116,6 +116,20 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
   let active = [...(members || [])];
 
   while (active.length > 0 && round < cfg.maxRounds) {
+    const isFinalRound = round + 1 === cfg.maxRounds;
+
+    // CUMULATIVE QUORUM PREFLIGHT. Do this before constructing the entries
+    // passed to settleByDeadline: constructing one invokes askMember, so the
+    // helper's zero-deadline enough check would otherwise release immediately
+    // only AFTER starting model calls that the quorum makes unnecessary. This
+    // is also the path that remains correct when the wall budget is already
+    // spent: a satisfied final quorum releases without asking first.
+    const priorAnswers = [...answers.values()].filter(isUsableAnswer).length;
+    if (isFinalRound && cfg.quorum > 0 && priorAnswers >= cfg.quorum) {
+      active = [];
+      break;
+    }
+
     // Checked BEFORE the members are asked, not only before the tools run. A
     // ceiling tested halfway through the step it is meant to bound is a ceiling
     // one whole step of slack above where it claims to be.
@@ -124,13 +138,6 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
       break;
     }
     round++;
-    const isFinalRound = round === cfg.maxRounds;
-
-    // Counted before the round so quorum is CUMULATIVE: a member that answered
-    // in round one is an answer in hand, and requiring the quorum to be met
-    // again from scratch in the last round would wait on members whose
-    // contribution the loop already has.
-    const priorAnswers = [...answers.values()].filter(isUsableAnswer).length;
 
     // Every still-active member is asked concurrently. A member that throws is
     // dropped from the round rather than failing the turn: a council of seven

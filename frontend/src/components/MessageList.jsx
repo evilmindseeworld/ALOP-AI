@@ -299,6 +299,19 @@ export const ToolTrail = memo(({ activity }) => {
 
 ToolTrail.displayName = "ToolTrail";
 
+/**
+ * Raw streamed text, split into the blocks markdown will make of it.
+ *
+ * Only blank lines, because that is the one boundary markdown and plain text
+ * agree on. Anything cleverer here — detecting headings, list items, fences —
+ * would be a second markdown parser written to avoid running the first one.
+ *
+ * The trailing empty string is dropped so a message ending in a newline, which
+ * every streamed message does at some point, does not render an empty
+ * paragraph and take a block gap with it.
+ */
+const splitParagraphs = (text) => text.split(/\n{2,}/).filter((p) => p !== "");
+
 export const Message = memo(({ msg, isStreaming, onCopy, onSpeak, onFeedback, feedback }) => {
   const isUser = msg.role === "user";
 
@@ -340,9 +353,44 @@ export const Message = memo(({ msg, isStreaming, onCopy, onSpeak, onFeedback, fe
               msg.stopped ? "is-stopped" : ""
             }`}
           >
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-              {msg.content}
-            </ReactMarkdown>
+            {/* PLAIN WHILE IT STREAMS, PARSED ONCE WHEN IT STOPS.
+                react-markdown re-parses the WHOLE accumulated message on every
+                paint, and the reveal cadence paints continuously — so a
+                2,000-word answer was parsed from scratch a few hundred times on
+                its way in, each parse longer than the last, and every fenced
+                block inside it re-tokenised by the syntax highlighter along
+                with it. The final parse is the only one whose output anyone
+                keeps.
+                The bubble element is deliberately the SAME div in both
+                branches: React reconciles it in place and swaps only the
+                children, so nothing unmounts, no entrance animation replays,
+                and there is no flash at the swap. Same box, same padding, same
+                measure — only the contents of it change.
+                The trade, stated: raw syntax is visible while the answer
+                arrives. Asked for, and it is what makes the parse deferrable
+                at all. */}
+            {isStreaming ? (
+              /* ONE <p> PER PARAGRAPH, not one <p> for the whole thing.
+                 The first version put the raw text in a single pre-wrap block,
+                 which turned every blank line into a full line of leading —
+                 27px where markdown's own block rhythm is the 16px of
+                 `.markdown-body > * + *`. Measured at an 820px column: 82px
+                 plain against 54px parsed, so the transcript jumped 28px under
+                 the reader at the exact moment the answer finished.
+                 Split on blank lines, each paragraph is spaced by the same
+                 rule that will space it after the parse, and single newlines
+                 inside a paragraph are still preserved by pre-wrap. A split is
+                 a few microseconds against a full markdown parse. */
+              splitParagraphs(msg.content).map((para, i) => (
+                <p className="stream-plain" key={i}>
+                  {para}
+                </p>
+              ))
+            ) : (
+              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+                {msg.content}
+              </ReactMarkdown>
+            )}
           </div>
         ) : null}
 

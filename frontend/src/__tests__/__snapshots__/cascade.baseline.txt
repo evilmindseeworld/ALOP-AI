@@ -16970,7 +16970,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[344] p
+[344] p.stream-plain
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -16995,12 +16995,14 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
+  overflow-wrap: anywhere
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
+  white-space: pre-wrap
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -38523,7 +38525,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[780] p
+[780] p.stream-plain
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -38548,12 +38550,14 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
+  overflow-wrap: anywhere
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
+  white-space: pre-wrap
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
@@ -51420,7 +51424,7 @@
   - ::after/animation-duration: <animation: caretBlink 1s steps(2, start) infinite>
   - ::after/animation-iteration-count: <animation: caretBlink 1s steps(2, start) infinite>
 
-[344] p
+[344] p.stream-plain
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -56440,7 +56444,7 @@
   - ::after/animation-duration: <animation: caretBlink 1s steps(2, start) infinite>
   - ::after/animation-iteration-count: <animation: caretBlink 1s steps(2, start) infinite>
 
-[780] p
+[780] p.stream-plain
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms

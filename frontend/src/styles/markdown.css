@@ -76,6 +76,28 @@
 
 .markdown-body p { margin: 0; }
 
+/* THE STREAMING BODY, before it is markdown.
+ *
+ * A real <p> inside .markdown-body, so it inherits the prose size, the 1.6
+ * leading and the zero paragraph margin from the rules above rather than
+ * restating any of them. That inheritance IS the no-shift guarantee: the text
+ * is set on exactly the metrics it will be re-set on when the parse lands, in
+ * the same bubble, at the same measure.
+ *
+ * pre-wrap because the raw text carries the author's line breaks and blank
+ * lines, and collapsing them would run an entire structured answer into one
+ * paragraph — which would then reflow into a completely different shape at the
+ * swap. Preserved, the block arrives at close to its final height.
+ *
+ * anywhere, not break-word: a streamed URL or a long identifier can exceed the
+ * measure before any space arrives, and without this it widens the bubble and
+ * moves the whole transcript sideways for as long as it takes the next space
+ * to stream in. */
+.stream-plain {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
 .markdown-body strong { font-weight: 650; color: var(--text); }
 .markdown-body em { font-style: italic; }
 

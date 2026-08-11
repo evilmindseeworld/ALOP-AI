@@ -52,6 +52,84 @@ describe("MessageList", () => {
     expect(container.querySelectorAll(".msg-row")[1]).toContainElement(streaming[0]);
   });
 
+  /**
+   * THE DEFERRED PARSE.
+   *
+   * react-markdown re-parses the whole accumulated message on every paint, and
+   * the reveal cadence paints continuously — so a long answer was parsed from
+   * scratch hundreds of times on the way in and only the last result was ever
+   * kept. It is plain text until the stream closes.
+   *
+   * Asserted on the OUTPUT rather than on the branch: what matters is that no
+   * parse happened, and the absence of a <strong> for `**bold**` is the
+   * cheapest proof of that which cannot pass by accident.
+   */
+  const withMarkdown = [
+    messages[0],
+    { id: "a1", role: "assistant", content: "A **bold** claim.", ts: "10:05" },
+  ];
+
+  it("renders the streaming answer as plain text, not parsed markdown", () => {
+    const { container } = renderList({ messages: withMarkdown, status: "streaming" });
+    const plain = container.querySelector(".bubble.is-streaming .stream-plain");
+    expect(plain).toBeInTheDocument();
+    expect(plain.textContent).toBe("A **bold** claim.");
+    expect(container.querySelector(".bubble.is-streaming strong")).toBeNull();
+  });
+
+  it("parses it once the stream closes", () => {
+    const { container } = renderList({ messages: withMarkdown, status: "idle" });
+    expect(container.querySelector(".stream-plain")).toBeNull();
+    expect(container.querySelector(".bubble strong")).toHaveTextContent("bold");
+  });
+
+  /**
+   * THE NO-SHIFT GUARANTEE, and it is a measurement rather than a preference.
+   *
+   * The first version put the whole raw message in one pre-wrap block, so every
+   * blank line became a full line of leading — 27px where markdown's block
+   * rhythm is 16px. Measured in a real browser at an 820px column: 82px plain
+   * against 54px parsed, a 28px jump under the reader at the moment the answer
+   * finished. One <p> per paragraph puts both states on the same
+   * `.markdown-body > * + *` rule, and the shift measured 0.
+   *
+   * jsdom has no layout, so this asserts the STRUCTURE that produces it: the
+   * plain branch emits the same number of block children the parsed branch
+   * will.
+   */
+  it("emits one block per paragraph, so the parse does not change the height", () => {
+    const twoParas = [
+      messages[0],
+      { id: "a1", role: "assistant", content: "First para.\n\nSecond para.", ts: "10:05" },
+    ];
+    const { container } = renderList({ messages: twoParas, status: "streaming" });
+    expect(container.querySelectorAll(".stream-plain")).toHaveLength(2);
+  });
+
+  it("does not emit an empty paragraph for the trailing newline every stream has", () => {
+    const trailing = [
+      messages[0],
+      { id: "a1", role: "assistant", content: "Done.\n\n", ts: "10:05" },
+    ];
+    const { container } = renderList({ messages: trailing, status: "streaming" });
+    expect(container.querySelectorAll(".stream-plain")).toHaveLength(1);
+  });
+
+  it("keeps the same bubble across the swap, so nothing remounts", () => {
+    // The one thing that would show as a flash: if the bubble itself were
+    // replaced rather than its children, the element would unmount and any
+    // entrance animation on it would replay at the exact moment the answer
+    // finished arriving.
+    const { container, rerender } = render(
+      <MessageList messages={withMarkdown} status="streaming" feedback={{}} onCopy={noop} onFeedback={noop} onPickStarter={noop} />
+    );
+    const before = container.querySelector(".bubble");
+    rerender(
+      <MessageList messages={withMarkdown} status="idle" feedback={{}} onCopy={noop} onFeedback={noop} onPickStarter={noop} />
+    );
+    expect(container.querySelector(".bubble")).toBe(before);
+  });
+
   it("does not mark a trailing USER message as streaming", () => {
     // The caret means "an answer is arriving". On a user message it would sit
     // blinking inside the question the reader just typed.

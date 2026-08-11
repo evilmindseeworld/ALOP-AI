@@ -306,7 +306,7 @@ export const appTree = (theme) => `
             <div class="msg-row assistant"><span class="sr-only">The council answered:</span>
               <div class="avatar" aria-hidden="true">AI</div>
               <div class="msg-content">
-                <div class="bubble markdown-body is-streaming"><p>Half an answ</p></div>
+                <div class="bubble markdown-body is-streaming"><p class="stream-plain">Half an **answ</p></div>
                 <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" class="msg-image" alt="Generated"/>
               </div>
             </div>

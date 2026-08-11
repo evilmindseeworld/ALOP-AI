@@ -37,7 +37,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  padding: var(--space-3);
+  /* The bottom is deeper than the other three, and that asymmetry is the
+   * skyline's floor. The town stands inside the inner rule at the foot of the
+   * card; without its own strip it would paint across the icon row, which is
+   * the mistake the branch above the top edge was making in the other
+   * direction. 24px clears an 18px horizon plus the 4px rule inset. */
+  padding: var(--space-3) var(--space-3) var(--space-6);
   background: var(--surface-2);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-xl);
@@ -101,22 +106,22 @@
   transform: translateY(-1px);
 }
 
-/* ===== THE SPRIGS ON THE PROMPT BAR =====
+/* ===== THE ORNAMENT ON THE PROMPT BAR =====
  *
  * The branch reached every surface in this app except the one the user
- * actually touches, and the only one that is always on screen — the base
- * corners frame the composer but unmount with the empty state.
+ * actually touches, and the only one that is always on screen.
  *
- * THEY SIT ON THE EDGE, NOT INSIDE THE CARD. Half above the border and half
- * below it, so they read as resting on the bar. Anything drawn inside would be
- * over the words someone is typing, and decoration over body copy has no good
- * opacity — the same conclusion decoration.css reached about the rosette and
- * the prose beneath it.
+ * IT USED TO HANG ABOVE THE TOP EDGE. Half over the transcript, at the faint
+ * step, on the reasoning that anything drawn inside the card would be over the
+ * words someone is typing. The reasoning held and the conclusion did not: an
+ * ornament that overlaps live text has no good opacity, so the branch was
+ * turned down until it read as a smudge BEHIND the bar rather than a drawing
+ * on it, which is exactly what it looked like.
  *
- * 0.18, against the rosette's 0.16 and the corner sprigs' 0.26. The composer
- * is the app's one elevated surface and the brightest thing on screen, so the
- * same ink needs a little more alpha here to read at all, and much more would
- * turn the one control that matters into an illustration. */
+ * The town does not overlap anything. It has a strip of its own at the foot of
+ * the card — see the padding above — so it can be drawn at a weight that reads.
+ * The rule for this surface is now: on the bar, or not on the bar. Nothing
+ * hangs off it. */
 .composer-sprigs {
   position: absolute;
   inset: 0;
@@ -125,26 +130,50 @@
   pointer-events: none;
 }
 
-.composer-sprig {
+/* The horizon strip. Inset 5px on three sides so the town stands ON the inner
+ * rule rather than crossing it — the rule's bottom line is the ground, and a
+ * skyline whose buildings sink through their own baseline reads as a mistake at
+ * any alpha. Centred, because a horizon anchored to one end is a vignette. */
+.composer-skyline {
   position: absolute;
-  /* Two thirds of the width above the card's edge: the blossoms on this
-   * branch sit along its upper side, so hanging it level would bury them
-   * behind the border instead of resting them on it. */
-  top: -19px;
-  /* Wider than the old pair, because there is only one now and it carries the
-   * whole bar. The `bar` variant runs off the right edge of its own viewBox, so
-   * this width is what decides how far the branch lies ACROSS the card rather
-   * than how far it hangs beside it. */
-  width: 128px;
-  height: auto;
-  color: var(--ornament-ink);
-  opacity: var(--ornament-a-faint);
-  transition:
-    opacity var(--dur) var(--ease-out),
-    transform var(--dur) var(--ease-spring);
+  left: 5px;
+  right: 5px;
+  bottom: 5px;
+  height: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  /* The card clips nothing else, and this is the one child that would show it:
+   * on a narrow viewport the 291px drawing is wider than the strip. */
+  overflow: hidden;
 }
 
-.composer-sprig-l { left: -10px; }
+.composer-skyline svg {
+  height: 18px;
+  width: auto;
+  flex-shrink: 0;
+  display: block;
+}
+
+/* The opacity is on the GROUP. Every building here overlaps its neighbour, and
+ * per-path alpha would draw a brighter seam down every shared edge. */
+.composer-town {
+  fill: var(--ornament-ink);
+  opacity: var(--ornament-a-mid);
+  transition: opacity var(--dur) var(--ease-out);
+}
+
+/* The one round thing in a strip of straight edges, and the only ornament on
+ * this card besides the seal that is allowed the strong step. It is drawn
+ * before the town in document order, so the roofline occludes its lower half
+ * and it reads as rising rather than as sitting on top. */
+.composer-sun {
+  fill: var(--ornament-seal);
+  opacity: var(--ornament-a-strong);
+  transition:
+    opacity var(--dur) var(--ease-out),
+    transform var(--dur-slow) var(--ease-spring);
+}
 
 /* THE RIGHT END IS A SEAL NOW, NOT A SECOND BRANCH.
  *
@@ -166,17 +195,20 @@
   transition: transform var(--dur) var(--ease-spring);
 }
 
-/* THE BRANCH ANSWERS THE CARET.
+/* THE SUN ANSWERS THE CARET, and it is the only thing on this card that can
+ * make that gesture mean something: it rises 2px. The card lifts 1px and
+ * changes border colour, the inner rule brightens a step, and the sun comes up
+ * behind the town on the slow spring — three different answers to one event
+ * rather than three copies of it.
  *
- * The card already lifts 1px and changes border colour on focus, and the
- * sprigs are its children so they come along. This is 2px MORE, which is what
- * makes it read as the ornament noticing rather than the whole card moving:
- * the branch arrives slightly ahead of the surface it rests on, on the spring
- * easing, while the border does its own thing on ease-out. */
-.input-wrapper:focus-within .composer-sprig {
-  opacity: var(--ornament-a-mid);
+ * 2px on an 18px horizon is most of the disc's visible height, so this is a
+ * large move at a small scale, which is the only kind of motion that survives
+ * being this quiet. */
+.input-wrapper:focus-within .composer-sun {
   transform: translateY(-2px);
 }
+
+.input-wrapper:focus-within .composer-town { opacity: var(--ornament-a-strong); }
 
 /* The seal does not brighten — it has nowhere to go from alpha 1 — so it takes
  * the same 2px the branch does and nothing else. */
@@ -184,14 +216,21 @@
   transform: translateY(-2px);
 }
 
-/* On a phone the composer is nearly the full width and its icon row is tight
- * under it; a full-size branch at each corner turns the one control that
- * matters into an illustration. */
+/* On a phone the composer is nearly the full width and the screen is mostly
+ * keyboard. The horizon keeps its full height — it is the same 18px strip at
+ * any width and the drawing is centred, so a narrow card simply shows less
+ * town on either side, which is what a horizon does. */
 @media (max-width: 640px) {
-  .composer-sprig { width: 88px; top: -13px; opacity: var(--ornament-a-faint); }
   /* The seal shrinks but stays at full opacity. It is 20px of the one saturated
    * colour on the screen, and it is the piece worth keeping at this width. */
   .composer-seal { width: 20px; height: 20px; top: -11px; right: 8px; }
+}
+
+/* The sun's rise is the one motion here; without it the ornament is static,
+ * which is the correct resting state anyway. */
+@media (prefers-reduced-motion: reduce) {
+  .composer-sun { transition: opacity var(--dur) var(--ease-out); }
+  .input-wrapper:focus-within .composer-sun { transform: none; }
 }
 
 /* A file is over the composer. Dashed, because the border is briefly a target

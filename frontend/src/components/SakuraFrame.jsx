@@ -139,24 +139,6 @@ const SPRIGS = {
       <Blossom x={50} y={52} r={0.4} o={0.26} />
     </g>
   ),
-  /* THE PROMPT BAR, and the only one that CROSSES ITS OWN BOX. It runs off the
-     right edge of the viewBox so that on the composer a real length of branch
-     lies over the card surface rather than stopping at its border. That crossing
-     is what makes the ornament read as resting ON the bar; see composer.css. */
-  bar: (
-    <g>
-      <path d="M0 8 C 26 14, 46 26, 62 42 C 74 54, 92 62, 120 66" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" opacity="0.66" />
-      <path d="M34 18 C 40 30, 44 40, 44 52" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.44" />
-      <Leaf x={30} y={16} r={1} a={34} o={0.82} />
-      <Leaf x={66} y={47} r={0.85} a={-16} o={0.66} />
-      <Leaf x={100} y={62} r={0.7} a={8} o={0.5} />
-      <Blossom x={14} y={9} r={0.95} o={0.88} />
-      <Blossom x={44} y={53} r={0.8} o={0.62} />
-      <Blossom x={61} y={41} r={1.15} o={0.95} />
-      <Blossom x={96} y={62} r={0.75} o={0.6} />
-      <Blossom x={116} y={66} r={0.55} o={0.42} />
-    </g>
-  ),
 };
 
 const Sprig = ({ variant = "tl" }) => SPRIGS[variant] ?? SPRIGS.tl;
@@ -304,9 +286,57 @@ export const Keystone = ({ className = "sakura-keystone" }) => (
  * someone is typing has no acceptable opacity, which is the same conclusion
  * decoration.css reached about the rosette and the prose beneath it.
  */
+/**
+ * THE TOWN AT DAWN, along the foot of the prompt bar.
+ *
+ * What was here was a branch hung ABOVE the card's top edge — half of it over
+ * the transcript, at fifteen percent alpha, reading as something behind the bar
+ * rather than something on it. The branch is the right family and was in the
+ * wrong place: an ornament that overlaps the surface it decorates has to be
+ * translucent enough to type through, and at that alpha it was a smudge.
+ *
+ * This stands on the ground instead. The rooftops' baseline IS the inner rule's
+ * bottom line — see composer.css, which owns the strip and the padding that
+ * clears it — so nothing overlaps anything and no alpha is spent hiding a
+ * collision. The card gained 12px of bottom padding to give the horizon a floor
+ * it owns, which is the whole cost of it.
+ *
+ * THE SUN IS THE SUBJECT. It is drawn in --ornament-seal, the vermilion the
+ * hanko uses, at the strong step and behind the roofline so the town occludes
+ * its lower half — a disc sitting ON a skyline is a logo, a disc rising BEHIND
+ * one is a time of day. It is the only round thing in a strip of straight
+ * edges, which is what makes it read at 18px.
+ *
+ * The town is one silhouette, not an illustration: flat blocks, three gables
+ * and a two-tier pagoda, all one fill at one alpha. The overlaps are deliberate
+ * and the opacity is on the GROUP rather than on each path — per-path alpha
+ * would show every seam where two buildings meet.
+ */
+export const ComposerSkyline = memo(() => (
+  <div className="composer-skyline">
+    <svg viewBox="0 0 320 22" aria-hidden="true" focusable="false">
+      <circle className="composer-sun" cx="176" cy="11" r="10" />
+      <g className="composer-town">
+        <path d="M0 22 V15 H16 V10 H24 V15 H38 L46 7 L54 15 H68 V5 H80 V15 H100 V17 H136 V12 H150 L158 6 L166 12 H180 V16 H196 V9 H208 V16 H228 L236 8 L244 16 H258 V13 H272 V17 H292 V14 H320 V22 Z" />
+        {/* The pagoda, rising out of the low run the profile leaves for it at
+            x 100–136. Two flared eaves and a finial: the flare is the whole
+            silhouette, so the eaves are quadratic curves where every other
+            roof here is a straight line. */}
+        <path d="M117.4 2 H118.6 V6 H117.4 Z" />
+        <path d="M104 9 Q118 4.5 132 9 L128.5 10.6 Q118 7.4 107.5 10.6 Z" />
+        <path d="M112 10.6 H124 V13.4 H112 Z" />
+        <path d="M101 15.4 Q118 10.6 135 15.4 L131.5 17 Q118 13.4 104.5 17 Z" />
+        <path d="M109 17 H127 V22 H109 Z" />
+      </g>
+    </svg>
+  </div>
+));
+
+ComposerSkyline.displayName = "ComposerSkyline";
+
 export const ComposerSprigs = memo(() => (
   <div className="composer-sprigs" aria-hidden="true">
-    <Corner className="composer-sprig composer-sprig-l" variant="bar" />
+    <ComposerSkyline />
     <Seal className="sakura-seal composer-seal" id="composer-seal" />
   </div>
 ));

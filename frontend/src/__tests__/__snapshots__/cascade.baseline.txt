@@ -11745,9 +11745,8 @@
   animation-delay: <animation: emptyFloat 6s ease-in-out infinite>
   animation-duration: <animation: emptyFloat 6s ease-in-out infinite>
   animation-iteration-count: <animation: emptyFloat 6s ease-in-out infinite>
-  border-bottom-right-radius: <border-radius: 12px>
-  border-radius: 12px
-  box-shadow: 0 18px 50px rgba(240, 138, 163, 0.22), 0 0 70px rgba(111, 211, 166, 0.18)
+  border-bottom-right-radius: <border-radius: 999px>
+  border-radius: 999px
   box-sizing: border-box
   height: 76px
   margin: 0
@@ -33299,9 +33298,8 @@
   animation-delay: <animation: emptyFloat 6s ease-in-out infinite>
   animation-duration: <animation: emptyFloat 6s ease-in-out infinite>
   animation-iteration-count: <animation: emptyFloat 6s ease-in-out infinite>
-  border-bottom-right-radius: <border-radius: 12px>
-  border-radius: 12px
-  box-shadow: 0 18px 50px rgba(179, 26, 84, 0.18), 0 0 70px rgba(31, 122, 82, 0.14)
+  border-bottom-right-radius: <border-radius: 999px>
+  border-radius: 999px
   box-sizing: border-box
   height: 76px
   margin: 0

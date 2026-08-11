@@ -134,13 +134,30 @@
 .empty-logo {
   width: 76px;
   height: 76px;
-  border-radius: var(--radius-xl);
+  /* ROUND, BECAUSE THE HOLE IT SITS IN IS ROUND.
+   *
+   * It was a 76px square with a 12px radius inside the rosette's clear disc,
+   * which is 85px across — so its corners reached 53.7px from centre against
+   * the ring's 42.5px and crossed the innermost traces. A rounded square inside
+   * a ring is two different geometries arguing; the mark is the centre of a
+   * seal, and the centre of a seal is a disc. At 76px it now clears the ring by
+   * 4.5px the whole way round instead of at four points only.
+   *
+   * The tile the mark is drawn on is a rounded square in the PNG — that is
+   * correct for a home screen and a tab strip, where every other icon is one —
+   * so the circle is cut here rather than in the asset. */
+  border-radius: var(--radius-full);
   object-fit: cover;
   /* The gap below the mark is on .empty-mark, not here. It has to be OUTSIDE
    * the box the rosette is centred in: with the margin on the image, the
    * wrapper was 8px taller than the mark and `top: 50%` put the ring 4px low —
    * measured, not guessed. */
-  box-shadow: 0 18px 50px var(--primary-glow), 0 0 70px var(--emerald-glow);
+  /* NO GLOW. There was a 50px pink shadow and a 70px emerald one under this,
+   * which is the soft-halo-behind-the-logo move every AI product ships, and it
+   * was fighting the rosette: the ring is engraved linework and a bloom behind
+   * it turns the lines to mush. The mark is a dark disc on a dark surface with
+   * a drawn ring around it — that is the whole identity, and it does not need
+   * to be lit from behind to be found. */
   animation: emptyFloat 6s ease-in-out infinite;
   /* anime.js scales and drags this element; touch-action keeps the drag from
    * being stolen by the browser's own panning on touch devices. */

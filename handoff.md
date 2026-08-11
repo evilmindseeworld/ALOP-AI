@@ -19,18 +19,27 @@ something this file describes, change this file in the same commit.
 ## The one thing to read before touching the frontend
 
 **The empty-state ornament set is the specification, and it has now been
-reverted to twice.** Two hanging crescents in the gutters, the sakura corner
-sprigs, the asanoha lattice across the chat surface, a centred hero, and the
-starters as a 2x2 card grid. The torii is gone — `CouncilRosette` replaced it,
-and the logo mark now sits inside the rosette's centre hole.
+reverted to twice.** Two hanging crescents in the gutters, the asanoha lattice
+across the chat surface, a centred hero, and the starters as a 2x2 card grid.
+The torii is gone — `CouncilRosette` replaced it, and the logo mark now sits
+inside the rosette's centre hole.
 
-**The top two sprigs came off this screen on 2026-08-11**, asked for by the
-owner as a declutter and confirmed against the alternatives before cutting. The
-chat empty state now carries the bottom pair and the keystone
-(`SakuraBaseCorners`); the top pair is `SakuraFrame`, which sign-in still
-renders. This was a cut WITHIN the family — the crescents, the lattice, the
-centred hero and the card grid were not touched, and the paragraphs below still
-stand in full. Do not read it as the family being open for editing.
+**EVERY BRANCH CAME OFF ON 2026-08-11**, on the owner's instruction: "leave the
+earrings, just delete the branches." The top pair went first as a declutter and
+the rest followed in the same breath — all four corner sprigs and their four
+hand-authored variants, the `Leaf` helper, the `Corner` component,
+`SakuraFrame` itself, and the bough and falling petals that were only ever on
+sign-in. `SakuraBough.jsx` is deleted. `SakuraBaseCorners` is the keystone
+alone. The dead CSS went with the markup rather than being left to rot.
+
+What remains is the family's harder half, and it is the half that was carrying
+it: the crescents, the keystone, the seal, the composer skyline and the lattice.
+The branch was the part that said "Japanese" without saying anything about THIS
+product — the same charge that retired the torii. **Do not redraw it.** If a
+screen needs more, it needs it from the marks that mean something here.
+
+Everything else in this section still stands in full. The cut was inside the
+family, not a licence to edit it.
 
 Five redesigns were tried and all five rejected: one wooden bough replacing the
 four sprigs; that bough moved to the bottom right; an ensō drawn as seven
@@ -52,7 +61,59 @@ files. If you ever need to do it again, that is the shape of it: check
 
 ---
 
-## This session (2026-08-11), latest — the loop's ceilings, reviewed by two peers
+## This session (2026-08-11), latest — sign-in rebuilt, branches cut
+
+**Sign-in was the screen nobody had improved.** Three things were wrong with it
+and all three are fixed.
+
+*It was vibe-coded where it showed.* Two blurred gradient orbs drifted behind
+the form on 18s and 22s loops — the single most reproduced background on the
+web, the one that arrives with the framework. Gone, along with the branch above
+them. The replacement is the app's own ground: the asanoha lattice, copied in
+geometry from `.chat-main::after` so that signing in is the same room as the
+app rather than an entrance hall decorated in a different style.
+
+*Nothing moved on it.* The owner's question was fair — "the earrings swing, but
+when I log in nothing's swinging" — because the crescents were mounted in
+`.chat-main`, behind the sign-in wall, so the one piece of motion in this app
+was invisible until after you had already committed to it. They now hang on the
+first screen, on the resting 7s arc rather than the active one: the wide quick
+swing means the council is working, and nothing is working yet. Hidden below
+900px where the grid collapses and there is no margin to hang them in.
+
+*The seal now closes the council ladder.* A hanko is pressed at the END of a
+document, as the stroke that commits to what is above it, which is what "One
+reply, reconciled." does to the seven rows above it. The drawing is already the
+argument — two strokes converging to a point — and it is the only mark on the
+page at full opacity. It lands at 980ms, exactly where `councilResolve`
+finishes, oversized and over-rotated, and lifts to -4deg because a seal set
+perfectly square reads as a printed logo.
+
+**The page's ARGUMENT was not touched.** The council ladder, the temperatures,
+the headline, the tagline and both legal paragraphs are exactly as they were.
+This was a change of surface. Do not read it as the copy being in play.
+
+**And it no longer waits on Clerk to render.** `if (!isLoaded) return null` was
+holding the entire screen blank until a third-party bundle had downloaded,
+parsed and initialised — seconds of nothing on a cold cache, on the one page
+every new user sees. Only the card waits now, in a slot that reserves the
+form's height so nothing reflows when Clerk arrives. The outage screen is
+deliberately unchanged: once the ten seconds are up the message is the only
+thing that matters.
+
+Two notes for whoever is next here:
+
+- **`prefers-reduced-motion` is handled globally**, in `utilities.css`, by
+  collapsing every duration to 0.01ms. Any entrance animation on this page must
+  therefore use `forwards`, or it is stranded at `opacity: 0` for those users.
+  The seal is written that way and says so.
+- **Sign-in renders OUTSIDE `.app-root`**, so `.app-root.light` never applies
+  and the screen is always the dark theme. That is pre-existing, not new, and
+  it is why the light theme was not part of this work.
+
+---
+
+## This session (2026-08-11), earlier — the loop's ceilings, reviewed by two peers
 
 Five defects in the agent loop's time and money ceilings. All five have a test
 that was verified failing on revert by actually reverting and running, not by

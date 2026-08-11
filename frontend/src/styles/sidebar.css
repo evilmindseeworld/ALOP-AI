@@ -634,7 +634,14 @@
   display: flex;
   justify-content: center;
   color: var(--text-subtle);
-  opacity: 0.55;
+  /* THE LADDER, not 0.55. tokens.css says no ornament rule may write a bare
+   * opacity number, and this one had — so the keystone at the foot of the rail
+   * was the single mark in the app tuned by eye instead of by the set. Faint at
+   * rest and strong when it reports work keeps the same two-state reading and
+   * puts both ends on the scale every other ornament answers to. It also fixes
+   * the light theme for free: 0.55 was a dark-theme value, and the ladder is
+   * declared per theme precisely because paper needs more. */
+  opacity: var(--ornament-a-faint);
   transition: opacity var(--dur-slow) ease, color var(--dur-slow) ease;
 }
 
@@ -653,6 +660,6 @@
  * this sits on the floor of a column and a moving fleuron would read as a
  * loose element rather than a working one. */
 .rail-foot.is-active {
-  opacity: 1;
+  opacity: var(--ornament-a-strong);
   color: var(--primary);
 }

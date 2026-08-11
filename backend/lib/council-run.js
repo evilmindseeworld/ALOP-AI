@@ -60,6 +60,24 @@ const SEAT_STATES = Object.freeze({
  *   trusted.
  * @returns {Promise<Array<{model: string, content: string}>>}
  */
+/**
+ * Is this reply an ANSWER, or a seat declining?
+ *
+ * Exported because three places needed the same judgement and only this one
+ * had it: the council's own quorum count, the agent loop's quorum release, and
+ * the route that filters what reaches the synthesiser. The agent loop counted
+ * any non-empty string, so a bare "skip" could make quorum and release the room
+ * without a single usable answer in it.
+ *
+ * The skip regex is ANCHORED so an answer that merely begins with the word is
+ * not mistaken for a decline, and anything at three characters or under is an
+ * empty completion rather than a reply.
+ */
+const isUsableAnswer = (content) => {
+  const trimmed = (content || "").trim();
+  return trimmed.length > 3 && !/^skip[.!]?$/i.test(trimmed);
+};
+
 async function runCouncil(members, messages, whipMs, quorum, tokenLimit, deps = {}) {
   const { callModel, onSeat } = deps;
   if (typeof callModel !== "function") throw new Error("runCouncil needs callModel");
@@ -118,7 +136,7 @@ async function runCouncil(members, messages, whipMs, quorum, tokenLimit, deps = 
           const isSkip = /^skip[.!]?$/i.test(trimmed);
           if (isSkip) {
             report(model, SEAT_STATES.SKIPPED);
-          } else if (trimmed.length > 3) {
+          } else if (isUsableAnswer(trimmed)) {
             validCount++;
             results.push({ model, content });
             report(model, SEAT_STATES.ANSWERED);
@@ -143,4 +161,4 @@ async function runCouncil(members, messages, whipMs, quorum, tokenLimit, deps = 
   });
 }
 
-module.exports = { runCouncil, SEAT_STATES };
+module.exports = { runCouncil, SEAT_STATES, isUsableAnswer };

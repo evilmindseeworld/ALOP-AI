@@ -393,3 +393,91 @@ test("quorum counts answers already in hand, not just this round's", async () =>
   assert.deepEqual(Object.keys(r.answers).sort(), ["digger", "early"]);
   assert.equal(r.truncated, null);
 });
+
+// ===== what the peer review found =====
+
+/**
+ * A bare "skip" is a seat DECLINING, and it used to count toward quorum here
+ * because this loop counted any non-empty string while runCouncil counted valid
+ * answers. So one real answer plus one "skip" could release the room at a
+ * quorum of two, drop the member that was about to answer properly, and report
+ * no truncation at all — the route then filtered the "skip" out and synthesised
+ * from a single expert.
+ */
+test("a skip does not count toward quorum", async () => {
+  const r = await runAgentLoop({
+    members: ["real", "decliner", "slow"],
+    askMember: (m, ctx) => {
+      if (!ctx.isFinalRound) return Promise.resolve(toolCall(`${m}-q`));
+      if (m === "decliner") return Promise.resolve("skip");
+      if (m === "slow") return Promise.resolve("a proper answer, eventually");
+      return Promise.resolve("a proper answer");
+    },
+    registry: fakeRegistry(),
+    maxRounds: 2,
+    quorum: 2,
+  });
+  // Both real answers are in: quorum was never met by "real" + "skip" alone.
+  assert.deepEqual(Object.keys(r.answers).sort(), ["decliner", "real", "slow"]);
+});
+
+test("an empty completion does not count toward quorum either", async () => {
+  const r = await runAgentLoop({
+    members: ["real", "empty", "slow"],
+    askMember: (m, ctx) => {
+      if (!ctx.isFinalRound) return Promise.resolve(toolCall(`${m}-q`));
+      if (m === "empty") return Promise.resolve("  ");
+      return Promise.resolve(`a proper answer from ${m}`);
+    },
+    registry: fakeRegistry(),
+    maxRounds: 2,
+    quorum: 2,
+  });
+  assert.ok(r.answers.slow, "the third seat was waited for, because two of the three had not answered");
+});
+
+/**
+ * The wall ceiling was checked before the TOOLS ran and not before the members
+ * were asked, so a loop that had already blown it still paid for one more round
+ * of seven model calls before noticing.
+ */
+test("the wall ceiling is checked before the members are asked, not only before the tools", async () => {
+  let clock = 0;
+  let asks = 0;
+  const r = await runAgentLoop({
+    members: ["a"],
+    askMember: async () => { asks++; clock += 40000; return toolCall("x"); },
+    registry: fakeRegistry(),
+    now: () => clock,
+    maxRounds: 10,
+    totalWallMs: 60000,
+  });
+  // Two rounds put the clock at 80000, past the ceiling. A third must not be
+  // paid for to discover that.
+  assert.equal(asks, 2);
+  assert.match(r.truncated, /60000ms ceiling/);
+});
+
+/**
+ * `enough` was only consulted when a reply landed, so a final round whose
+ * quorum was ALREADY satisfied by earlier rounds sat out its whole whip waiting
+ * for a member that never answered.
+ */
+test("a final round whose quorum is already met does not wait on a member that never replies", async () => {
+  const started = Date.now();
+  const r = await runAgentLoop({
+    members: ["early", "digger"],
+    askMember: (m, ctx) => {
+      if (m === "early") return Promise.resolve("early answer, and it is a long one");
+      // The digger researches in round one and then hangs forever.
+      return ctx.isFinalRound ? new Promise(() => {}) : Promise.resolve(toolCall("dig"));
+    },
+    registry: fakeRegistry(),
+    maxRounds: 2,
+    quorum: 1,
+    roundMs: 4000,
+  });
+  assert.ok(Date.now() - started < 1000, `waited ${Date.now() - started}ms for a round it did not need`);
+  assert.deepEqual(Object.keys(r.answers), ["early"]);
+  assert.equal(r.truncated, null);
+});

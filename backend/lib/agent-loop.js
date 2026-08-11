@@ -59,6 +59,7 @@
 const { parseToolRequests } = require("./tool-protocol");
 const { dedupeCalls } = require("./tool-dedupe");
 const { settleByDeadline } = require("./deadline");
+const { isUsableAnswer } = require("./council-run");
 
 const DEFAULTS = {
   maxRounds: 4,
@@ -115,6 +116,13 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
   let active = [...(members || [])];
 
   while (active.length > 0 && round < cfg.maxRounds) {
+    // Checked BEFORE the members are asked, not only before the tools run. A
+    // ceiling tested halfway through the step it is meant to bound is a ceiling
+    // one whole step of slack above where it claims to be.
+    if (wallLeft() <= 0) {
+      truncated = truncated || `Reached the ${cfg.totalWallMs}ms ceiling for this turn.`;
+      break;
+    }
     round++;
     const isFinalRound = round === cfg.maxRounds;
 
@@ -122,7 +130,7 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     // in round one is an answer in hand, and requiring the quorum to be met
     // again from scratch in the last round would wait on members whose
     // contribution the loop already has.
-    const priorAnswers = answers.size;
+    const priorAnswers = [...answers.values()].filter(isUsableAnswer).length;
 
     // Every still-active member is asked concurrently. A member that throws is
     // dropped from the round rather than failing the turn: a council of seven
@@ -146,7 +154,7 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
         // Never longer than what is left of the whole loop: a round that
         // outlives its own hard stop is the hang the hard stop exists to
         // prevent.
-        deadlineMs: Math.max(250, Math.min(cfg.roundMs, wallLeft())),
+        deadlineMs: Math.max(0, Math.min(cfg.roundMs, wallLeft())),
         /* QUORUM RELEASE, the council's own trade applied to the round.
          *
          * A round costs the SLOWEST member even after the whip caps it, and the
@@ -163,7 +171,7 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
          * them. Speed is worth a seat's answer; it is not worth the feature. */
         enough:
           isFinalRound && cfg.quorum > 0
-            ? (r) => priorAnswers + r.filter((x) => x && x.isFinal && x.text).length >= cfg.quorum
+            ? (r) => priorAnswers + r.filter((x) => x && x.isFinal && isUsableAnswer(x.text)).length >= cfg.quorum
             : undefined,
       },
     );
@@ -177,7 +185,8 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     // released without it, which is what quorum means and is not a truncation.
     // Reporting it as one would have the synthesiser hedge an answer that was
     // never short of anything.
-    const releasedAtQuorum = isFinalRound && cfg.quorum > 0 && answers.size >= cfg.quorum;
+    const usableAnswers = [...answers.values()].filter(isUsableAnswer).length;
+    const releasedAtQuorum = isFinalRound && cfg.quorum > 0 && usableAnswers >= cfg.quorum;
     if (lateCount > 0 && !releasedAtQuorum) {
       truncated = truncated || `${lateCount} member(s) did not reply within the ${cfg.roundMs}ms round.`;
     }

@@ -76,6 +76,21 @@ function settleByDeadline(entries, { deadlineMs = 3000, enough } = {}) {
         },
       );
     });
+
+    /* ASKED ONCE MORE HERE, WITH NOTHING SETTLED, because `enough` is not
+     * always a question about what arrived in THIS call. The agent loop's
+     * quorum counts the answers it already had from earlier rounds — so a round
+     * whose quorum was met before it started would otherwise sit out its entire
+     * deadline waiting for a reply to trigger the check, and the case where
+     * nothing settles at all is exactly the case that must not wait.
+     *
+     * AFTER the handlers are attached, not before: returning early from the
+     * executor would leave every entry's promise unobserved, and a rejection
+     * with nobody listening is the process-level event the note at the top of
+     * this file exists to avoid. Nothing can have settled between the two
+     * statements — `then` never runs synchronously — so `results` here is still
+     * every fallback, which is what the caller's predicate expects. */
+    if (enough && enough(results)) finish();
   });
 }
 

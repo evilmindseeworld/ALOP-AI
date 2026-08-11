@@ -160,7 +160,7 @@ const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'imag
 // process.exit(1) at import time on a missing env var, so nothing defined here
 // is reachable from a test file. It is the most intricate concurrency in the
 // product and it had no coverage at all until it moved.
-const { runCouncil } = require('./lib/council-run');
+const { runCouncil, isUsableAnswer } = require('./lib/council-run');
 
 /**
  * `members` is a list of { model, temperature } seats. Each speaks at its own
@@ -1851,8 +1851,12 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       toolResearch = loop.research;
       toolTruncated = loop.truncated;
       console.log(`[TOOLS] ${loop.rounds} round(s), ${loop.uniqueCallsUsed} unique call(s), ${Object.keys(loop.answers).length} answer(s)${loop.truncated ? ` — ${loop.truncated}` : ''}`);
+      // The same predicate the council's quorum uses, rather than a third copy
+      // of the skip regex. It was a second copy, and the agent loop had a third
+      // rule again — any non-empty string — which is how a bare "skip" came to
+      // count toward a quorum here.
       validResponses = Object.entries(loop.answers)
-        .filter(([, content]) => content && !/^skip[.!]?$/i.test(content.trim()) && content.trim().length > 3)
+        .filter(([, content]) => isUsableAnswer(content))
         .map(([model, content]) => ({ model, content }));
       // A loop that produced nothing usable falls through to the plain council
       // rather than to the fallback: losing seven experts because the tool

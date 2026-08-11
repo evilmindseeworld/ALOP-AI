@@ -1,10 +1,10 @@
 # Handoff — 2026-08-11
 
-State of play at `49dd9bc`, pushed to `origin/main`. Read `AGENTS.md` first;
+State of play at `d6e38ca`, pushed to `origin/main`. Read `AGENTS.md` first;
 this file is what changed and what is still open, not a description of the
 project.
 
-617 frontend tests, 576 backend, working tree clean. Render auto-deploys from
+617 frontend tests, 598 backend, working tree clean. Render auto-deploys from
 `main` and is slow — well over five minutes — so the four commits below are
 live or shortly will be.
 
@@ -41,6 +41,75 @@ The revert was done by restoring the design-owned files from `c513df7` rather
 than by reverting five commits, because non-design work had landed in the same
 files. If you ever need to do it again, that is the shape of it: check
 `git log <base>..HEAD -- <file>` per file before restoring anything wholesale.
+
+---
+
+## This session (2026-08-11), latest — the loop's ceilings, reviewed by two peers
+
+Five defects in the agent loop's time and money ceilings. All five have a test
+that was verified failing on revert by actually reverting and running, not by
+assertion. 598 backend tests pass.
+
+**Found by review, in `agent-loop.js`:**
+
+- The wall gate was `wallLeft() <= 0`, so a round could start with a few
+  milliseconds left: every member asked, every model call paid for, every one
+  dropped at a whip that had already expired. Now floored at `MIN_ROUND_MS`
+  (250), clamped against `cfg.roundMs` so a caller with a deliberately tiny
+  round is not floored out of existence. Stopping leaves up to 250ms of the
+  ceiling unspent, which is the point.
+- The late-member truncation blamed `cfg.roundMs` for a whip the wall had
+  clamped, sending whoever read the log at the wrong knob. It now names the whip
+  that actually fired.
+- **The fix for the first one introduced the same bug one level down.** The
+  round deadline was computed at the gate and reused verbatim as the helper's
+  `deadlineMs` — but `active.map(...)` invokes `askMember` for every member
+  eagerly, before the helper's timer starts, so that duration was granted twice
+  and a 300ms wall could accept a reply at ~380ms. Entry-construction time is
+  now subtracted. A ceiling measured from the wrong instant is the exact defect
+  the first fix addressed; watch for it whenever a budget is computed at one
+  point and spent at another.
+- `perCall` was `Math.max(250, Math.min(perCallMs, budgetLeft(), wallLeft()))`.
+  The floor sat OUTSIDE the clamp, so a 100ms budget handed the registry a 250ms
+  timeout — the overrun the clamp exists to prevent, reintroduced by the floor
+  meant to keep calls worth making. The 250 is now a stop, not a floor.
+
+**In `deadline.js`:** a throwing `enough` predicate rejected the promise
+returned by `.then()`, which nobody holds — the process-level unhandled
+rejection that whole file's header exists to prevent, arriving by the one path
+the fallbacks did not cover. Wrapped in `enoughNow()`; a predicate that cannot
+answer has not said "enough", so the deadline still governs. Not reachable from
+either live caller today, so it is a contract hole rather than a live bug.
+
+**In `tool-dedupe.js` / `tool-registry.js` — a money leak.** Dedupe keyed on the
+arguments as the model wrote them, but `validateArgs` strips anything the schema
+does not name before running the call. Two members proposing the same search,
+one carrying a `nonce`, were two unique calls at dedupe and one identical
+request at execution — billed twice, in money and in the 25s budget. The
+registry now exposes `normalize(call)`, the canonical form `execute` will run,
+and `dedupeCalls` takes it as an optional third argument. A call it cannot
+normalise keys on its raw form, so an invalid call still reaches `execute` once
+and comes back as the error the model needs to see. A registry without a
+`normalize` (every test double) dedupes on raw args exactly as before.
+
+**Two synchronous-throw paths**, same shape, both fixed: `server.js`'s periodic
+audit sweep and `search-cache.js`'s sweep both invoked `supabase.rpc()` before
+attaching a handler, so a synchronous client throw became an unhandled
+rejection. The cache one could also turn a successful paid search into a failed
+tool result.
+
+**How this session was run.** Two Codex peers worked alongside, as peers rather
+than as subagents: `gpt-5.6-sol` at medium effort on security, `gpt-5.6-luna` at
+max effort adversarially attacking the diff. Luna found the reused-deadline
+defect; sol found both synchronous-throw paths, the `perCall` floor and the
+dedupe leak. Two things made it work and are worth repeating:
+
+- **File ownership was partitioned up front** — luna owned `agent-loop.js` and
+  `deadline.js`, sol owned the rest and reported patches for luna's files rather
+  than editing them. Both ran concurrently with no collision.
+- **`gpt-5.6` is not a valid model id on a ChatGPT account.** The ids are
+  `gpt-5.6-sol`, `gpt-5.6-luna`, `gpt-5.6-terra`. The first launch died on a 400
+  with the model name in it; the work was fine.
 
 ---
 
@@ -269,6 +338,15 @@ user, and anything older than seven days is ignored.
   `fly.toml` with `primary_region = "bom"`, `scripts/verify-migration.sh` and
   `docs/MUMBAI-MIGRATION.md` all exist. Fly wants payment to deploy; Cloud Run
   `asia-south1` is the free alternative.
+- **Nothing is cancelled, only abandoned.** `settleByDeadline` ignores
+  stragglers rather than cancelling them, and quorum release does the same: five
+  final-round model calls keep running toward the server's 30s timeout after the
+  room has been released, and a timed-out tool keeps executing its provider (a
+  20ms tool timeout was measured still running at 103ms). The fix is an
+  `AbortSignal` threaded through `settleByDeadline`, `askMember`, `callModel`,
+  the registry executors and the provider fetches, then cancelled on deadline or
+  quorum release. Queued deliberately for a session of its own — it touches
+  every layer and is not a patch.
 - **The council is only late-streaming.** Seats are polled non-streaming, so the
   first token cannot arrive until the last seat settles. The stage line now
   covers that wait rather than removing it. Streaming the seats themselves is
@@ -289,6 +367,15 @@ user, and anything older than seven days is ignored.
   than a council table. The owner has said a council table on the main chat
   screen is not wanted; do not build one unprompted.
 - **Tooltips.** Already exist in the composer.
+- **Bounding the post-truncation fallback council.** When the agent loop
+  exhausts its 75s ceiling without producing an answer, `server.js` starts a
+  further full council run with its own 30s whip — seven more paid model calls,
+  outside the ceiling that was just declared blown. This was raised as a
+  resource-exhaustion finding and is **the owner's decision, made 2026-08-11:
+  leave it.** If the ceiling blows, spend the calls to recover; a truncated
+  answer is worse than a late one. Do not "fix" this by capping it to a single
+  model or by putting one request-wide deadline across both paths. It is a
+  product choice, not an oversight.
 
 ---
 

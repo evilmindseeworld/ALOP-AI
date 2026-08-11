@@ -98,6 +98,33 @@ lives in `~/CLAUDE.md` under "Peers" and the `codex-duo-protocol` memory file.
 Named rather than numbered on purpose: the rules were renumbered the same day
 this line was written, and a number is the part that goes stale silently.
 
+**How it was arrived at**, kept here rather than in the rule, because a rule
+that carries its own history stops being readable as an instruction.
+
+The split was got wrong three times in one day. First Claude delegated only
+REVIEW while keeping every piece of execution, which took the owner saying it
+twice — the second time as "you are fucking peers… you have friends, workers
+amongst you." That was not a refusal to delegate: two peers ran all session and
+found four real defects. It was handing them the errand and keeping the work.
+Reviewing a diff is the errand; building the thing is the work.
+
+Then the effort levels were set backwards. Sol was made the cheap default
+worker at `low`, which inverts the allocation above — sol is the senior peer
+and should be dispatched rarely, for something substantial. Before that, the
+rule claimed sol needed `medium` for reviews because review is an unbounded
+search. **That was a prior asserted as a measurement.** Sol has never been run
+at `low` on a review here; the owner asked for the evidence and there was none.
+If it matters again, test it rather than asserting it.
+
+Third was the AbortSignal misallocation recorded above.
+
+What has worked, every time it was tried: partitioning by file before dispatch
+(zero collisions across four concurrent runs), and telling peers plainly they
+may disagree and do it their way. Luna found a real defect in one of Claude's
+fixes that way; sol found two synchronous-throw crash paths, a money leak in
+the dedupe, and five hover rules Claude had missed after Claude claimed to have
+found them all.
+
 ---
 
 ## THE COUNCIL IS DELIVERING ONE SEAT OUT OF SIX (2026-08-11)

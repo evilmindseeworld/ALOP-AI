@@ -279,6 +279,61 @@ describe("useChats", () => {
     await waitFor(() => expect(result.current.status).toBe("idle"));
     const messages = result.current.chats[0].messages;
     expect(messages[messages.length - 1].content).toBe("Hello world");
+    expect(result.current.activeMessages).toBe(messages);
+    expect(result.current.streamDraft.content).toBe("Hello world");
+    expect(result.current.renderedMessages).toEqual(messages.slice(0, -1));
+  });
+
+  it("keeps the persisted chat tree stable while reveal paints advance the draft", async () => {
+    const releaseStream = deferred();
+    const encoder = new TextEncoder();
+    let readCount = 0;
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            readCount += 1;
+            if (readCount === 1) {
+              return {
+                done: false,
+                value: encoder.encode(`data: ${JSON.stringify({ type: "chunk", text: "x".repeat(1000) })}\n`),
+              };
+            }
+            if (readCount === 2) {
+              await releaseStream.promise;
+              return { done: false, value: encoder.encode("data: [DONE]\n") };
+            }
+            return { done: true, value: undefined };
+          },
+        }),
+      },
+    }));
+    const existing = {
+      id: "chat-1",
+      title: "Long chat",
+      messages: [{ id: "old", role: "assistant", content: "Already persisted" }],
+    };
+    const { result } = setup({ fetchImpl, chatsResponse: [existing] });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+    act(() => result.current.setActiveChatId("chat-1"));
+
+    let sendPromise;
+    act(() => { sendPromise = result.current.send("continue"); });
+    await waitFor(() => expect(result.current.streamDraft?.content.length).toBeGreaterThan(0));
+    const persistedTree = result.current.chats;
+    const persistedChat = result.current.chats[0];
+    const firstPaintLength = result.current.streamDraft.content.length;
+
+    await act(async () => { await new Promise((resolve) => setTimeout(resolve, 40)); });
+    expect(result.current.streamDraft.content.length).toBeGreaterThan(firstPaintLength);
+    expect(result.current.chats).toBe(persistedTree);
+    expect(result.current.chats[0]).toBe(persistedChat);
+
+    await act(async () => {
+      releaseStream.resolve();
+      await sendPromise;
+    });
   });
 
   it("skips a malformed frame rather than failing the whole response", async () => {

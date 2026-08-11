@@ -21,6 +21,14 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
   const [chats, setChats] = useState([]);
   const [activeChatId, setActiveChatId] = useState(null);
   const [status, setStatus] = useState("idle");
+  /* The answer currently arriving is UI state, not persisted chat state.
+   *
+   * This used to live as the last element of `chat.messages`. Every 16ms reveal
+   * paint therefore replaced the chat object and the complete messages array.
+   * Memoized bubbles skipped their own render, but MessageList still reconciled
+   * every row in a long transcript. Keeping the one changing row beside the
+   * persisted tree lets that history retain its identity for the whole stream. */
+  const [streamDraft, setStreamDraft] = useState(null);
   const [feedback, setFeedback] = useState({});
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   /* The list failing is NOT the same as having no chats, and the sidebar used
@@ -44,6 +52,17 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
 
   const activeChat = useMemo(() => chats.find((c) => c.id === activeChatId), [chats, activeChatId]);
   const activeMessages = useMemo(() => activeChat?.messages || [], [activeChat]);
+  const activeStream = streamDraft?.chatId === activeChatId ? streamDraft : null;
+  const activeStreamDraft = activeStream?.message || null;
+  /* Once the completed draft has been persisted, keep its existing DOM row in
+   * the draft slot until the next send. The full transcript remains available
+   * through activeMessages for export and feedback; only the render projection
+   * omits the duplicate persisted copy. This preserves the bubble across the
+   * stream-to-Markdown swap instead of remounting it at completion. */
+  const renderedMessages = useMemo(() => {
+    if (!activeStream?.persisted || activeMessages.at(-1)?.id !== activeStream.message.id) return activeMessages;
+    return activeMessages.slice(0, -1);
+  }, [activeMessages, activeStream?.persisted, activeStream?.message.id]);
 
   /**
    * The open conversation's transcript has not arrived yet.
@@ -535,6 +554,7 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
       }
       if (status !== "idle" || sendInFlightRef.current || regenerateInFlightRef.current) return;
       sendInFlightRef.current = true;
+      setStreamDraft(null);
       setStatus("loading");
 
       // The chat row is created here rather than earlier. An earlier revision
@@ -714,6 +734,9 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
       const cleanText = text.trim();
       if (!cleanText || status !== "idle" || sendInFlightRef.current || regenerateInFlightRef.current) return;
       sendInFlightRef.current = true;
+      // A completed draft stays mounted to preserve its DOM at stream close.
+      // It joins ordinary history when the next exchange begins.
+      setStreamDraft(null);
       // Lock before any await. Otherwise two clicks during a transcript fetch
       // both observe the old `idle` closure and append competing turns.
       setStatus("loading");
@@ -804,7 +827,7 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
 
       const assistantId = uid();
       const assistantMsg = { role: "assistant", content: "", typing: true, ts: now(), id: assistantId };
-      updateChatMessages(chatId, [...updated, assistantMsg], false);
+      setStreamDraft({ chatId, message: assistantMsg });
 
       const history = baseMessages
         .filter((m) => m.content && m.content.trim() && !m.typing)
@@ -863,11 +886,16 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
         let started = false;
         let stage = null;
         const paintPending = () =>
-          updateChatMessages(
+          setStreamDraft({
             chatId,
-            [...updated, { ...assistantMsg, typing: true, content: "", stage, activity: activity.length ? [...activity] : undefined }],
-            false,
-          );
+            message: {
+              ...assistantMsg,
+              typing: true,
+              content: "",
+              stage,
+              activity: activity.length ? [...activity] : undefined,
+            },
+          });
         paintPending();
 
         /* THE VIEW IS PACED SEPARATELY FROM THE NETWORK.
@@ -921,13 +949,15 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
           // race against the first chunk on every single turn.
           if (!text) return;
           painted = text;
-          setChats((p) =>
-            p.map((c) =>
-              c.id === chatId
-                ? { ...c, messages: [...updated, { ...assistantMsg, typing: false, content: text, activity: activity.length ? [...activity] : undefined }] }
-                : c
-            )
-          );
+          setStreamDraft({
+            chatId,
+            message: {
+              ...assistantMsg,
+              typing: false,
+              content: text,
+              activity: activity.length ? [...activity] : undefined,
+            },
+          });
         };
 
         /* THE REVEAL NEEDS ITS OWN CLOCK, not the network's.
@@ -1031,11 +1061,22 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
         }
         paint(reveal.finish());
 
+        const finalMessage = {
+          ...assistantMsg,
+          typing: false,
+          content: acc,
+          activity: activity.length ? [...activity] : undefined,
+        };
+        // Keep this exact keyed row mounted while its complete copy is written
+        // into chats. renderedMessages omits that copy, so there is no duplicate
+        // and the plain-text-to-Markdown swap does not remount the bubble.
+        setStreamDraft({ chatId, message: finalMessage, persisted: true });
         const saved = await updateChatMessages(chatId, [
           ...updated,
-          { ...assistantMsg, typing: false, content: acc, activity: activity.length ? [...activity] : undefined },
+          finalMessage,
         ]);
         if (!saved) {
+          setStreamDraft(null);
           sendInFlightRef.current = false;
           setStatus("idle");
           return;
@@ -1054,11 +1095,15 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
           // Stop existed; and it dropped `acc`, discarding text already on
           // screen.
           if (acc.trim()) {
-            await updateChatMessages(chatId, [
+            const stoppedMessage = { ...assistantMsg, typing: false, content: acc, stopped: true };
+            setStreamDraft({ chatId, message: stoppedMessage, persisted: true });
+            const saved = await updateChatMessages(chatId, [
               ...updated,
-              { ...assistantMsg, typing: false, content: acc, stopped: true },
+              stoppedMessage,
             ]);
+            if (!saved) setStreamDraft(null);
           } else {
+            setStreamDraft(null);
             await updateChatMessages(chatId, updated);
           }
           sendInFlightRef.current = false;
@@ -1068,10 +1113,17 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
 
         sendInFlightRef.current = false;
         setStatus("error");
-        await updateChatMessages(chatId, [
+        const errorMessage = {
+          ...assistantMsg,
+          typing: false,
+          content: `⚠️ ${err.message || "Connection failed"}`,
+        };
+        setStreamDraft({ chatId, message: errorMessage, persisted: true });
+        const saved = await updateChatMessages(chatId, [
           ...updated,
-          { ...assistantMsg, typing: false, content: `⚠️ ${err.message || "Connection failed"}` },
+          errorMessage,
         ]);
+        if (!saved) setStreamDraft(null);
       }
     },
     [activeChatId, status, createChat, ensureMessagesLoaded, renameChat, updateChatMessages, getToken]
@@ -1131,6 +1183,8 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
     activeChat,
     activeChatId,
     activeMessages,
+    renderedMessages,
+    streamDraft: activeStreamDraft,
     setActiveChatId,
     status,
     feedback,

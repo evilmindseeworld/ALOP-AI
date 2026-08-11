@@ -14,7 +14,7 @@ import Earring from "./components/Earring";
 import InputBar from "./components/InputBar";
 import ChatSidebar from "./components/ChatSidebar";
 import CameraOverlay from "./components/CameraOverlay";
-import { InitialLoader, AppSkeleton, StuckLoading } from "./components/Skeletons";
+import { InitialLoader, AppSkeleton, StuckLoading, TranscriptFallback } from "./components/Skeletons";
 import SettingsPanel from "./components/panels/SettingsPanel";
 import AdminPanel from "./components/panels/AdminPanel";
 import UpgradePanel from "./components/panels/UpgradePanel";
@@ -160,8 +160,8 @@ const AuthenticatedApp = () => {
    * No dependencies: navigator.clipboard is stable for the document's life. */
   const copyAnswer = useCallback((content) => navigator.clipboard.writeText(content), []);
 
-  const { activeChat, activeMessages, status } = chat;
-  const lastMessageId = activeMessages.at(-1)?.id;
+  const { activeChat, activeMessages, renderedMessages, streamDraft, status } = chat;
+  const lastMessageId = streamDraft?.id || activeMessages.at(-1)?.id;
 
   // --- preferences -------------------------------------------------------
   useEffect(() => Storage.set("alop-dark-mode", darkMode.toString()), [darkMode]);
@@ -182,7 +182,7 @@ const AuthenticatedApp = () => {
     if (!el) return;
     const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < FOLLOW_THRESHOLD_PX;
     if (nearBottom) el.scrollTop = el.scrollHeight;
-  }, [chat.chats, chat.activeChatId]);
+  }, [chat.chats, chat.activeChatId, streamDraft?.content]);
 
   useEffect(() => {
     if (chatRef.current && status === "loading") chatRef.current.scrollTop = chatRef.current.scrollHeight;
@@ -736,9 +736,10 @@ const AuthenticatedApp = () => {
                   setShowScrollDown(el.scrollHeight - el.scrollTop - el.clientHeight > FOLLOW_THRESHOLD_PX);
                 }}
               >
-                <Suspense fallback={null}>
+                <Suspense fallback={<TranscriptFallback answerPending={status !== "idle"} />}>
                 <MessageList
-                  messages={activeMessages}
+                  messages={renderedMessages}
+                  streamDraft={streamDraft}
                   isLoadingMessages={chat.isLoadingMessages}
                   messageLoadError={chat.messageLoadError}
                   onRetryMessages={chat.retryMessages}

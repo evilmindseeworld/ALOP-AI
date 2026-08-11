@@ -45,11 +45,14 @@ describe("MessageList", () => {
     expect(container.querySelectorAll(".msg-row.assistant .avatar")).toHaveLength(1);
   });
 
-  it("marks only the last assistant message as streaming", () => {
-    const { container } = renderList({ status: "streaming" });
+  it("marks only the streaming draft, not persisted assistants", () => {
+    const { container } = renderList({
+      status: "streaming",
+      streamDraft: { id: "a2", role: "assistant", content: "Arriving." },
+    });
     const streaming = container.querySelectorAll(".bubble.is-streaming");
     expect(streaming).toHaveLength(1);
-    expect(container.querySelectorAll(".msg-row")[1]).toContainElement(streaming[0]);
+    expect(container.querySelectorAll(".msg-row")[2]).toContainElement(streaming[0]);
   });
 
   /**
@@ -70,7 +73,7 @@ describe("MessageList", () => {
   ];
 
   it("renders the streaming answer as plain text, not parsed markdown", () => {
-    const { container } = renderList({ messages: withMarkdown, status: "streaming" });
+    const { container } = renderList({ messages: [messages[0]], streamDraft: withMarkdown[1], status: "streaming" });
     const plain = container.querySelector(".bubble.is-streaming .stream-plain");
     expect(plain).toBeInTheDocument();
     expect(plain.textContent).toBe("A **bold** claim.");
@@ -102,7 +105,7 @@ describe("MessageList", () => {
       messages[0],
       { id: "a1", role: "assistant", content: "First para.\n\nSecond para.", ts: "10:05" },
     ];
-    const { container } = renderList({ messages: twoParas, status: "streaming" });
+    const { container } = renderList({ messages: [messages[0]], streamDraft: twoParas[1], status: "streaming" });
     expect(container.querySelectorAll(".stream-plain")).toHaveLength(2);
   });
 
@@ -111,7 +114,7 @@ describe("MessageList", () => {
       messages[0],
       { id: "a1", role: "assistant", content: "Done.\n\n", ts: "10:05" },
     ];
-    const { container } = renderList({ messages: trailing, status: "streaming" });
+    const { container } = renderList({ messages: [messages[0]], streamDraft: trailing[1], status: "streaming" });
     expect(container.querySelectorAll(".stream-plain")).toHaveLength(1);
   });
 
@@ -121,13 +124,13 @@ describe("MessageList", () => {
     // entrance animation on it would replay at the exact moment the answer
     // finished arriving.
     const { container, rerender } = render(
-      <MessageList messages={withMarkdown} status="streaming" feedback={{}} onCopy={noop} onFeedback={noop} onPickStarter={noop} />
+      <MessageList messages={[messages[0]]} streamDraft={withMarkdown[1]} status="streaming" feedback={{}} onCopy={noop} onFeedback={noop} onPickStarter={noop} />
     );
-    const before = container.querySelector(".bubble");
+    const before = container.querySelector(".bubble.is-streaming");
     rerender(
-      <MessageList messages={withMarkdown} status="idle" feedback={{}} onCopy={noop} onFeedback={noop} onPickStarter={noop} />
+      <MessageList messages={[messages[0]]} streamDraft={withMarkdown[1]} status="idle" feedback={{}} onCopy={noop} onFeedback={noop} onPickStarter={noop} />
     );
-    expect(container.querySelector(".bubble")).toBe(before);
+    expect(container.querySelectorAll(".bubble")[1]).toBe(before);
   });
 
   it("does not mark a trailing USER message as streaming", () => {
@@ -141,7 +144,8 @@ describe("MessageList", () => {
   });
 
   it("announces streaming state to a screen reader", () => {
-    const { container, rerender } = renderList({ status: "streaming" });
+    const draft = { id: "a2", role: "assistant", content: "Arriving." };
+    const { container, rerender } = renderList({ status: "streaming", streamDraft: draft });
     expect(screen.getByRole("status")).toHaveTextContent("Answer in progress");
     // The answer text itself is deliberately not live. Putting aria-live on
     // the token stream makes assistive tech enqueue the growing answer again
@@ -151,6 +155,7 @@ describe("MessageList", () => {
     rerender(
       <MessageList
         messages={messages}
+        streamDraft={draft}
         status="idle"
         feedback={{}}
         onCopy={noop}
@@ -176,6 +181,31 @@ describe("MessageList", () => {
       "The council is thinking",
     );
     expect(container.querySelector(".msg-stream > .sr-only[role='status']")).toBeEmptyDOMElement();
+  });
+
+  it("does not remap persisted history when only the draft changes", () => {
+    const history = Array.from({ length: 200 }, (_, index) => ({
+      id: `m-${index}`,
+      role: index % 2 ? "assistant" : "user",
+      content: `Persisted ${index}`,
+    }));
+    history.map = vi.fn(Array.prototype.map.bind(history));
+    const feedback = {};
+    const renderProps = (content) => (
+      <MessageList
+        messages={history}
+        streamDraft={{ id: "draft", role: "assistant", content }}
+        status="streaming"
+        feedback={feedback}
+        onCopy={noop}
+        onFeedback={noop}
+        onPickStarter={noop}
+      />
+    );
+    const { rerender } = render(renderProps("a"));
+    for (let tick = 2; tick <= 20; tick++) rerender(renderProps("a".repeat(tick)));
+
+    expect(history.map).toHaveBeenCalledTimes(1);
   });
 
   it("escapes raw HTML and strips executable URL schemes from model output", () => {
@@ -297,10 +327,8 @@ describe("the wait before the placeholder exists", () => {
   it("does NOT double up once the real typing placeholder lands", () => {
     render(
       <MessageList
-        messages={[
-          { id: "u1", role: "user", content: "What is this?", ts: "10:04" },
-          { id: "a1", role: "assistant", content: "", typing: true },
-        ]}
+        messages={[{ id: "u1", role: "user", content: "What is this?", ts: "10:04" }]}
+        streamDraft={{ id: "a1", role: "assistant", content: "", typing: true }}
         status="loading"
         feedback={{}}
         onCopy={noop}
@@ -314,10 +342,8 @@ describe("the wait before the placeholder exists", () => {
   it("stops once the answer starts arriving", () => {
     render(
       <MessageList
-        messages={[
-          { id: "u1", role: "user", content: "What is this?", ts: "10:04" },
-          { id: "a1", role: "assistant", content: "The first tokens." },
-        ]}
+        messages={[{ id: "u1", role: "user", content: "What is this?", ts: "10:04" }]}
+        streamDraft={{ id: "a1", role: "assistant", content: "The first tokens." }}
         status="streaming"
         feedback={{}}
         onCopy={noop}
@@ -347,10 +373,8 @@ describe("the stage line under the skeleton", () => {
   const renderTyping = (stage) =>
     render(
       <MessageList
-        messages={[
-          { id: "u1", role: "user", content: "Best air fryer?", ts: "10:04" },
-          { id: "a1", role: "assistant", content: "", typing: true, stage },
-        ]}
+        messages={[{ id: "u1", role: "user", content: "Best air fryer?", ts: "10:04" }]}
+        streamDraft={{ id: "a1", role: "assistant", content: "", typing: true, stage }}
         status="loading"
         feedback={{}}
         onCopy={noop}

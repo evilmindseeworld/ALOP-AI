@@ -456,7 +456,8 @@ const LiveChrome = ({ theme, empty = false, streaming = false, loaded = false, c
             <div className="chat-content">
               <div className="scroll-wrapper">
                 <MessageList
-                  messages={empty ? [] : SAMPLE_MESSAGES}
+                  messages={empty ? [] : streaming ? SAMPLE_MESSAGES.slice(0, -1) : SAMPLE_MESSAGES}
+                  streamDraft={streaming ? SAMPLE_MESSAGES.at(-1) : undefined}
                   status={streaming ? "streaming" : "idle"}
                   feedback={{ a1: "up" }}
                   onCopy={() => {}}

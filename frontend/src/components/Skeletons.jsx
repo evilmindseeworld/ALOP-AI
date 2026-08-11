@@ -83,6 +83,31 @@ export const AnswerSkeleton = ({ stage }) => (
   </div>
 );
 
+/**
+ * The lazy transcript chunk's visible boundary.
+ *
+ * The app shell can finish loading before MessageList and its Markdown stack.
+ * A null Suspense fallback made the entire transcript blank in that interval.
+ * These are the two loading shapes the transcript already owns: history rows
+ * while the chunk itself is arriving, and the existing answer placeholder when
+ * a send is already pending. No third visual language is introduced here.
+ */
+export const TranscriptFallback = ({ answerPending = false }) => (
+  <div className="msg-stream" aria-busy="true">
+    {answerPending ? (
+      <div className="msg-row assistant">
+        <span className="sr-only">The council answered:</span>
+        <div className="avatar" aria-hidden="true">AI</div>
+        <div className="msg-content">
+          <AnswerSkeleton />
+        </div>
+      </div>
+    ) : (
+      <MessageSkeleton />
+    )}
+  </div>
+);
+
 export const AppSkeleton = () => (
   <div className="app-root dark">
     <div className="bg-layer" />

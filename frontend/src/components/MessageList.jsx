@@ -436,8 +436,32 @@ export const Message = memo(({ msg, isStreaming, onCopy, onSpeak, onFeedback, fe
 
 Message.displayName = "Message";
 
+/* The persisted transcript is one memo boundary, and the one changing draft
+ * is deliberately outside it.
+ *
+ * A streaming answer repaints at display cadence. Mapping the full transcript
+ * in MessageList on every paint still made reconciliation O(message count),
+ * even though each Message below was memoized and skipped its own render. The
+ * history props stay referentially stable for the life of a stream, so React
+ * can now skip both the map and every old row while the draft advances. */
+const MessageHistory = memo(function MessageHistory({ messages, feedback, onCopy, onSpeak, onFeedback }) {
+  return messages.map((msg, i) => (
+    <Message
+      key={msg.id || i}
+      msg={msg}
+      onCopy={onCopy}
+      onSpeak={onSpeak}
+      onFeedback={onFeedback}
+      feedback={feedback[msg.id]}
+    />
+  ));
+});
+
+MessageHistory.displayName = "MessageHistory";
+
 export default function MessageList({
   messages,
+  streamDraft,
   status,
   feedback,
   onCopy,
@@ -473,25 +497,29 @@ export default function MessageList({
       </div>
     );
   }
-  if (messages.length === 0 && status === "idle") return <EmptyState onPick={onPickStarter} />;
-
-  // Only the last assistant message can be the one currently arriving, so the
-  // caret is decided here rather than per message.
-  const lastIndex = messages.length - 1;
+  if (messages.length === 0 && !streamDraft && status === "idle") return <EmptyState onPick={onPickStarter} />;
 
   return (
     <div className="msg-stream">
-      {messages.map((msg, i) => (
+      <MessageHistory
+        messages={messages}
+        feedback={feedback}
+        onCopy={onCopy}
+        onSpeak={onSpeak}
+        onFeedback={onFeedback}
+      />
+
+      {streamDraft && (
         <Message
-          key={msg.id || i}
-          msg={msg}
-          isStreaming={status === "streaming" && i === lastIndex && msg.role === "assistant"}
+          key={streamDraft.id || "stream-draft"}
+          msg={streamDraft}
+          isStreaming={status === "streaming"}
           onCopy={onCopy}
           onSpeak={onSpeak}
           onFeedback={onFeedback}
-          feedback={feedback[msg.id]}
+          feedback={feedback[streamDraft.id]}
         />
-      ))}
+      )}
 
       {/* THE WAIT BEFORE THE WAIT.
           `send` sets status to "loading" immediately, but the assistant
@@ -512,7 +540,7 @@ export default function MessageList({
           Covers image generation too, which never had any in-transcript
           feedback at all — it sets the same status and inserts no placeholder
           of its own. */}
-      {status === "loading" && !messages[lastIndex]?.typing && (
+      {status === "loading" && !streamDraft && (
         <Message msg={{ role: "assistant", content: "", typing: true, id: "pending" }} />
       )}
 

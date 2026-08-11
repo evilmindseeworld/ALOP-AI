@@ -70,6 +70,8 @@ const chat = {
   activeChatId: null,
   activeChat: null,
   activeMessages: [],
+  renderedMessages: [],
+  streamDraft: null,
   status: "idle",
   chatFiles: [],
   chatFilesError: null,
@@ -122,7 +124,12 @@ vi.mock("../hooks/useSpeechRecognition", () => ({
 describe("the signed-in app", () => {
   it("renders without throwing", async () => {
     const { default: App } = await import("../App");
-    expect(() => render(<App />)).not.toThrow();
+    let view;
+    expect(() => { view = render(<App />); }).not.toThrow();
+    // The MessageList chunk is lazy. Before its import promise resolves the
+    // transcript must still paint one of the existing skeletons, never the
+    // blank panel produced by the old null Suspense fallback.
+    expect(view.container.querySelector(".msg-stream[aria-busy='true'] .skeleton-block")).toBeInTheDocument();
     // The composer is the one control present in every signed-in state, so it
     // proves the tree mounted rather than an error boundary swallowing it.
     expect(await screen.findByRole("textbox")).toBeInTheDocument();
@@ -146,12 +153,14 @@ describe("the signed-in app", () => {
     const before = inputBarProps.at(-1);
 
     chat.activeMessages = [{ id: "a1", role: "assistant", content: "first" }];
+    chat.renderedMessages = chat.activeMessages;
     rerender(<App />);
     const after = inputBarProps.at(-1);
 
     expect(after.onSend).toBe(before.onSend);
     expect(after.onRetryFiles).toBe(before.onRetryFiles);
     chat.activeMessages = [];
+    chat.renderedMessages = [];
   });
 
   it("runs the entrance animation once per message id, not once per token", async () => {
@@ -160,22 +169,26 @@ describe("the signed-in app", () => {
     // entrance is under test. Otherwise the parent effect correctly has no DOM
     // row to animate on its first pass.
     chat.activeMessages = [{ id: "seed", role: "assistant", content: "ready" }];
+    chat.renderedMessages = chat.activeMessages;
     const { default: App } = await import("../App");
     const { rerender } = render(<App />);
-    await screen.findByText("ready");
+    await screen.findByText("ready", {}, { timeout: 5_000 });
 
     chat.activeMessages = [{ id: "a1", role: "assistant", content: "first" }];
+    chat.renderedMessages = chat.activeMessages;
     rerender(<App />);
     await screen.findByText("first");
     await waitFor(() => expect(animateSpy).toHaveBeenCalled());
     const afterFirstToken = animateSpy.mock.calls.length;
 
     chat.activeMessages = [{ id: "a1", role: "assistant", content: "first second" }];
+    chat.renderedMessages = chat.activeMessages;
     rerender(<App />);
     await screen.findByText("first second");
     await Promise.resolve();
 
     expect(animateSpy).toHaveBeenCalledTimes(afterFirstToken);
     chat.activeMessages = [];
+    chat.renderedMessages = [];
   });
 });

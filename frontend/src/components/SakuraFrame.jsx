@@ -314,19 +314,35 @@ export const Keystone = ({ className = "sakura-keystone" }) => (
  */
 export const ComposerSkyline = memo(() => (
   <div className="composer-skyline">
-    <svg viewBox="0 0 320 22" aria-hidden="true" focusable="false">
-      <circle className="composer-sun" cx="176" cy="11" r="10" />
+    {/* 1040 UNITS WIDE, WHICH IS WIDER THAN THE CARD ON PURPOSE.
+        The first draft was 320 units — 262px rendered — centred in a strip up
+        to 850px, so it read as a sticker in dead space rather than as a
+        horizon. A horizon is not a motif you place; it is the thing the view
+        stops at, and the only way to draw one is to run it past both edges.
+        The profile is AUTHORED longer rather than scaled: stretching 320 units
+        to full width would shear every gable. */}
+    <svg viewBox="0 0 1040 22" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false">
+      {/* Left of centre, opposite the hanko at the card's top right. Two
+          vermilion marks on one diagonal is a composition; two stacked down
+          the same edge is a collision. */}
+      <circle className="composer-sun" cx="330" cy="11" r="10" />
       <g className="composer-town">
-        <path d="M0 22 V15 H16 V10 H24 V15 H38 L46 7 L54 15 H68 V5 H80 V15 H100 V17 H136 V12 H150 L158 6 L166 12 H180 V16 H196 V9 H208 V16 H228 L236 8 L244 16 H258 V13 H272 V17 H292 V14 H320 V22 Z" />
-        {/* The pagoda, rising out of the low run the profile leaves for it at
-            x 100–136. Two flared eaves and a finial: the flare is the whole
-            silhouette, so the eaves are quadratic curves where every other
-            roof here is a straight line. */}
-        <path d="M117.4 2 H118.6 V6 H117.4 Z" />
+        <path d="M0 22 V15 H16 V10 H24 V15 H38 L46 7 L54 15 H68 V5 H80 V15 H100 V17 H136 V12 H150 L158 6 L166 12 H180 V16 H196 V9 H208 V16 H228 L236 8 L244 16 H258 V13 H272 V17 H292 V14 H320 V16 H340 V8 H352 V16 H372 V12 H392 L401 6 L410 12 H430 V17 H452 V11 H470 V15 H486 V17 H520 V13 H536 L546 7 L556 13 H574 V16 H590 V9 H604 V16 H624 V13 H648 V17 H666 V10 H684 V15 H704 L713 8 L722 15 H740 V12 H762 V17 H780 V14 H800 V6 H816 V14 H836 V16 H860 V11 H884 V16 H904 L915 7 L926 16 H944 V13 H962 V17 H984 V10 H1000 V15 H1018 V17 H1040 V22 Z" />
+        {/* Two pagodas, each rising out of a low run the profile leaves for it —
+            x 100–136 and x 486–520. Two flared eaves apiece: the flare is the
+            whole silhouette, so these are the only curves in a strip of
+            straight lines.
+            NO FINIAL. The mast on the first draft was 1.2 units — under a pixel
+            at this height — and a sub-pixel path does not render as a spire, it
+            renders as a stray hairline over the roof. */}
         <path d="M104 9 Q118 4.5 132 9 L128.5 10.6 Q118 7.4 107.5 10.6 Z" />
         <path d="M112 10.6 H124 V13.4 H112 Z" />
         <path d="M101 15.4 Q118 10.6 135 15.4 L131.5 17 Q118 13.4 104.5 17 Z" />
         <path d="M109 17 H127 V22 H109 Z" />
+        <path d="M489 9 Q503 4.5 517 9 L513.5 10.6 Q503 7.4 492.5 10.6 Z" />
+        <path d="M497 10.6 H509 V13.4 H497 Z" />
+        <path d="M486 15.4 Q503 10.6 520 15.4 L516.5 17 Q503 13.4 489.5 17 Z" />
+        <path d="M494 17 H512 V22 H494 Z" />
       </g>
     </svg>
   </div>

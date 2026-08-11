@@ -143,8 +143,10 @@
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  /* The card clips nothing else, and this is the one child that would show it:
-   * on a narrow viewport the 291px drawing is wider than the strip. */
+  /* THE CLIP IS THE POINT, not a safety net. The drawing is 851px — wider than
+   * the widest this card ever gets — so the town runs off both ends at every
+   * viewport and the strip decides how much of it you see. That is what makes
+   * it a horizon rather than a motif placed in the middle of a bar. */
   overflow: hidden;
 }
 
@@ -226,11 +228,18 @@
   .composer-seal { width: 20px; height: 20px; top: -11px; right: 8px; }
 }
 
-/* The sun's rise is the one motion here; without it the ornament is static,
- * which is the correct resting state anyway. */
+/* Every transform this card makes on focus, not only the sun's.
+ *
+ * The global reduced-motion rule shortens durations; it does not remove a
+ * transform, so the card's 1px lift and the seal's 2px were still moving for
+ * someone who has asked the system for no motion. The colour and opacity
+ * changes carry the whole focus state on their own — the border, the ring and
+ * the inner rule all still respond. */
 @media (prefers-reduced-motion: reduce) {
   .composer-sun { transition: opacity var(--dur) var(--ease-out); }
-  .input-wrapper:focus-within .composer-sun { transform: none; }
+  .input-wrapper:focus-within,
+  .input-wrapper:focus-within .composer-sun,
+  .input-wrapper:focus-within .composer-seal { transform: none; }
 }
 
 /* A file is over the composer. Dashed, because the border is briefly a target

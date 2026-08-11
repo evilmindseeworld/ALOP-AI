@@ -71,19 +71,28 @@ function callKey(call) {
  *
  * @param {Array<{member?: string, calls: Array<{name, args}>}>} proposals
  * @param {number} limit  hard ceiling on unique calls (the turn's remaining budget)
+ * @param {(call) => ({name, args}|null)} [normalise]
+ *        The registry's canonical form of a call. Without it the key is built
+ *        from the arguments AS WRITTEN, and a field the tool ignores — a nonce,
+ *        a stray `n`, a trailing space past what the key already folds — makes
+ *        two identical billed requests look distinct. That is the exact
+ *        regression the header above says nobody notices. A call it cannot
+ *        normalise keys on its raw form, so an invalid call still reaches
+ *        `execute` once and comes back as the error the model needs to see.
  * @returns {{unique: Array<{key, name, args, requestedBy: string[]}>, dropped: number}}
  *   `requestedBy` is kept because a truncated round has to be able to say which
  *   member's request was cut, and because it is the only way to see in a log
  *   that the dedupe is earning its place.
  */
-function dedupeCalls(proposals, limit = Infinity) {
+function dedupeCalls(proposals, limit = Infinity, normalise) {
   const byKey = new Map();
   let dropped = 0;
 
   for (const proposal of proposals || []) {
     if (!proposal) continue;
     const member = proposal.member || "unknown";
-    for (const call of proposal.calls || []) {
+    for (const raw of proposal.calls || []) {
+      const call = (normalise && normalise(raw)) || raw;
       const key = callKey(call);
       if (key === "invalid") continue;
 

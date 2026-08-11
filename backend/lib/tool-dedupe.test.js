@@ -143,3 +143,42 @@ test("one member listed once however many times it repeats a call", () => {
   assert.equal(unique.length, 1);
   assert.deepEqual(unique[0].requestedBy, ["a"]);
 });
+
+// ===== deduping on the call as it will actually run =====
+
+/**
+ * The key was built from the arguments AS WRITTEN, but the registry strips
+ * anything the schema does not name before running the call. A field the tool
+ * ignores therefore split one billed search into two: the dedupe reported two
+ * unique calls, validation quietly deleted the difference, and the same query
+ * was paid for twice.
+ */
+test("a field the tool ignores does not buy a second execution", () => {
+  // Stands in for registry.normalize: keeps `q`, drops everything else.
+  const normalise = (call) => (call && call.name === "s" ? { name: "s", args: { q: call.args.q } } : null);
+
+  const proposals = [
+    { member: "a", calls: [{ name: "s", args: { q: "OLED burn-in", nonce: 1 } }] },
+    { member: "b", calls: [{ name: "s", args: { q: "OLED burn-in", nonce: 2 } }] },
+  ];
+
+  assert.equal(dedupeCalls(proposals).unique.length, 2, "the raw form is what made this a bug");
+
+  const { unique } = dedupeCalls(proposals, Infinity, normalise);
+  assert.equal(unique.length, 1);
+  assert.deepEqual(unique[0].requestedBy, ["a", "b"]);
+  assert.deepEqual(unique[0].args, { q: "OLED burn-in" }, "the canonical args are what runs");
+});
+
+test("a call the registry cannot normalise still reaches execute once", () => {
+  // Invalid arguments must not be silently dropped here: the failure the tool
+  // returns is how the model learns what it got wrong.
+  const normalise = () => null;
+  const { unique } = dedupeCalls(
+    [{ member: "a", calls: [{ name: "s", args: { q: "" } }] }],
+    Infinity,
+    normalise,
+  );
+  assert.equal(unique.length, 1);
+  assert.deepEqual(unique[0].args, { q: "" }, "the raw call is kept, so the error comes back");
+});

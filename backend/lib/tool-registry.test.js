@@ -21,6 +21,23 @@ test("offers exactly the tools whose backing is present", () => {
   assert.deepEqual(full().list().map((t) => t.name), ["web_search", "read_url"]);
 });
 
+// ===== normalize, which the dedupe keys on =====
+
+test("normalize returns the call as execute will run it, not as it was written", () => {
+  // The dedupe keys on this. A field the schema does not name must be gone by
+  // then, or two identical searches are billed twice — see tool-dedupe.js.
+  assert.deepEqual(
+    full().normalize({ name: "web_search", args: { query: "  OLED burn-in ", nonce: 7 } }),
+    { name: "web_search", args: { query: "OLED burn-in" } },
+  );
+});
+
+test("normalize returns null for a call execute would reject", () => {
+  const r = full();
+  assert.equal(r.normalize({ name: "nope", args: {} }), null);
+  assert.equal(r.normalize({ name: "web_search", args: {} }), null, "missing a required argument");
+});
+
 test("a tool with no backing is NOT offered", () => {
   // Not "offered but erroring" — a model retries a failing tool, and retries are
   // what the round and call ceilings exist to stop.

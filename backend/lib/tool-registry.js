@@ -250,6 +250,29 @@ function buildRegistry(deps = {}) {
     has: (name) => byName.has(name),
 
     /**
+     * One call, in the form `execute` will actually run it: unknown keys gone,
+     * strings trimmed and capped, numbers coerced and clamped.
+     *
+     * This exists for the dedupe. Two members proposing the same search, one of
+     * them carrying an extra field the tool ignores, are ONE billed request —
+     * but keyed on the arguments as written they are two, and the second one is
+     * paid for in money and in the 25s budget. Deduping on the canonical form
+     * closes that.
+     *
+     * Returns null when the call cannot be normalised — no such tool, or
+     * arguments the schema rejects. The caller keeps the raw call in that case,
+     * because a rejected call still has to reach `execute` to come back as the
+     * error message that tells the model what it got wrong.
+     */
+    normalize: (call) => {
+      const tool = byName.get(call && call.name);
+      if (!tool) return null;
+      const checked = validateArgs(tool, call.args);
+      if (!checked.valid) return null;
+      return { name: tool.name, args: checked.args };
+    },
+
+    /**
      * Run one call. Never throws: an executor that blows up is a failed tool
      * result, not a failed turn. A single bad page must not take down a council
      * answer that has six other sources.

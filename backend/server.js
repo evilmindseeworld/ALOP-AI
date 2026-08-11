@@ -1862,7 +1862,19 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       // readable on a laptop with the Render dashboard open and nowhere else.
       // In audit_logs they survive log rotation, they aggregate, and the admin
       // console can answer "is the dedupe earning its place" from a phone.
-      await auditLog(user.id, 'council.tools', {
+      /* NOT AWAITED, and this one was ON THE CRITICAL PATH.
+       *
+       * Every other auditLog in this route runs after the stream has ended, so
+       * it costs the user nothing. This one sits between the council settling
+       * and synthesis opening its stream — so on every turn that used a tool,
+       * the user waited for an INSERT into audit_logs, over the network to
+       * Supabase, before the first token of their answer could be requested.
+       * It is telemetry about how long they waited, and it was adding to it.
+       *
+       * Safe to drop the await because auditLog swallows its own errors and
+       * cannot reject; there is no unhandled rejection to leak. The row is
+       * written either way — just not with the answer held behind it. */
+      auditLog(user.id, 'council.tools', {
         msToFirstByte: (res.locals?.firstChunkAt || Date.now()) - t0,
         msToFirstProgress: (res.locals?.firstByteAt || Date.now()) - t0,
         rounds: loop.rounds,

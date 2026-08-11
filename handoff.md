@@ -66,6 +66,26 @@ hairline a few millimetres inside it. Three pseudo-elements, no new markup, so
 Rendering changed on purpose; the cascade baseline was regenerated. 620
 frontend tests pass.
 
+**The prompt bar's ornament is a town at dawn now, not a branch.** The owner's
+words for the old one: it read as sitting behind the bar and looked bad, and he
+was right about the cause. It hung ABOVE the card's top edge with half of it
+over the transcript, so it had to be faint enough to read text through, and at
+that alpha it was a smudge. An ornament that overlaps live text has no good
+opacity — the rule for this surface is now **on the bar, or not on the bar,
+nothing hangs off it**.
+
+What is there: a skyline silhouette standing on the inner rule at the FOOT of
+the card, with a vermilion sun rising behind the roofline. The card carries
+24px of bottom padding to give the horizon a strip it owns. The drawing is
+1040 units wide — wider than the card ever gets — because a 262px town centred
+in an 850px bar reads as a sticker, and a horizon has to run off both ends. The
+`bar` sprig variant is deleted. The hanko is unchanged.
+
+This was asked for with two botanical-poster references and is an addition
+within the ornament family, not a replacement of it. The empty state was not
+opened. If it is ever reverted, the files are `SakuraFrame.jsx`
+(`ComposerSkyline`) and the `.composer-skyline` block in `composer.css`.
+
 ---
 
 ## This session (2026-08-11)

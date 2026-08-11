@@ -334,3 +334,62 @@ test("the round whip does not fire when everyone answers", async () => {
   });
   assert.equal(r.truncated, null);
 });
+
+// ===== quorum release on the last round =====
+
+test("the last round is released as soon as quorum answers are in", async () => {
+  const r = await runAgentLoop({
+    members: ["a", "b", "slow"],
+    askMember: (m, ctx) => {
+      if (!ctx.isFinalRound) return Promise.resolve(toolCall(`${m}-q`));
+      if (m === "slow") return new Promise(() => {});
+      return Promise.resolve(`answer from ${m}`);
+    },
+    registry: fakeRegistry(),
+    maxRounds: 2,
+    quorum: 2,
+    roundMs: 5000, // deliberately long: quorum, not the whip, must end this
+  });
+  assert.deepEqual(Object.keys(r.answers).sort(), ["a", "b"]);
+  // Released, not cut short. Telling the synthesiser the research was truncated
+  // would have it hedge an answer that was never short of anything.
+  assert.equal(r.truncated, null);
+});
+
+test("quorum cannot release a RESEARCH round, however many members answer early", async () => {
+  // Two members answer immediately and one wants a tool. Releasing at a quorum
+  // of two here would drop the research the third asked for — the feature going
+  // quiet exactly when part of the council thought it was needed.
+  const registry = fakeRegistry();
+  await runAgentLoop({
+    members: ["a", "b", "digger"],
+    askMember: async (m, ctx) => (m === "digger" && ctx.round === 1 ? toolCall("dig") : `answer from ${m}`),
+    registry,
+    quorum: 2,
+  });
+  assert.equal(registry.executed.length, 1, "the researcher's call still ran");
+});
+
+test("quorum counts answers already in hand, not just this round's", async () => {
+  // A member that answered in round one is an answer; making the last round
+  // re-earn the quorum from scratch waits on members for nothing.
+  let finalRoundAsks = 0;
+  const r = await runAgentLoop({
+    members: ["early", "digger", "slow"],
+    askMember: (m, ctx) => {
+      if (m === "early") return Promise.resolve("early answer");
+      if (ctx.isFinalRound) {
+        finalRoundAsks++;
+        return m === "slow" ? new Promise(() => {}) : Promise.resolve("digger answer");
+      }
+      return Promise.resolve(toolCall("dig"));
+    },
+    registry: fakeRegistry(),
+    maxRounds: 2,
+    quorum: 2,
+    roundMs: 5000,
+  });
+  assert.equal(finalRoundAsks, 2);
+  assert.deepEqual(Object.keys(r.answers).sort(), ["digger", "early"]);
+  assert.equal(r.truncated, null);
+});

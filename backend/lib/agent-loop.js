@@ -16,6 +16,7 @@
  *     perCallMs        8000
  *     totalToolMs      25000 time spent INSIDE tools, all rounds together
  *     roundMs          18000 how long one round may wait on its members
+ *     quorum           0     answers that release the LAST round early (off)
  *     totalWallMs      75000 hard stop on the whole loop, model time included
  *
  * On hitting any of them the loop stops, hands back what it has, and SAYS SO in
@@ -42,6 +43,15 @@
  * does not need all seven, and the seat that is having a bad minute must not
  * spend the research budget of the six that are not.
  *
+ * AND WHY THE LAST ROUND HAS A QUORUM. Capping a round at 18s still means
+ * paying 18s for one bad seat, and on the last round every member is answering
+ * — the user is waiting on all seven to hear from any of them. `quorum`
+ * releases that round as soon as enough answers are in hand, exactly as
+ * runCouncilWithWhip has always released the plain council. It is deliberately
+ * inert on research rounds: releasing there would drop the members that had
+ * asked for a tool, which is not a latency saving, it is turning the feature
+ * off when the council wanted it most.
+ *
  * Nothing here touches the network. `askMember` and `registry` are injected, so
  * the whole loop is tested against fakes.
  */
@@ -57,6 +67,8 @@ const DEFAULTS = {
   totalToolMs: 25000,
   roundMs: 18000,
   totalWallMs: 75000,
+  /* 0 = wait for every member. server.js passes the council's own quorum. */
+  quorum: 0,
 };
 
 /** Tool results, rendered for the next round's prompt. */
@@ -106,6 +118,12 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     round++;
     const isFinalRound = round === cfg.maxRounds;
 
+    // Counted before the round so quorum is CUMULATIVE: a member that answered
+    // in round one is an answer in hand, and requiring the quorum to be met
+    // again from scratch in the last round would wait on members whose
+    // contribution the loop already has.
+    const priorAnswers = answers.size;
+
     // Every still-active member is asked concurrently. A member that throws is
     // dropped from the round rather than failing the turn: a council of seven
     // does not need all seven, and one gateway hiccup must not lose the answer.
@@ -124,9 +142,30 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
           }
         })(),
       })),
-      // Never longer than what is left of the whole loop: a round that outlives
-      // its own hard stop is the hang the hard stop exists to prevent.
-      { deadlineMs: Math.max(250, Math.min(cfg.roundMs, wallLeft())) },
+      {
+        // Never longer than what is left of the whole loop: a round that
+        // outlives its own hard stop is the hang the hard stop exists to
+        // prevent.
+        deadlineMs: Math.max(250, Math.min(cfg.roundMs, wallLeft())),
+        /* QUORUM RELEASE, the council's own trade applied to the round.
+         *
+         * A round costs the SLOWEST member even after the whip caps it, and the
+         * round that matters is the last one — every member is answering, and
+         * the user is waiting on all seven to hear from any of them.
+         * `runCouncilWithWhip` has always released the plain council the moment
+         * `quorum` valid answers landed; this is the same release, in the path
+         * that replaced it when tools are on, where it was simply missing.
+         *
+         * ONLY ON THE LAST ROUND, and that restriction is the whole safety of
+         * it. In a research round a quorum of quick answers would release the
+         * members that had asked for a tool, and the turn would silently stop
+         * using tools precisely when some of the council thought it needed
+         * them. Speed is worth a seat's answer; it is not worth the feature. */
+        enough:
+          isFinalRound && cfg.quorum > 0
+            ? (r) => priorAnswers + r.filter((x) => x && x.isFinal && x.text).length >= cfg.quorum
+            : undefined,
+      },
     );
 
     for (const reply of replies) {
@@ -134,7 +173,14 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     }
 
     const lateCount = replies.filter((r) => r.timedOut).length;
-    if (lateCount > 0) truncated = truncated || `${lateCount} member(s) did not reply within the ${cfg.roundMs}ms round.`;
+    // A member left outstanding by a QUORUM RELEASE was not slow — the room was
+    // released without it, which is what quorum means and is not a truncation.
+    // Reporting it as one would have the synthesiser hedge an answer that was
+    // never short of anything.
+    const releasedAtQuorum = isFinalRound && cfg.quorum > 0 && answers.size >= cfg.quorum;
+    if (lateCount > 0 && !releasedAtQuorum) {
+      truncated = truncated || `${lateCount} member(s) did not reply within the ${cfg.roundMs}ms round.`;
+    }
 
     // A member that gave a final answer is done. One that errored, or missed
     // the whip, is dropped — it has nothing to contribute and asking it again

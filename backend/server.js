@@ -1835,6 +1835,12 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       const loop = await runAgentLoop({
         members: selection.members.map((m) => m.model),
         registry,
+        /* THE SAME QUORUM THE PLAIN COUNCIL RUNS ON. The tools path replaced
+         * runCouncilWithWhip and did not replace its quorum release, so a turn
+         * that used a tool waited on every seat where a turn that did not waited
+         * on the k-th. The router already decides how many answers make a
+         * council; there is no second policy here. */
+        quorum: selection.quorum,
         onEvent: (e) => {
           console.log(`[TOOLS] r${e.round} ${e.type} ${e.name}${e.ok === false ? ' FAILED' : ''} — ${e.summary}`);
           sendEvent(res, e);

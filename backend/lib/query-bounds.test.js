@@ -29,7 +29,7 @@ test("admin chat list is paginated and metadata-only", () => {
 });
 
 test("file list remains bounded at the per-chat ceiling", () => {
-  const start = SOURCE.indexOf("list: async () => {");
+  const start = SOURCE.indexOf("list: async ({ signal } = {}) => {");
   assert.ok(start >= 0);
   const source = SOURCE.slice(start, start + 500);
   assert.match(source, /\.limit\(MAX_FILES_PER_CHAT\)/);

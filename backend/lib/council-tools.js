@@ -36,11 +36,12 @@ const UNTRUSTED_PREAMBLE =
  * A provider that throws is treated as a provider with no results — one dead
  * API key must not take down search.
  */
-async function firstWithResults(providers, query) {
+async function firstWithResults(providers, query, signal) {
   for (const provider of providers || []) {
+    if (signal?.aborted) return [];
     let raw;
     try {
-      raw = await provider(query);
+      raw = await provider(query, signal);
     } catch {
       continue;
     }

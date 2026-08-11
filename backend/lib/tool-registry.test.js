@@ -298,12 +298,30 @@ test("an executor that throws is a failed result, not a thrown error", async () 
 });
 
 test("an executor that hangs is cut off at the per-call ceiling", async () => {
-  const reg = buildRegistry({ search: () => new Promise(() => {}) });
+  let aborted = false;
+  const reg = buildRegistry({ search: (_query, { signal }) => new Promise((resolve, reject) => {
+    signal.addEventListener("abort", () => { aborted = true; reject(new Error("stopped")); }, { once: true });
+  }) });
   const started = Date.now();
   const r = await reg.execute({ name: "web_search", args: { query: "a" } }, { timeoutMs: 60 });
   assert.equal(r.ok, false);
   assert.ok(r.summary.includes("timed out"));
+  assert.equal(aborted, true);
   assert.ok(Date.now() - started < 1000);
+});
+
+test("a parent abort reaches the executor and resolves as a cancellation", async () => {
+  const controller = new AbortController();
+  let aborted = false;
+  const reg = buildRegistry({ search: (_query, { signal }) => new Promise((resolve, reject) => {
+    signal.addEventListener("abort", () => { aborted = true; reject(new Error("stopped")); }, { once: true });
+  }) });
+  const pending = reg.execute({ name: "web_search", args: { query: "a" } }, { timeoutMs: 5000, signal: controller.signal });
+  setTimeout(() => controller.abort(), 5);
+  const r = await pending;
+  assert.equal(aborted, true);
+  assert.equal(r.ok, false);
+  assert.match(r.summary, /cancelled/);
 });
 
 test("a garbage call object is refused rather than crashing", async () => {

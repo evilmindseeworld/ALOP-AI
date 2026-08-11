@@ -94,6 +94,25 @@ test('network failure degrades, never throws', async () => {
   assert.match(limited.error, /429/);
 });
 
+test('searchSerpApi aborts its provider fetch when the turn is cancelled', async () => {
+  const controller = new AbortController();
+  let aborted = false;
+  const pending = searchSerpApi({
+    engine: 'google_shopping',
+    query: 'monitor',
+    apiKey: 'k',
+    timeoutMs: 5000,
+    signal: controller.signal,
+    fetchImpl: (_url, { signal }) => new Promise((resolve, reject) => {
+      signal.addEventListener('abort', () => { aborted = true; reject(new Error('cancelled')); }, { once: true });
+    }),
+  });
+  controller.abort();
+  const res = await pending;
+  assert.equal(res.ok, false);
+  assert.equal(aborted, true);
+});
+
 test('the engine menu names every engine it offers', () => {
   const menu = engineMenu();
   for (const name of ENGINE_NAMES) assert.ok(menu.includes(name), `${name} missing from the menu`);

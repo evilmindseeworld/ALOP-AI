@@ -31,6 +31,7 @@
  */
 
 const ENDPOINT = "https://serpapi.com/search.json";
+const { timeoutSignal } = require("./abort");
 
 /**
  * The engines worth offering, and what each is FOR.
@@ -180,9 +181,10 @@ function extractRows(data, preferred) {
  * @param {string} opts.apiKey
  * @param {number} [opts.timeoutMs]
  * @param {Function} [opts.fetchImpl]
+ * @param {AbortSignal} [opts.signal]
  * @returns {Promise<{ok: boolean, engine: string, rows: Array, text: string, error: string}>}
  */
-async function searchSerpApi({ engine, query, params = {}, apiKey, timeoutMs = 8000, fetchImpl = fetch } = {}) {
+async function searchSerpApi({ engine, query, params = {}, apiKey, timeoutMs = 8000, fetchImpl = fetch, signal } = {}) {
   const miss = (error) => ({ ok: false, engine: engine || "", rows: [], text: "", error });
 
   if (!apiKey) return miss("SerpApi is not configured.");
@@ -208,8 +210,9 @@ async function searchSerpApi({ engine, query, params = {}, apiKey, timeoutMs = 8
   for (const [k, v] of Object.entries(extra)) url.searchParams.set(k, v);
   url.searchParams.set("api_key", apiKey);
 
+  const timed = timeoutSignal(signal, timeoutMs);
   try {
-    const res = await fetchImpl(url.toString(), { signal: AbortSignal.timeout(timeoutMs) });
+    const res = await fetchImpl(url.toString(), { signal: timed.signal });
     if (!res.ok) return miss(`${engine} returned HTTP ${res.status}.`);
     const data = await res.json();
     // SerpApi reports its own failures with 200 and an `error` field. Treating
@@ -220,6 +223,8 @@ async function searchSerpApi({ engine, query, params = {}, apiKey, timeoutMs = 8
     return { ok: true, engine, rows, text: formatRows(rows), error: "" };
   } catch (err) {
     return miss(`${engine} failed: ${err.name === "TimeoutError" ? "timed out" : "request failed"}.`);
+  } finally {
+    timed.dispose();
   }
 }
 

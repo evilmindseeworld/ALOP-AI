@@ -30,6 +30,7 @@
  */
 
 const ENDPOINT = 'https://google.serper.dev/shopping';
+const { timeoutSignal } = require('./abort');
 
 /** Currency codes and symbols, so a price string can be kept verbatim but checked. */
 const HAS_PRICE = /[\d]/;
@@ -53,16 +54,18 @@ function shoppingParams(region) {
  * @param {number} [opts.limit]    how many listings to keep
  * @param {number} [opts.timeoutMs]
  * @param {Function} [opts.fetchImpl]  injected for tests
+ * @param {AbortSignal} [opts.signal]  request/tool cancellation
  * @returns {Promise<{results: Array<{title,price,source,url,rating,delivery}>}>}
  */
-async function searchShopping(query, { apiKey, region = '', limit = 10, timeoutMs = 6000, fetchImpl = fetch } = {}) {
+async function searchShopping(query, { apiKey, region = '', limit = 10, timeoutMs = 6000, fetchImpl = fetch, signal } = {}) {
   if (!apiKey || typeof query !== 'string' || !query.trim()) return { results: [] };
+  const timed = timeoutSignal(signal, timeoutMs);
   try {
     const res = await fetchImpl(ENDPOINT, {
       method: 'POST',
       headers: { 'X-API-KEY': apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({ q: query.slice(0, 200), num: Math.min(limit, 20), ...shoppingParams(region) }),
-      signal: AbortSignal.timeout(timeoutMs),
+      signal: timed.signal,
     });
     if (!res.ok) return { results: [] };
     const data = await res.json();
@@ -85,6 +88,8 @@ async function searchShopping(query, { apiKey, region = '', limit = 10, timeoutM
     };
   } catch {
     return { results: [] };
+  } finally {
+    timed.dispose();
   }
 }
 

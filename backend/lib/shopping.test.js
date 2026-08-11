@@ -84,6 +84,22 @@ test('searchShopping is inert without a key and never throws', async () => {
   assert.deepEqual(await searchShopping('monitor price', { apiKey: 'k', fetchImpl: junk }), { results: [] });
 });
 
+test('searchShopping aborts its provider fetch when the turn is cancelled', async () => {
+  const controller = new AbortController();
+  let aborted = false;
+  const pending = searchShopping('monitor price', {
+    apiKey: 'k',
+    timeoutMs: 5000,
+    signal: controller.signal,
+    fetchImpl: (_url, { signal }) => new Promise((resolve, reject) => {
+      signal.addEventListener('abort', () => { aborted = true; reject(new Error('cancelled')); }, { once: true });
+    }),
+  });
+  controller.abort();
+  assert.deepEqual(await pending, { results: [] });
+  assert.equal(aborted, true);
+});
+
 test('formatShopping keeps the currency verbatim and states its own limits', () => {
   const block = formatShopping([{ title: 'LG 27', price: 'AED 1,199.00', source: 'Amazon.ae', url: 'https://a.ae/dp/X', delivery: '' }], { asOf: '2026-08-08' });
   // Parsing the price would force a currency guess; 1,899 dirhams silently

@@ -122,16 +122,18 @@ function classifyPage({ status, requestedUrl, finalUrl, html = "" } = {}) {
  *        third-party URLs and fetching them server-side is request forgery
  *        surface exactly like read_url is, so the same guard applies.
  * @param {number} [deps.concurrency]
+ * @param {AbortSignal} [deps.signal]
  * @returns {Promise<Map<string, {verdict, reason}>>}
  */
-async function checkLinks(urls, { fetchPage, assertSafeUrl, concurrency = 6 } = {}) {
+async function checkLinks(urls, { fetchPage, assertSafeUrl, concurrency = 6, signal } = {}) {
   const unique = [...new Set((urls || []).filter((u) => typeof u === "string" && u))];
   const out = new Map();
 
   const one = async (url) => {
+    if (signal?.aborted) return;
     if (assertSafeUrl) {
       try {
-        await assertSafeUrl(url);
+        await assertSafeUrl(url, { signal });
       } catch (err) {
         // A blocked URL is not "dead" — it is one we refuse to fetch. Dropping
         // it from an answer is right, but the reason is ours, not the page's.
@@ -140,7 +142,7 @@ async function checkLinks(urls, { fetchPage, assertSafeUrl, concurrency = 6 } = 
       }
     }
     try {
-      const page = await fetchPage(url);
+      const page = await fetchPage(url, { signal });
       out.set(url, classifyPage({ ...page, requestedUrl: url }));
     } catch (err) {
       // Our failure to reach it says nothing about whether it works for a

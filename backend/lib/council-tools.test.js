@@ -39,6 +39,15 @@ test("the query reaches every provider it tries", async () => {
   assert.deepEqual(seen, ["OLED burn-in", "OLED burn-in"]);
 });
 
+test("the provider fan-out receives the caller's abort signal", async () => {
+  const controller = new AbortController();
+  let received;
+  await firstWithResults([
+    async (_query, signal) => { received = signal; return [{ url: "a" }]; },
+  ], "q", controller.signal);
+  assert.equal(received, controller.signal);
+});
+
 // ===== toolMessages =====
 
 const registry = {

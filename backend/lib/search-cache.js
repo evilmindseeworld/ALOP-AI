@@ -120,7 +120,7 @@ function createSearchCache({ supabase, log = console, ...opts } = {}) {
 
   return {
     /** @returns {Promise<*|null>} the cached payload, or null for any miss. */
-    async get(query) {
+    async get(query, { signal } = {}) {
       const key = hash(query);
 
       const local = readMemory(key);
@@ -140,14 +140,18 @@ function createSearchCache({ supabase, log = console, ...opts } = {}) {
         // difference between a slow query and an unhandled rejection.
         const { results } = await settleByDeadline(
           [{
-            promise: supabase
-              .from("search_cache")
-              .select("payload, expires_at")
-              .eq("query_hash", key)
-              .maybeSingle(),
+            promise: (settleSignal) => {
+              let queryBuilder = supabase
+                .from("search_cache")
+                .select("payload, expires_at")
+                .eq("query_hash", key);
+              const joined = signal || settleSignal;
+              if (joined && typeof queryBuilder.abortSignal === "function") queryBuilder = queryBuilder.abortSignal(joined);
+              return queryBuilder.maybeSingle();
+            },
             fallback: null,
           }],
-          { deadlineMs: cfg.readDeadlineMs },
+          { deadlineMs: cfg.readDeadlineMs, signal },
         );
         row = results[0];
       } catch (e) {

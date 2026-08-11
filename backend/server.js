@@ -38,6 +38,8 @@ const crypto = require('crypto');
 const { createClient } = require('@supabase/supabase-js');
 const { clerkMiddleware, getAuth, clerkClient } = require('@clerk/express');
 const Stripe = require('stripe');
+const { timeoutSignal, childAbortController } = require('./lib/abort');
+const { createTurnTelemetry } = require('./lib/turn-telemetry');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -111,20 +113,19 @@ const PRIMARY_MODEL = 'glm-5.2';
 const FAST_MODEL = 'gemma4';
 
 // ===== AI HELPERS =====
-const callModel = async (modelName, messages, temperature = 0.0, timeoutMs = 30000, maxTokens = 1000) => {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), timeoutMs);
+const callModel = async (modelName, messages, temperature = 0.0, timeoutMs = 30000, maxTokens = 1000, parentSignal) => {
+  const timed = timeoutSignal(parentSignal, timeoutMs);
   try {
-    const res = await fetch(OLLAMA_HOST, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OLLAMA_API_KEY}` }, body: JSON.stringify({ model: modelName, messages, stream: false, options: { temperature, num_predict: maxTokens } }), signal: controller.signal });
-    clearTimeout(timer);
+    const res = await fetch(OLLAMA_HOST, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OLLAMA_API_KEY}` }, body: JSON.stringify({ model: modelName, messages, stream: false, options: { temperature, num_predict: maxTokens } }), signal: timed.signal });
     if (!res.ok) { const text = await res.text(); throw new Error(`Model ${modelName}: ${res.status} ${text.slice(0,200)}`); }
     const data = await res.json();
     return data.message?.content || data.response || '';
-  } catch (err) { clearTimeout(timer); if (err.name === 'AbortError') return ''; throw err; }
+  } catch (err) { if (timed.signal.aborted || err.name === 'AbortError') return ''; throw err; }
+  finally { timed.dispose(); }
 };
 
-const streamModel = async (res, modelName, messages, temperature = 0.0) => {
-  const response = await fetch(OLLAMA_HOST, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OLLAMA_API_KEY}` }, body: JSON.stringify({ model: modelName, messages, stream: true, options: { temperature } }) });
+const streamModel = async (res, modelName, messages, temperature = 0.0, signal) => {
+  const response = await fetch(OLLAMA_HOST, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OLLAMA_API_KEY}` }, body: JSON.stringify({ model: modelName, messages, stream: true, options: { temperature } }), ...(signal ? { signal } : {}) });
   if (!response.ok || !response.body) throw new Error('Stream failed');
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -145,14 +146,19 @@ const streamModel = async (res, modelName, messages, temperature = 0.0) => {
   }
 };
 
-const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'image/png', maxTokens = 2048) => {
+const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'image/png', maxTokens = 2048, parentSignal) => {
   if (!GOOGLE_API_KEY) throw new Error('GOOGLE_API_KEY not configured');
   if (Buffer.byteLength(base64Image, 'base64') / (1024*1024) > 8) throw new Error('Image too large');
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GOOGLE_API_KEY}`;
-  const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Image } }] }], generationConfig: { temperature: 0.0, maxOutputTokens: maxTokens } }) });
-  if (!res.ok) { const t = await res.text(); throw new Error(`Gemini: ${res.status} ${t.slice(0,300)}`); }
-  const data = await res.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  const timed = timeoutSignal(parentSignal, 30000);
+  try {
+    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Image } }] }], generationConfig: { temperature: 0.0, maxOutputTokens: maxTokens } }), signal: timed.signal });
+    if (!res.ok) { const t = await res.text(); throw new Error(`Gemini: ${res.status} ${t.slice(0,300)}`); }
+    const data = await res.json();
+    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+  } finally {
+    timed.dispose();
+  }
 };
 
 // ===== COUNCIL =====
@@ -167,8 +173,8 @@ const { runCouncil, isUsableAnswer } = require('./lib/council-run');
  * temperature, which is what makes the council produce genuinely different
  * takes to synthesise rather than one answer seven times.
  */
-const runCouncilWithWhip = (members, messages, whipMs, quorum, tokenLimit, onSeat) =>
-  runCouncil(members, messages, whipMs, quorum, tokenLimit, { callModel, onSeat });
+const runCouncilWithWhip = (members, messages, whipMs, quorum, tokenLimit, onSeat, options = {}) =>
+  runCouncil(members, messages, whipMs, quorum, tokenLimit, { callModel, onSeat, ...options });
 
 // ===== ROUTER =====
 // Moved to lib/router.js, where it can be called with a sentence and checked.
@@ -184,8 +190,8 @@ const {
 } = require('./lib/router');
 
 // ===== MEMORY DETECTION =====
-const isMemoryOrReferenceQuestion = async (text) => {
-  const response = await callModel(FAST_MODEL, [{ role: 'system', content: 'Is this question asking about a previous conversation or referencing something discussed earlier? Reply ONLY "YES" or "NO".' }, { role: 'user', content: text.slice(0, 500) }], 0.0, 3000, 10);
+const isMemoryOrReferenceQuestion = async (text, signal) => {
+  const response = await callModel(FAST_MODEL, [{ role: 'system', content: 'Is this question asking about a previous conversation or referencing something discussed earlier? Reply ONLY "YES" or "NO".' }, { role: 'user', content: text.slice(0, 500) }], 0.0, 3000, 10, signal);
   return response.trim().toUpperCase().startsWith('YES');
 };
 
@@ -199,7 +205,7 @@ const isMemoryOrReferenceQuestion = async (text) => {
 // Only where it helps: a query about tax law or a person is not improved by a
 // country appended to it, so the model is told to use it when the answer is
 // local and to leave it alone otherwise.
-const getSearchQuery = async (text, convSummary, region) => {
+const getSearchQuery = async (text, convSummary, region, signal) => {
   const userContent = convSummary ? `Context: ${convSummary}\n\nQuestion: ${text}` : text;
   const locale = region
     ? ` The user appears to be in ${region.place}. If — and only if — the answer depends on where they are (prices, availability, retailers, local services, regulations), include that country in the query. Otherwise ignore it.`
@@ -242,7 +248,7 @@ If no search is needed, reply with exactly: NO${locale}`;
   // 120 tokens rather than 50: two queries plus a stray word of preamble did
   // not fit in 50, and the ceiling truncated the SECOND query mid-word, which
   // parses as a valid short query and searches for half a phrase.
-  const response = await callModel(FAST_MODEL, [{ role: 'system', content: sys }, { role: 'user', content: userContent }], 0.0, 4000, 120);
+  const response = await callModel(FAST_MODEL, [{ role: 'system', content: sys }, { role: 'user', content: userContent }], 0.0, 4000, 120, signal);
   return parseSearchPlan(response);
 };
 
@@ -263,21 +269,23 @@ If no search is needed, reply with exactly: NO${locale}`;
  * canonical sources and returns blog posts. See freshnessWindow for why the
  * default window is a year rather than a month.
  */
-const searchBrave = async (query, fresh = null) => {
+const searchBrave = async (query, fresh = null, parentSignal) => {
   if (!BRAVE_API_KEY) return [];
   // Brave returns `page_age` as ISO and `age` as prose ("3 days ago"). The ISO
   // one is preferred and the prose one is not parsed — a label that has to be
   // guessed at is the thing normalizeDate exists to refuse.
   const freshness = fresh ? `&freshness=${BRAVE_FRESHNESS[fresh.label] || 'py'}` : '';
-  try { const res = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query.slice(0,200))}&count=10${freshness}`, { method: 'GET', headers: { 'Accept': 'application/json', 'X-Subscription-Token': BRAVE_API_KEY }, signal: AbortSignal.timeout(8000) }); if (!res.ok) return []; const data = await res.json(); return (data.web?.results || []).map(r => ({ title: r.title?.slice(0,200)||'', url: r.url, description: r.description?.slice(0,500)||'', date: normalizeDate(r.page_age) })); } catch { return []; }
+  const timed = timeoutSignal(parentSignal, 8000);
+  try { const res = await fetch(`https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(query.slice(0,200))}&count=10${freshness}`, { method: 'GET', headers: { 'Accept': 'application/json', 'X-Subscription-Token': BRAVE_API_KEY }, signal: timed.signal }); if (!res.ok) return []; const data = await res.json(); return (data.web?.results || []).map(r => ({ title: r.title?.slice(0,200)||'', url: r.url, description: r.description?.slice(0,500)||'', date: normalizeDate(r.page_age) })); } catch { return []; } finally { timed.dispose(); }
 };
-const searchTavily = async (query, fresh = null) => {
+const searchTavily = async (query, fresh = null, parentSignal) => {
   if (!TAVILY_API_KEY) return { answer: '', results: [], images: [] };
   // `days` only applies to topic:news on Tavily, so both are set together or
   // neither is. Sending `days` alone is silently ignored, which would look like
   // the freshness window was applied when it was not.
   const recency = fresh ? { topic: 'news', days: fresh.days } : {};
-  try { const res = await fetch('https://api.tavily.com/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ api_key: TAVILY_API_KEY, query: query.slice(0,400), search_depth: 'advanced', include_answer: true, include_raw_content: false, include_images: true, include_image_descriptions: true, max_results: 5, ...recency }), signal: AbortSignal.timeout(7000) }); if (!res.ok) return { answer: '', results: [], images: [] }; const data = await res.json(); return { answer: data.answer||'', results: (data.results||[]).map(r => ({ title: r.title?.slice(0,200)||'', url: r.url, content: (r.content||'').slice(0,3000), date: normalizeDate(r.published_date) })), images: (data.images||[]).map(img => typeof img === 'string' ? img : (img.url||img)) }; } catch { return { answer: '', results: [], images: [] }; }
+  const timed = timeoutSignal(parentSignal, 7000);
+  try { const res = await fetch('https://api.tavily.com/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ api_key: TAVILY_API_KEY, query: query.slice(0,400), search_depth: 'advanced', include_answer: true, include_raw_content: false, include_images: true, include_image_descriptions: true, max_results: 5, ...recency }), signal: timed.signal }); if (!res.ok) return { answer: '', results: [], images: [] }; const data = await res.json(); return { answer: data.answer||'', results: (data.results||[]).map(r => ({ title: r.title?.slice(0,200)||'', url: r.url, content: (r.content||'').slice(0,3000), date: normalizeDate(r.published_date) })), images: (data.images||[]).map(img => typeof img === 'string' ? img : (img.url||img)) }; } catch { return { answer: '', results: [], images: [] }; } finally { timed.dispose(); }
 };
 /**
  * Perplexity Sonar. A sixth provider, and the only one that reasons.
@@ -302,12 +310,13 @@ const searchTavily = async (query, fresh = null) => {
  * empty, settleByDeadline takes the fallback, and nothing else changes. This
  * costs a deployment without PERPLEXITY_API_KEY exactly nothing.
  */
-const searchPerplexity = async (query, fresh = null) => {
+const searchPerplexity = async (query, fresh = null, parentSignal) => {
   if (!PERPLEXITY_API_KEY) return { answer: '', results: [] };
   // Sonar takes the same four windows the other providers do, under its own
   // name. Sent only when a window was actually chosen — an unasked-for filter
   // is how a slow-topic question loses its canonical sources.
   const recency = fresh && PERPLEXITY_RECENCY[fresh.label] ? { search_recency_filter: PERPLEXITY_RECENCY[fresh.label] } : {};
+  const timed = timeoutSignal(parentSignal, 7000);
   try {
     const res = await fetch('https://api.perplexity.ai/chat/completions', {
       method: 'POST',
@@ -325,16 +334,16 @@ const searchPerplexity = async (query, fresh = null) => {
       // Tighter than its own patience. The fan-out's deadline is 3500ms and
       // this provider is additive — a Sonar that needs longer than the whip
       // simply does not contribute to this turn.
-      signal: AbortSignal.timeout(7000),
+      signal: timed.signal,
     });
     if (!res.ok) return { answer: '', results: [] };
     // Two citation shapes have shipped, and reading only one loses every source
     // silently — see lib/perplexity.js, which is where that is handled and
     // tested.
     return readSonar(await res.json(), normalizeDate);
-  } catch { return { answer: '', results: [] }; }
+  } catch { return { answer: '', results: [] }; } finally { timed.dispose(); }
 };
-const searchGoogleWeb = async (query, fresh = null) => {
+const searchGoogleWeb = async (query, fresh = null, parentSignal) => {
   if (!GOOGLE_SEARCH_API_KEY || !GOOGLE_CSE_ID) return [];
   /* dateRestrict, but NOT sort=date.
    *
@@ -347,19 +356,22 @@ const searchGoogleWeb = async (query, fresh = null) => {
    * carries one only when the site happened to emit the right metadata — so
    * these results stay undated rather than being labelled from a guess. */
   const restrict = fresh ? `&dateRestrict=${GOOGLE_DATE_RESTRICT[fresh.label] || 'y1'}` : '';
-  try { const res = await fetch(`https://www.googleapis.com/customsearch/v1?key=${GOOGLE_SEARCH_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query.slice(0,200))}&num=10${restrict}`, { signal: AbortSignal.timeout(8000) }); if (!res.ok) return []; const data = await res.json(); return (data.items||[]).map(r => ({ title: r.title?.slice(0,200)||'', url: r.link, description: (r.snippet||'').slice(0,500), date: '' })); } catch { return []; }
+  const timed = timeoutSignal(parentSignal, 8000);
+  try { const res = await fetch(`https://www.googleapis.com/customsearch/v1?key=${GOOGLE_SEARCH_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query.slice(0,200))}&num=10${restrict}`, { signal: timed.signal }); if (!res.ok) return []; const data = await res.json(); return (data.items||[]).map(r => ({ title: r.title?.slice(0,200)||'', url: r.link, description: (r.snippet||'').slice(0,500), date: '' })); } catch { return []; } finally { timed.dispose(); }
 };
-const searchGoogleImages = async (query) => {
+const searchGoogleImages = async (query, parentSignal) => {
   if (!GOOGLE_SEARCH_API_KEY || !GOOGLE_CSE_ID) return [];
-  try { const res = await fetch(`https://www.googleapis.com/customsearch/v1?key=${GOOGLE_SEARCH_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query.slice(0,200))}&searchType=image&num=5`, { signal: AbortSignal.timeout(8000) }); if (!res.ok) return []; const data = await res.json(); return (data.items||[]).map(r => ({ url: r.link, title: r.title?.slice(0,200)||'' })); } catch { return []; }
+  const timed = timeoutSignal(parentSignal, 8000);
+  try { const res = await fetch(`https://www.googleapis.com/customsearch/v1?key=${GOOGLE_SEARCH_API_KEY}&cx=${GOOGLE_CSE_ID}&q=${encodeURIComponent(query.slice(0,200))}&searchType=image&num=5`, { signal: timed.signal }); if (!res.ok) return []; const data = await res.json(); return (data.items||[]).map(r => ({ url: r.link, title: r.title?.slice(0,200)||'' })); } catch { return []; } finally { timed.dispose(); }
 };
-const readPageContent = async (url, { wantsPrice = false } = {}) => {
+const readPageContent = async (url, { wantsPrice = false, signal } = {}) => {
   // extractPageSignal, not slice(0, 3000). A retail page's markdown spends its
   // first few thousand characters on nav, breadcrumbs and marketing, so a flat
   // truncation cut the price off — which produced a real answer saying three
   // UAE retailers "did not display a price" when all three did. See
   // lib/page-extract.js.
-  try { const headers = { 'Accept': 'text/markdown' }; if (JINA_API_KEY) headers['Authorization'] = `Bearer ${JINA_API_KEY}`; const res = await fetch(`https://r.jina.ai/${url}`, { method: 'GET', headers, signal: AbortSignal.timeout(6000) }); if (!res.ok) return firecrawlPage(url); const signal = extractPageSignal(await res.text());
+  const timed = timeoutSignal(signal, 6000);
+  try { const headers = { 'Accept': 'text/markdown' }; if (JINA_API_KEY) headers['Authorization'] = `Bearer ${JINA_API_KEY}`; const res = await fetch(`https://r.jina.ai/${url}`, { method: 'GET', headers, signal: timed.signal }); if (!res.ok) return firecrawlPage(url, signal); const signalText = extractPageSignal(await res.text());
     /* JINA CANNOT SEE A PRICE THAT JAVASCRIPT PAINTS IN.
      *
      * It fetches the document and converts it; a page that ships an empty
@@ -374,8 +386,8 @@ const readPageContent = async (url, { wantsPrice = false } = {}) => {
      * fallback fires on the two signals that mean "this read failed": nothing
      * came back, or what came back has no price and no stock line on a page
      * that was fetched precisely to find one. */
-    if (!hasReadableSignal(signal, wantsPrice)) { const rendered = await firecrawlPage(url); if (rendered) return rendered; }
-    return signal; } catch { return firecrawlPage(url); }
+    if (!hasReadableSignal(signalText, wantsPrice)) { const rendered = await firecrawlPage(url, signal); if (rendered) return rendered; }
+    return signalText; } catch { return firecrawlPage(url, signal); } finally { timed.dispose(); }
 };
 
 /**
@@ -387,36 +399,38 @@ const readPageContent = async (url, { wantsPrice = false } = {}) => {
  * The cache is the existing two-tier one, so an L2 hit also serves the OTHER
  * instance rather than just this process.
  */
-const firecrawlPage = async (url) => {
+const firecrawlPage = async (url, signal) => {
   if (!FIRECRAWL_API_KEY) return '';
   const key = `firecrawl:${url}`;
-  const hit = await getCachedSearch(key);
+  const hit = await getCachedSearch(key, signal);
   // '' is a legitimate cached value — a page that rendered to nothing renders
   // to nothing again — so the check is for null, not for falsiness.
   if (hit !== null && hit !== undefined) return hit;
-  const out = await firecrawlFetch(url);
+  const out = await firecrawlFetch(url, signal);
   // Only a real render is worth storing. Caching a timeout would turn one bad
   // minute into fifteen minutes of the same empty answer.
   if (out) setCachedSearch(key, out);
   return out;
 };
 
-const firecrawlFetch = async (url) => {
+const firecrawlFetch = async (url, parentSignal) => {
+  const timed = timeoutSignal(parentSignal, 12000);
   try {
     const res = await fetch('https://api.firecrawl.dev/v1/scrape', {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${FIRECRAWL_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ url, formats: ['markdown'], onlyMainContent: false, timeout: 15000 }),
-      signal: AbortSignal.timeout(12000),
+      signal: timed.signal,
     });
     if (!res.ok) return '';
     const data = await res.json();
     const md = data && data.data && typeof data.data.markdown === 'string' ? data.data.markdown : '';
     return md ? extractPageSignal(md) : '';
-  } catch { return ''; }
+  } catch { return ''; } finally { timed.dispose(); }
 };
-const searchWikipedia = async (query) => {
-  try { const sr = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query.slice(0,100))}&format=json&origin=*`, { signal: AbortSignal.timeout(6000) }); if (!sr.ok) return ''; const sd = await sr.json(); const titles = (sd.query?.search||[]).slice(0,2).map(s => s.title); if (titles.length === 0) return ''; const er = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=true&explaintext=true&titles=${encodeURIComponent(titles.join('|'))}&format=json&origin=*`, { signal: AbortSignal.timeout(6000) }); if (!er.ok) return ''; const ed = await er.json(); return Object.values(ed.query?.pages||{}).map(p => p.extract||'').filter(e => e.length > 100).join('\n\n').slice(0, 5000); } catch { return ''; }
+const searchWikipedia = async (query, parentSignal) => {
+  const timed = timeoutSignal(parentSignal, 6000);
+  try { const sr = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query.slice(0,100))}&format=json&origin=*`, { signal: timed.signal }); if (!sr.ok) return ''; const sd = await sr.json(); const titles = (sd.query?.search||[]).slice(0,2).map(s => s.title); if (titles.length === 0) return ''; const er = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=true&explaintext=true&titles=${encodeURIComponent(titles.join('|'))}&format=json&origin=*`, { signal: timed.signal }); if (!er.ok) return ''; const ed = await er.json(); return Object.values(ed.query?.pages||{}).map(p => p.extract||'').filter(e => e.length > 100).join('\n\n').slice(0, 5000); } catch { return ''; } finally { timed.dispose(); }
 };
 
 /**
@@ -515,12 +529,14 @@ const uuidParam = (name = 'id') => (req, res, next) =>
   UUID_RE.test(req.params[name] || '') ? next() : res.status(400).json({ error: 'Invalid ID' });
 
 const fileStoreFor = (userId, chatId) => ({
-  list: async () => {
-    const { data } = await supabase.from('chat_files').select('id,name,kind,bytes').eq('user_id', userId).eq('chat_id', chatId).order('created_at', { ascending: true }).limit(MAX_FILES_PER_CHAT);
+  list: async ({ signal } = {}) => {
+    const query = supabase.from('chat_files').select('id,name,kind,bytes').eq('user_id', userId).eq('chat_id', chatId).order('created_at', { ascending: true }).limit(MAX_FILES_PER_CHAT);
+    const { data } = await withQuerySignal(query, signal);
     return data || [];
   },
-  get: async (id) => {
-    const { data } = await supabase.from('chat_files').select('id,name,kind,bytes,content,truncated').eq('id', id).eq('user_id', userId).eq('chat_id', chatId).maybeSingle();
+  get: async (id, { signal } = {}) => {
+    const query = supabase.from('chat_files').select('id,name,kind,bytes,content,truncated').eq('id', id).eq('user_id', userId).eq('chat_id', chatId).maybeSingle();
+    const { data } = await withQuerySignal(query, signal);
     return data || null;
   },
 });
@@ -559,13 +575,12 @@ const TOOLS_SHADOW = TOOLS_MODE === 'shadow';
  * 16KB and the reader is cancelled once <head> is through — enough for the
  * title on every real site, and it never pulls a whole product page.
  */
-const fetchPageHead = async (url) => {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 5000);
+const fetchPageHead = async (url, { signal } = {}) => {
+  const timed = timeoutSignal(signal, 5000);
   try {
     const res = await fetch(url, {
       redirect: 'follow',
-      signal: controller.signal,
+      signal: timed.signal,
       // Some CDNs serve a bot-check page to an unfamiliar agent, which would
       // read as a soft 404. Ask like a browser.
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ALOP-AI link check)', 'Accept': 'text/html,*/*' },
@@ -585,22 +600,29 @@ const fetchPageHead = async (url) => {
     }
     return { status: res.status, finalUrl: res.url || url, html };
   } finally {
-    clearTimeout(timer);
+    timed.dispose();
   }
 };
 
-const checkSearchLinks = (urls) => checkLinks(urls, { fetchPage: fetchPageHead, assertSafeUrl });
+const checkSearchLinks = (urls, { signal } = {}) => checkLinks(urls, { fetchPage: fetchPageHead, assertSafeUrl, signal });
 
-const toolSearch = async (query) => {
-  const cached = await getCachedSearch(`tool:${query}`);
+const toolSearch = async (query, { signal } = {}) => {
+  const cached = await getCachedSearch(`tool:${query}`, signal);
   if (cached) return cached;
-  const results = await firstWithResults([searchBrave, searchTavily, searchGoogleWeb], query);
-  if (results.length) setCachedSearch(`tool:${query}`, results);
+  // The comprehensive path passes (query, freshness, signal); this path has
+  // no freshness window, so keep the abort signal in the provider's third slot
+  // rather than accidentally treating it as the freshness object.
+  const results = await firstWithResults([
+    (q, providerSignal) => searchBrave(q, null, providerSignal),
+    (q, providerSignal) => searchTavily(q, null, providerSignal),
+    (q, providerSignal) => searchGoogleWeb(q, null, providerSignal),
+  ], query, signal);
+  if (results.length && !signal?.aborted) setCachedSearch(`tool:${query}`, results);
   return results;
 };
 
 // ===== COMPREHENSIVE SEARCH =====
-const comprehensiveSearch = async (query, needsWiki, fresh = null, region = null) => {
+const comprehensiveSearch = async (query, needsWiki, fresh = null, region = null, parentSignal) => {
   /* The freshness window is part of the cache KEY, not just the request.
    *
    * Two questions can produce the same search query text and want different
@@ -616,7 +638,7 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null, region = null
    * and the failure is invisible because the answer looks fine. */
   const gl = region && region.country ? String(region.country).toLowerCase() : '';
   const cacheKey = `${comprehensiveSearchKey(query, needsWiki)}:${fresh ? fresh.label : 'any'}:${gl || 'nogeo'}`;
-  const cached = await getCachedSearch(cacheKey); if (cached) return cached;
+  const cached = await getCachedSearch(cacheKey, parentSignal); if (cached) return cached;
 
   /* THE SEARCH WHIP, and it is the same idea runCouncilWithWhip already uses
    * for models: take what has arrived, do not wait for stragglers.
@@ -632,7 +654,7 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null, region = null
    *
    * 3.5s is the hard stop. Anything still outstanding is dropped and its
    * provider simply does not contribute to this turn. */
-  const tavilyP = searchTavily(query, fresh);
+  let tavilyP;
 
   /* Declared here, above the speculative read, because that read consults it.
    * It resolves in a later microtask so the old ordering happened to work, but
@@ -663,36 +685,68 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null, region = null
    * readPageContent swallows its own failures and resolves to '', so an
    * abandoned warm read cannot become an unhandled rejection. */
   let warm = null;
-  tavilyP.then((t) => {
+  let warmSearchFinished = false;
+  const startWarmRead = (url) => {
+    if (warmSearchFinished || parentSignal?.aborted) return null;
+    const warmChild = childAbortController(parentSignal);
+    const content = readPageContent(url, { wantsPrice: wantsShopping, signal: warmChild.signal });
+    let released = false;
+    const release = () => {
+      if (released) return;
+      released = true;
+      warmChild.dispose();
+    };
+    const entry = {
+      url,
+      content,
+      cancel: () => {
+        if (!warmChild.signal.aborted) warmChild.controller.abort("search-page-deadline");
+        release();
+      },
+    };
+    // A warm read can finish before the fan-out reaches its page-read phase.
+    // Release the parent listener then; otherwise a successful speculative read
+    // keeps a child controller attached to the request until the response closes.
+    void content.then(release, release);
+    warm = entry;
+    return entry;
+  };
+
+  const startTavily = (fanoutSignal) => {
+    tavilyP = searchTavily(query, fresh, fanoutSignal);
+    tavilyP.then((t) => {
     const url = t?.results?.[0]?.url;
-    if (url) warm = { url, content: readPageContent(url, { wantsPrice: wantsShopping }) };
+    if (url) startWarmRead(url);
   }).catch(() => {});
+    return tavilyP;
+  };
 
   const { results: [tavilyResult, braveResults, googleResults, googleImages, wikiContent, pplxResult, shopResult], waited, pending } =
     await settleByDeadline(
       [
-        { promise: tavilyP, fallback: { answer: '', results: [], images: [] } },
-        { promise: searchBrave(query, fresh), fallback: [] },
-        { promise: searchGoogleWeb(query, fresh), fallback: [] },
-        { promise: searchGoogleImages(query), fallback: [] },
-        { promise: needsWiki ? searchWikipedia(query) : Promise.resolve(''), fallback: '' },
+        { promise: startTavily, fallback: { answer: '', results: [], images: [] } },
+        { promise: (fanoutSignal) => searchBrave(query, fresh, fanoutSignal), fallback: [] },
+        { promise: (fanoutSignal) => searchGoogleWeb(query, fresh, fanoutSignal), fallback: [] },
+        { promise: (fanoutSignal) => searchGoogleImages(query, fanoutSignal), fallback: [] },
+        { promise: (fanoutSignal) => needsWiki ? searchWikipedia(query, fanoutSignal) : Promise.resolve(''), fallback: '' },
         // Last, and additive. It is appended to the array rather than inserted
         // so the destructuring above and `enough` below both keep their
         // positions — a provider added in the middle silently reassigns every
         // result after it.
-        { promise: searchPerplexity(query, fresh), fallback: { answer: '', results: [] } },
+        { promise: (fanoutSignal) => searchPerplexity(query, fresh, fanoutSignal), fallback: { answer: '', results: [] } },
         /* Shopping, and only when the question is about buying something.
          * Serper bills per query, and "who won the election" does not need a
          * price check. isShoppingQuery is the gate; see lib/shopping.js. */
         {
-          promise: SERPER_API_KEY && isShoppingQuery(query)
-            ? searchShopping(query, { apiKey: SERPER_API_KEY, region: gl })
+          promise: (fanoutSignal) => SERPER_API_KEY && isShoppingQuery(query)
+            ? searchShopping(query, { apiKey: SERPER_API_KEY, region: gl, signal: fanoutSignal })
             : Promise.resolve({ results: [] }),
           fallback: { results: [] },
         },
       ],
       {
         deadlineMs: 3500,
+        signal: parentSignal,
         // TWO conditions, and the second is the one that took a measurement to
         // find. Volume alone let Brave's ten results resolve the whole fan-out
         // at 400ms and throw away Tavily's synthesised ANSWER, which landed at
@@ -779,17 +833,28 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null, region = null
   // slowest, not the sum.
   if (sources.length > 0) {
     const targets = rankReadTargets(sources, { limit: PAGE_READ_LIMIT });
+    const warmMatches = warm && targets.includes(warm.url);
+    if (warm && !warmMatches) {
+      warm.cancel();
+      warm = null;
+    }
     const reads = targets.map((url) => ({
       url,
-      promise: warm && warm.url === url ? warm.content : readPageContent(url, { wantsPrice: wantsShopping }),
+      promise: warm && warm.url === url
+        ? warm.content
+        : (readSignal) => readPageContent(url, { wantsPrice: wantsShopping, signal: readSignal }),
+      cancel: warm && warm.url === url ? warm.cancel : undefined,
     }));
     const { results } = await settleByDeadline(
-      reads.map((r) => ({ promise: r.promise, fallback: '' })),
-      { deadlineMs: 2500 },
+      reads.map((r) => ({ promise: r.promise, fallback: '', cancel: r.cancel })),
+      { deadlineMs: 2500, signal: parentSignal },
     );
     results.forEach((pc, i) => {
       if (typeof pc === 'string' && pc.length > 200) ctx += `FULL PAGE (${reads[i].url}):\n${pc}\n\n---\n\n`;
     });
+  } else if (warm) {
+    warm.cancel();
+    warm = null;
   }
   if (allImages.length > 0) { const unique = [...new Set(allImages)].slice(0,5); ctx += `IMAGES:\n${unique.map((u,i) => `IMAGE ${i+1}: ${u}`).join('\n')}\n\n---\n\n`; }
   const found = sources.length > 0 || !!wikiContent || !!td.answer || !!pplx.answer;
@@ -798,7 +863,8 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null, region = null
   // they all pass through on the way out.
   const context = ctx.trim() ? `${UNTRUSTED_PREAMBLE}\n\n${ctx.trim()}` : '';
   const result = { context, sources, found, images: allImages };
-  setCachedSearch(cacheKey, result); return result;
+  warmSearchFinished = true;
+  if (!parentSignal?.aborted) setCachedSearch(cacheKey, result); return result;
 };
 
 // ===== MEMORY =====
@@ -849,10 +915,13 @@ const updateChatSummary = async (chatId, userId, userMsg, assistantMsg) => {
   } catch (e) { console.error('[MEMORY] Failed:', e.message); }
 };
 
-const readChatSummary = async (chatId, userId) => {
+const withQuerySignal = (query, signal) => signal && typeof query?.abortSignal === 'function' ? query.abortSignal(signal) : query;
+
+const readChatSummary = async (chatId, userId, signal) => {
   if (!chatId) return '';
   try {
-    const { data } = await supabase.from('chats').select('conversation_summary').eq('id', chatId).eq('user_id', userId).single();
+    const query = supabase.from('chats').select('conversation_summary').eq('id', chatId).eq('user_id', userId);
+    const { data } = await withQuerySignal(query, signal).single();
     return data?.conversation_summary || '';
   } catch { return ''; }
 };
@@ -860,9 +929,10 @@ const readChatSummary = async (chatId, userId) => {
 // Feedback lives in its own table and is read back as explicit guidance. It was
 // previously appended onto conversation_summary, where coaching notes and
 // conversation facts fought over the same 2000 characters and corrupted both.
-const getFeedbackGuidance = async (userId) => {
+const getFeedbackGuidance = async (userId, signal) => {
   try {
-    const { data } = await supabase.from('feedback_notes').select('kind,note').eq('user_id', userId).order('created_at', { ascending: false }).limit(6);
+    const query = supabase.from('feedback_notes').select('kind,note').eq('user_id', userId).order('created_at', { ascending: false }).limit(6);
+    const { data } = await withQuerySignal(query, signal);
     if (!data || data.length === 0) return '';
     const good = data.filter(n => n.kind === 'up').map(n => `- ${n.note}`);
     const avoid = data.filter(n => n.kind === 'down').map(n => `- ${n.note}`);
@@ -908,25 +978,28 @@ const EMBED_DEADLINE_MS = 600;
  * vector" or "this turn ranks by recency", both of which are working states.
  * See lib/embeddings.js for why a *malformed* vector has to read as null too.
  */
-const embedText = async (text) => {
+const embedText = async (text, parentSignal) => {
   if (!GOOGLE_API_KEY || !text) return null;
+  const timed = timeoutSignal(parentSignal, 10000);
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${EMBED_MODEL}:embedContent?key=${GOOGLE_API_KEY}`;
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(embedRequestBody(text)),
+      signal: timed.signal,
     });
     if (!res.ok) { console.error(`[EMBED] ${res.status} ${(await res.text()).slice(0, 200)}`); return null; }
     return parseEmbedding(await res.json());
-  } catch (e) { console.error('[EMBED] Failed:', e.message); return null; }
+  } catch (e) { if (!timed.signal.aborted) console.error('[EMBED] Failed:', e.message); return null; }
+  finally { timed.dispose(); }
 };
 
 /** This user's facts, nearest first, by cosine distance. [] on any failure. */
-const readUserFactsByMeaning = async (userId, limit, queryText) => {
+const readUserFactsByMeaning = async (userId, limit, queryText, parentSignal) => {
   const { results: [vec] } = await settleByDeadline(
-    [{ promise: embedText(queryText), fallback: null }],
-    { deadlineMs: EMBED_DEADLINE_MS },
+    [{ promise: (signal) => embedText(queryText, signal), fallback: null }],
+    { deadlineMs: EMBED_DEADLINE_MS, signal: parentSignal },
   );
   const literal = toVectorLiteral(vec);
   if (!literal) return [];
@@ -934,11 +1007,12 @@ const readUserFactsByMeaning = async (userId, limit, queryText) => {
     // p_user_id is the server's own resolved user. The service-role connection
     // bypasses RLS, so this argument IS the tenant boundary — 013 says the same
     // thing at the SQL layer and tenant-scope.test.js holds it here.
-    const { data, error } = await supabase.rpc('match_user_facts', {
+    let query = supabase.rpc('match_user_facts', {
       p_user_id: userId,
       p_query: literal,
       p_limit: limit,
     });
+    const { data, error } = await withQuerySignal(query, parentSignal);
     if (error) { console.error('[FACTS] Semantic recall unavailable:', error.message); return []; }
     return (data || []).map((r) => r.fact).filter(Boolean);
   } catch (e) { console.error('[FACTS] Semantic recall failed:', e.message); return []; }
@@ -958,19 +1032,20 @@ const readUserFactsByMeaning = async (userId, limit, queryText) => {
  * first and the newest fill whatever slots are left, deduplicated on the same
  * key the write path dedupes on.
  */
-const readUserFacts = async (userId, limit = FACTS_INJECT_LIMIT, queryText = null) => {
+const readUserFacts = async (userId, limit = FACTS_INJECT_LIMIT, queryText = null, parentSignal) => {
   if (!userId) return [];
 
   const [semantic, recent] = await Promise.all([
-    queryText ? readUserFactsByMeaning(userId, limit, queryText) : Promise.resolve([]),
+    queryText ? readUserFactsByMeaning(userId, limit, queryText, parentSignal) : Promise.resolve([]),
     (async () => {
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('user_facts')
           .select('fact')
           .eq('user_id', userId)
           .order('created_at', { ascending: false })
           .limit(limit);
+        const { data, error } = await withQuerySignal(query, parentSignal);
         // The table predates migrations/, so a missing column or table is a
         // live possibility. Memory being unavailable must cost the user nothing
         // but the memory.
@@ -1189,7 +1264,7 @@ const searchCache = createSearchCache({
   supabase,
   ttlMs: Number(process.env.SEARCH_CACHE_TTL_MS) || 15 * 60 * 1000,
 });
-const getCachedSearch = (q) => searchCache.get(q);
+const getCachedSearch = (q, signal) => searchCache.get(q, { signal });
 const setCachedSearch = (q, d) => searchCache.set(q, d);
 // Rejected requests must carry a 401, not a 500, or the client cannot tell an expired
 // session from a server fault. clerk-sdk-node@5 made that our problem by ignoring its
@@ -1435,11 +1510,42 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
   // Wall-clock to the point where the first byte of an answer starts streaming.
   // Everything before that is the user watching nothing happen, and until now
   // it was invisible: the only latency anyone could see was the total, which
-  // mixes it with however long the model took to write. `council.tools` records
-  // it so the admin console can report it without a log dashboard.
+  // mixes it with however long the model took to write. The existing council
+  // audit row now carries the phase breakdown so the admin console can report
+  // it without a second logging system or a log dashboard.
   const t0 = Date.now();
+  const telemetry = createTurnTelemetry({ startedAt: t0 });
+  const turnController = new AbortController();
+  const turnSignal = turnController.signal;
+  let auditUserId = null;
+  let telemetryWritten = false;
+  const auditTelemetry = async (action, category, extra = {}) => {
+    if (!auditUserId || telemetryWritten) return;
+    telemetryWritten = true;
+    await auditLog(auditUserId, action, telemetry.snapshot({
+      category,
+      msToFirstByte: (res.locals?.firstChunkAt || Date.now()) - t0,
+      msToFirstProgress: (res.locals?.firstByteAt || Date.now()) - t0,
+      extra,
+      aborted: turnSignal.aborted,
+    }), req.ip);
+  };
+  const abortOnDisconnect = () => {
+    if (!res.writableEnded && !res.writableFinished && !turnSignal.aborted) {
+      turnController.abort(new DOMException('Client disconnected', 'AbortError'));
+    }
+  };
+  const cleanupDisconnect = () => {
+    req.off('aborted', abortOnDisconnect);
+    res.off('close', abortOnDisconnect);
+    res.off('finish', cleanupDisconnect);
+  };
+  req.once('aborted', abortOnDisconnect);
+  res.once('close', abortOnDisconnect);
+  res.once('finish', cleanupDisconnect);
   try {
     const user = await ensureUser(req.auth.userId, { cached: req.userRow });
+    auditUserId = user.id;
     const { message, history = [], chatId, image } = req.body;
     const pv = validatePrompt(message);
     if (!pv.valid) return res.status(400).json({ error: pv.error });
@@ -1479,15 +1585,21 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
        * The result is still awaited before prompt assembly; only the idle time
        * is removed. */
       const visionModel = userPlan === 'pro' ? 'gemini-2.5-pro-preview-05-06' : 'gemini-2.5-flash-preview-05-06';
-      visionP = callGeminiVision(visionModel, 'Describe this image thoroughly. Include any text, code, UI elements, data and errors visible in it.', parsedImage.base64, parsedImage.mime, 1024)
+      visionP = telemetry.measureContext('vision', () => callGeminiVision(visionModel, 'Describe this image thoroughly. Include any text, code, UI elements, data and errors visible in it.', parsedImage.base64, parsedImage.mime, 1024, turnSignal))
         .then((text) => ({ text }))
         .catch((error) => ({ error }));
     }
 
+    const contextReads = Promise.all([
+      telemetry.measureContext('summary', () => readChatSummary(chatId, user.id, turnSignal)),
+      telemetry.measureContext('feedback', () => getFeedbackGuidance(user.id, turnSignal)),
+      telemetry.measureContext('facts', () => readUserFacts(user.id, FACTS_INJECT_LIMIT, pv.value, turnSignal)),
+    ]);
     const [contextResult, visionResult] = await Promise.all([
-      Promise.all([readChatSummary(chatId, user.id), getFeedbackGuidance(user.id), readUserFacts(user.id, FACTS_INJECT_LIMIT, pv.value)]),
+      contextReads,
       visionP,
     ]);
+    if (turnSignal.aborted) return;
     const [convSummary, feedbackGuidance, userFacts] = contextResult;
 
     if (parsedImage) {
@@ -1573,7 +1685,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       Promise.all(
         selection.members.map(async ({ model }) => {
           try {
-            const raw = await callModel(model, toolMessages(probeMsgs, probeRegistry, { round: 1, isFinalRound: false }), 0.0, selection.whipMs, selection.tokenLimit);
+            const raw = await callModel(model, toolMessages(probeMsgs, probeRegistry, { round: 1, isFinalRound: false }), 0.0, selection.whipMs, selection.tokenLimit, turnSignal);
             return { member: model, ...parseToolRequests(raw) };
           } catch (err) {
             return { member: model, calls: [], text: '', error: err.message };
@@ -1611,27 +1723,28 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     // turn — and greetings are disproportionately a user's FIRST message, which
     // is the one that forms their impression of how fast this is.
     const skipRouter = Boolean(imageContext) || selection.category === 'greeting';
-    const memoryP = skipRouter ? Promise.resolve(false) : isMemoryOrReferenceQuestion(pv.value).catch(() => false);
-    const searchQueryP = skipRouter ? Promise.resolve(null) : getSearchQuery(pv.value, convSummary, region).catch(() => null);
+    const memoryP = skipRouter ? Promise.resolve(false) : telemetry.measureRouter('memory', () => isMemoryOrReferenceQuestion(pv.value, turnSignal)).catch(() => false);
+    const searchQueryP = skipRouter ? Promise.resolve(null) : telemetry.measureRouter('search', () => getSearchQuery(pv.value, convSummary, region, turnSignal)).catch(() => null);
 
     if (await memoryP) {
       console.log('[COUNCIL] Memory question.');
       const memSys = `You are ALOP-AI. The user is asking about a previous conversation. The history below IS your memory. Do NOT say you can't remember. Reference what was discussed. Be concise.${convSummary ? `\n\nSummary: ${convSummary}` : ''}`;
       const memMsgs = [{ role: 'system', content: memSys }, ...histArr.slice(-10), { role: 'user', content: pv.value }];
       openStream(res);
-      await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0);
+      await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0, turnSignal);
       if (!res.writableEnded) res.end();
       rememberTurn(chatId, user.id, pv.value, 'Answered memory question.');
       await auditLog(user.id, 'council', { category: 'memory' }, req.ip);
       return;
     }
+    if (turnSignal.aborted) return;
 
     // 1. GREETING (see the note above on why an image skips this)
     if (!imageContext && selection.category === 'greeting') {
       console.log('[COUNCIL] Greeting.');
       const greetMsgs = [{ role: 'system', content: `You are ALOP-AI. Greet briefly.${convSummary ? ` Context: ${convSummary}` : ''}` }, { role: 'user', content: pv.value }];
       openStream(res);
-      await streamModel(res, PRIMARY_MODEL, greetMsgs, 0.0);
+      await streamModel(res, PRIMARY_MODEL, greetMsgs, 0.0, turnSignal);
       if (!res.writableEnded) res.end();
       await auditLog(user.id, 'council', { category: 'greeting' }, req.ip);
       return;
@@ -1651,6 +1764,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
      * present matters. See lib/recency. */
     const fresh = freshnessWindow(pv.value);
 
+    if (turnSignal.aborted) return;
     if (searchQueries) {
       /* THE SCREEN STOPS BEING BLANK HERE, not when the answer starts.
        *
@@ -1683,8 +1797,9 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
        * halves of one question — asking twice pays a second round trip for the
        * same article. */
       const perQuery = await Promise.all(
-        searchQueries.map((q, i) => comprehensiveSearch(q, shouldCheckWiki && i === 0, fresh, region)),
+        searchQueries.map((q, i) => comprehensiveSearch(q, shouldCheckWiki && i === 0, fresh, region, turnSignal)),
       );
+      if (turnSignal.aborted) return;
 
       /* Merged on URL, because two queries about one subject overlap heavily
        * and the same page arriving twice is not corroboration — it reads to the
@@ -1728,7 +1843,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       const extSys = `${todayLine()}\n\nYou are a precision data extraction engine. Use ONLY the provided data.\n\nRULES:\n1. Only state facts from the data.\n2. No training data.\n3. No inferring/guessing.\n4. No comparing unless both products are in data.\n5. If not in data, say "I couldn't find this in the search results."\n6. Include URLs as Markdown: [Title](URL)\n7. No inventing specs/prices.\n8. Note contradictions between sources.\n9. Format in Markdown. Match answer length to question. Be concise for simple questions.\n10. List sources at bottom under "## Sources".\n11. Embed images if provided: ![Description](url)\n12. CONVERSATION CONTEXT and history are EXEMPT from rules 1-5.\n13. Each source carries a Published date. When sources disagree, prefer the most recent one and say that the older one is out of date — do not average them or pick the more detailed one.\n14. If every source on a time-dependent point is more than a year old, say so rather than presenting it as current.\n15. Attach the date to any fact that changes over time: "as of [date]". A price, version or ranking stated bare reads as current even when it is not.${lang !== 'English' ? `\n16. Respond in ${lang}.` : ''}`;
       const extMsgs = [{ role: 'system', content: extSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n\n=== SEARCH DATA ===\n${context}` }];
       openStream(res);
-      await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0);
+      await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0, turnSignal);
       if (!res.writableEnded) res.end();
       const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
       rememberTurn(chatId, user.id, pv.value, lastA || 'Search response.');
@@ -1738,7 +1853,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
 
     // 3. WIKIPEDIA
     if (shouldCheckWiki) {
-      const wiki = await searchWikipedia(pv.value);
+      const wiki = await searchWikipedia(pv.value, turnSignal);
       if (wiki) {
         const wikiSys = `${todayLine()}
 
@@ -1748,7 +1863,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         // need a site of their own.
         const wikiMsgs = [{ role: 'system', content: wikiSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n=== WIKIPEDIA ===\n${UNTRUSTED_PREAMBLE}\n\n${wiki}` }];
         openStream(res);
-        await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0);
+        await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0, turnSignal);
         if (!res.writableEnded) res.end();
         rememberTurn(chatId, user.id, pv.value, 'Wikipedia response.');
         await auditLog(user.id, 'council', { category: 'wiki' }, req.ip);
@@ -1778,6 +1893,14 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
     // so this ships dark and a bad turn is one env var from being reverted
     // without a deploy.
     let validResponses, toolResearch = '', toolTruncated = null;
+    let telemetryExtra = {};
+    let toolPlainFallback = { used: false, durationMs: null };
+    let councilRelease = null;
+    const reportCouncilTiming = (phase) => (row) => telemetry.recordSeat({ ...row, phase });
+    const reportCouncilFinish = (event) => {
+      councilRelease = event;
+      if (event?.reason === 'whip') telemetry.markCeiling('council_whip');
+    };
 
     /* OPENED HERE, not at synthesis. Everything above this line can still fail
      * with a status code; from here the work is long, so the wait is narrated
@@ -1787,9 +1910,10 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
      * `sendSeatProgress` reports the room filling up. runCouncil has always
      * known when each seat starts and settles and has always accepted an
      * `onSeat`; nothing in production ever passed one, so the information
-     * existed and went nowhere. Counts only, never model names: which models
-     * sit on the council is not the user's business and is one string away from
-     * being in a screenshot. */
+     * existed and went nowhere. The SSE event remains counts only, never model
+     * names: which models sit on the council is not the user's business and is
+     * one string away from being in a screenshot. The audit row records the
+     * model label privately because that is what identifies a p90 straggler. */
     openStream(res);
     const seatCount = selection.members.length;
     let seatsAnswered = 0;
@@ -1805,7 +1929,8 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       // A tool that can only ever answer "no files" is a tool the council
       // wastes a round discovering is useless.
       const files = chatId ? fileStoreFor(user.id, chatId) : null;
-      const attached = files ? await files.list() : [];
+      const attached = files ? await files.list({ signal: turnSignal }) : [];
+      if (turnSignal.aborted) return;
       const registry = buildRegistry({
         search: toolSearch,
         readUrl: readPageContent,
@@ -1830,12 +1955,12 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
                * keying on the query alone would serve Dubai-to-London for
                * Dubai-to-Cairo. Only successful lookups are stored — caching a
                * failure would keep a transient one alive for fifteen minutes. */
-              searchEngine: async ({ engine, query, params }) => {
+              searchEngine: async ({ engine, query, params, signal }) => {
                 const merged = { ...(region && region.country ? { gl: region.country.toLowerCase() } : {}), ...params };
                 const key = `serpapi:${engine}:${query}:${JSON.stringify(Object.entries(merged).sort())}`;
-                const hit = await getCachedSearch(key);
+                const hit = await getCachedSearch(key, signal);
                 if (hit) return hit;
-                const res = await searchSerpApi({ engine, query, params: merged, apiKey: SERPAPI_API_KEY });
+                const res = await searchSerpApi({ engine, query, params: merged, apiKey: SERPAPI_API_KEY, signal });
                 if (res && res.ok) setCachedSearch(key, res);
                 return res;
               },
@@ -1862,9 +1987,14 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
           console.log(`[TOOLS] r${e.round} ${e.type} ${e.name}${e.ok === false ? ' FAILED' : ''} — ${e.summary}`);
           sendEvent(res, e);
         },
-        askMember: (model, ctx) =>
-          callModel(model, toolMessages(councilMsgs, registry, { ...ctx, attachedFiles: attached }), 0.0, selection.whipMs, selection.tokenLimit),
+        onSeatTiming: reportCouncilTiming('tools'),
+        signal: turnSignal,
+        askMember: (model, ctx, signal) =>
+          callModel(model, toolMessages(councilMsgs, registry, { ...ctx, attachedFiles: attached }), 0.0, selection.whipMs, selection.tokenLimit, signal),
       });
+      if (turnSignal.aborted) return;
+      for (const row of loop.toolRounds) telemetry.recordToolRound(row);
+      if (loop.stopReason && loop.stopReason !== 'quorum') telemetry.markCeiling(loop.stopReason);
       toolResearch = loop.research;
       toolTruncated = loop.truncated;
       console.log(`[TOOLS] ${loop.rounds} round(s), ${loop.uniqueCallsUsed} unique call(s), ${Object.keys(loop.answers).length} answer(s)${loop.truncated ? ` — ${loop.truncated}` : ''}`);
@@ -1881,45 +2011,47 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       const fellBack = validResponses.length === 0;
       if (fellBack) {
         console.log('[TOOLS] no usable answers, falling back to the plain council.');
-        validResponses = await runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit, sendSeatProgress);
+        const fallbackStartedAt = Date.now();
+        validResponses = await runCouncilWithWhip(
+          selection.members,
+          councilMsgs,
+          selection.whipMs,
+          selection.quorum,
+          selection.tokenLimit,
+          sendSeatProgress,
+          { signal: turnSignal, onSeatTiming: reportCouncilTiming('tool_plain_fallback'), onFinish: reportCouncilFinish },
+        );
+        toolPlainFallback = { used: true, durationMs: Date.now() - fallbackStartedAt };
       }
 
-      // Recorded, not just logged. The numbers that say whether this feature is
-      // working — how many members asked for a tool, and how many UNIQUE calls
-      // that collapsed to — only existed in stdout, which means they are
-      // readable on a laptop with the Render dashboard open and nowhere else.
-      // In audit_logs they survive log rotation, they aggregate, and the admin
-      // console can answer "is the dedupe earning its place" from a phone.
-      /* NOT AWAITED, and this one was ON THE CRITICAL PATH.
-       *
-       * Every other auditLog in this route runs after the stream has ended, so
-       * it costs the user nothing. This one sits between the council settling
-       * and synthesis opening its stream — so on every turn that used a tool,
-       * the user waited for an INSERT into audit_logs, over the network to
-       * Supabase, before the first token of their answer could be requested.
-       * It is telemetry about how long they waited, and it was adding to it.
-       *
-       * Safe to drop the await because auditLog swallows its own errors and
-       * cannot reject; there is no unhandled rejection to leak. The row is
-       * written either way — just not with the answer held behind it. */
-      auditLog(user.id, 'council.tools', {
-        msToFirstByte: (res.locals?.firstChunkAt || Date.now()) - t0,
-        msToFirstProgress: (res.locals?.firstByteAt || Date.now()) - t0,
+      // Keep all turn telemetry in the one audit row written after synthesis.
+      // A second logger would split the answer to "why was this turn slow?"
+      // across two retention and query paths, and writing here would put a
+      // Supabase round-trip between the council and the first model token.
+      telemetryExtra = {
         rounds: loop.rounds,
         uniqueCalls: loop.uniqueCallsUsed,
-        // Time actually spent inside tools, which is the only number that says
-        // whether a turn that reported running out of research time really did.
         toolMs: loop.toolMs,
         members: selection.members.length,
         answered: Object.keys(loop.answers).length,
         usable: validResponses.length,
         fellBack,
         truncated: loop.truncated || null,
-        // Which tools, so a tool that is never chosen is visible as such.
+        stopReason: loop.stopReason,
+        toolPlainFallback,
+        councilRelease,
         tools: loop.toolResults.reduce((acc, { call }) => ({ ...acc, [call.name]: (acc[call.name] || 0) + 1 }), {}),
-      }, req.ip);
+      };
     } else {
-      validResponses = await runCouncilWithWhip(selection.members, councilMsgs, selection.whipMs, selection.quorum, selection.tokenLimit, sendSeatProgress);
+      validResponses = await runCouncilWithWhip(
+        selection.members,
+        councilMsgs,
+        selection.whipMs,
+        selection.quorum,
+        selection.tokenLimit,
+        sendSeatProgress,
+        { signal: turnSignal, onSeatTiming: reportCouncilTiming('council'), onFinish: reportCouncilFinish },
+      );
     }
 
     // 5. FALLBACK
@@ -1930,10 +2062,17 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
 You are a helpful AI assistant. Answer directly. Match length to question. If you don't know, say "I don't have enough information." Don't guess. Use context if provided. Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
       const fbMsgs = [{ role: 'system', content: fbSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
       openStream(res);
-      await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0);
+      const fallbackStartedAt = Date.now();
+      await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0, turnSignal);
+      telemetry.recordFallback(Date.now() - fallbackStartedAt, 'post_council');
+      if (turnSignal.aborted) return;
       if (!res.writableEnded) res.end();
       rememberTurn(chatId, user.id, pv.value, 'Fallback response.');
-      await auditLog(user.id, 'council', { category: 'fallback' }, req.ip);
+      await auditTelemetry(
+        telemetryExtra.rounds !== undefined ? 'council.tools' : 'council',
+        'fallback',
+        { ...telemetryExtra, models: 0, seats: selection.members.length, quorum: selection.quorum, tokenLimit: selection.tokenLimit, councilRelease },
+      );
       return;
     }
 
@@ -1967,7 +2106,10 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     // step on a turn where the seats came back quickly.
     sendStage(res, 'synthesis', validResponses.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
     openStream(res);
-    await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0);
+    const synthesisStartedAt = Date.now();
+    await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0, turnSignal);
+    telemetry.recordSynthesis(Date.now() - synthesisStartedAt);
+    if (turnSignal.aborted) return;
     if (!res.writableEnded) res.end();
     const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
     rememberTurn(chatId, user.id, pv.value, lastA || validResponses[0]?.content?.slice(0,800) || 'Council response.');
@@ -1980,16 +2122,20 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
      * claim about it was a claim about a log line on somebody's laptop. `quorum`
      * and `tokenLimit` travel with it because they are the two knobs that move
      * this number; without them a shift in the median is unattributable. */
-    await auditLog(user.id, 'council', {
-      category: 'council',
-      models: validResponses.length,
-      msToFirstByte: (res.locals?.firstChunkAt || Date.now()) - t0,
-      msToFirstProgress: (res.locals?.firstByteAt || Date.now()) - t0,
-      seats: selection.members.length,
-      quorum: selection.quorum,
-      tokenLimit: selection.tokenLimit,
-    }, req.ip);
+    await auditTelemetry(
+      telemetryExtra.rounds !== undefined ? 'council.tools' : 'council',
+      'council',
+      {
+        ...telemetryExtra,
+        models: validResponses.length,
+        seats: selection.members.length,
+        quorum: selection.quorum,
+        tokenLimit: selection.tokenLimit,
+        councilRelease,
+      },
+    );
   } catch (err) {
+    if (turnSignal.aborted) return;
     console.error('Council error:', err.message);
     Sentry.captureException(err);
     if (!res.headersSent) return res.status(500).json({ error: err.message });
@@ -2003,6 +2149,8 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     // 500 body, so the client sees a failure either way.
     sendEvent(res, { type: 'error', text: err.message });
     if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
+  } finally {
+    cleanupDisconnect();
   }
 });
 

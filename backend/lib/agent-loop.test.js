@@ -349,6 +349,22 @@ test("a member that misses the round whip is dropped, not waited on", async () =
   assert.equal(registry.executed.length, 1, "the quick member's research still ran");
 });
 
+test("the round whip aborts a still-running askMember", async () => {
+  let aborted = false;
+  const r = await runAgentLoop({
+    members: ["hung"],
+    askMember: (_member, _ctx, signal) => new Promise((resolve, reject) => {
+      signal.addEventListener("abort", () => { aborted = true; reject(new Error("whipped")); }, { once: true });
+    }),
+    registry: fakeRegistry(),
+    roundMs: 25,
+  });
+  assert.equal(aborted, true);
+  assert.match(r.truncated, /did not reply within/);
+  assert.equal(r.stopReason, "round_whip");
+  assert.equal(r.aborted, false);
+});
+
 test("the round whip does not fire when everyone answers", async () => {
   const r = await runAgentLoop({
     members: ["a", "b"],
@@ -362,11 +378,16 @@ test("the round whip does not fire when everyone answers", async () => {
 // ===== quorum release on the last round =====
 
 test("the last round is released as soon as quorum answers are in", async () => {
+  let slowAborted = false;
   const r = await runAgentLoop({
     members: ["a", "b", "slow"],
-    askMember: (m, ctx) => {
+    askMember: (m, ctx, signal) => {
       if (!ctx.isFinalRound) return Promise.resolve(toolCall(`${m}-q`));
-      if (m === "slow") return new Promise(() => {});
+      if (m === "slow") return new Promise((resolve, reject) => {
+        // The last-round quorum must stop paying this seat once two answers
+        // exist, rather than merely ignoring it until the whip.
+        signal.addEventListener("abort", () => { slowAborted = true; reject(new Error("quorum")); }, { once: true });
+      });
       return Promise.resolve(`answer from ${m}`);
     },
     registry: fakeRegistry(),
@@ -378,6 +399,51 @@ test("the last round is released as soon as quorum answers are in", async () => 
   // Released, not cut short. Telling the synthesiser the research was truncated
   // would have it hedge an answer that was never short of anything.
   assert.equal(r.truncated, null);
+  assert.equal(slowAborted, true);
+});
+
+test("a parent disconnect aborts the loop and its current seat", async () => {
+  const controller = new AbortController();
+  let aborted = false;
+  const pending = runAgentLoop({
+    members: ["hung"],
+    signal: controller.signal,
+    askMember: (_member, _ctx, signal) => new Promise((resolve, reject) => {
+      signal.addEventListener("abort", () => { aborted = true; reject(new Error("client left")); }, { once: true });
+    }),
+    registry: fakeRegistry(),
+    roundMs: 5000,
+  });
+  controller.abort();
+  const r = await pending;
+  assert.equal(aborted, true);
+  assert.equal(r.aborted, true);
+  assert.equal(r.stopReason, "aborted");
+  assert.deepEqual(r.answers, {});
+});
+
+test("a later disconnect does not overwrite an earlier unique-call ceiling", async () => {
+  const controller = new AbortController();
+  const pending = runAgentLoop({
+    members: ["a", "b"],
+    signal: controller.signal,
+    askMember: async (member) => toolCall(`${member}-unique`),
+    registry: {
+      list: () => [{ name: "web_search" }],
+      execute: async (_call, { signal }) => new Promise((resolve) => {
+        signal.addEventListener("abort", () => resolve({ ok: false, summary: "cancelled", content: "" }), { once: true });
+      }),
+    },
+    maxRounds: 2,
+    maxUniqueCalls: 1,
+    roundMs: 5000,
+  });
+  await new Promise((resolve) => setTimeout(resolve, 5));
+  controller.abort();
+  const r = await pending;
+  assert.match(r.truncated, /1-call ceiling/);
+  assert.equal(r.stopReason, "unique_calls");
+  assert.equal(r.aborted, true);
 });
 
 test("quorum cannot release a RESEARCH round, however many members answer early", async () => {

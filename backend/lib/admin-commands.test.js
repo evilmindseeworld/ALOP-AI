@@ -17,6 +17,7 @@ const fakeSupabase = (over = {}) => ({
     const chain = {
       then: (res) => res(result),
       eq: () => chain,
+      in: () => chain,
       order: () => chain,
       limit: () => Promise.resolve(result),
     };
@@ -198,7 +199,7 @@ test("a development Clerk instance is called what it is", async () => {
 // ===== council tool-loop health =====
 
 const councilRows = (rows) => ({
-  audit_logs: { data: rows.map((metadata) => ({ metadata, created_at: "2026-08-05T12:00:00Z" })), error: null },
+  audit_logs: { data: rows.map((metadata) => ({ action: "council.tools", metadata, created_at: "2026-08-05T12:00:00Z" })), error: null },
 });
 
 test("aggregates tool-loop turns into a dedupe ratio", async () => {
@@ -276,6 +277,50 @@ test("reports time-to-first-byte as percentiles, not a mean", async () => {
   const r = await c.run("council");
   assert.equal(r.result.msToFirstByteMedian, 1500);
   assert.equal(r.result.msToFirstByteWorst, 22000);
+});
+
+test("reports the phase and per-seat telemetry from structured turn rows", async () => {
+  const c = buildCommands({
+    supabase: fakeSupabase(councilRows([
+      {
+        telemetry: "council_turn",
+        turnMs: 9100,
+        contextMs: 500,
+        routerReads: { memory: { ms: 120, ok: true }, search: { ms: 80, ok: true } },
+        synthesisMs: 1800,
+        toolMs: 2400,
+        seats: [
+          { model: "fast", ms: 900, outcome: "answered" },
+          { model: "slow", ms: 4200, outcome: "answered" },
+        ],
+        ceiling: { hit: true, reason: "council_whip" },
+        fallbackCouncil: { used: true, durationMs: 700 },
+      },
+      {
+        telemetry: "council_turn",
+        turnMs: 1200,
+        contextMs: 100,
+        routerReads: { memory: { ms: 20, ok: true } },
+        synthesisMs: 300,
+        toolMs: 0,
+        seats: [{ model: "fast", ms: 500, outcome: "answered" }],
+        fallbackCouncil: { used: false },
+      },
+    ])),
+    env: {}, proc: process,
+  });
+  const r = await c.run("council");
+  assert.equal(r.result.turnMsMedian, 9100);
+  assert.equal(r.result.turnMsP90, 9100);
+  assert.equal(r.result.synthesisMsMedian, 1800);
+  assert.equal(r.result.contextMsP90, 500);
+  assert.equal(r.result.routerMsP90, 200);
+  assert.equal(r.result.toolMsP90, 2400);
+  assert.equal(r.result.seatMsP90ByModel.fast, 900);
+  assert.equal(r.result.seatMsP90ByModel.slow, 4200);
+  assert.deepEqual(r.result.slowestSeatByModel, { slow: 1, fast: 1 });
+  assert.equal(r.result.postCouncilFallbacks, 1);
+  assert.equal(r.result.hitACeiling, "1 of 2");
 });
 
 test("turns with no timing recorded do not break the percentiles", async () => {

@@ -48,6 +48,62 @@ test("resolves early once `enough` is satisfied, like the council's quorum", asy
   assert.ok(Date.now() - started < 500, "should not have waited for the slow two");
 });
 
+test("the deadline aborts factory-owned work before returning", async () => {
+  let aborted = false;
+  const { results, pending, endedBy } = await settleByDeadline(
+    [{
+      promise: (signal) => new Promise((resolve) => {
+        signal.addEventListener("abort", () => { aborted = true; resolve("late"); }, { once: true });
+      }),
+      fallback: "fallback",
+    }],
+    { deadlineMs: 20 },
+  );
+  assert.deepEqual(results, ["fallback"]);
+  assert.equal(pending, 1);
+  assert.equal(endedBy, "deadline");
+  assert.equal(aborted, true);
+});
+
+test("quorum aborts the outstanding seats and names the release", async () => {
+  let aborted = false;
+  const { results, pending, endedBy } = await settleByDeadline(
+    [
+      { promise: after(5, "answer"), fallback: "fallback" },
+      {
+        promise: (signal) => new Promise((resolve) => {
+          signal.addEventListener("abort", () => { aborted = true; resolve("late"); }, { once: true });
+        }),
+        fallback: "fallback",
+      },
+    ],
+    { deadlineMs: 500, enough: (r) => r[0] === "answer" },
+  );
+  assert.deepEqual(results, ["answer", "fallback"]);
+  assert.equal(pending, 1);
+  assert.equal(endedBy, "enough");
+  assert.equal(aborted, true);
+});
+
+test("a parent abort resolves the helper without rejecting", async () => {
+  const controller = new AbortController();
+  let aborted = false;
+  const pending = settleByDeadline(
+    [{
+      promise: (signal) => new Promise((resolve) => {
+        signal.addEventListener("abort", () => { aborted = true; resolve("late"); }, { once: true });
+      }),
+      fallback: null,
+    }],
+    { deadlineMs: 500, signal: controller.signal },
+  );
+  controller.abort(new Error("client left"));
+  const result = await pending;
+  assert.equal(result.endedBy, "aborted");
+  assert.equal(result.pending, 1);
+  assert.equal(aborted, true);
+});
+
 test("a provider that throws contributes its fallback, and the call still resolves", async () => {
   const { results } = await settleByDeadline(
     [

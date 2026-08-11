@@ -17,32 +17,61 @@
  *   as a provider that timed out does. Search degrading to four sources is not
  *   an error worth failing a turn over.
  *
- *   Stragglers are ignored, NOT cancelled, and their rejections are swallowed.
- *   A promise that settles after the deadline with nobody listening is an
- *   unhandled rejection, which in Node is a process-level event and in
- *   production is a crash on the wrong config.
+ *   Stragglers are cancelled when the caller gives us an abortable promise
+ *   factory, and their rejections are swallowed either way. A promise that
+ *   settles after the deadline with nobody listening is an unhandled rejection,
+ *   which in Node is a process-level event and in production is a crash on the
+ *   wrong config. Existing already-started promises remain supported, but a
+ *   deadline cannot cancel work that was not given its signal.
  */
 
+const { childAbortController } = require("./abort");
+
 /**
- * @param {Array<{promise: Promise, fallback: *}>} entries
+ * @param {Array<{promise: Promise|((signal: AbortSignal) => Promise), fallback: *, cancel?: Function}>} entries
  * @param {object} opts
  * @param {number} opts.deadlineMs   hard stop; whatever has landed is returned
  * @param {(results: Array) => boolean} [opts.enough]
  *        Called as results land. Returning true resolves immediately — the
  *        equivalent of the council's quorum. Receives the current array, with
  *        fallbacks still in place for anything outstanding.
+ * @param {AbortSignal} [opts.signal] request/turn cancellation
  * @returns {Promise<{results: Array, waited: number, pending: number}>}
  */
-function settleByDeadline(entries, { deadlineMs = 3000, enough } = {}) {
+function settleByDeadline(entries, { deadlineMs = 3000, enough, signal } = {}) {
   const list = Array.isArray(entries) ? entries : [];
   const started = Date.now();
 
   return new Promise((resolve) => {
-    if (!list.length) return resolve({ results: [], waited: 0, pending: 0 });
-
-    const results = list.map((e) => e.fallback);
+    const results = list.map((e) => e?.fallback);
     let settled = 0;
     let done = false;
+    let timer = null;
+    const child = childAbortController(signal);
+    const onParentAbort = () => finish("aborted");
+
+    const finish = (endedBy = "deadline") => {
+      if (done) return;
+      done = true;
+      if (timer) clearTimeout(timer);
+      if (signal) signal.removeEventListener("abort", onParentAbort);
+      child.controller.abort(endedBy);
+      for (const entry of list) {
+        try {
+          entry?.cancel?.(endedBy);
+        } catch {
+          /* cancellation is best-effort; the deadline contract still holds */
+        }
+      }
+      child.dispose();
+      resolve({ results, waited: endedBy === "empty" ? 0 : Date.now() - started, pending: list.length - settled, endedBy });
+    };
+
+    if (!list.length) return finish("empty");
+    if (signal) {
+      signal.addEventListener("abort", onParentAbort, { once: true });
+      if (signal.aborted) return finish("aborted");
+    }
 
     /* `enough` is the caller's code, and the call below it lives inside a
      * `then` whose promise nobody holds. A predicate that throws therefore
@@ -58,27 +87,26 @@ function settleByDeadline(entries, { deadlineMs = 3000, enough } = {}) {
       }
     };
 
-    const finish = () => {
-      if (done) return;
-      done = true;
-      clearTimeout(timer);
-      resolve({ results, waited: Date.now() - started, pending: list.length - settled });
-    };
-
-    const timer = setTimeout(finish, deadlineMs);
+    timer = setTimeout(() => finish("deadline"), deadlineMs);
     // A deadline that keeps the process alive after the work is done is a
     // hang, not a timeout.
     timer.unref?.();
 
     list.forEach((entry, i) => {
-      Promise.resolve(entry.promise).then(
+      let promise;
+      try {
+        promise = typeof entry?.promise === "function" ? entry.promise(child.signal) : entry?.promise;
+      } catch (error) {
+        promise = Promise.reject(error);
+      }
+      Promise.resolve(promise).then(
         (value) => {
           settled++;
           // A late arrival must not mutate an array the caller already has.
           if (done) return;
           results[i] = value;
-          if (settled === list.length) return finish();
-          if (enoughNow()) return finish();
+          if (settled === list.length) return finish("all_settled");
+          if (enoughNow()) return finish("enough");
         },
         () => {
           // Rejection is indistinguishable from a timeout here: the fallback
@@ -86,7 +114,7 @@ function settleByDeadline(entries, { deadlineMs = 3000, enough } = {}) {
           // deliberately — see the note at the top.
           settled++;
           if (done) return;
-          if (settled === list.length) finish();
+          if (settled === list.length) finish("all_settled");
         },
       );
     });
@@ -104,7 +132,7 @@ function settleByDeadline(entries, { deadlineMs = 3000, enough } = {}) {
      * this file exists to avoid. Nothing can have settled between the two
      * statements — `then` never runs synchronously — so `results` here is still
      * every fallback, which is what the caller's predicate expects. */
-    if (enoughNow()) finish();
+    if (enoughNow()) finish("enough");
   });
 }
 

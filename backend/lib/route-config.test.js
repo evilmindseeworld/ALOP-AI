@@ -76,8 +76,8 @@ test("council vision starts before its independent context reads", () => {
   // each other. The source test is the reachable seam because server.js exits
   // during import when deployment env is absent; it guards the critical-path
   // ordering without pretending to call Gemini or Supabase in a unit test.
-  const vision = SRC.indexOf("visionP = callGeminiVision");
-  const context = SRC.indexOf("Promise.all([readChatSummary");
+  const vision = SRC.indexOf("visionP = telemetry.measureContext('vision'");
+  const context = SRC.indexOf("const contextReads = Promise.all([");
   assert.ok(vision >= 0, "the vision request vanished");
   assert.ok(context >= 0, "the context reads vanished");
   assert.ok(vision < context, "vision is back behind the context round-trip");

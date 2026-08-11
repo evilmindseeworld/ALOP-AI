@@ -37,6 +37,8 @@
  */
 
 /** Every state a seat can be in, and the whole vocabulary the client renders. */
+const { childAbortController } = require("./abort");
+
 const SEAT_STATES = Object.freeze({
   THINKING: "thinking",
   ANSWERED: "answered",
@@ -79,8 +81,11 @@ const isUsableAnswer = (content) => {
 };
 
 async function runCouncil(members, messages, whipMs, quorum, tokenLimit, deps = {}) {
-  const { callModel, onSeat } = deps;
+  const { callModel, onSeat, onSeatTiming, onFinish, signal, now = Date.now } = deps;
   if (typeof callModel !== "function") throw new Error("runCouncil needs callModel");
+
+  const child = childAbortController(signal);
+  const councilSignal = child.signal;
 
   /**
    * A reporter that cannot take the council down with it.
@@ -104,30 +109,55 @@ async function runCouncil(members, messages, whipMs, quorum, tokenLimit, deps = 
   let settledCount = 0;
   let validCount = 0;
   let resolved = false;
+  const seatRecords = [];
 
   return new Promise((resolve) => {
-    const finish = () => {
+    let whipTimer = null;
+    const onParentAbort = () => finish("aborted");
+    const reportTiming = (record) => {
+      try {
+        onSeatTiming?.(record);
+      } catch {
+        /* telemetry is best effort, like the progress reporter */
+      }
+    };
+    const finish = (reason = "all_settled") => {
+      if (resolved) return;
       resolved = true;
-      clearTimeout(whipTimer);
+      if (whipTimer) clearTimeout(whipTimer);
+      if (signal) signal.removeEventListener("abort", onParentAbort);
+      child.controller.abort(reason);
+      for (const record of seatRecords) {
+        if (record.timingDone) continue;
+        record.timingDone = true;
+        reportTiming({ model: record.model, round: 1, durationMs: now() - record.startedAt, outcome: reason === "quorum" ? "quorum" : reason === "aborted" ? "aborted" : "timed_out" });
+      }
+      try {
+        onFinish?.({ reason, durationMs: seatRecords.length ? Math.max(...seatRecords.map((r) => now() - r.startedAt)) : 0 });
+      } catch {
+        /* the release and the answer do not depend on telemetry */
+      }
+      child.dispose();
       resolve(results);
     };
 
-    const whipTimer = setTimeout(() => {
-      if (!resolved) {
-        resolved = true;
-        resolve(results);
-      }
-    }, whipMs);
+    whipTimer = setTimeout(() => finish("whip"), whipMs);
 
     const checkDone = () => {
       if (resolved) return;
-      if (validCount >= quorum) return finish();
-      if (settledCount >= members.length) return finish();
+      if (validCount >= quorum) return finish("quorum");
+      if (settledCount >= members.length) return finish("all_settled");
     };
 
+    if (signal) signal.addEventListener("abort", onParentAbort, { once: true });
+    if (signal?.aborted) return finish("aborted");
+
     for (const { model, temperature } of members) {
+      const record = { model, startedAt: now(), timingDone: false };
+      seatRecords.push(record);
       report(model, SEAT_STATES.THINKING);
-      callModel(model, messages, temperature, whipMs, tokenLimit)
+      Promise.resolve()
+        .then(() => callModel(model, messages, temperature, whipMs, tokenLimit, councilSignal))
         .then((content) => {
           settledCount++;
           const trimmed = (content || "").trim();
@@ -146,11 +176,19 @@ async function runCouncil(members, messages, whipMs, quorum, tokenLimit, deps = 
             // choose it.
             report(model, SEAT_STATES.FAILED);
           }
+          if (!record.timingDone) {
+            record.timingDone = true;
+            reportTiming({ model, round: 1, durationMs: now() - record.startedAt, outcome: isSkip ? "skipped" : isUsableAnswer(trimmed) ? "answered" : "empty" });
+          }
           checkDone();
         })
         .catch(() => {
           settledCount++;
           report(model, SEAT_STATES.FAILED);
+          if (!record.timingDone) {
+            record.timingDone = true;
+            reportTiming({ model, round: 1, durationMs: now() - record.startedAt, outcome: councilSignal.aborted ? "aborted" : "failed" });
+          }
           checkDone();
         });
     }

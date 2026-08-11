@@ -47,6 +47,67 @@ test("resolves as soon as quorum is met, without waiting for the rest", async ()
   assert.ok(Date.now() - started < 1000, "waited for the slow seats after quorum was made");
 });
 
+test("quorum aborts model calls that were left outside the answer", async () => {
+  let slowAborted = false;
+  let release;
+  const timings = [];
+  const finish = [];
+  const results = await runCouncil(
+    [seat("a"), seat("b"), seat("c"), seat("slow")],
+    [],
+    5000,
+    3,
+    500,
+    {
+      callModel: (model, _messages, _temperature, _whip, _tokens, signal) => {
+        if (model === "slow") {
+          return new Promise((resolve, reject) => {
+            release = () => reject(Object.assign(new Error("aborted"), { name: "AbortError" }));
+            signal.addEventListener("abort", () => { slowAborted = true; release(); }, { once: true });
+          });
+        }
+        return new Promise((resolve) => setTimeout(() => resolve(`answer ${model}`), 5));
+      },
+      onSeatTiming: (row) => timings.push(row),
+      onFinish: (event) => finish.push(event),
+    },
+  );
+  assert.equal(results.length, 3);
+  assert.equal(slowAborted, true);
+  assert.equal(finish[0].reason, "quorum");
+  assert.equal(timings.length, 4);
+  assert.ok(timings.some((row) => row.model === "slow" && row.outcome === "quorum"));
+});
+
+test("the whip aborts a model call and reports its bounded duration", async () => {
+  let aborted = false;
+  const timings = [];
+  const results = await runCouncil([seat("never")], [], 20, 1, 500, {
+    callModel: (_model, _messages, _temperature, _whip, _tokens, signal) => new Promise((resolve, reject) => {
+      signal.addEventListener("abort", () => { aborted = true; reject(new Error("cancelled")); }, { once: true });
+    }),
+    onSeatTiming: (row) => timings.push(row),
+  });
+  assert.deepEqual(results, []);
+  assert.equal(aborted, true);
+  assert.equal(timings[0].outcome, "timed_out");
+  assert.ok(timings[0].durationMs < 200);
+});
+
+test("a disconnected parent aborts all seats without rejecting the runner", async () => {
+  const controller = new AbortController();
+  let aborted = false;
+  const pending = runCouncil([seat("never")], [], 5000, 1, 500, {
+    signal: controller.signal,
+    callModel: (_model, _messages, _temperature, _whip, _tokens, signal) => new Promise((resolve, reject) => {
+      signal.addEventListener("abort", () => { aborted = true; reject(new Error("client left")); }, { once: true });
+    }),
+  });
+  setTimeout(() => controller.abort(), 5);
+  assert.deepEqual(await pending, []);
+  assert.equal(aborted, true);
+});
+
 test("returns what it has when the whip fires", async () => {
   const results = await runCouncil([seat("fast"), seat("never")], [], 60, 2, 500, {
     callModel: scripted({

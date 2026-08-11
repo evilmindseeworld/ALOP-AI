@@ -60,6 +60,7 @@ const { parseToolRequests } = require("./tool-protocol");
 const { dedupeCalls } = require("./tool-dedupe");
 const { settleByDeadline } = require("./deadline");
 const { isUsableAnswer } = require("./council-run");
+const { childAbortController } = require("./abort");
 
 const DEFAULTS = {
   maxRounds: 4,
@@ -101,18 +102,33 @@ const renderResults = (executed) =>
  *        never run and contributes nothing at all.
  * @param {{execute: Function, list: Function}} opts.registry
  * @param {(event) => void} [opts.onEvent]     tool_start / tool_result, for SSE
+ * @param {(event) => void} [opts.onSeatTiming] per-seat model timing, best effort
+ * @param {AbortSignal} [opts.signal]           request cancellation
  * @param {() => number} [opts.now]            injectable clock, so budget tests
  *                                             do not have to actually wait 25s
  */
-async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, now = Date.now, ...limits } = {}) {
+async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, onSeatTiming = () => {}, signal, now = Date.now, ...limits } = {}) {
   const cfg = { ...DEFAULTS, ...limits };
   const startedAt = now();
+  const turn = childAbortController(signal);
+  const turnSignal = turn.signal;
+  let wallDeadlineReached = false;
+  const wallTimer = Number.isFinite(cfg.totalWallMs)
+    ? setTimeout(() => {
+        wallDeadlineReached = true;
+        turn.controller.abort(new DOMException(`Reached the ${cfg.totalWallMs}ms ceiling`, "TimeoutError"));
+      }, Math.max(0, cfg.totalWallMs))
+    : null;
+  wallTimer?.unref?.();
 
   const answers = new Map(); // member -> final text
   const transcript = []; // every executed call, for the synthesiser and the log
+  const seatTimings = [];
+  const toolRounds = [];
   let round = 0;
   let uniqueCallsUsed = 0;
   let truncated = null;
+  let stopReason = null;
 
   // Only the time actually spent inside registry.execute. See the note at the
   // top: measuring this from the top of the loop counted the council's own
@@ -122,7 +138,25 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
   const wallLeft = () => cfg.totalWallMs - (now() - startedAt);
   let active = [...(members || [])];
 
+  const setTruncated = (message, reason) => {
+    truncated = truncated || message;
+    stopReason = stopReason || reason;
+  };
+  const reportSeatTiming = (row) => {
+    try {
+      onSeatTiming(row);
+    } catch {
+      /* telemetry must never turn a model result into a failed turn */
+    }
+    seatTimings.push(row);
+  };
+
   while (active.length > 0 && round < cfg.maxRounds) {
+    if (turnSignal.aborted) {
+      if (wallDeadlineReached) setTruncated(`Reached the ${cfg.totalWallMs}ms ceiling for this turn.`, "wall");
+      else stopReason = stopReason || "aborted";
+      break;
+    }
     const isFinalRound = round + 1 === cfg.maxRounds;
 
     // CUMULATIVE QUORUM PREFLIGHT. Do this before constructing the entries
@@ -134,6 +168,7 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     const priorAnswers = [...answers.values()].filter(isUsableAnswer).length;
     if (isFinalRound && cfg.quorum > 0 && priorAnswers >= cfg.quorum) {
       active = [];
+      stopReason = "quorum";
       break;
     }
 
@@ -147,7 +182,7 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     const roundStartedAt = now();
     const roundDeadlineMs = Math.min(cfg.roundMs, cfg.totalWallMs - (roundStartedAt - startedAt));
     if (roundDeadlineMs < Math.min(cfg.roundMs, MIN_ROUND_MS)) {
-      truncated = truncated || `Reached the ${cfg.totalWallMs}ms ceiling for this turn.`;
+      setTruncated(`Reached the ${cfg.totalWallMs}ms ceiling for this turn.`, "wall");
       break;
     }
     round++;
@@ -156,20 +191,35 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     // dropped from the round rather than failing the turn: a council of seven
     // does not need all seven, and one gateway hiccup must not lose the answer.
     // A member that is merely SLOW is dropped the same way, at the round whip —
-    // `settleByDeadline` never rejects and ignores stragglers rather than
-    // cancelling them, so a late reply cannot become an unhandled rejection.
-    const { results: replies } = await settleByDeadline(
-      active.map((member) => ({
+    // `settleByDeadline` never rejects. It aborts the supplied work when the
+    // whip or quorum releases the round, and still observes every late reply,
+    // so cancellation cannot become an unhandled rejection.
+    const entries = active.map((member) => {
+      const memberStartedAt = now();
+      let timingReported = false;
+      const report = (outcome, durationMs = now() - memberStartedAt) => {
+        if (timingReported) return;
+        timingReported = true;
+        reportSeatTiming({ member, model: member, round, durationMs, outcome });
+      };
+      return {
         fallback: { member, calls: [], text: "", isFinal: false, timedOut: true },
-        promise: (async () => {
+        promise: (roundSignal) => (async () => {
           try {
-            const raw = await askMember(member, { round, toolResults: transcript, isFinalRound });
-            return { member, ...parseToolRequests(raw) };
+            const raw = await askMember(member, { round, toolResults: transcript, isFinalRound }, roundSignal);
+            const parsed = parseToolRequests(raw);
+            report(roundSignal.aborted ? "aborted" : parsed.isFinal ? (isUsableAnswer(parsed.text) ? "answered" : "empty") : "tool_request");
+            return { member, ...parsed };
           } catch (err) {
+            report(roundSignal.aborted ? "aborted" : "failed");
             return { member, calls: [], text: "", isFinal: true, error: err.message };
           }
         })(),
-      })),
+        cancel: (endedBy) => report(endedBy === "enough" ? "quorum" : endedBy === "aborted" ? "aborted" : "timed_out"),
+      };
+    });
+    const { results: replies } = await settleByDeadline(
+      entries,
       {
         // Never longer than what is left of the whole loop: a round that
         // outlives its own hard stop is the hang the hard stop exists to
@@ -178,6 +228,7 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
         // that duration, so do not grant it twice when the helper starts its
         // own timer.
         deadlineMs: Math.max(0, roundDeadlineMs - (now() - roundStartedAt)),
+        signal: turnSignal,
         /* QUORUM RELEASE, the council's own trade applied to the round.
          *
          * A round costs the SLOWEST member even after the whip caps it, and the
@@ -199,6 +250,12 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
       },
     );
 
+    if (turnSignal.aborted) {
+      if (wallDeadlineReached) setTruncated(`Reached the ${cfg.totalWallMs}ms ceiling for this turn.`, "wall");
+      else stopReason = stopReason || "aborted";
+      break;
+    }
+
     for (const reply of replies) {
       if (reply.isFinal && reply.text) answers.set(reply.member, reply.text);
     }
@@ -214,11 +271,12 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
       // Name the whip that actually fired. When the wall clamped the round, the
       // members were not slow against the round they were given — reporting
       // cfg.roundMs there sends whoever reads the log looking at the wrong knob.
-      truncated =
-        truncated ||
-        (roundDeadlineMs < cfg.roundMs
+      setTruncated(
+        roundDeadlineMs < cfg.roundMs
           ? `Reached the ${cfg.totalWallMs}ms ceiling for this turn.`
-          : `${lateCount} member(s) did not reply within the ${cfg.roundMs}ms round.`);
+          : `${lateCount} member(s) did not reply within the ${cfg.roundMs}ms round.`,
+        roundDeadlineMs < cfg.roundMs ? "wall" : "round_whip",
+      );
     }
 
     // A member that gave a final answer is done. One that errored, or missed
@@ -231,21 +289,21 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     // The last round is for answering. Any call proposed there cannot be
     // executed and then read, so the loop stops instead of pretending.
     if (isFinalRound) {
-      truncated = truncated || `Stopped after ${cfg.maxRounds} rounds; ${active.length} member(s) still wanted to research.`;
+      setTruncated(`Stopped after ${cfg.maxRounds} rounds; ${active.length} member(s) still wanted to research.`, "max_rounds");
       break;
     }
 
     const remaining = cfg.maxUniqueCalls - uniqueCallsUsed;
     if (remaining <= 0) {
-      truncated = `Reached the ${cfg.maxUniqueCalls}-call ceiling for this turn.`;
+      setTruncated(`Reached the ${cfg.maxUniqueCalls}-call ceiling for this turn.`, "unique_calls");
       break;
     }
     if (budgetLeft() <= 0) {
-      truncated = `Reached the ${cfg.totalToolMs}ms tool budget for this turn.`;
+      setTruncated(`Reached the ${cfg.totalToolMs}ms tool budget for this turn.`, "tool_budget");
       break;
     }
     if (wallLeft() <= 0) {
-      truncated = `Reached the ${cfg.totalWallMs}ms ceiling for this turn.`;
+      setTruncated(`Reached the ${cfg.totalWallMs}ms ceiling for this turn.`, "wall");
       break;
     }
 
@@ -254,7 +312,7 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     // on the raw arguments, exactly as before.
     const { unique, dropped } = dedupeCalls(stillAsking, remaining, registry.normalize);
     if (unique.length === 0) break;
-    if (dropped > 0) truncated = `Dropped ${dropped} call(s) at the ${cfg.maxUniqueCalls}-call ceiling.`;
+    if (dropped > 0) setTruncated(`Dropped ${dropped} call(s) at the ${cfg.maxUniqueCalls}-call ceiling.`, "unique_calls");
     uniqueCallsUsed += unique.length;
 
     // Executed in parallel, once each, with the per-call ceiling additionally
@@ -267,30 +325,43 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     // line exists to prevent. Too little left to be worth a call is a stop.
     const perCall = Math.min(cfg.perCallMs, budgetLeft(), wallLeft());
     if (perCall < 250) {
-      truncated =
+      setTruncated(
         budgetLeft() <= wallLeft()
           ? `Reached the ${cfg.totalToolMs}ms tool budget for this turn.`
-          : `Reached the ${cfg.totalWallMs}ms ceiling for this turn.`;
+          : `Reached the ${cfg.totalWallMs}ms ceiling for this turn.`,
+        budgetLeft() <= wallLeft() ? "tool_budget" : "wall",
+      );
       break;
     }
     const toolsStartedAt = now();
-    const executed = await Promise.all(
-      unique.map(async (call) => {
-        onEvent({ type: "tool_start", round, name: call.name, summary: describe(call) });
-        const result = await registry.execute(call, { timeoutMs: perCall });
-        onEvent({ type: "tool_result", round, name: call.name, ok: result.ok, summary: result.summary });
-        return { call, result };
-      }),
-    );
+    let executed;
+    try {
+      executed = await Promise.all(
+        unique.map(async (call) => {
+          onEvent({ type: "tool_start", round, name: call.name, summary: describe(call) });
+          const result = await registry.execute(call, { timeoutMs: perCall, signal: turnSignal });
+          onEvent({ type: "tool_result", round, name: call.name, ok: result.ok, summary: result.summary });
+          return { call, result };
+        }),
+      );
+    } finally {
+      toolRounds.push({ round, durationMs: now() - toolsStartedAt, calls: unique.length, aborted: turnSignal.aborted });
+    }
     // The calls ran in parallel, so the round costs the SLOWEST of them, not
     // their sum — charging the budget the sum would bill eight parallel 2s
     // searches as sixteen seconds of a twenty-five second budget.
     toolMsUsed += now() - toolsStartedAt;
 
+    if (turnSignal.aborted) {
+      if (wallDeadlineReached) setTruncated(`Reached the ${cfg.totalWallMs}ms ceiling for this turn.`, "wall");
+      else stopReason = stopReason || "aborted";
+      break;
+    }
+
     transcript.push(...executed);
 
     if (budgetLeft() <= 0 && round < cfg.maxRounds) {
-      truncated = truncated || `Reached the ${cfg.totalToolMs}ms tool budget for this turn.`;
+      setTruncated(`Reached the ${cfg.totalToolMs}ms tool budget for this turn.`, "tool_budget");
       break;
     }
   }
@@ -298,10 +369,12 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
   // Members still mid-research when a ceiling hit have no final answer. Their
   // absence is the truncation, and it is reported rather than papered over.
   if (active.length > 0 && !truncated) {
-    truncated = `Stopped after ${round} round(s) with ${active.length} member(s) still researching.`;
+    setTruncated(`Stopped after ${round} round(s) with ${active.length} member(s) still researching.`, "unfinished");
   }
 
-  return {
+  if (turnSignal.aborted && !stopReason) stopReason = wallDeadlineReached ? "wall" : "aborted";
+  const wasAborted = Boolean(signal?.aborted) || (turnSignal.aborted && !wallDeadlineReached);
+  const result = {
     answers: Object.fromEntries(answers),
     rounds: round,
     uniqueCallsUsed,
@@ -312,7 +385,15 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     research: transcript.length ? renderResults(transcript) : "",
     /** null when the loop ended because everyone was done. A string otherwise. */
     truncated,
+    stopReason,
+    aborted: wasAborted,
+    seatTimings,
+    toolRounds,
   };
+  if (wallTimer) clearTimeout(wallTimer);
+  turn.controller.abort("loop-finished");
+  turn.dispose();
+  return result;
 }
 
 /** A short human-readable form of a call, for the SSE trail and the log. */

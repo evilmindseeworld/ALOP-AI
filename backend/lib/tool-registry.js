@@ -23,6 +23,7 @@
  */
 
 const { isCitable } = require("./link-check");
+const { childAbortController } = require("./abort");
 
 /** Result shapes are uniform so the loop never has to know which tool ran. */
 const ok = (summary, content) => ({ ok: true, summary, content });
@@ -95,8 +96,8 @@ function buildRegistry(deps = {}) {
       description:
         "Search the live web. Use for anything current, factual, or specific — prices, specs, releases, reviews. Returns titles, URLs and snippets.",
       schema: { query: { type: "string", required: true, maxLength: 300 } },
-      run: async ({ query }) => {
-        const results = await deps.search(query);
+      run: async ({ query }, { signal } = {}) => {
+        const results = await deps.search(query, { signal });
         const list = Array.isArray(results) ? results : results && results.results;
         if (!list || list.length === 0) return fail(`No results for "${query}".`);
 
@@ -111,7 +112,7 @@ function buildRegistry(deps = {}) {
         // Optional: without a checker the tool behaves exactly as before, so
         // this cannot become a hard dependency of search working at all.
         if (deps.checkLinks) {
-          const verdicts = await deps.checkLinks(top.map((r) => r.url).filter(Boolean));
+          const verdicts = await deps.checkLinks(top.map((r) => r.url).filter(Boolean), { signal });
           const kept = top.filter((r) => !r.url || isCitable((verdicts.get(r.url) || {}).verdict || "ok"));
           dropped = top.length - kept.length;
           // If EVERY result is dead, hand back the originals rather than
@@ -139,18 +140,18 @@ function buildRegistry(deps = {}) {
       description:
         "Fetch and read one web page as text. Use after web_search when a result's snippet is not enough. Takes one absolute http(s) URL.",
       schema: { url: { type: "string", required: true, maxLength: 2048 } },
-      run: async ({ url }) => {
+      run: async ({ url }, { signal } = {}) => {
         // Throws UrlBlocked for loopback, link-local, private ranges and the
         // cloud metadata address. The error text is safe to hand back: it says
         // the host was refused, and a model that learns "that host is refused"
         // stops asking, which is the behaviour we want.
         let safe;
         try {
-          safe = await deps.assertSafeUrl(url);
+          safe = await deps.assertSafeUrl(url, { signal });
         } catch (err) {
           return fail(`Refused to fetch that URL: ${err.message}`);
         }
-        const text = await deps.readUrl(safe.url.toString());
+        const text = await deps.readUrl(safe.url.toString(), { signal });
         if (!text) return fail(`Nothing readable at ${safe.url.hostname}.`);
         return ok(`Read ${safe.url.hostname}`, clamp(text));
       },
@@ -175,14 +176,14 @@ function buildRegistry(deps = {}) {
       description:
         "Read a file the user attached to this conversation, by its id. Ids come from the ATTACHED FILES list in your prompt. Takes an id, never a filename and never a path.",
       schema: { id: { type: "string", required: true, maxLength: 64 } },
-      run: async ({ id }) => {
+      run: async ({ id }, { signal } = {}) => {
         // Shape-checked before it reaches the store, so a malformed id is a
         // clear message rather than a database error.
         if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
-          const known = (await deps.files.list()).map((f) => `${f.id} (${f.name})`).join(", ");
+          const known = (await deps.files.list({ signal })).map((f) => `${f.id} (${f.name})`).join(", ");
           return fail(`"${id}" is not a file id. Available: ${known || "none"}.`);
         }
-        const file = await deps.files.get(id);
+        const file = await deps.files.get(id, { signal });
         // Indistinguishable from "belongs to someone else" ON PURPOSE. The
         // store only ever returns files in this (user, chat), so a miss means
         // either it does not exist or it is not theirs — and saying which
@@ -221,7 +222,7 @@ function buildRegistry(deps = {}) {
         query: { type: "string", required: false, maxLength: 300, default: "" },
         params: { type: "string", required: false, maxLength: 500, default: "" },
       },
-      run: async ({ engine, query, params }) => {
+      run: async ({ engine, query, params }, { signal } = {}) => {
         let parsed = {};
         if (params) {
           try {
@@ -234,7 +235,7 @@ function buildRegistry(deps = {}) {
             parsed = {};
           }
         }
-        const res = await deps.searchEngine({ engine, query, params: parsed });
+        const res = await deps.searchEngine({ engine, query, params: parsed, signal });
         if (!res || !res.ok) return fail((res && res.error) || `${engine} returned nothing.`);
         return ok(`${res.rows.length} result(s) from ${res.engine}`, clamp(res.text));
       },
@@ -277,7 +278,7 @@ function buildRegistry(deps = {}) {
      * result, not a failed turn. A single bad page must not take down a council
      * answer that has six other sources.
      */
-    execute: async (call, { timeoutMs = 8000 } = {}) => {
+    execute: async (call, { timeoutMs = 8000, signal } = {}) => {
       const tool = byName.get(call && call.name);
       if (!tool) {
         // Naming what DOES exist turns a wasted round into a corrected one.
@@ -288,16 +289,38 @@ function buildRegistry(deps = {}) {
       const checked = validateArgs(tool, call.args);
       if (!checked.valid) return fail(checked.error);
 
-      try {
-        // The per-call ceiling is enforced here rather than inside each
-        // executor, so a new tool cannot forget it.
-        return await Promise.race([
-          tool.run(checked.args),
-          new Promise((resolve) => setTimeout(() => resolve(fail(`${tool.name} timed out after ${timeoutMs}ms.`)), timeoutMs).unref?.()),
-        ]);
-      } catch (err) {
-        return fail(`${tool.name} failed: ${err.message}`);
-      }
+      if (signal?.aborted) return fail(`${tool.name} cancelled.`);
+
+      const child = childAbortController(signal);
+      let timer = null;
+      let settled = false;
+      let resolveResult;
+      const result = new Promise((resolve) => {
+        resolveResult = resolve;
+      });
+      const finish = (value) => {
+        if (settled) return;
+        settled = true;
+        if (timer) clearTimeout(timer);
+        if (signal) signal.removeEventListener("abort", onParentAbort);
+        child.controller.abort(value?.ok === false && /timed out|cancelled/.test(value.summary || "") ? value.summary : "tool-finished");
+        child.dispose();
+        resolveResult(value);
+      };
+      const onParentAbort = () => finish(fail(`${tool.name} cancelled.`));
+      if (signal) signal.addEventListener("abort", onParentAbort, { once: true });
+
+      // The per-call ceiling is enforced here rather than inside each
+      // executor, so a new tool cannot forget it. The timer aborts the
+      // executor BEFORE resolving the failed result; a provider with a fetch
+      // signal therefore stops doing work instead of merely being ignored.
+      timer = setTimeout(() => finish(fail(`${tool.name} timed out after ${timeoutMs}ms.`)), Math.max(0, timeoutMs));
+      timer.unref?.();
+      Promise.resolve()
+        .then(() => tool.run(checked.args, { signal: child.signal }))
+        .then((value) => finish(value || fail(`${tool.name} returned no result.`)), (err) => finish(fail(`${tool.name} failed: ${err.message}`)));
+
+      return result;
     },
   };
 }

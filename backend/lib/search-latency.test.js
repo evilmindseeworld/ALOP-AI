@@ -42,6 +42,15 @@ test("the warm read is only used for the page that would have been read anyway",
   assert.match(BLOCK, /warm\.url === url/);
 });
 
+test("a late Tavily reply cannot launch an orphan warm read", () => {
+  // The fan-out is allowed to return before Tavily. Once this search has
+  // finished, a provider callback must not start work with nobody left to use
+  // or cancel it.
+  assert.match(BLOCK, /let warmSearchFinished = false/);
+  assert.match(BLOCK, /if \(warmSearchFinished \|\| parentSignal\?\.aborted\) return null/);
+  assert.match(BLOCK, /warmSearchFinished = true/);
+});
+
 test("more than one page is read, and the reads share one deadline", () => {
   // One page was not enough: `sources[0]` on a shopping question is a category
   // listing whose prices are painted in by JavaScript, so the read returned

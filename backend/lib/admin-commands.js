@@ -75,6 +75,44 @@ const fmtDuration = (s) => {
   return [d && `${d}d`, h && `${h}h`, `${m}m`].filter(Boolean).join(" ");
 };
 
+const numericValues = (values) => (values || [])
+  .filter((value) => value !== null && value !== undefined && value !== "")
+  .map(Number)
+  .filter(Number.isFinite)
+  .sort((a, b) => a - b);
+
+const percentile = (values, p = 0.5) => {
+  const sorted = numericValues(values);
+  return sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] : null;
+};
+
+const readTotal = (reads) => {
+  const values = Object.values(reads || {});
+  return values.length ? values.reduce((n, read) => n + (Number(read?.ms) || 0), 0) : null;
+};
+
+const seatPercentile = (rows, p) => {
+  const byModel = {};
+  for (const row of rows || []) {
+    for (const seat of Array.isArray(row.seats) ? row.seats : []) {
+      if (!seat?.model || seat.ms === null || seat.ms === undefined) continue;
+      (byModel[seat.model] ||= []).push(seat.ms);
+    }
+  }
+  return Object.fromEntries(Object.entries(byModel).map(([model, values]) => [model, percentile(values, p)]));
+};
+
+const slowestSeatCounts = (rows) => {
+  const counts = {};
+  for (const row of rows || []) {
+    const seats = (Array.isArray(row.seats) ? row.seats : []).filter((seat) => seat?.model && Number.isFinite(Number(seat.ms)));
+    if (!seats.length) continue;
+    const slowest = seats.reduce((a, b) => Number(b.ms) > Number(a.ms) ? b : a);
+    counts[slowest.model] = (counts[slowest.model] || 0) + 1;
+  }
+  return counts;
+};
+
 /**
  * @param {object} deps
  * @param {object} deps.supabase   the service-role client
@@ -193,31 +231,38 @@ function buildCommands({ supabase, env = process.env, proc = process } = {}) {
     },
 
     /**
-     * Is the council's tool loop earning its place?
+     * Where does a council turn spend its wall clock?
      *
      * The numbers that answer that used to exist only in stdout, which meant
      * reading them required the Render dashboard on a large screen, and they
      * rolled off with log retention. They are audit rows now, so this
      * aggregates them.
      *
-     * THE NUMBER THAT MATTERS IS callsPerMember. The whole design rests on
-     * seven members' overlapping requests collapsing to a handful of unique
-     * calls — if it is near 1.0, every member is asking something different,
-     * the dedupe is saving nothing, and the prompt needs to push harder toward
-     * shared phrasing. Near 0.2 means it is working.
+     * For legacy tool rows the number that matters is callsPerMember. For new
+     * council_turn rows the phase and seat percentiles answer the p90 question
+     * directly: context, router, tools, synthesis, or one named straggler.
      */
     council: {
-      summary: "Tool-loop health over the last 200 turns — rounds, dedupe ratio, fallbacks",
+      summary: "Council timing over the last 200 turns — phases, seat tails, ceilings, fallbacks",
       run: async () => {
         const { data, error } = await supabase
           .from("audit_logs")
-          .select("metadata,created_at")
-          .eq("action", "council.tools")
+          .select("action,metadata,created_at")
+          .in("action", ["council.tools", "council"])
           .order("created_at", { ascending: false })
-          .limit(200);
+          // `council` also contains memory, greeting and search audit rows, so
+          // read a little more than the report needs before filtering those
+          // branches out below.
+          .limit(500);
         if (error) return { error: error.message };
 
-        const rows = (data || []).map((r) => r.metadata || {});
+        // `council` is also used by the fast memory/greeting/search branches.
+        // Only the structured turn rows belong in this report; old
+        // `council.tools` rows remain useful while the new shape rolls out.
+        const turnRows = (data || [])
+          .filter((r) => r.action === "council.tools" || r.metadata?.telemetry === "council_turn")
+          .slice(0, 200);
+        const rows = turnRows.map((r) => r.metadata || {});
         if (!rows.length) {
           return {
             turns: 0,
@@ -232,20 +277,34 @@ function buildCommands({ supabase, env = process.env, proc = process } = {}) {
         for (const r of rows) for (const [k, v] of Object.entries(r.tools || {})) tools[k] = (tools[k] || 0) + v;
 
         const fellBack = rows.filter((r) => r.fellBack).length;
-        const truncated = rows.filter((r) => r.truncated).length;
+        const truncated = rows.filter((r) => r.truncated || r.ceiling?.hit).length;
 
         // How long the user waited before the first character appeared. The
         // median matters more than the mean here: one cold start at 22s drags
         // an average somewhere no real request ever was.
-        const waits = rows.map((r) => Number(r.msToFirstByte)).filter(Number.isFinite).sort((a, b) => a - b);
-        const pct = (p) => (waits.length ? waits[Math.min(waits.length - 1, Math.floor(waits.length * p))] : null);
+        const waits = numericValues(rows.map((r) => r.msToFirstByte));
+        const pct = (p) => percentile(waits, p);
 
         return {
           turns: rows.length,
-          since: data[data.length - 1].created_at,
+          since: turnRows[turnRows.length - 1]?.created_at || null,
           msToFirstByteMedian: pct(0.5),
           msToFirstByteP90: pct(0.9),
           msToFirstByteWorst: waits.length ? waits[waits.length - 1] : null,
+          turnMsMedian: percentile(rows.map((r) => r.turnMs)),
+          turnMsP90: percentile(rows.map((r) => r.turnMs), 0.9),
+          contextMsMedian: percentile(rows.map((r) => r.contextMs)),
+          contextMsP90: percentile(rows.map((r) => r.contextMs), 0.9),
+          routerMsMedian: percentile(rows.map((r) => readTotal(r.routerReads))),
+          routerMsP90: percentile(rows.map((r) => readTotal(r.routerReads)), 0.9),
+          synthesisMsMedian: percentile(rows.map((r) => r.synthesisMs)),
+          synthesisMsP90: percentile(rows.map((r) => r.synthesisMs), 0.9),
+          toolMsMedian: percentile(rows.map((r) => r.toolMs)),
+          toolMsP90: percentile(rows.map((r) => r.toolMs), 0.9),
+          seatMsP90ByModel: seatPercentile(rows, 0.9),
+          slowestSeatByModel: slowestSeatCounts(rows),
+          postCouncilFallbacks: rows.filter((r) => r.fallbackCouncil?.used).length,
+          postCouncilFallbackMsP90: percentile(rows.map((r) => r.fallbackCouncil?.durationMs), 0.9),
           avgRounds: +(sum((r) => r.rounds) / rows.length).toFixed(2),
           avgUniqueCalls: +(uniqueCalls / rows.length).toFixed(2),
           // < 0.4 is the dedupe working. Near 1.0 means it is not.

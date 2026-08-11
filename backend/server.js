@@ -1420,7 +1420,8 @@ const auditLog = async (userId, action, metadata = {}, ip = null) => {
   }
   if (++auditWritesSinceSweep >= AUDIT_SWEEP_EVERY) {
     auditWritesSinceSweep = 0;
-    Promise.resolve(supabase.rpc('sweep_audit_logs', { retain_days: AUDIT_RETAIN_DAYS }))
+    Promise.resolve()
+      .then(() => supabase.rpc('sweep_audit_logs', { retain_days: AUDIT_RETAIN_DAYS }))
       .then((r) => { if (r?.data) console.log(`[RETENTION] swept ${r.data} audit rows older than ${AUDIT_RETAIN_DAYS}d`); })
       .catch(() => {});
   }

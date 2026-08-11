@@ -9,13 +9,14 @@ const { createSearchCache, hashQuery, comprehensiveSearchKey } = require("./sear
  * process would have left it — which is the whole scenario this cache exists
  * for and the one a per-process Map cannot reach.
  */
-const fakeDb = ({ rows = {}, readDelay = 0, readError = null, writeRejects = false, throwOnFrom = false } = {}) => {
+const fakeDb = ({ rows = {}, readDelay = 0, readError = null, writeRejects = false, throwOnFrom = false, sweepThrows = false } = {}) => {
   const calls = { reads: 0, writes: 0, sweeps: 0, wrote: [] };
   const db = {
     calls,
     rows,
     rpc: (name) => {
       if (name === "sweep_search_cache") calls.sweeps++;
+      if (sweepThrows) throw new Error("client not configured");
       return Promise.resolve({ data: 0, error: null });
     },
     from: () => {
@@ -254,6 +255,13 @@ test("the sweep runs periodically, not on every write", () => {
   const cache = createSearchCache({ supabase: db, sweepEveryWrites: 5, log: silent });
   for (let i = 0; i < 12; i++) cache.set(`q${i}`, i);
   assert.equal(db.calls.sweeps, 2, "12 writes at every-5 should sweep twice");
+});
+
+test("a sweep that throws synchronously does not fail the cache write", async () => {
+  const cache = createSearchCache({ supabase: fakeDb({ sweepThrows: true }), sweepEveryWrites: 1, log: silent });
+  assert.doesNotThrow(() => cache.set("q", { a: 1 }));
+  assert.deepEqual(await cache.get("q"), { a: 1 });
+  assert.equal(cache.stats().errors, 1);
 });
 
 test("A BROKEN TABLE IS REPORTED ONCE, NOT ON EVERY SEARCH", async () => {

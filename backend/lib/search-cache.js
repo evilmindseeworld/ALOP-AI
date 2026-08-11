@@ -111,7 +111,11 @@ function createSearchCache({ supabase, log = console, ...opts } = {}) {
     if (!supabase) return;
     if (++writesSinceSweep < cfg.sweepEveryWrites) return;
     writesSinceSweep = 0;
-    Promise.resolve(supabase.rpc("sweep_search_cache")).catch(() => {});
+    try {
+      Promise.resolve(supabase.rpc("sweep_search_cache")).catch(() => {});
+    } catch (e) {
+      warnOnce("sweep threw", e.message);
+    }
   };
 
   return {

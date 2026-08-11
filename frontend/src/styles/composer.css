@@ -244,9 +244,16 @@
  * behind the town on the slow spring — three different answers to one event
  * rather than three copies of it.
  *
- * 2px against a 24px disc is a tenth of it — a move you notice at the edge of
+ * 2px against a 21px disc is a tenth of it — a move you notice at the edge of
  * vision without ever catching it happening, which is the only kind of motion
- * that survives being this quiet. */
+ * that survives being this quiet.
+ *
+ * THIS 2px IS A CEILING ON HOW HIGH THE SUN CAN BE DRAWN, which is not obvious
+ * from either file alone. The strip is `overflow: hidden`, so the lift clips
+ * the crown off the disc if the circle's top is nearer the top of the viewBox
+ * than 2px — about 1.73 units at 44px per 38. SakuraFrame.jsx's sun sits at
+ * y=2 for that reason and says so. Raise this value and you move that limit
+ * with it. */
 .input-wrapper:focus-within .composer-sun {
   transform: translateY(-2px);
 }

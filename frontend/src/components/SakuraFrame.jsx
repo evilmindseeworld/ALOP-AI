@@ -161,7 +161,7 @@ export const Keystone = ({ className = "sakura-keystone" }) => (
  * decoration.css reached about the rosette and the prose beneath it.
  */
 /**
- * THE TOWN AT DAWN, along the foot of the prompt bar.
+ * THE TOWN UNDER A HIGH SUN, along the foot of the prompt bar.
  *
  * What was here was a branch hung ABOVE the card's top edge — half of it over
  * the transcript, at fifteen percent alpha, reading as something behind the bar
@@ -176,10 +176,23 @@ export const Keystone = ({ className = "sakura-keystone" }) => (
  * it owns, which is the whole cost of it.
  *
  * THE SUN IS THE SUBJECT. It is drawn in --ornament-seal, the vermilion the
- * hanko uses, at the strong step and behind the roofline so the town occludes
- * its lower half — a disc sitting ON a skyline is a logo, a disc rising BEHIND
- * one is a time of day. It is the only round thing in a strip of straight
- * edges, which is what makes it read at 18px.
+ * hanko uses, at the strong step. It is the only round thing in a strip of
+ * straight edges, which is what makes it read at 18px.
+ *
+ * IT IS UP, NOT RISING, and that is the owner's correction (2026-08-11): "the
+ * sun is high in the sky." It used to sit low and to the right with the
+ * roofline cutting its lower half, on the argument that a disc rising BEHIND a
+ * skyline is a time of day where a disc sitting ON one is a logo. That
+ * argument was for a DAWN, and it is the wrong drawing — a high sun is clear
+ * of the horizon, which is the whole difference between morning and midday.
+ * So it no longer touches the town at all, and the occlusion it was drawn to
+ * get is gone with it.
+ *
+ * That leaves the "logo" risk the old note was guarding against, and the guard
+ * is now the composition rather than the overlap: the disc is small, it is off
+ * to the left rather than centred over anything, and the cloud bars sit at
+ * different heights either side of it. A mark is a logo when it is centred and
+ * alone. This one is neither.
  *
  * The town is one silhouette, not an illustration: flat blocks, three gables
  * and a two-tier pagoda, all one fill at one alpha. The overlaps are deliberate
@@ -199,11 +212,17 @@ export const ComposerSkyline = memo(() => (
         sky at all: the viewBox ended at the tallest roof, so the sun could not
         be drawn above the roofline without being clipped by the top of its own
         box, and it sat half-buried in the town. Then four units of sky, which
-        got the sun clear of the roofs but left it hugging them. Sixteen is what
-        it takes for a sun to be UP: the disc now sits a full radius clear of
-        the tallest gable near it, with room either side for the cloud bars. */}
+        got the sun clear of the roofs but left it hugging them. Sixteen units
+        is what it takes for a sun to be genuinely UP with room either side for
+        the cloud bars.
+        THE SKY IS NOW THE CONSTRAINT ON THE SUN'S HEIGHT, so read this before
+        raising it further: the disc cannot go above y=0, and the strip's pixel
+        height is tied to this viewBox — `.composer-skyline` is 44px for 38
+        units, and composer.css's bottom padding is derived from that height and
+        must move with it. Buying more sky costs composer height, which costs
+        transcript. It was not worth it for the two units left in hand. */}
     <svg viewBox="0 0 1040 38" preserveAspectRatio="xMidYMax meet" aria-hidden="true" focusable="false">
-      {/* WHY x=170 AND NOT A FRACTION OF THE DRAWING.
+      {/* WHY A FIXED x AND NOT A FRACTION OF THE DRAWING.
           The sun used to sit at 330 of 1040 with the strip CENTRING the
           drawing, which meant its distance from the card's left edge was a
           function of the card's width — at a phone width the visible window is
@@ -211,8 +230,27 @@ export const ComposerSkyline = memo(() => (
           entirely. The strip now aligns the drawing to its left edge (see
           composer.css), so this coordinate is a fixed offset from the card's
           left edge at every viewport. The clip that makes this a horizon rather
-          than a motif moved to the right end, where the town runs off. */}
-      <circle className="composer-sun" cx="170" cy="12" r="10" />
+          than a motif moved to the right end, where the town runs off.
+
+          96 FROM 170, and r 9 from 10 with the centre up a unit to 11.
+
+          THE RADIUS IS WHAT BUYS THE ALTITUDE, and the reason is a clip, so do
+          not "fix" this by raising cy. `.composer-skyline` is `overflow:
+          hidden` and `:focus-within` lifts this disc 2px (composer.css). At
+          44px per 38 units that is 1.73 units, so the top of the sun can never
+          sit above y≈1.73 or it loses a chord off its crown every time the
+          composer takes focus. The old disc was already at that ceiling: top
+          y=2 at cy=12, r=10. Its centre could not rise at all.
+
+          So the height came out of the radius instead. Same top edge, one unit
+          less disc, and the bottom rises four units — which is the measurement
+          that matters, because "high in the sky" is about the gap to the
+          horizon, not the distance to the top of a box nobody can see. That gap
+          was ZERO: the old sun's lowest point was y=22 and the gable beside it
+          peaked at exactly 22, which is why it read as sitting on the roofs.
+          It is now 11 units of open sky — the town under x 80-136 is at y 31-33
+          absolute and this disc bottoms out at 20. */}
+      <circle className="composer-sun" cx="96" cy="11" r="9" />
       {/* KASUMI BARS, which is the only cloud this drawing can carry.
           A rendered cloud is a soft mass and everything else in the strip is a
           hard edge — the two do not read as one hand. Japanese screens solve it
@@ -222,8 +260,14 @@ export const ComposerSkyline = memo(() => (
           would compete with the one thing in the strip that is meant to be
           looked at. None of them touches the disc — a bar across the sun is a
           handsome drawing at poster size and a smudge at 44px. */}
+      {/* REDISTRIBUTED WHEN THE SUN MOVED LEFT. The long bar was at x=92, which
+          the disc now occupies — it ran straight across it. The pair that used
+          to sit left of the sun would have been behind it too.
+          Checked against the disc rather than eyeballed: the nearest is the low
+          bar ending at x=84, whose closest corner is 12.2 units from the centre
+          against a radius of 9. Everything else starts at x=130 or beyond. */}
       <g className="composer-clouds">
-        <rect x="92" y="3.4" width="30" height="4" rx="2" />
+        <rect x="130" y="3.4" width="30" height="4" rx="2" />
         <rect x="66" y="11" width="18" height="3.4" rx="1.7" />
         <rect x="202" y="5" width="22" height="3.6" rx="1.8" />
         <rect x="210" y="12.4" width="34" height="4" rx="2" />

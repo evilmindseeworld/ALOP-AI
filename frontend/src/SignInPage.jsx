@@ -92,8 +92,25 @@ export default function SignInPage() {
     return () => clearTimeout(t);
   }, [isLoaded]);
 
-  if (!isLoaded) {
-    if (!timedOut) return null;
+  /* THE PAGE NO LONGER WAITS ON CLERK TO RENDER AT ALL.
+   *
+   * `if (!isLoaded) return null` was here, so the whole screen was blank until
+   * a third-party bundle had downloaded, parsed and initialised. Everything on
+   * it except the card is ours and needs no network — the wordmark, the
+   * headline, the roster, the lattice, the crescents — and all of it was being
+   * withheld for as long as that took, which on a cold cache on a phone is
+   * seconds of nothing on the first screen of the product.
+   *
+   * Now only the CARD waits, in the slot below. It is the cheapest latency win
+   * on this page and it removes no information: what appears immediately is
+   * the same shell that stays, and the form lands in a slot that was already
+   * its size, so nothing reflows when Clerk arrives.
+   *
+   * The OUTAGE screen is deliberately NOT treated this way. Once the ten
+   * seconds are up the message is the only thing that matters, and decoration
+   * around an error reads as an app that has not noticed it is broken — see
+   * the note in signin.css. */
+  if (!isLoaded && timedOut) {
     return (
       <div className="signin-root">
         <div className="signin-down" role="alert">
@@ -243,10 +260,24 @@ export default function SignInPage() {
                 stating the minimum age here rather than only inside the linked
                 Terms is that registration is the moment it has to be seen. */}
             <div className="signin-card-inner">
-              {signUp ? (
-                <SignUp signInUrl="/" fallbackRedirectUrl="/" />
+              {/* The one part of this page that genuinely has to wait. The
+                  placeholder holds the card's height so the form does not
+                  push the plan line and the legal text down when it arrives —
+                  a slot that resizes on load is the layout shift the early
+                  render would otherwise have introduced.
+
+                  `aria-hidden`, and no "Loading…" text: a screen reader user
+                  is served by the form's own labels a moment later, and an
+                  announcement for a placeholder that is about to be replaced
+                  is noise. Nothing here is interactive yet. */}
+              {isLoaded ? (
+                signUp ? (
+                  <SignUp signInUrl="/" fallbackRedirectUrl="/" />
+                ) : (
+                  <SignIn signUpUrl="/sign-up" fallbackRedirectUrl="/" signUpFallbackRedirectUrl="/" />
+                )
               ) : (
-                <SignIn signUpUrl="/sign-up" fallbackRedirectUrl="/" signUpFallbackRedirectUrl="/" />
+                <div className="signin-card-loading" aria-hidden="true" />
               )}
             </div>
             <p className="signin-plan">

@@ -253,6 +253,31 @@
  * screen every new user sees. It is markup with no styles, which is honest —
  * not a rule that pretends to do something. */
 
+/* THE SLOT'S PLACEHOLDER, while Clerk's bundle is still on its way.
+ *
+ * The page used to render nothing at all until Clerk loaded; it now renders
+ * everything except the form. This holds the height the form will take, so the
+ * plan line and the legal paragraph below it do not get pushed down when the
+ * card arrives — an early paint that then jumps is worse than the blank screen
+ * it replaced, because the reader has already started reading.
+ *
+ * 342px is measured against the signed-out `<SignIn>` at its default size: the
+ * Google button, the divider, one field, the submit and the footer link. It is
+ * deliberately a plain reserved box and NOT a shimmering skeleton of a form
+ * that does not exist yet — a fake sign-in card is a worse promise than an
+ * empty one, and the shimmer would be the only moving thing on the screen
+ * competing with the crescents. */
+.signin-card-loading {
+  min-height: 342px;
+}
+
+@media (max-width: 480px) {
+  /* Clerk's card is shorter here — the Google button and the field stack
+   * tighter — so reserving the desktop height would leave a visible gap under
+   * the form once it lands. */
+  .signin-card-loading { min-height: 306px; }
+}
+
 
 .signin-dot {
   color: color-mix(in srgb, var(--text) 10%, transparent);

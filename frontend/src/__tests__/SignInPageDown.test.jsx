@@ -27,9 +27,28 @@ beforeEach(async () => {
 afterEach(() => vi.useRealTimers());
 
 describe("SignInPage when Clerk never loads", () => {
-  it("shows nothing at first, because a slow load is not an outage", () => {
-    const { container } = render(<SignInPage />);
-    expect(container).toBeEmptyDOMElement();
+  /* This asserted `toBeEmptyDOMElement()` — the page rendered NOTHING until
+   * Clerk had loaded, and the test was pinning that in place.
+   *
+   * The behaviour changed deliberately: everything on this screen except the
+   * form is ours and needs no network, so withholding the wordmark, the
+   * headline and the roster until a third-party bundle initialises was seconds
+   * of blank first screen for nothing. The contract the test defends is the
+   * one that actually matters, and it is unchanged: a slow load is NOT an
+   * outage, so no alert appears and the form is not faked. */
+  it("renders the page but not the form, because a slow load is not an outage", () => {
+    render(<SignInPage />);
+
+    // Ours, and up immediately.
+    expect(screen.getByText("Ask once. Several models answer.")).toBeInTheDocument();
+    expect(screen.getByText("One reply, reconciled.")).toBeInTheDocument();
+
+    // Clerk's, and correctly absent.
+    expect(screen.queryByTestId("clerk-sign-in")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("clerk-sign-up")).not.toBeInTheDocument();
+
+    // A wait is not a failure: the outage screen must not appear yet.
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("stops rendering nothing once the wait is unreasonable", () => {

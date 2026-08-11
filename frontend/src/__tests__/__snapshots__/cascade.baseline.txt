@@ -4,7 +4,7 @@
 # here means a refactor changed behaviour. Do not regenerate it to make a
 # test pass; fix the CSS.
 #
-# elements: 935   environments: 4   states: 6
+# elements: 936   environments: 4   states: 6
 
 === width=1400 ===
 
@@ -46093,7 +46093,49 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[931] p.signin-plan
+[931] div.signin-card-loading
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  min-height: 342px
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  padding-top: <padding: 0>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[932] p.signin-plan
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -46137,7 +46179,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[932] p.signin-legal
+[933] p.signin-legal
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -46185,7 +46227,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[933] a
+[934] a
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -46233,7 +46275,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[934] a
+[935] a
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -47166,6 +47208,10 @@
   - padding-bottom: <padding: 20px>
   - padding-left: <padding: 20px>
   - padding-top: <padding: 20px>
+
+[931] div.signin-card-loading
+  min-height: 306px
+  - min-height: 342px
 
 === width=1400 reduced-motion (changes vs width=1400) ===
 
@@ -57913,7 +57959,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[931] p.signin-plan
+[931] div.signin-card-loading
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -57924,7 +57970,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[932] p.signin-legal
+[932] p.signin-plan
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -57935,7 +57981,18 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[933] a
+[933] p.signin-legal
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[934] a
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -57947,7 +58004,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: color 0.15s>
 
-[934] a
+[935] a
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms

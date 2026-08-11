@@ -140,6 +140,28 @@
   --ornament-leaf: #79c6a2;
   --ornament-seal: #e2503c;
 
+  /* THE SILHOUETTE. Darker than every surface, in both themes, and that is the
+   * whole definition of it — a thing between you and the light.
+   *
+   * The prompt bar's town was drawn in --ornament-ink at the mid step. At 262px
+   * that read as a small pink drawing; run the full width of the card it read
+   * as a PINK BAND along the bottom of the composer, which is what it was. Ink
+   * is for line work — a branch, a rule, a caption's tail. A mass is not line
+   * work, and no alpha of a brand hue makes an 850px block of it stop being a
+   * band of that hue.
+   *
+   * So a silhouette is not the ink turned down. It is a different colour with a
+   * different job: the sun is the only saturated thing in that strip, the town
+   * is what the sun is behind, and the pair only works if the town is dark.
+   * Declared per theme because "darker than the surface" is a different value
+   * on near-black than it is on paper.
+   *
+   * Dark is --bg's value, and that is the idea rather than a coincidence: the
+   * town is cut out of the room the application is lit in. A blacker value read
+   * as a bar painted onto the composer, because maximum contrast against the
+   * card is exactly what distance does not look like. */
+  --ornament-silhouette: #0a0a0a;
+
   --ornament-a-strong: 0.40;
   --ornament-a-mid: 0.26;
   --ornament-a-faint: 0.15;
@@ -488,6 +510,15 @@
   --ornament-ink: #b31a54;
   --ornament-leaf: #3f7d5c;
   --ornament-seal: #b3241a;
+
+  /* A warm mid-dark rather than the ink, and NOT a near-black. See the block on
+   * :root: a silhouette is defined by being darker than what is behind it, and
+   * on paper that is a brown, not a rose. #2a1f1a was tried first and slammed —
+   * on a light surface, maximum contrast reads as a bar cut out of the card,
+   * where the same value on near-black reads as distance. This is roughly the
+   * wood accent's darkness, which is the register the rest of the light theme's
+   * shadows already sit in. */
+  --ornament-silhouette: #5a4a40;
 
   --ornament-a-strong: 0.55;
   --ornament-a-mid: 0.38;

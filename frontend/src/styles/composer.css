@@ -41,8 +41,8 @@
    * skyline's floor. The town stands inside the inner rule at the foot of the
    * card; without its own strip it would paint across the icon row, which is
    * the mistake the branch above the top edge was making in the other
-   * direction. 24px clears an 18px horizon plus the 4px rule inset. */
-  padding: var(--space-3) var(--space-3) var(--space-6);
+   * direction. 32px clears the 26px horizon plus the 4px rule inset. */
+  padding: var(--space-3) var(--space-3) var(--space-8);
   background: var(--surface-2);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-xl);
@@ -139,11 +139,15 @@
   left: 5px;
   right: 5px;
   bottom: 5px;
-  height: 18px;
+  /* 26px, not 18px. At 18 the tallest building was 15px and the sun 16px
+   * across — small enough that both were guessed at rather than seen, and the
+   * whole strip read as a texture along the bottom edge. The drawing has a
+   * subject in it; it has to be big enough to be that subject. */
+  height: 26px;
   display: flex;
   justify-content: center;
   align-items: flex-end;
-  /* THE CLIP IS THE POINT, not a safety net. The drawing is 851px — wider than
+  /* THE CLIP IS THE POINT, not a safety net. The drawing is 1229px — wider than
    * the widest this card ever gets — so the town runs off both ends at every
    * viewport and the strip decides how much of it you see. That is what makes
    * it a horizon rather than a motif placed in the middle of a bar. */
@@ -151,30 +155,42 @@
 }
 
 .composer-skyline svg {
-  height: 18px;
+  height: 26px;
   width: auto;
   flex-shrink: 0;
   display: block;
 }
 
-/* The opacity is on the GROUP. Every building here overlaps its neighbour, and
- * per-path alpha would draw a brighter seam down every shared edge. */
+/* SOLID, AND NOT PINK.
+ *
+ * This was --ornament-ink at the mid step, which is what the alpha ladder is
+ * for and was the wrong instrument. At 262px it read as a small pink drawing;
+ * once it ran the full width of the card it read as a pink BAND along the
+ * bottom of the composer, because that is what an 850px mass of brand hue is at
+ * any alpha. Ink is for line work. A silhouette is a mass.
+ *
+ * So it is --ornament-silhouette at full opacity: darker than the surface in
+ * both themes, no alpha at all. It also removes the seam problem that group
+ * opacity existed to solve — overlapping opaque shapes have no seams — and it
+ * is what lets the sun read, because a disc only glows against something dark.
+ *
+ * The second hard-edged fill in the app, after the band in tokens.css, and for
+ * the same reason: an edge the eye can land on. */
 .composer-town {
-  fill: var(--ornament-ink);
-  opacity: var(--ornament-a-mid);
-  transition: opacity var(--dur) var(--ease-out);
+  fill: var(--ornament-silhouette);
 }
 
-/* The one round thing in a strip of straight edges, and the only ornament on
- * this card besides the seal that is allowed the strong step. It is drawn
- * before the town in document order, so the roofline occludes its lower half
- * and it reads as rising rather than as sitting on top. */
+/* THE ONLY SATURATED THING IN THE STRIP, at full opacity like the hanko. It had
+ * the strong step and was losing to the town it was meant to rise behind — two
+ * marks at similar weight in similar hues merge into one shape at 20px. Now the
+ * town is dark and this is the one colour: the round thing among straight
+ * edges, and the only lit thing among dark ones.
+ *
+ * Drawn before the town in document order, so the roofline occludes its lower
+ * half and it reads as rising rather than as sitting on top. */
 .composer-sun {
   fill: var(--ornament-seal);
-  opacity: var(--ornament-a-strong);
-  transition:
-    opacity var(--dur) var(--ease-out),
-    transform var(--dur-slow) var(--ease-spring);
+  transition: transform var(--dur-slow) var(--ease-spring);
 }
 
 /* THE RIGHT END IS A SEAL NOW, NOT A SECOND BRANCH.
@@ -203,14 +219,12 @@
  * behind the town on the slow spring — three different answers to one event
  * rather than three copies of it.
  *
- * 2px on an 18px horizon is most of the disc's visible height, so this is a
- * large move at a small scale, which is the only kind of motion that survives
- * being this quiet. */
+ * 2px against a 24px disc is a tenth of it — a move you notice at the edge of
+ * vision without ever catching it happening, which is the only kind of motion
+ * that survives being this quiet. */
 .input-wrapper:focus-within .composer-sun {
   transform: translateY(-2px);
 }
-
-.input-wrapper:focus-within .composer-town { opacity: var(--ornament-a-strong); }
 
 /* The seal does not brighten — it has nowhere to go from alpha 1 — so it takes
  * the same 2px the branch does and nothing else. */

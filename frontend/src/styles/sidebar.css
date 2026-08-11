@@ -311,7 +311,12 @@
   background: var(--surface);
   font-size: var(--text-2xs);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  /* --tracking-eyebrow, not 0.08em. The token exists for exactly this — a
+   * tracked uppercase caption at 11px — and the literal here predates it, so
+   * the sidebar's captions were the one set in the app not cut to the same
+   * measure. It is also the reference's own register: the latin captions on
+   * those plates are tracked much wider than a heading would be. */
+  letter-spacing: var(--tracking-eyebrow);
   text-transform: uppercase;
   color: var(--text-subtle);
   user-select: none;
@@ -333,7 +338,12 @@
   content: "";
   flex: 1;
   height: 1px;
-  background: linear-gradient(to right, var(--border-strong), transparent);
+  /* ORNAMENT INK, NOT --border-strong. This line is the same object as the two
+   * rules on the composer and the sidebar's edge, and drawn off the border ramp
+   * it read as chrome that happened to land near them. The ladder is what makes
+   * a set of marks one drawing. */
+  background: linear-gradient(to right, var(--ornament-ink), transparent);
+  opacity: var(--ornament-a-faint);
 }
 
 /* No cursor: pointer here any more. The row is not the click target — the
@@ -434,7 +444,11 @@
   pointer-events: none;
   background: linear-gradient(to right, transparent, var(--surface-2) 24%);
   border-radius: var(--radius-md);
-  transition: opacity var(--dur-fast) ease;
+  /* Background is in here as well as opacity. The fade behind these buttons
+   * changes from surface-2 to surface-3 the moment the row is hovered — the
+   * same instant they fade in — and with only opacity transitioned the fade
+   * arrived smoothly over a gradient that had already snapped. */
+  transition: opacity var(--dur-fast) ease, background var(--dur-fast) ease;
 }
 
 /* Revealing the actions is ONE rule. `opacity` and `pointer-events` were

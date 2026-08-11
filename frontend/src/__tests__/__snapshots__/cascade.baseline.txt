@@ -5127,14 +5127,15 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
-  ::after/background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)
-  ::after/background-clip: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
-  ::after/background-image: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
-  ::after/background-size: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
+  ::after/background: linear-gradient(to right, #f08aa3, transparent)
+  ::after/background-clip: <background: linear-gradient(to right, #f08aa3, transparent)>
+  ::after/background-image: <background: linear-gradient(to right, #f08aa3, transparent)>
+  ::after/background-size: <background: linear-gradient(to right, #f08aa3, transparent)>
   ::after/content: ""
   ::after/flex: 1
   ::after/flex-shrink: <flex: 1>
   ::after/height: 1px
+  ::after/opacity: 0.15
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
   ::selection/background-image: <background: #f08aa3>
@@ -5151,7 +5152,7 @@
   font-size: 11px
   font-weight: 700
   gap: 8px
-  letter-spacing: 0.08em
+  letter-spacing: 0.18em
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -5354,8 +5355,8 @@
   scrollbar-width: thin
   top: 50%
   transform: translateY(-50%)
-  transition: opacity 120ms ease
-  transition-duration: <transition: opacity 120ms ease>
+  transition: opacity 120ms ease, background 120ms ease
+  transition-duration: <transition: opacity 120ms ease, background 120ms ease>
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -5856,14 +5857,15 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
-  ::after/background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)
-  ::after/background-clip: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
-  ::after/background-image: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
-  ::after/background-size: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
+  ::after/background: linear-gradient(to right, #f08aa3, transparent)
+  ::after/background-clip: <background: linear-gradient(to right, #f08aa3, transparent)>
+  ::after/background-image: <background: linear-gradient(to right, #f08aa3, transparent)>
+  ::after/background-size: <background: linear-gradient(to right, #f08aa3, transparent)>
   ::after/content: ""
   ::after/flex: 1
   ::after/flex-shrink: <flex: 1>
   ::after/height: 1px
+  ::after/opacity: 0.15
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
   ::selection/background-image: <background: #f08aa3>
@@ -5880,7 +5882,7 @@
   font-size: 11px
   font-weight: 700
   gap: 8px
-  letter-spacing: 0.08em
+  letter-spacing: 0.18em
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -6068,8 +6070,8 @@
   scrollbar-width: thin
   top: 50%
   transform: translateY(-50%)
-  transition: opacity 120ms ease
-  transition-duration: <transition: opacity 120ms ease>
+  transition: opacity 120ms ease, background 120ms ease
+  transition-duration: <transition: opacity 120ms ease, background 120ms ease>
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -6284,14 +6286,15 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
-  ::after/background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)
-  ::after/background-clip: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
-  ::after/background-image: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
-  ::after/background-size: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
+  ::after/background: linear-gradient(to right, #f08aa3, transparent)
+  ::after/background-clip: <background: linear-gradient(to right, #f08aa3, transparent)>
+  ::after/background-image: <background: linear-gradient(to right, #f08aa3, transparent)>
+  ::after/background-size: <background: linear-gradient(to right, #f08aa3, transparent)>
   ::after/content: ""
   ::after/flex: 1
   ::after/flex-shrink: <flex: 1>
   ::after/height: 1px
+  ::after/opacity: 0.15
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
   ::selection/background-image: <background: #f08aa3>
@@ -6308,7 +6311,7 @@
   font-size: 11px
   font-weight: 700
   gap: 8px
-  letter-spacing: 0.08em
+  letter-spacing: 0.18em
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -26545,14 +26548,15 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
-  ::after/background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)
-  ::after/background-clip: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
-  ::after/background-image: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
-  ::after/background-size: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
+  ::after/background: linear-gradient(to right, #b31a54, transparent)
+  ::after/background-clip: <background: linear-gradient(to right, #b31a54, transparent)>
+  ::after/background-image: <background: linear-gradient(to right, #b31a54, transparent)>
+  ::after/background-size: <background: linear-gradient(to right, #b31a54, transparent)>
   ::after/content: ""
   ::after/flex: 1
   ::after/flex-shrink: <flex: 1>
   ::after/height: 1px
+  ::after/opacity: 0.22
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>
   ::selection/background-image: <background: #b31a54>
@@ -26569,7 +26573,7 @@
   font-size: 11px
   font-weight: 700
   gap: 8px
-  letter-spacing: 0.08em
+  letter-spacing: 0.18em
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -26772,8 +26776,8 @@
   scrollbar-width: thin
   top: 50%
   transform: translateY(-50%)
-  transition: opacity 120ms ease
-  transition-duration: <transition: opacity 120ms ease>
+  transition: opacity 120ms ease, background 120ms ease
+  transition-duration: <transition: opacity 120ms ease, background 120ms ease>
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
@@ -27274,14 +27278,15 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
-  ::after/background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)
-  ::after/background-clip: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
-  ::after/background-image: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
-  ::after/background-size: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
+  ::after/background: linear-gradient(to right, #b31a54, transparent)
+  ::after/background-clip: <background: linear-gradient(to right, #b31a54, transparent)>
+  ::after/background-image: <background: linear-gradient(to right, #b31a54, transparent)>
+  ::after/background-size: <background: linear-gradient(to right, #b31a54, transparent)>
   ::after/content: ""
   ::after/flex: 1
   ::after/flex-shrink: <flex: 1>
   ::after/height: 1px
+  ::after/opacity: 0.22
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>
   ::selection/background-image: <background: #b31a54>
@@ -27298,7 +27303,7 @@
   font-size: 11px
   font-weight: 700
   gap: 8px
-  letter-spacing: 0.08em
+  letter-spacing: 0.18em
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -27486,8 +27491,8 @@
   scrollbar-width: thin
   top: 50%
   transform: translateY(-50%)
-  transition: opacity 120ms ease
-  transition-duration: <transition: opacity 120ms ease>
+  transition: opacity 120ms ease, background 120ms ease
+  transition-duration: <transition: opacity 120ms ease, background 120ms ease>
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
@@ -27702,14 +27707,15 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
-  ::after/background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)
-  ::after/background-clip: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
-  ::after/background-image: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
-  ::after/background-size: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
+  ::after/background: linear-gradient(to right, #b31a54, transparent)
+  ::after/background-clip: <background: linear-gradient(to right, #b31a54, transparent)>
+  ::after/background-image: <background: linear-gradient(to right, #b31a54, transparent)>
+  ::after/background-size: <background: linear-gradient(to right, #b31a54, transparent)>
   ::after/content: ""
   ::after/flex: 1
   ::after/flex-shrink: <flex: 1>
   ::after/height: 1px
+  ::after/opacity: 0.22
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>
   ::selection/background-image: <background: #b31a54>
@@ -27726,7 +27732,7 @@
   font-size: 11px
   font-weight: 700
   gap: 8px
-  letter-spacing: 0.08em
+  letter-spacing: 0.18em
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -48448,7 +48454,7 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - transition-duration: <transition: opacity 120ms ease>
+  - transition-duration: <transition: opacity 120ms ease, background 120ms ease>
 
 [107] button.chat-action.is-on
   ::after/animation-duration: 0.01ms
@@ -48608,7 +48614,7 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - transition-duration: <transition: opacity 120ms ease>
+  - transition-duration: <transition: opacity 120ms ease, background 120ms ease>
 
 [121] button.chat-action.is-on
   ::after/animation-duration: 0.01ms
@@ -53433,7 +53439,7 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - transition-duration: <transition: opacity 120ms ease>
+  - transition-duration: <transition: opacity 120ms ease, background 120ms ease>
 
 [540] button.chat-action.is-on
   ::after/animation-duration: 0.01ms
@@ -53593,7 +53599,7 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - transition-duration: <transition: opacity 120ms ease>
+  - transition-duration: <transition: opacity 120ms ease, background 120ms ease>
 
 [554] button.chat-action.is-on
   ::after/animation-duration: 0.01ms

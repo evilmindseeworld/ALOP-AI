@@ -3309,6 +3309,18 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/background: #f08aa3
+  ::after/background-clip: <background: #f08aa3>
+  ::after/background-image: <background: #f08aa3>
+  ::after/background-size: <background: #f08aa3>
+  ::after/bottom: 0
+  ::after/content: ""
+  ::after/opacity: 0.15
+  ::after/pointer-events: none
+  ::after/position: absolute
+  ::after/right: 3px
+  ::after/top: 0
+  ::after/width: 1px
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
   ::selection/background-image: <background: #f08aa3>
@@ -3330,6 +3342,7 @@
   padding-bottom: <padding: 12px 8px>
   padding-left: <padding: 12px 8px>
   padding-top: <padding: 12px 8px>
+  position: relative
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: width 320ms cubic-bezier(0.16, 1, 0.3, 1), padding 320ms cubic-bezier(0.16, 1, 0.3, 1), transform 320ms cubic-bezier(0.16, 1, 0.3, 1), background 200ms ease
@@ -5114,6 +5127,14 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)
+  ::after/background-clip: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
+  ::after/background-image: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
+  ::after/background-size: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
+  ::after/content: ""
+  ::after/flex: 1
+  ::after/flex-shrink: <flex: 1>
+  ::after/height: 1px
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
   ::selection/background-image: <background: #f08aa3>
@@ -5835,6 +5856,14 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)
+  ::after/background-clip: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
+  ::after/background-image: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
+  ::after/background-size: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
+  ::after/content: ""
+  ::after/flex: 1
+  ::after/flex-shrink: <flex: 1>
+  ::after/height: 1px
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
   ::selection/background-image: <background: #f08aa3>
@@ -6255,6 +6284,14 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)
+  ::after/background-clip: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
+  ::after/background-image: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
+  ::after/background-size: <background: linear-gradient(to right, rgba(255, 255, 255, 0.14), transparent)>
+  ::after/content: ""
+  ::after/flex: 1
+  ::after/flex-shrink: <flex: 1>
+  ::after/height: 1px
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
   ::selection/background-image: <background: #f08aa3>
@@ -6822,6 +6859,18 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/background: #f08aa3
+  ::after/background-clip: <background: #f08aa3>
+  ::after/background-image: <background: #f08aa3>
+  ::after/background-size: <background: #f08aa3>
+  ::after/bottom: 0
+  ::after/content: ""
+  ::after/opacity: 0.15
+  ::after/pointer-events: none
+  ::after/position: absolute
+  ::after/right: 3px
+  ::after/top: 0
+  ::after/width: 1px
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
   ::selection/background-image: <background: #f08aa3>
@@ -6843,6 +6892,7 @@
   padding-bottom: <padding: 12px 8px>
   padding-left: <padding: 12px 8px>
   padding-top: <padding: 12px 8px>
+  position: relative
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: width 320ms cubic-bezier(0.16, 1, 0.3, 1), padding 320ms cubic-bezier(0.16, 1, 0.3, 1), transform 320ms cubic-bezier(0.16, 1, 0.3, 1), background 200ms ease
@@ -7061,6 +7111,18 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/background: #f08aa3
+  ::after/background-clip: <background: #f08aa3>
+  ::after/background-image: <background: #f08aa3>
+  ::after/background-size: <background: #f08aa3>
+  ::after/bottom: 0
+  ::after/content: ""
+  ::after/opacity: 0.15
+  ::after/pointer-events: none
+  ::after/position: absolute
+  ::after/right: 3px
+  ::after/top: 0
+  ::after/width: 1px
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
   ::selection/background-image: <background: #f08aa3>
@@ -7082,6 +7144,7 @@
   padding-bottom: <padding: 12px 8px>
   padding-left: <padding: 12px 8px>
   padding-top: <padding: 12px 8px>
+  position: relative
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transform: translateX(0)
@@ -19160,6 +19223,21 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/border: 1px solid #f08aa3
+  ::after/border-bottom-right-radius: <border-radius: calc(12px - 4px)>
+  ::after/border-color: <border: 1px solid #f08aa3>
+  ::after/border-radius: calc(12px - 4px)
+  ::after/bottom: <inset: 4px>
+  ::after/content: ""
+  ::after/inset: 4px
+  ::after/left: <inset: 4px>
+  ::after/opacity: 0.15
+  ::after/pointer-events: none
+  ::after/position: absolute
+  ::after/right: <inset: 4px>
+  ::after/top: <inset: 4px>
+  ::after/transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)
+  ::after/transition-duration: <transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
   ::selection/background-image: <background: #f08aa3>
@@ -19323,6 +19401,21 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/border: 1px solid #f08aa3
+  ::after/border-bottom-right-radius: <border-radius: calc(12px - 4px)>
+  ::after/border-color: <border: 1px solid #f08aa3>
+  ::after/border-radius: calc(12px - 4px)
+  ::after/bottom: <inset: 4px>
+  ::after/content: ""
+  ::after/inset: 4px
+  ::after/left: <inset: 4px>
+  ::after/opacity: 0.15
+  ::after/pointer-events: none
+  ::after/position: absolute
+  ::after/right: <inset: 4px>
+  ::after/top: <inset: 4px>
+  ::after/transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)
+  ::after/transition-duration: <transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   ::selection/background: #f08aa3
   ::selection/background-clip: <background: #f08aa3>
   ::selection/background-image: <background: #f08aa3>
@@ -24634,6 +24727,18 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/background: #b31a54
+  ::after/background-clip: <background: #b31a54>
+  ::after/background-image: <background: #b31a54>
+  ::after/background-size: <background: #b31a54>
+  ::after/bottom: 0
+  ::after/content: ""
+  ::after/opacity: 0.22
+  ::after/pointer-events: none
+  ::after/position: absolute
+  ::after/right: 3px
+  ::after/top: 0
+  ::after/width: 1px
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>
   ::selection/background-image: <background: #b31a54>
@@ -24655,6 +24760,7 @@
   padding-bottom: <padding: 12px 8px>
   padding-left: <padding: 12px 8px>
   padding-top: <padding: 12px 8px>
+  position: relative
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: width 320ms cubic-bezier(0.16, 1, 0.3, 1), padding 320ms cubic-bezier(0.16, 1, 0.3, 1), transform 320ms cubic-bezier(0.16, 1, 0.3, 1), background 200ms ease
@@ -26439,6 +26545,14 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)
+  ::after/background-clip: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
+  ::after/background-image: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
+  ::after/background-size: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
+  ::after/content: ""
+  ::after/flex: 1
+  ::after/flex-shrink: <flex: 1>
+  ::after/height: 1px
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>
   ::selection/background-image: <background: #b31a54>
@@ -27160,6 +27274,14 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)
+  ::after/background-clip: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
+  ::after/background-image: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
+  ::after/background-size: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
+  ::after/content: ""
+  ::after/flex: 1
+  ::after/flex-shrink: <flex: 1>
+  ::after/height: 1px
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>
   ::selection/background-image: <background: #b31a54>
@@ -27580,6 +27702,14 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)
+  ::after/background-clip: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
+  ::after/background-image: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
+  ::after/background-size: <background: linear-gradient(to right, rgba(50, 36, 28, 0.22), transparent)>
+  ::after/content: ""
+  ::after/flex: 1
+  ::after/flex-shrink: <flex: 1>
+  ::after/height: 1px
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>
   ::selection/background-image: <background: #b31a54>
@@ -28147,6 +28277,18 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/background: #b31a54
+  ::after/background-clip: <background: #b31a54>
+  ::after/background-image: <background: #b31a54>
+  ::after/background-size: <background: #b31a54>
+  ::after/bottom: 0
+  ::after/content: ""
+  ::after/opacity: 0.22
+  ::after/pointer-events: none
+  ::after/position: absolute
+  ::after/right: 3px
+  ::after/top: 0
+  ::after/width: 1px
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>
   ::selection/background-image: <background: #b31a54>
@@ -28168,6 +28310,7 @@
   padding-bottom: <padding: 12px 8px>
   padding-left: <padding: 12px 8px>
   padding-top: <padding: 12px 8px>
+  position: relative
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: width 320ms cubic-bezier(0.16, 1, 0.3, 1), padding 320ms cubic-bezier(0.16, 1, 0.3, 1), transform 320ms cubic-bezier(0.16, 1, 0.3, 1), background 200ms ease
@@ -28386,6 +28529,18 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/background: #b31a54
+  ::after/background-clip: <background: #b31a54>
+  ::after/background-image: <background: #b31a54>
+  ::after/background-size: <background: #b31a54>
+  ::after/bottom: 0
+  ::after/content: ""
+  ::after/opacity: 0.22
+  ::after/pointer-events: none
+  ::after/position: absolute
+  ::after/right: 3px
+  ::after/top: 0
+  ::after/width: 1px
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>
   ::selection/background-image: <background: #b31a54>
@@ -28407,6 +28562,7 @@
   padding-bottom: <padding: 12px 8px>
   padding-left: <padding: 12px 8px>
   padding-top: <padding: 12px 8px>
+  position: relative
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transform: translateX(0)
@@ -40485,6 +40641,21 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/border: 1px solid #b31a54
+  ::after/border-bottom-right-radius: <border-radius: calc(12px - 4px)>
+  ::after/border-color: <border: 1px solid #b31a54>
+  ::after/border-radius: calc(12px - 4px)
+  ::after/bottom: <inset: 4px>
+  ::after/content: ""
+  ::after/inset: 4px
+  ::after/left: <inset: 4px>
+  ::after/opacity: 0.22
+  ::after/pointer-events: none
+  ::after/position: absolute
+  ::after/right: <inset: 4px>
+  ::after/top: <inset: 4px>
+  ::after/transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)
+  ::after/transition-duration: <transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>
   ::selection/background-image: <background: #b31a54>
@@ -40648,6 +40819,21 @@
   ::-webkit-scrollbar-track/background-size: <background: transparent>
   ::-webkit-scrollbar/height: 10px
   ::-webkit-scrollbar/width: 10px
+  ::after/border: 1px solid #b31a54
+  ::after/border-bottom-right-radius: <border-radius: calc(12px - 4px)>
+  ::after/border-color: <border: 1px solid #b31a54>
+  ::after/border-radius: calc(12px - 4px)
+  ::after/bottom: <inset: 4px>
+  ::after/content: ""
+  ::after/inset: 4px
+  ::after/left: <inset: 4px>
+  ::after/opacity: 0.22
+  ::after/pointer-events: none
+  ::after/position: absolute
+  ::after/right: <inset: 4px>
+  ::after/top: <inset: 4px>
+  ::after/transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)
+  ::after/transition-duration: <transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   ::selection/background: #b31a54
   ::selection/background-clip: <background: #b31a54>
   ::selection/background-image: <background: #b31a54>
@@ -46340,6 +46526,7 @@
   transform: translateX(-110%)
   width: min(300px, 86vw)
   z-index: 50
+  - position: relative
   - width: 272px
   - z-index: 10
   :focus-visible
@@ -46362,6 +46549,7 @@
   transform: translateX(-110%)
   width: min(300px, 86vw)
   z-index: 50
+  - position: relative
   - width: 56px
   - z-index: 10
   :focus-visible
@@ -46390,6 +46578,7 @@
   top: 0
   width: min(300px, 86vw)
   z-index: 50
+  - position: relative
   - width: 272px
   - z-index: 10
   :focus-visible
@@ -46707,6 +46896,7 @@
   transform: translateX(-110%)
   width: min(300px, 86vw)
   z-index: 50
+  - position: relative
   - width: 272px
   - z-index: 10
   :focus-visible
@@ -46729,6 +46919,7 @@
   transform: translateX(-110%)
   width: min(300px, 86vw)
   z-index: 50
+  - position: relative
   - width: 56px
   - z-index: 10
   :focus-visible
@@ -46757,6 +46948,7 @@
   top: 0
   width: min(300px, 86vw)
   z-index: 50
+  - position: relative
   - width: 272px
   - z-index: 10
   :focus-visible
@@ -51527,6 +51719,7 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
+  - ::after/transition-duration: <transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   - transition-duration: <transition: border-color 200ms cubic-bezier(0.16, 1, 0.3, 1), background 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1)>
 
 [390] textarea.input-text
@@ -51561,6 +51754,7 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
+  - ::after/transition-duration: <transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   - transition-duration: <transition: border-color 200ms cubic-bezier(0.16, 1, 0.3, 1), background 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1)>
 
 [393] div.composer-sprigs
@@ -56510,6 +56704,7 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
+  - ::after/transition-duration: <transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   - transition-duration: <transition: border-color 200ms cubic-bezier(0.16, 1, 0.3, 1), background 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1)>
 
 [823] textarea.input-text
@@ -56544,6 +56739,7 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
+  - ::after/transition-duration: <transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1)>
   - transition-duration: <transition: border-color 200ms cubic-bezier(0.16, 1, 0.3, 1), background 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1)>
 
 [826] div.composer-sprigs

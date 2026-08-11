@@ -54,6 +54,41 @@
     box-shadow var(--dur) var(--ease-out);
 }
 
+/* ===== THE INNER RULE =====
+ *
+ * The botanical posters this ornament family comes from never draw a single
+ * edge. There is an outer rule at the trim and a second hairline a few
+ * millimetres inside it, and everything — the plate, the vertical text rail,
+ * the specimen card — sits between the two. That doubled edge is what makes a
+ * printed sheet read as composed rather than as content stopping at a border.
+ *
+ * The composer already carries the branch and the seal from that reference and
+ * still had one plain 1px border, so it was the one place the family was
+ * quoted in ornament but not in structure.
+ *
+ * It lives in the padding gutter, not over the text: inset 4px against the
+ * card's 12px padding leaves 8px of clear space before the first glyph. Drawn
+ * in --ornament-ink at the faint step, so it belongs to the drawing rather than
+ * to the border ramp — a second --border here would read as a rendering bug.
+ *
+ * pointer-events: none for the same reason .composer-sprigs has it. A rule
+ * covering the whole card must never eat a click meant for the prompt. */
+.input-wrapper::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border: 1px solid var(--ornament-ink);
+  border-radius: calc(var(--radius-xl) - 4px);
+  opacity: var(--ornament-a-faint);
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease-out);
+}
+
+/* One step up on focus, the same move the branch makes. The card's own border
+ * changes colour, the branch lifts, and the inner rule brightens — three
+ * different answers to the caret rather than three copies of one. */
+.input-wrapper:focus-within::after { opacity: var(--ornament-a-mid); }
+
 /* The focus ring goes on the card, not the textarea: the textarea has no
  * border of its own, so a ring on it would float inside the card.
  *

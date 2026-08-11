@@ -13,12 +13,40 @@
   border-right: 1px solid var(--border);
   padding: var(--space-3) var(--space-2);
   overflow: hidden;
+  /* The positioning context for the inner rule below. z-index already worked
+   * without it — a flex item honours z-index unpositioned — so this is only
+   * about ::after resolving against this column. */
+  position: relative;
   z-index: var(--z-sidebar);
   transition:
     width var(--dur-slow) var(--ease-out),
     padding var(--dur-slow) var(--ease-out),
     transform var(--dur-slow) var(--ease-out),
     background var(--dur) ease;
+}
+
+/* The second half of the divide — see the same reasoning in composer.css. The
+ * reference's frame is two lines, and the sidebar's single border-right was the
+ * app's longest edge drawn with one.
+ *
+ * 3px in, in ornament ink at the faint step, so it reads as part of the drawing
+ * rather than as a border somebody declared twice. It sits inside the column's
+ * 8px padding gutter; .chat-list's -4px bleed leaves a 1px clearance, and the
+ * rule paints over it in any case because a positioned element paints after
+ * static content.
+ *
+ * The rail keeps it. A collapsed column that lost its second line would read as
+ * a different KIND of edge every time the sidebar is toggled. */
+.sidebar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 3px;
+  width: 1px;
+  background: var(--ornament-ink);
+  opacity: var(--ornament-a-faint);
+  pointer-events: none;
 }
 
 /* ===== COLLAPSED = A RAIL =====
@@ -287,6 +315,25 @@
   text-transform: uppercase;
   color: var(--text-subtle);
   user-select: none;
+}
+
+/* The rule that finishes the label.
+ *
+ * A tracked uppercase caption with a hairline running off it to the trim is the
+ * reference's own way of setting a section heading, and it is the cheapest
+ * possible way to make a list read as a plate rather than as rows. It also does
+ * a job: PINNED and RECENT were two identical grey captions in a scrolling
+ * column, and the line gives each the full width of the sidebar as its
+ * boundary, so where one group ends is legible without counting rows.
+ *
+ * Faded to transparent rather than stopped square. The label is sticky and
+ * passes over rows underneath it; a hard-ended rule would read as an underline
+ * belonging to whichever chat happened to be behind it. */
+.chat-group-label::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--border-strong), transparent);
 }
 
 /* No cursor: pointer here any more. The row is not the click target — the

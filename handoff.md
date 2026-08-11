@@ -44,6 +44,30 @@ files. If you ever need to do it again, that is the shape of it: check
 
 ---
 
+## This session (2026-08-11), later
+
+**The double rule** on the composer and the sidebar. Asked for with two
+botanical-poster references, and taken as an addition WITHIN the ornament
+family rather than as a direction to replace it — the branch, the seal and the
+alpha ladder are untouched, and the empty state was not opened.
+
+The references never draw a single edge: an outer rule at the trim and a second
+hairline a few millimetres inside it. Three pseudo-elements, no new markup, so
+`appMarkup.js` did not need a fixture:
+
+- `.input-wrapper::after` — inner rule, inset 4px inside the card's 12px
+  padding, `--ornament-ink` at the faint step, one step up on focus-within.
+- `.sidebar::after` — the second line 3px inside `border-right`. Kept in the
+  collapsed rail, so toggling never changes the KIND of edge.
+- `.chat-group-label::after` — the rule that runs off the caption to the trim,
+  faded rather than stopped square because the label is sticky and passes over
+  rows underneath it.
+
+Rendering changed on purpose; the cascade baseline was regenerated. 620
+frontend tests pass.
+
+---
+
 ## This session (2026-08-11)
 
 **Semantic memory, Phase 2** (`c19508e`). `user_facts.embedding` is

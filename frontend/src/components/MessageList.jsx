@@ -1,6 +1,5 @@
 import { memo, lazy, Suspense, useState, useRef, useEffect } from "react";
 import { animate, spring, createDraggable } from "animejs";
-import SakuraFrame from "./SakuraFrame";
 import CouncilRosette from "./CouncilRosette";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -180,9 +179,16 @@ export const EmptyState = memo(({ onPick }) => {
 
   return (
   <div className="empty-state">
-    {/* Behind everything, and only here — see SakuraFrame for why the frame
-        does not follow the transcript. */}
-    <SakuraFrame />
+    {/* THE TOP TWO SPRIGS ARE GONE FROM THIS SCREEN, on the owner's call
+        (2026-08-11): the empty state was reading as cluttered and the top pair
+        was what to cut. `SakuraFrame` IS that pair — the bottom corners and the
+        keystone come from `SakuraBaseCorners`, which App.jsx still renders — so
+        removing the element is the whole change and nothing else moves.
+
+        This is a cut WITHIN the ornament family, not a redesign of it: the
+        crescents, the lattice, the centred hero, the 2x2 starter grid and the
+        base corners are untouched. Do not read it as licence to take more.
+        Sign-in still renders the frame; the request was about this screen. */}
     {/* The seal goes round the mark, not round the panel.
         The rosette's traces all pass through one centre and leave a clear disc
         there — the figure is a ring, and the mark is exactly what that ring is

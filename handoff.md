@@ -4,7 +4,7 @@ State of play at `d6e38ca`, pushed to `origin/main`. Read `AGENTS.md` first;
 this file is what changed and what is still open, not a description of the
 project.
 
-617 frontend tests, 598 backend, working tree clean. Render auto-deploys from
+625 frontend tests, 598 backend, working tree clean. Render auto-deploys from
 `main` and is slow — well over five minutes — so the four commits below are
 live or shortly will be.
 
@@ -19,10 +19,18 @@ something this file describes, change this file in the same commit.
 ## The one thing to read before touching the frontend
 
 **The empty-state ornament set is the specification, and it has now been
-reverted to twice.** Two hanging crescents in the gutters, four sakura corner
+reverted to twice.** Two hanging crescents in the gutters, the sakura corner
 sprigs, the asanoha lattice across the chat surface, a centred hero, and the
 starters as a 2x2 card grid. The torii is gone — `CouncilRosette` replaced it,
 and the logo mark now sits inside the rosette's centre hole.
+
+**The top two sprigs came off this screen on 2026-08-11**, asked for by the
+owner as a declutter and confirmed against the alternatives before cutting. The
+chat empty state now carries the bottom pair and the keystone
+(`SakuraBaseCorners`); the top pair is `SakuraFrame`, which sign-in still
+renders. This was a cut WITHIN the family — the crescents, the lattice, the
+centred hero and the card grid were not touched, and the paragraphs below still
+stand in full. Do not read it as the family being open for editing.
 
 Five redesigns were tried and all five rejected: one wooden bough replacing the
 four sprigs; that bough moved to the bottom right; an ensō drawn as seven

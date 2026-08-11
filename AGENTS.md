@@ -188,9 +188,20 @@ itself: `chats` gets a new identity on every painted frame of a streaming
 answer, so an effect on it would write to `localStorage` sixty times a second.
 
 **The ornament set is the one the owner wants, and it has been reverted to
-twice.** Two hanging crescents in the gutters, four sakura corner sprigs and a
-faint torii behind the empty state, an asanoha lattice across the chat surface,
+twice.** Two hanging crescents in the gutters, an asanoha lattice across the
+chat surface, the keystone above the composer, the seal, the composer skyline,
 a centred hero, and starters as a 2x2 card grid.
+
+**The torii and EVERY branch are gone (2026-08-11) and must not be redrawn.**
+This paragraph used to list "four sakura corner sprigs and a faint torii" as
+part of the specification, and said so for a while after both had been deleted
+— which is how a stale spec gets restored by someone reading it as current.
+The torii went first, replaced by `CouncilRosette`; the branches went on the
+owner's instruction, "leave the earrings, just delete the branches", taking all
+four corner sprigs, the `Leaf` helper, the `Corner` component, `SakuraFrame`
+itself and the sign-in bough and petals. The charge against both was the same:
+they said "Japanese" without saying anything about THIS product. What is left
+is the half that carries meaning. See `handoff.md`.
 
 Five redesigns were tried and all five were rejected: a single wooden bough, the
 same bough moved to the bottom right, an ensō drawn as seven arcs, a split
@@ -222,12 +233,17 @@ has. Fixed by shape; the budget came down from 10 to 9 as a result. If that test
 blocks you, check whether it is counting something real before you edit CSS to
 satisfy it.
 
-**`@clerk/clerk-sdk-node` is deprecated at its final version, 5.1.6.** It pulls
-`@clerk/shared@2.22.1`, which pulls `js-cookie@3.0.5`, which has an unpatched
-prototype-hijack advisory. No `npm audit fix` clears it — the only non-breaking
-suggestion is a downgrade to v4. The successor is `@clerk/express`. Until that
-migration happens, `npm audit` on the backend will keep reporting three highs
-and they are all this one chain.
+**The `@clerk/clerk-sdk-node` migration is DONE.** `@clerk/express` is what is
+installed, and `npm audit --omit=dev` on the backend reports **0
+vulnerabilities** — verified 2026-08-11.
+
+This paragraph used to say the opposite, at length: that the old SDK was pinned
+at its final 5.1.6, that its `js-cookie@3.0.5` chain carried an unpatched
+advisory, and that "until that migration happens" the backend would keep
+reporting three highs. It said that after the migration had merged. Anyone
+reading it as current state would have believed this backend had three live
+high-severity advisories, and either re-planned finished work or panicked about
+nothing. Do not restore it.
 
 ## Handoff — 2026-08-07 (second pass)
 
@@ -274,15 +290,17 @@ production. See the trap below.
    engines — flights, hotels, scholar, finance; billed per call, 100/month
    free), `PERPLEXITY_API_KEY`. `PERPLEXITY_MODEL` defaults to `sonar` and
    `PAGE_READ_LIMIT` to 3; neither needs setting.
-3. **`@clerk/clerk-sdk-node` is deprecated and carries a high-severity
-   advisory.** `npm audit` reports `js-cookie <=3.0.5` (GHSA-qjx8-664m-686j,
-   cookie-attribute injection) reached through `@clerk/shared`. Traced before
-   panicking: the only import is `@clerk/shared/dist/cookie.js`, browser-side
-   code that this Node backend never executes, so it is **not reachable here**.
-   The real fix is migrating to `@clerk/express`, which is an auth-path change
-   worth its own session and a live Clerk to test against — not something to
-   slip into an unrelated commit. `npm audit fix --force` would downgrade to
-   `@clerk/clerk-sdk-node@4` and break the app.
+3. **Clerk's advisory chain is gone — the `@clerk/express` migration shipped.**
+   `npm audit --omit=dev` on the backend is clean as of 2026-08-11. The entry
+   that stood here described `js-cookie <=3.0.5` (GHSA-qjx8-664m-686j) reached
+   through `@clerk/shared` as live, and named the migration as the unfinished
+   fix, months after it had merged.
+
+   The reasoning it recorded is still worth keeping, because it was right and
+   the habit is the point: the advisory was traced before anyone panicked, and
+   the only import was `@clerk/shared/dist/cookie.js` — browser-side code this
+   Node backend never executed, so it was never reachable here. Trace first,
+   then act. That is the durable part; the package versions were not.
 
 ### Accessibility: what still needs a real browser
 

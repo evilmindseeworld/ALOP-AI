@@ -33,6 +33,23 @@ directly. Every ownership check has to live in the query itself
 exactly this way — the policies were on, and irrelevant. `tenant-scope.test.js`
 enforces it; keep it passing.
 
+**The agent loop has two clocks, and mixing them up is the bug it already
+had.** `totalToolMs` (25s) is time spent *inside* `registry.execute` only;
+`totalWallMs` (75s) is what bounds the request. They were one clock measured
+from the top of the loop, which counted the council's own deliberation as tool
+spend — a single round of seven seats under the 30s whip could exhaust the
+"tool budget" before the first search returned, and the turn truncated saying
+it had run out of time to research on a turn where it had barely researched.
+If you add a ceiling here, be explicit about which clock it is on.
+
+**Anything that waits on the whole council needs a whip and a quorum.** Both
+exist in `runCouncilWithWhip`, and both had to be added again to the tools path
+after it replaced that call — `roundMs` caps a round, `quorum` releases the
+last one. The quorum release is inert on research rounds on purpose: releasing
+there drops the members that asked for a tool, which turns the feature off
+exactly when part of the council wanted it. Copying the whip without the quorum,
+or the quorum without the last-round guard, reintroduces one of the two.
+
 **Third-party text must be labelled.** `UNTRUSTED_PREAMBLE` lives in
 `lib/council-tools.js` and is prepended at every boundary where content we did
 not write enters a prompt: search context, tool results, Wikipedia, attached

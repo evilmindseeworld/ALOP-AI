@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
+
+const { animateSpy, inputBarProps } = vi.hoisted(() => ({
+  animateSpy: vi.fn(),
+  inputBarProps: [],
+}));
 
 /**
  * THE SIGNED-IN APP RENDERS AT ALL.
@@ -45,12 +50,19 @@ vi.mock("@clerk/react", () => ({
 vi.mock("animejs", () => {
   const scope = { add: () => scope, revert: () => {} };
   return {
-    animate: () => {},
+    animate: animateSpy,
     createScope: () => scope,
     spring: () => ({}),
     createDraggable: () => ({}),
   };
 });
+
+vi.mock("../components/InputBar", () => ({
+  default: (props) => {
+    inputBarProps.push(props);
+    return <textarea aria-label="Message the AI Council" />;
+  },
+}));
 
 const chat = {
   chats: [],
@@ -84,7 +96,10 @@ const chat = {
   retryChatFiles: () => {},
 };
 
-vi.mock("../hooks/useChats", () => ({ useChats: () => chat }));
+// The real hook returns a new object literal on every render. Returning a copy
+// here catches callbacks that accidentally depend on that wrapper instead of
+// on the stable methods inside it.
+vi.mock("../hooks/useChats", () => ({ useChats: () => ({ ...chat }) }));
 vi.mock("../hooks/useBilling", () => ({
   useBilling: () => ({
     userPlan: "free",
@@ -122,5 +137,45 @@ describe("the signed-in app", () => {
     } finally {
       chat.isInitialLoading = false;
     }
+  });
+
+  it("keeps composer callbacks stable when only streamed content changes", async () => {
+    inputBarProps.length = 0;
+    const { default: App } = await import("../App");
+    const { rerender } = render(<App />);
+    const before = inputBarProps.at(-1);
+
+    chat.activeMessages = [{ id: "a1", role: "assistant", content: "first" }];
+    rerender(<App />);
+    const after = inputBarProps.at(-1);
+
+    expect(after.onSend).toBe(before.onSend);
+    expect(after.onRetryFiles).toBe(before.onRetryFiles);
+    chat.activeMessages = [];
+  });
+
+  it("runs the entrance animation once per message id, not once per token", async () => {
+    animateSpy.mockClear();
+    // Let the lazy MessageList boundary resolve before adding the row whose
+    // entrance is under test. Otherwise the parent effect correctly has no DOM
+    // row to animate on its first pass.
+    chat.activeMessages = [{ id: "seed", role: "assistant", content: "ready" }];
+    const { default: App } = await import("../App");
+    const { rerender } = render(<App />);
+    await screen.findByText("ready");
+
+    chat.activeMessages = [{ id: "a1", role: "assistant", content: "first" }];
+    rerender(<App />);
+    await screen.findByText("first");
+    await waitFor(() => expect(animateSpy).toHaveBeenCalled());
+    const afterFirstToken = animateSpy.mock.calls.length;
+
+    chat.activeMessages = [{ id: "a1", role: "assistant", content: "first second" }];
+    rerender(<App />);
+    await screen.findByText("first second");
+    await Promise.resolve();
+
+    expect(animateSpy).toHaveBeenCalledTimes(afterFirstToken);
+    chat.activeMessages = [];
   });
 });

@@ -61,16 +61,49 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
     activeMessageLoadState !== "error";
   const messageLoadError = Boolean(activeChat) && activeChat.messages === undefined && activeMessageLoadState === "error";
 
-  /** Pinned first, then favourites, then most recently posted in. */
-  const sortedChats = useMemo(
-    () =>
-      [...chats].sort((a, b) => {
-        if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
-        if (a.favorite !== b.favorite) return a.favorite ? -1 : 1;
-        return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at);
-      }),
-    [chats]
-  );
+  const sortedChatsRef = useRef([]);
+
+  /**
+   * Pinned first, then favourites, then most recently posted in.
+   *
+   * Transcript content changes on every reveal paint, but neither the sidebar
+   * nor the command palette renders it. Projecting the rows to their displayed
+   * fields lets both memoized consumers keep the same array identity while a
+   * response grows. A changed timestamp can still change the order; if it does
+   * not, it is not observable by either consumer and the old array is reused.
+   */
+  const sortedChats = useMemo(() => {
+    const previous = sortedChatsRef.current;
+    const previousById = new Map(previous.map((chat) => [chat.id, chat]));
+    const ordered = [...chats].sort((a, b) => {
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+      if (a.favorite !== b.favorite) return a.favorite ? -1 : 1;
+      return new Date(b.updated_at || b.created_at) - new Date(a.updated_at || a.created_at);
+    });
+    const projected = ordered.map((chat) => {
+      const old = previousById.get(chat.id);
+      if (
+        old &&
+        old.title === chat.title &&
+        old.pinned === Boolean(chat.pinned) &&
+        old.favorite === Boolean(chat.favorite)
+      ) {
+        return old;
+      }
+      return {
+        id: chat.id,
+        title: chat.title,
+        pinned: Boolean(chat.pinned),
+        favorite: Boolean(chat.favorite),
+      };
+    });
+
+    if (projected.length === previous.length && projected.every((chat, index) => chat === previous[index])) {
+      return previous;
+    }
+    sortedChatsRef.current = projected;
+    return projected;
+  }, [chats]);
 
   const createChat = useCallback(async () => {
     try {
@@ -602,6 +635,11 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
     if (isReady) loadChatFiles(activeChatId);
   }, [isReady, activeChatId, loadChatFiles]);
 
+  const retryChatFiles = useCallback(
+    () => loadChatFiles(activeChatId),
+    [activeChatId, loadChatFiles]
+  );
+
   /**
    * Read a picked file and hand the bytes to the server.
    *
@@ -1115,7 +1153,7 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
     regenerateLast,
     chatFiles,
     chatFilesError,
-    retryChatFiles: () => loadChatFiles(activeChatId),
+    retryChatFiles,
     uploadFile,
     removeFile,
   };

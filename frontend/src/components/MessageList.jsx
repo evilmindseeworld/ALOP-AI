@@ -1,5 +1,4 @@
 import { memo, lazy, Suspense, useState, useRef, useEffect } from "react";
-import { animate, spring, createDraggable } from "animejs";
 import CouncilRosette from "./CouncilRosette";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -162,18 +161,19 @@ export const EmptyState = memo(({ onPick }) => {
   useEffect(() => {
     const el = logoRef.current;
     if (!el) return;
-    const pulse = animate(el, {
-      scale: [
-        { to: 1.08, ease: "inOut(3)", duration: 400 },
-        { to: 1, ease: spring({ bounce: 0.7 }) },
-      ],
-      loop: true,
-      loopDelay: 1200,
-    });
-    const drag = createDraggable(el, { container: [0, 0, 0, 0], releaseEase: spring({ bounce: 0.8 }) });
+    let disposed = false;
+    let pulse;
+    let drag;
+    import("../lib/motion")
+      .then(({ animateEmptyLogo }) => {
+        if (disposed) return;
+        ({ pulse, drag } = animateEmptyLogo(el));
+      })
+      .catch(() => {});
     return () => {
-      pulse.revert();
-      drag.revert();
+      disposed = true;
+      pulse?.revert();
+      drag?.revert();
     };
   }, []);
 
@@ -448,6 +448,12 @@ export default function MessageList({
   messageLoadError,
   onRetryMessages,
 }) {
+  const previousStatusRef = useRef(status);
+  const wasResponding = previousStatusRef.current === "loading" || previousStatusRef.current === "streaming";
+  useEffect(() => {
+    previousStatusRef.current = status;
+  }, [status]);
+
   // A conversation whose transcript is still in flight is NOT an empty one.
   //
   // Messages no longer arrive with the chat list — they are fetched per
@@ -513,13 +519,11 @@ export default function MessageList({
       {/* Announced, not just animated. A screen reader had no way to know an
           answer had finished arriving — the only signal was a caret stopping. */}
       <p className="sr-only" role="status" aria-live="polite">
-        {status === "loading"
-          ? "The council is working"
-          : status === "streaming"
-            ? "Answer in progress"
-            : status === "idle"
-              ? "Answer complete"
-              : ""}
+        {status === "streaming"
+          ? "Answer in progress"
+          : status === "idle" && wasResponding
+            ? "Answer complete"
+            : ""}
       </p>
     </div>
   );

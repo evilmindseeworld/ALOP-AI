@@ -54,8 +54,6 @@ import { useSpeechRecognition } from "./hooks/useSpeechRecognition";
 import { speak } from "./lib/speak";
 import { clearChats } from "./lib/chatCache";
 
-import { animate, spring } from "animejs";
-
 /** Follow the transcript only while the reader is already near the bottom. */
 const FOLLOW_THRESHOLD_PX = 150;
 const ADMIN_PAGE_SIZE = 50;
@@ -163,6 +161,7 @@ const AuthenticatedApp = () => {
   const copyAnswer = useCallback((content) => navigator.clipboard.writeText(content), []);
 
   const { activeChat, activeMessages, status } = chat;
+  const lastMessageId = activeMessages.at(-1)?.id;
 
   // --- preferences -------------------------------------------------------
   useEffect(() => Storage.set("alop-dark-mode", darkMode.toString()), [darkMode]);
@@ -222,15 +221,21 @@ const AuthenticatedApp = () => {
     // No animation at all rather than a faster one: the row is already in the
     // DOM and readable, so skipping the entrance costs nothing to see.
     if (rows.length && !reducedMotion()) {
-      animate(rows[rows.length - 1], {
-        opacity: [0, 1],
-        translateY: [16, 0],
-        scale: [0.97, 1],
-        ease: spring({ bounce: 0.3, stiffness: 120 }),
-        duration: 700,
-      });
+      let cancelled = false;
+      import("./lib/motion")
+        .then(({ animateMessageEntrance }) => {
+          if (cancelled) return;
+          animateMessageEntrance(rows[rows.length - 1]);
+        })
+        .catch(() => {});
+      return () => {
+        cancelled = true;
+      };
     }
-  }, [activeMessages]);
+  // Content changes on every reveal paint; the row itself is new only when
+  // its id changes. Keying this effect on the array restarted a 700ms entrance
+  // animation at the 16ms token cadence.
+  }, [lastMessageId]);
 
   /* A starter SEEDS the composer; it does not send.
    *
@@ -261,11 +266,17 @@ const AuthenticatedApp = () => {
 
   // Delegated press feedback, so every primary button gets it without wiring.
   useEffect(() => {
-    const onClick = (e) => {
+    const onClick = async (e) => {
       const button = e.target.closest(".input-btn.primary, .new-chat-btn, .overlay-submit");
       if (!button) return;
       if (reducedMotion()) return;
-      animate(button, { scale: [{ to: 0.9, duration: 80 }, { to: 1, ease: spring({ bounce: 0.6 }) }] });
+      try {
+        const { animateButtonPress } = await import("./lib/motion");
+        animateButtonPress(button);
+      } catch {
+        // Motion is optional. A failed lazy chunk must not turn a click into
+        // an unhandled rejection after the button's real action has run.
+      }
     };
     document.addEventListener("click", onClick);
     return () => document.removeEventListener("click", onClick);
@@ -390,7 +401,7 @@ const AuthenticatedApp = () => {
       }
       chat.send(text, attachedImage, () => setAttachedImage(null));
     },
-    [attachedImage, chat]
+    [attachedImage, chat.generateImage, chat.send]
   );
 
   const exportChat = useCallback(() => {
@@ -430,8 +441,10 @@ const AuthenticatedApp = () => {
       // waiting on is latency on the path they are.
       if (which === "settings") userFacts.loadFacts();
     },
-    [userFacts],
+    [userFacts.loadFacts],
   );
+
+  const openUpgrade = useCallback(() => openOnly("upgrade"), [openOnly]);
 
   const paletteActions = useMemo(
     () => [
@@ -450,7 +463,7 @@ const AuthenticatedApp = () => {
         ? [{ id: "upgrade", label: "Upgrade to Pro", hint: "Billing", icon: "♛", run: () => openOnly("upgrade") }]
         : []),
     ],
-    [chat, exportChat, darkMode, billing.userPlan, billing.prices, openOnly]
+    [chat.newChat, chat.regenerateLast, exportChat, darkMode, billing.userPlan, billing.prices, openOnly]
   );
 
   // Capture phase, so it still fires while focus is in the composer where
@@ -470,7 +483,7 @@ const AuthenticatedApp = () => {
     };
     window.addEventListener("keydown", onKey, true);
     return () => window.removeEventListener("keydown", onKey, true);
-  }, [chat]);
+  }, [chat.newChat]);
 
   if (!isLoaded) return null;
   if (chat.isInitialLoading) return skeletonStuck ? <StuckLoading /> : <AppSkeleton />;
@@ -630,7 +643,7 @@ const AuthenticatedApp = () => {
             userName={user?.fullName || user?.firstName || user?.username || user?.primaryEmailAddress?.emailAddress}
             userImageUrl={user?.imageUrl}
             userPlan={billing.userPlan}
-            onUpgrade={showUpgradeButton ? () => openOnly("upgrade") : undefined}
+            onUpgrade={showUpgradeButton ? openUpgrade : undefined}
             busy={status !== "idle"}
           />
 

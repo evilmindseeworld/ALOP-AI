@@ -88,14 +88,14 @@ export default defineConfig({
           /* framer-motion and animejs are SEPARATE chunks, and the split is
              load-bearing rather than tidiness.
 
-             They were one 'motion' chunk. App.jsx imports animejs statically,
-             so that chunk was on the critical path — which silently cancelled
-             the lazy loading of MagneticButtonMotion, the only importer of
-             framer-motion. Lazy-loading a module whose dependency has been
-             manually chunked alongside an eager one loads it eagerly anyway,
-             and the only visible symptom is a modulepreload tag. */
+             Both are lazy, but different interactions request them. Grouping
+             them would make the first small animejs entrance animation
+             download framer-motion too. */
           if (/framer-motion|motion-dom|motion-utils/.test(id)) return 'framer';
-          if (/animejs/.test(id)) return 'anime';
+          // Keep the facade in the same async chunk. If only animejs is named,
+          // Rollup can inline the tiny re-exporting facade into the entry and
+          // turn its static dependency back into an eager import.
+          if (/animejs|\/src\/lib\/motion\.js/.test(id.replace(/\\/g, '/'))) return 'anime';
           if (/react-markdown|remark|micromark|mdast|unist|hast|vfile|unified|property-information|character-entities|decode-named-character|space-separated|comma-separated|markdown-table|longest-streak|zwitch|trough|bail|devlop|estree|html-url-attributes/.test(id)) return 'markdown';
         }
       }

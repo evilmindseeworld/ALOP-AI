@@ -77,6 +77,46 @@ describe("useChats", () => {
     expect(result.current.chats).toEqual([]);
   });
 
+  it("keeps retry callbacks stable across unrelated chat-list renders", async () => {
+    const { result } = setup();
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+    const before = result.current.retryChatFiles;
+
+    await act(async () => {
+      await result.current.retryChats();
+    });
+
+    expect(result.current.retryChatFiles).toBe(before);
+  });
+
+  it("keeps sidebar rows stable when only hidden chat data changes", async () => {
+    let response = [{
+      id: "c1",
+      title: "Stable title",
+      pinned: false,
+      favorite: false,
+      updated_at: "2026-01-01T00:00:00.000Z",
+    }];
+    const apiCall = vi.fn(async (path) => ({
+      ok: true,
+      json: async () => path === "/api/chats" ? response : {},
+    }));
+    const { result } = setup({ apiCallImpl: apiCall });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+    const before = result.current.sortedChats;
+
+    response = [{
+      ...response[0],
+      messages: [{ id: "a1", role: "assistant", content: "one more token" }],
+      updated_at: "2026-01-01T00:00:01.000Z",
+    }];
+    await act(async () => {
+      await result.current.retryChats();
+    });
+
+    expect(result.current.sortedChats).toBe(before);
+  });
+
   it("waits for an old transcript before saving a new message", async () => {
     const transcript = deferred();
     const fetchImpl = vi.fn(async (url) => {

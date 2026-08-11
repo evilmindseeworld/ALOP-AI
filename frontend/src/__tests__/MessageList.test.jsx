@@ -141,8 +141,12 @@ describe("MessageList", () => {
   });
 
   it("announces streaming state to a screen reader", () => {
-    const { rerender } = renderList({ status: "streaming" });
+    const { container, rerender } = renderList({ status: "streaming" });
     expect(screen.getByRole("status")).toHaveTextContent("Answer in progress");
+    // The answer text itself is deliberately not live. Putting aria-live on
+    // the token stream makes assistive tech enqueue the growing answer again
+    // on every 16ms paint.
+    expect(container.querySelector(".bubble.is-streaming")).not.toHaveAttribute("aria-live");
 
     rerender(
       <MessageList
@@ -155,6 +159,45 @@ describe("MessageList", () => {
       />
     );
     expect(screen.getByRole("status")).toHaveTextContent("Answer complete");
+  });
+
+  it("does not announce a completed answer on an initial idle transcript", () => {
+    renderList({ status: "idle" });
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  });
+
+  it("does not duplicate the loading announcement", () => {
+    const { container } = renderList({
+      messages: [{ id: "u1", role: "user", content: "Hi" }],
+      status: "loading",
+    });
+    expect(container.querySelector(".answer-skeleton")).toHaveAttribute(
+      "aria-label",
+      "The council is thinking",
+    );
+    expect(container.querySelector(".msg-stream > .sr-only[role='status']")).toBeEmptyDOMElement();
+  });
+
+  it("escapes raw HTML and strips executable URL schemes from model output", () => {
+    const hostile = [
+      messages[0],
+      {
+        id: "a1",
+        role: "assistant",
+        content:
+          '<script>window.pwned = true</script><img src=x onerror="window.pwned=true">\n\n' +
+          '[bad link](javascript:alert(1)) ![bad image](javascript:alert(2)) [safe link](https://example.com)',
+      },
+    ];
+    const { container } = renderList({ messages: hostile });
+
+    expect(container.querySelector("script")).toBeNull();
+    expect(container.querySelector("img[onerror]")).toBeNull();
+    const links = [...container.querySelectorAll(".markdown-body a")];
+    expect(links[0].getAttribute("href") || "").not.toMatch(/^javascript:/i);
+    expect(links[1]).toHaveAttribute("href", "https://example.com");
+    const markdownImage = container.querySelector(".markdown-body img");
+    expect(markdownImage.getAttribute("src") || "").not.toMatch(/^javascript:/i);
   });
 });
 
@@ -285,7 +328,7 @@ describe("the wait before the placeholder exists", () => {
     expect(skeletons()).toHaveLength(0);
   });
 
-  it("announces the wait, which used to be silent", () => {
+  it("announces the wait once through the answer skeleton", () => {
     render(
       <MessageList
         messages={[{ id: "u1", role: "user", content: "Hi", ts: "10:04" }]}
@@ -296,7 +339,7 @@ describe("the wait before the placeholder exists", () => {
         onPickStarter={noop}
       />
     );
-    expect(screen.getByText("The council is working")).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "The council is thinking" })).toBeInTheDocument();
   });
 });
 

@@ -53,16 +53,34 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
   const activeChat = useMemo(() => chats.find((c) => c.id === activeChatId), [chats, activeChatId]);
   const activeMessages = useMemo(() => activeChat?.messages || [], [activeChat]);
   const activeStream = streamDraft?.chatId === activeChatId ? streamDraft : null;
-  const activeStreamDraft = activeStream?.message || null;
+
   /* Once the completed draft has been persisted, keep its existing DOM row in
    * the draft slot until the next send. The full transcript remains available
    * through activeMessages for export and feedback; only the render projection
    * omits the duplicate persisted copy. This preserves the bubble across the
-   * stream-to-Markdown swap instead of remounting it at completion. */
-  const renderedMessages = useMemo(() => {
-    if (!activeStream?.persisted || activeMessages.at(-1)?.id !== activeStream.message.id) return activeMessages;
-    return activeMessages.slice(0, -1);
-  }, [activeMessages, activeStream?.persisted, activeStream?.message.id]);
+   * stream-to-Markdown swap instead of remounting it at completion.
+   *
+   * THE TAIL TEST DRIVES BOTH HALVES, and that is the whole correctness of it.
+   *
+   * The slice used to be conditional while the draft rendered unconditionally,
+   * so the two could disagree: if the transcript no longer ended with the
+   * draft, nothing was sliced AND the draft still painted, and the answer
+   * appeared TWICE. That is reachable. On a 409 the PUT's own recovery calls
+   * `loadMessages(..., { force: true })`, which replaces the transcript with
+   * the server's copy — a different tail — and the `setToast` that follows in
+   * the same catch triggers a paint before `send` gets to clear the draft.
+   *
+   * A persisted draft is only standing in for the tail while it IS the tail.
+   * When it is not, it is stale: do not slice, and do not render it either. */
+  const persistedDraftIsTail =
+    Boolean(activeStream?.persisted) && activeMessages.at(-1)?.id === activeStream.message.id;
+  const draftIsStale = Boolean(activeStream?.persisted) && !persistedDraftIsTail;
+  const activeStreamDraft = activeStream && !draftIsStale ? activeStream.message : null;
+
+  const renderedMessages = useMemo(
+    () => (persistedDraftIsTail ? activeMessages.slice(0, -1) : activeMessages),
+    [activeMessages, persistedDraftIsTail],
+  );
 
   /**
    * The open conversation's transcript has not arrived yet.

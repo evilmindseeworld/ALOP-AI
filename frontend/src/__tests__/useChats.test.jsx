@@ -282,7 +282,34 @@ describe("useChats", () => {
     expect(result.current.activeMessages).toBe(messages);
     expect(result.current.streamDraft.content).toBe("Hello world");
     expect(result.current.renderedMessages).toEqual(messages.slice(0, -1));
+
+    /* THE ANSWER APPEARS EXACTLY ONCE. The draft slot and the projected
+     * transcript are two independent renders of one message, so the invariant
+     * worth pinning is the total, not either half. */
+    const shown = result.current.renderedMessages.filter((m) => m.role === "assistant").length
+      + (result.current.streamDraft ? 1 : 0);
+    expect(shown).toBe(1);
   });
+
+  /* NO TEST FOR THE STALE-DRAFT GUARD, and this is why.
+   *
+   * `useChats` will not hand back a persisted draft that is no longer the
+   * transcript's tail — see `draftIsStale` in the hook. That guard exists
+   * because the slice was conditional while the draft rendered
+   * unconditionally, so on a 409 the forced reload swaps the tail and the
+   * `setToast` in the same catch can paint before `send` clears the draft:
+   * one frame with the answer on screen twice.
+   *
+   * A 409 test was written for it and DELETED, because it did not discriminate
+   * — reverting the guard left it green. It asserted settled state, and by then
+   * the draft has been cleared on every terminal path, so the transient frame
+   * is invisible to it. Catching it needs an assertion on an intermediate
+   * render, which `renderHook` does not expose cheaply.
+   *
+   * So the guard is reasoned, not demonstrated. It is three lines and makes the
+   * invariant total rather than dependent on a clear arriving in time, which is
+   * worth having on that basis alone — but do not let this comment be read as
+   * "covered". If you find a way to observe the intermediate paint, write it. */
 
   it("keeps the persisted chat tree stable while reveal paints advance the draft", async () => {
     const releaseStream = deferred();

@@ -1,11 +1,11 @@
 # Handoff — 2026-08-11
 
-State of play at `d6e38ca`, pushed to `origin/main`. Read `AGENTS.md` first;
+State of play at `7b2a1ac`, pushed to `origin/main`. Read `AGENTS.md` first;
 this file is what changed and what is still open, not a description of the
 project.
 
 625 frontend tests, 598 backend, working tree clean. Render auto-deploys from
-`main` and is slow — well over five minutes — so the four commits below are
+`main` and is slow — well over five minutes — so the six commits below are
 live or shortly will be.
 
 **A previous handoff went stale in the worst way**: it still described the

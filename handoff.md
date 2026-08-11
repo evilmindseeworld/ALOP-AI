@@ -202,9 +202,54 @@ reported `"quorum"`.
 624 tests green. Each fix was reverted individually and its regression test
 watched to fail before being restored.
 
-One thing came out of it and is NOT done — aborted turns write no telemetry row
-at all. It is under "Open, and needing the owner" because the fix spends a
-Supabase write on a client that has already disconnected.
+---
+
+## This session (2026-08-12) — the p90 stops lying about abandoned turns
+
+The owner's ruling on the item the last commit left him: *"A p90 that hides
+aborted turns is a lying metric."* Fixed, and the fix is in two halves because
+writing the row is only half of not lying.
+
+**`server.js` writes the row from the `finally`, fire-and-forget.** Every abort
+path returned before the audit write — the `if (turnSignal.aborted) return`
+guards and the catch alike — so a turn the user gave up on left no trace. It is
+NOT awaited: the client is already gone, so there is nobody left to wait for the
+round trip, and `.catch(() => {})` is there because an unhandled rejection in a
+`finally` ends the process under Node's default policy. Only
+`turnSignal.aborted` reaches it, so a 400 from `validatePrompt` still writes
+nothing.
+
+**It keeps the `council` action rather than taking a new `council.aborted`.**
+The admin console selects `.in("action", ["council.tools", "council"])` and then
+filters on `metadata.telemetry === "council_turn"`. A new action name would have
+written rows no report reads — the same invisibility with extra steps.
+
+**`admin-commands.js` counts them and keeps them out of the percentiles**, and
+this is the half worth remembering. An abandoned turn's `turnMs` is a CENSORED
+observation: the turn was still running, so the number is a lower bound on a
+duration nobody measured. Folding those in would have made every percentile
+improve as more users gave up — the original bug, inverted, and harder to spot
+because the graph moves the way you want. They are reported as
+`abandonedTurns` and `abandonedAfterMsMedian`, and an abandonment rate over one
+in five now outranks every other verdict the report can print. Their seat and
+tool records are dropped too: seats that had not answered yet are absent rather
+than slow, which biases a seat percentile toward whichever seats are fast.
+
+Also collapsed to one flag: `telemetryWritten` guarded only `auditTelemetry`
+while the memory, greeting, no_results, search and wiki branches called
+`auditLog` directly, so it read false on the paths that had already written.
+Harmless until the `finally` started writing too — then a client vanishing
+between a branch's `await` and its `return` meant two rows for one turn.
+Everything routes through `auditBranch` or `auditTelemetry` now, and a contract
+test asserts no `auditLog(user.id, 'council'` survives in the route.
+
+**Still not audited: a non-aborted 500.** Real gap, separate one, not fixed
+here.
+
+631 backend tests pass (624 + 7). Each of the three fixes was reverted
+individually and its tests watched to fail — percentiles including abandoned
+rows, the `finally` firing for a 400, one branch bypassing the flag — then
+restored.
 
 ---
 
@@ -605,13 +650,6 @@ user, and anything older than seven days is ignored.
 
 ## Open, and needing the owner
 
-- **Aborted turns are never written to telemetry.** Every abort path in
-  `server.js` returns before the audit write, including the catch, so the tail
-  data excludes exactly the abandoned work the telemetry was added to measure —
-  the p90 is measured only over turns that finished. The fix is to write the row
-  from a `finally`, which means a Supabase write after the client has already
-  disconnected. That is a decision about spending a write on a departed client,
-  not a patch, so it is the owner's.
 - **Is `COUNCIL_TOOLS=1` set in Render?** If it is off, the entire tool-calling
   path is dark in production — specialised engines, live shopping, the tool
   trail — which would be a second and larger cause of weak answers than the

@@ -43,3 +43,41 @@ test("a provider stream must reach its completion frame before the turn can succ
   assert.match(STREAM_MODEL, /if \(p\.done\) \{ completed = true;/);
   assert.match(STREAM_MODEL, /if \(!completed\) throw new Error\('Stream ended before provider completion'\)/);
 });
+
+// An abandoned turn used to write nothing at all: every abort path returns
+// before the audit write, so the only turns in the telemetry were the ones that
+// finished — the population that by definition excludes the slow ones.
+test("an abandoned turn still writes its telemetry row, from the finally", () => {
+  const tail = ROUTE.slice(ROUTE.lastIndexOf("} finally {"));
+  assert.match(tail, /if \(turnSignal\.aborted && !turnAudited && auditUserId\)/);
+  assert.match(tail, /telemetry\.snapshot\(/);
+  assert.match(tail, /aborted: true/);
+});
+
+test("the abandoned-turn write does not block on a client that has already gone", () => {
+  const tail = ROUTE.slice(ROUTE.lastIndexOf("} finally {"));
+  // Not awaited — the client is gone, so there is nobody left to wait for it —
+  // and caught, because an unhandled rejection from a `finally` ends the
+  // process under Node's default policy.
+  assert.doesNotMatch(tail, /await auditLog\(/);
+  assert.match(tail, /\)\.catch\(\(\) => \{\}\);/);
+});
+
+// The guard used to sit on `auditTelemetry` alone while five branches called
+// `auditLog` directly, so the flag read false on the exact paths that had
+// already written. Harmless until the `finally` above started writing too.
+test("one turn writes one audit row: every writer routes through the same flag", () => {
+  assert.doesNotMatch(ROUTE, /auditLog\(user\.id, 'council'/);
+  assert.match(ROUTE, /const auditBranch = async \(metadata\) => \{\s*\n\s*if \(!auditUserId \|\| turnAudited\) return;\s*\n\s*turnAudited = true;/);
+  assert.match(ROUTE, /const auditTelemetry = async \([\s\S]{0,80}?if \(!auditUserId \|\| turnAudited\) return;\s*\n\s*turnAudited = true;/);
+  for (const category of ["memory", "greeting", "no_results", "search", "wiki"]) {
+    assert.match(ROUTE, new RegExp(`auditBranch\\(\\{ category: '${category}'`), category);
+  }
+});
+
+// A 400 is not an abandoned turn. The `finally` runs for it too, and the
+// aborted guard is the only thing keeping it from inventing a row.
+test("only an aborted turn writes from the finally", () => {
+  const tail = ROUTE.slice(ROUTE.lastIndexOf("} finally {"));
+  assert.match(tail, /turnSignal\.aborted &&/);
+});

@@ -1520,10 +1520,25 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
   const turnController = new AbortController();
   const turnSignal = turnController.signal;
   let auditUserId = null;
-  let telemetryWritten = false;
+  /* ONE FLAG FOR EVERY WRITE, not one per writer.
+   *
+   * This used to be `telemetryWritten` and it guarded only `auditTelemetry`.
+   * The memory, greeting, no_results, search and wiki branches called
+   * `auditLog` directly, so the flag stayed false on the exact paths that had
+   * already written a row — which did not matter while nothing else wrote, and
+   * matters now that the `finally` below writes one for abandoned turns. A
+   * client vanishing between a branch's `await auditLog` and its `return` would
+   * have produced two rows for one turn. Everything that can write the turn's
+   * row now routes through `auditBranch` or `auditTelemetry` and sets this. */
+  let turnAudited = false;
+  const auditBranch = async (metadata) => {
+    if (!auditUserId || turnAudited) return;
+    turnAudited = true;
+    await auditLog(auditUserId, 'council', metadata, req.ip);
+  };
   const auditTelemetry = async (action, category, extra = {}) => {
-    if (!auditUserId || telemetryWritten) return;
-    telemetryWritten = true;
+    if (!auditUserId || turnAudited) return;
+    turnAudited = true;
     await auditLog(auditUserId, action, telemetry.snapshot({
       category,
       msToFirstByte: (res.locals?.firstChunkAt || Date.now()) - t0,
@@ -1736,7 +1751,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0, turnSignal);
       if (!res.writableEnded) res.end();
       rememberTurn(chatId, user.id, pv.value, 'Answered memory question.');
-      await auditLog(user.id, 'council', { category: 'memory' }, req.ip);
+      await auditBranch({ category: 'memory' });
       return;
     }
     if (turnSignal.aborted) return;
@@ -1748,7 +1763,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       openStream(res);
       await streamModel(res, PRIMARY_MODEL, greetMsgs, 0.0, turnSignal);
       if (!res.writableEnded) res.end();
-      await auditLog(user.id, 'council', { category: 'greeting' }, req.ip);
+      await auditBranch({ category: 'greeting' });
       return;
     }
 
@@ -1825,7 +1840,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
         res.write(`data: ${JSON.stringify({ type: 'chunk', text: "I searched but couldn't find results. Could you rephrase?" })}\n\n`);
         res.write('data: [DONE]\n\n');
         if (!res.writableEnded) res.end();
-        await auditLog(user.id, 'council', { category: 'no_results' }, req.ip);
+        await auditBranch({ category: 'no_results' });
         return;
       }
       console.log(`[COUNCIL] ${searchQueries.length} quer${searchQueries.length === 1 ? 'y' : 'ies'}, ${sources.length} sources, ${context.length} chars${fresh ? `, freshness=${fresh.label}` : ''}.`);
@@ -1849,7 +1864,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       if (!res.writableEnded) res.end();
       const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
       rememberTurn(chatId, user.id, pv.value, lastA || 'Search response.');
-      await auditLog(user.id, 'council', { category: 'search', sources: sources.length }, req.ip);
+      await auditBranch({ category: 'search', sources: sources.length });
       return;
     }
 
@@ -1868,7 +1883,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0, turnSignal);
         if (!res.writableEnded) res.end();
         rememberTurn(chatId, user.id, pv.value, 'Wikipedia response.');
-        await auditLog(user.id, 'council', { category: 'wiki' }, req.ip);
+        await auditBranch({ category: 'wiki' });
         return;
       }
     }
@@ -2153,6 +2168,50 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
   } finally {
     cleanupDisconnect();
+    /* ABANDONED TURNS ARE THE ONES THE TELEMETRY EXISTS TO MEASURE, and until
+     * now they were the only ones it could not see. Every abort path returns
+     * before the audit write — the `if (turnSignal.aborted) return` guards
+     * throughout, and the catch as well — so a turn the user gave up on left no
+     * row at all. The p90 was therefore computed over the survivors, which is
+     * the one population guaranteed not to contain the problem. The owner's
+     * words: a p90 that hides aborted turns is a lying metric.
+     *
+     * NOT AWAITED, DELIBERATELY. The client has already disconnected, so there
+     * is nobody left to keep waiting; awaiting a Supabase round trip here would
+     * hold the handler open past the point where its answer could matter.
+     * `auditLog` swallows its own insert failures, and the `.catch` is belt and
+     * braces against that changing — an unhandled rejection in a `finally`
+     * takes the process down under Node's default policy.
+     *
+     * The action stays `council`, not a new `council.aborted`. The admin
+     * console selects `.in("action", ["council.tools", "council"])` and then
+     * keeps rows by `metadata.telemetry === "council_turn"`; a new action name
+     * would have written rows that no report reads, which is the same
+     * invisibility with more steps. The rows are told apart by the `aborted`
+     * flag the snapshot already carries, and `admin-commands.js` keeps them out
+     * of the duration percentiles — an abandoned turn's duration is a censored
+     * observation, a lower bound on a number nobody measured, and averaging it
+     * in with completed turns would make the p90 look BETTER the more people
+     * gave up. It is reported as a rate instead.
+     *
+     * Only `turnSignal.aborted` reaches this. A 400 from `validatePrompt`, and
+     * any other early return, is not an abandoned turn and still writes
+     * nothing. A non-aborted 500 also still writes nothing — that is a real gap
+     * and a separate one; it is in `handoff.md` rather than fixed here. */
+    if (turnSignal.aborted && !turnAudited && auditUserId) {
+      turnAudited = true;
+      auditLog(
+        auditUserId,
+        'council',
+        telemetry.snapshot({
+          category: 'aborted',
+          msToFirstByte: res.locals?.firstChunkAt ? res.locals.firstChunkAt - t0 : null,
+          msToFirstProgress: res.locals?.firstByteAt ? res.locals.firstByteAt - t0 : null,
+          aborted: true,
+        }),
+        req.ip,
+      ).catch(() => {});
+    }
   }
 });
 

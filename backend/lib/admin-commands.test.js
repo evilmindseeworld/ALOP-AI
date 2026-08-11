@@ -245,6 +245,65 @@ test("names the case where no tool was ever called", async () => {
   assert.match((await c.run("council")).result.verdict, /No tool was ever called/);
 });
 
+// ===== abandoned turns =====
+//
+// `server.js` writes a row for a turn the client walked away from. Those rows
+// are the reason the p90 was worth distrusting, and they must not become the
+// reason it is worth distrusting in the other direction.
+
+test("an abandoned turn's duration stays out of every percentile", async () => {
+  // Two turns waited out at 10s, and eight given up on after 200ms. Folding the
+  // abandonments in would report a median of 200ms and call the council fast,
+  // when what actually happened is that eight people out of ten left.
+  const finished = Array.from({ length: 2 }, () => ({
+    telemetry: "council_turn", turnMs: 10000, msToFirstByte: 10000, synthesisMs: 400,
+    rounds: 1, uniqueCalls: 1, members: 7, tools: {},
+  }));
+  const gaveUp = Array.from({ length: 8 }, () => ({
+    telemetry: "council_turn", aborted: true, turnMs: 200, msToFirstByte: null,
+    rounds: 1, uniqueCalls: 1, members: 7, tools: {},
+  }));
+  const c = buildCommands({
+    supabase: fakeSupabase(councilRows([...finished, ...gaveUp])),
+    env: {},
+    proc: process,
+  });
+  const r = await c.run("council");
+  assert.equal(r.result.turns, 2, "percentiles are over completed turns only");
+  assert.equal(r.result.turnMsMedian, 10000);
+  assert.equal(r.result.msToFirstByteMedian, 10000);
+  assert.equal(r.result.abandonedTurns, "8 of 10");
+  assert.equal(r.result.abandonedAfterMsMedian, 200);
+});
+
+test("an abandonment rate above one in five outranks every other verdict", async () => {
+  const rows = [
+    { telemetry: "council_turn", turnMs: 9000, rounds: 1, uniqueCalls: 7, members: 7, tools: { web_search: 7 } },
+    { telemetry: "council_turn", aborted: true, turnMs: 300, rounds: 1, uniqueCalls: 0, members: 7, tools: {} },
+  ];
+  const c = buildCommands({ supabase: fakeSupabase(councilRows(rows)), env: {}, proc: process });
+  const r = await c.run("council");
+  // The dedupe verdict would otherwise fire here — callsPerMember is 1.0.
+  assert.equal(r.result.callsPerMember, 1);
+  assert.match(r.result.verdict, /ABANDONED/);
+});
+
+test("all turns abandoned reads as a finding, not as no data", async () => {
+  const c = buildCommands({
+    supabase: fakeSupabase(councilRows([
+      { telemetry: "council_turn", aborted: true, turnMs: 400 },
+      { telemetry: "council_turn", aborted: true, turnMs: 900 },
+    ])),
+    env: {},
+    proc: process,
+  });
+  const r = await c.run("council");
+  assert.equal(r.result.turns, 0);
+  assert.equal(r.result.abandonedTurns, "2 of 2");
+  assert.match(r.result.note, /given up/);
+  assert.doesNotMatch(r.result.note, /COUNCIL_TOOLS is not 1/);
+});
+
 test("flags frequent fallbacks to the plain council", async () => {
   const rows = Array.from({ length: 4 }, (_, i) => ({
     rounds: 2, uniqueCalls: 2, members: 7, fellBack: i < 2, tools: { web_search: 2 },

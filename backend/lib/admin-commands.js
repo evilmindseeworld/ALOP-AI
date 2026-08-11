@@ -262,11 +262,36 @@ function buildCommands({ supabase, env = process.env, proc = process } = {}) {
         const turnRows = (data || [])
           .filter((r) => r.action === "council.tools" || r.metadata?.telemetry === "council_turn")
           .slice(0, 200);
-        const rows = turnRows.map((r) => r.metadata || {});
+        /* ABANDONED TURNS COUNT, BUT NOT IN THE DURATIONS.
+         *
+         * `server.js` now writes a row for a turn the client walked away from,
+         * because a p90 computed only over turns that finished is a p90 over
+         * the population guaranteed not to contain the problem. But an
+         * abandoned turn's `turnMs` is a CENSORED observation — the turn was
+         * still running, so the number is a lower bound on a duration nobody
+         * ever measured. Averaging those in would make every percentile here
+         * improve as MORE users gave up, which is the failure this row was
+         * added to prevent, inverted.
+         *
+         * So they are counted and reported as a rate, and the percentiles are
+         * taken over completed turns only. Seat and tool records from an
+         * abandoned turn are real measurements of real calls, but they are left
+         * out too: the seats that had not answered yet are absent rather than
+         * slow, so a seat percentile over these rows is biased toward whichever
+         * seats happen to be fast. */
+        const allRows = turnRows.map((r) => r.metadata || {});
+        const abandoned = allRows.filter((r) => r.aborted);
+        const rows = allRows.filter((r) => !r.aborted);
+        const abandonedRate = allRows.length
+          ? `${abandoned.length} of ${allRows.length}`
+          : "0 of 0";
         if (!rows.length) {
           return {
             turns: 0,
-            note: "No tool-loop turns recorded yet. Either COUNCIL_TOOLS is not 1, or every question so far was routed to memory, search or a greeting before reaching the council.",
+            abandonedTurns: abandonedRate,
+            note: abandoned.length
+              ? `No turn ran to completion. All ${abandoned.length} recorded turns were abandoned by the client mid-flight, which is a finding rather than an absence of data — every user so far has given up before an answer landed.`
+              : "No tool-loop turns recorded yet. Either COUNCIL_TOOLS is not 1, or every question so far was routed to memory, search or a greeting before reaching the council.",
           };
         }
 
@@ -312,8 +337,14 @@ function buildCommands({ supabase, env = process.env, proc = process } = {}) {
           toolsUsed: tools,
           fellBackToPlainCouncil: `${fellBack} of ${rows.length}`,
           hitACeiling: `${truncated} of ${rows.length}`,
+          // Out of every percentile above, on purpose — see the note where
+          // these are split. The rate is the signal; the durations are not.
+          abandonedTurns: abandonedRate,
+          abandonedAfterMsMedian: percentile(abandoned.map((r) => r.turnMs)),
           verdict:
-            !uniqueCalls
+            abandoned.length > allRows.length / 5
+              ? `ONE TURN IN ${Math.round(allRows.length / Math.max(1, abandoned.length))} IS ABANDONED. Read that before any timing below it: the percentiles here describe only the turns people waited out, and the ones they did not are the slow ones by definition.`
+              : !uniqueCalls
               ? "No tool was ever called. Models are answering directly — check a [PROBE] line, or the questions genuinely needed no research."
               : members && uniqueCalls / members > 0.7
                 ? "DEDUPE IS NOT EARNING ITS PLACE: members are asking for different things almost every time. Tighten the prompt toward shared phrasing."

@@ -147,6 +147,21 @@ const AuthenticatedApp = () => {
    */
   const speakAnswer = useCallback((text, opts) => speak(text, { apiCall, ...opts }), [apiCall]);
 
+  /* THE MOST EXPENSIVE ARROW FUNCTION IN THE APPLICATION.
+   *
+   * This was written inline on <MessageList onCopy={...}>, which gave it a new
+   * identity on every render of App. `Message` is memo'd and takes onCopy, so a
+   * new identity invalidated EVERY message in the transcript — and a message
+   * re-render is a full react-markdown parse of its content.
+   *
+   * While a reply streams, App re-renders at the reveal cadence. So every
+   * paint, every message already on screen was re-parsed from Markdown, not
+   * only the one receiving tokens. The memo was there and was doing nothing;
+   * one unstable prop is enough to switch it off completely.
+   *
+   * No dependencies: navigator.clipboard is stable for the document's life. */
+  const copyAnswer = useCallback((content) => navigator.clipboard.writeText(content), []);
+
   const { activeChat, activeMessages, status } = chat;
 
   // --- preferences -------------------------------------------------------
@@ -318,6 +333,30 @@ const AuthenticatedApp = () => {
    * the type check would be three chances for them to disagree about what an
    * image is.
    */
+  /* THE COMPOSER'S TWO UNSTABLE PROPS, for the same reason as copyAnswer above.
+   *
+   * Both were arrow functions written inline on <InputBar>, which is memo'd —
+   * so the composer re-rendered on every streaming paint along with its
+   * textarea and its five tooltip subscriptions, for tokens it has nothing to
+   * do with. The one control the user is looking at while waiting was the one
+   * doing the most pointless work. */
+  const clearAttachment = useCallback(() => setAttachedImage(null), []);
+
+  const handleDocSelect = useCallback(
+    (e) => {
+      const file = e.target.files?.[0];
+      // Cleared so picking the same file twice in a row still fires change —
+      // the input keeps its value otherwise.
+      e.target.value = "";
+      chat.uploadFile(file);
+    },
+    // The FUNCTION, not `chat`. useChats returns a fresh object literal every
+    // render, so depending on the whole hook result would rebuild this callback
+    // every time and undo the point of it. uploadFile is useCallback'd in
+    // useChats.js:616 and is the only part of `chat` this reads.
+    [chat.uploadFile]
+  );
+
   const acceptImageFile = useCallback(async (file) => {
     if (!file) return;
     if (!file.type.startsWith("image/")) {
@@ -692,7 +731,7 @@ const AuthenticatedApp = () => {
                   onRetryMessages={chat.retryMessages}
                   status={status}
                   feedback={chat.feedback}
-                  onCopy={(content) => navigator.clipboard.writeText(content)}
+                  onCopy={copyAnswer}
                   onSpeak={speakAnswer}
                   onFeedback={chat.submitFeedback}
                   onPickStarter={handlePickStarter}
@@ -730,20 +769,14 @@ const AuthenticatedApp = () => {
                 isListening={speech.isListening}
                 toggleListening={speech.toggle}
                 attachedImage={attachedImage}
-                onClearAttachment={() => setAttachedImage(null)}
+                onClearAttachment={clearAttachment}
                 isGenerating={status === "loading" || status === "streaming"}
                 onStop={chat.stopGeneration}
                 onImageFile={acceptImageFile}
                 attachedFiles={chat.chatFiles}
                 attachedFilesError={chat.chatFilesError}
                 onRetryFiles={chat.retryChatFiles}
-                onDocSelect={(e) => {
-                  const file = e.target.files?.[0];
-                  // Cleared so picking the same file twice in a row still
-                  // fires change — the input keeps its value otherwise.
-                  e.target.value = "";
-                  chat.uploadFile(file);
-                }}
+                onDocSelect={handleDocSelect}
                 onRemoveFile={chat.removeFile}
               />
             </div>

@@ -100,6 +100,42 @@ this line was written, and a number is the part that goes stale silently.
 
 ---
 
+## THE COUNCIL IS DELIVERING ONE SEAT OUT OF SIX (2026-08-11)
+
+**Read this before optimising anything about latency.** It reorders everything
+below it.
+
+Luna's telemetry run, on this runner, across 3 turns: **5 of 6 seats timed out
+on EVERY run.** Only `glm-5.2` produced a usable answer. `qwen3.6`, `gemma4`,
+`qwen3-coder`, `gemma2` and `mistral-nemo` never delivered. All 3 turns hit the
+30s council whip. No fallback council ran. Total turn 33.5–39.5s, synthesis
+3.4–9.5s.
+
+So the tail is **seat availability** — not synthesis, and not the
+post-truncation fallback the owner deliberately kept. Those were both
+suspected earlier in the session and both are cleared by this.
+
+The owner's call, and it is the right one: **a council that promises seven
+voices and delivers one is not a latency problem, it is a broken council.** No
+further work on quorum, ceilings or abort propagation until these are answered:
+
+1. Are those five model endpoints reachable from the runner at all? A model the
+   gateway does not serve and a model that is merely slow look IDENTICAL from
+   inside the whip, and need opposite fixes.
+2. What is each one's real TTFT and total, over several runs?
+3. Is the one request shape sent to every seat — `{ model, messages, stream,
+   options: { temperature, num_predict } }` — actually valid for each of them on
+   this gateway? A rejected parameter can present as a timeout rather than an
+   error. Read the response bodies, not the statuses.
+4. Is the 30s whip simply shorter than their time-to-first-token? If a seat
+   reliably takes longer than the whip on this hardware, no council change can
+   rescue it and it should not be in the roster.
+
+Diagnosis is in flight. Numbers above are from the LOCAL RUNNER, not production
+audit rows — do not quote them as production.
+
+---
+
 ## This session (2026-08-11), latest — response times, measured at last
 
 The owner's report was "AI response times are quite slow". Both peers profiled

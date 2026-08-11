@@ -1,14 +1,14 @@
-# Handoff — 2026-08-11
+# Handoff — 2026-08-12
 
-State of play at frontend commit `f110515` on local `main`; Claude owns the
-push. Read `AGENTS.md` first;
+State of play at backend commit `2306cf8` on `main`, pushed — local and
+`origin/main` are level, nothing is being sat on. Read `AGENTS.md` first;
 this file is what changed and what is still open, not a description of the
 project.
 
-634 frontend tests and the production build are green. Backend work was owned
-concurrently and was not touched or counted in this frontend pass. Render
-auto-deploys from `main` and is slow — well over five minutes — so nothing in
-`f110515` is live until Claude pushes it and that deploy finishes.
+624 backend tests are green at `2306cf8`; the 634 frontend tests and the
+production build were green at `f110515` and have not been re-run since, as
+that pass touched backend only. Render auto-deploys from `main` and is slow —
+well over five minutes — so `2306cf8` is live only once that deploy finishes.
 
 **A previous handoff went stale in the worst way**: it still described the
 Clerk migration as "deliberately NOT attempted" three weeks after it had merged,
@@ -127,39 +127,84 @@ found them all.
 
 ---
 
-## THE COUNCIL IS DELIVERING ONE SEAT OUT OF SIX (2026-08-11)
+## SEAT HEALTH IS UNKNOWN, AND THE ALARMING NUMBER WAS MEASURED ON THE WRONG
+## ROSTER (2026-08-11)
 
-**Read this before optimising anything about latency.** It reorders everything
-below it.
+**Retracted before it could be acted on.** This section briefly read "THE
+COUNCIL IS DELIVERING ONE SEAT OUT OF SIX" and named it the top priority. That
+claim does not survive its own evidence, and the retraction is left visible
+because the mistake is more instructive than the correction.
 
-Luna's telemetry run, on this runner, across 3 turns: **5 of 6 seats timed out
-on EVERY run.** Only `glm-5.2` produced a usable answer. `qwen3.6`, `gemma4`,
-`qwen3-coder`, `gemma2` and `mistral-nemo` never delivered. All 3 turns hit the
-30s council whip. No fallback council ran. Total turn 33.5–39.5s, synthesis
-3.4–9.5s.
+**What was measured.** A local telemetry run reported 5 of 6 seats timing out
+on every turn, naming `qwen3.6`, `gemma4`, `qwen3-coder`, `gemma2` and
+`mistral-nemo`, with only `glm-5.2` answering.
 
-So the tail is **seat availability** — not synthesis, and not the
-post-truncation fallback the owner deliberately kept. Those were both
-suspected earlier in the session and both are cleared by this.
+**Why it does not mean what it looked like.** Four of those five ARE NOT IN THE
+COUNCIL. The roster in `server.js` is `glm-5.2`, `kimi-k2.7-code`, `qwen3.5`,
+`gemma4`, `deepseek-v4-pro`, `nemotron-3-ultra`, `minimax-m3`. This machine's
+Ollama serves exactly one of them — `gemma4` — plus `glm-5.2:cloud` under a
+different tag. It has none of `kimi-k2.7-code`, `qwen3.5`, `deepseek-v4-pro`,
+`nemotron-3-ultra` or `minimax-m3`. The models that "timed out" are local
+odds and ends that happen to be installed here.
 
-The owner's call, and it is the right one: **a council that promises seven
-voices and delivers one is not a latency problem, it is a broken council.** No
-further work on quorum, ceilings or abort propagation until these are answered:
+So the run measured a substitute roster on hardware that cannot serve the real
+one. It is not evidence about production seat health in either direction — the
+council may be perfectly healthy in production, or badly broken, and this says
+nothing either way.
 
-1. Are those five model endpoints reachable from the runner at all? A model the
-   gateway does not serve and a model that is merely slow look IDENTICAL from
-   inside the whip, and need opposite fixes.
-2. What is each one's real TTFT and total, over several runs?
-3. Is the one request shape sent to every seat — `{ model, messages, stream,
-   options: { temperature, num_predict } }` — actually valid for each of them on
-   this gateway? A rejected parameter can present as a timeout rather than an
-   error. Read the response bodies, not the statuses.
-4. Is the 30s whip simply shorter than their time-to-first-token? If a seat
-   reliably takes longer than the whip on this hardware, no council change can
-   rescue it and it should not be in the roster.
+**Why the production probe could not settle it either.** This runner has no
+`OLLAMA_HOST` and no `OLLAMA_API_KEY`; `backend/.env` does not carry them. The
+gateway cannot be reached from here at all, so no measurement made on this
+machine can speak for production.
 
-Diagnosis is in flight. Numbers above are from the LOCAL RUNNER, not production
-audit rows — do not quote them as production.
+**What IS established, and is worth keeping:**
+
+- The request shape is not the problem. `{ model, messages, stream, options:
+  { temperature, num_predict } }` was accepted by every model that responded —
+  no 400s on options, roles or structure. That kills the malformed-request
+  hypothesis for good.
+- Locally, three models produce no token within 35–60s and `gemma4` cold-starts
+  at 33.4s against a 30s whip. On hardware like this, a cold seat cannot make
+  the whip. Whether the production gateway behaves this way is unknown.
+- A model the gateway does not serve and a model that is merely slow look
+  IDENTICAL from inside the whip and need opposite fixes. That distinction is
+  the thing any real probe has to establish first.
+
+**The one action that would settle it**, and it needs the owner: an
+authenticated probe of the real `OLLAMA_HOST` using the seven roster names and
+the exact payload above, measuring TTFT per seat over several runs. Until that
+exists, do not remove seats, do not raise the whip, and do not repeat the
+"one seat in six" number — it measured something else.
+
+---
+
+## This session (2026-08-12) — cancellation landed, then reviewed for state
+
+`2306cf8`, backend. The `AbortSignal` work that this file had queued "for a
+session of its own" is done: the signal is threaded through
+`settleByDeadline`, `askMember`, `callModel`, the registry executors and the
+provider fetches, and cancelled on deadline and on quorum release. Stragglers
+are now cancelled, not merely ignored.
+
+The part worth remembering is the review brief, because a weaker one would have
+passed this. Sol was asked to trace **what the state IS at each layer while an
+abort propagates**, not whether the abort fires — and the named failure turned
+out to be reachable: a seat released by quorum could still land its answer and
+reach synthesis. `settleByDeadline` now marks the round resolved BEFORE
+aborting the layers below it, closed for all four orderings (quorum-first,
+abort-first, late-fulfilment, late-rejection). Three more came out of the same
+pass: a provider body closing without Ollama's `done: true` frame was persisted
+as a complete answer rather than an error, `signal || settleSignal` in the
+search cache dropped the local deadline whenever a parent signal existed, and
+quorum-during-a-round reported `stopReason: null` where the preflight path
+reported `"quorum"`.
+
+624 tests green. Each fix was reverted individually and its regression test
+watched to fail before being restored.
+
+One thing came out of it and is NOT done — aborted turns write no telemetry row
+at all. It is under "Open, and needing the owner" because the fix spends a
+Supabase write on a client that has already disconnected.
 
 ---
 
@@ -560,6 +605,13 @@ user, and anything older than seven days is ignored.
 
 ## Open, and needing the owner
 
+- **Aborted turns are never written to telemetry.** Every abort path in
+  `server.js` returns before the audit write, including the catch, so the tail
+  data excludes exactly the abandoned work the telemetry was added to measure —
+  the p90 is measured only over turns that finished. The fix is to write the row
+  from a `finally`, which means a Supabase write after the client has already
+  disconnected. That is a decision about spending a write on a departed client,
+  not a patch, so it is the owner's.
 - **Is `COUNCIL_TOOLS=1` set in Render?** If it is off, the entire tool-calling
   path is dark in production — specialised engines, live shopping, the tool
   trail — which would be a second and larger cause of weak answers than the
@@ -596,15 +648,13 @@ user, and anything older than seven days is ignored.
   `fly.toml` with `primary_region = "bom"`, `scripts/verify-migration.sh` and
   `docs/MUMBAI-MIGRATION.md` all exist. Fly wants payment to deploy; Cloud Run
   `asia-south1` is the free alternative.
-- **Nothing is cancelled, only abandoned.** `settleByDeadline` ignores
-  stragglers rather than cancelling them, and quorum release does the same: five
-  final-round model calls keep running toward the server's 30s timeout after the
-  room has been released, and a timed-out tool keeps executing its provider (a
-  20ms tool timeout was measured still running at 103ms). The fix is an
-  `AbortSignal` threaded through `settleByDeadline`, `askMember`, `callModel`,
-  the registry executors and the provider fetches, then cancelled on deadline or
-  quorum release. Queued deliberately for a session of its own — it touches
-  every layer and is not a patch.
+- ~~**Nothing is cancelled, only abandoned.**~~ **Done** — the `AbortSignal` is
+  threaded through `settleByDeadline`, `askMember`, `callModel`, the registry
+  executors and the provider fetches, and cancelled on deadline and on quorum
+  release. Sol's review of it landed four further fixes in `2306cf8`; see the
+  2026-08-12 section above. What remains of this item is one owner decision,
+  listed under "Open, and needing the owner": aborted turns write no telemetry
+  row at all.
 - **The council is only late-streaming.** Seats are polled non-streaming, so the
   first token cannot arrive until the last seat settles. The stage line now
   covers that wait rather than removing it. Streaming the seats themselves is
@@ -640,6 +690,10 @@ user, and anything older than seven days is ignored.
 ## Environment notes
 
 - `jq` is not installed. Use `node -e` for JSON work.
+- **The two halves use different test runners.** Backend is `node:test` —
+  `npm test` from `backend/`. Frontend is vitest. Running `npx vitest` in
+  `backend/` reports all 44 files as "No test suite found in file", which reads
+  as a broken suite and is only the wrong runner.
 - **Agent Reach is installed on this machine** (2026-08-11) and is a research
   tool for whoever is working on this repo, not a dependency of the app —
   nothing in `backend/` or `frontend/` imports it. Live web page reads via

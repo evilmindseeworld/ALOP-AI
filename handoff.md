@@ -1,12 +1,14 @@
 # Handoff — 2026-08-11
 
-State of play at `7b2a1ac`, pushed to `origin/main`. Read `AGENTS.md` first;
+State of play at frontend commit `f110515` on local `main`; Claude owns the
+push. Read `AGENTS.md` first;
 this file is what changed and what is still open, not a description of the
 project.
 
-625 frontend tests, 598 backend, working tree clean. Render auto-deploys from
-`main` and is slow — well over five minutes — so the six commits below are
-live or shortly will be.
+634 frontend tests and the production build are green. Backend work was owned
+concurrently and was not touched or counted in this frontend pass. Render
+auto-deploys from `main` and is slow — well over five minutes — so nothing in
+`f110515` is live until Claude pushes it and that deploy finishes.
 
 **A previous handoff went stale in the worst way**: it still described the
 Clerk migration as "deliberately NOT attempted" three weeks after it had merged,
@@ -103,15 +105,34 @@ user opening an old chat was told an answer had just finished. It now
 announces lifecycle transitions only, and only after something was actually
 responding.
 
-Deliberately left, with reasons: `MessageList` still reconciles O(message
-count) per token paint — fixing it means separating the streaming draft from
-the persisted `chats` tree, which is not a small patch; the 224ms reveal tail,
-which smooths bursty output and is a cadence decision, not a bug; and the null
-Suspense fallback, which can flash a blank transcript on a slow chunk.
+**The O(message count) reveal reconcile is fixed in `f110515`, and the size of
+the win was measured before keeping it.** The arriving answer now lives outside
+the persisted `chats` tree, and settled rows sit behind a memo boundary while
+the draft advances. The completed draft remains mounted through the
+plain-text-to-Markdown swap, while export, feedback and the PUT continue to use
+the full persisted transcript. Against 200 settled messages and the earlier
+replay shape — 57 network frames, 109 reveal commits, 13.4 characters per
+commit — median React update work across five runs fell 45.88ms → 7.27ms
+(84.1%), and median replay wall time fell 68.60ms → 14.68ms (78.6%). The commit
+count is unchanged on purpose: the draft still needs every paint; the 200 old
+rows do not.
+
+The null transcript Suspense fallback is also fixed in `f110515`. A slow
+MessageList chunk now paints the existing `MessageSkeleton` or
+`AnswerSkeleton`; there is no new decoration and no CSS change. The regression
+tests were run against actual temporary reverts: history mapping rose from 1
+to 20 calls, the persisted tree lost identity, and the null boundary lost its
+skeleton. All three tests passed again after restoration.
+
+Still deliberately left: the 224ms reveal tail, which smooths bursty output
+and is a cadence decision, not a bug.
 
 **A real NVDA or VoiceOver run is still owed.** Unit semantics and axe pass,
 which is not the same thing, and the peer declined to call screen-reader
-behaviour cleared without running one. Do not mark it done from the test count.
+behaviour cleared without running one. Windows Narrator is present on this
+machine, but this automation environment cannot capture or inspect what it
+speaks, so launching it would not produce evidence of what a user heard. Do not
+mark it done from the test count or the browser accessibility tree.
 
 **Seat streaming is written up as a staged plan and is NOT started.** Stage
 one is worth shipping for progress telemetry and perceived waiting, but it is

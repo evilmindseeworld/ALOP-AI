@@ -365,7 +365,7 @@ export const appTree = (theme) => `
           </div>
 
           <div class="input-bar">
-            <div class="input-wrapper"><div class="composer-sprigs" aria-hidden="true"><svg class="composer-sprig composer-sprig-l" viewBox="0 0 120 76"><path d="M0 0"/></svg><svg class="composer-sprig composer-sprig-r" viewBox="0 0 120 76"><path d="M0 0"/></svg></div>
+            <div class="input-wrapper"><div class="composer-sprigs" aria-hidden="true"><svg class="composer-sprig composer-sprig-l" viewBox="0 0 120 76"><path d="M0 0"/></svg><svg class="sakura-seal composer-seal" viewBox="0 0 32 32"><rect width="32" height="32"/></svg></div>
               <div class="attachment-preview">
                 <img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="Attached"/>
                 <button aria-label="Remove attached image">×</button>

@@ -96,10 +96,14 @@
    * branch sit along its upper side, so hanging it level would bury them
    * behind the border instead of resting them on it. */
   top: -19px;
-  width: 104px;
+  /* Wider than the old pair, because there is only one now and it carries the
+   * whole bar. The `bar` variant runs off the right edge of its own viewBox, so
+   * this width is what decides how far the branch lies ACROSS the card rather
+   * than how far it hangs beside it. */
+  width: 128px;
   height: auto;
-  color: var(--primary);
-  opacity: 0.18;
+  color: var(--ornament-ink);
+  opacity: var(--ornament-a-faint);
   transition:
     opacity var(--dur) var(--ease-out),
     transform var(--dur) var(--ease-spring);
@@ -107,9 +111,25 @@
 
 .composer-sprig-l { left: -10px; }
 
-/* Mirrored, never rotated — see the Sprig comment in SakuraFrame.jsx: a
- * rotated branch grows the wrong way and hangs its blossoms underneath. */
-.composer-sprig-r { right: -10px; transform: scaleX(-1); }
+/* THE RIGHT END IS A SEAL NOW, NOT A SECOND BRANCH.
+ *
+ * `.composer-sprig-r` was the same drawing under scaleX(-1), so the prompt bar
+ * was a symmetrical pair — the mirroring problem recorded in decoration.css, at
+ * the one place on the screen the eye is always pointed at. A hanko is what the
+ * reference puts at the end of a composition, and it is the only mark in this
+ * app drawn at full opacity: no alpha-ladder step here on purpose, because a
+ * seal that hedges is not a seal.
+ *
+ * It sits ON the card rather than above its edge, which is where a stamp goes,
+ * and inside the padding so it never lands under the send button. */
+.composer-seal {
+  position: absolute;
+  right: 12px;
+  top: -14px;
+  width: 26px;
+  height: 26px;
+  transition: transform var(--dur) var(--ease-spring);
+}
 
 /* THE BRANCH ANSWERS THE CARET.
  *
@@ -119,19 +139,24 @@
  * the branch arrives slightly ahead of the surface it rests on, on the spring
  * easing, while the border does its own thing on ease-out. */
 .input-wrapper:focus-within .composer-sprig {
-  opacity: 0.3;
+  opacity: var(--ornament-a-mid);
   transform: translateY(-2px);
 }
 
-.input-wrapper:focus-within .composer-sprig-r {
-  transform: scaleX(-1) translateY(-2px);
+/* The seal does not brighten — it has nowhere to go from alpha 1 — so it takes
+ * the same 2px the branch does and nothing else. */
+.input-wrapper:focus-within .composer-seal {
+  transform: translateY(-2px);
 }
 
 /* On a phone the composer is nearly the full width and its icon row is tight
  * under it; a full-size branch at each corner turns the one control that
  * matters into an illustration. */
 @media (max-width: 640px) {
-  .composer-sprig { width: 72px; top: -13px; opacity: 0.14; }
+  .composer-sprig { width: 88px; top: -13px; opacity: var(--ornament-a-faint); }
+  /* The seal shrinks but stays at full opacity. It is 20px of the one saturated
+   * colour on the screen, and it is the piece worth keeping at this width. */
+  .composer-seal { width: 20px; height: 20px; top: -11px; right: 8px; }
 }
 
 /* A file is over the composer. Dashed, because the border is briefly a target

@@ -112,6 +112,49 @@
   --danger: #f0808f;
   --info: #8fc9d6;
 
+  /* ===== THE ORNAMENT SET =====
+   *
+   * ONE HUE AT FIVE ALPHAS IS A WATERMARK. That is what this family was: every
+   * crescent, sprig, keystone, rosette and lattice painted `var(--primary)`
+   * somewhere between 0.16 and 0.34, so the whole illustration was the same ink
+   * turned up and down. Nothing in it ever committed, and an ornament that
+   * never commits reads as placeholder texture rather than as a drawing.
+   *
+   * The reference this family comes from is ink on paper and carries three
+   * colour families: pink blossom, sage leaf, and one vermilion seal that is the
+   * only saturated thing on the page. All three are here, and the seal is drawn
+   * at alpha 1 — see `Seal` in SakuraFrame.jsx.
+   *
+   * THE ALPHA LADDER IS PER THEME, and that is a correction rather than a
+   * refinement. 0.34 pink over the Bamboo Day paper (#f8f4ed) is a smaller
+   * perceptual step than the same value over Sakura Night's #0a0a0a, so the
+   * corner sprigs were close to invisible in the light theme while reading
+   * correctly in the dark one. Same token, two different results. Light needs
+   * roughly 1.4x the alpha for the same presence, so it declares its own ladder
+   * below rather than inheriting this one.
+   *
+   * Every ornament rule reads one of these three steps. No rule may write a
+   * bare opacity number; if a piece needs a value between two steps, the
+   * question is which step it belongs to. */
+  --ornament-ink: #f08aa3;
+  --ornament-leaf: #79c6a2;
+  --ornament-seal: #e2503c;
+
+  --ornament-a-strong: 0.40;
+  --ornament-a-mid: 0.26;
+  --ornament-a-faint: 0.15;
+
+  /* The band. A SOLID fill with a hard edge, and the only one in the app.
+   *
+   * Everything here was soft: washes, masks, low-alpha gradients, hairline
+   * borders at 7% white. Softness everywhere is the other half of why this read
+   * as unfinished, because nothing had a boundary the eye could land on. The
+   * reference's spine is a hard-edged block of colour running the full height of
+   * the paper with the branch crossing in front of it, and that single hard edge
+   * is what the whole composition hangs off. */
+  --ornament-band: #1b1417;
+  --ornament-band-edge: rgba(240, 138, 163, 0.42);
+
   --font-heading: 'Clash Grotesk', system-ui, sans-serif;
   --font-body: 'Switzer', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
@@ -433,6 +476,25 @@
   --warning: #855017;
   --danger: #a3172b;
   --info: #1f6675;
+
+  /* The ornament set, Bamboo Day. See the block on :root for why the alpha
+   * ladder is declared twice rather than shared: paper takes roughly 1.4x the
+   * alpha of near-black for the same perceptual weight, and the corner sprigs
+   * had been tuned on the dark theme only.
+   *
+   * The band is a dusty rose rather than a tint of the paper, which is what the
+   * reference does — its spine is a different MATERIAL from the sheet, not a
+   * darker patch of it. A tint of --surface would read as a shadow. */
+  --ornament-ink: #b31a54;
+  --ornament-leaf: #3f7d5c;
+  --ornament-seal: #b3241a;
+
+  --ornament-a-strong: 0.55;
+  --ornament-a-mid: 0.38;
+  --ornament-a-faint: 0.22;
+
+  --ornament-band: #ecdde0;
+  --ornament-band-edge: rgba(179, 26, 84, 0.34);
 
   --shadow-xs: 0 1px 2px rgba(50, 36, 28, 0.08);
   --shadow-sm: 0 2px 8px rgba(50, 36, 28, 0.08);

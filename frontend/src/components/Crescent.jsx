@@ -62,10 +62,22 @@ const Crescent = memo(({ side }) => {
             with a mask rather than a two-arc path keeps the geometry honest —
             arc-based crescents silently collapse when the inner radius is too
             small for the chord and SVG scales it back up. */}
+        {/* THE TWO SIDES ARE DIFFERENT PHASES, NOT ONE SHAPE FLIPPED.
+            `.earring-right .crescent` used to carry `transform: scaleX(-1)`,
+            which made the pair a perfect bilateral mirror — and a mirror is the
+            single loudest signal that an ornament was placed by a stylesheet
+            rather than drawn. Moving the bite to the other side of the disc AND
+            changing its radius and centre gives the right-hand moon a genuinely
+            thinner phase, so the two read as the same object at two moments
+            rather than as one object and its reflection. */}
         <mask id={mid}>
           <rect width="96" height="132" fill="black" />
           <circle cx="46" cy="84" r="42" fill="white" />
-          <circle cx="72" cy="66" r="38" fill="black" />
+          {side === "right" ? (
+            <circle cx="22" cy="72" r="41" fill="black" />
+          ) : (
+            <circle cx="72" cy="66" r="38" fill="black" />
+          )}
         </mask>
       </defs>
 

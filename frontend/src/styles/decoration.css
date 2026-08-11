@@ -70,7 +70,11 @@
    * padding still ends inside the wrapper's padding box. */
   inset: 0 0 calc((var(--fade-bottom) - var(--space-6)) * -1) 0;
   pointer-events: none;
-  color: var(--primary);
+  /* --ornament-ink, not --primary. The ornament family is its own three-colour
+   * set now (ink, leaf, seal) declared per theme in tokens.css; --primary is the
+   * UI's accent and the two had been the same value at five alphas, which is
+   * what made the whole illustration read as a watermark of the button colour. */
+  color: var(--ornament-ink);
   z-index: var(--z-empty-decor);
 }
 
@@ -86,11 +90,30 @@
   position: absolute;
   width: clamp(96px, 15vw, 190px);
   height: auto;
-  opacity: 0.34;
+  opacity: var(--ornament-a-strong);
 }
 
+/* NO MIRRORING ANYWHERE IN THIS BLOCK, and it is not coming back.
+ *
+ * All four corners used to be one drawing under scaleX(-1) / scaleY(-1) /
+ * scale(-1), which is a perfect bilateral frame — the one thing no hand-drawn
+ * branch has ever been, and the reason the ornament read as a CSS frame instead
+ * of a painting. SakuraFrame.jsx now holds four separately authored variants,
+ * each already growing the right way, so a transform here would flip a branch
+ * back into the wrong direction rather than save a drawing.
+ *
+ * The sizes and alphas differ per corner on top of that. Equal corners are the
+ * same symmetry problem one level up: the top left is the heaviest and the eye
+ * lands there, the right-hand pair is larger and fainter, which pulls the
+ * composition's mass off the centre line without moving anything. */
 .sakura-corner-tl { top: 4%; left: 3%; }
-.sakura-corner-tr { top: 4%; right: 3%; transform: scaleX(-1); }
+
+.sakura-corner-tr {
+  top: 6%;
+  right: 3%;
+  width: clamp(104px, 16.5vw, 208px);
+  opacity: var(--ornament-a-mid);
+}
 
 /* THE LOWER PAIR LIVES OUTSIDE THE SCROLLER, and that is the whole fix.
  *
@@ -113,12 +136,34 @@
   inset: auto 0 0 0;
   height: clamp(96px, 18vh, 180px);
   pointer-events: none;
-  color: var(--primary);
+  color: var(--ornament-ink);
   z-index: var(--z-empty-decor);
+  /* THE ONE HARD EDGE IN THE APP.
+   *
+   * Everything else here is a wash, a mask or a 7% hairline, and softness
+   * everywhere is half of why this surface read as unfinished — nothing had a
+   * boundary the eye could land on. The reference this family comes from hangs
+   * its whole composition off a single solid block with the branch crossing in
+   * front of it. This is that block: a flat fill, a 1px top edge, no gradient.
+   *
+   * It is the base band that already existed, so it costs no new element and no
+   * new geometry, and the two lower sprigs and the keystone already sit on it.
+   * The composer sits on it too, which is what stops the prompt bar reading as
+   * the point where the decorated page stops. */
+  background: var(--ornament-band);
+  border-top: 1px solid var(--ornament-band-edge);
 }
 
-.sakura-base .sakura-corner-bl { bottom: 6px; left: 3%; transform: scaleY(-1); }
-.sakura-base .sakura-corner-br { bottom: 6px; right: 3%; transform: scale(-1); }
+/* No transforms — see the block on .sakura-corner-tl. `bl` rises out of the
+ * corner and `br` rises left out of the right one, both as drawn. */
+.sakura-base .sakura-corner-bl { bottom: 6px; left: 3%; }
+
+.sakura-base .sakura-corner-br {
+  bottom: 6px;
+  right: 3%;
+  width: clamp(104px, 16.5vw, 208px);
+  opacity: var(--ornament-a-mid);
+}
 
 /* The keystone sits at the TOP of the base band, which is the one anchor here
  * that does not move.
@@ -139,7 +184,7 @@
   width: clamp(34px, 4vw, 52px);
   height: auto;
   transform: translate(-50%, -50%);
-  opacity: 0.22;
+  opacity: var(--ornament-a-mid);
 }
 
 /* The rosette sits BEHIND THE LOGO MARK, not behind the prose, and the first
@@ -164,7 +209,7 @@
   position: absolute;
   left: 50%;
   height: auto;
-  opacity: 0.16;
+  opacity: var(--ornament-a-faint);
 }
 
 
@@ -221,7 +266,12 @@
  * rest and its band shortens, so the sprigs stay tucked into the corners
  * beside the composer instead of climbing up the starter grid. */
 @media (max-width: 640px) {
-  .sakura-corner { width: clamp(72px, 26vw, 120px); opacity: 0.26; }
+  /* One width for all four here, and the per-corner overrides above go with it:
+   * the asymmetry earns its keep across a 1600px composition, and at 320px it
+   * only makes one branch collide with the starter grid before the other. */
+  .sakura-corner,
+  .sakura-corner-tr,
+  .sakura-base .sakura-corner-br { width: clamp(72px, 26vw, 120px); opacity: var(--ornament-a-mid); }
   .council-rosette { display: none; }
   .sakura-base { height: clamp(72px, 12vh, 110px); }
 
@@ -271,10 +321,14 @@
   inset: 0;
   pointer-events: none;
   z-index: var(--z-empty-decor);
+  /* --ornament-ink like the rest of the family. The percentages stay where they
+   * are: they are tuned against the banding problem described above, not chosen
+   * for weight, and they are a colour mix rather than an opacity so the alpha
+   * ladder does not apply to them. */
   background-image:
-    repeating-linear-gradient(60deg, transparent 0 27px, color-mix(in srgb, var(--primary) 8%, transparent) 27px 28px),
-    repeating-linear-gradient(-60deg, transparent 0 27px, color-mix(in srgb, var(--primary) 8%, transparent) 27px 28px),
-    repeating-linear-gradient(0deg, transparent 0 47px, color-mix(in srgb, var(--primary) 6%, transparent) 47px 48px);
+    repeating-linear-gradient(60deg, transparent 0 27px, color-mix(in srgb, var(--ornament-ink) 8%, transparent) 27px 28px),
+    repeating-linear-gradient(-60deg, transparent 0 27px, color-mix(in srgb, var(--ornament-ink) 8%, transparent) 27px 28px),
+    repeating-linear-gradient(0deg, transparent 0 47px, color-mix(in srgb, var(--ornament-ink) 6%, transparent) 47px 48px);
   /* Cleared from the middle, so it is never behind the reading column.
    *
    * Widened from 72%/28% now that this covers the transcript: the reading
@@ -309,11 +363,15 @@
 .earring-left { left: 22px; right: auto; }
 .earring-right { right: 22px; left: auto; }
 
-/* Mirrored so the pair reads as a matching set rather than two identical
- * ornaments. Was previously an inline transform on <model-viewer>, which is
- * precisely the inline-vs-stylesheet mismatch that made the earlier z-index
- * commits so hard to reason about. */
-.earring-right .crescent { transform: scaleX(-1); }
+/* THE MIRROR IS GONE, and the pair is now two PHASES of one moon.
+ *
+ * `.earring-right .crescent { transform: scaleX(-1) }` used to live here. A
+ * mirrored pair is bilaterally perfect, and that perfection is the loudest
+ * signal an ornament was placed by a stylesheet rather than drawn. Crescent.jsx
+ * moves the mask circle to the other side of the disc AND changes its radius
+ * for the right-hand one, so that moon is genuinely thinner: the same object at
+ * two moments instead of an object beside its reflection. Re-adding a transform
+ * here would flip the drawn phase back and undo it. */
 
 .earring-chain {
   width: 1px;

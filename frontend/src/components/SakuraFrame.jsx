@@ -38,29 +38,128 @@ const Blossom = ({ x, y, r = 1, o = 1 }) => (
 );
 
 /**
- * A corner branch. Drawn once for the top-left and mirrored for the rest —
- * authoring four by hand is four chances for one to be subtly wrong.
+ * One leaf, in the SECOND COLOUR.
  *
- * Mirrored with scale(-1), never rotated: a rotated branch grows the wrong way
- * and the blossoms end up hanging underneath it on two of the four corners.
+ * This is the only part of the branch that is not `currentColor`, and that is
+ * the point. Every ornament in this app used to be one hue at five alphas,
+ * which is what a watermark is — the reference painting this family comes from
+ * carries pink blossom, sage leaf and a single vermilion seal, and reads as ink
+ * on paper because of it. `--ornament-leaf` is declared per theme, so the leaf
+ * follows Sakura Night and Bamboo Day without a second drawing.
  */
-const Sprig = () => (
-  <g>
-    <path d="M2 4 C 28 10, 50 20, 70 36 C 82 45, 94 51, 108 54" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.55" />
-    <path d="M42 17 C 48 28, 54 34, 64 39" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.4" />
-    <path d="M72 38 C 76 30, 82 25, 90 22" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.4" />
-    <Blossom x={16} y={7} r={1} o={0.9} />
-    <Blossom x={40} y={16} r={0.75} o={0.6} />
-    <Blossom x={63} y={39} r={1.1} o={0.95} />
-    <Blossom x={90} y={21} r={0.85} o={0.7} />
-    <Blossom x={106} y={53} r={0.7} o={0.55} />
-    {/* Loose petals falling away from the branch. Every reference image has
-        these, and they are what stops a sprig reading as a diagram. */}
-    <Blossom x={28} y={38} r={0.5} o={0.4} />
-    <Blossom x={82} y={66} r={0.45} o={0.3} />
-    <Blossom x={54} y={62} r={0.38} o={0.25} />
-  </g>
+const Leaf = ({ x, y, r = 1, a = 0, o = 0.7 }) => (
+  <path
+    d="M0 0 C 3.4 -3.6, 8.4 -3.9, 11.6 -1.2 C 8.2 2.6, 3.2 3.1, 0 0 Z"
+    transform={`translate(${x} ${y}) rotate(${a}) scale(${r})`}
+    fill="var(--ornament-leaf)"
+    opacity={o}
+  />
 );
+
+/**
+ * A corner branch, in four DIFFERENT drawings.
+ *
+ * It used to be one drawing mirrored with scale(-1) into all four corners, plus
+ * a fifth and sixth copy on the composer. That is why the ornament read as a
+ * CSS frame rather than as a painting: a perfect bilateral pair is the one
+ * thing no hand-drawn branch has ever been, and the eye reads the symmetry long
+ * before it reads the flowers. The reference has a single branch rising from
+ * the lower left with its mass right of centre and nothing repeated anywhere.
+ *
+ * So there are four variants and no mirroring. They differ in branch path,
+ * blossom count, leaf placement and length, and decoration.css gives each
+ * corner a different SIZE and ALPHA on top of that — the right-hand pair is
+ * larger, which is what moves the composition's mass off centre.
+ *
+ * MIRRORING IS NOT COMING BACK. If a fifth position is ever needed, draw a
+ * fifth variant. `scaleX(-1)` on any of these undoes the whole change.
+ *
+ * Still never ROTATED past a few degrees, for the original reason: a branch
+ * turned upside down hangs its blossoms underneath itself.
+ */
+const SPRIGS = {
+  /* TOP LEFT. Enters at the corner and sweeps down and right, heaviest of the
+     four: this is the one the eye lands on first. */
+  tl: (
+    <g>
+      <path d="M2 4 C 28 10, 50 20, 70 36 C 82 45, 94 51, 108 54" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity="0.62" />
+      <path d="M42 17 C 48 28, 54 34, 64 39" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.45" />
+      <Leaf x={38} y={14} r={0.95} a={26} o={0.8} />
+      <Leaf x={74} y={40} r={0.8} a={-42} o={0.62} />
+      <Blossom x={16} y={7} r={1} o={0.9} />
+      <Blossom x={40} y={16} r={0.75} o={0.6} />
+      <Blossom x={63} y={39} r={1.1} o={0.95} />
+      <Blossom x={90} y={21} r={0.85} o={0.7} />
+      <Blossom x={106} y={53} r={0.7} o={0.55} />
+      {/* Loose petals falling away from the branch. Every reference image has
+          these, and they are what stops a sprig reading as a diagram. */}
+      <Blossom x={28} y={38} r={0.5} o={0.4} />
+      <Blossom x={82} y={66} r={0.45} o={0.3} />
+    </g>
+  ),
+  /* TOP RIGHT. Enters at the right edge and runs down and LEFT — authored that
+     way rather than flipped, which is the whole point of this set. It is
+     deliberately the sparsest: four blossoms against the top left's seven, so
+     the two do not read as one gesture repeated. */
+  tr: (
+    <g>
+      <path d="M118 6 C 96 12, 78 20, 62 32 C 46 44, 30 49, 14 50" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" opacity="0.58" />
+      <Leaf x={86} y={16} r={0.9} a={152} o={0.74} />
+      <Blossom x={112} y={8} r={0.9} o={0.85} />
+      <Blossom x={84} y={18} r={0.7} o={0.58} />
+      <Blossom x={60} y={33} r={1.05} o={0.9} />
+      <Blossom x={17} y={50} r={0.6} o={0.48} />
+      <Blossom x={44} y={62} r={0.42} o={0.28} />
+    </g>
+  ),
+  /* BOTTOM LEFT. Rises out of the corner. The cluster sits at the FAR end,
+     which is what stops the four corners sharing a rhythm. */
+  bl: (
+    <g>
+      <path d="M2 70 C 22 62, 40 48, 56 32 C 68 20, 84 12, 104 10" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" opacity="0.6" />
+      <path d="M56 32 C 62 40, 70 45, 80 47" fill="none" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" opacity="0.42" />
+      <Leaf x={48} y={36} r={0.9} a={-38} o={0.75} />
+      <Leaf x={86} y={13} r={0.7} a={-8} o={0.55} />
+      <Blossom x={88} y={11} r={1.05} o={0.92} />
+      <Blossom x={103} y={10} r={0.8} o={0.72} />
+      <Blossom x={78} y={47} r={0.7} o={0.55} />
+      <Blossom x={30} y={53} r={0.55} o={0.4} />
+    </g>
+  ),
+  /* BOTTOM RIGHT. Rises left out of the right corner. Two blossoms and a leaf
+     only: it sits beside the composer, and the quietest corner belongs next to
+     the one control on the screen. */
+  br: (
+    <g>
+      <path d="M118 68 C 100 62, 84 52, 70 38 C 58 26, 42 18, 22 14" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" opacity="0.56" />
+      <Leaf x={78} y={44} r={0.85} a={140} o={0.7} />
+      <Blossom x={112} y={66} r={0.75} o={0.62} />
+      <Blossom x={68} y={37} r={1} o={0.88} />
+      <Blossom x={24} y={14} r={0.65} o={0.5} />
+      <Blossom x={50} y={52} r={0.4} o={0.26} />
+    </g>
+  ),
+  /* THE PROMPT BAR, and the only one that CROSSES ITS OWN BOX. It runs off the
+     right edge of the viewBox so that on the composer a real length of branch
+     lies over the card surface rather than stopping at its border. That crossing
+     is what makes the ornament read as resting ON the bar; see composer.css. */
+  bar: (
+    <g>
+      <path d="M0 8 C 26 14, 46 26, 62 42 C 74 54, 92 62, 120 66" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" opacity="0.66" />
+      <path d="M34 18 C 40 30, 44 40, 44 52" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.44" />
+      <Leaf x={30} y={16} r={1} a={34} o={0.82} />
+      <Leaf x={66} y={47} r={0.85} a={-16} o={0.66} />
+      <Leaf x={100} y={62} r={0.7} a={8} o={0.5} />
+      <Blossom x={14} y={9} r={0.95} o={0.88} />
+      <Blossom x={44} y={53} r={0.8} o={0.62} />
+      <Blossom x={61} y={41} r={1.15} o={0.95} />
+      <Blossom x={96} y={62} r={0.75} o={0.6} />
+      <Blossom x={116} y={66} r={0.55} o={0.42} />
+    </g>
+  ),
+};
+
+const Sprig = ({ variant = "tl" }) => SPRIGS[variant] ?? SPRIGS.tl;
 
 /**
  * Exported because the BOTTOM PAIR CANNOT LIVE IN THIS FRAME.
@@ -76,9 +175,59 @@ const Sprig = () => (
  * in `.chat-content`, where the bottom of the box really is the bottom of the
  * chat surface. See decoration.css.
  */
-export const Corner = ({ className }) => (
+export const Corner = ({ className, variant }) => (
   <svg className={className} viewBox="0 0 120 76" aria-hidden="true" focusable="false" fill="currentColor">
-    <Sprig />
+    <Sprig variant={variant} />
+  </svg>
+);
+
+/**
+ * The seal, and it is the one thing on the screen that COMMITS.
+ *
+ * Nothing in this app's ornament had ever been drawn at full opacity. The whole
+ * family lived between 0.16 and 0.34, which is the definition of a watermark:
+ * every mark hedging, nothing asserting. The reference painting answers that
+ * with two hanko — small, hard-edged, fully saturated vermilion, the only
+ * saturated thing on a page otherwise made of washes. They are what stop the
+ * composition floating.
+ *
+ * So this is a solid square at alpha 1, in `--ornament-seal`, with the glyph cut
+ * out of it rather than drawn on top. NEGATIVE SPACE IS NOT A FLOURISH HERE: a
+ * carved seal reads as pressed into the page, and a stroked glyph on a filled
+ * square reads as a logo in a box. The mask is what makes the difference, and it
+ * also means the cut-out shows whatever surface is behind the seal, so one
+ * drawing works on the band, on the composer and on both themes.
+ *
+ * WHAT IT DRAWS is the same two-arcs-meeting-at-a-point as `Keystone` and the
+ * rosette's centre: several traces agreeing. Same sentence, third size.
+ *
+ * NO VERTICAL STEM BETWEEN THE ARCS AND THE DOT, for the reason recorded on
+ * `Keystone`: arcs plus a stem plus a dot beneath it reads as a downward arrow,
+ * and an ornament that looks like a scroll-to-bottom control is a bug. The
+ * inset frame is the density a real hanko gets from its border, and it is what
+ * keeps two arcs from looking thin inside a 28px square.
+ *
+ * `id` must be unique per instance or the second seal on the page inherits the
+ * first one's mask, which renders as a plain square. Two are on screen at once.
+ */
+export const Seal = ({ className = "sakura-seal", id = "seal" }) => (
+  <svg className={className} viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+    <mask id={`${id}-cut`}>
+      <rect width="32" height="32" fill="#fff" />
+      <rect x="3.2" y="3.2" width="25.6" height="25.6" rx="1.4" fill="none" stroke="#000" strokeWidth="1.4" />
+      <g fill="none" stroke="#000" strokeWidth="2.4" strokeLinecap="round">
+        <path d="M9.5 11 C 13 11.4, 15.4 13.6, 16 16.6" />
+        <path d="M22.5 11 C 19 11.4, 16.6 13.6, 16 16.6" />
+      </g>
+      <circle cx="16" cy="21.8" r="2.2" fill="#000" />
+    </mask>
+    <rect
+      width="32"
+      height="32"
+      rx="3"
+      fill="var(--ornament-seal)"
+      mask={`url(#${id}-cut)`}
+    />
   </svg>
 );
 
@@ -157,8 +306,8 @@ export const Keystone = ({ className = "sakura-keystone" }) => (
  */
 export const ComposerSprigs = memo(() => (
   <div className="composer-sprigs" aria-hidden="true">
-    <Corner className="composer-sprig composer-sprig-l" />
-    <Corner className="composer-sprig composer-sprig-r" />
+    <Corner className="composer-sprig composer-sprig-l" variant="bar" />
+    <Seal className="sakura-seal composer-seal" id="composer-seal" />
   </div>
 ));
 
@@ -175,9 +324,9 @@ ComposerSprigs.displayName = "ComposerSprigs";
  */
 export const SakuraBaseCorners = memo(() => (
   <div className="sakura-base" aria-hidden="true">
-    <Corner className="sakura-corner sakura-corner-bl" />
+    <Corner className="sakura-corner sakura-corner-bl" variant="bl" />
     <Keystone />
-    <Corner className="sakura-corner sakura-corner-br" />
+    <Corner className="sakura-corner sakura-corner-br" variant="br" />
   </div>
 ));
 
@@ -201,8 +350,8 @@ SakuraBaseCorners.displayName = "SakuraBaseCorners";
  */
 const SakuraFrame = memo(() => (
   <div className="sakura-frame" aria-hidden="true">
-    <Corner className="sakura-corner sakura-corner-tl" />
-    <Corner className="sakura-corner sakura-corner-tr" />
+    <Corner className="sakura-corner sakura-corner-tl" variant="tl" />
+    <Corner className="sakura-corner sakura-corner-tr" variant="tr" />
   </div>
 ));
 

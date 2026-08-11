@@ -7789,7 +7789,6 @@
   padding-top: <padding: 0>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
-  transform: scaleX(-1)
   width: 56px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
@@ -10896,6 +10895,11 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
+  background: #1b1417
+  background-clip: <background: #1b1417>
+  background-image: <background: #1b1417>
+  background-size: <background: #1b1417>
+  border-top: 1px solid rgba(240, 138, 163, 0.42)
   bottom: <inset: auto 0 0 0>
   box-sizing: border-box
   color: #f08aa3
@@ -10955,7 +10959,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.34
+  opacity: 0.40
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -10963,7 +10967,6 @@
   position: absolute
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
-  transform: scaleY(-1)
   width: clamp(96px, 15vw, 190px)
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
@@ -11043,7 +11046,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.22
+  opacity: 0.26
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -11132,7 +11135,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.34
+  opacity: 0.26
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -11141,8 +11144,7 @@
   right: 3%
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
-  transform: scale(-1)
-  width: clamp(96px, 15vw, 190px)
+  width: clamp(104px, 16.5vw, 208px)
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -11369,7 +11371,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.34
+  opacity: 0.40
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -11456,7 +11458,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.34
+  opacity: 0.26
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -11465,9 +11467,8 @@
   right: 3%
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
-  top: 4%
-  transform: scaleX(-1)
-  width: clamp(96px, 15vw, 190px)
+  top: 6%
+  width: clamp(104px, 16.5vw, 208px)
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -11591,7 +11592,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.16
+  opacity: 0.15
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -19440,7 +19441,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.18
+  opacity: 0.15
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -19451,7 +19452,7 @@
   top: -19px
   transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)
   transition-duration: <transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)>
-  width: 104px
+  width: 128px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -19503,7 +19504,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[396] svg.composer-sprig.composer-sprig-r
+[396] svg.sakura-seal.composer-seal
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -19524,26 +19525,23 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  color: #f08aa3
-  height: auto
+  height: 26px
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.18
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
   position: absolute
-  right: -10px
+  right: 12px
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
-  top: -19px
-  transform: scaleX(-1)
-  transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)
-  transition-duration: <transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)>
-  width: 104px
+  top: -14px
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)
+  transition-duration: <transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)>
+  width: 26px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
@@ -19554,7 +19552,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[397] path
+[397] rect
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -29116,7 +29114,6 @@
   padding-top: <padding: 0>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
-  transform: scaleX(-1)
   width: 56px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
@@ -32223,6 +32220,11 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
+  background: #ecdde0
+  background-clip: <background: #ecdde0>
+  background-image: <background: #ecdde0>
+  background-size: <background: #ecdde0>
+  border-top: 1px solid rgba(179, 26, 84, 0.34)
   bottom: <inset: auto 0 0 0>
   box-sizing: border-box
   color: #b31a54
@@ -32282,7 +32284,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.34
+  opacity: 0.55
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -32290,7 +32292,6 @@
   position: absolute
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
-  transform: scaleY(-1)
   width: clamp(96px, 15vw, 190px)
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
@@ -32370,7 +32371,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.22
+  opacity: 0.38
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -32459,7 +32460,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.34
+  opacity: 0.38
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -32468,8 +32469,7 @@
   right: 3%
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
-  transform: scale(-1)
-  width: clamp(96px, 15vw, 190px)
+  width: clamp(104px, 16.5vw, 208px)
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
@@ -32696,7 +32696,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.34
+  opacity: 0.55
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -32783,7 +32783,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.34
+  opacity: 0.38
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -32792,9 +32792,8 @@
   right: 3%
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
-  top: 4%
-  transform: scaleX(-1)
-  width: clamp(96px, 15vw, 190px)
+  top: 6%
+  width: clamp(104px, 16.5vw, 208px)
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
@@ -32918,7 +32917,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.16
+  opacity: 0.22
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -40767,7 +40766,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.18
+  opacity: 0.22
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -40778,7 +40777,7 @@
   top: -19px
   transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)
   transition-duration: <transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)>
-  width: 104px
+  width: 128px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
@@ -40830,7 +40829,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[829] svg.composer-sprig.composer-sprig-r
+[829] svg.sakura-seal.composer-seal
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -40851,26 +40850,23 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
-  color: #b31a54
-  height: auto
+  height: 26px
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.18
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
   position: absolute
-  right: -10px
+  right: 12px
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
-  top: -19px
-  transform: scaleX(-1)
-  transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)
-  transition-duration: <transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)>
-  width: 104px
+  top: -14px
+  transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)
+  transition-duration: <transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)>
+  width: 26px
   :hover
     ::-webkit-scrollbar-thumb/background: rgba(179, 26, 84, 0.10)
     ::-webkit-scrollbar-thumb/background-image: <background: rgba(179, 26, 84, 0.10)>
@@ -40881,7 +40877,7 @@
     outline: 2px solid #b31a54
     outline-offset: 2px
 
-[830] path
+[830] rect
   ::-webkit-scrollbar-thumb/background: #d9cfbe
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #d9cfbe>
@@ -46427,14 +46423,12 @@
 [220] svg.sakura-corner.sakura-corner-bl
   opacity: 0.26
   width: clamp(72px, 26vw, 120px)
-  - opacity: 0.34
+  - opacity: 0.40
   - width: clamp(96px, 15vw, 190px)
 
 [224] svg.sakura-corner.sakura-corner-br
-  opacity: 0.26
   width: clamp(72px, 26vw, 120px)
-  - opacity: 0.34
-  - width: clamp(96px, 15vw, 190px)
+  - width: clamp(104px, 16.5vw, 208px)
 
 [226] div.scroll-wrapper
   padding: 16px 12px 8px
@@ -46449,14 +46443,12 @@
 [229] svg.sakura-corner.sakura-corner-tl
   opacity: 0.26
   width: clamp(72px, 26vw, 120px)
-  - opacity: 0.34
+  - opacity: 0.40
   - width: clamp(96px, 15vw, 190px)
 
 [231] svg.sakura-corner.sakura-corner-tr
-  opacity: 0.26
   width: clamp(72px, 26vw, 120px)
-  - opacity: 0.34
-  - width: clamp(96px, 15vw, 190px)
+  - width: clamp(104px, 16.5vw, 208px)
 
 [234] svg.council-rosette
   display: none
@@ -46608,20 +46600,20 @@
   - border-radius: 12px
 
 [394] svg.composer-sprig.composer-sprig-l
-  opacity: 0.14
   top: -13px
-  width: 72px
-  - opacity: 0.18
+  width: 88px
   - top: -19px
-  - width: 104px
+  - width: 128px
 
-[396] svg.composer-sprig.composer-sprig-r
-  opacity: 0.14
-  top: -13px
-  width: 72px
-  - opacity: 0.18
-  - top: -19px
-  - width: 104px
+[396] svg.sakura-seal.composer-seal
+  height: 20px
+  right: 8px
+  top: -11px
+  width: 20px
+  - height: 26px
+  - right: 12px
+  - top: -14px
+  - width: 26px
 
 [428] span.input-hint.desktop-only
   display: none
@@ -46796,16 +46788,14 @@
   - height: clamp(96px, 18vh, 180px)
 
 [653] svg.sakura-corner.sakura-corner-bl
-  opacity: 0.26
+  opacity: 0.38
   width: clamp(72px, 26vw, 120px)
-  - opacity: 0.34
+  - opacity: 0.55
   - width: clamp(96px, 15vw, 190px)
 
 [657] svg.sakura-corner.sakura-corner-br
-  opacity: 0.26
   width: clamp(72px, 26vw, 120px)
-  - opacity: 0.34
-  - width: clamp(96px, 15vw, 190px)
+  - width: clamp(104px, 16.5vw, 208px)
 
 [659] div.scroll-wrapper
   padding: 16px 12px 8px
@@ -46818,16 +46808,14 @@
   - padding-top: <padding: 24px 24px 56px>
 
 [662] svg.sakura-corner.sakura-corner-tl
-  opacity: 0.26
+  opacity: 0.38
   width: clamp(72px, 26vw, 120px)
-  - opacity: 0.34
+  - opacity: 0.55
   - width: clamp(96px, 15vw, 190px)
 
 [664] svg.sakura-corner.sakura-corner-tr
-  opacity: 0.26
   width: clamp(72px, 26vw, 120px)
-  - opacity: 0.34
-  - width: clamp(96px, 15vw, 190px)
+  - width: clamp(104px, 16.5vw, 208px)
 
 [667] svg.council-rosette
   display: none
@@ -46979,20 +46967,20 @@
   - border-radius: 12px
 
 [827] svg.composer-sprig.composer-sprig-l
-  opacity: 0.14
   top: -13px
-  width: 72px
-  - opacity: 0.18
+  width: 88px
   - top: -19px
-  - width: 104px
+  - width: 128px
 
-[829] svg.composer-sprig.composer-sprig-r
-  opacity: 0.14
-  top: -13px
-  width: 72px
-  - opacity: 0.18
-  - top: -19px
-  - width: 104px
+[829] svg.sakura-seal.composer-seal
+  height: 20px
+  right: 8px
+  top: -11px
+  width: 20px
+  - height: 26px
+  - right: 12px
+  - top: -14px
+  - width: 26px
 
 [861] span.input-hint.desktop-only
   display: none
@@ -51609,7 +51597,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[396] svg.composer-sprig.composer-sprig-r
+[396] svg.sakura-seal.composer-seal
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -51619,9 +51607,9 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - transition-duration: <transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)>
+  - transition-duration: <transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)>
 
-[397] path
+[397] rect
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -56592,7 +56580,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[829] svg.composer-sprig.composer-sprig-r
+[829] svg.sakura-seal.composer-seal
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -56602,9 +56590,9 @@
   animation-duration: 0.01ms
   animation-iteration-count: 1
   transition-duration: 0.01ms
-  - transition-duration: <transition: opacity 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)>
+  - transition-duration: <transition: transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)>
 
-[830] path
+[830] rect
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -57894,6 +57882,14 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
   --grain-opacity: 0.055
   --info: #8fc9d6
   --measure: 66ch
+  --ornament-a-faint: 0.15
+  --ornament-a-mid: 0.26
+  --ornament-a-strong: 0.40
+  --ornament-band: #1b1417
+  --ornament-band-edge: rgba(240, 138, 163, 0.42)
+  --ornament-ink: #f08aa3
+  --ornament-leaf: #79c6a2
+  --ornament-seal: #e2503c
   --primary: #f08aa3
   --primary-dim: rgba(240, 138, 163, 0.12)
   --primary-glow: rgba(240, 138, 163, 0.22)
@@ -57995,6 +57991,14 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
   --grain-opacity: 0.03
   --info: #1f6675
   --measure: 66ch
+  --ornament-a-faint: 0.22
+  --ornament-a-mid: 0.38
+  --ornament-a-strong: 0.55
+  --ornament-band: #ecdde0
+  --ornament-band-edge: rgba(179, 26, 84, 0.34)
+  --ornament-ink: #b31a54
+  --ornament-leaf: #3f7d5c
+  --ornament-seal: #b3241a
   --primary: #b31a54
   --primary-dim: rgba(179, 26, 84, 0.10)
   --primary-glow: rgba(179, 26, 84, 0.18)

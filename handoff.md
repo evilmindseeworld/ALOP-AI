@@ -94,7 +94,9 @@ because "that is what happened last time": that is the precedent this paragraph
 exists to kill.
 
 The full protocol — invocation, the ~23k dispatch floor, file partitioning —
-lives in `~/CLAUDE.md` rule 15 and the `codex-duo-protocol` memory file.
+lives in `~/CLAUDE.md` under "Peers" and the `codex-duo-protocol` memory file.
+Named rather than numbered on purpose: the rules were renumbered the same day
+this line was written, and a number is the part that goes stale silently.
 
 ---
 

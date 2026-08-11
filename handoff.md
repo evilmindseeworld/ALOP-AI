@@ -198,13 +198,16 @@ user, and anything older than seven days is ignored.
   voice; the key upgrades it with no UI change.
 - **Rotate the Perplexity API key.** It was printed into a transcript earlier in
   this project's history.
-- **Two repos the owner asked about, checked but not adopted.**
-  `Panniantong/Agent-Reach` is real — 70,247 stars, MIT, Python, pushed
-  2026-08-06 — a CLI plus MCP server giving YouTube subtitles, arbitrary page
-  reads and social platforms, mostly keyless. Genuinely relevant to the search
-  accuracy complaint and worth evaluating against what this app already has
-  rather than installing blind. `rohitg00/awesome-claude-design` is 974 stars,
-  last pushed April, and is a collection of DESIGN.md prompts rather than code.
+- **Two commands the sandbox classifier blocked during the Agent Reach install.**
+  Both are the owner's to run in a terminal:
+  ```
+  ~/.local/bin/agent-reach.exe install --env=auto
+  mcporter config add exa https://mcp.exa.ai/mcp --scope home
+  ```
+  The second is the one that matters — free semantic web search, no key, and
+  the highest-value channel still dark. `mcporter` is already installed. It was
+  blocked because it wires a remote MCP endpoint into the home config, which is
+  a reasonable thing to gate rather than route around.
 
 ## Open, and not blocked
 
@@ -248,6 +251,17 @@ user, and anything older than seven days is ignored.
 ## Environment notes
 
 - `jq` is not installed. Use `node -e` for JSON work.
+- **Agent Reach is installed on this machine** (2026-08-11) and is a research
+  tool for whoever is working on this repo, not a dependency of the app —
+  nothing in `backend/` or `frontend/` imports it. Live web page reads via
+  `curl https://r.jina.ai/<URL>`, YouTube subtitles via `yt-dlp`, RSS, V2EX,
+  Bilibili search — all keyless and verified working. `agent-reach doctor`
+  reports every channel. Full notes, including the two commands still to be run
+  by hand, are in `~/CLAUDE.md`.
+- **`~/.claude/awesome-claude-design`** is a prose reference of DESIGN.md
+  prompts by aesthetic family. Read it when a named direction is asked for.
+  **Do not apply a family to this app on your own initiative** — see the
+  ornament warning at the top of this file.
 - The frontend dev server for screenshots: `npx vite --port 5199 --strictPort`,
   then drive it with the Playwright MCP. `gallery.html` renders every component
   state without needing auth, which is the fastest way to look at the empty

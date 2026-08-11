@@ -4,7 +4,7 @@
 # here means a refactor changed behaviour. Do not regenerate it to make a
 # test pass; fix the CSS.
 #
-# elements: 933   environments: 4   states: 6
+# elements: 935   environments: 4   states: 6
 
 === width=1400 ===
 
@@ -45865,7 +45865,97 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[926] p.signin-tagline
+[926] svg.sakura-seal.signin-seal
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  animation: signinSealStamp 320ms cubic-bezier(0.16, 1, 0.3, 1) 980ms forwards
+  animation-delay: <animation: signinSealStamp 320ms cubic-bezier(0.16, 1, 0.3, 1) 980ms forwards>
+  animation-duration: <animation: signinSealStamp 320ms cubic-bezier(0.16, 1, 0.3, 1) 980ms forwards>
+  animation-iteration-count: <animation: signinSealStamp 320ms cubic-bezier(0.16, 1, 0.3, 1) 980ms forwards>
+  box-sizing: border-box
+  height: 16px
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: 8px
+  margin-top: <margin: 0>
+  opacity: 0
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  padding-top: <padding: 0>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  vertical-align: -2px
+  width: 16px
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[927] rect
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  padding-top: <padding: 0>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[928] p.signin-tagline
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -45912,7 +46002,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[927] section.signin-card
+[929] section.signin-card
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -45962,7 +46052,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[928] div.signin-card-inner
+[930] div.signin-card-inner
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -46003,7 +46093,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[929] p.signin-plan
+[931] p.signin-plan
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -46047,7 +46137,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[930] p.signin-legal
+[932] p.signin-legal
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -46095,7 +46185,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[931] a
+[933] a
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -46143,7 +46233,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[932] a
+[934] a
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -46325,11 +46415,11 @@
   max-width: 30ch
   - max-width: 34ch
 
-[926] p.signin-tagline
+[928] p.signin-tagline
   text-align: center
   - text-align: left
 
-[927] section.signin-card
+[929] section.signin-card
   order: 1
 
 === width=400 (changes vs width=1400) ===
@@ -47062,11 +47152,11 @@
   max-width: 30ch
   - max-width: 34ch
 
-[926] p.signin-tagline
+[928] p.signin-tagline
   text-align: center
   - text-align: left
 
-[927] section.signin-card
+[929] section.signin-card
   order: 1
   padding: 18px
   padding-bottom: <padding: 18px>
@@ -57766,7 +57856,20 @@
   - animation-duration: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
   - animation-iteration-count: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
 
-[926] p.signin-tagline
+[926] svg.sakura-seal.signin-seal
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+  - animation-duration: <animation: signinSealStamp 320ms cubic-bezier(0.16, 1, 0.3, 1) 980ms forwards>
+  - animation-iteration-count: <animation: signinSealStamp 320ms cubic-bezier(0.16, 1, 0.3, 1) 980ms forwards>
+
+[927] rect
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -57777,7 +57880,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[927] section.signin-card
+[928] p.signin-tagline
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -57788,7 +57891,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[928] div.signin-card-inner
+[929] section.signin-card
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -57799,7 +57902,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[929] p.signin-plan
+[930] div.signin-card-inner
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -57810,7 +57913,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[930] p.signin-legal
+[931] p.signin-plan
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -57821,7 +57924,18 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[931] a
+[932] p.signin-legal
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[933] a
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -57833,7 +57947,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: color 0.15s>
 
-[932] a
+[934] a
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -57866,6 +57980,7 @@ pricePulse: 0%, 100% { opacity: 0.22; } 50% { opacity: 0.45; }
 reducedPulse: 0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
 scrollDownIn: from { opacity: 0; transform: translateX(-50%) translateY(6px); } to { opacity: 1; transform: translateX(-50%) translateY(0); }
 signinFadeIn: from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); }
+signinSealStamp: from { opacity: 0; transform: scale(1.6) rotate(-9deg); } to { opacity: 1; transform: scale(1) rotate(-4deg); }
 skeletonShimmer: 0% { background-position: 200% 0; } 100% { background-position: -200% 0; }
 stageIn: from { opacity: 0; } to { opacity: 1; }
 stopPulse: 0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--danger) 45%, transparent); } 50% { box-shadow: 0 0 0 7px transparent; }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { SignIn, SignUp, useUser } from "@clerk/react";
 import Earring from "./components/Earring";
+import { Seal } from "./components/SakuraFrame";
 import { COUNCIL, FREE_COUNT } from "./constants/council";
 
 /**
@@ -204,7 +205,24 @@ export default function SignInPage() {
               ))}
             </ol>
 
-            <p className="council-resolve">One reply, reconciled.</p>
+            {/* THE SEAL CLOSES THE LADDER, and it is the one mark on this page
+                drawn at full opacity.
+
+                A hanko is applied at the END of a document, as the stroke that
+                commits to what is above it — which is exactly what this line
+                is doing to the seven above it. The drawing is already the
+                argument: two strokes converging into a single point. It is the
+                council mechanic, not a flower.
+
+                It is also the only element here that asserts rather than
+                hedges. Everything else on this screen sits between 0.16 and
+                0.34 alpha, which is the definition of a watermark; see the
+                note on `Seal` in SakuraFrame.jsx for why the family needed one
+                thing that does not. */}
+            <p className="council-resolve">
+              One reply, reconciled.
+              <Seal className="sakura-seal signin-seal" id="signin-seal" />
+            </p>
 
             {/* The previous line explained the temperature column — "runs 0.2 to
                 0.8, literal to lateral". It was true and it was the wrong

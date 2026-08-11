@@ -440,6 +440,36 @@
   animation: councilResolve 420ms var(--ease-out) 560ms backwards;
 }
 
+/* THE STAMP, at the end of the sentence rather than beside it.
+ *
+ * A seal is pressed after the writing, not next to it, and the timing carries
+ * the same idea: 980ms is where `councilResolve` finishes, so the mark lands
+ * exactly as the line it commits to settles. It comes down slightly oversized
+ * and rotated further than it ends, because a stamp is pressed and lifted —
+ * a mark that fades in at its final size is a sticker.
+ *
+ * `forwards`, and that is what makes it safe under reduced motion: the global
+ * block in utilities.css collapses every duration to 0.01ms, so this resolves
+ * instantly to its end state rather than being stranded at `opacity: 0`. Any
+ * entrance animation in this file has to be written that way.
+ *
+ * The residual -4deg is deliberate. A seal set perfectly square reads as a
+ * printed logo; every one in the reference frames is slightly off, because a
+ * hand pressed it. */
+.signin-seal {
+  width: 16px;
+  height: 16px;
+  margin-left: var(--space-2);
+  vertical-align: -2px;
+  opacity: 0;
+  animation: signinSealStamp 320ms var(--ease-out) 980ms forwards;
+}
+
+@keyframes signinSealStamp {
+  from { opacity: 0; transform: scale(1.6) rotate(-9deg); }
+  to { opacity: 1; transform: scale(1) rotate(-4deg); }
+}
+
 /* A short rule that meets the ladder's border where it ends, so the seven
  * lines visibly feed into this one. */
 .council-resolve::before {

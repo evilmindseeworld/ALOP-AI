@@ -480,7 +480,7 @@ export const outsideAppRoot = `
           <li class="council-row"><span class="council-temp">0.3</span><span class="council-name">kimi-k2.7-code</span></li>
           <li class="council-row is-pro"><span class="council-temp">0.8</span><span class="council-name">minimax-m3</span><span class="council-tag">Pro</span></li>
         </ol>
-        <p class="council-resolve">One reply, reconciled.</p>
+        <p class="council-resolve">One reply, reconciled.<svg class="sakura-seal signin-seal" viewBox="0 0 32 32"><rect width="32" height="32"/></svg></p>
         <p class="signin-tagline">They disagree on purpose.</p>
       </section>
 

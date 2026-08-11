@@ -21,3 +21,6 @@ skills-lock.json
 # graphify build artifacts (regenerate with /graphify .)
 graphify-out/
 .gstack/
+
+# Codex session artefacts, written into the repo by the CLI.
+.codex/

@@ -236,8 +236,19 @@ const callModel = (modelName, messages, temperature = 0.0, timeoutMs = 30000, ma
   orCallModel(OPENROUTER_HOST, OPENROUTER_API_KEY, modelName, messages, temperature, timeoutMs, maxTokens, parentSignal)
     .catch(noteDailyLimit);
 
-const streamModel = async (res, modelName, messages, temperature = 0.0, signal) => {
-  const response = await fetch(OPENROUTER_HOST, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_API_KEY}` }, body: JSON.stringify({ model: modelName, messages, temperature, stream: true, reasoning: { exclude: true } }), ...(signal ? { signal } : {}) });
+/**
+ * `maxTokens` is a SAFETY NET, not the length control. The length control is the
+ * instruction in the prompt; this stops a model that ignores it from streaming
+ * forever on someone else's quota. It is therefore set well ABOVE the length
+ * actually asked for at each tier — a cap the answer reaches is a sentence cut
+ * in half, which is worse than the long answer it was meant to prevent.
+ *
+ * Null means no cap, which is what every non-council path still sends: they are
+ * already short by construction and a wrong number there would truncate a
+ * greeting.
+ */
+const streamModel = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null) => {
+  const response = await fetch(OPENROUTER_HOST, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_API_KEY}` }, body: JSON.stringify({ model: modelName, messages, temperature, stream: true, reasoning: { exclude: true }, ...(maxTokens ? { max_tokens: maxTokens } : {}) }), ...(signal ? { signal } : {}) });
   if (!response.ok || !response.body) throw new Error('Stream failed');
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -292,6 +303,47 @@ const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'imag
     timed.dispose();
   }
 };
+
+/**
+ * HOW LONG THE ANSWER SHOULD BE, keyed to the tier the router already chose.
+ *
+ * Rule 7 of the synthesis prompt used to read "Match length to the question's
+ * complexity. Do not pad." Both halves are correct and neither is actionable: a
+ * model has no idea what THIS product considers complex, so in practice every
+ * answer came back at the same essay length — five paragraphs on which monitor
+ * to buy. An instruction that names no number is a preference, not a rule.
+ *
+ * The number now comes from `assessComplexity`, which is the same decision that
+ * already sized the council. One judgement about how hard a question is, used
+ * twice: it picks the seats AND it sets the length. They cannot disagree, and
+ * that is the point — a one-seat question answered at essay length would be the
+ * cheap tier producing the expensive output.
+ *
+ * WHAT OVERRIDES ALL OF IT: the user asking. `wantsDetailedAnswer` forces the
+ * complex tier upstream, so "explain in detail" lands here as `complex` and
+ * gets the long form. Brevity is the default, never a ceiling on what the user
+ * can ask for.
+ *
+ * AND WHAT OVERRIDES THAT: being right. Every line below ends the same way, on
+ * purpose — length yields to completeness. A short answer that drops the caveat
+ * that made it true is not concise, it is wrong, and it is the failure mode this
+ * whole change risks. Safety, money, medical and legal caveats are content, not
+ * padding.
+ */
+const LENGTH_RULE = {
+  simple:
+    'BE BRIEF. One to three sentences, and stop. No headings, no bullet list unless the answer genuinely IS a list, no preamble restating the question, no summary of what you just said. Give the answer first. Add a caveat ONLY if leaving it out would make the answer wrong or unsafe.',
+  moderate:
+    'BE CONCISE — a short paragraph or a few bullets, not an essay. Lead with the answer, then only the reasoning that changes what the reader would do. Cut background they did not ask for, alternatives they did not raise, and any recap of your own answer. Length is earned by content: go longer only where leaving something out would make the answer wrong, unsafe, or misleading.',
+  complex:
+    'Match length to the question. This one has moving parts, so use the room it needs — but every paragraph must carry something the reader could not have guessed. Do not pad, do not recap yourself, and do not lengthen an answer to look thorough.',
+};
+
+/**
+ * The streaming safety net per tier, in tokens. Generous on purpose: see the
+ * note on `streamModel`. These stop a runaway, they do not shape the answer.
+ */
+const SYNTH_MAX_TOKENS = { simple: 500, moderate: 1000, complex: 2500 };
 
 // ===== COUNCIL =====
 // The runner lives in lib/council-run.js so it can be tested: server.js calls
@@ -2440,7 +2492,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
 4. Prefer the more specific, better-supported answer — but never invent a justification for preferring it.
 5. Introduce no fact that appears in none of the responses.
 6. Never mention the panel, the experts, how many there were, or that synthesis happened. Write as a single voice.
-7. Match length to the question's complexity. Do not pad.
+7. ${LENGTH_RULE[selection.complexity] || LENGTH_RULE.moderate}
 8. Use Markdown.
 9. End on the answer. No "Would you like help with anything else?", no "Let me know if...", no closing offer of further assistance. The user knows they can ask again.
 10. If you are inferring rather than reporting — a price you did not see, a spec you are reasoning to, a substitute product — say so IN THE SAME SENTENCE. "Likely higher" without "I did not find a listed price" reads as a fact.${lang !== 'English' ? `\n11. Respond in ${lang}.` : ''}`;
@@ -2460,7 +2512,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     sendStage(res, 'synthesis', validResponses.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
     openStream(res);
     const synthesisStartedAt = Date.now();
-    await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0, turnSignal);
+    await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate);
     telemetry.recordSynthesis(Date.now() - synthesisStartedAt);
     if (turnSignal.aborted) return;
     if (!res.writableEnded) res.end();

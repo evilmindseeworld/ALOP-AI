@@ -388,7 +388,22 @@ function classifyRequest(text, members, detailed = false) {
      * sentence. The synthesis prompt's rule 10 is what covers that. If cut-off
      * drafts start showing up in answers, raise this before touching the
      * quorum. */
-    tokenLimit: detailed ? 2000 : 1000,
+    /* 2000 when the user asked for depth, 400 when the question is a lookup,
+     * 1000 otherwise.
+     *
+     * THE 400 IS THE ONE THAT IS NEW, and it is worth more than it looks. A
+     * seat's output is a DRAFT that only the synthesiser reads, generation time
+     * is roughly linear in tokens produced, and this leg is what the whole
+     * request blocks on. Giving a one-seat "what is the capital of France" the
+     * same 1000-token budget as a design question buys nothing: the answer is
+     * one sentence either way, and the ceiling only ever costs the difference
+     * when a model decides to fill it.
+     *
+     * It is a CEILING, not a target, and 400 tokens is still several paragraphs
+     * — comfortably more than any question that reaches this tier should need.
+     * The tier is only ever chosen for messages that are both short and shaped
+     * like a lookup, which is the check that makes this safe. */
+    tokenLimit: detailed ? 2000 : complexity === "simple" ? 400 : 1000,
     category: "council",
     /* Returned so the caller can log which tier a turn took. Without it the
      * single most consequential routing decision in the product is invisible

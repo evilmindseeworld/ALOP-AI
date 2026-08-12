@@ -31,7 +31,15 @@ test("the council request aborts every long-running layer on disconnect", () => 
   assert.match(ROUTE, /signal: turnSignal/);
   assert.match(LOOP, /registry\.execute\(call, \{ timeoutMs: perCall, signal: turnSignal \}\)/);
   assert.match(ROUTE, /callModel\(model, toolMessages\([\s\S]*?, signal\)/);
-  assert.match(ROUTE, /streamModel\(res, PRIMARY_MODEL, synthMsgs, 0\.0, turnSignal\)/);
+  /* `turnSignal` must be the FIFTH argument — that is the whole assertion, and
+   * the position is the part that matters, because streamModel takes the signal
+   * positionally and a shifted argument would silently pass `undefined` as the
+   * signal while still looking like it threads one.
+   *
+   * The trailing `[,)]` allows a sixth argument (the per-tier token cap) without
+   * allowing the signal to move. The original pinned the call's exact arity,
+   * which made adding any later parameter look like removing the abort. */
+  assert.match(ROUTE, /streamModel\(res, PRIMARY_MODEL, synthMsgs, 0\.0, turnSignal[,)]/);
 });
 
 test("the account's daily model cap refuses the turn before anything is spent", () => {

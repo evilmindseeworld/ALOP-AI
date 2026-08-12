@@ -181,12 +181,25 @@ export const clerkAppearance = {
       },
     },
 
-    headerTitle: {
-      color: "var(--text)",
-      fontFamily: "'Clash Grotesk', sans-serif",
-      fontWeight: 600,
-    },
-    headerSubtitle: { color: "var(--text-muted)" },
+    /* HIDDEN, BECAUSE THE PAGE ALREADY HAS AN h1 AND CLERK RENDERS ITS OWN.
+     *
+     * Measured on `/sign-in`: two `<h1>` elements, "Ask once. Several models
+     * answer." and Clerk's "Sign in to ALOP-AI", with no `<h2>` anywhere
+     * between them. A screen reader user gets two competing page titles and a
+     * heading outline with a hole in it; a sighted user gets the product's
+     * brand asserted twice within 700px, under a lockup that already says
+     * ALOP-AI in the top-left corner.
+     *
+     * `SignInPage.jsx` supplies its own `<h2>` above the card instead, which
+     * fixes the outline and lets the heading differ between the sign-in and
+     * sign-up flows without fighting Clerk for the string.
+     *
+     * The colour and family are gone with the element rather than left behind
+     * as dead declarations — but note for anyone editing this block:
+     * `contrast.test.js` slices this file from `formButtonPrimary:` to
+     * `formFieldInput:`, which includes these keys, and fails on a literal hex
+     * `color:` anywhere in that range. */
+    header: { display: "none" },
 
     formFieldLabel: { color: "var(--text-muted)", fontSize: "12px" },
     formFieldInput: {

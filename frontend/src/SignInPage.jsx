@@ -259,6 +259,20 @@ export default function SignInPage() {
                 load-bearing on the sign-up side — the whole argument for
                 stating the minimum age here rather than only inside the linked
                 Terms is that registration is the moment it has to be seen. */}
+            {/* THE PAGE'S SECOND HEADING, AND THE REASON CLERK'S IS HIDDEN.
+                There were two `<h1>`s here — the thesis title and Clerk's own
+                "Sign in to ALOP-AI" — and no `<h2>` between them, so the
+                outline had two page titles and a hole. `header` is now
+                `display: none` in lib/clerkAppearance.js and this takes its
+                place.
+
+                It also stops the brand being asserted three times above the
+                fold: the lockup says ALOP-AI, Clerk said "Sign in to ALOP-AI",
+                and the thesis title is the actual argument. Two words are
+                enough over a form with one email field. */}
+            <h2 className="signin-card-title">
+              {signUp ? "Create your account" : "Sign in"}
+            </h2>
             <div className="signin-card-inner">
               {/* The one part of this page that genuinely has to wait. The
                   placeholder holds the card's height so the form does not

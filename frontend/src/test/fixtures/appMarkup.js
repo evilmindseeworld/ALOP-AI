@@ -485,6 +485,7 @@ export const outsideAppRoot = `
       </section>
 
       <section class="signin-card">
+        <h2 class="signin-card-title">Sign in</h2>
         <div class="signin-card-inner"><div class="signin-card-loading"></div></div>
         <p class="signin-plan">3 models free. All 7 on Pro.</p>
         <p class="signin-legal">

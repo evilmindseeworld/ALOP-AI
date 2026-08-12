@@ -202,28 +202,39 @@
   transition: transform var(--dur-slow) var(--ease-spring);
 }
 
-/* LINE WORK, SO INK AND SO THE LADDER.
+/* MIST, NOT INK, AND THAT IS A MATERIAL CHANGE RATHER THAN A WEIGHT ONE.
  *
- * The town is the one thing in this strip that gets a solid fill, for the
- * reason above: it is a mass, and a mass in brand pink is a pink band. Cloud
- * bars are the opposite case — five small shapes totalling under 400 square
- * units — so they take the same ink at the same faint step as every other line
- * in the app, and they sit a step below the sun rather than beside it. No bare
- * opacity here: the light theme needs about 1.4x the alpha of the dark one to
- * read at all on paper, which is exactly what the ladder encodes. */
+ * These were `--ornament-ink` at the faint step, then ink at the mid step when
+ * both peers found them impossible to spot. At mid they read as highlighter —
+ * the owner's word, and the right one. Kasumi is grey mist; the ink is a brand
+ * pink. The bars had not become too loud, they had become the wrong substance,
+ * and no point on the alpha ladder is grey. Measured both ends of it before
+ * accepting that: half a step back left +0.045 chroma over the card, a full step
+ * back left +0.030 and put them back to invisible.
+ *
+ * `--ornament-mist` holds the weight and drops the colour — same lightness gap
+ * to within a rounding error, about a twentieth of the chroma. The derivation
+ * and the numbers are in tokens.css.
+ *
+ * The step stays MID, which is what "more visible" asked for. The town keeps its
+ * solid silhouette fill for the reason recorded above it: a mass and line work
+ * are different jobs. Three materials in one strip now, which is the point —
+ * the sun is the only saturated thing, the town is the only solid one, and the
+ * cloud is the only grey one. */
 .composer-clouds {
-  fill: var(--ornament-ink);
-  /* A STEP UP FROM FAINT, and only this ornament. Both peers landed on the same
-   * change independently, which is the strongest signal either of them gave:
-   * the bars were present in every screenshot and had to be hunted for. Faint is
-   * the right step for a rule nobody is meant to look at; these sit beside the
-   * one mark in the strip that IS meant to be looked at, and a cloud you cannot
-   * find is not weather, it is noise at a lower alpha.
+  fill: var(--ornament-mist);
+  /* MID, NOT FAINT, AND STILL MID AFTER THE MATERIAL CHANGE. Both peers landed
+   * on this step independently — the strongest signal either of them gave — each
+   * having found the bars present in every screenshot and needing to be hunted
+   * for. Faint is the right step for a rule nobody is meant to look at; these sit
+   * beside the one mark in the strip that IS meant to be looked at, and a cloud
+   * you cannot find is not weather, it is noise at a lower alpha.
    *
-   * It moves to the existing mid step rather than to a new value. The ladder is
-   * three steps and no rule may invent a fourth — and the ladder is why this
-   * needs no per-theme handling: light is already about 1.4x dark at every
-   * rung. */
+   * An existing rung, not a new value: the ladder is three steps and no rule may
+   * invent a fourth. It is also why this needs no per-theme handling — light is
+   * about 1.4x dark at every rung, and the mist token is declared per theme for
+   * the separate reason that "pale enough to see" points opposite ways on
+   * near-black and on paper. */
   opacity: var(--ornament-a-mid);
 }
 

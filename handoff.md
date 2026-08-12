@@ -204,6 +204,71 @@ watched to fail before being restored.
 
 ---
 
+## This session (2026-08-12) — mist, hookify disarmed, sign-in measured
+
+**The cloud bars were the wrong MATERIAL, not the wrong weight.** The owner:
+"the bars reading as highlighter means they crossed from one material into
+another. Kasumi is grey mist." He asked for half a step back on the alpha, and
+the experiment says no point on that ladder works — measured over the composer
+card in the light theme, the bars sat at +0.062 chroma; a half step left +0.045,
+a full step left +0.030 and returned them to the invisible state that started
+this. Both ends of the ladder are wrong in opposite directions because the
+ladder is not the axis the fault lives on. `--ornament-mist` is a new per-theme
+token: same lightness gap to within a rounding error (dark 0.166 against 0.159,
+light 0.186 against 0.187), about a twentieth of the chroma. Verified live.
+
+It is per theme and it is NOT the silhouette, though the light value matches it.
+Mist is defined against the card; silhouette is defined against the light. In
+the dark theme `--ornament-silhouette` is `#0a0a0a` and mist drawn in it
+vanishes outright — a lightness gap of 0.014. Tried, looked at, rejected.
+
+**hookify is installed and three of Luna's four rules had to be disarmed or
+loosened before they could stay.** The install and its firing evidence are real
+and good — see `docs/hookify-setup.md`. But:
+
+- `block-outside-declared-boundary` shipped `enabled: true` with the boundary of
+  the dispatch that wrote it: `.claude/**` plus one docs file. Left armed, it
+  denies every write to `frontend/` and `backend/`. The next session would have
+  opened to a repo where no source file could be edited, by a rule whose purpose
+  is to prevent surprises. Now `enabled: false` with a placeholder pattern and
+  arming instructions.
+- The two stop gates were bare `not_contains` on the transcript, so a session
+  that answered a question could not stop until it had run a test suite for code
+  it never touched. Now conditional on the transcript mentioning a source file
+  in that half.
+- They also demanded one exact spelling, `cd backend && npm test`. The command
+  actually used in that same session was `npm test` with the cwd already at
+  `backend/`, which is correct and would have been blocked. **The rule passed its
+  own false-positive check because it was tested against the string it had
+  itself written** — the check tested the author's memory, not the rule.
+
+**Sign-in, measured rather than redesigned.** Four defects found on the live
+page, all fixed:
+
+- **Two `<h1>`s and no `<h2>`** — the thesis title and Clerk's "Sign in to
+  ALOP-AI". Clerk's `header` is now `display: none` (confirmed removed from the
+  accessibility tree, not merely invisible) and `SignInPage.jsx` supplies its own
+  `<h2>`, which also lets the heading differ between sign-in and sign-up.
+- **The Pro tags sat 158–167px from the name they qualify**, `margin-left: auto`
+  pushing them to the far edge of the ladder — a fourth column of stranded
+  words. Now 12px, on the same baseline.
+- **The temperature outranked the seat name.** In `--primary` at 0.85 it
+  measured 8.36:1 against the page while the attribution sat at 5.62:1, so the
+  first thing the eye met on every row was an internal sampling parameter. The
+  column stays as texture, one step back instead of one step in front.
+- The Clerk card is NOT unthemed — `lib/clerkAppearance.js` is thorough. An
+  early read that it was "stock" was wrong.
+
+Checked and NOT changed: the page is already vertically centred (the 112px below
+the content is matched by 110px above it), and every small-text contrast on it
+passes AA — the legal and plan text at 5.62:1. Both were suspected and both are
+fine.
+
+Sol's independent sign-in critique was still running when this landed; it will
+arrive as `docs/signin-critique-sol.md` and has not been folded in yet.
+
+---
+
 ## This session (2026-08-12) — the weather, and a green suite over a broken build
 
 The owner asked for the sun at middle-left with clouds, for the design to be

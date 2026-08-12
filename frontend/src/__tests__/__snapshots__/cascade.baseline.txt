@@ -4,7 +4,7 @@
 # here means a refactor changed behaviour. Do not regenerate it to make a
 # test pass; fix the CSS.
 #
-# elements: 938   environments: 5   states: 6
+# elements: 939   environments: 5   states: 6
 
 === width=1400 ===
 
@@ -19307,7 +19307,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  fill: #f08aa3
+  fill: #b8b0ad
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -40581,7 +40581,7 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
-  fill: #b31a54
+  fill: #5a4a40
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -45616,7 +45616,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  color: #f08aa3
+  color: #8d8880
   flex: 0 0 auto
   flex-shrink: <flex: 0 0 auto>
   font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace
@@ -45626,7 +45626,6 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.85
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -45765,7 +45764,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
-  color: #f08aa3
+  color: #8d8880
   flex: 0 0 auto
   flex-shrink: <flex: 0 0 auto>
   font-family: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace
@@ -45775,7 +45774,6 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
-  opacity: 0.85
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -45863,6 +45861,7 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
+  align-self: baseline
   box-sizing: border-box
   color: #8d8880
   flex: 0 0 auto
@@ -45871,7 +45870,7 @@
   letter-spacing: 0.18em
   margin: 0
   margin-bottom: <margin: 0>
-  margin-left: auto
+  margin-left: <margin: 0>
   margin-top: <margin: 0>
   padding: 0
   padding-bottom: <padding: 0>
@@ -46136,7 +46135,54 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[932] div.signin-card-inner
+[932] h2.signin-card-title
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #f5f1ee
+  font-family: "Clash Grotesk", sans-serif
+  font-size: 18px
+  font-weight: 600
+  letter-spacing: -0.01em
+  margin: 0 0 16px
+  margin-bottom: <margin: 0 0 16px>
+  margin-left: <margin: 0 0 16px>
+  margin-top: <margin: 0 0 16px>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  padding-top: <padding: 0>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  text-align: center
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[933] div.signin-card-inner
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -46177,7 +46223,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[933] div.signin-card-loading
+[934] div.signin-card-loading
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -46219,7 +46265,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[934] p.signin-plan
+[935] p.signin-plan
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -46263,7 +46309,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[935] p.signin-legal
+[936] p.signin-legal
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -46311,7 +46357,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[936] a
+[937] a
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -46359,7 +46405,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[937] a
+[938] a
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -47293,7 +47339,7 @@
   - padding-left: <padding: 20px>
   - padding-top: <padding: 20px>
 
-[933] div.signin-card-loading
+[934] div.signin-card-loading
   min-height: 306px
   - min-height: 342px
 
@@ -58054,7 +58100,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[932] div.signin-card-inner
+[932] h2.signin-card-title
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58065,7 +58111,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[933] div.signin-card-loading
+[933] div.signin-card-inner
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58076,7 +58122,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[934] p.signin-plan
+[934] div.signin-card-loading
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58087,7 +58133,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[935] p.signin-legal
+[935] p.signin-plan
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58098,7 +58144,18 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[936] a
+[936] p.signin-legal
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[937] a
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58110,7 +58167,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: color 0.15s>
 
-[937] a
+[938] a
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58967,7 +59024,7 @@
   - padding-left: <padding: 20px>
   - padding-top: <padding: 20px>
 
-[933] div.signin-card-loading
+[934] div.signin-card-loading
   min-height: 306px
   - min-height: 342px
 
@@ -59041,6 +59098,7 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
   --ornament-a-mid: 0.26
   --ornament-a-strong: 0.40
   --ornament-ink: #f08aa3
+  --ornament-mist: #b8b0ad
   --ornament-seal: #e2503c
   --ornament-silhouette: #0a0a0a
   --primary: #f08aa3
@@ -59149,6 +59207,7 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
   --ornament-a-mid: 0.38
   --ornament-a-strong: 0.55
   --ornament-ink: #b31a54
+  --ornament-mist: #5a4a40
   --ornament-seal: #b3241a
   --ornament-silhouette: #5a4a40
   --primary: #b31a54

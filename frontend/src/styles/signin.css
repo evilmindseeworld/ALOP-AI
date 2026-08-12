@@ -245,6 +245,25 @@
   box-shadow: var(--rim), var(--shadow-lg);
 }
 
+/* THE CARD'S OWN HEADING, which exists because Clerk's is now hidden.
+ *
+ * Two `<h1>`s were rendering on this page — the thesis title and Clerk's "Sign
+ * in to ALOP-AI" — with no `<h2>` between them. See lib/clerkAppearance.js.
+ *
+ * Sized well below the thesis title on purpose. This is the second heading on
+ * the page and it labels a form; the argument is on the left and it should stay
+ * the loudest thing here. Matching Clerk's old weight would have recreated the
+ * competition the duplicate h1 already caused, in one element instead of two. */
+.signin-card-title {
+  margin: 0 0 var(--space-4);
+  font-family: "Clash Grotesk", sans-serif;
+  font-size: var(--text-lg);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  text-align: center;
+}
+
 /* .signin-card-inner has no rule any more, and the div is kept on purpose.
  *
  * It was a second bordered, inset-shadowed box inside .signin-card — and Clerk
@@ -402,8 +421,19 @@
   font-family: var(--font-mono-system);
   font-size: var(--text-xs);
   font-variant-numeric: tabular-nums;
-  color: var(--primary);
-  opacity: 0.85;
+  /* DEMOTED FROM --primary, WHICH IS THE FIX AND NOT A TASTE CHANGE.
+   *
+   * A sampling temperature is an internal parameter. In brand pink at 0.85 it
+   * was the brightest thing in its row — measured 8.36:1 against the page while
+   * the seat's own attribution sat at 5.62:1 — so the first thing the eye met
+   * on every line was a number that means nothing to anyone who has not tuned a
+   * model, and the seat's NAME, which is the argument, came second.
+   *
+   * The earlier note here is still right that the numbers can stay as texture
+   * for people who recognise them; the mistake was letting texture outrank
+   * content. They keep the column, the tabular figures and the scale, one step
+   * back from the name instead of one step in front of it. */
+  color: var(--text-subtle);
   flex: 0 0 auto;
 }
 
@@ -443,9 +473,19 @@
 }
 
 /* Merchandising without a pricing table: which three you do not get for free,
- * stated once, next to the thing itself. */
+ * stated once, next to the thing itself.
+ *
+ * "NEXT TO THE THING ITSELF" WAS NOT WHAT IT DID. `margin-left: auto` pushed
+ * each tag to the far edge of the ladder, and measured on the live page that
+ * put it 158–167px from the end of the name it qualifies — four words stranded
+ * in a ragged column with nothing between them and the seat but empty ground.
+ * At that distance it is not a label on a row, it is a fourth column, and the
+ * eye has to travel back to find out which seat it belonged to.
+ *
+ * It now sits directly after the name, on the same baseline, which is where the
+ * comment above always claimed it was. */
 .council-tag {
-  margin-left: auto;
+  align-self: baseline;
   font-size: var(--text-2xs);
   letter-spacing: var(--tracking-eyebrow);
   text-transform: uppercase;

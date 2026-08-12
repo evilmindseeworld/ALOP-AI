@@ -160,6 +160,38 @@
    * card is exactly what distance does not look like. */
   --ornament-silhouette: #0a0a0a;
 
+  /* THE MIST. Kasumi is grey; the ink is a brand pink, and no alpha of a brand
+   * hue is grey — that is the owner's correction, 2026-08-12, and it is the same
+   * lesson the silhouette above records, arriving a second time at a smaller
+   * shape. The cloud bars had been raised from the faint step to the mid step
+   * because both peers found them impossible to spot, and at mid they read as
+   * highlighter: they had crossed from one material into another.
+   *
+   * ALPHA CANNOT FIX A HUE, and this was measured before it was believed. In the
+   * light theme the bars composited to chroma 0.076 against a card at 0.015 —
+   * +0.062 of pure colour. Taking them back a half step to 0.30 left +0.045, and
+   * a full step back to faint left +0.030 AND returned them to invisible, which
+   * is the state that started this. Both endpoints of the alpha ladder are
+   * wrong, in opposite directions, because the ladder is not the axis the fault
+   * lives on.
+   *
+   * These two values hold the visibility and drop the colour. Measured over the
+   * composer card at the mid step:
+   *
+   *              lightness gap        chroma over the card
+   *   dark   0.166 (ink was 0.159)    0.0019 (ink was 0.0372)
+   *   light  0.186 (ink was 0.187)    0.0032 (ink was 0.0616)
+   *
+   * Same weight to within a rounding error, roughly a twentieth of the colour.
+   *
+   * Per theme and NOT the silhouette, though the light value is the silhouette's
+   * — mist is defined against the card rather than under it. On paper that means
+   * the town's own warm grey, and the two agreeing there is why the strip reads
+   * as one hand. On near-black it has to be PALE: `--ornament-silhouette` in the
+   * dark theme is #0a0a0a, and mist drawn in it disappears completely (a
+   * lightness gap of 0.014, which is nothing). Tried, looked at, rejected. */
+  --ornament-mist: #b8b0ad;
+
   --ornament-a-strong: 0.40;
   --ornament-a-mid: 0.26;
   --ornament-a-faint: 0.15;
@@ -511,6 +543,17 @@
    * wood accent's darkness, which is the register the rest of the light theme's
    * shadows already sit in. */
   --ornament-silhouette: #5a4a40;
+
+  /* THE SAME VALUE AS THE SILHOUETTE HERE, and it is worth saying why it is
+   * still a separate token rather than a reference to it. Mist is defined
+   * against the card and silhouette is defined against the light; on paper the
+   * two answers coincide, and on near-black they are opposites — see the mist
+   * block on :root, where the dark theme needs a PALE grey and reusing the
+   * silhouette made the bars vanish outright. A token whose definition happens
+   * to match another in one theme is not the same token. Writing
+   * `var(--ornament-silhouette)` here would read as intent and would break the
+   * moment either value moved. */
+  --ornament-mist: #5a4a40;
 
   --ornament-a-strong: 0.55;
   --ornament-a-mid: 0.38;

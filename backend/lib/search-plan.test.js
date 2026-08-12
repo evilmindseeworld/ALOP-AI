@@ -85,3 +85,55 @@ test("a very long line is cut rather than sent whole", () => {
   const long = Array.from({ length: 8 }, () => "supercalifragilistic").join(" ");
   assert.ok(parseSearchPlan(long)[0].length <= 200);
 });
+
+/**
+ * A MODEL ANSWERING IN ITS NATIVE TOOL-CALL SYNTAX.
+ *
+ * Reported by the owner as a bad answer in production: a question about the
+ * monitor model XG27AQWMG came back "I do not have sufficient information...
+ * please clarify". The telemetry for that turn shows the search router ran
+ * (`routerReads.search` ok, 4009ms) and the council then answered from memory.
+ *
+ * The cause is here. gemma-4-26b-a4b, asked to reply with a search query,
+ * sometimes replies with the function-call mechanism it has for exactly that:
+ *
+ *   <|tool_call>call:google_search:search{queries:["ASUS ROG XG27AQWMG specs"]}<tool_call|>
+ *
+ * That is one line, under ten words, and not "NO", so every existing guard let
+ * it through as the query — and the product searched the web for a string of
+ * control tokens. Reproduced live on two of four phrasings of the same
+ * question, so it is a coin flip rather than a property of the prompt.
+ */
+test("a native tool-call reply yields the query inside it, not the control tokens", () => {
+  const wrapped = '<|tool_call>call:google_search:search{queries:["ASUS ROG Swift XG27AQWMG specs price"]}<tool_call|>';
+  assert.deepEqual(parseSearchPlan(wrapped), ["ASUS ROG Swift XG27AQWMG specs price"]);
+});
+
+test("the control tokens never reach a search provider", () => {
+  // The failure this prevents, stated as the thing that must not happen rather
+  // than as the shape that happens to be produced today. Any future wrapper
+  // that leaks its own syntax fails here too.
+  const wrapped = '<|tool_call>call:google_search:search{queries:["monitor specs"]}<tool_call|>';
+  for (const q of parseSearchPlan(wrapped) || []) {
+    assert.ok(!/tool_call|call:|queries\s*:/i.test(q), `control syntax reached the query: ${q}`);
+  }
+});
+
+test("both queries survive a two-query tool call", () => {
+  const wrapped = '<|tool_call>call:google_search:search{queries:["a specs","b price"]}<tool_call|>';
+  assert.deepEqual(parseSearchPlan(wrapped), ["a specs", "b price"]);
+});
+
+test("a tool call with nothing quoted searches for NOTHING rather than for tokens", () => {
+  // Dropping is a silent no-search, which is bad. Sending the raw blob is a
+  // search for garbage that then reads as a confident answer, which is worse.
+  assert.equal(parseSearchPlan('<|tool_call>call:google_search:search{queries:[]}<tool_call|>'), null);
+});
+
+test("the unwrapping does not disturb an ordinary reply", () => {
+  // The regression that would matter most: a plain query containing a colon or
+  // a quoted phrase must be untouched.
+  assert.deepEqual(parseSearchPlan("iphone 17 price"), ["iphone 17 price"]);
+  assert.deepEqual(parseSearchPlan('"iphone 17" price'), ["iphone 17\" price"]);
+  assert.equal(parseSearchPlan("NO"), null);
+});

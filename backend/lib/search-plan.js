@@ -43,6 +43,44 @@ const clean = (line) =>
     .slice(0, MAX_QUERY_LEN);
 
 /**
+ * A model answering in its NATIVE TOOL-CALL SYNTAX instead of in plain text.
+ *
+ * Observed in production on 2026-08-12, from `google/gemma-4-26b-a4b-it:free`
+ * asked for a search query about a monitor model number:
+ *
+ *   <|tool_call>call:google_search:search{queries:["ASUS ROG XG27AQWMG specs price"]}<tool_call|>
+ *
+ * It happened on two of four phrasings of the same question and not on the
+ * other two, so it is a coin-flip rather than a property of the prompt. Gemma 4
+ * advertises native function calling; asked to "reply with the search queries",
+ * it sometimes reaches for the mechanism it has for exactly that.
+ *
+ * WITHOUT THIS, THE WHOLE BLOB WENT TO THE SEARCH API AS THE QUERY. It is one
+ * line, under ten words, and not "NO", so every guard below passed it through.
+ * The user's question then got a web search for a string of control tokens,
+ * which returns nothing usable, and the council answered a product it had never
+ * heard of from memory — which is the confidently-empty "I do not have
+ * sufficient information" the owner reported.
+ *
+ * SALVAGED RATHER THAN REJECTED, because the model did the hard part correctly:
+ * the query inside is good. The quoted strings are pulled out and used. Only if
+ * there is nothing quoted is the line dropped — sending the raw tokens is never
+ * right, and dropping is at least a silent no-search rather than a search for
+ * garbage.
+ */
+const TOOL_CALL_RE = /<\|?\s*tool_call|tool_call\s*\|?>|\bcall:[\w.-]+:[\w.-]+|["']?queries["']?\s*:\s*\[/i;
+
+const unwrapToolCall = (line) => {
+  if (!TOOL_CALL_RE.test(line)) return [line];
+  /* Anything quoted inside the call. Bounded at MAX_QUERY_LEN so a pathological
+   * blob cannot smuggle a huge string past the cap the cleaner applies. */
+  const quoted = [...line.matchAll(/["']([^"']{2,200})["']/g)]
+    .map((m) => m[1].trim())
+    .filter((q) => q && !TOOL_CALL_RE.test(q));
+  return quoted.length ? quoted.map((q) => q.slice(0, MAX_QUERY_LEN)) : [];
+};
+
+/**
  * @param {string} raw  the model's reply
  * @returns {string[]|null}  queries to run, or null for "no search needed"
  */
@@ -50,6 +88,7 @@ function parseSearchPlan(raw) {
   const text = typeof raw === "string" ? raw : "";
   const lines = text
     .split("\n")
+    .flatMap((line) => unwrapToolCall(String(line)))
     .map(clean)
     .filter(Boolean);
 

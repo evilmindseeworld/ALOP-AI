@@ -185,6 +185,88 @@ test("a missing dependency fails loudly at construction, not silently at request
   assert.throws(() => createRequestBudget({ rpc: async () => ({}) }), /numeric limits/);
 });
 
+// ===== what a turn really costs =====
+//
+// The numbers below were derived independently by a second reviewer from the
+// call sites, and they are the ones the previous accounting got wrong. It
+// charged a flat overhead of 3 to council turns and exactly 1 to everything
+// else; the overhead named three calls that are NOT made per turn (the router's
+// classification is pure code, the title fires once per new chat, the feedback
+// note only when a user rates an answer) while missing the four that are — two
+// router MODEL calls and the two fire-and-forget rememberTurn calls.
+//
+// Nearly right, composed of entirely the wrong things, and therefore the kind
+// of number that survives review indefinitely. These tests pin the arithmetic
+// to the branch shapes so it cannot drift back.
+
+const { countTurnRequests, reservationRequests } = require("./spend");
+
+const ROUTER = { memory: { ms: 5, ok: true }, search: { ms: 5, ok: true } };
+const council = (n) => ({
+  seats: Array.from({ length: n }, (_, i) => ({ model: `m${i}` })),
+  synthesisMs: 9,
+  routerReads: ROUTER,
+  fastCalls: 2,
+});
+
+test("a council turn costs its seats plus synthesis plus four", () => {
+  // 2 router calls + N seats + 1 synthesis + 2 rememberTurn.
+  assert.equal(countTurnRequests(council(1)), 6, "simple tier");
+  assert.equal(countTurnRequests(council(3)), 8, "moderate tier");
+  assert.equal(countTurnRequests(council(7)), 12, "complex tier");
+});
+
+test("the cheap branches cost FIVE, not one", () => {
+  // The worst of the old errors. A memory or search answer spends two router
+  // calls, one streamed answer and two rememberTurn calls — it was charged 1.
+  assert.equal(countTurnRequests({ routerReads: ROUTER, fastCalls: 2 }), 5);
+});
+
+test("a turn that skipped the router is not charged for it", () => {
+  // A greeting and an image turn set skipRouter, so neither router call is
+  // dispatched. Counting them from routerReads rather than from a constant is
+  // what makes this free instead of a flat charge.
+  assert.equal(countTurnRequests({}), 1, "greeting: one streamed answer");
+  assert.equal(countTurnRequests({ routerReads: ROUTER }), 3, "search with no results");
+});
+
+test("fire-and-forget memory calls are counted, because nothing else can see them", () => {
+  // rememberTurn's two calls leave no seat record, no synthesis time and no
+  // router read. Without recordFastCalls they are invisible to the meter and
+  // every answering turn undercounts by two.
+  assert.equal(countTurnRequests({ ...council(3), fastCalls: 0 }), 6);
+  assert.equal(countTurnRequests(council(3)), 8);
+});
+
+test("the reservation still bounds the corrected count", () => {
+  // The load-bearing property, re-checked after the correction: raising what a
+  // turn is known to cost without raising the reservation would let concurrent
+  // turns walk the shared cap past its limit.
+  const seats = [];
+  for (let round = 1; round <= 4; round++) for (let i = 0; i < 7; i++) seats.push({ model: `m${i}`, round });
+  for (let i = 0; i < 7; i++) seats.push({ model: `m${i}`, round: 5 });
+  const worst = { seats, synthesisMs: 1200, fallbackCouncil: { used: true }, routerReads: ROUTER, fastCalls: 2 };
+  assert.ok(
+    reservationRequests(7, 12, 4) >= countTurnRequests(worst),
+    `reservation ${reservationRequests(7, 12, 4)} does not bound worst case ${countTurnRequests(worst)}`,
+  );
+});
+
+test("every answering branch records its memory calls", () => {
+  // The count is only right if rememberTurn is actually handed the telemetry at
+  // every call site. Five branches answer a user; missing one undercounts that
+  // branch by two forever, and it is invisible because the other four are right.
+  // Matched to end-of-statement rather than to the first ")", because one call
+  // site passes a nested expression — `validResponses[0]?.content?.slice(0,800)`
+  // — and a lazy match stopped inside it and reported a correct call as broken.
+  // A guard that fails on well-formed code gets silenced rather than believed.
+  const calls = [...SERVER.matchAll(/rememberTurn\(.*?\);$/gm)].map((m) => m[0]);
+  assert.ok(calls.length >= 5, `expected 5 rememberTurn call sites, found ${calls.length}`);
+  for (const call of calls) {
+    assert.match(call, /,\s*telemetry\);$/, `${call} does not pass telemetry, so its two provider calls go uncounted`);
+  }
+});
+
 // ===== the route contract =====
 //
 // server.js exits during import when deployment configuration is absent, so the

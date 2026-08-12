@@ -1355,8 +1355,21 @@ const updateUserFacts = async (userId, userMsg) => {
 };
 
 /* One funnel for everything learned from a settled turn, so a new memory does
- * not have to be threaded through six terminal paths and miss one. */
-const rememberTurn = (chatId, userId, userMsg, assistantMsg) => {
+ * not have to be threaded through six terminal paths and miss one.
+ *
+ * TWO PROVIDER CALLS, AND THEY HAVE TO BE COUNTED. Both helpers call
+ * FAST_MODEL, so every answering branch spends two OpenRouter requests here
+ * against an account-wide daily cap. Nothing else could see them: they are
+ * fire-and-forget by design, so they leave no seat record, no synthesis time
+ * and no router read, and the request meter was silently short by two on every
+ * turn that reached this point.
+ *
+ * `telemetry` is optional so the funnel stays callable from anywhere that has
+ * no turn to attribute the work to. When it is absent the calls still happen —
+ * they are simply not metered, which is the honest failure mode for a counter
+ * and is preferable to making the memory write depend on the meter. */
+const rememberTurn = (chatId, userId, userMsg, assistantMsg, telemetry) => {
+  telemetry?.recordFastCalls(2);
   updateChatSummary(chatId, userId, userMsg, assistantMsg).catch(() => {});
   updateUserFacts(userId, userMsg).catch(() => {});
 };
@@ -2251,7 +2264,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       openStream(res);
       await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0, turnSignal);
       if (!res.writableEnded) res.end();
-      rememberTurn(chatId, user.id, pv.value, 'Answered memory question.');
+      rememberTurn(chatId, user.id, pv.value, 'Answered memory question.', telemetry);
       await auditBranch({ category: 'memory' });
       return;
     }
@@ -2364,7 +2377,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0, turnSignal);
       if (!res.writableEnded) res.end();
       const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
-      rememberTurn(chatId, user.id, pv.value, lastA || 'Search response.');
+      rememberTurn(chatId, user.id, pv.value, lastA || 'Search response.', telemetry);
       await auditBranch({ category: 'search', sources: sources.length });
       return;
     }
@@ -2383,7 +2396,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         openStream(res);
         await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0, turnSignal);
         if (!res.writableEnded) res.end();
-        rememberTurn(chatId, user.id, pv.value, 'Wikipedia response.');
+        rememberTurn(chatId, user.id, pv.value, 'Wikipedia response.', telemetry);
         await auditBranch({ category: 'wiki' });
         return;
       }
@@ -2585,7 +2598,7 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       telemetry.recordFallback(Date.now() - fallbackStartedAt, 'post_council');
       if (turnSignal.aborted) return;
       if (!res.writableEnded) res.end();
-      rememberTurn(chatId, user.id, pv.value, 'Fallback response.');
+      rememberTurn(chatId, user.id, pv.value, 'Fallback response.', telemetry);
       await auditTelemetry(
         telemetryExtra.rounds !== undefined ? 'council.tools' : 'council',
         'fallback',
@@ -2630,7 +2643,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     if (turnSignal.aborted) return;
     if (!res.writableEnded) res.end();
     const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
-    rememberTurn(chatId, user.id, pv.value, lastA || validResponses[0]?.content?.slice(0,800) || 'Council response.');
+    rememberTurn(chatId, user.id, pv.value, lastA || validResponses[0]?.content?.slice(0,800) || 'Council response.', telemetry);
     /* msToFirstByte on THIS path too, not only on the tools path.
      *
      * The number that says whether a latency change worked is the wait before

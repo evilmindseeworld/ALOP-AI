@@ -254,16 +254,34 @@ function reservationCents(seatCount, maxToolCalls, maxRounds) {
  * ========================================================================== */
 
 /**
- * The FAST_MODEL calls a council turn makes outside the council itself, none of
- * which appear in the telemetry snapshot's seat records and all of which spend
- * quota: the router's classification, the chat title, and the feedback note.
+ * The FAST_MODEL calls a turn makes outside the council, used only as the
+ * RESERVATION's assumption. The settlement counts the real ones.
  *
- * Counted as a flat overhead rather than measured because the snapshot does not
- * record them individually. Overridable, since it is the number most likely to
- * drift as routing changes — if a fourth short call is added, this is the line
- * that has to move or the cap is under-counted on every single turn.
+ * THE PREVIOUS VALUE WAS RIGHT BY ACCIDENT AND WRONG IN EVERY PART. It was 3,
+ * documented as "the router's classification, the chat title, and the feedback
+ * note", and all three were wrong:
+ *
+ *   The router's classification is `assessComplexity` in lib/router.js, which is
+ *   PURE CODE. It has never cost a request.
+ *   The chat title is a separate endpoint that fires once on a new chat's first
+ *   message, not on every turn.
+ *   The feedback note is a separate endpoint that fires only when a user rates
+ *   an answer.
+ *
+ * What a turn actually spends outside the council is FOUR: two router MODEL
+ * calls — `isMemoryOrReferenceQuestion` and `getSearchQuery` — and the two
+ * `rememberTurn` fires after answering, `updateChatSummary` and
+ * `updateUserFacts`. The count was nearly right while being composed of
+ * entirely the wrong things, which is the most durable kind of wrong: a number
+ * that survives every review because it looks about right.
+ *
+ * So the number is no longer asserted. The settlement reads what the turn
+ * recorded — `routerReads` for the router calls, `fastCalls` for the
+ * fire-and-forget pair — and this constant survives only as the upper bound the
+ * RESERVATION assumes before any of that is known. Four, because four is what
+ * the worst case actually dispatches.
  */
-const FAST_OVERHEAD = int(process.env.SPEND_FAST_OVERHEAD, 3);
+const FAST_OVERHEAD = int(process.env.SPEND_FAST_OVERHEAD, 4);
 
 /**
  * The request ceiling, account-wide, per UTC day.
@@ -314,13 +332,27 @@ function countTurnRequests(snapshot) {
     requests += roster + 1;
   }
 
-  /* A turn that ran a council carries the FAST_MODEL overhead; the cheap
-   * branches — memory, greeting, search, wiki — record no seats and no synthesis
-   * and spend exactly one streamed call. The condition is deliberately the same
-   * one priceTurn uses to find those branches, so the two functions can never
-   * disagree about what kind of turn they were handed. */
-  if (seats.length || snap.synthesisMs) requests += FAST_OVERHEAD;
-  else requests += 1;
+  /* THE NON-COUNCIL CALLS, COUNTED RATHER THAN ASSUMED. This used to add a flat
+   * FAST_OVERHEAD to council turns and exactly 1 to everything else, and it was
+   * wrong in both directions at once: the constant named three calls that were
+   * not the ones being made, and the cheap branches were charged 1 when a memory
+   * or search answer really spends 5 — two router calls, one streamed answer,
+   * and the two `rememberTurn` fires. Off by four on the branches that were
+   * supposed to be the cheap ones.
+   *
+   * Both numbers now come from the turn itself. `routerReads` is written by
+   * `measureRouter` around each of the two router model calls, so a turn that
+   * skipped them (a greeting, or an image turn) contributes nothing here rather
+   * than being charged for calls it never made. `fastCalls` is written at
+   * dispatch by `rememberTurn`, which is the only way those two can be seen at
+   * all — they are fire-and-forget and leave no other trace. */
+  requests += Object.keys(snap.routerReads || {}).length;
+  requests += Math.max(0, Number(snap.fastCalls) || 0);
+
+  /* The cheap branches stream one answer and record no seat and no synthesis for
+   * it. The condition is the same one priceTurn uses to recognise them, so the
+   * two functions cannot disagree about what kind of turn they were handed. */
+  if (!seats.length && !snap.synthesisMs) requests += 1;
 
   return Math.max(0, requests);
 }

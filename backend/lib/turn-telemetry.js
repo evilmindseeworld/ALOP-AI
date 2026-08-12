@@ -16,6 +16,18 @@ function createTurnTelemetry({ now = Date.now, startedAt = now() } = {}) {
   let synthesisMs = null;
   let fallbackCouncil = { used: false, durationMs: null, kind: null };
   let ceiling = { hit: false, reason: null };
+  /* Provider calls that are NOT seats, NOT synthesis and NOT router reads —
+   * today that is the pair `rememberTurn` fires after the user has been
+   * answered, one to re-summarise the chat and one to extract user facts.
+   *
+   * They are counted because they are real OpenRouter requests against an
+   * account-wide daily cap, and because nothing else here could see them: they
+   * are deliberately fire-and-forget, so they leave no seat record, no
+   * synthesis time and no router read. lib/spend.js used to model them as part
+   * of a flat `FAST_OVERHEAD` constant that named the wrong three calls
+   * entirely, which is exactly the kind of assumption a recorder exists to
+   * replace. */
+  let fastCalls = 0;
 
   const measure = (bucket, name, work) => {
     const started = now();
@@ -39,6 +51,19 @@ function createTurnTelemetry({ now = Date.now, startedAt = now() } = {}) {
     },
     measureRouter(name, work) {
       return measure(routerReads, name, work);
+    },
+    /**
+     * Record N provider calls that no other recorder here can see.
+     *
+     * Counted at DISPATCH rather than on completion, deliberately: these are
+     * fire-and-forget, so waiting for them would mean the settlement in the
+     * route's `finally` reads a count that has not finished changing. The
+     * provider bills a request that was sent whether or not we waited for the
+     * answer, so dispatch is also the honest moment to count it.
+     */
+    recordFastCalls(n = 1) {
+      const count = Number(n);
+      if (Number.isFinite(count) && count > 0) fastCalls += Math.round(count);
     },
     recordSeat(row) {
       if (!row || typeof row !== "object") return;
@@ -90,6 +115,7 @@ function createTurnTelemetry({ now = Date.now, startedAt = now() } = {}) {
         contextReads,
         contextMs,
         routerReads,
+        fastCalls,
         seats: [...seats],
         synthesisMs,
         toolRounds: [...toolRounds],

@@ -204,6 +204,66 @@ watched to fail before being restored.
 
 ---
 
+## This session (2026-08-12) — the CSP finding was aimed at the wrong CSP
+
+Chased `'unsafe-inline'` in `server.js`'s helmet block, on the assumption it was
+governing the app's scripts. **It never was**, and the correction is more useful
+than the original finding.
+
+**The document CSP is set by `frontend/vercel.json`, on the Vercel response, and
+it is already clean.** Measured on live `alop-ai.com`:
+
+```
+script-src 'self' https://clerk.alop-ai.com https://challenges.cloudflare.com
+```
+
+No `'unsafe-inline'`, no nonce. Loaded production in a browser with a
+`securitypolicyviolation` listener attached: Clerk initialised, the app
+rendered, **zero violations**. The page ships exactly one inline block — an
+`application/ld+json` data block, which is not executable and which `script-src`
+does not govern. **Clerk needs neither the inline permission nor a nonce here**,
+because it arrives as an external script from an allowlisted origin. Nothing to
+fix on the frontend.
+
+**The backend CSP was still worth tightening, for a different reason.** It
+travels on JSON and SSE; `server.js` has zero HTML routes, zero `<script>`
+tags, no `express.static`, no `sendFile`. So `script-src 'self' 'unsafe-inline'
+https://*.clerk.com` was permission for a route that does not exist — dead until
+someone adds one, and Express's own error handler already returns HTML. Now
+`'none'`.
+
+**And the real find, which nothing was looking for:
+`xFrameOptions: 'DENY'` was silently ignored.** Helmet 8 does not accept the
+string form, does not warn, and falls through to its own SAMEORIGIN default.
+Reproduced locally against helmet 8.3.0:
+
+```
+default (no option)                X-Frame-Options = SAMEORIGIN
+xFrameOptions: 'DENY'   (ours)     X-Frame-Options = SAMEORIGIN
+xFrameOptions: {action:'deny'}     X-Frame-Options = DENY
+```
+
+and confirmed on the deployed backend, which was serving `SAMEORIGIN` while the
+source read as `DENY`. Impact is small — `frame-ancestors 'none'` in the same
+CSP covers every browser that matters, deliberately redundant — but **a line
+that states an intent it does not carry out is worse than a missing line,
+because it stops anyone looking again.** No grep could have caught it: the
+source was not wrong about its intent, it was wrong about the library.
+
+The options moved to `backend/lib/security-headers.js` so
+`security-headers.test.js` can mount them on a real express app and read the
+headers off a real response. It pins the helmet behaviour itself — if helmet
+ever starts honouring the string, that assertion fails and says so. Both fixes
+watched to fail. 635 backend tests pass.
+
+**Queued, not done: measuring whether `UNTRUSTED_PREAMBLE` actually works.** The
+owner's framing, and it is right: that is a research question, not a fix. It is
+the most serious item on `docs/cyber-skills-shortlist.md` and the hardest to act
+on — seven models are handed arbitrary fetched web text behind a preamble that
+asks them to distrust it, and nobody has measured whether they do.
+
+---
+
 ## This session (2026-08-12) — mist, hookify disarmed, sign-in measured
 
 **The cloud bars were the wrong MATERIAL, not the wrong weight.** The owner:

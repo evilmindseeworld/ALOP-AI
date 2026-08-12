@@ -1121,7 +1121,12 @@ const { isOriginAllowed, originPolicyFromEnv } = require('./lib/origin-guard');
 const originPolicy = originPolicyFromEnv();
 if (!originPolicy.exact.length && !originPolicy.allowAll) console.warn('[BOOT] FRONTEND_URL not set — every cross-origin browser request will be refused.');
 app.use(cors({ origin: (origin, cb) => isOriginAllowed(origin, originPolicy) ? cb(null, true) : cb(new Error(`CORS: ${origin}`)), credentials: true, methods: ['GET','POST','PUT','DELETE','OPTIONS'], allowedHeaders: ['Content-Type','Authorization','X-Requested-With'], maxAge: 86400 }));
-app.use(helmet({ contentSecurityPolicy: { directives: { defaultSrc: ["'self'"], connectSrc: ["'self'", process.env.FRONTEND_URL, 'https://*.clerk.com', 'https://*.stripe.com'], scriptSrc: ["'self'", "'unsafe-inline'", 'https://*.clerk.com'], styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'], imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'https://image.pollinations.ai'], fontSrc: ["'self'", 'https://fonts.gstatic.com'], frameAncestors: ["'none'"], formAction: ["'self'", 'https://*.stripe.com'], upgradeInsecureRequests: [] } }, crossOriginEmbedderPolicy: false, crossOriginResourcePolicy: { policy: 'cross-origin' }, hsts: { maxAge: 31536000, includeSubDomains: true, preload: true }, referrerPolicy: { policy: 'strict-origin-when-cross-origin' }, xContentTypeOptions: true, xFrameOptions: 'DENY', xPermittedCrossDomainPolicies: 'none' }));
+// The options moved to lib/security-headers.js so a test can mount them and
+// read the headers off a real response. Two of them were wrong here, and
+// `xFrameOptions: 'DENY'` was wrong SILENTLY — helmet ignored the string and
+// served its SAMEORIGIN default while this line read as DENY. See that file.
+const { helmetOptions } = require('./lib/security-headers');
+app.use(helmet(helmetOptions));
 // clientFingerprint used to be computed here and used as the rate-limit key.
 // It hashed the User-Agent, so it was not an identity — it was a bucket the
 // caller could change at will. Nothing derives from a client-chosen header now.

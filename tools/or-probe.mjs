@@ -12,7 +12,12 @@ if (!apiKey) {
   console.log('id | content-at-10-tokens present? | first-byte ms | total ms | reasoning-only?');
   console.log('--- | --- | ---: | ---: | ---');
 
-  const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+  const pause = (ms, signal) => new Promise((resolve) => {
+    if (signal?.aborted) return resolve();
+    const onAbort = () => { clearTimeout(timer); resolve(); };
+    const timer = setTimeout(() => { signal?.removeEventListener('abort', onAbort); resolve(); }, ms);
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
   const fetchTransiently = async (url, options) => {
     for (let attempt = 0; attempt < 3; attempt++) {
       const response = await fetch(url, options);
@@ -20,17 +25,26 @@ if (!apiKey) {
       if (attempt === 2) return response;
       const retryAfterHeader = response.headers.get('retry-after');
       const retryAfter = retryAfterHeader === null ? NaN : Number(retryAfterHeader);
-      await pause(Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : [10000, 30000][attempt]);
+      await pause(
+        Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : [10000, 30000][attempt],
+        options.signal,
+      );
     }
   };
 
   for (const model of models) {
     const run = async (maxTokens) => {
       const started = performance.now();
-      const response = await fetchTransiently(`${API_ROOT}/chat/completions`, {
-        method: 'POST', headers,
-        body: JSON.stringify({ model, messages: [{ role: 'user', content: 'Reply with exactly: probe successful' }], max_tokens: maxTokens, temperature: 0, stream: true }),
-      });
+      const signal = AbortSignal.timeout(20000);
+      let response;
+      try {
+        response = await fetchTransiently(`${API_ROOT}/chat/completions`, {
+          method: 'POST', headers, signal,
+          body: JSON.stringify({ model, messages: [{ role: 'user', content: 'Reply with exactly: probe successful' }], max_tokens: maxTokens, temperature: 0, stream: true }),
+        });
+      } catch (error) {
+        return { error: signal.aborted ? 'timeout' : error.name };
+      }
       if (!response.ok) return { error: `HTTP ${response.status}` };
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -38,23 +52,27 @@ if (!apiKey) {
       let content = '';
       let reasoning = '';
       let pending = '';
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (firstByteMs === null) firstByteMs = Math.round(performance.now() - started);
-        pending += decoder.decode(value, { stream: true });
-        const lines = pending.split(/\r?\n/);
-        pending = lines.pop() || '';
-        for (const line of lines) {
-          if (!line.startsWith('data:')) continue;
-          const raw = line.slice(5).trim();
-          if (!raw || raw === '[DONE]') continue;
-          try {
-            const delta = JSON.parse(raw)?.choices?.[0]?.delta;
-            if (typeof delta?.content === 'string') content += delta.content;
-            if (typeof delta?.reasoning === 'string') reasoning += delta.reasoning;
-          } catch { /* ignore malformed provider events */ }
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          if (firstByteMs === null) firstByteMs = Math.round(performance.now() - started);
+          pending += decoder.decode(value, { stream: true });
+          const lines = pending.split(/\r?\n/);
+          pending = lines.pop() || '';
+          for (const line of lines) {
+            if (!line.startsWith('data:')) continue;
+            const raw = line.slice(5).trim();
+            if (!raw || raw === '[DONE]') continue;
+            try {
+              const delta = JSON.parse(raw)?.choices?.[0]?.delta;
+              if (typeof delta?.content === 'string') content += delta.content;
+              if (typeof delta?.reasoning === 'string') reasoning += delta.reasoning;
+            } catch { /* ignore malformed provider events */ }
+          }
         }
+      } catch (error) {
+        return { error: signal.aborted ? 'timeout' : error.name };
       }
       return { content, reasoning, firstByteMs: firstByteMs ?? Math.round(performance.now() - started), totalMs: Math.round(performance.now() - started) };
     };

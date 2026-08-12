@@ -40,8 +40,29 @@ test("aborted tool results are not cached", () => {
 });
 
 test("a provider stream must reach its completion frame before the turn can succeed", () => {
-  assert.match(STREAM_MODEL, /if \(p\.done\) \{ completed = true;/);
+  // The invariant is unchanged by the OpenRouter migration — a turn may not
+  // succeed unless the provider SAID it finished — but the frame that carries
+  // that signal is completely different, so the guard had to move with it.
+  //
+  // Ollama sent line-delimited JSON with a `done: true` flag on the last
+  // object. OpenRouter sends SSE: `data: {...}` frames, a literal `data:
+  // [DONE]` terminator, and `: OPENROUTER PROCESSING` comment lines that are
+  // not JSON at all. Parsing that with the old loop yields zero completions and
+  // the throw below fires on every turn, so this assertion is what stops the
+  // old shape being reintroduced by anyone copying an Ollama example.
+  assert.match(STREAM_MODEL, /parseOpenRouterSseLine\(line\)/);
+  assert.match(STREAM_MODEL, /if \(frame\.done && !completed\) \{ completed = true;/);
   assert.match(STREAM_MODEL, /if \(!completed\) throw new Error\('Stream ended before provider completion'\)/);
+});
+
+test("the completion sentinel is written exactly once", () => {
+  // Completion arrives TWICE in SSE — a delta carrying finish_reason, then the
+  // [DONE] terminator — where Ollama signalled it once. Without the `!completed`
+  // guard the client receives two [DONE] frames and reads the second as a
+  // second turn ending. There is no test that would catch that downstream, so
+  // it is caught here.
+  assert.match(STREAM_MODEL, /if \(frame\.done && !completed\)/);
+  assert.equal(STREAM_MODEL.match(/data: \[DONE\]/g)?.length, 1);
 });
 
 // An abandoned turn used to write nothing at all: every abort path returns

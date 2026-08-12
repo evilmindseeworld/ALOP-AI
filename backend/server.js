@@ -50,7 +50,7 @@ const PORT = process.env.PORT || 3000;
 // Core config: the server cannot answer a single request without these.
 // CLERK_PUBLISHABLE_KEY is deliberately absent — it is a frontend value and is
 // never read here, so requiring it only blocked startup for no reason.
-const requiredEnv = ['SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','CLERK_SECRET_KEY','FRONTEND_URL','OLLAMA_HOST','OLLAMA_API_KEY'];
+const requiredEnv = ['SUPABASE_URL','SUPABASE_SERVICE_ROLE_KEY','CLERK_SECRET_KEY','FRONTEND_URL','OPENROUTER_API_KEY'];
 const missingEnv = requiredEnv.filter((k) => !process.env[k]);
 if (missingEnv.length > 0) { console.error(`Missing required env: ${missingEnv.join(', ')}`); process.exit(1); }
 
@@ -84,8 +84,14 @@ const GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID || null;
 
 const stripe = STRIPE_ENABLED ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' }) : null;
 const requireStripe = (req, res, next) => STRIPE_ENABLED ? next() : res.status(503).json({ error: 'Billing is not configured on this server.' });
-const OLLAMA_HOST = process.env.OLLAMA_HOST;
-const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
+/* OpenRouter, not the old Ollama-shaped gateway. The HOST is defaulted and is
+ * NOT in requiredEnv, which is a deliberate difference from OLLAMA_HOST: that
+ * was a private gateway whose address only the deploy knew, so booting without
+ * it was a misconfiguration. This is one fixed public endpoint, so requiring it
+ * would only ever block a boot over a value that has exactly one correct
+ * setting. It stays overridable for a proxy or a self-hosted gateway. */
+const OPENROUTER_HOST = process.env.OPENROUTER_HOST || 'https://openrouter.ai/api/v1/chat/completions';
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 // ===== MODELS =====
 // One seat per model family. The previous roster ran three Kimi variants,
@@ -97,36 +103,93 @@ const OLLAMA_API_KEY = process.env.OLLAMA_API_KEY;
 // at 0.0, which made them converge on the same answer and left the synthesis
 // step with nothing to reconcile. The determinism that matters — extracting
 // facts from search results — is unaffected; those paths still run at 0.0.
+// ---------------------------------------------------------------------------
+// OPENROUTER FREE MODELS, AND WHY THESE SEVEN. Migrated 2026-08-12.
+//
+// Every id ends in `:free` and that suffix is part of the id — drop it and the
+// call 404s. `free: true` keeps its existing meaning: the seat a FREE-TIER USER
+// gets. It does not mean the model is free, because all seven are. The owner's
+// split is the strongest models behind the paywall and the small cheap ones in
+// front of it, and the tier column below is that instruction, not a guess.
+//
+// THE SEATS WERE PICKED ON MEASUREMENT, NOT ON PARAMETER COUNT, and the paper
+// ranking and the measured one disagree sharply. Every number below is MEASURED
+// — one sample per model, `max_tokens: 200`, `temperature: 0.4`, requests paced
+// 5s apart so that OpenRouter's own free-models-per-minute cap could not be
+// mistaken for a provider fault. That pacing matters: an earlier unpaced sweep
+// produced 429s on six models and every one of them was OUR rate limit, not
+// theirs. The four rejections are recorded because each is a trap someone will
+// otherwise re-discover by shipping it:
+//
+//   nvidia/nemotron-3-ultra-550b-a55b:free  the biggest free model there is,
+//     550B and a 1M context, and it did not answer inside 30s on any of five
+//     attempts. The whip is 30s. A seat that cannot beat the whip is not a
+//     slow seat, it is an absent one that still costs a request.
+//   nvidia/nemotron-nano-9b-v2:free         11.1s and returned EMPTY content.
+//   liquid/lfm-2.5-2.6b:free                15.9s, EMPTY content, and its model
+//     card states prompts and outputs may be retained to train Liquid's models.
+//     That alone disqualifies it: this product has a privacy policy naming its
+//     subprocessors, and a seat that trains on user text cannot sit behind it.
+//   nvidia/nemotron-3.5-lightning:free      7.2s and answered, but leaked its
+//     scratchpad into the answer — content began "Here's a thinking process:"
+//     WITH `reasoning: { exclude: true }` already set. A seat whose draft is
+//     half meta-commentary poisons the synthesis it feeds.
+//
+// ONE CAVEAT ON THE LATENCIES, stated because the roster rests on them: they
+// were measured at a 200-token ceiling and the council runs at 1000. Generation
+// time is roughly linear in tokens produced, so treat these as a floor and not
+// as a prediction. It is why the slow strong seats are the PAID ones — quorum
+// is 3, so the fast seats close the room and a slow seat either arrives with
+// something worth having or is whipped without holding anyone up.
 const COUNCIL = [
-  { model: 'glm-5.2',          temperature: 0.2, free: false },
-  { model: 'kimi-k2.7-code',   temperature: 0.3, free: true  },
-  { model: 'qwen3.5',          temperature: 0.5, free: true  },
-  { model: 'gemma4',           temperature: 0.7, free: true  },
-  { model: 'deepseek-v4-pro',  temperature: 0.4, free: false },
-  { model: 'nemotron-3-ultra', temperature: 0.5, free: false },
-  { model: 'minimax-m3',       temperature: 0.8, free: false },
+  // 23.9s measured, and the slowest seat kept. A 120B MoE is the strongest
+  // model on this list that answers at all, and 0.2 is the seat whose job is to
+  // hold to what is literally there.
+  { model: 'nvidia/nemotron-3-super-120b-a12b:free', temperature: 0.2, free: false },
+  // 1.2s measured — the fastest of all twelve, which is why it carries a free
+  // tier that has only three seats to make quorum with.
+  { model: 'inclusionai/ling-3.0-tiny:free',        temperature: 0.3, free: true  },
+  // 429 on the paced sample and healthy on an earlier one at 2.5s. Retried by
+  // lib/openrouter.js rather than dropped: a 429 here is contention, not
+  // absence, and this is the only OpenAI-lineage seat on the board.
+  { model: 'openai/gpt-oss-20b:free',               temperature: 0.4, free: false },
+  { model: 'poolside/laguna-s-2.1:free',            temperature: 0.5, free: false }, // 8.9s
+  // 31B dense, and 429 on both paced attempts. Kept for the same reason as
+  // gpt-oss and with the same retry: it is the best quality-per-second on paper
+  // of anything here, and the free-tier seat below is its small sibling.
+  { model: 'google/gemma-4-31b-it:free',            temperature: 0.6, free: false },
+  { model: 'google/gemma-4-26b-a4b-it:free',        temperature: 0.7, free: true  }, // 2.4s
+  { model: 'nvidia/nemotron-3-nano-30b-a3b:free',   temperature: 0.8, free: true  }, // 2.1s
 ];
 
 const FREE_COUNCIL = COUNCIL.filter((m) => m.free);
 // The single model used for streaming: synthesis, greetings, fallback and
 // search extraction all speak with one voice, so it stays deterministic.
-const PRIMARY_MODEL = 'glm-5.2';
-const FAST_MODEL = 'gemma4';
+//
+// BOTH ARE THE SAME MODEL NOW, and deliberately. gemma-4-26b-a4b is the only id
+// measured to do BOTH jobs: 2.4s on a 200-token answer, and — the part that
+// eliminated everything else — it returns usable content at a TEN-token ceiling.
+// Every reasoning model on the free list returns `content: null` at that budget
+// and puts its text in `reasoning` instead, so FAST_MODEL's YES/NO router calls
+// come back empty and the router silently misroutes every turn. That is the
+// single most dangerous trap in this migration, because nothing throws: the
+// council still runs, still streams, and answers the wrong shape of question.
+// If either of these is ever swapped, re-check the 10-token case first.
+const PRIMARY_MODEL = 'google/gemma-4-26b-a4b-it:free';
+const FAST_MODEL = 'google/gemma-4-26b-a4b-it:free';
 
 // ===== AI HELPERS =====
-const callModel = async (modelName, messages, temperature = 0.0, timeoutMs = 30000, maxTokens = 1000, parentSignal) => {
-  const timed = timeoutSignal(parentSignal, timeoutMs);
-  try {
-    const res = await fetch(OLLAMA_HOST, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OLLAMA_API_KEY}` }, body: JSON.stringify({ model: modelName, messages, stream: false, options: { temperature, num_predict: maxTokens } }), signal: timed.signal });
-    if (!res.ok) { const text = await res.text(); throw new Error(`Model ${modelName}: ${res.status} ${text.slice(0,200)}`); }
-    const data = await res.json();
-    return data.message?.content || data.response || '';
-  } catch (err) { if (timed.signal.aborted || err.name === 'AbortError') return ''; throw err; }
-  finally { timed.dispose(); }
-};
+/* The request shape, the retry policy and the reasoning-field fallback all live
+ * in lib/openrouter.js so they can be unit tested — this file calls
+ * process.exit(1) at import time on a missing env var, so nothing defined here
+ * is reachable from a test. Only the socket and the telemetry stay here. */
+const { callModel: orCallModel, parseOpenRouterSseLine } = require('./lib/openrouter');
+
+const callModel = (modelName, messages, temperature = 0.0, timeoutMs = 30000, maxTokens = 1000, parentSignal) =>
+  orCallModel(OPENROUTER_HOST, OPENROUTER_API_KEY, modelName, messages, temperature, timeoutMs, maxTokens, parentSignal);
 
 const streamModel = async (res, modelName, messages, temperature = 0.0, signal) => {
-  const response = await fetch(OLLAMA_HOST, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OLLAMA_API_KEY}` }, body: JSON.stringify({ model: modelName, messages, stream: true, options: { temperature } }), ...(signal ? { signal } : {}) });
+  const response = await fetch(OPENROUTER_HOST, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_API_KEY}` }, body: JSON.stringify({ model: modelName, messages, temperature, stream: true, reasoning: { exclude: true } }), ...(signal ? { signal } : {}) });
   if (!response.ok || !response.body) throw new Error('Stream failed');
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
@@ -138,13 +201,31 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal) 
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
     buffer = lines.pop() || '';
-    for (const line of lines) { const t = line.trim(); if (!t) continue; try { const p = JSON.parse(t); const d = p.message?.content || p.response || ''; if (d) { /* The moment the ANSWER starts, which stopped being the same moment
-           * the response opens once progress events were added. msToFirstByte
-           * is the number every latency change is judged by; leaving it stamped
-           * at openStream would have made this feature look like a 15-second
-           * improvement while the user waited exactly as long. */
-          if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
-          res.write(`data: ${JSON.stringify({ type: 'chunk', text: d })}\n\n`); } if (p.done) { completed = true; res.write('data: [DONE]\n\n'); } } catch {} }
+    for (const line of lines) {
+      /* OpenRouter speaks SSE, not Ollama's line-delimited JSON: frames are
+       * `data: {...}`, the terminator is the literal `data: [DONE]`, and the
+       * stream is padded with `: OPENROUTER PROCESSING` comment lines that are
+       * NOT JSON. Feeding those to JSON.parse is what the old loop did, and it
+       * swallowed them silently — the visible failure was the throw at the
+       * bottom of this function on every single turn, because Ollama's `p.done`
+       * flag does not exist in this shape at all. */
+      const frame = parseOpenRouterSseLine(line);
+      if (frame.skip) continue;
+      if (frame.text) {
+        /* The moment the ANSWER starts, which stopped being the same moment
+         * the response opens once progress events were added. msToFirstByte
+         * is the number every latency change is judged by; leaving it stamped
+         * at openStream would have made this feature look like a 15-second
+         * improvement while the user waited exactly as long. */
+        if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
+        res.write(`data: ${JSON.stringify({ type: 'chunk', text: frame.text })}\n\n`);
+      }
+      /* Completion arrives TWICE in this protocol — a delta carrying
+       * finish_reason, then the `[DONE]` terminator — so the sentinel is
+       * written once and only once. The client treats a second [DONE] as a
+       * second turn ending. */
+      if (frame.done && !completed) { completed = true; res.write('data: [DONE]\n\n'); }
+    }
   }
   if (!completed) throw new Error('Stream ended before provider completion');
 };

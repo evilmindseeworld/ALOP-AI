@@ -273,8 +273,58 @@ the content is matched by 110px above it), and every small-text contrast on it
 passes AA — the legal and plan text at 5.62:1. Both were suspected and both are
 fine.
 
-Sol's independent sign-in critique was still running when this landed; it will
-arrive as `docs/signin-critique-sol.md` and has not been folded in yet.
+**Sol's critique landed and found the thing that mattered.** Full document in
+`docs/signin-critique-sol.md`. Its verdict on the premise is worth keeping: the
+1440/1024 steady state is NOT "really bad" — it is authored and coherent with
+the app; the complaint becomes true at the information order, the collapsed
+layout, and the states around Clerk.
+
+**`/sign-up` had no route to Terms or Privacy, and a test enforced it.** The
+component withheld our legal links there on the belief that Clerk renders its
+own required consent checkbox with links to both documents. False in this
+configuration — measured by Sol and then independently here: zero Terms/Privacy
+links in the card, zero checkboxes, no occurrence of either word in its rendered
+text. The flow where consent is actually taken was the only one with no route to
+either document; sign-in, where the account already exists, had both. A test
+asserted exactly that, so the suite agreed with the comment and neither looked
+at the page. Fixed in both flows, test inverted and watched to fail.
+
+The rule that came out of it: **our obligations must not be conditioned on what
+a third-party component is believed to render.** Its markup changes on their
+release schedule, silently, and the failure is invisible from inside this repo.
+
+**The loading slot now says which state it is in** — a 700ms grace period, then
+"Preparing secure sign-in…" with `role="status"`. Before, a blank 342px well sat
+there with nothing to separate "on its way" from "failed" until the ten-second
+down-state. Two timers, because those are different questions.
+
+### Open from Sol's critique, not done
+
+- **The narrow-viewport information order is backwards.** At 768 and 320 the
+  auth card renders above the product headline, so the first consequential
+  choice precedes the first product sentence — and DOM order is still thesis
+  then card, so sighted and screen-reader users get opposite sequences. Sol's
+  fix is a `grid-template-areas` split of the thesis into `signin-intro` (title
+  + tagline, before the card) and `signin-proof` (ladder + seal, after it). Real,
+  and a bigger change than the commit that carried the legal fix should have
+  taken on.
+- **Sign-in cannot render Bamboo Day at all.** With `prefers-color-scheme:
+  light`, `.signin-root` still resolves `--bg: #0a0a0a` — it has no
+  `.app-root.light` ancestor — and Clerk is pinned to `baseTheme: "dark"` with
+  hex variables. Every screenshot of this page, including today's, is one theme.
+  Describe it as Sakura Night-only until the saved `alop-dark-mode` choice is
+  threaded through the signed-out gate.
+- **`gallery.html` has no sign-in, sign-up, loading or down frames**, which is
+  why these defects survived: every visual check ran against a fixture that does
+  not contain the page.
+- **Sol's surprise, not built**: a seven-bar seat meter above "3 models free.
+  All 7 on Pro." in `--ornament-mist`, free seats at mid and Pro-only at faint.
+  Cheap, and it explicitly uses mist rather than pink "because brand pink at the
+  same visibility would read as highlighter" — the lesson from the composer
+  travelling on its own.
+- The council ladder announces each row starting with an unexplained decimal.
+  Sol proposes a visually hidden scale description; the numbers are already
+  demoted visually but a screen reader still meets them first.
 
 ---
 

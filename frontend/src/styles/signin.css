@@ -49,10 +49,15 @@
   inset: 0;
   pointer-events: none;
   z-index: var(--z-empty-decor);
+  /* `--lattice-line` and the reasoning behind it live in decoration.css, on
+   * :root, because this is the same drawing as the transcript's asanoha and the
+   * two must not drift. Short version: a 1px band at a fractional display scale
+   * is smeared across two device pixels and reads as thin rather than faint, so
+   * the width — not the alpha — is what varies by resolution. */
   background-image:
-    repeating-linear-gradient(60deg, transparent 0 27px, color-mix(in srgb, var(--ornament-ink) 8%, transparent) 27px 28px),
-    repeating-linear-gradient(-60deg, transparent 0 27px, color-mix(in srgb, var(--ornament-ink) 8%, transparent) 27px 28px),
-    repeating-linear-gradient(0deg, transparent 0 47px, color-mix(in srgb, var(--ornament-ink) 6%, transparent) 47px 48px);
+    repeating-linear-gradient(60deg, transparent 0 calc(28px - var(--lattice-line)), color-mix(in srgb, var(--ornament-ink) 8%, transparent) calc(28px - var(--lattice-line)) 28px),
+    repeating-linear-gradient(-60deg, transparent 0 calc(28px - var(--lattice-line)), color-mix(in srgb, var(--ornament-ink) 8%, transparent) calc(28px - var(--lattice-line)) 28px),
+    repeating-linear-gradient(0deg, transparent 0 calc(48px - var(--lattice-line)), color-mix(in srgb, var(--ornament-ink) 6%, transparent) calc(48px - var(--lattice-line)) 48px);
   -webkit-mask-image: radial-gradient(76% 66% at 50% 50%, transparent 38%, #000 100%);
   mask-image: radial-gradient(76% 66% at 50% 50%, transparent 38%, #000 100%);
 }

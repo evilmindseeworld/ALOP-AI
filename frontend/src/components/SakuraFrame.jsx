@@ -247,6 +247,27 @@ export const ComposerSkyline = memo(() => (
           peaked at exactly 22, which is why it read as sitting on the roofs.
           It is now 11 units of open sky — the town under x 80-136 is at y 31-33
           absolute and this disc bottoms out at 20. */}
+      {/* THE WEATHER MOVES; THE TOWN DOES NOT. Sun and cloud are one group so
+          their spacing is authored once and survives the shift — the clearances
+          measured below are between members of THIS group, so they hold at every
+          viewport rather than needing re-deriving per breakpoint.
+
+          The shift itself is in composer.css and is bounded. Why it exists: a
+          single fixed x cannot be middle-left at both ends. At 320px the strip
+          shows about 219 units and x=96 lands 44% across, which is right. At
+          desktop the strip shows about 607 and the same 96 lands at 16%, hard
+          against the edge. Measured, not reasoned: at a 1068px window the strip
+          is 702.8px, the drawing renders at 1.158px per unit (height-bound, so
+          this ratio is FIXED at every width), and the sun's centre sits 111px
+          from the card's left edge.
+
+          A UNIT IN THAT TRANSFORM IS AN SVG UNIT, NOT A CSS PIXEL, and this is
+          the part that will mislead the next reader. `translateX(74px)` on an
+          SVG child resolves in the user coordinate system: measured in Chrome at
+          this viewBox it moved the disc 60.3 CSS px, not 74. Any number written
+          into that clamp is in the same 1040-wide space as the coordinates
+          here — do not convert it. */}
+      <g className="composer-weather">
       <circle className="composer-sun" cx="96" cy="11" r="9" />
       {/* KASUMI BARS, which is the only cloud this drawing can carry.
           A rendered cloud is a soft mass and everything else in the strip is a
@@ -257,18 +278,30 @@ export const ComposerSkyline = memo(() => (
           would compete with the one thing in the strip that is meant to be
           looked at. None of them touches the disc — a bar across the sun is a
           handsome drawing at poster size and a smudge at 44px. */}
-      {/* REDISTRIBUTED WHEN THE SUN MOVED LEFT. The long bar was at x=92, which
-          the disc now occupies — it ran straight across it. The pair that used
-          to sit left of the sun would have been behind it too.
-          Checked against the disc rather than eyeballed: the nearest is the low
-          bar ending at x=84, whose closest corner is 12.2 units from the centre
-          against a radius of 9. Everything else starts at x=130 or beyond. */}
+      {/* SEVEN BARS, ONE PER SEAT. Four approach from the left, three answer
+          from the right, and the sun is the one resolved mark between them. The
+          council is seven voices reconciled into a single reply, and this is
+          that shape in weather rather than printed as a widget — the owner has
+          ruled out a council table on the chat screen, and this is not one: it
+          labels nothing, counts nothing, and updates never. If the roster size
+          ever changes this does not have to.
+
+          CHECKED AGAINST THE DISC RATHER THAN EYEBALLED, centre (96, 11) and
+          r=9. The nearest corner in the set is (82, 7.4) on the fourth bar:
+          sqrt(14² + 3.6²) = 14.46 units, so 5.46 clear of the edge. Next
+          nearest is the third bar's right edge at x=70, 26 units out. Nothing
+          crosses the disc — a bar across the sun is a handsome drawing at poster
+          size and a smudge at 44px. These are group-local, so the shift above
+          does not disturb any of it. */}
       <g className="composer-clouds">
-        <rect x="130" y="3.4" width="30" height="4" rx="2" />
-        <rect x="66" y="11" width="18" height="3.4" rx="1.7" />
-        <rect x="202" y="5" width="22" height="3.6" rx="1.8" />
-        <rect x="210" y="12.4" width="34" height="4" rx="2" />
-        <rect x="262" y="8.4" width="16" height="3.2" rx="1.6" />
+        <rect x="18" y="4.2" width="24" height="3.4" rx="1.7" />
+        <rect x="36" y="12.4" width="32" height="4" rx="2" />
+        <rect x="54" y="8.2" width="16" height="3.2" rx="1.6" />
+        <rect x="68" y="3.4" width="14" height="4" rx="2" />
+        <rect x="118" y="4.8" width="26" height="3.6" rx="1.8" />
+        <rect x="126" y="12.4" width="34" height="4" rx="2" />
+        <rect x="170" y="8.2" width="16" height="3.2" rx="1.6" />
+      </g>
       </g>
       {/* The town keeps its own coordinates and is dropped 16 units into the
           taller box, so the profile below is the same drawing it always was and

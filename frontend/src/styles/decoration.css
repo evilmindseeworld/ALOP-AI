@@ -235,11 +235,36 @@
   /* --ornament-ink like the rest of the family. The percentages stay where they
    * are: they are tuned against the banding problem described above, not chosen
    * for weight, and they are a colour mix rather than an opacity so the alpha
-   * ladder does not apply to them. */
+   * ladder does not apply to them.
+   *
+   * THE REPORTED FAULT WAS "VERY THIN AND HARD TO SEE", AND THE ANSWER IS NOT
+   * ALPHA. This machine is Windows at 125% display scale — `AppliedDPI = 120`,
+   * `devicePixelRatio = 1.25`, measured, not assumed. A 1 CSS px band is then
+   * 1.25 device pixels, and an angled gradient spreads that fractional coverage
+   * across two rows of pixels at partial strength. The line does not get fainter
+   * because there is too little ink in it; it gets fainter because the ink is
+   * smeared over more pixels than it can fill.
+   *
+   * That distinction decides the fix, and the two were told apart by A/B rather
+   * than argued: doubling the mixes to 16%/12% at 1px made the smear darker and
+   * left it a smear, while holding the mixes and widening the band to 1.6px at
+   * 125% made it crisp. Alpha was the wrong variable. It is left alone here, and
+   * the banding tuning above survives untouched.
+   *
+   * So the band width is now a variable that lands on WHOLE DEVICE PIXELS at the
+   * common Windows scale factors, below. The starts are expressed as
+   * `calc(period - width)` so the 28px and 48px periods — the kasumi rhythm, and
+   * the thing not to change — hold whatever the width becomes.
+   *
+   * One peer measured DPR 1 here and concluded the opposite, that alpha was the
+   * whole story. That reading came from a Playwright browser launched at the
+   * default deviceScaleFactor of 1 rather than from the user's Chrome; the
+   * instrument reported its own configuration. Worth remembering as a shape:
+   * a headless default is not a measurement of the machine. */
   background-image:
-    repeating-linear-gradient(60deg, transparent 0 27px, color-mix(in srgb, var(--ornament-ink) 8%, transparent) 27px 28px),
-    repeating-linear-gradient(-60deg, transparent 0 27px, color-mix(in srgb, var(--ornament-ink) 8%, transparent) 27px 28px),
-    repeating-linear-gradient(0deg, transparent 0 47px, color-mix(in srgb, var(--ornament-ink) 6%, transparent) 47px 48px);
+    repeating-linear-gradient(60deg, transparent 0 calc(28px - var(--lattice-line)), color-mix(in srgb, var(--ornament-ink) 8%, transparent) calc(28px - var(--lattice-line)) 28px),
+    repeating-linear-gradient(-60deg, transparent 0 calc(28px - var(--lattice-line)), color-mix(in srgb, var(--ornament-ink) 8%, transparent) calc(28px - var(--lattice-line)) 28px),
+    repeating-linear-gradient(0deg, transparent 0 calc(48px - var(--lattice-line)), color-mix(in srgb, var(--ornament-ink) 6%, transparent) calc(48px - var(--lattice-line)) 48px);
   /* Cleared from the middle, so it is never behind the reading column.
    *
    * Widened from 72%/28% now that this covers the transcript: the reading
@@ -249,6 +274,43 @@
    * column at every width the app supports. */
   -webkit-mask-image: radial-gradient(86% 70% at 50% 50%, transparent 42%, #000 100%);
   mask-image: radial-gradient(86% 70% at 50% 50%, transparent 42%, #000 100%);
+}
+
+/* TWO DEVICE PIXELS AT EACH COMMON WINDOWS SCALE, which is the whole trick: a
+ * band that lands on an integer number of device pixels is drawn as a line, and
+ * one that does not is drawn as an average of a line and its background.
+ *
+ *   1.25 x 1.6   = 2      (Windows 125%, this machine)
+ *   1.5  x 1.333 = 2      (Windows 150%)
+ *   1.75 x 1.143 = 2      (Windows 175%)
+ *
+ * DPR 1 and DPR 2 need no entry and deliberately have none: 1px is already
+ * exactly 1 and exactly 2 device pixels respectively. The ranges are windows
+ * rather than equalities because browsers report these as floats and an
+ * `=1.25dppx` query is a promise about a rounding mode nobody controls.
+ *
+ * A fractional DPR outside these windows — 1.1, a pinch zoom, a browser at 90% —
+ * falls back to 1px and to exactly the behaviour reported as the fault. That is
+ * a deliberate ceiling: the alternative is a rule per possible scale factor, and
+ * the named scales are the ones Windows offers in its own display settings.
+ * ponytail: if this needs to hold at arbitrary zoom, the honest fix is a single
+ * device-pixel unit, and CSS has no such unit today.
+ *
+ * ON :root, NOT ON .chat-main::after, because the asanoha is drawn TWICE — here
+ * and as `.signin-lattice` in signin.css, deliberately the same drawing so the
+ * sign-in screen and the app share a ground. Two copies of one pattern get one
+ * definition of how thick its line is; scoping this to the transcript would have
+ * fixed the fault on one screen and left it on the other, which is how the two
+ * drift apart. */
+:root { --lattice-line: 1px; }
+@media (min-resolution: 1.20dppx) and (max-resolution: 1.30dppx) {
+  :root { --lattice-line: 1.6px; }
+}
+@media (min-resolution: 1.45dppx) and (max-resolution: 1.55dppx) {
+  :root { --lattice-line: 1.333px; }
+}
+@media (min-resolution: 1.70dppx) and (max-resolution: 1.80dppx) {
+  :root { --lattice-line: 1.143px; }
 }
 
 /* .empty-state is a flex column of STATIC children, so they paint in the same

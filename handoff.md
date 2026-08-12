@@ -204,6 +204,83 @@ watched to fail before being restored.
 
 ---
 
+## This session (2026-08-12) — the weather, and a green suite over a broken build
+
+The owner asked for the sun at middle-left with clouds, for the design to be
+more visible, and for the background lines, which go thin and hard to see in
+both themes. He also said "surprise me", and asked that the three of us make the
+idea together. Sol and Luna each wrote an independent proposal without seeing
+the other's; both are committed as `docs/design-proposal-sol.md` and
+`docs/design-proposal-luna.md`, and the implementation is a synthesis, not
+either one.
+
+**Where they agreed, that is the finding.** Both independently moved
+`.composer-clouds` from `--ornament-a-faint` to `--ornament-a-mid`, having each
+found the bars present in every screenshot and needing to be hunted for. Done.
+
+**Where they disagreed, one of them was measuring the wrong machine, and it is
+worth knowing why.** Sol measured `devicePixelRatio = 1.25` and Windows
+`AppliedDPI = 120`, diagnosed subpixel smearing, and A/B'd it: doubling the
+lattice mixes to 16%/12% at 1px made the smear darker and left it a smear, while
+holding the mixes and widening the band to 1.6px made it crisp. Luna measured
+DPR 1, concluded the fault was alpha, and proposed new per-theme lattice tokens.
+Luna's DPR came from a Playwright browser at the default `deviceScaleFactor` of
+1 — **the instrument reported its own configuration, not the machine.** I
+measured 1.25 twice independently before choosing. The width fix shipped; the
+alpha is untouched, which also keeps the banding tuning in that rule intact.
+
+`--lattice-line` is on `:root`, not on `.chat-main::after`, because the asanoha
+is drawn twice — the transcript and `.signin-lattice` — and two copies of one
+pattern get one definition of how thick its line is.
+
+**A unit inside an SVG transform is a user unit, not a CSS pixel**, and Sol's
+proposal was written as if in pixels. Measured in Chrome at this viewBox,
+`translateX(74px)` on the weather group moves the disc 60.3 CSS px. The
+behaviour was right and the stated magnitudes were not; the comments now say so
+at both sites, because this is exactly the kind of number the next person
+"corrects".
+
+Shipped: sun and clouds in one `.composer-weather` group under a bounded
+`clamp` shift — measured at 28% across the visible strip at a 1068px window,
+against 16% before, and unchanged at 380px where the composition already worked.
+Seven cloud bars, one per council seat, four approaching and three answering,
+which is Sol's surprise and the only thing here nobody asked for. Verified in
+the browser rather than asserted: 7 bars, nearest 6.3px clear of the disc,
+`--lattice-line` resolving to exactly 2.000 device pixels, cloud opacity 0.26.
+
+### The part that matters more than the design
+
+**The full frontend suite passed, 636 green, while App.css was returning 500 and
+the app mounted to an empty body.** An unterminated comment in decoration.css
+made PostCSS refuse the file. The cascade snapshot did not notice, and it could
+not: `readStylesheet` inlines the @imports as text and hands the result to
+jsdom's CSSOM, which is specified to DROP rules it cannot parse rather than
+raise. The broken file arrived as slightly fewer rules, the baseline was
+regenerated from that, and the diff came out clean — with two comment fragments
+sitting in the baseline as selectors.
+
+`src/__tests__/cssParses.test.js` is the missing half: it parses every
+stylesheet with PostCSS itself and fails on the error the dev server would have
+raised. It was watched to fail by reintroducing that exact comment. The baseline
+has been regenerated from correct CSS.
+
+The general shape, and the reason this is in the handoff rather than just in a
+commit: **a test that reads CSS as text cannot tell you the CSS compiles.** The
+suite was green over a build that 500s.
+
+Not taken: Luna's per-theme lattice alpha tokens (the diagnosis under them is
+the DPR-1 artefact) and Luna's `.input-wrapper::before` kasumi rail (Sol's seven
+bars cost two rects and say something about the product; a second decorated edge
+beside the seal was the riskier of the two, and Luna itself said to delete it if
+it competed).
+
+Open, for the owner's eye rather than a fix: at `--ornament-a-mid` in the light
+theme the cloud bars are saturated enough to read a little like highlighter
+rather than kasumi. Both peers wanted the step up and it is what "more visible"
+asked for. Say the word and they go back half a step.
+
+---
+
 ## This session (2026-08-12) — the p90 stops lying about abandoned turns
 
 The owner's ruling on the item the last commit left him: *"A p90 that hides
@@ -728,6 +805,18 @@ user, and anything older than seven days is ignored.
 ## Environment notes
 
 - `jq` is not installed. Use `node -e` for JSON work.
+- **The cascade snapshot cannot see a stylesheet that does not compile**, so
+  `UPDATE_CASCADE_BASELINE=1` on a broken file bakes the breakage into the
+  baseline. `src/__tests__/cssParses.test.js` covers that now. If a CSS change
+  looks green but the page is blank, load `/src/App.css` from the dev server and
+  read the 500 body — it names the file, line and column.
+- **A `px` inside a `transform` on an SVG child is an SVG user unit**, not a CSS
+  pixel. Measured: `translateX(74px)` on `.composer-weather` moves the disc 60.3
+  CSS px at this drawing's scale.
+- **A headless browser's `devicePixelRatio` is its own configuration.**
+  Playwright defaults to `deviceScaleFactor: 1`, and this machine is at 1.25.
+  One peer's whole diagnosis rested on reading 1 there. For anything
+  resolution-dependent, read the value in the user's own Chrome.
 - **The two halves use different test runners.** Backend is `node:test` —
   `npm test` from `backend/`. Frontend is vitest. Running `npx vitest` in
   `backend/` reports all 44 files as "No test suite found in file", which reads

@@ -609,6 +609,36 @@
 .msg-row:focus-within .msg-actions,
 .msg-actions.is-voted { opacity: 1; }
 
+/* ON A TOUCH DEVICE THEY WERE NEVER VISIBLE AT ALL.
+ *
+ * The reveal above is `:hover`, `:focus-within` or a cast vote. A phone has no
+ * hover and nothing here takes focus without being tapped first — and tapping
+ * an invisible zero-opacity button is not a discovery path. So Copy, Listen and
+ * both feedback buttons were, in practice, absent on every phone: present in
+ * the DOM, reachable by a screen reader, and invisible to the person holding
+ * the device.
+ *
+ * The owner's report was that the phone feels cramped and small. This is the
+ * other half of it — the phone was not a denser version of the app, it was a
+ * version with features missing.
+ *
+ * `hover: none` rather than a width breakpoint, because the question is
+ * capability and not size: a touch laptop at 1400px has the same problem and a
+ * narrow desktop window does not. The rest of this file already reasons that
+ * way (see `.msg-image` below, and `.starter-card` in chat-controls.css).
+ *
+ * The hover reveal stays exactly as it is for pointers — it is the right
+ * behaviour there, and this adds a case rather than replacing one. */
+@media (hover: none) {
+  .msg-actions {
+    opacity: 1;
+    /* No transition either: it has nothing left to animate between, and a
+     * transition that never runs is a declaration the next reader has to
+     * evaluate before discarding. */
+    transition: none;
+  }
+}
+
 .msg-action-btn {
   display: inline-flex;
   align-items: center;

@@ -47178,7 +47178,7 @@
   - width: 34px
 
 [48] h1.main-title
-  font-size: 13px
+  font-size: 15px
   - font-size: 16px
 
 [50] button.cmdk-trigger.desktop-only
@@ -47186,6 +47186,7 @@
   - display: flex
 
 [55] button.upgrade-btn
+  height: 40px
   justify-content: center
   padding: 0
   padding-bottom: <padding: 0>
@@ -47306,6 +47307,34 @@
   - border-bottom-right-radius: <border-radius: 4px>
   - border-radius: 4px
 
+[194] button.msg-action-btn
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
+[195] button.msg-action-btn
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
 [219] div.sakura-base
   height: clamp(72px, 12vh, 110px)
   - height: clamp(96px, 18vh, 180px)
@@ -47374,6 +47403,84 @@
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
   - row-gap: <gap: 12px>
+
+[306] button.code-copy-btn
+  min-height: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - padding: 4px 8px
+  - padding-bottom: <padding: 4px 8px>
+  - padding-left: <padding: 4px 8px>
+  - padding-top: <padding: 4px 8px>
+
+[311] button.code-copy-btn.is-copied
+  min-height: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - padding: 4px 8px
+  - padding-bottom: <padding: 4px 8px>
+  - padding-left: <padding: 4px 8px>
+  - padding-top: <padding: 4px 8px>
+
+[319] button.msg-action-btn
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
+[320] button.msg-action-btn.is-copied
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
+[321] button.msg-action-btn.active
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
+[324] button.msg-action-btn.is-down.active
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
 
 [330] div.msg-row.assistant
   column-gap: <gap: 8px>
@@ -47465,6 +47572,14 @@
   - padding-left: <padding: 4px 24px 12px>
   - padding-top: <padding: 4px 24px 12px>
 
+[373] button.chat-toolbar-btn
+  min-height: 40px
+  - min-height: 30px
+
+[376] button.chat-toolbar-btn
+  min-height: 40px
+  - min-height: 30px
+
 [379] div.input-bar
   padding: 0 12px 12px
   padding-bottom: <padding: 0 12px 12px>
@@ -47511,6 +47626,26 @@
   display: none
   - display: flex
 
+[427] button.input-btn.primary
+  height: 44px
+  width: 44px
+  :disabled
+    transform: none
+  - height: 40px
+  - width: 40px
+  :disabled
+  - transform: scale(0.92)
+
+[430] button.input-btn.primary.is-stop
+  height: 44px
+  width: 44px
+  :disabled
+    transform: none
+  - height: 40px
+  - width: 40px
+  :disabled
+  - transform: scale(0.92)
+
 [444] div.cmdk-backdrop
   padding: 8vh 12px 12px
   padding-bottom: <padding: 8vh 12px 12px>
@@ -47550,7 +47685,7 @@
   - width: 34px
 
 [478] h1.main-title
-  font-size: 13px
+  font-size: 15px
   - font-size: 16px
 
 [480] button.cmdk-trigger.desktop-only
@@ -47558,6 +47693,7 @@
   - display: flex
 
 [485] button.upgrade-btn
+  height: 40px
   justify-content: center
   padding: 0
   padding-bottom: <padding: 0>
@@ -47678,6 +47814,34 @@
   - border-bottom-right-radius: <border-radius: 4px>
   - border-radius: 4px
 
+[624] button.msg-action-btn
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
+[625] button.msg-action-btn
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
 [649] div.sakura-base
   height: clamp(72px, 12vh, 110px)
   - height: clamp(96px, 18vh, 180px)
@@ -47746,6 +47910,84 @@
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
   - row-gap: <gap: 12px>
+
+[736] button.code-copy-btn
+  min-height: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - padding: 4px 8px
+  - padding-bottom: <padding: 4px 8px>
+  - padding-left: <padding: 4px 8px>
+  - padding-top: <padding: 4px 8px>
+
+[741] button.code-copy-btn.is-copied
+  min-height: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - padding: 4px 8px
+  - padding-bottom: <padding: 4px 8px>
+  - padding-left: <padding: 4px 8px>
+  - padding-top: <padding: 4px 8px>
+
+[749] button.msg-action-btn
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
+[750] button.msg-action-btn.is-copied
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
+[751] button.msg-action-btn.active
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
+[754] button.msg-action-btn.is-down.active
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
 
 [760] div.msg-row.assistant
   column-gap: <gap: 8px>
@@ -47837,6 +48079,14 @@
   - padding-left: <padding: 4px 24px 12px>
   - padding-top: <padding: 4px 24px 12px>
 
+[803] button.chat-toolbar-btn
+  min-height: 40px
+  - min-height: 30px
+
+[806] button.chat-toolbar-btn
+  min-height: 40px
+  - min-height: 30px
+
 [809] div.input-bar
   padding: 0 12px 12px
   padding-bottom: <padding: 0 12px 12px>
@@ -47882,6 +48132,26 @@
 [855] span.input-hint.desktop-only
   display: none
   - display: flex
+
+[857] button.input-btn.primary
+  height: 44px
+  width: 44px
+  :disabled
+    transform: none
+  - height: 40px
+  - width: 40px
+  :disabled
+  - transform: scale(0.92)
+
+[860] button.input-btn.primary.is-stop
+  height: 44px
+  width: 44px
+  :disabled
+    transform: none
+  - height: 40px
+  - width: 40px
+  :disabled
+  - transform: scale(0.92)
 
 [897] div.earring-wrap.earring-left
   display: none
@@ -58866,7 +59136,7 @@
   - transform: scale(1.08) rotate(-4deg)
 
 [48] h1.main-title
-  font-size: 13px
+  font-size: 15px
   - font-size: 16px
 
 [50] button.cmdk-trigger.desktop-only
@@ -58874,6 +59144,7 @@
   - display: flex
 
 [55] button.upgrade-btn
+  height: 40px
   justify-content: center
   padding: 0
   padding-bottom: <padding: 0>
@@ -58999,6 +59270,42 @@
   - border-bottom-right-radius: <border-radius: 4px>
   - border-radius: 4px
 
+[193] div.msg-actions
+  opacity: 1
+  transition: none
+  transition-duration: <transition: none>
+  - opacity: 0
+  - transition: opacity 120ms ease
+  - transition-duration: <transition: opacity 120ms ease>
+
+[194] button.msg-action-btn
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
+[195] button.msg-action-btn
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
 [215] button.plan-buy
   :hover
   - box-shadow: 0 6px 20px rgba(240, 138, 163, 0.22)
@@ -59085,6 +59392,104 @@
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
   - row-gap: <gap: 12px>
+
+[306] button.code-copy-btn
+  min-height: 40px
+  opacity: 1
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  transition: none
+  transition-duration: <transition: none>
+  - opacity: 0
+  - padding: 4px 8px
+  - padding-bottom: <padding: 4px 8px>
+  - padding-left: <padding: 4px 8px>
+  - padding-top: <padding: 4px 8px>
+  - transition: opacity 120ms ease, color 120ms ease, background 120ms ease
+  - transition-duration: <transition: opacity 120ms ease, color 120ms ease, background 120ms ease>
+  :hover
+  - opacity: 1
+  :focus-visible
+  - opacity: 1
+
+[311] button.code-copy-btn.is-copied
+  min-height: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  transition: none
+  transition-duration: <transition: none>
+  - padding: 4px 8px
+  - padding-bottom: <padding: 4px 8px>
+  - padding-left: <padding: 4px 8px>
+  - padding-top: <padding: 4px 8px>
+  - transition: opacity 120ms ease, color 120ms ease, background 120ms ease
+  - transition-duration: <transition: opacity 120ms ease, color 120ms ease, background 120ms ease>
+
+[318] div.msg-actions.is-voted
+  transition: none
+  transition-duration: <transition: none>
+  - transition: opacity 120ms ease
+  - transition-duration: <transition: opacity 120ms ease>
+
+[319] button.msg-action-btn
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
+[320] button.msg-action-btn.is-copied
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
+[321] button.msg-action-btn.active
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
+[324] button.msg-action-btn.is-down.active
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
 
 [330] div.msg-row.assistant
   column-gap: <gap: 8px>
@@ -59180,6 +59585,14 @@
   - padding-left: <padding: 4px 24px 12px>
   - padding-top: <padding: 4px 24px 12px>
 
+[373] button.chat-toolbar-btn
+  min-height: 40px
+  - min-height: 30px
+
+[376] button.chat-toolbar-btn
+  min-height: 40px
+  - min-height: 30px
+
 [379] div.input-bar
   padding: 0 12px 12px
   padding-bottom: <padding: 0 12px 12px>
@@ -59227,12 +59640,28 @@
   - display: flex
 
 [427] button.input-btn.primary
+  height: 44px
+  width: 44px
+  :disabled
+    transform: none
+  - height: 40px
+  - width: 40px
   :hover
   - box-shadow: 0 6px 20px rgba(240, 138, 163, 0.22)
+  :disabled
+  - transform: scale(0.92)
 
 [430] button.input-btn.primary.is-stop
+  height: 44px
+  width: 44px
+  :disabled
+    transform: none
+  - height: 40px
+  - width: 40px
   :hover
   - box-shadow: 0 6px 20px rgba(240, 138, 163, 0.22)
+  :disabled
+  - transform: scale(0.92)
 
 [444] div.cmdk-backdrop
   padding: 8vh 12px 12px
@@ -59277,7 +59706,7 @@
   - transform: scale(1.08) rotate(-4deg)
 
 [478] h1.main-title
-  font-size: 13px
+  font-size: 15px
   - font-size: 16px
 
 [480] button.cmdk-trigger.desktop-only
@@ -59285,6 +59714,7 @@
   - display: flex
 
 [485] button.upgrade-btn
+  height: 40px
   justify-content: center
   padding: 0
   padding-bottom: <padding: 0>
@@ -59410,6 +59840,42 @@
   - border-bottom-right-radius: <border-radius: 4px>
   - border-radius: 4px
 
+[623] div.msg-actions
+  opacity: 1
+  transition: none
+  transition-duration: <transition: none>
+  - opacity: 0
+  - transition: opacity 120ms ease
+  - transition-duration: <transition: opacity 120ms ease>
+
+[624] button.msg-action-btn
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
+[625] button.msg-action-btn
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
 [645] button.plan-buy
   :hover
   - box-shadow: 0 6px 20px rgba(179, 26, 84, 0.18)
@@ -59496,6 +59962,104 @@
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
   - row-gap: <gap: 12px>
+
+[736] button.code-copy-btn
+  min-height: 40px
+  opacity: 1
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  transition: none
+  transition-duration: <transition: none>
+  - opacity: 0
+  - padding: 4px 8px
+  - padding-bottom: <padding: 4px 8px>
+  - padding-left: <padding: 4px 8px>
+  - padding-top: <padding: 4px 8px>
+  - transition: opacity 120ms ease, color 120ms ease, background 120ms ease
+  - transition-duration: <transition: opacity 120ms ease, color 120ms ease, background 120ms ease>
+  :hover
+  - opacity: 1
+  :focus-visible
+  - opacity: 1
+
+[741] button.code-copy-btn.is-copied
+  min-height: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  transition: none
+  transition-duration: <transition: none>
+  - padding: 4px 8px
+  - padding-bottom: <padding: 4px 8px>
+  - padding-left: <padding: 4px 8px>
+  - padding-top: <padding: 4px 8px>
+  - transition: opacity 120ms ease, color 120ms ease, background 120ms ease
+  - transition-duration: <transition: opacity 120ms ease, color 120ms ease, background 120ms ease>
+
+[748] div.msg-actions.is-voted
+  transition: none
+  transition-duration: <transition: none>
+  - transition: opacity 120ms ease
+  - transition-duration: <transition: opacity 120ms ease>
+
+[749] button.msg-action-btn
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
+[750] button.msg-action-btn.is-copied
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
+[751] button.msg-action-btn.active
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
+
+[754] button.msg-action-btn.is-down.active
+  justify-content: center
+  min-height: 40px
+  min-width: 40px
+  padding: 0 12px
+  padding-bottom: <padding: 0 12px>
+  padding-left: <padding: 0 12px>
+  padding-top: <padding: 0 12px>
+  - min-height: 28px
+  - padding: 0 8px
+  - padding-bottom: <padding: 0 8px>
+  - padding-left: <padding: 0 8px>
+  - padding-top: <padding: 0 8px>
 
 [760] div.msg-row.assistant
   column-gap: <gap: 8px>
@@ -59591,6 +60155,14 @@
   - padding-left: <padding: 4px 24px 12px>
   - padding-top: <padding: 4px 24px 12px>
 
+[803] button.chat-toolbar-btn
+  min-height: 40px
+  - min-height: 30px
+
+[806] button.chat-toolbar-btn
+  min-height: 40px
+  - min-height: 30px
+
 [809] div.input-bar
   padding: 0 12px 12px
   padding-bottom: <padding: 0 12px 12px>
@@ -59638,12 +60210,28 @@
   - display: flex
 
 [857] button.input-btn.primary
+  height: 44px
+  width: 44px
+  :disabled
+    transform: none
+  - height: 40px
+  - width: 40px
   :hover
   - box-shadow: 0 6px 20px rgba(179, 26, 84, 0.18)
+  :disabled
+  - transform: scale(0.92)
 
 [860] button.input-btn.primary.is-stop
+  height: 44px
+  width: 44px
+  :disabled
+    transform: none
+  - height: 40px
+  - width: 40px
   :hover
   - box-shadow: 0 6px 20px rgba(179, 26, 84, 0.18)
+  :disabled
+  - transform: scale(0.92)
 
 [881] button.overlay-tts-btn
   :hover

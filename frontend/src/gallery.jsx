@@ -415,7 +415,16 @@ const LiveChrome = ({ theme, empty = false, streaming = false, loaded = false, c
             </Badge>
           </div>
           <div className="header-actions">
-            <button className="cmdk-trigger">
+            {/* `desktop-only` was missing here and the note four lines above —
+                "these classes are copied from App.jsx and must stay copied" —
+                was written about the Badge on the element immediately before
+                it. The very next element drifted anyway.
+                The consequence was not cosmetic: this frame showed a 142px
+                search box with a "Ctrl K" hint in a 390px header, so the
+                gallery reported a crowded phone header that the real app does
+                not have, and a phone fix aimed at it would have been aimed at
+                nothing. The real trigger is hidden below 768px. */}
+            <button className="cmdk-trigger desktop-only">
               <Icon name="search" size={14} /> <span>Search</span> <kbd>Ctrl K</kbd>
             </button>
             <button className="upgrade-btn">

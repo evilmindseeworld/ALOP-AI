@@ -4,96 +4,97 @@ Reviewed `main`'s uncommitted implementation on 2026-08-12. Scope: `backend/lib/
 
 ## Verdict
 
-**NEEDS WORK. Do not describe this as a $5/day, $20/month per-user spend ceiling yet.** The same-day Postgres admission step is sound, but the maximum council path can still exceed its reservation, the settlement snapshot omits material paid work, and a database failure disables the control. Those are ceiling failures, not accounting polish.
+**NEEDS WORK.** The corrected reservation is an upper bound on the pure JS price model, and the same-day Postgres admission is atomic. It is not yet a dependable $5/day, $20/month owner-cost ceiling: a database failure disables it, the settlement snapshot omits paid work, and midnight can move a refund onto the wrong day's reservation.
 
 ## Findings, ranked
 
-### 1. HIGH — a reachable turn still costs more than it reserves
+### 1. HIGH — reservation failure admits unbounded paid work
 
-**Confidence:** 10/10. **Status:** source-verified and reproduced with the pure model.
+**Confidence:** 10/10. **Status:** source-verified; outage not induced.
 
-`spend.js:171-194` reserves four loop rosters, one fallback roster, synthesis, and 12 tools. The reachable maximum is four loop rosters (`agent-loop.js:154-220`), then the full plain-council fallback when the loop has no usable answer (`server.js:2219-2236`), then the streamed post-council fallback when that roster also has no usable answer (`server.js:2268-2287`). Telemetry contains 35 seat records before `fallbackCouncil.used` is added.
+`server.js:1623-1639` admits the request unmetered on every RPC, network, or schema failure. A rate limiter failing open loses one bounded window; this control failing open permits paid calls for the duration of the outage with no dollar bound. The attacker need not cause or detect the outage in advance: an already-running client simply continues through it.
 
-With defaults, `reservationCents(7, 12, 4)` is 20¢ while `priceTurn()` returns 23¢ for 35 seats, 12 tools, and the post fallback. Concurrent requests can therefore be admitted on 20¢ each and settle above the ceiling. The free roster has the same defect: 12¢ reserved, 13¢ priced.
+The error path also sets `spendReserved = reserved` at `server.js:1773`. Its `finally` then calls settle even though no reservation was written. If today's row already exists, `settle_user_spend` can subtract `reserved - actual` from somebody's real prior balance. Conversely, a response lost after Postgres commits is indistinguishable from a reservation that failed.
 
-`spend.test.js:134-160` now models 28 loop seats plus `fallbackCouncil`, but omits the seven `tool_plain_fallback` seats and combines synthesis with the mutually exclusive post-fallback path. It passes over the reachable maximum.
-
-**Small fix:** price `fallbackCouncil` as the one streamed `PRIMARY_MODEL` call it actually is, not another roster plus synthesis (`server.js:2273-2278`). Reserve `maxRounds * seats + one plain-fallback roster + one streamed fallback + maxUniqueCalls`, and add the exact 35-seat/no-synthesis property case. Import shared loop limits instead of repeating `12, 4` at `server.js:1762`.
+**Small fix now:** fail closed before any provider call with 503, `Usage accounting is temporarily unavailable. Please try again shortly.`, and a short `Retry-After`. Do not set or settle `spendReserved` for a known-unmetered result. **Durable fix:** give each request a reservation UUID and make reserve/settle idempotent, so a lost response can be queried or safely retried.
 
 ### 2. HIGH — telemetry is not a complete spending record
 
 **Confidence:** 10/10. **Status:** source-verified.
 
-The claim in `spend.js:18-24` that telemetry counts model and tool calls exactly is false across the request:
+The claim at `spend.js:18-24` that telemetry knows model and tool calls exactly does not hold across a request:
 
-- `callModel` discards every provider field except text (`server.js:117-125`), and `streamModel` ignores final-frame usage (`server.js:128-150`).
-- Two router model calls run on ordinary non-greetings (`server.js:1917-1938`), but `priceTurn` reduces every no-seat branch to one `fastTenths` charge (`spend.js:128-131`).
-- A search turn can run two seven-way provider fan-outs plus page reads (`server.js:1979-2012`, `server.js:785-928`); none becomes a `toolRound`.
+- `callModel` returns only text (`server.js:117-125`), and `streamModel` ignores provider usage (`server.js:128-150`). Cost-driving tokens or Ollama GPU time/model class never reach pricing.
+- Ordinary non-greetings make two router model calls (`server.js:1917-1938`), but a no-seat snapshot receives one `fastTenths` charge (`spend.js:128-131`).
+- A search turn can make two multi-provider search fan-outs plus page reads (`server.js:785-928`, `server.js:1979-2012`); none of that becomes an agent-loop `toolRound`.
 - Semantic recall, Gemini vision, and shadow-probe seats spend outside the priced buckets (`server.js:1042-1064`, `server.js:1799`, `server.js:1888-1909`).
-- `rememberTurn` starts a summary model call, a fact-extraction call, and zero or more embeddings after the response (`server.js:937-976`, `server.js:1131-1171`). Settlement runs before that background work finishes.
-- On abort, `server.js:2206-2207` returns before copying completed/aborted tool rounds. Synthesis and fallback are recorded only after their awaited stream succeeds (`server.js:2276-2279`, `server.js:2320-2323`), so an abort or throw after provider admission undercounts them.
+- `rememberTurn` launches a summary call, fact extraction, and embeddings after the reply (`server.js:937-976`, `server.js:1131-1171`). Settlement at `server.js:2382-2385` runs before that work finishes.
+- An abort at `server.js:2206` returns before copying `loop.toolRounds` at line 2207. Synthesis and fallback record only after their awaited streams succeed (`server.js:2276-2279`, `server.js:2320-2323`). Provider admission followed by abort/throw therefore prices as if it never happened.
 
-This is exploitable without subtle timing: `/api/overlay` can make Gemini vision plus two model attempts and never touches the ledger (`server.js:2434-2487`). `/api/chat-title`, `/api/speech`, and `/api/feedback` are also outside it (`server.js:2626-2708`). The per-user rate limits bound calls per minute, not sustained dollars.
+Paid routes outside `/api/council` bypass the ledger entirely. `/api/overlay` can perform Gemini vision plus two model attempts (`server.js:2434-2487`); `/api/chat-title`, `/api/speech`, and `/api/feedback` also spend without reserving (`server.js:2626-2708`). Per-minute rate limits bound burst rate, not cumulative dollars.
 
-**Smallest sound direction:** meter attempts in the provider wrappers, before each `await`, into a request-scoped operation record: model/model-class, token or GPU-time usage when returned, search provider, fetch provider, embedding, vision, and TTS bytes. Make every paid route reserve through one admission helper. Keep the latency snapshot as latency telemetry; do not make it double as a billing event model. Background memory work must remain attached to the reservation and settle only after it finishes, or be included pessimistically and not refunded early.
+**Smallest sound direction:** instrument paid-operation attempts in the provider wrappers, before each `await`, into a request-scoped record: model/model-class and returned usage, search/fetch provider, embedding, vision, and TTS bytes. Route every paid endpoint through one admission helper. Keep turn telemetry for latency; do not make a latency snapshot double as the billing event model. Background memory work must stay attached to the reservation until it finishes or remain included in the pessimistic charge.
 
-### 3. HIGH — reservation failure must fail closed
+### 3. MEDIUM — settlement targets the clock's current day, not the reserved day
 
-**Confidence:** 9/10. **Status:** source-verified; outage not induced.
+**Confidence:** 10/10. **Status:** source-verified; UTC-boundary probe not run.
 
-`server.js:1623-1639` admits unmetered on any RPC/network/schema failure. A rate limiter failing open loses one window; this control failing open permits paid calls for the whole outage with no dollar bound. The attacker need not cause the outage: a running script simply continues through it.
+Reservation captures UTC day inside `reserve_user_spend` (`014_user_spend.sql:65-73`), while settlement independently recomputes UTC today (`014_user_spend.sql:118-130`). With no new-day row, the refund is lost: the user is overcharged and the owner remains protected. If another turn has reserved after midnight, the old turn's refund reduces that new day's live reservation. That understates the new daily balance and can admit excess spend; across a month boundary it also understates the new month.
 
-There is a second error-path problem: the unmetered result still leads to `spendReserved = reserved`, so settlement may subtract `reserved - actual` from an existing row even if no reservation was written. A response-lost-after-commit case is ambiguous in the opposite direction. This needs an idempotent reservation identity, not inference from an HTTP result.
+**Small fix:** return `reserved_day` from reserve, retain it in `server.js`, and pass it to settle so the update targets `(user_id, reserved_day)`. A reservation UUID is better and also resolves finding 1's response ambiguity.
 
-**Small fix now:** return 503 before any provider call: `Usage accounting is temporarily unavailable. Please try again shortly.`, with a short `Retry-After`. Do not set or settle `spendReserved` for a known-unmetered admission. **Durable fix:** pass a request/reservation UUID into idempotent reserve and settle functions so retries and lost responses cannot double-charge or invent a refund.
-
-### 4. MEDIUM — settlement targets the clock's current day, not the reserved day
-
-**Confidence:** 10/10. **Status:** source-verified; production boundary probe not run.
-
-Reservation captures UTC day inside `reserve_user_spend` (`014_user_spend.sql:65-73`), but settlement independently recomputes UTC today (`014_user_spend.sql:118-130`). If no new-day row exists, the refund is lost: the user is overcharged and the owner is protected. If another turn has reserved on the new day, the old turn's refund is applied to that active reservation. That understates the new day's balance and admits excess daily spend. Across a month boundary it also understates the new month's total.
-
-**Small fix:** have reserve return `reserved_day`; retain it in `server.js`; pass it to settle and update exactly `(user_id, reserved_day)`. A reservation UUID is better and also solves finding 3's response ambiguity.
-
-### 5. MEDIUM — settlement is not durable; failures spend user quota
+### 4. MEDIUM — settlement is not durable; failures consume user quota
 
 **Confidence:** 9/10. **Status:** source-verified.
 
-`server.js:1642-1647` fires settlement without awaiting or retrying it. A process death, deployment, network failure, or synchronous `supabase.rpc()` throw leaves the pessimistic reservation charged. This leak runs in the safe direction for the owner but the harmful direction for the user: enough failures lock a user out before they consumed $5. The `finally` helps only while this process remains alive long enough to deliver the RPC.
+`server.js:1642-1647` fires settlement without awaiting or retrying it. A process death, deployment, network failure, or synchronous `supabase.rpc()` throw leaves the pessimistic reservation charged. This leak protects the owner but harms the user: repeated failures can lock them out before they consumed $5. `finally` helps only while the process survives long enough to deliver the RPC.
 
-**Fix:** make settlement idempotent and durable: await it on ordinary completed requests; enqueue failed settlements for retry; retain pessimistic reservations on process death but expose/alert on stale ones and provide an admin reconciliation path. Do not auto-refund an unknown crashed turn: provider spend may already have happened.
+**Fix:** make settlement idempotent and durable. Await it on ordinary completed requests; enqueue failures for retry; alert on stale reservations and provide reconciliation. Do not blindly refund a crashed turn, because provider spend may already have occurred.
+
+### 5. MEDIUM — the units and defaults materially distort the stated budget
+
+**Confidence:** 9/10 on arithmetic; provider-account calibration not available.
+
+The stated “3.3¢ turn, about 150 turns/day” is not what the ledger records. `priceTurn` rounds every turn to whole cents (`spend.js:133`), so seven seats plus synthesis settle at 4¢. Because admission reserves 23¢, a sequence of ordinary 4¢ turns stops at 480¢: the last 20¢ cannot admit even a cheap path. Cheap 0.1¢ paths settle at 1¢, a 10× distortion. Store tenths (or microdollars) in Postgres, set limits to 5,000/20,000 tenths, and round only for display.
+
+The defaults are not demonstrably conservative for the providers in this code. Public retail rates include Brave and Google CSE at $5/1,000 requests, Tavily advanced at two $0.008 credits (1.6¢), and SerpApi Starter at $25/1,000: [Brave](https://brave.com/search/api/), [Google](https://developers.google.com/custom-search/v1/overview), [Tavily](https://docs.tavily.com/documentation/api-credits), [SerpApi](https://serpapi.com/pricing). One logical `web_search` can also try several providers, so the single 0.4¢ `searchTenths` is not an upper bound on owner cost.
+
+Ollama's public pricing meters cloud usage using model size and GPU time rather than a flat per-call tariff, so the 0.4¢/seat and 0.5¢/synthesis defaults cannot be validated publicly: [Ollama pricing](https://www.ollama.com/pricing). Fish lists paid TTS at $15/M UTF-8 bytes, making this route's 3,000-byte maximum about 4.5¢ if the free model is not used: [Fish pricing](https://docs.fish.audio/developer-guide/models-pricing/pricing-and-rate-limits). Settle the defaults from provider invoices/dashboard exports joined to model labels, durations, usage fields, TTS bytes, cache hits, and route/category; calibrate a conservative percentile rather than guessing.
+
+### 6. LOW — a monthly refusal gives the wrong reset guidance
+
+`server.js:1767-1771` says every refusal resets at midnight UTC. A monthly refusal does not. Return which limit bound, or say when both daily and monthly balances reset, so retries are not encouraged for the rest of the month.
+
+## Upper-bound reasoning
+
+The revised pure model passes this part of the review. `agent-loop.js:65-67` permits four rounds and 12 unique calls. A reachable maximum has 28 loop seats, seven `tool_plain_fallback` seats, the post-council fallback flag, and 12 tool calls (`server.js:2188-2287`). With defaults, `reservationCents(7, 12, 4)` and `priceTurn()` both return 23¢; the three-seat case returns 13¢ for both. `spend.js:186-209` deliberately reserves six roster equivalents plus two synthesis charges, which covers the actual sequence. This is conservative because post-council fallback is one streamed model call, not a roster, but conservatism is the correct direction for admission.
+
+The property is coupled to duplicated literals: `server.js:1762` repeats `12, 4` from `agent-loop.js`. Export one immutable limits object and use it in both places, then retain the exact 35-seat/no-synthesis fixture. A future loop-limit change must not silently invalidate the ceiling.
 
 ## Seam outcomes
 
-| Seam | Current direction | Why it matters |
+| Seam | Current direction | Consequence |
 |---|---|---|
-| Client abort during tools/synthesis/fallback | Owner undercharged | Attempts occur before the recorder; tool rounds are dropped before copy. |
-| Non-aborted throw before any provider | User overcharged | An empty snapshot still prices one fast call. |
-| Settlement RPC fails / process dies | User overcharged | Reservation remains pessimistic and can exhaust quota. |
-| Midnight with no new row | User overcharged | Refund misses yesterday's row. |
-| Midnight with a new row | Owner undercharged / ceiling bypass | Yesterday's refund reduces today's active reservation. |
-
-## The numbers
-
-The comments' “3.3¢ turn, about 150 turns/day” is not what the ledger does. `priceTurn` rounds each turn up to whole cents (`spend.js:133`), so seven seats plus synthesis settle at 4¢ and $5 buys 125 ordinary turns. Cheap 0.1¢ branches settle at 1¢, a 10× markup. Keep integer arithmetic, but store tenths (or microdollars) in Postgres and set limits to 5,000/20,000 tenths; round only for display.
-
-The defaults are not demonstrably conservative for the providers in this code. Current public retail rates include Brave at $5/1,000 requests, Google CSE at $5/1,000, Tavily **advanced** at 2 × $0.008 credits = 1.6¢ per request, and SerpApi Starter at $25/1,000. Those exceed the single 0.4¢ `searchTenths` in several cases: [Brave](https://brave.com/search/api/), [Google](https://developers.google.com/custom-search/v1/overview), [Tavily](https://docs.tavily.com/documentation/api-credits), [SerpApi](https://serpapi.com/pricing). A single logical `web_search` can also try multiple providers.
-
-Ollama's public pricing meters cloud usage by model size and GPU time, not a flat per-call price, so 0.4¢/seat and 0.5¢/synthesis cannot be validated from a public token tariff: [Ollama pricing](https://www.ollama.com/pricing). Fish's paid TTS is $15/M UTF-8 bytes, making this route's 3,000-byte maximum about 4.5¢ when the free model is not selected: [Fish pricing](https://docs.fish.audio/developer-guide/models-pricing/pricing-and-rate-limits). What would settle all defaults: a month of provider dashboard/invoice exports joined to operation counts, model labels, durations, returned usage fields, TTS bytes, cache hits, and route/category. Calibrate high-percentile cost per operation, not the average.
+| Client abort during tools/synthesis/fallback | Owner undercharged | Paid attempts can be absent from settlement. |
+| Throw before any paid operation | User overcharged | An empty snapshot still prices one fast call. |
+| Settlement fails / process dies | User overcharged | Pessimistic reservation remains and consumes quota. |
+| Midnight, no new row | User overcharged | Refund misses yesterday's row. |
+| Midnight, new row | Owner undercharged / ceiling bypass | Yesterday's refund reduces today's reservation. |
 
 ## What is right
 
-- The same-day reserve operation increments, checks, and undoes refusal under the daily-row lock. The supplied production probe demonstrates the crucial “refusal does not charge” invariant.
-- One row per user/day with month as a sum avoids two drifting counters; the primary key serves the query.
+- The corrected reservation covers every snapshot the current loop can actually produce under the cost model.
+- Reserve increments, checks, and reverses refusal under the daily-row lock. The supplied production probe demonstrates the crucial “refusal does not charge” invariant.
+- One row per user/day with month as a sum avoids drifting counters; the primary key serves the query.
 - User identity comes from authenticated server state, not request input.
-- RLS is enabled with no user policy, and these are invoker functions; server service-role access remains the intended boundary.
+- RLS is forced with no user policy and the functions are invoker functions; backend service-role access remains the intended boundary.
 - Settling from `finally` is the correct lifecycle location. The missing pieces are complete operation records and durable delivery.
 
 ## Validation and limits
 
-- Ran `node --test lib/spend.test.js lib/agent-loop.test.js lib/turn-telemetry.test.js`; the focused suite passed, but the property fixture omits the reachable two-fallback sequence above.
-- Reproduced the current pure-model counterexample locally: 20¢ reserved, 23¢ priced.
-- I accepted the owner's production SQL probe as runtime evidence. I did not mutate production or rerun it.
-- I could not verify Render's active `COUNCIL_TOOLS`/shadow mode, provider keys/plans, Ollama contract/extra-usage balance, dashboard costs, signed-in HTTP behavior, process-kill recovery, or a real UTC-boundary turn. Public prices above may differ from the account's negotiated/free tiers.
+- Ran `node --test lib/spend.test.js lib/agent-loop.test.js lib/turn-telemetry.test.js`: 49/49 passed.
+- Reproduced the reachable pure-model maximum locally: 23¢ reserved, 23¢ priced.
+- I accepted the owner's production SQL probe as runtime evidence; I did not mutate production or rerun it.
+- I could not verify Render's active tool/shadow configuration, provider keys or plans, invoices/dashboard costs, Ollama contract/extra-usage balance, signed-in HTTP behavior, outage behavior, process-kill recovery, or a real UTC-boundary turn. Public prices may differ from negotiated/free tiers.
 
 This AI-assisted review is a focused engineering control review, not a substitute for a professional security or financial audit.

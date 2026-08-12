@@ -85,7 +85,27 @@
   .app-header { height: 56px; padding: 0 var(--space-2); }
   .app-header .icon-btn { width: 40px; height: 40px; }
 
-  .main-title { font-size: var(--text-sm); }
+  /* 15px, up from --text-sm's 13px, and the shrink it replaces was a leftover.
+   *
+   * The owner's report was that the phone reads small and cramped. The header
+   * title is the app's primary orientation text — the one element that says
+   * WHERE YOU ARE — and it was the smallest text in the bar at 13px, a step
+   * below body copy rather than above it.
+   *
+   * It was shrunk when the header WAS crowded. The note immediately below says
+   * so: Upgrade went icon-only because "at 390px the actions were taking so
+   * much of the bar that the chat title truncated to nothing". That fix freed
+   * the space and the font reduction was never revisited, so the title stayed
+   * small to solve a problem that no longer existed.
+   *
+   * Measured at 390px with the real header: 180px of room. "Monitor buying
+   * advice" needs 130px at 13px and 150px at 15px, so it does not truncate
+   * either way, and a genuinely long title ellipsises — which is this element's
+   * documented behaviour, not a regression.
+   *
+   * Not the full 16px: a step below body copy leaves headroom before a long
+   * title starts clipping, and the bar is 56px tall. */
+  .main-title { font-size: 15px; }
 
   /* Upgrade goes icon-only. `.brand` is flex:1 with min-width:0, so it yields
    * to the action row — and at 390px the actions were taking so much of the
@@ -104,6 +124,52 @@
   .scroll-wrapper { padding: var(--space-4) var(--space-3) var(--space-2); }
   .msg-row { padding: var(--space-3) 0; gap: var(--space-2); }
   .msg-row.user .bubble { max-width: 88%; }
+
+  /* THUMB TARGETS UNDER EVERY ANSWER, measured rather than eyeballed.
+   *
+   * At 390px the per-message action row rendered Copy at 43x23, Listen at
+   * 67x28 and each feedback thumb at 31x28. The header already took the view
+   * that "34px is below the 44px floor, which is a defensible trade for a
+   * pointer and not for a finger" and moved its icon buttons to 40px on touch;
+   * this row never got the same treatment, and it holds the two controls a
+   * reader is most likely to want — copy the answer, and say it was wrong.
+   *
+   * 23px tall also fails WCAG 2.5.8, which asks for 24x24 as the MINIMUM, not
+   * as a target. The thumbs at 31px wide fail it on the other axis.
+   *
+   * 40px matches the header rather than reaching for the full 44: it is the
+   * figure the rest of the phone layout already uses, and one consistent floor
+   * is worth more than two defensible ones. The row is horizontal and there is
+   * width to spare — the constraint was never the space, it was that nobody
+   * had measured it. */
+  .msg-action-btn {
+    min-height: 40px;
+    min-width: 40px;
+    justify-content: center;
+    padding: 0 var(--space-3);
+  }
+
+  /* The toolbar under the transcript — Regenerate and Export — measured 30px.
+   * Same floor, same reason. */
+  .chat-toolbar-btn { min-height: 40px; }
+
+  /* SEND IS THE MOST-USED CONTROL IN THE APP and it measured 37x37, which is
+   * smaller than the theme toggle beside the settings gear. It gets 44 rather
+   * than the 40 used elsewhere: everything else on this list is a secondary
+   * action a reader may never press, and this is the one the whole screen
+   * exists to reach. The icon does not grow with it. */
+  .input-actions .input-btn.primary { width: 44px; height: 44px; }
+  .input-actions .input-btn.primary:disabled { transform: none; }
+
+  /* The copy button on a code block, at 23px tall — the smallest target on the
+   * phone and the one most likely to be wanted, since a code block is the
+   * thing a reader most often needs out of the app and into somewhere else. */
+  .code-copy-btn { min-height: 40px; padding: 0 var(--space-3); }
+
+  /* Upgrade was given `width: 40px` above when it went icon-only, and kept a
+   * 32px height from the desktop rule — so it sat as the odd one out in a row
+   * of 40px icon buttons, which is visible as well as small. */
+  .upgrade-btn { height: 40px; }
 
   /* The composer is the one control that must stay reachable with a thumb, so
    * it keeps its full padding while everything above it tightens. */

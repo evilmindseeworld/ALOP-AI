@@ -552,10 +552,15 @@ bars cost two rects and say something about the product; a second decorated edge
 beside the seal was the riskier of the two, and Luna itself said to delete it if
 it competed).
 
-Open, for the owner's eye rather than a fix: at `--ornament-a-mid` in the light
-theme the cloud bars are saturated enough to read a little like highlighter
-rather than kasumi. Both peers wanted the step up and it is what "more visible"
-asked for. Say the word and they go back half a step.
+**Closed the same day, and the closing is the interesting part.** The owner
+called it: "the bars reading as highlighter means they crossed from one material
+into another. Kasumi is grey mist." He asked for half a step back on the alpha —
+and running that experiment showed no point on the ladder works. Measured over
+the composer card in light: ink at mid was +0.062 chroma, half a step +0.045, a
+full step +0.030 AND invisible again. Both ends wrong in opposite directions,
+because alpha lowers lightness and chroma together, so pink never becomes grey.
+`--ornament-mist` holds the weight and drops the colour. See the 2026-08-12
+section above.
 
 ---
 
@@ -1005,6 +1010,20 @@ user, and anything older than seven days is ignored.
 
 ## Open, and needing the owner
 
+- **The authenticated seat probe is STILL the owner's to run, and it is now the
+  oldest open item.** Confirmed again 2026-08-12: this machine has no
+  `OLLAMA_HOST` and no `OLLAMA_API_KEY`, and `backend/.env` does not carry them,
+  so nothing measured here can speak for production. The probe is the seven
+  roster names against the real gateway with the exact payload
+  `{ model, messages, stream, options: { temperature, num_predict } }`,
+  measuring TTFT per seat over several runs. Until it exists: do not remove
+  seats, do not raise the whip, and do not repeat the "one seat in six" number.
+- **A per-user spend ceiling.** Sol's finding 2 is fixed as far as it can be in
+  code — limits key on the user now instead of the IP — but there is still only
+  a request rate, no budget. A single account inside 30/minute can run the bill
+  up. The proposal is an atomic reservation against a daily or monthly figure
+  before the first provider call, refunded on completion. It needs a number,
+  which is the owner's to pick.
 - **Is `COUNCIL_TOOLS=1` set in Render?** If it is off, the entire tool-calling
   path is dark in production — specialised engines, live shopping, the tool
   trail — which would be a second and larger cause of weak answers than the

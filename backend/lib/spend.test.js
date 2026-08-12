@@ -136,12 +136,23 @@ test('the pessimistic reservation covers the worst turn the loop can produce', (
   const CALLS = 12;   // agent-loop.js maxUniqueCalls — per TURN, across rounds
   const SEATS = 7;
 
-  // One seat record per member per round, which is what recordSeat does.
+  /* One seat record per member per round, which is what recordSeat does — AND
+   * the intervening plain-council fallback, which this test missed on its first
+   * two versions and Sol caught both times.
+   *
+   * server.js has three `reportCouncilTiming` sites that can run in sequence on
+   * one turn: 'tools' (the loop, once per round), 'tool_plain_fallback' (a full
+   * roster when the loop yields nothing usable), and then the post-council
+   * fallback on top. Modelling only the loop understates the worst case by a
+   * whole roster, which is precisely the direction that breaks the ceiling. */
   const seats = [];
   for (let round = 1; round <= ROUNDS; round++) {
     for (let s = 0; s < SEATS; s++) {
       seats.push({ phase: 'tools', round, model: `m${s}`, ms: 1, outcome: 'answered' });
     }
+  }
+  for (let s = 0; s < SEATS; s++) {
+    seats.push({ phase: 'tool_plain_fallback', round: 1, model: `m${s}`, ms: 1, outcome: 'answered' });
   }
 
   const worstTurn = {

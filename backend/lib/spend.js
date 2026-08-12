@@ -182,14 +182,29 @@ function reservationCents(seatCount, maxToolCalls, maxRounds) {
   const seats = int(seatCount, 7);
   const calls = int(maxToolCalls, 12);
   const rounds = Math.max(1, int(maxRounds, 4));
+
+  /* THREE PATHS RUN A FULL ROSTER, and the worst case is all three in sequence.
+   * Enumerated from the `reportCouncilTiming` call sites in server.js rather
+   * than reasoned about, because the second one is easy to miss and both Sol
+   * and I missed it on the first pass:
+   *
+   *   1. 'tools'               — the agent loop, re-asking every seat per round
+   *   2. 'tool_plain_fallback' — a full plain council when the loop yields
+   *                              nothing usable
+   *   3. the post-truncation fallback, recorded by `recordFallback`
+   *
+   * A turn can hit all three: four loop rounds, then the plain fallback, then
+   * the post-council fallback. That is `rounds + 2` rosters, and pricing only
+   * `rounds + 1` left a reachable 7-seat path at 23c against a 20c reservation.
+   * ('council' is the fourth call site and is the branch taken INSTEAD of the
+   * loop, so it does not add to this worst case.) */
+  const rosters = rounds + 2;
+
   const tenths =
-    /* Every round re-asks every seat. This is the term that was missing. */
-    rounds * seats * PRICES.seatTenths +
-    PRICES.synthesisTenths +
-    /* The post-truncation fallback: a whole second council run plus its own
-     * synthesis, which the owner deliberately keeps after the ceiling blows. */
-    seats * PRICES.seatTenths + PRICES.synthesisTenths +
-    /* Per turn across all rounds, so NOT multiplied by `rounds`. */
+    rosters * seats * PRICES.seatTenths +
+    /* Two synthesis passes: the turn's own, and the post-council fallback's. */
+    2 * PRICES.synthesisTenths +
+    /* maxUniqueCalls is per TURN across all rounds, so it is not multiplied. */
     calls * PRICES.searchTenths;
   return Math.max(0, Math.ceil(tenths / 10));
 }

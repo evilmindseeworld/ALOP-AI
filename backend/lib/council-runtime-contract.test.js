@@ -62,7 +62,11 @@ test("the completion sentinel is written exactly once", () => {
   // second turn ending. There is no test that would catch that downstream, so
   // it is caught here.
   assert.match(STREAM_MODEL, /if \(frame\.done && !completed\)/);
-  assert.equal(STREAM_MODEL.match(/data: \[DONE\]/g)?.length, 1);
+  // Counts the WRITE, not the string. Counting `data: [DONE]` across the whole
+  // source counted the comment above this function describing the terminator
+  // too, so the guard failed on prose while the code was correct — a guard that
+  // fires on a comment is one the next person deletes rather than reads.
+  assert.equal(STREAM_MODEL.match(/res\.write\('data: \[DONE\]/g)?.length, 1);
 });
 
 // An abandoned turn used to write nothing at all: every abort path returns

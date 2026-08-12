@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import { COUNCIL, MODEL_IDS } from "../constants/council";
 
 /**
@@ -247,4 +250,128 @@ describe("what has to be on the page whichever card is showing", () => {
       }
     });
   }
+});
+
+/* THE ORDER A STRANGER MEETS THE PAGE IN, which had no test and was wrong.
+ *
+ * The mobile layout used `order: 2` on the thesis and `order: 1` on the card.
+ * That moves boxes and leaves the DOM alone, so it bought a better VISUAL
+ * sequence by giving screen-reader users the reverse one — and because the
+ * headline lived in the same element as the roster, it pushed the product's
+ * first sentence below the form. Measured at 320: card y=90–593, headline
+ * y=617. The first consequential choice arrived before the first word about
+ * what the product is.
+ *
+ * A screenshot cannot catch that and neither can a CSS snapshot; the failure is
+ * a DISAGREEMENT between two orders, and only one of them is visible. So the
+ * contract is asserted on the DOM, which is now the phone order, with
+ * `grid-template-areas` doing the desktop rearrangement instead.
+ */
+describe("the order a first-time visitor meets the page in", () => {
+  const order = (container) =>
+    [...container.querySelectorAll(".signin-intro, .signin-card, .signin-proof")].map(
+      (el) => el.className.match(/signin-(intro|card|proof)/)[1],
+    );
+
+  for (const [label, path] of [["sign-in", "/"], ["sign-up", "/sign-up"]]) {
+    it(`is intro, then card, then proof on ${label}`, () => {
+      at(path);
+      const { container } = render(<SignInPage />);
+      expect(order(container)).toEqual(["intro", "card", "proof"]);
+    });
+  }
+
+  it("puts the plain-language sentence with the headline, not after the roster", () => {
+    at("/");
+    const { container } = render(<SignInPage />);
+    const intro = container.querySelector(".signin-intro");
+    expect(intro.querySelector("h1")).toBeTruthy();
+    expect(intro.querySelector(".signin-tagline")).toBeTruthy();
+    // The sentence written for someone who knows nothing must not be inside the
+    // block that comes after the form.
+    expect(container.querySelector(".signin-proof .signin-tagline")).toBeNull();
+  });
+
+  it("never reorders with CSS `order`, which is what split the two readings", () => {
+    const css = readFileSync(
+      join(dirname(fileURLToPath(import.meta.url)), "..", "styles", "signin.css"),
+      "utf8",
+    );
+    /* `order:` anywhere in this file is the exact mechanism that made the
+     * visual and DOM sequences disagree. If a future layout needs it, that is a
+     * decision to argue for, not to slip in.
+     *
+     * THE FIRST VERSION OF THIS PATTERN WAS `/^\s*order:\s*\d/m` AND IT DID NOT
+     * WORK. Reintroducing the bug as `.signin-card { order: 1; }` — inline
+     * after the brace, which is how the deleted rule was actually written —
+     * sailed straight past it, because the pattern demanded the declaration
+     * start a line. The guard was tested by injecting the failure and watching
+     * it NOT fail, which is the only reason it was caught; a guard verified
+     * only against the formatting its author happened to imagine is not
+     * verified.
+     *
+     * The lookbehind is what keeps `border: 1px` out — the last six characters
+     * of that property are the whole pattern.
+     *
+     * COMMENTS ARE STRIPPED FIRST, and that is not a convenience. With them in,
+     * the guard failed on the note in signin.css that QUOTES the deleted rule
+     * to explain why it must not come back — so documenting the bug would have
+     * been what tripped the alarm about it, and the obvious way out is to stop
+     * documenting it. A guard that punishes its own explanation gets deleted
+     * along with the explanation. Test the declarations, not the prose. */
+    const declarations = css.replace(/\/\*[\s\S]*?\*\//g, "");
+    expect(
+      /(?<![-\w])order:\s*-?\d/.test(declarations),
+      "signin.css is reordering with `order:` again — the DOM order is the contract",
+    ).toBe(false);
+  });
+
+  it("gives the roster a heading and explains the temperature column once", () => {
+    at("/");
+    const { container } = render(<SignInPage />);
+    const proof = container.querySelector(".signin-proof");
+    // Hidden, not absent: the outline needs the heading, the page does not want
+    // a third visible title above the fold.
+    const heading = container.querySelector("#council-proof-title");
+    expect(heading).toBeTruthy();
+    expect(heading.className).toContain("sr-only");
+    expect(proof.getAttribute("aria-labelledby")).toBe("council-proof-title");
+    // Every row starts with an unexplained decimal to a screen reader.
+    const ladder = container.querySelector(".council-ladder");
+    expect(ladder.getAttribute("aria-describedby")).toBe("council-scale");
+    expect(container.querySelector("#council-scale").textContent).toMatch(/temperature/i);
+  });
+});
+
+/* THE SIGNED-OUT SCREEN COULD NOT RENDER BAMBOO DAY.
+ *
+ * tokens.css declares the light palette at `.app-root.light`, and this page is
+ * an early return ABOVE the element App.jsx puts that class on — so every token
+ * fell through to `:root`, which is Sakura Night, whatever the user had chosen.
+ * Sol measured `--bg: #0a0a0a` resolving under `prefers-color-scheme: light`.
+ */
+describe("the signed-out screen honours the saved theme", () => {
+  afterEach(() => localStorage.clear());
+
+  it("wraps itself in app-root so the light palette can apply at all", () => {
+    localStorage.setItem("alop-dark-mode", "false");
+    at("/");
+    const { container } = render(<SignInPage />);
+    const root = container.querySelector(".signin-root");
+    expect(root.classList.contains("app-root")).toBe(true);
+    expect(root.classList.contains("light")).toBe(true);
+  });
+
+  it("defaults to dark with no stored preference, the same way App.jsx does", () => {
+    at("/");
+    const { container } = render(<SignInPage />);
+    expect(container.querySelector(".signin-root").classList.contains("dark")).toBe(true);
+  });
+
+  it("reads the same storage key App.jsx writes, so the two cannot drift", () => {
+    localStorage.setItem("alop-dark-mode", "true");
+    at("/");
+    const { container } = render(<SignInPage />);
+    expect(container.querySelector(".signin-root").classList.contains("dark")).toBe(true);
+  });
 });

@@ -360,20 +360,70 @@
  * The numbers deliberately are NOT an invented 01/02/03 sequence. They are
  * data, they are checkable, and they are the reason the product works.
  */
+/* NAMED AREAS, SO DOM ORDER CAN BE THE PHONE ORDER.
+ *
+ * The thesis used to be one block beside the card, which is right at 1440 and
+ * wrong the moment the grid stacks. Measured by Sol: at 768 the card sat
+ * y=106–613 with the headline at y=637, at 320 the card sat y=90–593 with the
+ * headline at y=617 — the first consequential choice arriving before the first
+ * sentence about the product. And DOM order was still thesis-then-card, so a
+ * screen-reader user got the opposite sequence to a sighted one.
+ *
+ * `grid-template-areas` is the whole fix and the reason it is worth the extra
+ * rules: the DOM is now intro → card → proof, which IS the mobile order and so
+ * needs no reordering at all below 900px, while at desktop the two thesis
+ * halves are placed back into one left column either side of nothing. The card
+ * spans both rows on its own.
+ *
+ * NOT `order:` on flex children, which was the cheaper reach. That moves boxes
+ * visually and leaves the DOM alone, which is exactly the split being fixed
+ * here — it would have made the sighted view correct and left the screen-reader
+ * view backwards. */
 .signin-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
-  gap: clamp(32px, 6vw, 88px);
+  grid-template-areas:
+    "intro card"
+    "proof card";
+  column-gap: clamp(32px, 6vw, 88px);
+  row-gap: var(--space-4);
   align-items: center;
 }
 
-.signin-thesis {
+/* ONE BLOCK EACH, not a placement rule plus a shared shape rule. Written as
+ * three lines and then a `.signin-intro, .signin-proof` pair, it read fine and
+ * `cssHygiene.test.js` counted `.signin-proof` three times over — its budget
+ * exists precisely to stop a selector accumulating scattered copies, which is
+ * how the cascade becomes unreadable one convenience at a time.
+ *
+ * `end` and `start` pull the two halves together against the row gap, so at
+ * desktop they read as the single column they used to be rather than as two
+ * blocks with a hole between them. The card centres against both. */
+.signin-intro {
+  grid-area: intro;
+  align-self: end;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: var(--space-4);
   min-width: 0;
 }
+
+.signin-proof {
+  grid-area: proof;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-4);
+  min-width: 0;
+}
+
+.signin-card { grid-area: card; align-self: center; }
+
+/* The one-column rules live at the bottom of this file with the other
+ * responsive block, not here — see the note there, which is where the `order:`
+ * swap this replaces used to be. */
 
 .council-ladder {
   list-style: none;
@@ -572,18 +622,40 @@
   color: var(--text-subtle);
 }
 
-/* One column below the split. The ladder stays — it is the argument, not
- * decoration — but the card leads, because on a phone the user came to sign in
- * and scrolling past a roster to reach the form is a worse trade than reading
- * it afterwards. */
+/* ONE COLUMN BELOW THE SPLIT, AND THIS BLOCK IS WHERE THE BUG LIVED.
+ *
+ * It used to be `.signin-thesis { order: 2 }` and `.signin-card { order: 1 }`,
+ * on the reasoning — quoted from the comment that was here — that "on a phone
+ * the user came to sign in and scrolling past a roster to reach the form is a
+ * worse trade than reading it afterwards".
+ *
+ * That reasoning is HALF right, and the half it got right is the half that is
+ * kept. Putting the seven-row roster before the form on a phone is the wrong
+ * trade. But `order:` moves boxes and leaves the DOM alone, so it bought the
+ * better visual sequence by giving screen-reader users the worse one — and it
+ * pushed the HEADLINE down with the roster, because the two were one element.
+ * Measured at 320: card y=90–593, headline y=617. The first consequential
+ * choice arrived before the first sentence about the product.
+ *
+ * The thesis is two sections now, so the DOM can simply BE the phone order —
+ * intro, card, proof — and both readings agree. `order:` is gone; the desktop
+ * two-column arrangement is the one that needs `grid-template-areas`, which is
+ * the right way round, because it is the exception rather than the sequence the
+ * markup states.
+ *
+ * The roster still comes after the form here. That was never the mistake. */
 @media (max-width: 900px) {
   .signin-grid {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--space-6);
+    grid-template-areas: "intro" "card" "proof";
+    row-gap: var(--space-5);
     justify-items: center;
   }
-  .signin-thesis { order: 2; align-items: center; }
-  .signin-card { order: 1; }
+  .signin-intro,
+  .signin-proof {
+    width: min(100%, 34rem);
+    align-items: center;
+  }
   .signin-title, .signin-tagline { text-align: center; }
   .council-ladder { max-width: 30ch; }
 }

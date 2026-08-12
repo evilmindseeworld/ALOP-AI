@@ -3,6 +3,34 @@ import { SignIn, SignUp, useUser } from "@clerk/react";
 import Earring from "./components/Earring";
 import { Seal } from "./components/SakuraFrame";
 import { COUNCIL, FREE_COUNT } from "./constants/council";
+import { Storage } from "./lib/storage";
+
+/**
+ * SIGN-IN COULD NOT RENDER BAMBOO DAY AT ALL, and nobody had noticed because
+ * every screenshot of this page was taken in one theme.
+ *
+ * `App.jsx` puts the theme class on `.app-root`, and tokens.css declares the
+ * light palette at `.app-root.light` (line 483). But this page is an EARLY
+ * RETURN above that element — `if (!hasUser) return <SignInPage />` — so
+ * `.signin-root` had no `.app-root` ancestor and every token fell through to
+ * the `:root` block, which is Sakura Night. Measured by Sol: with
+ * `prefers-color-scheme: light` the page still resolved `--bg: #0a0a0a`.
+ *
+ * So the signed-out screen was hard-wired dark while the app it leads into
+ * honoured a saved preference, and a returning light-theme user was flipped
+ * twice per visit.
+ *
+ * READ FROM THE SAME KEY App.jsx WRITES, and default the same way it does
+ * (`!== "false"`, i.e. dark unless the user has explicitly chosen light), so
+ * the two cannot drift into disagreeing about what "no preference" means. It is
+ * read once at mount rather than watched: there is no theme toggle on this
+ * screen, so there is nothing to keep in sync.
+ *
+ * Not `prefers-color-scheme`. The app does not honour the OS setting anywhere
+ * else — the preference is the stored choice — and having the signed-out screen
+ * obey a different signal from the signed-in one is the same split this fixes.
+ */
+const themeClass = () => (Storage.get("alop-dark-mode") !== "false" ? "dark" : "light");
 
 /**
  * Whether the visitor asked to register.
@@ -123,7 +151,7 @@ export default function SignInPage() {
    * the note in signin.css. */
   if (!isLoaded && timedOut) {
     return (
-      <div className="signin-root">
+      <div className={`app-root ${themeClass()} signin-root`}>
         <div className="signin-down" role="alert">
           <h1 className="signin-down-title">Sign-in isn&rsquo;t responding.</h1>
           <p className="signin-down-body">
@@ -145,7 +173,7 @@ export default function SignInPage() {
   const signUp = wantsSignUp();
 
   return (
-    <div className="signin-root">
+    <div className={`app-root ${themeClass()} signin-root`}>
       <div className="signin-noise" />
 
       {/* THE ORBS ARE GONE, and so is the branch that hung above them.
@@ -189,8 +217,35 @@ export default function SignInPage() {
           <span className="signin-logo-text">ALOP-AI</span>
         </div>
 
+        {/* THE THESIS IS TWO SECTIONS NOW, AND THE FORM SITS BETWEEN THEM.
+            Sol measured the reason at four viewports. It was one
+            `.signin-thesis` block beside the card, which is right at 1440 and
+            wrong the moment the grid collapses: at 768 the card occupied
+            y=106–613 and the headline started at y=637, and at 320 the card ran
+            y=90–593 with the headline at y=617. **The first consequential
+            choice — Google or email — arrived before the first sentence saying
+            what the product is.** A stranger was asked how they would like to
+            sign in to something they had not been told about.
+
+            Worse, and invisible in a screenshot: the DOM order was still thesis
+            then card, so a sighted user met the form first and a screen-reader
+            user met the argument first. Two different products depending on how
+            you read.
+
+            Splitting it into an INTRO (title + the plain-language tagline) and a
+            PROOF (the ladder + the seal) fixes both at once, because DOM order
+            can now be the mobile order — intro, card, proof — while
+            `grid-template-areas` in signin.css puts intro and proof back in one
+            left column at desktop. Nothing is duplicated and nothing new is
+            written; the tagline simply moves up to where it answers the question
+            it was always answering.
+
+            The proof staying AFTER the card on a phone is deliberate. The
+            roster is the argument for WHY, and it is worth scrolling to; the
+            headline and one sentence are what somebody needs before choosing to
+            act. */}
         <div className="signin-grid">
-          <section className="signin-thesis">
+          <section className="signin-intro">
             {/* No eyebrow above this title. "The Council" sat here in tracked
                 uppercase and told a reader nothing the headline, the roster
                 and the tagline below it do not already say — a label whose
@@ -212,53 +267,10 @@ export default function SignInPage() {
               Ask once. Several models answer.
             </h1>
 
-            {/* The roster is still the argument — seven seats, each held at its
-                own temperature — but a seat is named for what it DOES, and
-                credited to the company behind it rather than to a model id.
-                The titles run the same axis as the numbers beside them: The
-                Architect holds to what is literally there, The Explorer is
-                furthest from it. The second line is the COMPANY and nothing
-                more — constants/council.js records why there is no superlative
-                on it, and why one must not be added back. */}
-            <ol className="council-ladder">
-              {COUNCIL.map((m) => (
-                <li key={m.model} className={`council-row ${m.free ? "" : "is-pro"}`}>
-                  <span className="council-temp">{m.temperature.toFixed(1)}</span>
-                  <span className="council-seat">
-                    <span className="council-name">{m.title}</span>
-                    <span className="council-blurb">{m.company}</span>
-                  </span>
-                  {!m.free && <span className="council-tag">Pro</span>}
-                </li>
-              ))}
-            </ol>
-
-            {/* THE SEAL CLOSES THE LADDER, and it is the one mark on this page
-                drawn at full opacity.
-
-                A hanko is applied at the END of a document, as the stroke that
-                commits to what is above it — which is exactly what this line
-                is doing to the seven above it. The drawing is already the
-                argument: two strokes converging into a single point. It is the
-                council mechanic, not a flower.
-
-                It is also the only element here that asserts rather than
-                hedges. Everything else on this screen sits between 0.16 and
-                0.34 alpha, which is the definition of a watermark; see the
-                note on `Seal` in SakuraFrame.jsx for why the family needed one
-                thing that does not. */}
-            <p className="council-resolve">
-              One reply, reconciled.
-              <Seal className="sakura-seal signin-seal" id="signin-seal" />
-            </p>
-
-            {/* The previous line explained the temperature column — "runs 0.2 to
-                0.8, literal to lateral". It was true and it was the wrong
-                sentence: to anyone who does not already know what a sampling
-                temperature is, "temperature" is the weather. The numbers can
-                stay as texture for people who recognise them; the caption has
-                to work for everyone, so it says what the product does instead
-                of what the column means. */}
+            {/* MOVED UP FROM BELOW THE LADDER, where it was the last thing on
+                the page. It is the only sentence here written for someone who
+                knows nothing yet, so it belongs directly under the headline and
+                above the first choice — not 406px past it. Same words. */}
             <p className="signin-tagline">
               They disagree on purpose. You get what they agreed on, and where they didn&rsquo;t.
             </p>
@@ -383,6 +395,68 @@ export default function SignInPage() {
               )}
               <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a> and{" "}
               <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>.
+            </p>
+          </section>
+
+          <section className="signin-proof" aria-labelledby="council-proof-title">
+            {/* The heading the outline needs and the page does not want to show.
+                Without it the ladder is an unlabelled list between two landmarks;
+                with a visible one there are three competing titles above the
+                fold. `.sr-only` is the honest resolution — see signin.css. */}
+            <h2 id="council-proof-title" className="sr-only">
+              How the council is composed
+            </h2>
+            {/* THE TEMPERATURE COLUMN IS TEXTURE TO THE EYE AND NOISE TO A
+                SCREEN READER. Visually it now reads one step behind the seat
+                name, which was today's fix. But a screen reader still meets
+                every row as "zero point two, The Architect, Zhipu AI" — an
+                unexplained decimal, seven times, with nothing saying what the
+                number is. One hidden sentence explains the scale once, and the
+                visual texture is unchanged. */}
+            <p id="council-scale" className="sr-only">
+              Seven seats, ordered from the most literal to the most lateral.
+              Each row begins with that seat&rsquo;s sampling temperature, from
+              0.2 to 0.8.
+            </p>
+
+            {/* The roster is still the argument — seven seats, each held at its
+                own temperature — but a seat is named for what it DOES, and
+                credited to the company behind it rather than to a model id.
+                The titles run the same axis as the numbers beside them: The
+                Architect holds to what is literally there, The Explorer is
+                furthest from it. The second line is the COMPANY and nothing
+                more — constants/council.js records why there is no superlative
+                on it, and why one must not be added back. */}
+            <ol className="council-ladder" aria-describedby="council-scale">
+              {COUNCIL.map((m) => (
+                <li key={m.model} className={`council-row ${m.free ? "" : "is-pro"}`}>
+                  <span className="council-temp">{m.temperature.toFixed(1)}</span>
+                  <span className="council-seat">
+                    <span className="council-name">{m.title}</span>
+                    <span className="council-blurb">{m.company}</span>
+                  </span>
+                  {!m.free && <span className="council-tag">Pro</span>}
+                </li>
+              ))}
+            </ol>
+
+            {/* THE SEAL CLOSES THE LADDER, and it is the one mark on this page
+                drawn at full opacity.
+
+                A hanko is applied at the END of a document, as the stroke that
+                commits to what is above it — which is exactly what this line
+                is doing to the seven above it. The drawing is already the
+                argument: two strokes converging into a single point. It is the
+                council mechanic, not a flower.
+
+                It is also the only element here that asserts rather than
+                hedges. Everything else on this screen sits between 0.16 and
+                0.34 alpha, which is the definition of a watermark; see the
+                note on `Seal` in SakuraFrame.jsx for why the family needed one
+                thing that does not. */}
+            <p className="council-resolve">
+              One reply, reconciled.
+              <Seal className="sakura-seal signin-seal" id="signin-seal" />
             </p>
           </section>
         </div>

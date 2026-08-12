@@ -98,11 +98,32 @@ const INSET_WELL = "inset 0 1px 2px rgba(0,0,0,0.2)";
 const TRANSITION = "background 0.2s ease, border-color 0.2s ease, color 0.2s ease";
 
 export const clerkAppearance = {
+  /* THE THREE LITERALS BELOW WERE THE OTHER HALF OF THE SIGN-IN THEME BUG.
+   *
+   * `SignInPage` now wraps itself in `.app-root.light` or `.app-root.dark` and
+   * so reaches the real palette, but the Clerk card inside it did not follow:
+   * these were hex values baked to Sakura Night, so on paper the card stayed a
+   * dark brown well in the middle of a light page.
+   *
+   * They are CSS variables now, resolved by the same tokens as everything
+   * around them, which is the rule the rest of this file already followed —
+   * `formButtonPrimary` uses `var(--text-on-fill)` precisely because a literal
+   * "cannot follow the theme". These three were the exception nobody revisited.
+   *
+   * `baseTheme` STAYS "dark" and cannot be a variable: it is Clerk's own
+   * stylesheet choice, picked once at provider construction, and this object is
+   * built at module load. What it actually decides, now that every colour above
+   * it is a token, is the handful of internals we do not style — the divider,
+   * the OAuth logos' backdrop, disabled states. On paper those read a little
+   * heavier than they should. Making it follow the theme means recreating this
+   * object when the preference changes and passing it through `ClerkProvider`,
+   * which is a change to App.jsx's render, not to this file. Recorded in
+   * handoff.md rather than half-done here. */
   baseTheme: "dark",
   variables: {
-    colorPrimary: "#ec7d96",
-    colorBackground: "#1b120c",
-    colorText: "#faf0e6",
+    colorPrimary: "var(--primary)",
+    colorBackground: "var(--surface)",
+    colorText: "var(--text)",
   },
   elements: {
     rootBox: RESET,

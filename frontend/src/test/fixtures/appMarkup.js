@@ -474,14 +474,18 @@ export const outsideAppRoot = `
     </div>
 
     <div class="signin-grid">
-      <section class="signin-thesis">
+      <section class="signin-intro">
         <h1 class="signin-title">Seven answers.<span class="signin-title-accent">One reply.</span></h1>
-        <ol class="council-ladder">
+        <p class="signin-tagline">They disagree on purpose.</p>
+      </section>
+      <section class="signin-proof" aria-labelledby="council-proof-title">
+        <h2 id="council-proof-title" class="sr-only">How the council is composed</h2>
+        <p id="council-scale" class="sr-only">Seven seats, ordered from the most literal to the most lateral.</p>
+        <ol class="council-ladder" aria-describedby="council-scale">
           <li class="council-row"><span class="council-temp">0.3</span><span class="council-name">kimi-k2.7-code</span></li>
           <li class="council-row is-pro"><span class="council-temp">0.8</span><span class="council-name">minimax-m3</span><span class="council-tag">Pro</span></li>
         </ol>
         <p class="council-resolve">One reply, reconciled.<svg class="sakura-seal signin-seal" viewBox="0 0 32 32"><rect width="32" height="32"/></svg></p>
-        <p class="signin-tagline">They disagree on purpose.</p>
       </section>
 
       <section class="signin-card">

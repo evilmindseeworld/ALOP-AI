@@ -16,7 +16,8 @@ import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/comp
 import MagneticButton from "@/components/ui/MagneticButton";
 import Earring from "./components/Earring";
 import CouncilRosette from "./components/CouncilRosette";
-import { SakuraBaseCorners } from "./components/SakuraFrame";
+import { SakuraBaseCorners, Seal } from "./components/SakuraFrame";
+import { COUNCIL, FREE_COUNT } from "./constants/council";
 import Icon, { ICON_NAMES } from "./components/Icon";
 import MessageList from "./components/MessageList";
 import InputBar from "./components/InputBar";
@@ -505,6 +506,198 @@ const LiveChrome = ({ theme, empty = false, streaming = false, loaded = false, c
   </figure>
 );
 
+/**
+ * Clerk cannot mount in this entry: there is no ClerkProvider, identity, or
+ * network session. Keep the surrounding shell identical to SignInPage and
+ * make the substitution impossible to mistake for a real auth check.
+ */
+const GalleryClerkPlaceholder = ({ signUp }) => (
+  <div
+    aria-label="Clerk form stand-in"
+    style={{
+      display: "grid",
+      gap: 12,
+      color: "var(--text-muted)",
+      font: "13px/1.4 system-ui, sans-serif",
+    }}
+  >
+    <div
+      style={{
+        display: "grid",
+        placeItems: "center",
+        minHeight: 42,
+        border: "1px solid var(--border)",
+        borderRadius: 8,
+        color: "var(--text)",
+        background: "color-mix(in srgb, var(--surface) 72%, transparent)",
+      }}
+    >
+      Continue with Google
+    </div>
+    <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--text-subtle)", fontSize: 11 }}>
+      <span aria-hidden="true" style={{ height: 1, flex: 1, background: "var(--border)" }} />
+      or
+      <span aria-hidden="true" style={{ height: 1, flex: 1, background: "var(--border)" }} />
+    </div>
+    <label style={{ display: "grid", gap: 6, color: "var(--text-muted)", fontSize: 12 }}>
+      Email address
+      <input
+        readOnly
+        aria-label="Email address (stand-in)"
+        placeholder="you@example.com"
+        style={{
+          width: "100%",
+          boxSizing: "border-box",
+          minHeight: 42,
+          padding: "0 12px",
+          border: "1px solid var(--border)",
+          borderRadius: 8,
+          background: "var(--bg)",
+          color: "var(--text)",
+          font: "inherit",
+        }}
+      />
+    </label>
+    <div
+      style={{
+        display: "grid",
+        placeItems: "center",
+        minHeight: 42,
+        borderRadius: 8,
+        background: "var(--primary)",
+        color: "var(--text-on-fill)",
+        fontWeight: 600,
+      }}
+    >
+      {signUp ? "Create account" : "Continue"}
+    </div>
+    <p style={{ margin: 0, textAlign: "center", color: "var(--text-subtle)", fontSize: 11 }}>
+      Static Clerk form stand-in for the gallery
+    </p>
+  </div>
+);
+
+const SIGNIN_SHELL = ({ signUp, loading, theme }) => (
+  <div className={`app-root ${theme}`} style={{ position: "relative", height: "100vh", overflow: "hidden", transform: "translateZ(0)" }}>
+    <div className="signin-root">
+      <div className="signin-noise" />
+      <div className="signin-lattice" aria-hidden="true" />
+      <Earring side="left" />
+      <Earring side="right" />
+
+      <div className="signin-wrap">
+        <div className="signin-brand">
+          <img src="/favicon.png" alt="" className="signin-logo-mark" />
+          <span className="signin-logo-text">ALOP-AI</span>
+        </div>
+
+        {/* INTRO, CARD, PROOF — the same DOM order as SignInPage.jsx, and the
+            order matters more here than anywhere else in this file.
+            `.signin-thesis` was one block with the tagline after the ladder;
+            splitting it is what stopped the form from preceding the product's
+            first sentence on a phone. A gallery frame that keeps the old
+            structure would document a layout the app no longer has, and would
+            be consulted as if it were current — the same failure as the test
+            that agreed with a comment about Clerk instead of checking the
+            page. If SignInPage's structure changes again, change this too. */}
+        <div className="signin-grid">
+          <section className="signin-intro">
+            <h1 className="signin-title">Ask once. Several models answer.</h1>
+            <p className="signin-tagline">
+              They disagree on purpose. You get what they agreed on, and where they didn&rsquo;t.
+            </p>
+          </section>
+
+          <section className="signin-card">
+            <h2 className="signin-card-title">{signUp ? "Create your account" : "Sign in"}</h2>
+            <div className="signin-card-inner">
+              {loading ? (
+                <div className="signin-card-loading" {...(loading === "captioned" ? { role: "status" } : { "aria-hidden": "true" })}>
+                  {loading === "captioned" ? "Preparing secure sign-in\u2026" : null}
+                </div>
+              ) : (
+                <GalleryClerkPlaceholder signUp={signUp} />
+              )}
+            </div>
+            <p className="signin-plan">
+              {FREE_COUNT} models free. All {COUNCIL.length} on Pro.
+            </p>
+            <p className="signin-legal">
+              {signUp ? "By creating an account" : "By continuing"} you confirm you are at least 13 years old
+              (16 in the EEA and UK) and agree to our{" "}
+              <a href="/terms.html">Terms</a> and <a href="/privacy.html">Privacy Policy</a>.
+            </p>
+          </section>
+
+          <section className="signin-proof" aria-labelledby={`gallery-proof-title-${theme}-${signUp ? "up" : "in"}`}>
+            <h2 id={`gallery-proof-title-${theme}-${signUp ? "up" : "in"}`} className="sr-only">
+              How the council is composed
+            </h2>
+            <p id={`gallery-council-scale-${theme}-${signUp ? "up" : "in"}`} className="sr-only">
+              Seven seats, ordered from the most literal to the most lateral.
+              Each row begins with that seat&rsquo;s sampling temperature, from
+              0.2 to 0.8.
+            </p>
+            <ol
+              className="council-ladder"
+              aria-describedby={`gallery-council-scale-${theme}-${signUp ? "up" : "in"}`}
+            >
+              {COUNCIL.map((m) => (
+                <li key={m.model} className={`council-row ${m.free ? "" : "is-pro"}`}>
+                  <span className="council-temp">{m.temperature.toFixed(1)}</span>
+                  <span className="council-seat">
+                    <span className="council-name">{m.title}</span>
+                    <span className="council-blurb">{m.company}</span>
+                  </span>
+                  {!m.free && <span className="council-tag">Pro</span>}
+                </li>
+              ))}
+            </ol>
+            <p className="council-resolve">
+              One reply, reconciled.
+              <Seal className="sakura-seal signin-seal" id={`gallery-signin-seal-${theme}-${signUp ? "up" : "in"}`} />
+            </p>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+const SignInGalleryFrame = ({ theme, signUp = false, loading, down = false, label }) => (
+  <figure style={{ margin: "0 24px 28px" }}>
+    <figcaption
+      style={{
+        font: "600 11px/1.4 system-ui, sans-serif",
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+        opacity: 0.55,
+        margin: "0 0 8px",
+      }}
+    >
+      {label}
+    </figcaption>
+    {down ? (
+      <div className={`app-root ${theme}`} style={{ position: "relative", height: "72vh", minHeight: 560, overflow: "hidden", transform: "translateZ(0)" }}>
+        <div className="signin-root">
+          <div className="signin-down" role="alert">
+            <h1 className="signin-down-title">Sign-in isn&rsquo;t responding.</h1>
+            <p className="signin-down-body">
+              We can&rsquo;t reach the service that signs you in. Your account and your chats are not affected &mdash; there is nothing to recover and nothing has been lost.
+            </p>
+            <p className="signin-down-body">
+              This is usually brief. If reloading doesn&rsquo;t help, it is on our side, not yours.
+            </p>
+            <button className="signin-down-retry" type="button">Reload</button>
+          </div>
+        </div>
+      </div>
+    ) : (
+      <SIGNIN_SHELL signUp={signUp} loading={loading} theme={theme} />
+    )}
+  </figure>
+);
+
 /** Everything that paints over the app rather than being part of it. */
 const OVERLAYS = [".cmdk-backdrop", ".camera-overlay", ".panel-overlay", ".side-panel", ".toast"];
 
@@ -534,6 +727,67 @@ const Gallery = () => (
     >
       App chrome — both themes
     </h2>
+
+    <h2
+      style={{
+        font: "600 12px/1.4 system-ui, sans-serif",
+        letterSpacing: "0.12em",
+        textTransform: "uppercase",
+        opacity: 0.55,
+        margin: "8px 24px 12px",
+      }}
+    >
+      Signed-out shell — Clerk states
+    </h2>
+
+    <SignInGalleryFrame
+      theme="dark"
+      label="Sign-in — Sakura Night; Clerk form is a static stand-in, not a mounted Clerk card"
+    />
+    <SignInGalleryFrame
+      theme="light"
+      label="Sign-in — Bamboo Day intent; Clerk form is a static stand-in, not a mounted Clerk card; live page cannot currently reach this theme"
+    />
+    <SignInGalleryFrame
+      theme="dark"
+      signUp
+      label="Sign-up — Sakura Night; Clerk form is a static stand-in, not a mounted Clerk card"
+    />
+    <SignInGalleryFrame
+      theme="light"
+      signUp
+      label="Sign-up — Bamboo Day intent; Clerk form is a static stand-in, not a mounted Clerk card; live page cannot currently reach this theme"
+    />
+    <SignInGalleryFrame
+      theme="dark"
+      loading="reserved"
+      label="Clerk loading slot — dark; empty 342px reservation before the 700ms grace period; no form is mounted"
+    />
+    <SignInGalleryFrame
+      theme="dark"
+      loading="captioned"
+      label="Clerk loading slot — dark; after 700ms: Preparing secure sign-in…; no form is mounted"
+    />
+    <SignInGalleryFrame
+      theme="light"
+      loading="reserved"
+      label="Clerk loading slot — light intent; empty 342px reservation before the 700ms grace period; live page cannot currently reach this theme"
+    />
+    <SignInGalleryFrame
+      theme="light"
+      loading="captioned"
+      label="Clerk loading slot — light intent; after 700ms: Preparing secure sign-in…; live page cannot currently reach this theme"
+    />
+    <SignInGalleryFrame
+      theme="dark"
+      down
+      label="Ten-second Clerk down state — dark; no form is mounted, only the real outage message and Reload action"
+    />
+    <SignInGalleryFrame
+      theme="light"
+      down
+      label="Ten-second Clerk down state — light intent; no form is mounted; live page cannot currently reach this theme"
+    />
 
     <LiveChrome theme="dark" />
     <LiveChrome theme="dark" empty />

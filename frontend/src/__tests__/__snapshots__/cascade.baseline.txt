@@ -4,7 +4,7 @@
 # here means a refactor changed behaviour. Do not regenerate it to make a
 # test pass; fix the CSS.
 #
-# elements: 939   environments: 5   states: 6
+# elements: 942   environments: 5   states: 6
 
 === width=1400 ===
 
@@ -419,6 +419,7 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 30px rgba(0, 0, 0, 0.45)
   box-sizing: border-box
   color: #f5f1ee
+  column-gap: <gap: 12px>
   display: flex
   font-family: 'Switzer', system-ui, sans-serif
   font-size: 13px
@@ -432,6 +433,7 @@
   padding-bottom: <padding: 12px 16px>
   padding-left: <padding: 12px 16px>
   padding-top: <padding: 12px 16px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   user-select: none
@@ -607,6 +609,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -617,6 +620,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -891,6 +895,7 @@
   align-items: center
   border-bottom: 1px solid rgba(255, 255, 255, 0.07)
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -901,6 +906,7 @@
   padding-bottom: <padding: 12px 16px>
   padding-left: <padding: 12px 16px>
   padding-top: <padding: 12px 16px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -1085,6 +1091,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  column-gap: <gap: 2px>
   display: flex
   flex-direction: column
   gap: 2px
@@ -1097,6 +1104,7 @@
   padding-bottom: <padding: 8px>
   padding-left: <padding: 8px>
   padding-top: <padding: 8px>
+  row-gap: <gap: 2px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -1185,6 +1193,7 @@
   border-radius: 6px
   box-sizing: border-box
   color: #f5f1ee
+  column-gap: <gap: 12px>
   cursor: pointer
   display: flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -1199,6 +1208,7 @@
   padding-bottom: <padding: 0 12px>
   padding-left: <padding: 0 12px>
   padding-top: <padding: 0 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   text-align: left
@@ -1386,6 +1396,7 @@
   border-radius: 6px
   box-sizing: border-box
   color: #b8b3ae
+  column-gap: <gap: 12px>
   cursor: pointer
   display: flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -1400,6 +1411,7 @@
   padding-bottom: <padding: 0 12px>
   padding-left: <padding: 0 12px>
   padding-top: <padding: 0 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   text-align: left
@@ -1579,6 +1591,7 @@
   border-top: 1px solid rgba(255, 255, 255, 0.07)
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 16px>
   display: flex
   font-size: 11px
   gap: 16px
@@ -1590,6 +1603,7 @@
   padding-bottom: <padding: 8px 16px>
   padding-left: <padding: 8px 16px>
   padding-top: <padding: 8px 16px>
+  row-gap: <gap: 16px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -1624,6 +1638,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 4px>
   display: inline-flex
   gap: 4px
   margin: 0
@@ -1634,6 +1649,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -1768,6 +1784,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 4px>
   display: inline-flex
   gap: 4px
   margin: 0
@@ -1778,6 +1795,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -1862,6 +1880,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 4px>
   display: inline-flex
   gap: 4px
   margin: 0
@@ -1872,6 +1891,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -2002,6 +2022,7 @@
   align-items: center
   border-bottom: 1px solid rgba(255, 255, 255, 0.07)
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-shrink: 0
   gap: 8px
@@ -2015,6 +2036,7 @@
   padding-left: <padding: 0 12px>
   padding-top: <padding: 0 12px>
   position: relative
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -2349,6 +2371,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex: 1
   flex-shrink: <flex: 1>
@@ -2362,6 +2385,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -2497,6 +2521,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-direction: row
   flex-shrink: 0
@@ -2510,6 +2535,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -2554,6 +2580,7 @@
   border-radius: 6px
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 8px>
   cursor: pointer
   display: flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -2568,6 +2595,7 @@
   padding-bottom: <padding: 0 12px>
   padding-left: <padding: 0 12px>
   padding-top: <padding: 0 12px>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: color 120ms ease, border-color 120ms ease, background 120ms ease
@@ -2790,6 +2818,7 @@
   border-radius: 6px
   box-sizing: border-box
   color: #f08aa3
+  column-gap: <gap: 8px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -2805,6 +2834,7 @@
   padding-bottom: <padding: 0 12px>
   padding-left: <padding: 0 12px>
   padding-top: <padding: 0 12px>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: background 120ms ease, border-color 120ms ease
@@ -3381,6 +3411,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: none
   flex: 1
   flex-direction: column
@@ -3395,6 +3426,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -3772,6 +3804,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 4px>
   display: flex
   flex-direction: column
   gap: 4px
@@ -3786,6 +3819,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -4132,6 +4166,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -4142,6 +4177,7 @@
   padding-bottom: 8px
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -4187,6 +4223,7 @@
   box-shadow: 0 2px 12px rgba(240, 138, 163, 0.22)
   box-sizing: border-box
   color: #1a0e13
+  column-gap: <gap: 8px>
   cursor: pointer
   display: flex
   flex: 1
@@ -4206,6 +4243,7 @@
   padding-bottom: <padding: 0 12px>
   padding-left: <padding: 0 12px>
   padding-top: <padding: 0 12px>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease
@@ -4488,6 +4526,7 @@
   border-radius: 6px
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   height: 32px
@@ -4499,6 +4538,7 @@
   padding-bottom: <padding: 0 8px>
   padding-left: <padding: 0 8px>
   padding-top: <padding: 0 8px>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: border-color 120ms ease, background 120ms ease
@@ -5148,6 +5188,7 @@
   background-size: <background: #101010>
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-weight: 700
@@ -5162,6 +5203,7 @@
   padding-left: <padding: 4px 8px 8px>
   padding-top: <padding: 4px 8px 8px>
   position: sticky
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   text-transform: uppercase
@@ -5222,6 +5264,7 @@
   border-radius: 6px
   box-sizing: border-box
   color: #f5f1ee
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -5234,6 +5277,7 @@
   padding-left: <padding: 0 8px 0 4px>
   padding-top: <padding: 0 8px 0 4px>
   position: relative
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: background 120ms ease, color 120ms ease, border-color 120ms ease
@@ -5337,6 +5381,7 @@
   border-bottom-right-radius: <border-radius: 6px>
   border-radius: 6px
   box-sizing: border-box
+  column-gap: <gap: 2px>
   display: flex
   gap: 2px
   margin: 0
@@ -5351,6 +5396,7 @@
   pointer-events: none
   position: absolute
   right: 4px
+  row-gap: <gap: 2px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   top: 50%
@@ -5878,6 +5924,7 @@
   background-size: <background: #101010>
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-weight: 700
@@ -5892,6 +5939,7 @@
   padding-left: <padding: 4px 8px 8px>
   padding-top: <padding: 4px 8px 8px>
   position: sticky
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   text-transform: uppercase
@@ -5935,6 +5983,7 @@
   border-radius: 6px
   box-sizing: border-box
   color: #b8b3ae
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -5947,6 +5996,7 @@
   padding-left: <padding: 0 8px 0 4px>
   padding-top: <padding: 0 8px 0 4px>
   position: relative
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: background 120ms ease, color 120ms ease, border-color 120ms ease
@@ -6052,6 +6102,7 @@
   border-bottom-right-radius: <border-radius: 6px>
   border-radius: 6px
   box-sizing: border-box
+  column-gap: <gap: 2px>
   display: flex
   gap: 2px
   margin: 0
@@ -6066,6 +6117,7 @@
   pointer-events: none
   position: absolute
   right: 4px
+  row-gap: <gap: 2px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   top: 50%
@@ -6307,6 +6359,7 @@
   background-size: <background: #101010>
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-weight: 700
@@ -6321,6 +6374,7 @@
   padding-left: <padding: 4px 8px 8px>
   padding-top: <padding: 4px 8px 8px>
   position: sticky
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   text-transform: uppercase
@@ -6364,6 +6418,7 @@
   border-radius: 6px
   box-sizing: border-box
   color: #b8b3ae
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -6376,6 +6431,7 @@
   padding-left: <padding: 0 8px 0 4px>
   padding-top: <padding: 0 8px 0 4px>
   position: relative
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: background 120ms ease, color 120ms ease, border-color 120ms ease
@@ -6480,6 +6536,7 @@
   align-items: center
   border-top: 1px solid rgba(255, 255, 255, 0.07)
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -6490,6 +6547,7 @@
   padding-bottom: <padding: 8px 4px>
   padding-left: <padding: 8px 4px>
   padding-top: <padding: 8px 4px>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   user-select: none
@@ -6934,6 +6992,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex: 1
   flex-direction: column
@@ -6948,6 +7007,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -6982,6 +7042,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 4px>
   display: flex
   flex-direction: column
   gap: 4px
@@ -6996,6 +7057,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -8046,6 +8108,7 @@
   align-items: center
   border-bottom: 1px solid rgba(255, 255, 255, 0.07)
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   flex-shrink: 0
   gap: 12px
@@ -8058,6 +8121,7 @@
   padding-bottom: <padding: 16px 20px>
   padding-left: <padding: 16px 20px>
   padding-top: <padding: 16px 20px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -8333,6 +8397,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   flex-direction: row
   gap: 12px
@@ -8345,6 +8410,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -8435,6 +8501,7 @@
   border-color: <border: 1px solid rgba(255, 255, 255, 0.07)>
   border-radius: 999px
   box-sizing: border-box
+  column-gap: <gap: 12px>
   cursor: pointer
   display: flex
   gap: 12px
@@ -8446,6 +8513,7 @@
   padding-bottom: <padding: 8px 12px>
   padding-left: <padding: 8px 12px>
   padding-top: <padding: 8px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: background 120ms ease, border-color 120ms ease
@@ -8595,6 +8663,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   flex-direction: row
   gap: 12px
@@ -8607,6 +8676,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -8707,6 +8777,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   flex-direction: row
   gap: 12px
@@ -8719,6 +8790,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -8819,6 +8891,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: block
   flex-direction: row
   gap: 12px
@@ -8831,6 +8904,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -9013,6 +9087,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -9025,6 +9100,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -9067,6 +9143,7 @@
   border-color: <border: 1px solid rgba(255, 255, 255, 0.07)>
   border-radius: 6px
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   justify-content: space-between
@@ -9078,6 +9155,7 @@
   padding-bottom: <padding: 8px 12px>
   padding-left: <padding: 8px 12px>
   padding-top: <padding: 8px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -9377,6 +9455,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -9387,6 +9466,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -9691,6 +9771,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  column-gap: <gap: 4px>
   display: flex
   gap: 4px
   margin: 0
@@ -9702,6 +9783,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: opacity 120ms ease
@@ -9748,6 +9830,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -9762,6 +9845,7 @@
   padding-bottom: <padding: 0 8px>
   padding-left: <padding: 0 8px>
   padding-top: <padding: 0 8px>
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: color 120ms ease, background 120ms ease, border-color 120ms ease
@@ -9813,6 +9897,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -9827,6 +9912,7 @@
   padding-bottom: <padding: 0 8px>
   padding-left: <padding: 0 8px>
   padding-top: <padding: 0 8px>
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: color 120ms ease, background 120ms ease, border-color 120ms ease
@@ -9918,6 +10004,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -9928,6 +10015,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -10200,6 +10288,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: grid
   gap: 12px
   margin: 0
@@ -10210,6 +10299,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -10292,6 +10382,7 @@
   align-items: center
   box-sizing: border-box
   color: #f5f1ee
+  column-gap: <gap: 8px>
   display: flex
   font-family: 'Clash Grotesk', system-ui, sans-serif
   font-size: 16px
@@ -10305,6 +10396,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -10472,6 +10564,7 @@
   align-items: center
   box-sizing: border-box
   color: #f5f1ee
+  column-gap: <gap: 8px>
   display: flex
   font-family: 'Clash Grotesk', system-ui, sans-serif
   font-size: 16px
@@ -10485,6 +10578,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -10694,6 +10788,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -10705,6 +10800,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -11152,6 +11248,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   flex-direction: column
   gap: 12px
@@ -11166,6 +11263,7 @@
   padding-left: <padding: 24px 0>
   padding-top: <padding: 24px 0>
   position: relative
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   text-align: center
@@ -11536,6 +11634,7 @@
   animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards>
   animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards>
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: grid
   gap: 8px
   grid-template-columns: repeat(2, minmax(0, 1fr))
@@ -11549,6 +11648,7 @@
   padding-left: <padding: 0>
   padding-top: <padding: 0>
   position: relative
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   width: 100%
@@ -11608,6 +11708,7 @@
   border-radius: 8px
   box-sizing: border-box
   color: #f5f1ee
+  column-gap: <gap: 4px>
   cursor: pointer
   display: flex
   flex-direction: column
@@ -11624,6 +11725,7 @@
   padding-left: <padding: 12px 16px>
   padding-top: <padding: 12px 16px>
   position: relative
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   text-align: left
@@ -11918,6 +12020,7 @@
   border-radius: 8px
   box-sizing: border-box
   color: #f5f1ee
+  column-gap: <gap: 4px>
   cursor: pointer
   display: flex
   flex-direction: column
@@ -11934,6 +12037,7 @@
   padding-left: <padding: 12px 16px>
   padding-top: <padding: 12px 16px>
   position: relative
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   text-align: left
@@ -12255,6 +12359,7 @@
   border-bottom-right-radius: <border-radius: 8px>
   border-radius: 8px
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   flex-direction: row-reverse
   gap: 12px
@@ -12267,6 +12372,7 @@
   padding-bottom: <padding: 16px 12px>
   padding-left: <padding: 16px 12px>
   padding-top: <padding: 16px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: background 120ms ease
@@ -12565,6 +12671,7 @@
   align-items: center
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-variant-numeric: tabular-nums
@@ -12577,6 +12684,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   user-select: none
@@ -12704,6 +12812,7 @@
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -12715,6 +12824,7 @@
   padding-bottom: <padding: 16px 12px>
   padding-left: <padding: 16px 12px>
   padding-top: <padding: 16px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: background 120ms ease
@@ -12958,6 +13068,7 @@
   align-items: center
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 8px>
   cursor: pointer
   display: inline-flex
   font-size: 12px
@@ -12973,6 +13084,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: color 120ms ease
@@ -13133,6 +13245,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  column-gap: <gap: 4px>
   display: flex
   flex-direction: column
   gap: 4px
@@ -13145,6 +13258,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -13180,6 +13294,7 @@
   align-items: flex-start
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 8px>
   display: flex
   font-size: 12px
   gap: 8px
@@ -13193,6 +13308,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -13355,6 +13471,7 @@
   align-items: flex-start
   box-sizing: border-box
   color: #b8b3ae
+  column-gap: <gap: 8px>
   display: flex
   font-size: 12px
   gap: 8px
@@ -13368,6 +13485,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -13534,6 +13652,7 @@
   align-items: flex-start
   box-sizing: border-box
   color: #f0808f
+  column-gap: <gap: 8px>
   display: flex
   font-size: 12px
   gap: 8px
@@ -13547,6 +13666,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -13717,6 +13837,7 @@
   border-radius: 999px
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 8px>
   display: inline-flex
   font-size: 12px
   gap: 8px
@@ -13728,6 +13849,7 @@
   padding-bottom: <padding: 4px 12px>
   padding-left: <padding: 4px 12px>
   padding-top: <padding: 4px 12px>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -14230,6 +14352,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -14241,6 +14364,7 @@
   padding-bottom: <padding: 0>
   padding-left: 20px
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -14358,6 +14482,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -14369,6 +14494,7 @@
   padding-bottom: <padding: 0>
   padding-left: 20px
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -15089,6 +15215,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #b8b3ae
+  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -15105,6 +15232,7 @@
   padding-top: <padding: 4px 8px>
   position: absolute
   right: 8px
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   top: 8px
@@ -15354,6 +15482,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #6fd3a6
+  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -15370,6 +15499,7 @@
   padding-top: <padding: 4px 8px>
   position: absolute
   right: 8px
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   top: 8px
@@ -15710,6 +15840,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  column-gap: <gap: 4px>
   display: flex
   gap: 4px
   margin: 0
@@ -15721,6 +15852,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: opacity 120ms ease
@@ -15767,6 +15899,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -15781,6 +15914,7 @@
   padding-bottom: <padding: 0 8px>
   padding-left: <padding: 0 8px>
   padding-top: <padding: 0 8px>
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: color 120ms ease, background 120ms ease, border-color 120ms ease
@@ -15832,6 +15966,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #6fd3a6
+  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -15846,6 +15981,7 @@
   padding-bottom: <padding: 0 8px>
   padding-left: <padding: 0 8px>
   padding-top: <padding: 0 8px>
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: color 120ms ease, background 120ms ease, border-color 120ms ease
@@ -15891,6 +16027,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #6fd3a6
+  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -15905,6 +16042,7 @@
   padding-bottom: <padding: 0 8px>
   padding-left: <padding: 0 8px>
   padding-top: <padding: 0 8px>
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: color 120ms ease, background 120ms ease, border-color 120ms ease
@@ -16032,6 +16170,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #f0808f
+  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -16046,6 +16185,7 @@
   padding-bottom: <padding: 0 8px>
   padding-left: <padding: 0 8px>
   padding-top: <padding: 0 8px>
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: color 120ms ease, background 120ms ease, border-color 120ms ease
@@ -16164,6 +16304,7 @@
   align-items: center
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-variant-numeric: tabular-nums
@@ -16176,6 +16317,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   user-select: none
@@ -16303,6 +16445,7 @@
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -16314,6 +16457,7 @@
   padding-bottom: <padding: 16px 12px>
   padding-left: <padding: 16px 12px>
   padding-top: <padding: 16px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: background 120ms ease
@@ -16682,6 +16826,7 @@
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -16693,6 +16838,7 @@
   padding-bottom: <padding: 16px 12px>
   padding-left: <padding: 16px 12px>
   padding-top: <padding: 16px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: background 120ms ease
@@ -16890,6 +17036,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -16902,6 +17049,7 @@
   padding-bottom: <padding: 4px 0>
   padding-left: <padding: 4px 0>
   padding-top: <padding: 4px 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -17143,6 +17291,7 @@
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -17154,6 +17303,7 @@
   padding-bottom: <padding: 16px 12px>
   padding-left: <padding: 16px 12px>
   padding-top: <padding: 16px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: background 120ms ease
@@ -17452,6 +17602,7 @@
   align-items: center
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 4px>
   display: inline-flex
   font-size: 12px
   gap: 4px
@@ -17463,6 +17614,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -17585,6 +17737,7 @@
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -17596,6 +17749,7 @@
   padding-bottom: <padding: 16px 12px>
   padding-left: <padding: 16px 12px>
   padding-top: <padding: 16px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: background 120ms ease
@@ -17980,6 +18134,7 @@
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -17991,6 +18146,7 @@
   padding-bottom: <padding: 16px 12px>
   padding-left: <padding: 16px 12px>
   padding-top: <padding: 16px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: background 120ms ease
@@ -18445,6 +18601,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   justify-content: center
@@ -18456,6 +18613,7 @@
   padding-bottom: <padding: 4px 24px 12px>
   padding-left: <padding: 4px 24px 12px>
   padding-top: <padding: 4px 24px 12px>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -18500,6 +18658,7 @@
   border-radius: 999px
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 8px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -18514,6 +18673,7 @@
   padding-bottom: <padding: 0 12px>
   padding-left: <padding: 0 12px>
   padding-top: <padding: 0 12px>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: color 120ms ease, border-color 120ms ease, background 120ms ease
@@ -18646,6 +18806,7 @@
   border-radius: 999px
   box-sizing: border-box
   color: #8d8880
+  column-gap: <gap: 8px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -18660,6 +18821,7 @@
   padding-bottom: <padding: 0 12px>
   padding-left: <padding: 0 12px>
   padding-top: <padding: 0 12px>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: color 120ms ease, border-color 120ms ease, background 120ms ease
@@ -18850,6 +19012,7 @@
   border-radius: 12px
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 24px 60px rgba(0, 0, 0, 0.55), 0 0 0 4px rgba(240, 138, 163, 0.12)
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex: 1
   flex-direction: column
@@ -18865,6 +19028,7 @@
   padding-left: <padding: 12px 12px calc(32px + 20px)>
   padding-top: <padding: 12px 12px calc(32px + 20px)>
   position: relative
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: border-color 200ms cubic-bezier(0.16, 1, 0.3, 1), background 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1)
@@ -19028,6 +19192,7 @@
   border-radius: 12px
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 24px 60px rgba(0, 0, 0, 0.55)
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex: 1
   flex-direction: column
@@ -19043,6 +19208,7 @@
   padding-left: <padding: 12px 12px calc(32px + 20px)>
   padding-top: <padding: 12px 12px calc(32px + 20px)>
   position: relative
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   transition: border-color 200ms cubic-bezier(0.16, 1, 0.3, 1), background 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1)
@@ -19723,6 +19889,7 @@
   align-items: center
   box-sizing: border-box
   color: #b8b3ae
+  column-gap: <gap: 8px>
   display: flex
   flex-wrap: wrap
   font-size: 12px
@@ -19735,6 +19902,7 @@
   padding-bottom: <padding: 8px 12px>
   padding-left: <padding: 8px 12px>
   padding-top: <padding: 8px 12px>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -19869,6 +20037,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-wrap: wrap
   gap: 8px
@@ -19881,6 +20050,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -19924,6 +20094,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #b8b3ae
+  column-gap: <gap: 8px>
   display: inline-flex
   font-size: 12px
   gap: 8px
@@ -19936,6 +20107,7 @@
   padding-bottom: <padding: 4px 8px>
   padding-left: <padding: 4px 8px>
   padding-top: <padding: 4px 8px>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -20163,6 +20335,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #b8b3ae
+  column-gap: <gap: 8px>
   display: inline-flex
   font-size: 12px
   gap: 8px
@@ -20175,6 +20348,7 @@
   padding-bottom: <padding: 4px 8px>
   padding-left: <padding: 4px 8px>
   padding-top: <padding: 4px 8px>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -20454,6 +20628,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -20464,6 +20639,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -21693,6 +21869,7 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 8px 30px rgba(50, 36, 28, 0.10)
   box-sizing: border-box
   color: #241a16
+  column-gap: <gap: 12px>
   display: flex
   font-family: 'Switzer', system-ui, sans-serif
   font-size: 13px
@@ -21706,6 +21883,7 @@
   padding-bottom: <padding: 12px 16px>
   padding-left: <padding: 12px 16px>
   padding-top: <padding: 12px 16px>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   user-select: none
@@ -21881,6 +22059,7 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -21891,6 +22070,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -22165,6 +22345,7 @@
   align-items: center
   border-bottom: 1px solid rgba(50, 36, 28, 0.12)
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -22175,6 +22356,7 @@
   padding-bottom: <padding: 12px 16px>
   padding-left: <padding: 12px 16px>
   padding-top: <padding: 12px 16px>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -22359,6 +22541,7 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  column-gap: <gap: 2px>
   display: flex
   flex-direction: column
   gap: 2px
@@ -22371,6 +22554,7 @@
   padding-bottom: <padding: 8px>
   padding-left: <padding: 8px>
   padding-top: <padding: 8px>
+  row-gap: <gap: 2px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -22459,6 +22643,7 @@
   border-radius: 6px
   box-sizing: border-box
   color: #241a16
+  column-gap: <gap: 12px>
   cursor: pointer
   display: flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -22473,6 +22658,7 @@
   padding-bottom: <padding: 0 12px>
   padding-left: <padding: 0 12px>
   padding-top: <padding: 0 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   text-align: left
@@ -22660,6 +22846,7 @@
   border-radius: 6px
   box-sizing: border-box
   color: #5c4b40
+  column-gap: <gap: 12px>
   cursor: pointer
   display: flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -22674,6 +22861,7 @@
   padding-bottom: <padding: 0 12px>
   padding-left: <padding: 0 12px>
   padding-top: <padding: 0 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   text-align: left
@@ -22853,6 +23041,7 @@
   border-top: 1px solid rgba(50, 36, 28, 0.12)
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 16px>
   display: flex
   font-size: 11px
   gap: 16px
@@ -22864,6 +23053,7 @@
   padding-bottom: <padding: 8px 16px>
   padding-left: <padding: 8px 16px>
   padding-top: <padding: 8px 16px>
+  row-gap: <gap: 16px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -22898,6 +23088,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 4px>
   display: inline-flex
   gap: 4px
   margin: 0
@@ -22908,6 +23099,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -23042,6 +23234,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 4px>
   display: inline-flex
   gap: 4px
   margin: 0
@@ -23052,6 +23245,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -23136,6 +23330,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 4px>
   display: inline-flex
   gap: 4px
   margin: 0
@@ -23146,6 +23341,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -23276,6 +23472,7 @@
   align-items: center
   border-bottom: 1px solid rgba(50, 36, 28, 0.12)
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-shrink: 0
   gap: 8px
@@ -23289,6 +23486,7 @@
   padding-left: <padding: 0 12px>
   padding-top: <padding: 0 12px>
   position: relative
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -23623,6 +23821,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex: 1
   flex-shrink: <flex: 1>
@@ -23636,6 +23835,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -23771,6 +23971,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-direction: row
   flex-shrink: 0
@@ -23784,6 +23985,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -23828,6 +24030,7 @@
   border-radius: 6px
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 8px>
   cursor: pointer
   display: flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -23842,6 +24045,7 @@
   padding-bottom: <padding: 0 12px>
   padding-left: <padding: 0 12px>
   padding-top: <padding: 0 12px>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: color 120ms ease, border-color 120ms ease, background 120ms ease
@@ -24064,6 +24268,7 @@
   border-radius: 6px
   box-sizing: border-box
   color: #b31a54
+  column-gap: <gap: 8px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -24079,6 +24284,7 @@
   padding-bottom: <padding: 0 12px>
   padding-left: <padding: 0 12px>
   padding-top: <padding: 0 12px>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: background 120ms ease, border-color 120ms ease
@@ -24655,6 +24861,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: none
   flex: 1
   flex-direction: column
@@ -24669,6 +24876,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -25046,6 +25254,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 4px>
   display: flex
   flex-direction: column
   gap: 4px
@@ -25060,6 +25269,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -25406,6 +25616,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -25416,6 +25627,7 @@
   padding-bottom: 8px
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -25461,6 +25673,7 @@
   box-shadow: 0 2px 12px rgba(179, 26, 84, 0.18)
   box-sizing: border-box
   color: #fffaf7
+  column-gap: <gap: 8px>
   cursor: pointer
   display: flex
   flex: 1
@@ -25480,6 +25693,7 @@
   padding-bottom: <padding: 0 12px>
   padding-left: <padding: 0 12px>
   padding-top: <padding: 0 12px>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: transform 120ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1), filter 120ms ease
@@ -25762,6 +25976,7 @@
   border-radius: 6px
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   height: 32px
@@ -25773,6 +25988,7 @@
   padding-bottom: <padding: 0 8px>
   padding-left: <padding: 0 8px>
   padding-top: <padding: 0 8px>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: border-color 120ms ease, background 120ms ease
@@ -26422,6 +26638,7 @@
   background-size: <background: #f8f4ed>
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-weight: 700
@@ -26436,6 +26653,7 @@
   padding-left: <padding: 4px 8px 8px>
   padding-top: <padding: 4px 8px 8px>
   position: sticky
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   text-transform: uppercase
@@ -26496,6 +26714,7 @@
   border-radius: 6px
   box-sizing: border-box
   color: #241a16
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -26508,6 +26727,7 @@
   padding-left: <padding: 0 8px 0 4px>
   padding-top: <padding: 0 8px 0 4px>
   position: relative
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: background 120ms ease, color 120ms ease, border-color 120ms ease
@@ -26611,6 +26831,7 @@
   border-bottom-right-radius: <border-radius: 6px>
   border-radius: 6px
   box-sizing: border-box
+  column-gap: <gap: 2px>
   display: flex
   gap: 2px
   margin: 0
@@ -26625,6 +26846,7 @@
   pointer-events: none
   position: absolute
   right: 4px
+  row-gap: <gap: 2px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   top: 50%
@@ -27152,6 +27374,7 @@
   background-size: <background: #f8f4ed>
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-weight: 700
@@ -27166,6 +27389,7 @@
   padding-left: <padding: 4px 8px 8px>
   padding-top: <padding: 4px 8px 8px>
   position: sticky
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   text-transform: uppercase
@@ -27209,6 +27433,7 @@
   border-radius: 6px
   box-sizing: border-box
   color: #5c4b40
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -27221,6 +27446,7 @@
   padding-left: <padding: 0 8px 0 4px>
   padding-top: <padding: 0 8px 0 4px>
   position: relative
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: background 120ms ease, color 120ms ease, border-color 120ms ease
@@ -27326,6 +27552,7 @@
   border-bottom-right-radius: <border-radius: 6px>
   border-radius: 6px
   box-sizing: border-box
+  column-gap: <gap: 2px>
   display: flex
   gap: 2px
   margin: 0
@@ -27340,6 +27567,7 @@
   pointer-events: none
   position: absolute
   right: 4px
+  row-gap: <gap: 2px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   top: 50%
@@ -27581,6 +27809,7 @@
   background-size: <background: #f8f4ed>
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-weight: 700
@@ -27595,6 +27824,7 @@
   padding-left: <padding: 4px 8px 8px>
   padding-top: <padding: 4px 8px 8px>
   position: sticky
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   text-transform: uppercase
@@ -27638,6 +27868,7 @@
   border-radius: 6px
   box-sizing: border-box
   color: #5c4b40
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -27650,6 +27881,7 @@
   padding-left: <padding: 0 8px 0 4px>
   padding-top: <padding: 0 8px 0 4px>
   position: relative
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: background 120ms ease, color 120ms ease, border-color 120ms ease
@@ -27754,6 +27986,7 @@
   align-items: center
   border-top: 1px solid rgba(50, 36, 28, 0.12)
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -27764,6 +27997,7 @@
   padding-bottom: <padding: 8px 4px>
   padding-left: <padding: 8px 4px>
   padding-top: <padding: 8px 4px>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   user-select: none
@@ -28208,6 +28442,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex: 1
   flex-direction: column
@@ -28222,6 +28457,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -28256,6 +28492,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 4px>
   display: flex
   flex-direction: column
   gap: 4px
@@ -28270,6 +28507,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -29320,6 +29558,7 @@
   align-items: center
   border-bottom: 1px solid rgba(50, 36, 28, 0.12)
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   flex-shrink: 0
   gap: 12px
@@ -29332,6 +29571,7 @@
   padding-bottom: <padding: 16px 20px>
   padding-left: <padding: 16px 20px>
   padding-top: <padding: 16px 20px>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -29607,6 +29847,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   flex-direction: row
   gap: 12px
@@ -29619,6 +29860,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -29709,6 +29951,7 @@
   border-color: <border: 1px solid rgba(50, 36, 28, 0.12)>
   border-radius: 999px
   box-sizing: border-box
+  column-gap: <gap: 12px>
   cursor: pointer
   display: flex
   gap: 12px
@@ -29720,6 +29963,7 @@
   padding-bottom: <padding: 8px 12px>
   padding-left: <padding: 8px 12px>
   padding-top: <padding: 8px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: background 120ms ease, border-color 120ms ease
@@ -29869,6 +30113,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   flex-direction: row
   gap: 12px
@@ -29881,6 +30126,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -29981,6 +30227,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   flex-direction: row
   gap: 12px
@@ -29993,6 +30240,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -30093,6 +30341,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: block
   flex-direction: row
   gap: 12px
@@ -30105,6 +30354,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -30287,6 +30537,7 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -30299,6 +30550,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -30341,6 +30593,7 @@
   border-color: <border: 1px solid rgba(50, 36, 28, 0.12)>
   border-radius: 6px
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   justify-content: space-between
@@ -30352,6 +30605,7 @@
   padding-bottom: <padding: 8px 12px>
   padding-left: <padding: 8px 12px>
   padding-top: <padding: 8px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -30651,6 +30905,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -30661,6 +30916,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -30965,6 +31221,7 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  column-gap: <gap: 4px>
   display: flex
   gap: 4px
   margin: 0
@@ -30976,6 +31233,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: opacity 120ms ease
@@ -31022,6 +31280,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -31036,6 +31295,7 @@
   padding-bottom: <padding: 0 8px>
   padding-left: <padding: 0 8px>
   padding-top: <padding: 0 8px>
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: color 120ms ease, background 120ms ease, border-color 120ms ease
@@ -31087,6 +31347,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -31101,6 +31362,7 @@
   padding-bottom: <padding: 0 8px>
   padding-left: <padding: 0 8px>
   padding-top: <padding: 0 8px>
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: color 120ms ease, background 120ms ease, border-color 120ms ease
@@ -31192,6 +31454,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -31202,6 +31465,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -31474,6 +31738,7 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: grid
   gap: 12px
   margin: 0
@@ -31484,6 +31749,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -31566,6 +31832,7 @@
   align-items: center
   box-sizing: border-box
   color: #241a16
+  column-gap: <gap: 8px>
   display: flex
   font-family: 'Clash Grotesk', system-ui, sans-serif
   font-size: 16px
@@ -31579,6 +31846,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -31746,6 +32014,7 @@
   align-items: center
   box-sizing: border-box
   color: #241a16
+  column-gap: <gap: 8px>
   display: flex
   font-family: 'Clash Grotesk', system-ui, sans-serif
   font-size: 16px
@@ -31759,6 +32028,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -31968,6 +32238,7 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -31979,6 +32250,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -32426,6 +32698,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   flex-direction: column
   gap: 12px
@@ -32440,6 +32713,7 @@
   padding-left: <padding: 24px 0>
   padding-top: <padding: 24px 0>
   position: relative
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   text-align: center
@@ -32810,6 +33084,7 @@
   animation-duration: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards>
   animation-iteration-count: <animation: emptyRise 320ms cubic-bezier(0.16, 1, 0.3, 1) 260ms backwards>
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: grid
   gap: 8px
   grid-template-columns: repeat(2, minmax(0, 1fr))
@@ -32823,6 +33098,7 @@
   padding-left: <padding: 0>
   padding-top: <padding: 0>
   position: relative
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   width: 100%
@@ -32882,6 +33158,7 @@
   border-radius: 8px
   box-sizing: border-box
   color: #241a16
+  column-gap: <gap: 4px>
   cursor: pointer
   display: flex
   flex-direction: column
@@ -32898,6 +33175,7 @@
   padding-left: <padding: 12px 16px>
   padding-top: <padding: 12px 16px>
   position: relative
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   text-align: left
@@ -33192,6 +33470,7 @@
   border-radius: 8px
   box-sizing: border-box
   color: #241a16
+  column-gap: <gap: 4px>
   cursor: pointer
   display: flex
   flex-direction: column
@@ -33208,6 +33487,7 @@
   padding-left: <padding: 12px 16px>
   padding-top: <padding: 12px 16px>
   position: relative
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   text-align: left
@@ -33529,6 +33809,7 @@
   border-bottom-right-radius: <border-radius: 8px>
   border-radius: 8px
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   flex-direction: row-reverse
   gap: 12px
@@ -33541,6 +33822,7 @@
   padding-bottom: <padding: 16px 12px>
   padding-left: <padding: 16px 12px>
   padding-top: <padding: 16px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: background 120ms ease
@@ -33839,6 +34121,7 @@
   align-items: center
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-variant-numeric: tabular-nums
@@ -33851,6 +34134,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   user-select: none
@@ -33978,6 +34262,7 @@
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -33989,6 +34274,7 @@
   padding-bottom: <padding: 16px 12px>
   padding-left: <padding: 16px 12px>
   padding-top: <padding: 16px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: background 120ms ease
@@ -34232,6 +34518,7 @@
   align-items: center
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 8px>
   cursor: pointer
   display: inline-flex
   font-size: 12px
@@ -34247,6 +34534,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: color 120ms ease
@@ -34407,6 +34695,7 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  column-gap: <gap: 4px>
   display: flex
   flex-direction: column
   gap: 4px
@@ -34419,6 +34708,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -34454,6 +34744,7 @@
   align-items: flex-start
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 8px>
   display: flex
   font-size: 12px
   gap: 8px
@@ -34467,6 +34758,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -34629,6 +34921,7 @@
   align-items: flex-start
   box-sizing: border-box
   color: #5c4b40
+  column-gap: <gap: 8px>
   display: flex
   font-size: 12px
   gap: 8px
@@ -34642,6 +34935,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -34808,6 +35102,7 @@
   align-items: flex-start
   box-sizing: border-box
   color: #a3172b
+  column-gap: <gap: 8px>
   display: flex
   font-size: 12px
   gap: 8px
@@ -34821,6 +35116,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -34991,6 +35287,7 @@
   border-radius: 999px
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 8px>
   display: inline-flex
   font-size: 12px
   gap: 8px
@@ -35002,6 +35299,7 @@
   padding-bottom: <padding: 4px 12px>
   padding-left: <padding: 4px 12px>
   padding-top: <padding: 4px 12px>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -35504,6 +35802,7 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -35515,6 +35814,7 @@
   padding-bottom: <padding: 0>
   padding-left: 20px
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -35632,6 +35932,7 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -35643,6 +35944,7 @@
   padding-bottom: <padding: 0>
   padding-left: 20px
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -36363,6 +36665,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #5c4b40
+  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -36379,6 +36682,7 @@
   padding-top: <padding: 4px 8px>
   position: absolute
   right: 8px
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   top: 8px
@@ -36628,6 +36932,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #1f7a52
+  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -36644,6 +36949,7 @@
   padding-top: <padding: 4px 8px>
   position: absolute
   right: 8px
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   top: 8px
@@ -36984,6 +37290,7 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  column-gap: <gap: 4px>
   display: flex
   gap: 4px
   margin: 0
@@ -36995,6 +37302,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: opacity 120ms ease
@@ -37041,6 +37349,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -37055,6 +37364,7 @@
   padding-bottom: <padding: 0 8px>
   padding-left: <padding: 0 8px>
   padding-top: <padding: 0 8px>
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: color 120ms ease, background 120ms ease, border-color 120ms ease
@@ -37106,6 +37416,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #1f7a52
+  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -37120,6 +37431,7 @@
   padding-bottom: <padding: 0 8px>
   padding-left: <padding: 0 8px>
   padding-top: <padding: 0 8px>
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: color 120ms ease, background 120ms ease, border-color 120ms ease
@@ -37165,6 +37477,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #1f7a52
+  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -37179,6 +37492,7 @@
   padding-bottom: <padding: 0 8px>
   padding-left: <padding: 0 8px>
   padding-top: <padding: 0 8px>
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: color 120ms ease, background 120ms ease, border-color 120ms ease
@@ -37306,6 +37620,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #a3172b
+  column-gap: <gap: 4px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -37320,6 +37635,7 @@
   padding-bottom: <padding: 0 8px>
   padding-left: <padding: 0 8px>
   padding-top: <padding: 0 8px>
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: color 120ms ease, background 120ms ease, border-color 120ms ease
@@ -37438,6 +37754,7 @@
   align-items: center
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 8px>
   display: flex
   font-size: 11px
   font-variant-numeric: tabular-nums
@@ -37450,6 +37767,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   user-select: none
@@ -37577,6 +37895,7 @@
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -37588,6 +37907,7 @@
   padding-bottom: <padding: 16px 12px>
   padding-left: <padding: 16px 12px>
   padding-top: <padding: 16px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: background 120ms ease
@@ -37956,6 +38276,7 @@
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -37967,6 +38288,7 @@
   padding-bottom: <padding: 16px 12px>
   padding-left: <padding: 16px 12px>
   padding-top: <padding: 16px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: background 120ms ease
@@ -38164,6 +38486,7 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -38176,6 +38499,7 @@
   padding-bottom: <padding: 4px 0>
   padding-left: <padding: 4px 0>
   padding-top: <padding: 4px 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -38417,6 +38741,7 @@
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -38428,6 +38753,7 @@
   padding-bottom: <padding: 16px 12px>
   padding-left: <padding: 16px 12px>
   padding-top: <padding: 16px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: background 120ms ease
@@ -38726,6 +39052,7 @@
   align-items: center
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 4px>
   display: inline-flex
   font-size: 12px
   gap: 4px
@@ -38737,6 +39064,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 4px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -38859,6 +39187,7 @@
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -38870,6 +39199,7 @@
   padding-bottom: <padding: 16px 12px>
   padding-left: <padding: 16px 12px>
   padding-top: <padding: 16px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: background 120ms ease
@@ -39254,6 +39584,7 @@
   border-radius: 8px
   border-top: 1px solid transparent
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0 calc(12px * -1)
@@ -39265,6 +39596,7 @@
   padding-bottom: <padding: 16px 12px>
   padding-left: <padding: 16px 12px>
   padding-top: <padding: 16px 12px>
+  row-gap: <gap: 12px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: background 120ms ease
@@ -39719,6 +40051,7 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   justify-content: center
@@ -39730,6 +40063,7 @@
   padding-bottom: <padding: 4px 24px 12px>
   padding-left: <padding: 4px 24px 12px>
   padding-top: <padding: 4px 24px 12px>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -39774,6 +40108,7 @@
   border-radius: 999px
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 8px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -39788,6 +40123,7 @@
   padding-bottom: <padding: 0 12px>
   padding-left: <padding: 0 12px>
   padding-top: <padding: 0 12px>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: color 120ms ease, border-color 120ms ease, background 120ms ease
@@ -39920,6 +40256,7 @@
   border-radius: 999px
   box-sizing: border-box
   color: #6e5a4d
+  column-gap: <gap: 8px>
   cursor: pointer
   display: inline-flex
   font-family: 'Switzer', system-ui, sans-serif
@@ -39934,6 +40271,7 @@
   padding-bottom: <padding: 0 12px>
   padding-left: <padding: 0 12px>
   padding-top: <padding: 0 12px>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: color 120ms ease, border-color 120ms ease, background 120ms ease
@@ -40124,6 +40462,7 @@
   border-radius: 12px
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 24px 60px rgba(50, 36, 28, 0.14), 0 0 0 4px rgba(179, 26, 84, 0.10)
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex: 1
   flex-direction: column
@@ -40139,6 +40478,7 @@
   padding-left: <padding: 12px 12px calc(32px + 20px)>
   padding-top: <padding: 12px 12px calc(32px + 20px)>
   position: relative
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: border-color 200ms cubic-bezier(0.16, 1, 0.3, 1), background 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1)
@@ -40302,6 +40642,7 @@
   border-radius: 12px
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 24px 60px rgba(50, 36, 28, 0.14)
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex: 1
   flex-direction: column
@@ -40317,6 +40658,7 @@
   padding-left: <padding: 12px 12px calc(32px + 20px)>
   padding-top: <padding: 12px 12px calc(32px + 20px)>
   position: relative
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   transition: border-color 200ms cubic-bezier(0.16, 1, 0.3, 1), background 200ms cubic-bezier(0.16, 1, 0.3, 1), transform 200ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 200ms cubic-bezier(0.16, 1, 0.3, 1)
@@ -40997,6 +41339,7 @@
   align-items: center
   box-sizing: border-box
   color: #5c4b40
+  column-gap: <gap: 8px>
   display: flex
   flex-wrap: wrap
   font-size: 12px
@@ -41009,6 +41352,7 @@
   padding-bottom: <padding: 8px 12px>
   padding-left: <padding: 8px 12px>
   padding-top: <padding: 8px 12px>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -41143,6 +41487,7 @@
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-wrap: wrap
   gap: 8px
@@ -41155,6 +41500,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -41198,6 +41544,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #5c4b40
+  column-gap: <gap: 8px>
   display: inline-flex
   font-size: 12px
   gap: 8px
@@ -41210,6 +41557,7 @@
   padding-bottom: <padding: 4px 8px>
   padding-left: <padding: 4px 8px>
   padding-top: <padding: 4px 8px>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -41437,6 +41785,7 @@
   border-radius: 4px
   box-sizing: border-box
   color: #5c4b40
+  column-gap: <gap: 8px>
   display: inline-flex
   font-size: 12px
   gap: 8px
@@ -41449,6 +41798,7 @@
   padding-bottom: <padding: 4px 8px>
   padding-left: <padding: 4px 8px>
   padding-top: <padding: 4px 8px>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -41728,6 +42078,7 @@
   ::selection/color: #fffaf7
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -41738,6 +42089,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 8px>
   scrollbar-color: #d9cfbe transparent
   scrollbar-width: thin
   :hover
@@ -42973,6 +43325,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  column-gap: <gap: 10px>
   display: flex
   flex-wrap: wrap
   gap: 10px
@@ -42984,6 +43337,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 10px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -43225,6 +43579,7 @@
   background-image: radial-gradient(36% 28% at 12% -4%, rgba(240, 138, 163, 0.20) 0%, transparent 68%), radial-gradient(70% 56% at 18% 2%, rgba(240, 138, 163, 0.09) 0%, transparent 72%), radial-gradient(60% 50% at 92% 104%, rgba(111, 211, 166, 0.08) 0%, transparent 70%), radial-gradient(120% 100% at 50% 45%, transparent 46%, rgba(120, 92, 64, 0.09) 100%)
   background-size: <background: #0a0a0a>
   box-sizing: border-box
+  column-gap: <gap: 20px>
   display: flex
   flex-direction: column
   gap: 20px
@@ -43238,6 +43593,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 20px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   width: 100vw
@@ -43426,6 +43782,7 @@
   ::selection/color: #1a0e13
   align-items: flex-end
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   flex-direction: column
   gap: 8px
@@ -43439,6 +43796,7 @@
   padding-left: <padding: 0>
   padding-top: <padding: 0>
   pointer-events: auto
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   width: 100%
@@ -43489,6 +43847,7 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 30px rgba(0, 0, 0, 0.45)
   box-sizing: border-box
   color: #f5f1ee
+  column-gap: <gap: 12px>
   display: flex
   font-size: 13px
   gap: 12px
@@ -43502,6 +43861,7 @@
   padding-bottom: <padding: 12px 16px>
   padding-left: <padding: 12px 16px>
   padding-top: <padding: 12px 16px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -43696,6 +44056,7 @@
   border-radius: 999px
   box-sizing: border-box
   color: #b8b3ae
+  column-gap: <gap: 8px>
   display: inline-flex
   font-size: 12px
   gap: 8px
@@ -43708,6 +44069,7 @@
   padding-left: <padding: 4px 12px>
   padding-top: <padding: 4px 12px>
   pointer-events: auto
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -43805,6 +44167,7 @@
   border-radius: 999px
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 30px rgba(0, 0, 0, 0.45)
   box-sizing: border-box
+  column-gap: <gap: 8px>
   display: flex
   gap: 8px
   margin: 0
@@ -43817,6 +44180,7 @@
   padding-left: <padding: 8px 12px>
   padding-top: <padding: 8px 12px>
   pointer-events: auto
+  row-gap: <gap: 8px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   width: 100%
@@ -44965,6 +45329,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  column-gap: <gap: 24px>
   display: flex
   flex-direction: column
   gap: 24px
@@ -44980,6 +45345,7 @@
   padding-left: <padding: 48px 24px>
   padding-top: <padding: 48px 24px>
   position: relative
+  row-gap: <gap: 24px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   width: 100%
@@ -45207,6 +45573,7 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: <gap: 12px>
   display: flex
   gap: 12px
   margin: 0
@@ -45217,6 +45584,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -45341,8 +45709,9 @@
   ::selection/color: #1a0e13
   align-items: center
   box-sizing: border-box
+  column-gap: clamp(32px, 6vw, 88px)
   display: grid
-  gap: clamp(32px, 6vw, 88px)
+  grid-template-areas: "intro card" "proof card"
   grid-template-columns: minmax(0, 1fr) minmax(0, 380px)
   margin: 0
   margin-bottom: <margin: 0>
@@ -45352,6 +45721,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: 16px
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -45364,7 +45734,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[916] section.signin-thesis
+[916] section.signin-intro
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -45385,10 +45755,13 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   align-items: flex-start
+  align-self: end
   box-sizing: border-box
+  column-gap: <gap: 16px>
   display: flex
   flex-direction: column
   gap: 16px
+  grid-area: intro
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -45398,6 +45771,7 @@
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
   padding-top: <padding: 0>
+  row-gap: <gap: 16px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -45500,7 +45874,206 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[919] ol.council-ladder
+[919] p.signin-tagline
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  box-sizing: border-box
+  color: #b8b3ae
+  font-size: 13px
+  line-height: 1.65
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  max-width: 46ch
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  padding-top: <padding: 0>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  text-align: left
+  text-wrap: pretty
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[920] section.signin-proof
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  align-items: flex-start
+  align-self: start
+  box-sizing: border-box
+  column-gap: <gap: 16px>
+  display: flex
+  flex-direction: column
+  gap: 16px
+  grid-area: proof
+  margin: 0
+  margin-bottom: <margin: 0>
+  margin-left: <margin: 0>
+  margin-top: <margin: 0>
+  min-width: 0
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  padding-top: <padding: 0>
+  row-gap: <gap: 16px>
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[921] h2#council-proof-title.sr-only
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  border: 0
+  border-color: <border: 0>
+  box-sizing: border-box
+  clip-path: inset(50%)
+  height: 1px
+  margin: -1px
+  margin-bottom: <margin: -1px>
+  margin-left: <margin: -1px>
+  margin-top: <margin: -1px>
+  overflow: hidden
+  overflow-x: <overflow: hidden>
+  overflow-y: <overflow: hidden>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  padding-top: <padding: 0>
+  position: absolute
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  white-space: nowrap
+  width: 1px
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[922] p#council-scale.sr-only
+  ::-webkit-scrollbar-thumb/background: #282825
+  ::-webkit-scrollbar-thumb/background-clip: padding-box
+  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
+  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
+  ::-webkit-scrollbar-thumb/border: 3px solid transparent
+  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
+  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
+  ::-webkit-scrollbar-thumb/border-radius: 999px
+  ::-webkit-scrollbar-track/background: transparent
+  ::-webkit-scrollbar-track/background-clip: <background: transparent>
+  ::-webkit-scrollbar-track/background-image: <background: transparent>
+  ::-webkit-scrollbar-track/background-size: <background: transparent>
+  ::-webkit-scrollbar/height: 10px
+  ::-webkit-scrollbar/width: 10px
+  ::selection/background: #f08aa3
+  ::selection/background-clip: <background: #f08aa3>
+  ::selection/background-image: <background: #f08aa3>
+  ::selection/background-size: <background: #f08aa3>
+  ::selection/color: #1a0e13
+  border: 0
+  border-color: <border: 0>
+  box-sizing: border-box
+  clip-path: inset(50%)
+  height: 1px
+  margin: -1px
+  margin-bottom: <margin: -1px>
+  margin-left: <margin: -1px>
+  margin-top: <margin: -1px>
+  overflow: hidden
+  overflow-x: <overflow: hidden>
+  overflow-y: <overflow: hidden>
+  padding: 0
+  padding-bottom: <padding: 0>
+  padding-left: <padding: 0>
+  padding-top: <padding: 0>
+  position: absolute
+  scrollbar-color: #282825 transparent
+  scrollbar-width: thin
+  white-space: nowrap
+  width: 1px
+  :hover
+    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
+    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
+    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
+  :focus-visible
+    border-bottom-right-radius: <border-radius: 4px>
+    border-radius: 4px
+    outline: 2px solid #f08aa3
+    outline-offset: 2px
+
+[923] ol.council-ladder
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -45545,7 +46118,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[920] li.council-row
+[924] li.council-row
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -45572,6 +46145,7 @@
   animation-iteration-count: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   box-sizing: border-box
   color: #b8b3ae
+  column-gap: <gap: 12px>
   display: flex
   font-size: 13px
   gap: 12px
@@ -45583,6 +46157,7 @@
   padding-bottom: <padding: 7px 0 7px 16px>
   padding-left: <padding: 7px 0 7px 16px>
   padding-top: <padding: 7px 0 7px 16px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -45595,7 +46170,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[921] span.council-temp
+[925] span.council-temp
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -45642,7 +46217,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[922] span.council-name
+[926] span.council-name
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -45693,7 +46268,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[923] li.council-row.is-pro
+[927] li.council-row.is-pro
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -45720,6 +46295,7 @@
   animation-iteration-count: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   box-sizing: border-box
   color: #b8b3ae
+  column-gap: <gap: 12px>
   display: flex
   font-size: 13px
   gap: 12px
@@ -45731,6 +46307,7 @@
   padding-bottom: <padding: 7px 0 7px 16px>
   padding-left: <padding: 7px 0 7px 16px>
   padding-top: <padding: 7px 0 7px 16px>
+  row-gap: <gap: 12px>
   scrollbar-color: #282825 transparent
   scrollbar-width: thin
   :hover
@@ -45743,7 +46320,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[924] span.council-temp
+[928] span.council-temp
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -45790,7 +46367,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[925] span.council-name
+[929] span.council-name
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -45841,7 +46418,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[926] span.council-tag
+[930] span.council-tag
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -45889,7 +46466,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[927] p.council-resolve
+[931] p.council-resolve
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -45948,7 +46525,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[928] svg.sakura-seal.signin-seal
+[932] svg.sakura-seal.signin-seal
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -45997,7 +46574,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[929] rect
+[933] rect
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -46038,7 +46615,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[930] p.signin-tagline
+[934] section.signin-card
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -46058,53 +46635,7 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
-  box-sizing: border-box
-  color: #b8b3ae
-  font-size: 13px
-  line-height: 1.65
-  margin: 0
-  margin-bottom: <margin: 0>
-  margin-left: <margin: 0>
-  margin-top: <margin: 0>
-  max-width: 46ch
-  padding: 0
-  padding-bottom: <padding: 0>
-  padding-left: <padding: 0>
-  padding-top: <padding: 0>
-  scrollbar-color: #282825 transparent
-  scrollbar-width: thin
-  text-align: left
-  text-wrap: pretty
-  :hover
-    ::-webkit-scrollbar-thumb/background: rgba(240, 138, 163, 0.12)
-    ::-webkit-scrollbar-thumb/background-image: <background: rgba(240, 138, 163, 0.12)>
-    ::-webkit-scrollbar-thumb/background-size: <background: rgba(240, 138, 163, 0.12)>
-  :focus-visible
-    border-bottom-right-radius: <border-radius: 4px>
-    border-radius: 4px
-    outline: 2px solid #f08aa3
-    outline-offset: 2px
-
-[931] section.signin-card
-  ::-webkit-scrollbar-thumb/background: #282825
-  ::-webkit-scrollbar-thumb/background-clip: padding-box
-  ::-webkit-scrollbar-thumb/background-image: <background: #282825>
-  ::-webkit-scrollbar-thumb/background-size: <background: #282825>
-  ::-webkit-scrollbar-thumb/border: 3px solid transparent
-  ::-webkit-scrollbar-thumb/border-bottom-right-radius: <border-radius: 999px>
-  ::-webkit-scrollbar-thumb/border-color: <border: 3px solid transparent>
-  ::-webkit-scrollbar-thumb/border-radius: 999px
-  ::-webkit-scrollbar-track/background: transparent
-  ::-webkit-scrollbar-track/background-clip: <background: transparent>
-  ::-webkit-scrollbar-track/background-image: <background: transparent>
-  ::-webkit-scrollbar-track/background-size: <background: transparent>
-  ::-webkit-scrollbar/height: 10px
-  ::-webkit-scrollbar/width: 10px
-  ::selection/background: #f08aa3
-  ::selection/background-clip: <background: #f08aa3>
-  ::selection/background-image: <background: #f08aa3>
-  ::selection/background-size: <background: #f08aa3>
-  ::selection/color: #1a0e13
+  align-self: center
   background: #101010
   background-clip: <background: #101010>
   background-image: <background: #101010>
@@ -46115,6 +46646,7 @@
   border-radius: 12px
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 24px 60px rgba(0, 0, 0, 0.55)
   box-sizing: border-box
+  grid-area: card
   margin: 0
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
@@ -46135,7 +46667,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[932] h2.signin-card-title
+[935] h2.signin-card-title
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -46182,7 +46714,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[933] div.signin-card-inner
+[936] div.signin-card-inner
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -46223,7 +46755,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[934] div.signin-card-loading
+[937] div.signin-card-loading
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -46272,7 +46804,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[935] p.signin-plan
+[938] p.signin-plan
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -46316,7 +46848,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[936] p.signin-legal
+[939] p.signin-legal
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
   ::-webkit-scrollbar-thumb/background-image: <background: #282825>
@@ -46364,7 +46896,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[937] a
+[940] a
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -46412,7 +46944,7 @@
     outline: 2px solid #f08aa3
     outline-offset: 2px
 
-[938] a
+[941] a
   -webkit-tap-highlight-color: transparent
   ::-webkit-scrollbar-thumb/background: #282825
   ::-webkit-scrollbar-thumb/background-clip: padding-box
@@ -46575,31 +47107,35 @@
   - display: flex
 
 [915] div.signin-grid
-  gap: 24px
+  grid-template-areas: "intro" "card" "proof"
   grid-template-columns: minmax(0, 1fr)
   justify-items: center
-  - gap: clamp(32px, 6vw, 88px)
+  row-gap: 20px
+  - grid-template-areas: "intro card" "proof card"
   - grid-template-columns: minmax(0, 1fr) minmax(0, 380px)
+  - row-gap: 16px
 
-[916] section.signin-thesis
+[916] section.signin-intro
   align-items: center
-  order: 2
+  width: min(100%, 34rem)
   - align-items: flex-start
 
 [917] h1.signin-title
   text-align: center
   - text-align: left
 
-[919] ol.council-ladder
-  max-width: 30ch
-  - max-width: 34ch
-
-[930] p.signin-tagline
+[919] p.signin-tagline
   text-align: center
   - text-align: left
 
-[931] section.signin-card
-  order: 1
+[920] section.signin-proof
+  align-items: center
+  width: min(100%, 34rem)
+  - align-items: flex-start
+
+[923] ol.council-ladder
+  max-width: 30ch
+  - max-width: 34ch
 
 === width=400 (changes vs width=1400) ===
 
@@ -46804,92 +47340,120 @@
   - max-width: 580px
 
 [245] div.msg-row.user
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [249] div.bubble.markdown-body
   max-width: 92%
   - max-width: min(78%, 60ch)
 
 [254] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [330] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [337] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [346] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [355] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [363] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [372] div.chat-toolbar
   padding: 0 16px 8px
@@ -47148,92 +47712,120 @@
   - max-width: 580px
 
 [675] div.msg-row.user
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [679] div.bubble.markdown-body
   max-width: 92%
   - max-width: min(78%, 60ch)
 
 [684] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [760] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [767] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [776] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [785] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [793] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [802] div.chat-toolbar
   padding: 0 16px 8px
@@ -47300,43 +47892,53 @@
   - display: flex
 
 [907] div.signin-wrap
+  column-gap: <gap: 16px>
   gap: 16px
   padding: 40px 16px
   padding-bottom: <padding: 40px 16px>
   padding-left: <padding: 40px 16px>
   padding-top: <padding: 40px 16px>
+  row-gap: <gap: 16px>
+  - column-gap: <gap: 24px>
   - gap: 24px
   - padding: 48px 24px
   - padding-bottom: <padding: 48px 24px>
   - padding-left: <padding: 48px 24px>
   - padding-top: <padding: 48px 24px>
+  - row-gap: <gap: 24px>
 
 [915] div.signin-grid
-  gap: 24px
+  grid-template-areas: "intro" "card" "proof"
   grid-template-columns: minmax(0, 1fr)
   justify-items: center
-  - gap: clamp(32px, 6vw, 88px)
+  row-gap: 20px
+  - grid-template-areas: "intro card" "proof card"
   - grid-template-columns: minmax(0, 1fr) minmax(0, 380px)
+  - row-gap: 16px
 
-[916] section.signin-thesis
+[916] section.signin-intro
   align-items: center
-  order: 2
+  width: min(100%, 34rem)
   - align-items: flex-start
 
 [917] h1.signin-title
   text-align: center
   - text-align: left
 
-[919] ol.council-ladder
-  max-width: 30ch
-  - max-width: 34ch
-
-[930] p.signin-tagline
+[919] p.signin-tagline
   text-align: center
   - text-align: left
 
-[931] section.signin-card
-  order: 1
+[920] section.signin-proof
+  align-items: center
+  width: min(100%, 34rem)
+  - align-items: flex-start
+
+[923] ol.council-ladder
+  max-width: 30ch
+  - max-width: 34ch
+
+[934] section.signin-card
   padding: 18px
   padding-bottom: <padding: 18px>
   padding-left: <padding: 18px>
@@ -47346,7 +47948,7 @@
   - padding-left: <padding: 20px>
   - padding-top: <padding: 20px>
 
-[934] div.signin-card-loading
+[937] div.signin-card-loading
   min-height: 306px
   - min-height: 342px
 
@@ -57923,7 +58525,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[916] section.signin-thesis
+[916] section.signin-intro
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -57956,7 +58558,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[919] ol.council-ladder
+[919] p.signin-tagline
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -57967,7 +58569,51 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[920] li.council-row
+[920] section.signin-proof
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[921] h2#council-proof-title.sr-only
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[922] p#council-scale.sr-only
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[923] ol.council-ladder
+  ::after/animation-duration: 0.01ms
+  ::after/animation-iteration-count: 1
+  ::after/transition-duration: 0.01ms
+  ::before/animation-duration: 0.01ms
+  ::before/animation-iteration-count: 1
+  ::before/transition-duration: 0.01ms
+  animation-duration: 0.01ms
+  animation-iteration-count: 1
+  transition-duration: 0.01ms
+
+[924] li.council-row
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -57980,7 +58626,7 @@
   - animation-duration: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   - animation-iteration-count: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
 
-[921] span.council-temp
+[925] span.council-temp
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -57991,7 +58637,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[922] span.council-name
+[926] span.council-name
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58002,7 +58648,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[923] li.council-row.is-pro
+[927] li.council-row.is-pro
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58015,7 +58661,7 @@
   - animation-duration: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
   - animation-iteration-count: <animation: councilRow 380ms cubic-bezier(0.16, 1, 0.3, 1) backwards>
 
-[924] span.council-temp
+[928] span.council-temp
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58026,7 +58672,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[925] span.council-name
+[929] span.council-name
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58037,7 +58683,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[926] span.council-tag
+[930] span.council-tag
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58048,7 +58694,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[927] p.council-resolve
+[931] p.council-resolve
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58061,7 +58707,7 @@
   - animation-duration: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
   - animation-iteration-count: <animation: councilResolve 420ms cubic-bezier(0.16, 1, 0.3, 1) 560ms backwards>
 
-[928] svg.sakura-seal.signin-seal
+[932] svg.sakura-seal.signin-seal
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58074,7 +58720,7 @@
   - animation-duration: <animation: signinSealStamp 320ms cubic-bezier(0.16, 1, 0.3, 1) 980ms forwards>
   - animation-iteration-count: <animation: signinSealStamp 320ms cubic-bezier(0.16, 1, 0.3, 1) 980ms forwards>
 
-[929] rect
+[933] rect
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58085,7 +58731,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[930] p.signin-tagline
+[934] section.signin-card
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58096,7 +58742,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[931] section.signin-card
+[935] h2.signin-card-title
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58107,7 +58753,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[932] h2.signin-card-title
+[936] div.signin-card-inner
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58118,7 +58764,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[933] div.signin-card-inner
+[937] div.signin-card-loading
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58129,7 +58775,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[934] div.signin-card-loading
+[938] p.signin-plan
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58140,7 +58786,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[935] p.signin-plan
+[939] p.signin-legal
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58151,18 +58797,7 @@
   animation-iteration-count: 1
   transition-duration: 0.01ms
 
-[936] p.signin-legal
-  ::after/animation-duration: 0.01ms
-  ::after/animation-iteration-count: 1
-  ::after/transition-duration: 0.01ms
-  ::before/animation-duration: 0.01ms
-  ::before/animation-iteration-count: 1
-  ::before/transition-duration: 0.01ms
-  animation-duration: 0.01ms
-  animation-iteration-count: 1
-  transition-duration: 0.01ms
-
-[937] a
+[940] a
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58174,7 +58809,7 @@
   transition-duration: 0.01ms
   - transition-duration: <transition: color 0.15s>
 
-[938] a
+[941] a
   ::after/animation-duration: 0.01ms
   ::after/animation-iteration-count: 1
   ::after/transition-duration: 0.01ms
@@ -58416,96 +59051,124 @@
   - transform: translateY(-2px)
 
 [245] div.msg-row.user
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [249] div.bubble.markdown-body
   max-width: 92%
   - max-width: min(78%, 60ch)
 
 [254] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [330] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [336] img.msg-image
   :hover
   - transform: scale(1.01)
 
 [337] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [346] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [355] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [363] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [372] div.chat-toolbar
   padding: 0 16px 8px
@@ -58799,96 +59462,124 @@
   - transform: translateY(-2px)
 
 [675] div.msg-row.user
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [679] div.bubble.markdown-body
   max-width: 92%
   - max-width: min(78%, 60ch)
 
 [684] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [760] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [766] img.msg-image
   :hover
   - transform: scale(1.01)
 
 [767] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [776] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [785] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [793] div.msg-row.assistant
+  column-gap: <gap: 8px>
   gap: 8px
   padding: 12px 0
   padding-bottom: <padding: 12px 0>
   padding-left: <padding: 12px 0>
   padding-top: <padding: 12px 0>
+  row-gap: <gap: 8px>
+  - column-gap: <gap: 12px>
   - gap: 12px
   - padding: 16px 12px
   - padding-bottom: <padding: 16px 12px>
   - padding-left: <padding: 16px 12px>
   - padding-top: <padding: 16px 12px>
+  - row-gap: <gap: 12px>
 
 [802] div.chat-toolbar
   padding: 0 16px 8px
@@ -58985,43 +59676,53 @@
   - display: flex
 
 [907] div.signin-wrap
+  column-gap: <gap: 16px>
   gap: 16px
   padding: 40px 16px
   padding-bottom: <padding: 40px 16px>
   padding-left: <padding: 40px 16px>
   padding-top: <padding: 40px 16px>
+  row-gap: <gap: 16px>
+  - column-gap: <gap: 24px>
   - gap: 24px
   - padding: 48px 24px
   - padding-bottom: <padding: 48px 24px>
   - padding-left: <padding: 48px 24px>
   - padding-top: <padding: 48px 24px>
+  - row-gap: <gap: 24px>
 
 [915] div.signin-grid
-  gap: 24px
+  grid-template-areas: "intro" "card" "proof"
   grid-template-columns: minmax(0, 1fr)
   justify-items: center
-  - gap: clamp(32px, 6vw, 88px)
+  row-gap: 20px
+  - grid-template-areas: "intro card" "proof card"
   - grid-template-columns: minmax(0, 1fr) minmax(0, 380px)
+  - row-gap: 16px
 
-[916] section.signin-thesis
+[916] section.signin-intro
   align-items: center
-  order: 2
+  width: min(100%, 34rem)
   - align-items: flex-start
 
 [917] h1.signin-title
   text-align: center
   - text-align: left
 
-[919] ol.council-ladder
-  max-width: 30ch
-  - max-width: 34ch
-
-[930] p.signin-tagline
+[919] p.signin-tagline
   text-align: center
   - text-align: left
 
-[931] section.signin-card
-  order: 1
+[920] section.signin-proof
+  align-items: center
+  width: min(100%, 34rem)
+  - align-items: flex-start
+
+[923] ol.council-ladder
+  max-width: 30ch
+  - max-width: 34ch
+
+[934] section.signin-card
   padding: 18px
   padding-bottom: <padding: 18px>
   padding-left: <padding: 18px>
@@ -59031,7 +59732,7 @@
   - padding-left: <padding: 20px>
   - padding-top: <padding: 20px>
 
-[934] div.signin-card-loading
+[937] div.signin-card-loading
   min-height: 306px
   - min-height: 342px
 

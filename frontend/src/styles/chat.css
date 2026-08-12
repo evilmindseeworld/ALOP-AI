@@ -542,6 +542,9 @@
 .answer-skeleton {
   display: flex;
   flex-direction: column;
+  /* The assistant message aligns children to its left edge. Stretch this
+   * child back across the prose column so its percentage bars have a width. */
+  align-self: stretch;
   gap: var(--space-2);
   /* Matches the prose column so the bars sit exactly where the first lines of
    * the answer will, instead of hinting at a different measure. */

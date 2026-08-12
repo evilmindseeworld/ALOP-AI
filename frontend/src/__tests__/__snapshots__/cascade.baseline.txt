@@ -17035,6 +17035,7 @@
   ::selection/background-image: <background: #f08aa3>
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
+  align-self: stretch
   box-sizing: border-box
   column-gap: <gap: 8px>
   display: flex
@@ -38485,6 +38486,7 @@
   ::selection/background-image: <background: #b31a54>
   ::selection/background-size: <background: #b31a54>
   ::selection/color: #fffaf7
+  align-self: stretch
   box-sizing: border-box
   column-gap: <gap: 8px>
   display: flex

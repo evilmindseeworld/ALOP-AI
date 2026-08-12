@@ -15,7 +15,7 @@
  * nobody can reason about. Costs are rounded UP at the point of pricing, so the
  * estimate errs toward protecting the owner.
  *
- * THE PRICES ARE ESTIMATES AND THEY ARE MEANT TO BE CALIBRATED. Nothing in this
+ * THE PRICES ARE ESTIMATES AND THEY ARE MEANT TO BE CALIBRATED.
  * OpenRouter reports `usage.prompt_tokens`, `usage.completion_tokens`, and
  * `usage.cost` on responses. The current `:free` model calls cost $0; search
  * and page-fetch calls still cost real money. This ceiling deliberately keeps
@@ -208,4 +208,173 @@ function reservationCents(seatCount, maxToolCalls, maxRounds) {
   return Math.max(0, Math.ceil(tenths / 10));
 }
 
-module.exports = { priceTurn, reservationCents, PRICES, LIMITS };
+/* ==========================================================================
+ * REQUESTS, WHICH IS THE CONSTRAINT THAT ACTUALLY BINDS NOW
+ *
+ * Everything above meters MONEY, and money stopped being the scarce thing on
+ * 2026-08-12 when the council moved to OpenRouter's `:free` models. A `:free`
+ * model call costs exactly $0 — `usage.cost` is 0 on every response — so the
+ * $5/day ceiling can never bind on a model call. It is not dead code and must
+ * not be deleted: search and page-fetch calls still cost real money, and the
+ * per-operation pricing above is what keeps the ceiling protective the moment
+ * any seat is swapped back to a paid model.
+ *
+ * What binds instead is OpenRouter's free-model REQUEST cap, and three of its
+ * properties make it a different kind of limit from the one above:
+ *
+ *   IT IS COUNTED IN REQUESTS, NOT DOLLARS. 50 per UTC day on a zero-credit
+ *   account, 1000 per day once $10 of credits has been bought — and the models
+ *   stay $0 either way, so the purchase buys throughput and not tokens. Both
+ *   numbers are measured, from a live 429 carrying `X-RateLimit-Limit: 50` and
+ *   `limit_source: openrouter_free_tier_daily`.
+ *
+ *   IT IS ACCOUNT-WIDE, NOT PER USER. This is the sharpest difference and the
+ *   easiest to get wrong: every ceiling above is a per-user allowance, so one
+ *   user cannot spend another's. Here they share ONE pool. A single user can
+ *   exhaust the day for everybody, which means the counter these functions feed
+ *   must be global — do NOT key it on `u:<userId>` by analogy with the spend
+ *   limiters, or the cap will be enforced at N times its real size.
+ *
+ *   FAILED REQUESTS STILL COUNT. A seat that timed out, returned empty, or was
+ *   whipped was still dispatched, and OpenRouter charges the quota for it. So
+ *   these functions count what was ASKED, exactly as `priceTurn` prices what was
+ *   asked, and for the same reason: counting only successes would make the
+ *   expensive failure case free and blind the cap to the runs most likely to
+ *   blow it.
+ *
+ * THERE IS NO MONTHLY FIGURE. Deliberately — the provider's cap is purely daily
+ * and resets at UTC midnight, so a monthly limit here would be an invention of
+ * ours rather than a constraint of theirs. The dollar ceiling above has both
+ * because that one is our policy; this one only mirrors what the provider does.
+ *
+ * SEARCH AND FETCH CALLS ARE NOT COUNTED. They go to Brave, Tavily, Serper,
+ * Google CSE and r.jina.ai — not to OpenRouter — so they consume money from the
+ * ceiling above and none of this quota. The two limits count disjoint sets of
+ * operations, which is why both exist.
+ * ========================================================================== */
+
+/**
+ * The FAST_MODEL calls a council turn makes outside the council itself, none of
+ * which appear in the telemetry snapshot's seat records and all of which spend
+ * quota: the router's classification, the chat title, and the feedback note.
+ *
+ * Counted as a flat overhead rather than measured because the snapshot does not
+ * record them individually. Overridable, since it is the number most likely to
+ * drift as routing changes — if a fourth short call is added, this is the line
+ * that has to move or the cap is under-counted on every single turn.
+ */
+const FAST_OVERHEAD = int(process.env.SPEND_FAST_OVERHEAD, 3);
+
+/**
+ * The request ceiling, account-wide, per UTC day.
+ *
+ * THE DEFAULT ASSUMES CREDITS HAVE BEEN BOUGHT. 1000/day is the post-$10 figure;
+ * a zero-credit account gets 50, which is about five council turns for the whole
+ * product. If credits have not been added, set `SPEND_DAY_REQUESTS=50` — leaving
+ * the default in place on a zero-credit account means this ceiling never fires
+ * and OpenRouter's own 429 is the only thing enforcing the limit, which is the
+ * situation this module exists to get ahead of.
+ *
+ * `warnRequests` is the soft mark for telling someone before the day dies, at
+ * 80% of the default. It is not enforced here; it is a number for whoever
+ * reports on the counter.
+ */
+const REQUEST_LIMITS = {
+  dayRequests: int(process.env.SPEND_DAY_REQUESTS, 1000),
+  warnRequests: int(process.env.SPEND_WARN_REQUESTS, 800),
+};
+
+/**
+ * How many OpenRouter requests a turn actually made, from the same telemetry
+ * snapshot `priceTurn` reads. Null-safe in the same way and for the same reason:
+ * the settlement path counts whatever the turn produced, and a partial or
+ * aborted turn is exactly where a `null` shows up.
+ *
+ * @param {object} snapshot `telemetry.snapshot()` output, or any subset of it.
+ * @returns {number} whole requests, never negative.
+ */
+function countTurnRequests(snapshot) {
+  const snap = snapshot && typeof snapshot === 'object' ? snapshot : {};
+  const seats = Array.isArray(snap.seats) ? snap.seats : [];
+
+  /* One record per member PER ROUND, so a four-round seven-seat turn is 28 seat
+   * records and 28 requests. That is not double counting — each round really did
+   * re-ask every seat over the wire. `priceTurn` charges all 28 for the same
+   * reason, and the reservation below has to bound the same number. */
+  let requests = seats.length;
+
+  if (snap.synthesisMs) requests += 1;
+
+  /* The post-truncation fallback council: one more run of the ROSTER, plus its
+   * own synthesis. Sized from the distinct models asked rather than from
+   * `seats.length`, which is the accumulated across-rounds total — the same bug
+   * priceTurn already had and had to be corrected for. */
+  if (snap.fallbackCouncil?.used) {
+    const roster = new Set(seats.map((s) => s?.model)).size || 7;
+    requests += roster + 1;
+  }
+
+  /* A turn that ran a council carries the FAST_MODEL overhead; the cheap
+   * branches — memory, greeting, search, wiki — record no seats and no synthesis
+   * and spend exactly one streamed call. The condition is deliberately the same
+   * one priceTurn uses to find those branches, so the two functions can never
+   * disagree about what kind of turn they were handed. */
+  if (seats.length || snap.synthesisMs) requests += FAST_OVERHEAD;
+  else requests += 1;
+
+  return Math.max(0, requests);
+}
+
+/**
+ * What to reserve BEFORE a turn runs, in requests.
+ *
+ * IT MUST BE AN UPPER BOUND ON `countTurnRequests()` FOR EVERY TURN THE LOOP CAN
+ * PRODUCE — the identical load-bearing property `reservationCents` documents at
+ * length above, and it fails the same way if broken: several concurrent turns
+ * each admitted on an under-estimate walk the shared cap past its limit, and
+ * because this pool is ACCOUNT-WIDE the damage is not confined to one user.
+ *
+ * The signature matches `reservationCents` so a caller can compute both from one
+ * set of arguments without remembering which takes what.
+ *
+ * @param {number} seatCount    roster size for this turn.
+ * @param {number} maxToolCalls ACCEPTED AND IGNORED. Search and page-fetch calls
+ *        go to the search providers, not to OpenRouter, so they cannot consume
+ *        this quota. It is in the signature only for symmetry with
+ *        `reservationCents`, and it is coerced anyway so that a caller passing
+ *        garbage gets the same treatment from both functions.
+ * @param {number} maxRounds    `agent-loop.js` maxRounds. Every round re-asks
+ *        every seat, so this multiplies the roster.
+ * @returns {number} whole requests, never negative.
+ */
+function reservationRequests(seatCount, maxToolCalls, maxRounds) {
+  /* Coerced for the reason reservationCents spells out: NaN here would travel
+   * into the reservation as the amount to hold, and every comparison against a
+   * limit is false for NaN — the cap would admit everything while appearing to
+   * work. Defaults go through the coercion rather than through default
+   * parameters, which fire on `undefined` only. */
+  const seats = int(seatCount, 7);
+  int(maxToolCalls, 12); // coerced for parity; search calls are not OpenRouter requests
+  const rounds = Math.max(1, int(maxRounds, 4));
+
+  /* The same three-full-roster worst case reservationCents enumerates, and it is
+   * enumerated there rather than re-derived here so the two cannot drift: the
+   * agent loop's rounds, then the plain-council fallback, then the
+   * post-truncation fallback. `rounds + 2` rosters. */
+  const rosters = rounds + 2;
+
+  /* Two synthesis passes — the turn's own and the post-council fallback's — plus
+   * the fast-call overhead, which a reserved turn must assume it will spend. */
+  return Math.max(0, rosters * seats + 2 + FAST_OVERHEAD);
+}
+
+module.exports = {
+  priceTurn,
+  reservationCents,
+  PRICES,
+  LIMITS,
+  countTurnRequests,
+  reservationRequests,
+  REQUEST_LIMITS,
+  FAST_OVERHEAD,
+};

@@ -268,7 +268,29 @@ export const ComposerSkyline = memo(() => (
           into that clamp is in the same 1040-wide space as the coordinates
           here — do not convert it. */}
       <g className="composer-weather">
+      {/* THE SAME DISC TWICE: a sun for the day theme, a crescent for the night.
+          The owner asked for the moon at night and the sun by day, and the whole
+          drawing above is measured against ONE disc at centre (96, 11) with r=9
+          — the 5.46 units of clearance to the nearest cloud bar, the 11 units of
+          open sky above the town, and the focus-within lift that must not clip
+          the crown. So the crescent is not a second shape placed in the sky. It
+          is this circle with another circle masked out of it, which leaves the
+          outer edge, the centre and the radius identical. Every clearance
+          measured in the comments above therefore still holds at night, without
+          re-deriving any of them.
+
+          The bite is offset up and to the right so the crescent opens down-left,
+          which is where the town is — a moon turned away from the roofs reads as
+          lighting them. r=9 against a bite of r=8.2 at (+3.4, -2.2) leaves a
+          limb about 2.6 units at its thickest, which survives 44px. */}
+      <defs>
+        <mask id="composer-moon-bite" maskUnits="userSpaceOnUse" x="87" y="2" width="18" height="18">
+          <circle cx="96" cy="11" r="9" fill="#fff" />
+          <circle cx="99.4" cy="8.8" r="8.2" fill="#000" />
+        </mask>
+      </defs>
       <circle className="composer-sun" cx="96" cy="11" r="9" />
+      <circle className="composer-moon" cx="96" cy="11" r="9" mask="url(#composer-moon-bite)" />
       {/* KASUMI BARS, which is the only cloud this drawing can carry.
           A rendered cloud is a soft mass and everything else in the strip is a
           hard edge — the two do not read as one hand. Japanese screens solve it

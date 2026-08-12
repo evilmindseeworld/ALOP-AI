@@ -197,10 +197,28 @@
  *
  * Drawn before the town in document order, though the high disc is now fully
  * clear of the roofline rather than occluded by it. */
-.composer-sun {
+.composer-sun,
+.composer-moon {
   fill: var(--ornament-seal);
   transition: transform var(--dur-slow) var(--ease-spring);
 }
+
+/* ONE DISC IS SHOWN AT A TIME, and which one is the only thing the theme
+ * changes here. Both are drawn at the same centre and radius, so nothing about
+ * the sky's measured clearances depends on which is visible.
+ *
+ * `display` rather than `opacity`, deliberately: an invisible disc at opacity 0
+ * still takes the focus-within transform and still sits in the accessibility
+ * tree, and two suns transitioning past each other on a theme switch is a
+ * flicker nobody asked for. Display removes it from both.
+ *
+ * DEFAULT IS THE SUN, and the night rule is the override. The app root always
+ * carries one of `.light` or `.dark` (App.jsx), but if it ever carried neither
+ * the drawing should still show a disc rather than an empty sky — a missing
+ * class must not produce a blank ornament. */
+.composer-moon { display: none; }
+.app-root.dark .composer-sun { display: none; }
+.app-root.dark .composer-moon { display: block; }
 
 /* MIST, NOT INK, AND THAT IS A MATERIAL CHANGE RATHER THAN A WEIGHT ONE.
  *
@@ -308,7 +326,8 @@
  * than 2px — about 1.73 units at 44px per 38. SakuraFrame.jsx's sun sits at
  * y=2 for that reason and says so. Raise this value and you move that limit
  * with it. */
-.input-wrapper:focus-within .composer-sun {
+.input-wrapper:focus-within .composer-sun,
+.input-wrapper:focus-within .composer-moon {
   transform: translateY(-2px);
 }
 

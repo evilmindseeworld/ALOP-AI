@@ -19430,6 +19430,7 @@
   ::selection/background-size: <background: #f08aa3>
   ::selection/color: #1a0e13
   box-sizing: border-box
+  display: none
   fill: #e2503c
   margin: 0
   margin-bottom: <margin: 0>
@@ -60580,7 +60581,9 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
 # knowing, and a change to this list is a change to the stylesheet's reach.
 
 #transcript
+.app-root.dark .composer-moon
 .chat-toolbar-btn span
+.composer-moon
 .council-blurb
 .council-row:nth-child(3)
 .council-row:nth-child(4)
@@ -60589,6 +60592,7 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
 .council-row:nth-child(7)
 .council-seat
 .fact-text-pending
+.input-wrapper:focus-within .composer-moon
 .markdown-body > * + h1
 .markdown-body em
 .markdown-body h4

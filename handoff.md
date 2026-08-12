@@ -25,13 +25,20 @@ frontend roster, backend environment names, admin configuration reporting and
 privacy policy now use `OPENROUTER_HOST` and `OPENROUTER_API_KEY`; the deployed
 policy copy was updated alongside the source. The seven seats are:
 
-`nvidia/nemotron-3-ultra-550b-a55b:free` (NVIDIA, 0.2),
-`cohere/north-mini-code:free` (Cohere, 0.3),
+`nvidia/nemotron-3-super-120b-a12b:free` (NVIDIA, 0.2, Pro),
+`inclusionai/ling-3.0-tiny:free` (InclusionAI, 0.3, free),
 `openai/gpt-oss-20b:free` (OpenAI, 0.4),
 `poolside/laguna-s-2.1:free` (Poolside, 0.5),
-`inclusionai/ling-3.0-tiny:free` (InclusionAI, 0.6),
-`google/gemma-4-26b-a4b-it:free` (Google, 0.7), and
-`nvidia/nemotron-3.5-lightning:free` (NVIDIA, 0.8).
+`google/gemma-4-31b-it:free` (Google, 0.6, Pro),
+`google/gemma-4-26b-a4b-it:free` (Google, 0.7, free), and
+`nvidia/nemotron-3-nano-30b-a3b:free` (NVIDIA, 0.8, free).
+
+The measured candidates rejected from this roster were:
+
+- `nvidia/nemotron-3-ultra-550b-a55b:free` — never answered inside 30s on five attempts; the council whip is 30s.
+- `liquid/lfm-2.5-2.6b:free` — 15.9s with empty content; its model card permits retaining prompts and outputs to train Liquid's models, disqualifying it under the subprocessor-naming privacy policy.
+- `nvidia/nemotron-3.5-lightning:free` — answered in 7.2s but leaked its scratchpad into the answer despite reasoning exclusion.
+- `nvidia/nemotron-nano-9b-v2:free` — 11.1s with empty content.
 
 Live constraints: free-model requests are rate limited per minute and per day
 on the zero-credit account. A 429 from an upstream provider is transient and

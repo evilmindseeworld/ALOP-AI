@@ -45,7 +45,7 @@
  * seat. It was removed, and the reasons are worth keeping because the line is
  * tempting and the objection is not obvious.
  *
- * 1. IT WAS FALSE ON TWO SEATS. north-mini-code is Cohere's small code model,
+ * 1. IT WAS FALSE ON TWO SEATS. gemma-4-26b-a4b is Google's small MoE,
  *    and gpt-oss-20b is OpenAI's open-weights model, not GPT.
  *
  * 2. IT WAS UNVERIFIABLE ON THE OTHER FIVE. Nobody here has checked that these
@@ -86,18 +86,18 @@
  */
 export const COUNCIL = [
   {
-    model: "nvidia/nemotron-3-ultra-550b-a55b:free",
+    model: "nvidia/nemotron-3-super-120b-a12b:free",
     temperature: 0.2,
     free: false,
     title: "The Architect",
     company: "NVIDIA",
   },
   {
-    model: "cohere/north-mini-code:free",
+    model: "inclusionai/ling-3.0-tiny:free",
     temperature: 0.3,
     free: true,
     title: "The Engineer",
-    company: "Cohere",
+    company: "InclusionAI",
   },
   {
     model: "openai/gpt-oss-20b:free",
@@ -114,11 +114,11 @@ export const COUNCIL = [
     company: "Poolside",
   },
   {
-    model: "inclusionai/ling-3.0-tiny:free",
+    model: "google/gemma-4-31b-it:free",
     temperature: 0.6,
     free: false,
     title: "The Scholar",
-    company: "InclusionAI",
+    company: "Google",
   },
   {
     model: "google/gemma-4-26b-a4b-it:free",
@@ -128,9 +128,9 @@ export const COUNCIL = [
     company: "Google",
   },
   {
-    model: "nvidia/nemotron-3.5-lightning:free",
+    model: "nvidia/nemotron-3-nano-30b-a3b:free",
     temperature: 0.8,
-    free: false,
+    free: true,
     title: "The Explorer",
     company: "NVIDIA",
   },

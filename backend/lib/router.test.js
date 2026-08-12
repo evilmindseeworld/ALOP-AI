@@ -206,6 +206,47 @@ test("the council's token ceiling follows the length the user asked for", () => 
   assert.equal(classifyRequest("hi", ROSTER, true).tokenLimit, 200);
 });
 
+test("document-generation requests use the complex tier", () => {
+  for (const text of [
+    "write a story about a dragon",
+    "write me a cover letter",
+    "draft a project proposal for school",
+    "summarise chapter 4 and write my report",
+    "make a lesson plan",
+    "write an essay on photosynthesis",
+    "write my homework",
+    "write my assignment",
+    "translate this passage and write a commentary",
+  ]) {
+    const result = classifyRequest(text, ROSTER);
+    assert.equal(result.complexity, "complex", text);
+    assert.equal(result.members.length, ROSTER.length, text);
+    assert.equal(result.tokenLimit, 4000, text);
+  }
+});
+
+test("answer-seeking lookups stay short without a document request", () => {
+  for (const text of [
+    "which monitor should I buy",
+    "what is a good laptop",
+    "what is the best monitor for coding",
+    "which laptop is good for school",
+    "translate hello to Spanish",
+  ]) {
+    const result = classifyRequest(text, ROSTER);
+    assert.equal(result.complexity, "simple", text);
+    assert.equal(result.members.length, 1, text);
+    assert.equal(result.tokenLimit, 400, text);
+  }
+});
+
+test("generation escalation is one-directional", () => {
+  const plain = classifyRequest("help with my project", ROSTER);
+  const generated = classifyRequest("draft my project proposal", ROSTER);
+  assert.ok(generated.members.length >= plain.members.length);
+  assert.notEqual(generated.complexity, "simple");
+});
+
 // This test used to assert `members` deepEqual ROSTER — "the roster is passed
 // through untouched". That invariant was deliberately retired when complexity
 // tiering landed: the whole point is that an easy question does NOT get the

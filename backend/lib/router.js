@@ -236,6 +236,28 @@ const COMPLEX_RE =
 const LOOKUP_RE =
   /^(what|who|when|where|which|how (many|much|do you spell|do you say)|define|translate|spell|convert|calculate|solve|name)\b/i;
 
+/**
+ * A request to produce a document, rather than answer a question.
+ *
+ * The verb must be tied to a document-shaped object within a small bounded
+ * window. That keeps "write a tweet" and "make a shopping list" out of the
+ * long-draft path, while still treating school and work artefacts as work.
+ * The standalone forms cover verbs whose object is implicit ("summarise this
+ * chapter", "outline the proposal", "make a lesson plan") and the explicit
+ * homework/assignment phrases. Translation is special: "translate hello to
+ * Spanish" is a one-line lookup, but a passage is a document-sized input.
+ *
+ * This is deliberately an escalation signal only. It is checked before the
+ * simplicity test, so a production request can never be made simpler by this
+ * feature; a lookup wins only when no production signal is present.
+ */
+const GENERATION_RE =
+  /\b(?:write|compose|draft|produce|create|make)\b(?:\W+\w+){0,6}\W+\b(?:essay|report|letter|story|poem|script|summary|outline|plan|lesson|proposal|presentation|article|blog|review|project|homework|assignment)\b|\b(?:summari[sz]e|outline|plan)\b|\bmy\s+(?:homework|assignment)\b|\btranslate\s+(?:this|the|following|a)\s+(?:passage|text|paragraph|article|chapter)\b/i;
+
+function isGenerationRequest(text) {
+  return GENERATION_RE.test(typeof text === "string" ? text : "");
+}
+
 /** Bare arithmetic — "15% of 80", "2+2", "144/12" — with no prose around it. */
 const ARITHMETIC_RE = /^[\s\d+\-*/^%().,=x×÷]+\??$/;
 
@@ -257,7 +279,7 @@ function assessComplexity(text, detailed = false) {
    * at. It already buys a doubled token ceiling; it should buy the council too,
    * or "explain in detail" gets a longer answer from fewer minds. */
   if (detailed) return "complex";
-  if (COMPLEX_RE.test(t) || CODE_RE.test(t)) return "complex";
+  if (COMPLEX_RE.test(t) || CODE_RE.test(t) || isGenerationRequest(t)) return "complex";
 
   /* Two or more questions in one message is a conversation, not a lookup, even
    * when each half is short. Counted rather than pattern-matched because the
@@ -403,7 +425,9 @@ function classifyRequest(text, members, detailed = false) {
      * — comfortably more than any question that reaches this tier should need.
      * The tier is only ever chosen for messages that are both short and shaped
      * like a lookup, which is the check that makes this safe. */
-    tokenLimit: detailed ? 2000 : complexity === "simple" ? 400 : 1000,
+    /* Generation drafts need room for the artefact itself. This is the
+     * per-seat draft ceiling; server.js has a separate synthesis ceiling. */
+    tokenLimit: isGenerationRequest(text) ? 4000 : detailed ? 2000 : complexity === "simple" ? 400 : 1000,
     category: "council",
     /* Returned so the caller can log which tier a turn took. Without it the
      * single most consequential routing decision in the product is invisible
@@ -421,5 +445,6 @@ module.exports = {
   narrowRoster,
   GREETING_RE,
   DETAIL_PHRASES,
+  GENERATION_RE,
   TIER_SEATS,
 };

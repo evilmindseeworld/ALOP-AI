@@ -1,14 +1,27 @@
-# Handoff — 2026-08-12
+# Handoff — 2026-08-13
 
-State of play at backend commit `2306cf8` on `main`, pushed — local and
-`origin/main` are level, nothing is being sat on. Read `AGENTS.md` first;
-this file is what changed and what is still open, not a description of the
-project.
+State of play at commit `6ce9c1b` on `main`, pushed — local and `origin/main`
+are level, nothing is being sat on. Read `AGENTS.md` first; this file is what
+changed and what is still open, not a description of the project.
 
-624 backend tests are green at `2306cf8`; the 634 frontend tests and the
-production build were green at `f110515` and have not been re-run since, as
-that pass touched backend only. Render auto-deploys from `main` and is slow —
-well over five minutes — so `2306cf8` is live only once that deploy finishes.
+729 backend tests and 673 frontend tests are green at `6ce9c1b`, both re-run
+2026-08-13. `6ce9c1b` IS LIVE — `GET /health` on `alop-ai.onrender.com`
+returned that SHA at 2026-08-12T23:47Z.
+
+**Do not re-derive the deploy diagnosis from 2026-08-12.** Two `Monitor`
+watches on `56260aa` and `ecf6911` both expired after 30 minutes with the
+commit not live, and the session concluded auto-deploy was off. The commits
+did land afterwards. Which of the two happened — a manual deploy, or an
+auto-deploy slower than the watch — was never established, and the earlier
+conclusion is recorded here as UNPROVEN rather than as fact. If a deploy looks
+stuck again, read the Render dashboard rather than inferring from a timeout.
+
+The sections below dated 2026-08-12 describe the OpenRouter migration and were
+written at `2306cf8`. Everything after that commit — the request budget, the
+per-user rate-limit fix, the search-planner and tool-call-leak fixes, the
+Unicode maths fix, the composer moon, the health commit report — landed after
+this file's body was last revised. `git log 2306cf8..HEAD` is the authority on
+that window; the prose here is not.
 
 **A previous handoff went stale in the worst way**: it still described the
 Clerk migration as "deliberately NOT attempted" three weeks after it had merged,

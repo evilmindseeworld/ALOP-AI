@@ -204,6 +204,65 @@ watched to fail before being restored.
 
 ---
 
+## This session (2026-08-12) — the spend ceiling, and three bugs found in review
+
+$5/day, $20/month per user, the owner's figures. It closes the half of Sol's
+finding 2 that the rate-limiter fix could not: limits key on the authenticated
+user now, but a request rate is not a spend ceiling.
+
+**Priced from the telemetry the turn already produces.** Nothing here meters
+tokens, so a real bill cannot be computed; what the app knows exactly is how
+many model and tool calls a turn made, because `turn-telemetry` counts them for
+the latency work. `lib/spend.js` is the pure cost model, `014_user_spend.sql` is
+the ledger, every rate is a `SPEND_*` variable. **These are estimates and the
+file says so** — a safety net, not an accounting system. Someone should compare
+them against the provider dashboards; that is what the variables are for.
+
+**Reserved, not charged.** Admission commits to a number before knowing what the
+turn will do, reserves the pessimistic worst case, and refunds the difference in
+the `finally`. Charging afterwards would make it a report. The reservation is
+atomic in Postgres — increment, test, undo in the same transaction if refused —
+so a refused caller is not charged for the refusal and two concurrent turns
+cannot both read an under-limit balance.
+
+Worst four-round-plus-fallback turn and its reservation are both **20c exactly**;
+a typical turn settles to 4c, so about 125 turns/day and 500/month.
+
+### The three bugs, all mine, all on the money path
+
+Luna's tests exposed two and, as briefed, fixed neither. `priceTurn(null)` threw
+— a default parameter fires on `undefined` only, and a partial turn is exactly
+where a null appears. `reservationCents('x')` returned NaN, which is the worst
+possible value here: **every comparison against a limit is false for NaN**, so
+the ceiling would have admitted everything while looking like it worked.
+
+Sol found the third and it was load-bearing: **the reservation was not an upper
+bound on the turn price.** `recordSeat` pushes one record per member PER ROUND —
+the record carries a `round` field for exactly that reason — so four rounds
+against seven seats is 28 seat records, and the reservation priced 14. Chasing
+it surfaced the real defect one level down: `priceTurn` priced the fallback
+council off `seats.length`, the accumulated total, when the fallback is one more
+run of the ROSTER.
+
+**Luna's coverage test had passed over it**, modelling four rounds of tool calls
+against a single round of seats — the intuitive reading of "a seven-seat turn",
+and not what the loop records. Both halves were the same wrong assumption, made
+independently by two of us. If the reservation had stayed under the real cost,
+concurrency would have walked straight past the ceiling.
+
+### Open on the ceiling
+
+- **Only `/api/council` is metered.** `/api/overlay`, `/api/chat-title`,
+  `/api/speech` and `/api/feedback` all call models and none of them reserve.
+  A first cut, not a finished job.
+- **Fails open** on a database error, inheriting `pg-rate-limit-store.js`'s
+  argument. The calculus is not identical — a rate limiter failing open costs a
+  window of abuse, this costs money — and it is flagged for Sol rather than
+  settled.
+- **The prices are uncalibrated.** Nobody has compared them to a provider bill.
+
+---
+
 ## This session (2026-08-12) — an attacker's read of the app, and three fixes
 
 The owner asked for the app looked at "like a hacker would think". Sol did the
@@ -261,12 +320,15 @@ client did on our behalf and a stub would only have tested the stub's opinion.
 
 ### Still open from that review
 
-- **The DNS-rebinding half of the URL guard.** Each hop is validated by NAME
-  and then fetched by NAME, so a name answering public for the check and private
-  for the connection still wins. `assertSafeUrl` already returns
-  `{ address, family }` for exactly this and every caller throws it away.
-  Closing it means connecting to the vetted address while preserving Host and
-  SNI — a custom dispatcher, not a flag.
+- **The DNS-rebinding half of the URL guard — THE NEXT SECURITY ITEM.** The
+  owner's ruling, 2026-08-12: queue it, do not rush it, the redirect fix closed
+  the easier path. Each hop is validated by NAME and then fetched by NAME, so a
+  name answering public for the check and private for the connection still wins.
+  `assertSafeUrl` already returns `{ address, family }` for exactly this and
+  every caller throws it away. Closing it means connecting to the vetted address
+  while preserving the Host header and TLS SNI — a custom undici dispatcher, not
+  a flag — and getting it wrong breaks every outbound fetch in the product, which
+  is why it is not a patch to slip in beside something else.
 - **Indirect prompt injection**, ranked highest by Sol and still the queued
   research question. Its concrete shape: a page instructs a seat to encode
   conversation context into `https://attacker/collect?d=…` and call `read_url`;
@@ -1018,12 +1080,10 @@ user, and anything older than seven days is ignored.
   `{ model, messages, stream, options: { temperature, num_predict } }`,
   measuring TTFT per seat over several runs. Until it exists: do not remove
   seats, do not raise the whip, and do not repeat the "one seat in six" number.
-- **A per-user spend ceiling.** Sol's finding 2 is fixed as far as it can be in
-  code — limits key on the user now instead of the IP — but there is still only
-  a request rate, no budget. A single account inside 30/minute can run the bill
-  up. The proposal is an atomic reservation against a daily or monthly figure
-  before the first provider call, refunded on completion. It needs a number,
-  which is the owner's to pick.
+- ~~**A per-user spend ceiling.**~~ **Done** — $5/day, $20/month, the owner's
+  figures. See the 2026-08-12 section above. What remains of it is calibrating
+  the price estimates against a real provider bill, and metering the four paid
+  routes other than `/api/council`.
 - **Is `COUNCIL_TOOLS=1` set in Render?** If it is off, the entire tool-calling
   path is dark in production — specialised engines, live shopping, the tool
   trail — which would be a second and larger cause of weak answers than the

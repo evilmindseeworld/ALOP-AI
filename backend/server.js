@@ -1828,7 +1828,30 @@ const settleSpend = (userId, reserved, actual) => {
 };
 
 // ===== HEALTH =====
-app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+/**
+ * WHAT IS ACTUALLY RUNNING, not merely that something is.
+ *
+ * `{status:'ok'}` alone answers "is the service up", which is the easier half
+ * and the less useful one. It cost real time twice on 2026-08-12: a 200 here was
+ * read as evidence that the OpenRouter migration had deployed, and it is not —
+ * Render keeps the previous deployment serving when a new one fails to boot, so
+ * a healthy old build and a healthy new build are indistinguishable from
+ * outside. Both investigations that day ended at "cannot tell from here".
+ *
+ * `commit` closes that. Render sets RENDER_GIT_COMMIT on every deploy; anyone
+ * can now diff it against origin/main and get a yes or no instead of an
+ * inference. It falls back to 'unknown' rather than throwing, because a health
+ * endpoint that can fail is worse than one that under-reports.
+ *
+ * SAFE TO EXPOSE: the repository is public, so the SHA identifies a commit
+ * anyone can already read. No env values, no config, no key material — only
+ * which public commit is live.
+ */
+app.get('/health', (req, res) => res.json({
+  status: 'ok',
+  time: new Date().toISOString(),
+  commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'unknown',
+}));
 
 // ===== COUNCIL =====
 app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {

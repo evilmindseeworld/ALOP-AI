@@ -40,7 +40,8 @@ const { clerkMiddleware, getAuth, clerkClient } = require('@clerk/express');
 const Stripe = require('stripe');
 const { timeoutSignal, childAbortController } = require('./lib/abort');
 const { createTurnTelemetry } = require('./lib/turn-telemetry');
-const { priceTurn, reservationCents, LIMITS } = require('./lib/spend');
+const { priceTurn, reservationCents, LIMITS, countTurnRequests, reservationRequests, REQUEST_LIMITS } = require('./lib/spend');
+const { createRequestBudget } = require('./lib/request-budget');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -342,8 +343,16 @@ const LENGTH_RULE = {
 /**
  * The streaming safety net per tier, in tokens. Generous on purpose: see the
  * note on `streamModel`. These stop a runaway, they do not shape the answer.
+ *
+ * THE COMPLEX NUMBER MUST NOT SIT BELOW THE COUNCIL'S OWN DRAFT CEILING, which
+ * is 4000 for a generation request in lib/router.js. These are two different
+ * limits on two different calls and confusing them is easy: the router's
+ * `tokenLimit` bounds each SEAT's draft, this bounds the SYNTHESIS that writes
+ * what the user actually reads. Leave this lower and the drafts arrive complete
+ * while the essay built from them is guillotined mid-sentence — the seats look
+ * healthy in every log and only the user sees the damage.
  */
-const SYNTH_MAX_TOKENS = { simple: 500, moderate: 1000, complex: 2500 };
+const SYNTH_MAX_TOKENS = { simple: 500, moderate: 1000, complex: 4000 };
 
 // ===== COUNCIL =====
 // The runner lives in lib/council-run.js so it can be tested: server.js calls
@@ -1827,6 +1836,41 @@ const settleSpend = (userId, reserved, actual) => {
     .catch((e) => console.error(`[SPEND] Settlement failed: ${e.message}`));
 };
 
+/* THE OPENROUTER REQUEST BUDGET, which is a different ceiling from the one
+ * above and is deliberately kept alongside it rather than folded into it.
+ *
+ * WHY BOTH EXIST. The cost ledger meters MONEY, per USER. Every model on the
+ * roster is a `:free` id costing exactly $0, so that ceiling can no longer bind
+ * on a model call — it now guards search and page fetches, and it stays exactly
+ * as it was so that it becomes protective again the moment a seat is swapped to
+ * a paid model. What binds today is OpenRouter's free-model REQUEST cap: 50 per
+ * UTC day on a zero-credit account, 1000 after $10 of credits. Two ceilings,
+ * counting disjoint things.
+ *
+ * GLOBAL, NOT PER USER, AND THAT IS THE WHOLE POINT. `reserve_user_spend` keys
+ * on a user id; this one keys on nothing but the UTC date, because OpenRouter's
+ * quota belongs to the ACCOUNT. Every user draws from one pool. Keying it per
+ * user — the obvious thing to do by analogy with the function above — would
+ * enforce a 1000/day cap as 1000 PER USER, which is the limit multiplied by the
+ * user count and no limit at all.
+ *
+ * THE DAY ROLLS OVER BY ITSELF. The key is the UTC date, so midnight starts a
+ * fresh row with no reset job, no TTL and nothing to forget to run. Yesterday's
+ * rows are left in place; they are one small row per day and they are the only
+ * record of what the account actually used.
+ *
+ * BOTH FAIL OPEN, like the cost ledger and the rate limiter before it. A
+ * Supabase blip must not take the product down, and OpenRouter's own 429 is the
+ * real backstop — the latch above `callModel` catches it and refuses the next
+ * turn outright. This ceiling exists to refuse politely BEFORE the provider
+ * refuses rudely, not to be the only thing standing between us and the cap.
+ * Every failure is logged: a ceiling that has silently stopped applying is
+ * worse than no ceiling, because the graphs stay reassuring. */
+const { reserve: reserveRequests, settle: settleRequests } = createRequestBudget({
+  rpc: (fn, args) => supabase.rpc(fn, args),
+  limits: REQUEST_LIMITS,
+});
+
 // ===== HEALTH =====
 /**
  * WHAT IS ACTUALLY RUNNING, not merely that something is.
@@ -1884,6 +1928,12 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
    * or it failed before admission — and the settlement is skipped rather than
    * settling a reservation that does not exist. */
   let spendReserved = 0;
+  /* The same, for the account-wide OpenRouter request budget. A separate
+   * variable rather than a field on the one above, because the two ceilings
+   * settle against different stores and either can be admitted while the other
+   * refuses — folding them together would make it possible to settle a
+   * reservation that was never taken. */
+  let requestsReserved = 0;
   /* ONE FLAG FOR EVERY WRITE, not one per writer.
    *
    * This used to be `telemetryWritten` and it guarded only `auditTelemetry`.
@@ -1988,6 +2038,46 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       });
     }
     spendReserved = reserved;
+
+    /* THE SECOND CEILING, and it is the one that actually binds today.
+     *
+     * Checked AFTER the money and BEFORE any model is called, which is the only
+     * position that works. Before the cost check it would let a request-rich
+     * turn skip the per-user money ceiling; after the first model call it would
+     * be measuring a horse that has already bolted.
+     *
+     * `reservationRequests` takes the same arguments as `reservationCents` on
+     * purpose, so the two cannot be computed from different assumptions about
+     * the turn. The literals mirror `agent-loop.js`'s DEFAULTS, exactly as the
+     * line above does; if those change, both must.
+     *
+     * A DISTINCT `reason`, because the two refusals mean opposite things to
+     * whoever reads the log. The cost ceiling is about THIS user and resets for
+     * them; this one is about the whole account and resets for everybody at the
+     * same moment. Same 402 and the same response shape — a client that already
+     * handles the money refusal keeps working — with the reason as the field
+     * that tells them apart. */
+    const reservedRequests = reservationRequests(selection.members.length, 12, 4);
+    const requestBudget = await reserveRequests(reservedRequests);
+    if (!requestBudget.allowed) {
+      telemetry.markCeiling('requests');
+      /* The money reservation is handed back before returning. Without this a
+       * turn refused HERE would hold its cost reservation until the `finally`
+       * settled it — and the `finally` skips settlement when the turn never
+       * started, so it would never come back at all. A ceiling that charges a
+       * user for the turn it refused is worse than no ceiling. */
+      settleSpend(user.id, spendReserved, 0);
+      spendReserved = 0;
+      await auditBranch({ category: 'request_ceiling', usedRequests: requestBudget.used });
+      return res.status(402).json({
+        error: "The council is out of model requests for today. It resets at midnight UTC.",
+        reason: 'daily_request_limit',
+        usedRequests: requestBudget.used,
+        dayRequests: REQUEST_LIMITS.dayRequests,
+      });
+    }
+    requestsReserved = reservedRequests;
+
     const truncatedPrompt = truncatePrompt(pv.value);
     const histArr = sanitizeHistory(history);
 
@@ -2608,6 +2698,24 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     if (spendReserved > 0 && auditUserId) {
       const actual = priceTurn(telemetry.snapshot({ category: 'settle' }));
       settleSpend(auditUserId, spendReserved, actual);
+    }
+    /* AND THE REQUEST BUDGET, settled from the same snapshot on the same
+     * reserve-then-settle contract.
+     *
+     * NOT GUARDED ON `auditUserId`, unlike the money above, and the difference
+     * is the point rather than an inconsistency: the cost ledger needs a user to
+     * credit, so it cannot settle without one. This counter is global — there is
+     * no user in its key — so a turn that reserved must always hand back what it
+     * did not spend, even on a path where the user row was never resolved.
+     * Guarding this on `auditUserId` would leak the whole reservation on exactly
+     * those failure paths, and the leak is permanent until midnight UTC.
+     *
+     * An abort settles to what the turn managed to spend before the client left,
+     * because those provider requests were really made and OpenRouter really
+     * counted them. countTurnRequests reads the same snapshot priceTurn does, so
+     * the two can never disagree about what the turn did. */
+    if (requestsReserved > 0) {
+      settleRequests(requestsReserved, countTurnRequests(telemetry.snapshot({ category: 'settle' })));
     }
     /* ABANDONED TURNS ARE THE ONES THE TELEMETRY EXISTS TO MEASURE, and until
      * now they were the only ones it could not see. Every abort path returns

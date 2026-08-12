@@ -1,6 +1,18 @@
 'use strict';
 
 const RETRY_DELAYS_MS = [400, 1200];
+const RATE_LIMIT_RESET_SAFETY_MS = 50;
+
+class OpenRouterRateLimitError extends Error {
+  constructor(kind, message, { resetAt = null, status = 429 } = {}) {
+    super(message);
+    this.name = 'OpenRouterRateLimitError';
+    this.code = kind === 'daily' ? 'OPENROUTER_DAILY_LIMIT' : 'OPENROUTER_RATE_LIMIT';
+    this.kind = kind;
+    this.resetAt = resetAt;
+    this.status = status;
+  }
+}
 
 const completionText = (message) => {
   if (!message || typeof message !== 'object') return '';
@@ -15,6 +27,39 @@ const completionText = (message) => {
 const endpointFor = (host) => {
   const base = String(host || '').replace(/\/+$/, '');
   return base.endsWith('/chat/completions') ? base : `${base}/chat/completions`;
+};
+
+const keyEndpointFor = (host) => {
+  const completionEndpoint = endpointFor(host);
+  return `${completionEndpoint.replace(/\/chat\/completions$/, '')}/key`;
+};
+
+const parseErrorBody = (text) => {
+  try { return JSON.parse(text); } catch { return null; }
+};
+
+const rateLimitResetAt = (response, payload) => {
+  const raw = response.headers?.get?.('x-ratelimit-reset')
+    || payload?.error?.metadata?.headers?.['X-RateLimit-Reset']
+    || payload?.error?.metadata?.headers?.['x-ratelimit-reset'];
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? value : null;
+};
+
+const classify429 = (response, errorBody) => {
+  const payload = parseErrorBody(errorBody);
+  const error = payload?.error || {};
+  const source = String(error.metadata?.limit_source || '').toLowerCase();
+  const message = String(error.message || errorBody || 'OpenRouter rate limit exceeded');
+  const providerCode = error.metadata?.provider_code;
+  const resetAt = rateLimitResetAt(response, payload);
+  if (source === 'openrouter_free_tier_daily' || /free-models-per-day/i.test(message)) {
+    return { kind: 'daily', message, resetAt };
+  }
+  if (!providerCode && (source.includes('free-models-per-min') || /free-models-per-min/i.test(message))) {
+    return { kind: 'per-minute', message, resetAt };
+  }
+  return { kind: 'provider', message, resetAt };
 };
 
 const abortableDelay = (ms, signal) => new Promise((resolve) => {
@@ -37,6 +82,7 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
     parentSignal?.addEventListener('abort', onParentAbort, { once: true });
     const timer = setTimeout(() => controller.abort('timeout'), remainingMs);
     let retryable = false;
+    let retryDelayMs;
     try {
       const response = await fetch(endpointFor(host), {
         method: 'POST',
@@ -48,8 +94,27 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
         const payload = await response.json();
         return completionText(payload?.choices?.[0]?.message);
       }
-      retryable = response.status === 429 || response.status >= 500;
       const errorBody = await response.text().catch(() => '');
+      if (response.status === 429) {
+        const rateLimit = classify429(response, errorBody);
+        if (rateLimit.kind === 'daily') {
+          throw new OpenRouterRateLimitError('daily', rateLimit.message, { resetAt: rateLimit.resetAt });
+        }
+        if (rateLimit.kind === 'per-minute') {
+          const waitMs = rateLimit.resetAt == null
+            ? Infinity
+            : Math.max(0, rateLimit.resetAt - Date.now() + RATE_LIMIT_RESET_SAFETY_MS);
+          if (attempt >= RETRY_DELAYS_MS.length || waitMs >= deadline - Date.now()) {
+            throw new OpenRouterRateLimitError('per-minute', rateLimit.message, { resetAt: rateLimit.resetAt });
+          }
+          retryable = true;
+          retryDelayMs = waitMs;
+        } else {
+          retryable = true;
+        }
+      } else {
+        retryable = response.status >= 500;
+      }
       if (!retryable || attempt >= RETRY_DELAYS_MS.length) {
         throw new Error(`OpenRouter ${response.status}: ${errorBody.slice(0, 500)}`);
       }
@@ -61,10 +126,26 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
       clearTimeout(timer);
       parentSignal?.removeEventListener('abort', onParentAbort);
     }
-    const delay = Math.min(RETRY_DELAYS_MS[attempt], deadline - Date.now());
-    if (!(await abortableDelay(delay, parentSignal))) return '';
+    const delay = Math.min(retryDelayMs ?? RETRY_DELAYS_MS[attempt], deadline - Date.now());
+    if (delay > 0 && !(await abortableDelay(delay, parentSignal))) return '';
   }
   return '';
+}
+
+async function getOpenRouterKeyStatus(host, apiKey, signal) {
+  const response = await fetch(keyEndpointFor(host), {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${apiKey}` },
+    ...(signal ? { signal } : {}),
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) throw new Error(`OpenRouter key status ${response.status}`);
+  const data = payload?.data || payload || {};
+  return {
+    isFreeTier: Boolean(data.is_free_tier),
+    usage: data.usage ?? null,
+    limitRemaining: data.limit_remaining ?? null,
+  };
 }
 
 function parseOpenRouterSseLine(line) {
@@ -82,4 +163,4 @@ function parseOpenRouterSseLine(line) {
   return { skip: false, done: choice?.finish_reason != null, text };
 }
 
-module.exports = { callModel, parseOpenRouterSseLine };
+module.exports = { callModel, getOpenRouterKeyStatus, OpenRouterRateLimitError, parseOpenRouterSseLine };

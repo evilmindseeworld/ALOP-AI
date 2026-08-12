@@ -2545,7 +2545,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
      * staleness only where sources already existed to fix it. */
     const councilSys = `${todayLine()}
 
-You are an elite AI expert in the ALOP-AI Council. If outside your expertise, reply ONLY "SKIP". If you answer, be direct. Match response length to question complexity. Use Markdown. If context/history provided, use for continuity. ${isDetailed ? 'Be thorough.' : 'Be concise.'}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+You are an elite AI expert in the ALOP-AI Council. If outside your expertise, reply ONLY "SKIP". If you answer, be direct. Match response length to question complexity. Use Markdown. Write maths in plain Unicode (x², √2, ½, π, ≈), never LaTeX. If context/history provided, use for continuity. ${isDetailed ? 'Be thorough.' : 'Be concise.'}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
     const councilMsgs = [{ role: 'system', content: councilSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
 
     // The agent loop, when enabled, replaces the single-shot council with
@@ -2753,7 +2753,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
 5. Introduce no fact that appears in none of the responses.
 6. Never mention the panel, the experts, how many there were, or that synthesis happened. Write as a single voice.
 7. ${LENGTH_RULE[selection.complexity] || LENGTH_RULE.moderate}
-8. Use Markdown.
+8. Use Markdown. Write mathematics in plain Unicode, never LaTeX: x², √2, ½, π, ≈, ≤, →, Fe₂O₃. Never $…$, never \\frac, never \\sin. The reader's screen renders Markdown and nothing else, so LaTeX reaches them as literal dollar signs and backslashes.
 9. End on the answer. No "Would you like help with anything else?", no "Let me know if...", no closing offer of further assistance. The user knows they can ask again.
 10. If you are inferring rather than reporting — a price you did not see, a spec you are reasoning to, a substitute product — say so IN THE SAME SENTENCE. "Likely higher" without "I did not find a listed price" reads as a fact.${lang !== 'English' ? `\n11. Respond in ${lang}.` : ''}`;
     // Research and truncation reach the synthesiser, because the design's rule

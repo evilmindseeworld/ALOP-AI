@@ -143,6 +143,31 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 // is 3, so the fast seats close the room and a slow seat either arrives with
 // something worth having or is whipped without holding anyone up.
 //
+// EVERY `:free` VARIANT HERE IS SERVED BY ONE PROVIDER, EXCEPT ONE. Measured
+// 2026-08-12 from /api/v1/models/<id>/endpoints:
+//
+//   inclusionai/ling-3.0-tiny:free        1  Novita
+//   google/gemma-4-26b-a4b-it:free        2  Darkbloom, Google AI Studio
+//   nvidia/nemotron-3-nano-30b-a3b:free   1  Nvidia
+//   openai/gpt-oss-20b:free               1  Darkbloom
+//
+// The paid variants have far more — gemma-4-26b-a4b has EIGHT — but the `:free`
+// suffix pins routing to whoever sponsors the free tier, so OpenRouter has
+// nobody to fall back to when that one provider rate-limits. This was observed
+// live: a simple-tier turn came back 0/1 with
+// `limit_source: upstream_provider_shared_pool` from Novita, which is the
+// provider throttling the model rather than anything to do with our own quota.
+// lib/openrouter.js classifies that as `provider` and retries it, which is
+// right for contention and cannot help when a provider is out for minutes.
+//
+// SO DO NOT "FIX" THAT BY POINTING THE ONE-SEAT TIER AT A MODEL WITH TWO
+// PROVIDERS. The redundancy that matters here is already in place and it is
+// between the seat and the FALLBACK, not inside the seat: the simple tier asks
+// ling, and if the council yields nothing the route streams from PRIMARY_MODEL,
+// which is gemma — a different model, from different providers. Making the seat
+// gemma too would put the seat and its own fallback behind the same two
+// providers, which is less robust than what is here now, not more.
+//
 // `medianMs` IS LOAD-BEARING, not a comment in a field. lib/router.js narrows
 // this roster for simple and moderate questions and picks the FASTEST seat in
 // each region of the temperature ladder; without these numbers it would pick by

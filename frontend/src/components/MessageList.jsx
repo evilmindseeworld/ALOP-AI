@@ -1,7 +1,34 @@
 import { memo, lazy, Suspense, useState, useRef, useEffect } from "react";
 import CouncilRosette from "./CouncilRosette";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+/**
+ * THE MARKDOWN STACK IS 160.92 kB RAW / 49.11 kB GZIP AND IS NEEDED BY NO
+ * MESSAGE UNTIL ONE HAS FINISHED ARRIVING.
+ *
+ * Measured from the production build. It was a static import, so it downloaded
+ * whenever MessageList did — before the first answer, and even for a
+ * conversation that never contains a fenced block, a table or a link.
+ *
+ * It is deferrable ONLY because of the streaming design directly below: an
+ * arriving answer is already rendered as plain paragraphs, and react-markdown
+ * is used for exactly one thing — the single parse after the answer stops. So
+ * the chunk is not needed until that moment, and the moment is preceded by
+ * seconds of streaming during which it can load.
+ *
+ * The Suspense fallback is that same plain rendering rather than a spinner or
+ * null. That is the whole reason this is safe: if the chunk has not landed when
+ * the answer completes, the reader keeps seeing the exact frame they were
+ * already looking at, and it is replaced in place when the parse is ready.
+ * Nothing blanks and nothing jumps.
+ */
+const Markdown = lazy(() =>
+  Promise.all([import("react-markdown"), import("remark-gfm")]).then(([md, gfm]) => ({
+    default: ({ children }) => (
+      <md.default remarkPlugins={[gfm.default]} components={markdownComponents}>
+        {children}
+      </md.default>
+    ),
+  })),
+);
 import Icon from "./Icon";
 import { STARTERS } from "../constants/starters";
 import { MessageSkeleton, AnswerSkeleton } from "./Skeletons";
@@ -317,6 +344,21 @@ ToolTrail.displayName = "ToolTrail";
  */
 const splitParagraphs = (text) => text.split(/\n{2,}/).filter((p) => p !== "");
 
+/**
+ * The unparsed form of an answer, used in two places that must not diverge:
+ * while it streams, and as the Suspense fallback if the markdown chunk has not
+ * arrived by the time it stops. Extracted rather than duplicated precisely
+ * because the swap between them is only invisible while they are the same —
+ * two copies would drift and the drift would show as a jump at the exact moment
+ * the answer completes.
+ */
+const PlainParagraphs = ({ text }) =>
+  splitParagraphs(text).map((para, i) => (
+    <p className="stream-plain" key={i}>
+      {para}
+    </p>
+  ));
+
 export const Message = memo(({ msg, isStreaming, onCopy, onSpeak, onFeedback, feedback }) => {
   const isUser = msg.role === "user";
 
@@ -374,6 +416,10 @@ export const Message = memo(({ msg, isStreaming, onCopy, onSpeak, onFeedback, fe
                 The trade, stated: raw syntax is visible while the answer
                 arrives. Asked for, and it is what makes the parse deferrable
                 at all. */}
+            {/* One renderer for the plain form, because it is now used twice —
+                while the answer streams, and as the Suspense fallback if the
+                markdown chunk has not landed by the time it stops. Identical
+                output in both, which is what makes the swap invisible. */}
             {isStreaming ? (
               /* ONE <p> PER PARAGRAPH, not one <p> for the whole thing.
                  The first version put the raw text in a single pre-wrap block,
@@ -386,15 +432,11 @@ export const Message = memo(({ msg, isStreaming, onCopy, onSpeak, onFeedback, fe
                  rule that will space it after the parse, and single newlines
                  inside a paragraph are still preserved by pre-wrap. A split is
                  a few microseconds against a full markdown parse. */
-              splitParagraphs(msg.content).map((para, i) => (
-                <p className="stream-plain" key={i}>
-                  {para}
-                </p>
-              ))
+              <PlainParagraphs text={msg.content} />
             ) : (
-              <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                {msg.content}
-              </ReactMarkdown>
+              <Suspense fallback={<PlainParagraphs text={msg.content} />}>
+                <Markdown>{msg.content}</Markdown>
+              </Suspense>
             )}
           </div>
         ) : null}

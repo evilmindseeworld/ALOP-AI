@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, act } from "@testing-library/react";
+import { render, screen, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import MessageList, { MessageActions } from "../components/MessageList";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+/** expect().toMatch on a large source blob prints the whole file on failure. */
+const assertMatch = (src, re) => expect(re.test(src), "MessageList.jsx does not match " + re).toBe(true);
 
 const messages = [
   { id: "u1", role: "user", content: "What is this?", ts: "10:04" },
@@ -21,6 +26,28 @@ const renderList = (props = {}) =>
       {...props}
     />
   );
+
+/**
+ * Render and wait for the markdown chunk.
+ *
+ * react-markdown is lazy — it is 49 kB gzip and no message needs it until one
+ * has finished arriving. Until the chunk resolves, a completed message renders
+ * through the same plain-paragraph path a streaming one does, which is what
+ * makes the swap invisible. Anything asserting on PARSED output therefore has
+ * to let the import settle first; asserting synchronously reads the fallback
+ * and fails on markup that is merely not there yet.
+ */
+const renderParsed = async (props = {}) => {
+  const result = renderList(props);
+  // POLLED, NOT TICKED. Flushing microtasks is not enough: `import()` is a real
+  // module load that vitest resolves and transforms asynchronously, so twenty
+  // `await Promise.resolve()` still left every bubble on its fallback. waitFor
+  // polls on a timer, which is the only thing that outlasts a genuine import.
+  await waitFor(() => {
+    expect(result.container.querySelector(".stream-plain")).toBeNull();
+  });
+  return result;
+};
 
 describe("MessageList", () => {
   it("shows the starters when there is nothing to show yet", () => {
@@ -80,10 +107,32 @@ describe("MessageList", () => {
     expect(container.querySelector(".bubble.is-streaming strong")).toBeNull();
   });
 
-  it("parses it once the stream closes", () => {
-    const { container } = renderList({ messages: withMarkdown, status: "idle" });
+  it("parses it once the stream closes", async () => {
+    const { container } = await renderParsed({ messages: withMarkdown, status: "idle" });
     expect(container.querySelector(".stream-plain")).toBeNull();
     expect(container.querySelector(".bubble strong")).toHaveTextContent("bold");
+  });
+
+  it("falls back to the unparsed answer, never to a blank, while the chunk loads", () => {
+    // THE ONLY USER-VISIBLE COST OF MAKING THE PARSER LAZY. If the chunk has not
+    // arrived when an answer completes, the reader must keep seeing the frame
+    // they were already looking at — a null fallback would blank a finished
+    // answer, which is far worse than unstyled text for one frame.
+    //
+    // ASSERTED ON THE SOURCE, and the reason is a limit of the test environment
+    // rather than a preference: the module cache makes this state unobservable.
+    // Once any earlier test in this file has pulled the chunk in, React.lazy
+    // resolves it immediately and the fallback never renders — so a test that
+    // waited for the fallback would pass alone, fail in suite order, and prove
+    // nothing either way. What is checkable is the contract that produces the
+    // behaviour: the boundary's fallback is the plain renderer.
+    const src = readFileSync(join(__dirname, "..", "components", "MessageList.jsx"), "utf8");
+    assertMatch(src, /<Suspense fallback=\{<PlainParagraphs text=\{msg\.content\} \/>\}>/);
+    // And the same renderer serves the streaming branch — one component used
+    // twice is what makes the swap between them invisible. Two copies would
+    // drift, and the drift would show as a jump at the moment an answer lands.
+    assertMatch(src, /const PlainParagraphs = /);
+    expect((src.match(/<PlainParagraphs text=\{msg\.content\} \/>/g) || []).length).toBe(2);
   });
 
   /**
@@ -105,8 +154,13 @@ describe("MessageList", () => {
       messages[0],
       { id: "a1", role: "assistant", content: "First para.\n\nSecond para.", ts: "10:05" },
     ];
+    // SCOPED TO THE STREAMING BUBBLE. `.stream-plain` used to appear only while
+    // an answer arrived, so an unscoped count meant "the draft's paragraphs".
+    // It is now also the Suspense fallback for any message whose markdown chunk
+    // has not landed — including the user's own — so the unscoped count picks
+    // up neighbours and the number it returns is not the one this test is about.
     const { container } = renderList({ messages: [messages[0]], streamDraft: twoParas[1], status: "streaming" });
-    expect(container.querySelectorAll(".stream-plain")).toHaveLength(2);
+    expect(container.querySelectorAll(".bubble.is-streaming .stream-plain")).toHaveLength(2);
   });
 
   it("does not emit an empty paragraph for the trailing newline every stream has", () => {
@@ -115,7 +169,7 @@ describe("MessageList", () => {
       { id: "a1", role: "assistant", content: "Done.\n\n", ts: "10:05" },
     ];
     const { container } = renderList({ messages: [messages[0]], streamDraft: trailing[1], status: "streaming" });
-    expect(container.querySelectorAll(".stream-plain")).toHaveLength(1);
+    expect(container.querySelectorAll(".bubble.is-streaming .stream-plain")).toHaveLength(1);
   });
 
   it("keeps the same bubble across the swap, so nothing remounts", () => {
@@ -208,7 +262,7 @@ describe("MessageList", () => {
     expect(history.map).toHaveBeenCalledTimes(1);
   });
 
-  it("escapes raw HTML and strips executable URL schemes from model output", () => {
+  it("escapes raw HTML and strips executable URL schemes from model output", async () => {
     const hostile = [
       messages[0],
       {
@@ -219,7 +273,7 @@ describe("MessageList", () => {
           '[bad link](javascript:alert(1)) ![bad image](javascript:alert(2)) [safe link](https://example.com)',
       },
     ];
-    const { container } = renderList({ messages: hostile });
+    const { container } = await renderParsed({ messages: hostile });
 
     expect(container.querySelector("script")).toBeNull();
     expect(container.querySelector("img[onerror]")).toBeNull();

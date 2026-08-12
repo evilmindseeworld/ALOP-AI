@@ -185,8 +185,42 @@ const FAST_MODEL = 'google/gemma-4-26b-a4b-it:free';
  * is reachable from a test. Only the socket and the telemetry stay here. */
 const { callModel: orCallModel, parseOpenRouterSseLine } = require('./lib/openrouter');
 
+/**
+ * THE ACCOUNT-WIDE DAILY CAP, LATCHED.
+ *
+ * OpenRouter's free tier allows 50 model requests per UTC day and the quota is
+ * per ACCOUNT, not per user — measured 2026-08-12 from a live 429 carrying
+ * `limit_source: openrouter_free_tier_daily` and `X-RateLimit-Limit: 50`. A
+ * council turn spends seven seats plus synthesis plus the router's short calls,
+ * so the whole product gets roughly five turns a day until credits are added.
+ *
+ * WHY A LATCH AND NOT JUST A CATCH. runCouncil turns every rejection into a
+ * FAILED seat, by design — one provider falling over should not end a turn. But
+ * the daily cap is not one provider falling over: it is the same certain answer
+ * for every seat, so without this the turn dispatches all seven, waits out the
+ * whip on each, and reports "the council could not answer" for something that
+ * has nothing to do with the council. That is 21 requests against a quota that
+ * is already spent, and a user-facing message that names the wrong cause.
+ *
+ * The cap is genuinely global and time-boxed, so one observation is enough to
+ * know the answer for every call until it resets. `resetAt` comes from the
+ * provider's own X-RateLimit-Reset rather than from a guess about midnight.
+ */
+let dailyLimitUntil = 0;
+const dailyLimitActive = () => dailyLimitUntil > Date.now();
+const noteDailyLimit = (err) => {
+  if (err?.code === 'OPENROUTER_DAILY_LIMIT') {
+    /* One hour is the fallback when the provider sent no reset — long enough to
+     * stop the stampede, short enough that a wrong guess self-corrects. */
+    dailyLimitUntil = Number(err.resetAt) || (Date.now() + 3600_000);
+    console.error(`[OPENROUTER] Daily free-model cap reached. Requests refused until ${new Date(dailyLimitUntil).toISOString()}.`);
+  }
+  throw err;
+};
+
 const callModel = (modelName, messages, temperature = 0.0, timeoutMs = 30000, maxTokens = 1000, parentSignal) =>
-  orCallModel(OPENROUTER_HOST, OPENROUTER_API_KEY, modelName, messages, temperature, timeoutMs, maxTokens, parentSignal);
+  orCallModel(OPENROUTER_HOST, OPENROUTER_API_KEY, modelName, messages, temperature, timeoutMs, maxTokens, parentSignal)
+    .catch(noteDailyLimit);
 
 const streamModel = async (res, modelName, messages, temperature = 0.0, signal) => {
   const response = await fetch(OPENROUTER_HOST, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_API_KEY}` }, body: JSON.stringify({ model: modelName, messages, temperature, stream: true, reasoning: { exclude: true } }), ...(signal ? { signal } : {}) });
@@ -1732,6 +1766,19 @@ app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISO
 
 // ===== COUNCIL =====
 app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
+  /* Refused before anything is spent — no telemetry row, no spend reservation,
+   * no seats dispatched — because the account's daily model quota is gone and
+   * every one of those steps would be work done for an answer that cannot
+   * arrive. 503 with a Retry-After is the honest shape: the service is
+   * temporarily unable, it is not the request that is wrong. See the latch above
+   * callModel for why one observation settles it for the whole window. */
+  if (dailyLimitActive()) {
+    res.set('Retry-After', String(Math.max(1, Math.ceil((dailyLimitUntil - Date.now()) / 1000))));
+    return res.status(503).json({
+      error: "The council is out of model requests for today. It resets at midnight UTC.",
+      retryAt: new Date(dailyLimitUntil).toISOString(),
+    });
+  }
   // Wall-clock to the point where the first byte of an answer starts streaming.
   // Everything before that is the user watching nothing happen, and until now
   // it was invisible: the only latency anyone could see was the total, which

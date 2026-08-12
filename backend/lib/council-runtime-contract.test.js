@@ -34,6 +34,29 @@ test("the council request aborts every long-running layer on disconnect", () => 
   assert.match(ROUTE, /streamModel\(res, PRIMARY_MODEL, synthMsgs, 0\.0, turnSignal\)/);
 });
 
+test("the account's daily model cap refuses the turn before anything is spent", () => {
+  // OpenRouter's free tier is 50 model requests per UTC day, per ACCOUNT rather
+  // than per user. runCouncil turns a rejected seat into a FAILED seat — right
+  // for one provider falling over, wrong here, because the cap gives the same
+  // certain answer to all seven seats. Unguarded, a capped account dispatches 21
+  // doomed requests, waits out the whip on each, and blames the council.
+  //
+  // The ORDER is the whole assertion: the refusal has to precede the telemetry
+  // row and the spend reservation, or the turn pays for an answer that cannot
+  // arrive. Checking only that the guard exists would pass with it sitting
+  // uselessly at the bottom of the route.
+  const guard = ROUTE.indexOf("if (dailyLimitActive())");
+  assert.ok(guard !== -1, "the daily-cap guard is missing from the council route");
+  assert.ok(guard < ROUTE.indexOf("createTurnTelemetry("), "the daily-cap guard must precede the telemetry row");
+  assert.match(ROUTE, /res\.status\(503\)/);
+  assert.match(ROUTE, /Retry-After/);
+
+  // And the latch has to be armed from the adapter's typed error, or the guard
+  // is never true and the whole path is dead code.
+  assert.match(SOURCE, /err\?\.code === 'OPENROUTER_DAILY_LIMIT'/);
+  assert.match(SOURCE, /\.catch\(noteDailyLimit\)/);
+});
+
 test("aborted tool results are not cached", () => {
   const toolSearch = SOURCE.slice(SOURCE.indexOf("const toolSearch"), SOURCE.indexOf("// ===== COMPREHENSIVE SEARCH ====="));
   assert.match(toolSearch, /if \(results\.length && !signal\?\.aborted\) setCachedSearch/);

@@ -109,11 +109,14 @@ the fast seats close the room without it.
 - `og.png` is a build artifact of `og.svg`. Confirm it was regenerated, or the
   link preview still shows the old temperature ladder — that is the copy of the
   roster the most people see and the only one invisible from inside the app.
-- Commit `43dafd3` was Claude's and was AMENDED by a peer to fold in
-  `tools/or-probe.mjs`, so one commit carries two authors' work. Left as-is
-  because four commits landed on top before it was noticed and nothing was
-  pushed yet. Do not amend another agent's commit in a shared tree; stage file by
-  file instead.
+- A peer briefly amended Claude's commit `09cee07` to fold in its own
+  `tools/or-probe.mjs`, producing `43dafd3`. It then reset that away itself and
+  committed the probe separately as `f4db050`, so history is clean and every
+  commit is single-authored — `43dafd3` is in no branch. Recorded only as the
+  near-miss it was: in a tree three agents are writing to, stage file by file and
+  never amend a commit you did not make. Verified with `git merge-base
+  --is-ancestor`, after an earlier note in this file asserted the amend had
+  landed on the strength of the reflog alone.
 
 ---
 

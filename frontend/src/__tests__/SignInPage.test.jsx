@@ -145,20 +145,35 @@ describe("where the legal documents are reachable from", () => {
     );
   });
 
-  it("sign-up does NOT restate the agreement, because Clerk's checkbox does", () => {
-    // Clerk renders a required "I agree to the Terms of Service and Privacy
-    // Policy" checkbox inside the form, with its own links. Repeating it here
-    // states the same obligation twice in two wordings a few pixels apart —
-    // and the weaker one, a sentence nobody acts on, sitting under the stronger
-    // one they do act on reads as the real terms being somewhere else.
-    at("/sign-up");
-    const { container } = render(<SignInPage />);
-    const ownLegal = container.querySelector(".signin-legal");
-    expect(ownLegal.textContent).not.toMatch(/agree to/i);
-    expect(ownLegal.querySelectorAll("a")).toHaveLength(0);
-    // But the age statement must survive — the checkbox does not carry it.
-    expect(ownLegal.textContent).toMatch(/at least 13 years old/i);
-  });
+  /* THIS TEST USED TO ASSERT THE BUG, and it is worth leaving the story in.
+   *
+   * It read "sign-up does NOT restate the agreement, because Clerk's checkbox
+   * does", and asserted `.signin-legal` on `/sign-up` contained no "agree to"
+   * and ZERO links. Both the test and the component comment were repeating a
+   * belief about Clerk's markup that nobody had checked against the page.
+   *
+   * Checked, 2026-08-12: on `/sign-up` with Clerk mounted there are no Terms or
+   * Privacy links in the card, no checkboxes, and no occurrence of "terms" or
+   * "privacy" in its rendered text. So the flow where consent is actually taken
+   * was the one flow with no route to either document — enforced by a passing
+   * test.
+   *
+   * The rule now: our obligations do not depend on what a third-party component
+   * is believed to render. If Clerk adds its own consent checkbox, the cost is a
+   * duplicated sentence. The cost of the old contract was an account created
+   * with no visible terms. */
+  for (const [label, path] of [["sign-in", "/"], ["sign-up", "/sign-up"]]) {
+    it(`${label} reaches Terms and Privacy from the page itself`, () => {
+      at(path);
+      const { container } = render(<SignInPage />);
+      const ownLegal = container.querySelector(".signin-legal");
+      expect(ownLegal.textContent).toMatch(/agree to/i);
+      expect(ownLegal.querySelector('a[href="/terms.html"]')).toBeTruthy();
+      expect(ownLegal.querySelector('a[href="/privacy.html"]')).toBeTruthy();
+      // The age statement rides in the same sentence and must survive with it.
+      expect(ownLegal.textContent).toMatch(/at least 13 years old/i);
+    });
+  }
 });
 
 describe("what has to be on the page whichever card is showing", () => {

@@ -85,11 +85,22 @@ const CLERK_LOAD_TIMEOUT_MS = 10_000;
 export default function SignInPage() {
   const { isSignedIn, isLoaded } = useUser();
   const [timedOut, setTimedOut] = useState(false);
+  /* Two waits, two timers, and they are different questions. `timedOut` at ten
+   * seconds means "this has failed, say so and offer a reload". `slow` at 700ms
+   * means "this is taking long enough that an empty box is misleading, so
+   * caption it". A single threshold cannot do both: at 700ms you would be
+   * declaring an outage that usually is not one, and at ten seconds the caption
+   * arrives at the same moment as the error that replaces it. */
+  const [slow, setSlow] = useState(false);
 
   useEffect(() => {
     if (isLoaded) return;
     const t = setTimeout(() => setTimedOut(true), CLERK_LOAD_TIMEOUT_MS);
-    return () => clearTimeout(t);
+    /* 700ms, so a warm load never flashes a caption on its way past. Below
+     * about half a second a message that appears and vanishes is a glitch
+     * rather than information. */
+    const s = setTimeout(() => setSlow(true), 700);
+    return () => { clearTimeout(t); clearTimeout(s); };
   }, [isLoaded]);
 
   /* THE PAGE NO LONGER WAITS ON CLERK TO RENDER AT ALL.
@@ -291,7 +302,27 @@ export default function SignInPage() {
                   <SignIn signUpUrl="/sign-up" fallbackRedirectUrl="/" signUpFallbackRedirectUrl="/" />
                 )
               ) : (
-                <div className="signin-card-loading" aria-hidden="true" />
+                /* A BLANK 342px BOX CANNOT SAY WHICH STATE IT IS IN, and there
+                   are two. Sol caught the middle of this page rendering as a
+                   large empty well between the card title and the plan note,
+                   with no visible or announced difference between "the secure
+                   form is on its way" and "the form failed" — right up until
+                   second ten, when the down-state finally admits the second one.
+                   A slow dependency presented as a broken composition.
+
+                   The sentence is literally true and does not invent progress:
+                   no spinner, no shimmer, no skeleton of a form that does not
+                   exist, no rotating status verbs. `role="status"` announces it
+                   once; the earlier `aria-hidden` was right for a blank box and
+                   wrong for one that now says something.
+
+                   AFTER A GRACE PERIOD, so a fast load never flashes it. The
+                   reserved height holds from the first paint either way, which
+                   is what keeps the plan line and the legal text from being
+                   pushed down when the form lands. */
+                <div className="signin-card-loading" {...(slow ? { role: "status" } : { "aria-hidden": "true" })}>
+                  {slow ? "Preparing secure sign-in…" : null}
+                </div>
               )}
             </div>
             <p className="signin-plan">
@@ -304,30 +335,55 @@ export default function SignInPage() {
                 user actually saw, which is what turns it from paper into a
                 defensible position. COPPA attaches to collecting a child's
                 email, not to what the app is for, and Clerk collects one. */}
-            {signUp ? (
-              /* AGE ONLY on sign-up, because Clerk now renders a required
-                 "I agree to the Terms of Service and Privacy Policy" checkbox
-                 inside the form, with its own links to both documents.
-                 Repeating the agreement here would state the same obligation
-                 twice in two different wordings a few pixels apart, and the
-                 weaker of the two — a sentence nobody acts on — sitting under
-                 the stronger one that they do act on reads as the real terms
-                 being somewhere else. The age line stays: the checkbox does not
-                 carry it, and it is the reason this paragraph existed. */
-              <p className="signin-legal">
-                You must be at least 13 years old to use ALOP-AI &mdash; 16 in the EEA and the UK.
-              </p>
-            ) : (
-              /* Sign-in has no consent checkbox: consent is taken once, at
-                 registration. So this stays the full sentence AND the only
-                 route to either document from this screen. */
-              <p className="signin-legal">
-                By continuing you confirm you are at least 13 years old (16 in the EEA and UK) and
-                agree to our{" "}
-                <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a> and{" "}
-                <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>.
-              </p>
-            )}
+            {/* BOTH FLOWS CARRY BOTH LINKS, and the branch that used to withhold
+                them from sign-up was the worst bug on this page.
+
+                It read: "AGE ONLY on sign-up, because Clerk now renders a
+                required 'I agree to the Terms of Service and Privacy Policy'
+                checkbox inside the form, with its own links to both documents."
+                That was a claim about third-party markup, and Sol checked it
+                against the live page rather than against the comment. It is
+                false in this Clerk configuration.
+
+                Measured on `/sign-up` after Clerk mounted, twice and
+                independently: **zero** Terms or Privacy links anywhere in the
+                card, **zero** checkboxes, and no occurrence of the words
+                "terms" or "privacy" in its rendered text. The only links were
+                "Sign in" and the Clerk logo.
+
+                So the one flow where consent is actually taken — registration —
+                was the only one with no route to either document, while
+                sign-in, where the account already exists, had both. Exactly
+                inverted, and a real compliance gap rather than an aesthetic
+                one. Duplicated consent copy would have been the lesser fault by
+                a wide margin.
+
+                THE LESSON IS BIGGER THAN THE BUG. A test pinned the same
+                assumption, so the suite agreed with the comment and neither
+                looked at the page. Do not condition OUR obligations on what a
+                third-party component is believed to render: its markup changes
+                on their release schedule, silently, and the failure is invisible
+                from inside this repo. If Clerk ever does render its own consent
+                checkbox, the cost is one duplicated sentence; the cost of this
+                branch was an account created with no visible terms.
+
+                The age line differs by flow because it is a statement about
+                what you are agreeing TO at the moment you agree. */}
+            <p className="signin-legal">
+              {signUp ? (
+                <>
+                  By creating an account you confirm you are at least 13 years old
+                  (16 in the EEA and UK) and agree to our{" "}
+                </>
+              ) : (
+                <>
+                  By continuing you confirm you are at least 13 years old
+                  (16 in the EEA and UK) and agree to our{" "}
+                </>
+              )}
+              <a href="/terms.html" target="_blank" rel="noreferrer">Terms</a> and{" "}
+              <a href="/privacy.html" target="_blank" rel="noreferrer">Privacy Policy</a>.
+            </p>
           </section>
         </div>
       </div>

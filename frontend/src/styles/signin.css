@@ -293,6 +293,14 @@
  * competing with the crescents. */
 .signin-card-loading {
   min-height: 342px;
+  /* Centring for the caption the slot grows after 700ms. Harmless while it is
+   * empty, which is most loads — an empty grid with one centred cell and no
+   * cell in it lays out exactly like the plain reserved box it replaced. */
+  display: grid;
+  place-items: center;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  text-align: center;
 }
 
 @media (max-width: 480px) {

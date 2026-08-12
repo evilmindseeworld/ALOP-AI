@@ -90,3 +90,57 @@ test('every route that calls a model behind auth also checks suspension', () => 
     );
   }
 });
+
+/* THE SPEND CEILING'S WIRING, asserted at the route seam.
+ *
+ * $5/day, $20/month per user (the owner, 2026-08-12). `lib/spend.test.js`
+ * covers the cost model exhaustively and the SQL was exercised against the live
+ * database. What neither can see is whether server.js actually calls them in
+ * the right ORDER — and order is the whole design. Reserve before the first
+ * paid call or the ceiling is a report; settle in a `finally` or an aborted
+ * turn leaves a permanent over-charge on a real user's balance.
+ */
+test('the council reserves against the ceiling BEFORE it spends anything', () => {
+  const route = SOURCE.slice(at("app.post('/api/council'"), at("// ===== OVERLAY"));
+  const reserve = route.indexOf('await reserveSpend(');
+  assert.notEqual(reserve, -1, 'no reservation on the council route');
+
+  // The first thing that costs money. If a provider call ever moves above the
+  // reservation, the ceiling is being enforced after the spend it exists to
+  // prevent.
+  for (const spender of ['runCouncil(', 'streamModel(', 'callModel(']) {
+    const first = route.indexOf(spender);
+    if (first === -1) continue;
+    assert.ok(
+      reserve < first,
+      `${spender} happens before the spend reservation — the money is gone before the ceiling is checked`,
+    );
+  }
+});
+
+test('a refused turn is answered 402 and never reaches a model', () => {
+  const route = SOURCE.slice(at("app.post('/api/council'"), at("// ===== OVERLAY"));
+  const refusal = route.slice(route.indexOf('if (!budget.allowed)'));
+  // 402 rather than 429: the request is not too frequent, it is refused, and a
+  // retry in a minute does not help.
+  assert.match(refusal.slice(0, 400), /res\.status\(402\)/);
+  assert.match(refusal.slice(0, 400), /return res\.status\(402\)/, 'must return, not fall through into the turn');
+});
+
+test('the reservation is settled from a finally, so an abort cannot leave it charged', () => {
+  const route = SOURCE.slice(at("app.post('/api/council'"), at("// ===== OVERLAY"));
+  const tail = route.slice(route.lastIndexOf('} finally {'));
+  assert.match(tail, /spendReserved > 0 && auditUserId/);
+  assert.match(tail, /settleSpend\(auditUserId, spendReserved, actual\)/);
+  // Priced from the telemetry, so an aborted turn is charged for the calls it
+  // did make rather than for a full turn or for nothing.
+  assert.match(tail, /priceTurn\(telemetry\.snapshot\(/);
+});
+
+test('both ledger calls fail OPEN and say so, rather than taking the product down', () => {
+  const reserveFn = SOURCE.slice(at('const reserveSpend'), at('const settleSpend'));
+  // A Supabase blip must not stop the app. The exposure is a window of
+  // unmetered spend; the alternative is a total outage from a partial failure.
+  assert.match(reserveFn, /allowed: true/, 'reserveSpend must admit on database error');
+  assert.match(reserveFn, /console\.error\(`\[SPEND\]/, 'a ceiling that stopped applying must not be silent');
+});

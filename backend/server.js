@@ -40,6 +40,7 @@ const { clerkMiddleware, getAuth, clerkClient } = require('@clerk/express');
 const Stripe = require('stripe');
 const { timeoutSignal, childAbortController } = require('./lib/abort');
 const { createTurnTelemetry } = require('./lib/turn-telemetry');
+const { priceTurn, reservationCents, LIMITS } = require('./lib/spend');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -1606,6 +1607,45 @@ const auditLog = async (userId, action, metadata = {}, ip = null) => {
   }
 };
 
+/* THE TWO CALLS INTO THE SPEND LEDGER, kept here rather than in lib/spend.js
+ * so that file stays a pure cost model with no database in it — it is the part
+ * worth unit-testing exhaustively, and a module that reaches for Supabase is
+ * not that.
+ *
+ * BOTH FAIL OPEN. A Supabase blip must not stop the product working, and the
+ * exposure is a window of unmetered spend that requires an attacker to notice
+ * an outage they cannot cause. Same trade `pg-rate-limit-store.js` makes and
+ * argues at length; the difference — that this one leaks money rather than
+ * request quota — is real and is flagged for review rather than assumed away.
+ *
+ * The failure is logged every time. A ceiling that has silently stopped
+ * applying is worse than no ceiling, because the graphs stay reassuring. */
+const reserveSpend = async (userId, cents) => {
+  try {
+    const { data, error } = await supabase.rpc('reserve_user_spend', {
+      p_user_id: userId,
+      p_cents: cents,
+      p_day_limit: LIMITS.dayCents,
+      p_month_limit: LIMITS.monthCents,
+    });
+    if (error) throw new Error(error.message || String(error));
+    // Postgres RETURNS TABLE arrives as an array of one row.
+    const row = Array.isArray(data) ? data[0] : data;
+    if (!row) throw new Error('reserve_user_spend returned no row');
+    return { allowed: row.allowed !== false, dayCents: row.day_cents, monthCents: row.month_cents };
+  } catch (e) {
+    console.error(`[SPEND] Reservation failed, ADMITTING UNMETERED: ${e.message}`);
+    return { allowed: true, dayCents: null, monthCents: null, unmetered: true };
+  }
+};
+
+const settleSpend = (userId, reserved, actual) => {
+  supabase
+    .rpc('settle_user_spend', { p_user_id: userId, p_reserved: reserved, p_actual: actual })
+    .then(({ error }) => { if (error) console.error(`[SPEND] Settlement failed: ${error.message}`); })
+    .catch((e) => console.error(`[SPEND] Settlement failed: ${e.message}`));
+};
+
 // ===== HEALTH =====
 app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
@@ -1622,6 +1662,11 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
   const turnController = new AbortController();
   const turnSignal = turnController.signal;
   let auditUserId = null;
+  /* What this turn reserved against the user's ceiling, so the `finally` can
+   * refund the difference. 0 means nothing was reserved — the turn was refused,
+   * or it failed before admission — and the settlement is skipped rather than
+   * settling a reservation that does not exist. */
+  let spendReserved = 0;
   /* ONE FLAG FOR EVERY WRITE, not one per writer.
    *
    * This used to be `telemetryWritten` and it guarded only `auditTelemetry`.
@@ -1679,6 +1724,53 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     // The plan decides the roster HERE, once, rather than inside the router —
     // which is what lets the router be called with a sentence and checked.
     const selection = classifyRequest(pv.value, userPlan === 'pro' ? COUNCIL : FREE_COUNCIL, isDetailed);
+
+    /* THE SPEND CEILING, RESERVED BEFORE THE FIRST PAID CALL.
+     *
+     * $5/day and $20/month per user, the owner's figures, 2026-08-12. It closes
+     * the half of Sol's finding 2 that the rate-limiter fix could not: limits
+     * now key on the authenticated user rather than the IP, but a request RATE
+     * is not a spend ceiling, and one account inside 30 turns/minute can still
+     * run the bill up.
+     *
+     * RESERVED, NOT CHARGED, and the order is the whole design. Admission has
+     * to commit to a number before anyone knows what the turn will do, so it
+     * reserves the pessimistic worst case — full roster, synthesis, a fallback
+     * council, the whole tool budget — and the difference is refunded in the
+     * `finally` once the telemetry says what actually happened. Charging only
+     * afterwards would make this a report rather than a ceiling; the money
+     * would already be gone.
+     *
+     * The reservation is ATOMIC in Postgres — increment first, test the limits
+     * against the result, undo inside the same transaction if refused. A
+     * SELECT-then-UPDATE from here would leave a window where two concurrent
+     * turns both read an under-limit balance and both proceed, and concurrency
+     * is exactly how someone would attack a ceiling. See 014_user_spend.sql.
+     *
+     * FAILS OPEN, inheriting the argument in pg-rate-limit-store.js: a database
+     * blip must not take the product down, and the exposure is a window of
+     * spend that requires an attacker to notice an outage they cannot cause.
+     * It is logged loudly because a ceiling that has quietly stopped applying
+     * must not also be quiet about it. Flagged for Sol's review, since the
+     * calculus is not identical to a rate limiter's — this one leaks money.
+     *
+     * 402, not 429: the request is not too frequent, it is refused. A retry in
+     * a minute does not help and the client should not be told it might. */
+    /* Rounds passed explicitly, because every round re-asks every seat and the
+     * reservation has to cover all of them — see the note in lib/spend.js. The
+     * literals mirror `agent-loop.js`'s DEFAULTS; if those change, this must. */
+    const reserved = reservationCents(selection.members.length, 12, 4);
+    const budget = await reserveSpend(user.id, reserved);
+    if (!budget.allowed) {
+      telemetry.markCeiling('spend');
+      await auditBranch({ category: 'spend_ceiling', dayCents: budget.dayCents, monthCents: budget.monthCents });
+      return res.status(402).json({
+        error: 'Daily or monthly usage limit reached. It resets at midnight UTC.',
+        dayCents: budget.dayCents,
+        monthCents: budget.monthCents,
+      });
+    }
+    spendReserved = reserved;
     const truncatedPrompt = truncatePrompt(pv.value);
     const histArr = sanitizeHistory(history);
 
@@ -2270,6 +2362,27 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
   } finally {
     cleanupDisconnect();
+    /* SETTLE THE RESERVATION DOWN TO WHAT THE TURN ACTUALLY COST.
+     *
+     * In the `finally` and not at the end of the happy path, because every
+     * other exit — an abort, a throw, a ceiling blown mid-turn — has also
+     * already reserved, and a reservation that is never settled is a permanent
+     * over-charge against a real user's daily balance.
+     *
+     * Priced from `telemetry.snapshot()`, which counts the seats asked, the
+     * synthesis, the tool rounds and the fallback council. An aborted turn is
+     * charged for what it managed to spend before the client left — the
+     * provider calls were still made — which is why this reads the snapshot
+     * rather than assuming a full turn or assuming nothing.
+     *
+     * NOT AWAITED, for the same reason the audit write below is not: the client
+     * may already be gone and there is nobody left to wait for a round trip.
+     * `.catch` because an unhandled rejection in a `finally` ends the process
+     * under Node's default policy. */
+    if (spendReserved > 0 && auditUserId) {
+      const actual = priceTurn(telemetry.snapshot({ category: 'settle' }));
+      settleSpend(auditUserId, spendReserved, actual);
+    }
     /* ABANDONED TURNS ARE THE ONES THE TELEMETRY EXISTS TO MEASURE, and until
      * now they were the only ones it could not see. Every abort path returns
      * before the audit write — the `if (turnSignal.aborted) return` guards

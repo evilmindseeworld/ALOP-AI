@@ -321,6 +321,113 @@ test("the settlement runs from the finally and is NOT guarded on a user id", () 
   assert.match(tail, /settleRequests\(requestsReserved, countTurnRequests\(/);
 });
 
+// ===== every model-calling route is behind the budget =====
+//
+// The audit finding this closes: the ledger was wired into /api/council and
+// nowhere else, so three authenticated routes called OpenRouter with no
+// reservation. One ordinary account could drive ~90 unmetered requests a minute
+// across them — a 50-request day gone in under a minute — and once OpenRouter
+// returned its own 429 the latch refused the COUNCIL for every user. An
+// unmetered side route does not just overspend its own budget; it takes the
+// main feature down for everybody.
+//
+// A ceiling with three doors around it is not a ceiling, so the assertion is
+// not "these three routes were fixed" but "no model call sits outside a
+// wrapper" — the form that also catches the fourth route nobody has written yet.
+
+const MODEL_ROUTES = [
+  { path: "/api/overlay", reserve: 2 },
+  { path: "/api/chat-title", reserve: 1 },
+  { path: "/api/feedback", reserve: 1 },
+];
+
+/* CODE ONLY. Counting `spend()` across the raw slice counted the sentence in the
+ * handler's own comment explaining where spend() goes, and reported a correct
+ * route as broken — the third time today a guard has been fooled by the prose
+ * sitting next to the thing it checks. A guard that fires on a comment gets
+ * silenced rather than believed, so comments come out before anything counts. */
+const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, "");
+
+const routeBody = (path) => {
+  const start = SERVER.indexOf(`app.post('${path}'`);
+  assert.notEqual(start, -1, `${path} is missing`);
+  const next = SERVER.indexOf("\napp.", start + 1);
+  return stripComments(SERVER.slice(start, next === -1 ? SERVER.length : next));
+};
+
+for (const { path, reserve } of MODEL_ROUTES) {
+  test(`${path} reserves against the daily budget before calling a model`, () => {
+    const body = routeBody(path);
+    const guard = body.indexOf("withRequestBudget(");
+    assert.ok(guard !== -1, `${path} calls OpenRouter without reserving`);
+    // Before the model call, not merely present somewhere in the handler.
+    const firstCall = body.indexOf("callModel(");
+    assert.ok(firstCall !== -1, `${path} no longer calls a model — update this list`);
+    assert.ok(guard < firstCall, `${path} reserves AFTER its first model call`);
+  });
+
+  test(`${path} reserves an honest upper bound`, () => {
+    // Admission commits to a number before the work happens, so a route that
+    // can exceed its reservation walks the shared cap past its limit exactly
+    // like an under-reserved council turn. Counted against the callModel sites
+    // in the handler; the vision call is Google's endpoint, not OpenRouter's.
+    const body = routeBody(path);
+    const declared = Number(new RegExp(`withRequestBudget\\(res, (\\d+)`).exec(body)?.[1]);
+    assert.equal(declared, reserve, `${path} reserves ${declared}, expected ${reserve}`);
+    const calls = (body.match(/callModel\(/g) || []).length;
+    assert.ok(declared >= calls, `${path} reserves ${declared} but can make ${calls} OpenRouter calls`);
+  });
+
+  test(`${path} counts every attempt, including ones that throw`, () => {
+    // OpenRouter charges quota for a request it received, so a failed call is
+    // spent quota. Counting only successes would make the expensive failure
+    // case free — the same rule the council's seat counting follows.
+    const body = routeBody(path);
+    const spends = (body.match(/\bspend\(\)/g) || []).length;
+    const calls = (body.match(/callModel\(/g) || []).length;
+    assert.equal(spends, calls, `${path} has ${calls} model calls but ${spends} spend() records`);
+  });
+}
+
+test("NO model-calling route escapes the budget wrapper", () => {
+  // The form that survives a fourth route being added. Every `app.post`/`app.get`
+  // handler containing a callModel or streamModel must also contain a budget
+  // gate — either the wrapper, or the council's own reserve/settle pair.
+  const handlers = [...SERVER.matchAll(/\napp\.(post|get|put)\('([^']+)'/g)];
+  const offenders = [];
+  for (let i = 0; i < handlers.length; i++) {
+    const start = handlers[i].index;
+    const end = i + 1 < handlers.length ? handlers[i + 1].index : SERVER.length;
+    const body = stripComments(SERVER.slice(start, end));
+    const path = handlers[i][2];
+    const callsModel = /\b(callModel|streamModel)\(/.test(body);
+    if (!callsModel) continue;
+    const gated = body.includes("withRequestBudget(") || body.includes("reserveRequests(");
+    if (!gated) offenders.push(path);
+  }
+  assert.deepEqual(
+    offenders,
+    [],
+    `these routes call OpenRouter with no reservation: ${offenders.join(", ")}`,
+  );
+});
+
+test("the refusal is identical in shape across every route", () => {
+  // A client that handles one 402 handles all of them. `reason` is the field
+  // that says which ceiling fired, and it must not vary by route.
+  const wrapper = SERVER.slice(SERVER.indexOf("const withRequestBudget"), SERVER.indexOf("// ===== HEALTH ====="));
+  assert.match(wrapper, /res\.status\(402\)/);
+  assert.match(wrapper, /reason: 'daily_request_limit'/);
+  assert.match(wrapper, /Retry-After/);
+});
+
+test("the wrapper settles from a finally, so a throw cannot strand quota", () => {
+  // Every exit has already reserved. A reservation that is never settled is
+  // quota lost until midnight UTC for every user, not just this one.
+  const wrapper = SERVER.slice(SERVER.indexOf("const withRequestBudget"), SERVER.indexOf("// ===== HEALTH ====="));
+  assert.match(wrapper, /\} finally \{[\s\S]*settleRequests\(worstCase, spent\)/);
+});
+
 test("the synthesis cap is never below the council's own draft ceiling", () => {
   // Two limits on two different calls, and confusing them is easy. The router's
   // tokenLimit bounds each SEAT's draft; SYNTH_MAX_TOKENS bounds the synthesis

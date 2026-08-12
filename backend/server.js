@@ -1884,6 +1884,79 @@ const { reserve: reserveRequests, settle: settleRequests } = createRequestBudget
   limits: REQUEST_LIMITS,
 });
 
+/**
+ * EVERY OPENROUTER CALL OUTSIDE THE COUNCIL GOES THROUGH HERE.
+ *
+ * The budget was wired into `/api/council` and nowhere else, which left three
+ * authenticated routes calling OpenRouter with no reservation at all —
+ * `/api/overlay`, `/api/chat-title` and `/api/feedback`. A single ordinary
+ * account could drive roughly 90 unmetered requests a minute across them, which
+ * exhausts a 50-request day in under a minute and a 1000-request day in about
+ * twelve. Nothing about that requires a compromised account or an unusual
+ * precondition — the per-route rate limits bound how fast each endpoint can be
+ * called, not how much account-wide quota the calls consume.
+ *
+ * The failure mode is the part worth stating: once OpenRouter returns its own
+ * daily 429, the latch above `callModel` refuses the COUNCIL for every user.
+ * So an unmetered side route does not merely overspend its own budget; it takes
+ * down the product's main feature for everybody.
+ *
+ * A ceiling with three doors around it is not a ceiling, and route-local
+ * convention is what let those doors exist. This is one door.
+ *
+ * WHY IT IS NOT `countTurnRequests`. That function reads a council turn's
+ * telemetry — seats, synthesis, router reads, the fallback roster — and its
+ * final clause charges 1 for the streamed answer a non-council branch always
+ * makes. These routes have no telemetry and do not always answer: chat-title
+ * returns early on a prompt it will not name, having called nothing. Settling
+ * them through it would charge a request for turns that made none, which is the
+ * mirror of the bug being fixed. They count what they actually spend instead,
+ * and `spend()` is called at the model call rather than before it.
+ *
+ * @param {import('express').Response} res
+ * @param {number} worstCase the most OpenRouter calls this route can make.
+ *        MUST be an upper bound: admission commits to a number before the work
+ *        happens, and a route that can exceed its reservation walks the shared
+ *        cap past its limit exactly like an under-reserved council turn.
+ * @param {(spend: (n?: number) => void) => Promise<any>} work
+ */
+const REQUEST_BUDGET_REFUSED = Symbol('request-budget-refused');
+const withRequestBudget = async (res, worstCase, work) => {
+  const budget = await reserveRequests(worstCase);
+  if (!budget.allowed) {
+    /* The same shape the council refusal uses, deliberately: a client that
+     * already handles one handles all four, and `reason` is what tells a reader
+     * which ceiling fired. */
+    res.set('Retry-After', String(secondsUntilUtcMidnight()));
+    res.status(402).json({
+      error: "The council is out of model requests for today. It resets at midnight UTC.",
+      reason: 'daily_request_limit',
+      usedRequests: budget.used,
+      dayRequests: REQUEST_LIMITS.dayRequests,
+    });
+    return REQUEST_BUDGET_REFUSED;
+  }
+
+  let spent = 0;
+  const spend = (n = 1) => { spent += Math.max(0, Number(n) || 0); };
+  try {
+    return await work(spend);
+  } finally {
+    /* In a `finally` for the same reason the council's settlement is: every
+     * other exit — a throw, an early return, a provider error — has also
+     * already reserved, and a reservation that is never settled is quota lost
+     * until midnight UTC for every user, not just this one. */
+    settleRequests(worstCase, spent);
+  }
+};
+
+/** Whole seconds to the next UTC midnight, which is when the day's quota rolls. */
+const secondsUntilUtcMidnight = () => {
+  const now = new Date();
+  const next = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1);
+  return Math.max(1, Math.ceil((next - now.getTime()) / 1000));
+};
+
 // ===== HEALTH =====
 /**
  * WHAT IS ACTUALLY RUNNING, not merely that something is.
@@ -2779,6 +2852,11 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
 
 // ===== OVERLAY (bulletproof — never returns 500) =====
 app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
+  /* TWO, because the primary call has a fallback and both are real requests.
+   * The vision call is NOT counted: callGeminiVision goes to Google's endpoint
+   * with GOOGLE_API_KEY, not to OpenRouter, so it spends a different budget and
+   * counting it here would refuse turns over quota that was never touched. */
+  await withRequestBudget(res, 2, async (spend) => {
   try {
     const user = await ensureUser(req.auth.userId, { cached: req.userRow });
     const { prompt, image, history = [] } = req.body;
@@ -2817,11 +2895,17 @@ You are ALOP-AI Overlay. Give concise answers. For coding, provide working code.
     ];
 
     let answer = '';
+    /* Each attempt is counted, including the one that threw: OpenRouter charges
+     * the quota for a request it received, so a failed call is spent quota. This
+     * is the same rule the council's seat counting follows and the reason the
+     * reservation above is 2 rather than 1. */
+    spend();
     try { answer = await callModel(PRIMARY_MODEL, overlayMsgs, 0.0, 15000, 800); }
     catch (e1) {
-      console.error('[OVERLAY] glm-5.2 failed:', e1.message);
+      console.error('[OVERLAY] primary model failed:', e1.message);
+      spend();
       try { answer = await callModel(FAST_MODEL, overlayMsgs, 0.0, 10000, 800); }
-      catch (e2) { console.error('[OVERLAY] gemma4 failed:', e2.message); answer = "I couldn't process that. Please try again."; }
+      catch (e2) { console.error('[OVERLAY] fast model failed:', e2.message); answer = "I couldn't process that. Please try again."; }
     }
 
         console.log('[OVERLAY] Answered. Vision:', !!ctx);
@@ -2831,6 +2915,7 @@ You are ALOP-AI Overlay. Give concise answers. For coding, provide working code.
     Sentry.captureException(err);
     res.json({ answer: "Something went wrong. Please try again." });
   }
+  });
 });
 
 // ===== ADMIN CONSOLE =====
@@ -2971,24 +3056,29 @@ app.delete('/api/chats/:id/files/:fileId', requireAuth, requireOwnership('chats'
 // why every failure path returns 200 with title: null rather than an error the
 // caller has to handle.
 app.post('/api/chat-title', requireAuth, checkSuspended, async (req, res) => {
-  try {
-    const pv = validatePrompt(req.body.message);
-    if (!pv.valid) return res.json({ title: null });
-    // 600 characters is more than enough to name a topic and bounds what a
-    // caller can spend on a FAST_MODEL call.
-    const raw = await callModel(
-      FAST_MODEL,
-      [{ role: 'system', content: TITLE_PROMPT }, { role: 'user', content: pv.value.slice(0, 600) }],
-      0.0,
-      6000,
-      24,
-    );
-    res.json({ title: sanitizeTitle(raw) });
-  } catch (err) {
-    // Not Sentry-worthy and not a 500: the caller already has a usable title.
-    console.error('[TITLE] Failed:', err.message);
-    res.json({ title: null });
-  }
+  // One OpenRouter call at most, and often none — an unnameable prompt returns
+  // before the model is asked, which is why `spend()` sits at the call.
+  await withRequestBudget(res, 1, async (spend) => {
+    try {
+      const pv = validatePrompt(req.body.message);
+      if (!pv.valid) return res.json({ title: null });
+      // 600 characters is more than enough to name a topic and bounds what a
+      // caller can spend on a FAST_MODEL call.
+      spend();
+      const raw = await callModel(
+        FAST_MODEL,
+        [{ role: 'system', content: TITLE_PROMPT }, { role: 'user', content: pv.value.slice(0, 600) }],
+        0.0,
+        6000,
+        24,
+      );
+      res.json({ title: sanitizeTitle(raw) });
+    } catch (err) {
+      // Not Sentry-worthy and not a 500: the caller already has a usable title.
+      console.error('[TITLE] Failed:', err.message);
+      res.json({ title: null });
+    }
+  });
 });
 
 /**
@@ -3032,6 +3122,8 @@ app.post('/api/speech', requireAuth, checkSuspended, async (req, res) => {
  *
  * Ordered immediately after `requireAuth` because it needs `req.auth`. */
 app.post('/api/feedback', requireAuth, checkSuspended, async (req, res) => {
+  // One OpenRouter call at most: the note. A rejected rating never reaches it.
+  await withRequestBudget(res, 1, async (spend) => {
   try {
     const user = await ensureUser(req.auth.userId);
     const { feedback, question, answer } = req.body;
@@ -3041,6 +3133,7 @@ app.post('/api/feedback', requireAuth, checkSuspended, async (req, res) => {
     // users.conversation_summary, so every thumbs-up ate into the same 2000
     // characters the conversation memory needed and eventually destroyed both.
     try {
+      spend();
       const note = await callModel(FAST_MODEL, [
         { role: 'system', content: feedback === 'down' ? 'User disliked this answer. Create a 1-sentence note about what to avoid. Reply ONLY with the note.' : 'User liked this answer. Create a 1-sentence note about what worked. Reply ONLY with the note.' },
         { role: 'user', content: `Q: ${question?.slice(0,300)}\nA: ${answer?.slice(0,300)}` }
@@ -3053,6 +3146,7 @@ app.post('/api/feedback', requireAuth, checkSuspended, async (req, res) => {
     } catch (e) { console.error('[LEARN] Failed:', e.message); }
     res.json({ ok: true });
   } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  });
 });
 
 // ===== CHATS =====

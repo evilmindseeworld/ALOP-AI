@@ -191,14 +191,184 @@ const QUORUM = 2;
  *   user is entitled to.
  * @param {boolean} [detailed]  whether the user asked for length.
  */
+/**
+ * HOW HARD THE QUESTION IS, decided from the text alone.
+ *
+ * WHY NOT ASK A MODEL. The obvious implementation is a FAST_MODEL call that
+ * rates the question, and it is self-defeating: the call costs one OpenRouter
+ * request and its own latency, on the critical path, to save requests and
+ * latency. On a 50-request daily cap the classifier would be a fifth of the
+ * budget it exists to protect. So this is characters and words, like every
+ * other decision in this file, and like them it is checkable with a sentence.
+ *
+ * WHICH WAY TO BE WRONG. Under-rating is the expensive mistake: a hard question
+ * answered by one model is confidently thin, and the user cannot see that it
+ * was decided in the router. Over-rating only costs requests. So a complexity
+ * signal ESCALATES unconditionally, while simplicity has to be earned by a
+ * short question that also looks like a lookup — a message with no signal
+ * either way lands in the middle rather than at the bottom.
+ *
+ * THE DEFAULT MOVED, AND THAT IS THE POINT. Every message used to get the whole
+ * roster. The middle tier is now three seats, which is what actually lowers
+ * usage, because most messages carry no signal at all. Three is not a rounding
+ * of seven: it is the smallest roster the synthesiser can still do its job on,
+ * for the same reason QUORUM is 2 rather than 1 — its prompt is about
+ * reconciling disagreement, and there has to be some.
+ *
+ * CEILING, and it is a real one: this reads words, not meaning. "Prove that the
+ * square root of two is irrational" is short, starts like a lookup, and is not
+ * simple. `prove` and `derive` are in the escalation list for exactly that
+ * case, but the general defect stands — a short sentence can be hard, and no
+ * amount of pattern matching finds out. What protects the user is that the
+ * middle tier is the default and the simple tier needs a lookup SHAPE, not just
+ * brevity.
+ */
+const COMPLEX_RE =
+  /\b(compare|comparison|contrast|versus|vs\.?|trade[- ]?offs?|pros and cons|evaluate|analy[sz]e|critique|assess|design|architect(ure)?|strategy|recommend|justify|prove|derive|optimi[sz]e|refactor|debug|troubleshoot|implement|migrate|refute|synthesi[sz]e)\b/i;
+
+/**
+ * A question whose answer is looked up or computed rather than reasoned out.
+ * Anchored at the start, because these words only signal a lookup when the
+ * message OPENS with them: "what is a monad" is a lookup, "tell me what is
+ * wrong with this design" is not, and an unanchored test cannot tell them
+ * apart — the same defect the greeting regex was anchored to fix.
+ */
+const LOOKUP_RE =
+  /^(what|who|when|where|which|how (many|much|do you spell|do you say)|define|translate|spell|convert|calculate|solve|name)\b/i;
+
+/** Bare arithmetic — "15% of 80", "2+2", "144/12" — with no prose around it. */
+const ARITHMETIC_RE = /^[\s\d+\-*/^%().,=x×÷]+\??$/;
+
+/** A fenced block or an obvious snippet: never a simple question. */
+const CODE_RE = /```|\bfunction\b|\bclass\b|=>|;\s*$|\{\s*$/m;
+
+/**
+ * @param {string} text
+ * @param {boolean} [detailed] the caller's existing wantsDetailedAnswer result,
+ *   passed in rather than recomputed so the two cannot disagree — the same
+ *   reason `detailed` already decides the token ceiling.
+ * @returns {"simple"|"moderate"|"complex"}
+ */
+function assessComplexity(text, detailed = false) {
+  const t = typeof text === "string" ? text.trim() : "";
+  if (!t) return "moderate";
+
+  /* Asking for depth IS the escalation, stated by the user rather than guessed
+   * at. It already buys a doubled token ceiling; it should buy the council too,
+   * or "explain in detail" gets a longer answer from fewer minds. */
+  if (detailed) return "complex";
+  if (COMPLEX_RE.test(t) || CODE_RE.test(t)) return "complex";
+
+  /* Two or more questions in one message is a conversation, not a lookup, even
+   * when each half is short. Counted rather than pattern-matched because the
+   * shapes vary and the count does not. */
+  if ((t.match(/\?/g) || []).length >= 2) return "complex";
+
+  /* Length as a proxy for how much there is to reconcile. 600 characters is
+   * roughly a full paragraph — someone who has written that much has given the
+   * council something to disagree about. Not a measurement; a chosen threshold,
+   * and the one number here most worth revisiting against real transcripts. */
+  if (t.length > 600) return "complex";
+
+  /* SIMPLICITY IS EARNED, not assumed from brevity alone. Both halves are
+   * required: short AND shaped like a lookup or a sum. "Fix it" is short and is
+   * not a lookup; it stays in the middle tier where it can still be argued
+   * over. 200 characters is about two sentences. */
+  if (t.length <= 200 && (LOOKUP_RE.test(t) || ARITHMETIC_RE.test(t))) return "simple";
+
+  return "moderate";
+}
+
+/** Seats per tier. `complex` is the whole roster, whatever size that is. */
+const TIER_SEATS = { simple: 1, moderate: 3 };
+
+/**
+ * An unmeasured seat's assumed latency, in ms. Deliberately pessimistic and
+ * deliberately FINITE: Infinity would make a seat with no measurement
+ * unpickable, which quietly drops it from every narrowed roster and turns a
+ * missing number into a permanent demotion. Finite means it loses to any
+ * measured seat but can still be picked when it is the only one in its band.
+ */
+const UNMEASURED_MS = 30000;
+const seatMs = (seat) => {
+  const n = Number(seat?.medianMs);
+  return Number.isFinite(n) && n >= 0 ? n : UNMEASURED_MS;
+};
+
+/**
+ * Narrow a roster to `n` seats, keeping the temperature spread and taking the
+ * fastest seat available at each point on it.
+ *
+ * THE OBVIOUS IMPLEMENTATION IS SLOWER THAN NOT NARROWING AT ALL, which is the
+ * whole reason this function is not three lines. Slicing evenly across the
+ * temperature ladder picks seats 0, 3 and 6 of seven — and on the measured
+ * roster seat 0 is the 23.9s model. With QUORUM at 2 the turn then waits for
+ * the second-fastest of {23.9s, 8.9s, 2.1s}, about 8.9s, where the FULL council
+ * resolves in about 2.1s because it has more fast seats to choose from. The
+ * middle tier would have been slower than the top one, which is absurd on its
+ * face and would have shipped invisibly: nothing errors, the answer is fine,
+ * and only a stopwatch on two tiers side by side ever shows it.
+ *
+ * So: split the temperature-sorted roster into `n` contiguous BANDS and take
+ * the fastest seat in each. The spread survives, because one seat comes from
+ * each region of the ladder, and the latency comes from the best available
+ * member of each region rather than from its edge.
+ *
+ * The single-seat case restricts to the literal half of the ladder first. A
+ * simple factual question answered by the most lateral seat on the board is the
+ * wrong trade even when that seat is quick, and at n=1 there is no synthesis
+ * step left to temper it.
+ */
+function narrowRoster(roster, n) {
+  if (n >= roster.length) return roster;
+  if (n <= 0) return [];
+
+  const sorted = [...roster].sort((a, b) => (Number(a?.temperature) || 0) - (Number(b?.temperature) || 0));
+  const fastest = (list) => list.reduce((best, seat) => (seatMs(seat) < seatMs(best) ? seat : best));
+
+  if (n === 1) {
+    const median = Number(sorted[Math.floor((sorted.length - 1) / 2)]?.temperature) || 0;
+    const literal = sorted.filter((s) => (Number(s?.temperature) || 0) <= median);
+    return [fastest(literal.length ? literal : sorted)];
+  }
+
+  const picked = [];
+  for (let i = 0; i < n; i++) {
+    /* Contiguous bands over the sorted roster. The arithmetic gives every band
+     * at least one seat whenever n <= roster.length, which the guard above
+     * already assures. */
+    const start = Math.floor((i * sorted.length) / n);
+    const end = Math.max(start + 1, Math.floor(((i + 1) * sorted.length) / n));
+    picked.push(fastest(sorted.slice(start, end)));
+  }
+  return picked;
+}
+
 function classifyRequest(text, members, detailed = false) {
   const roster = Array.isArray(members) ? members : [];
   if (GREETING_RE.test((typeof text === "string" ? text : "").trim())) {
-    return { members: [], quorum: 0, whipMs: 5000, tokenLimit: 200, category: "greeting" };
+    return { members: [], quorum: 0, whipMs: 5000, tokenLimit: 200, category: "greeting", complexity: "simple" };
   }
+
+  /* THE TIER NARROWS THE ROSTER, IT NEVER EXTENDS IT. `narrowRoster` only ever
+   * returns a subset of what it was handed, so a free-plan user cannot be given
+   * a seat their plan does not include no matter what they type — the plan
+   * decision stays where it was, in the caller, and this cannot reach past it.
+   */
+  const complexity = assessComplexity(text, detailed);
+  const seats = TIER_SEATS[complexity] ?? roster.length;
+  const selected = narrowRoster(roster, seats);
+
   return {
-    members: roster,
-    quorum: Math.min(QUORUM, roster.length),
+    members: selected,
+    /* AGAINST THE SELECTED SEATS, NOT THE FULL ROSTER, and this is the bug the
+     * tiering would otherwise have introduced. Reading `roster.length` here
+     * leaves quorum at 2 while the simple tier dispatches ONE seat, so the whip
+     * can never reach its count and every simple question waits out the full
+     * 30-second timer — the exact failure the "a full free roster does not need
+     * unanimity" test was written for, reintroduced one level down. The tier
+     * that exists to be fast would have been the slowest path in the product. */
+    quorum: Math.min(QUORUM, selected.length),
     whipMs: 30000,
     /* 1000 unless length was actually asked for, down from a flat 2000.
      *
@@ -220,6 +390,10 @@ function classifyRequest(text, members, detailed = false) {
      * quorum. */
     tokenLimit: detailed ? 2000 : 1000,
     category: "council",
+    /* Returned so the caller can log which tier a turn took. Without it the
+     * single most consequential routing decision in the product is invisible
+     * after the fact, and "why was that answer thin" has no answer. */
+    complexity,
   };
 }
 
@@ -228,6 +402,9 @@ module.exports = {
   wantsDetailedAnswer,
   needsWikiCheck,
   classifyRequest,
+  assessComplexity,
+  narrowRoster,
   GREETING_RE,
   DETAIL_PHRASES,
+  TIER_SEATS,
 };

@@ -141,25 +141,39 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 // as a prediction. It is why the slow strong seats are the PAID ones — quorum
 // is 3, so the fast seats close the room and a slow seat either arrives with
 // something worth having or is whipped without holding anyone up.
+//
+// `medianMs` IS LOAD-BEARING, not a comment in a field. lib/router.js narrows
+// this roster for simple and moderate questions and picks the FASTEST seat in
+// each region of the temperature ladder; without these numbers it would pick by
+// ladder position and land on the 23.9s seat, making the middle tier slower
+// than the full council. See `narrowRoster` for why that is not hypothetical.
+// Every value is measured at max_tokens 200 and is therefore a FLOOR — the
+// council runs at 1000. They are used only to rank seats against each other,
+// which is a comparison the floor preserves.
 const COUNCIL = [
   // 23.9s measured, and the slowest seat kept. A 120B MoE is the strongest
   // model on this list that answers at all, and 0.2 is the seat whose job is to
   // hold to what is literally there.
-  { model: 'nvidia/nemotron-3-super-120b-a12b:free', temperature: 0.2, free: false },
+  { model: 'nvidia/nemotron-3-super-120b-a12b:free', temperature: 0.2, free: false, medianMs: 23900 },
   // 1.2s measured — the fastest of all twelve, which is why it carries a free
   // tier that has only three seats to make quorum with.
-  { model: 'inclusionai/ling-3.0-tiny:free',        temperature: 0.3, free: true  },
+  { model: 'inclusionai/ling-3.0-tiny:free',        temperature: 0.3, free: true,  medianMs: 1200 },
   // 429 on the paced sample and healthy on an earlier one at 2.5s. Retried by
   // lib/openrouter.js rather than dropped: a 429 here is contention, not
   // absence, and this is the only OpenAI-lineage seat on the board.
-  { model: 'openai/gpt-oss-20b:free',               temperature: 0.4, free: false },
-  { model: 'poolside/laguna-s-2.1:free',            temperature: 0.5, free: false }, // 8.9s
+  { model: 'openai/gpt-oss-20b:free',               temperature: 0.4, free: false, medianMs: 2500 },
+  { model: 'poolside/laguna-s-2.1:free',            temperature: 0.5, free: false, medianMs: 8900 },
   // 31B dense, and 429 on both paced attempts. Kept for the same reason as
   // gpt-oss and with the same retry: it is the best quality-per-second on paper
   // of anything here, and the free-tier seat below is its small sibling.
+  //
+  // NO medianMs, deliberately: it never completed a paced call, so there is no
+  // measurement to write and inventing one would be a guess wearing a
+  // measurement's clothes. `narrowRoster` treats a missing value as slow but
+  // still pickable, so this seat stays eligible without being preferred.
   { model: 'google/gemma-4-31b-it:free',            temperature: 0.6, free: false },
-  { model: 'google/gemma-4-26b-a4b-it:free',        temperature: 0.7, free: true  }, // 2.4s
-  { model: 'nvidia/nemotron-3-nano-30b-a3b:free',   temperature: 0.8, free: true  }, // 2.1s
+  { model: 'google/gemma-4-26b-a4b-it:free',        temperature: 0.7, free: true,  medianMs: 2400 },
+  { model: 'nvidia/nemotron-3-nano-30b-a3b:free',   temperature: 0.8, free: true,  medianMs: 2100 },
 ];
 
 const FREE_COUNCIL = COUNCIL.filter((m) => m.free);
@@ -2410,7 +2424,7 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       await auditTelemetry(
         telemetryExtra.rounds !== undefined ? 'council.tools' : 'council',
         'fallback',
-        { ...telemetryExtra, models: 0, seats: selection.members.length, quorum: selection.quorum, tokenLimit: selection.tokenLimit, councilRelease },
+        { ...telemetryExtra, models: 0, seats: selection.members.length, quorum: selection.quorum, tokenLimit: selection.tokenLimit, complexity: selection.complexity, councilRelease },
       );
       return;
     }
@@ -2470,6 +2484,15 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
         seats: selection.members.length,
         quorum: selection.quorum,
         tokenLimit: selection.tokenLimit,
+        /* WHICH TIER THE ROUTER CHOSE. `seats` alone cannot answer "was this
+         * answer thin because the router called it easy?" — a three-seat turn
+         * looks identical whether it was a moderate question on a Pro roster or
+         * any question on a free one. This is the only record that the decision
+         * happened at all, and it is the decision most likely to be wrong in a
+         * way nobody can see: an under-rated question still returns a confident
+         * answer. Comparing feedback against this column is how the thresholds
+         * in assessComplexity get corrected with evidence instead of opinion. */
+        complexity: selection.complexity,
         councilRelease,
       },
     );

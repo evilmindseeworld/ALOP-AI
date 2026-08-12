@@ -206,8 +206,130 @@ test("the council's token ceiling follows the length the user asked for", () => 
   assert.equal(classifyRequest("hi", ROSTER, true).tokenLimit, 200);
 });
 
-test("the roster is passed through untouched", () => {
-  assert.deepEqual(classifyRequest("q", ROSTER).members, ROSTER);
+// This test used to assert `members` deepEqual ROSTER — "the roster is passed
+// through untouched". That invariant was deliberately retired when complexity
+// tiering landed: the whole point is that an easy question does NOT get the
+// whole roster. It is rewritten rather than deleted, because the half of it
+// that still matters is the half that was never the headline.
+test("a narrowed roster is always a SUBSET of the seats the caller allowed", () => {
+  // THE ENTITLEMENT BOUNDARY. The caller decides plan → roster and hands it in;
+  // this function may only ever hand seats back. If it could add one, a free
+  // user could type their way onto a Pro seat, and the check that stops that
+  // lives nowhere else — server.js passes `userPlan === 'pro' ? COUNCIL :
+  // FREE_COUNCIL` and then trusts what comes back.
+  for (const q of ["what is 2+2", "fix it", "compare React and Vue", "q"]) {
+    const { members } = classifyRequest(q, ROSTER);
+    assert.ok(members.length >= 1, `${q} got no seats`);
+    assert.ok(members.length <= ROSTER.length, `${q} got more seats than the roster has`);
+    for (const seat of members) {
+      assert.ok(ROSTER.includes(seat), `${q} was given a seat that is not in the roster: ${seat.model}`);
+    }
+    assert.equal(new Set(members.map((m) => m.model)).size, members.length, `${q} got a duplicated seat`);
+  }
+});
+
+test("an easy question costs fewer seats than a hard one", () => {
+  // The feature itself, stated as the inequality it has to satisfy. Written as
+  // a comparison rather than as three exact counts so it keeps meaning if the
+  // tier sizes are retuned — the ORDER is the contract, the numbers are policy.
+  const simple = classifyRequest("what is the capital of France", ROSTER).members.length;
+  const moderate = classifyRequest("my code is not working", ROSTER).members.length;
+  const complex = classifyRequest("compare React and Vue", ROSTER).members.length;
+  assert.ok(simple < moderate, `simple ${simple} is not fewer than moderate ${moderate}`);
+  assert.ok(moderate < complex, `moderate ${moderate} is not fewer than complex ${complex}`);
+  assert.equal(complex, ROSTER.length, "the hardest tier must still get the whole roster");
+});
+
+test("quorum counts the seats actually dispatched, not the roster", () => {
+  // THE BUG THIS TIERING WOULD OTHERWISE HAVE SHIPPED. Quorum read
+  // `roster.length`, so the one-seat tier kept a quorum of 2 — unreachable, so
+  // the whip could only ever fire on its 30-SECOND TIMER. The tier that exists
+  // to be fast would have been the slowest path in the product, and nothing
+  // would have errored: the answer still arrives, half a minute late.
+  //
+  // It is the same defect as "a full free roster does NOT need unanimity"
+  // above, one level down, which is why that test did not catch it.
+  const simple = classifyRequest("what is 2+2", ROSTER);
+  assert.equal(simple.members.length, 1);
+  assert.ok(
+    simple.quorum <= simple.members.length,
+    `quorum ${simple.quorum} exceeds the ${simple.members.length} seats dispatched — the whip can never fire`,
+  );
+  for (const q of ["what is 2+2", "fix it", "compare React and Vue"]) {
+    const s = classifyRequest(q, ROSTER);
+    assert.ok(s.quorum >= 1, `${q} got quorum 0 with ${s.members.length} seats`);
+    assert.ok(s.quorum <= s.members.length, `${q}: quorum ${s.quorum} > ${s.members.length} seats`);
+  }
+});
+
+test("narrowing never costs MORE wall-clock than not narrowing", () => {
+  // The trap that makes this feature worth testing at all. Slicing evenly
+  // across the temperature ladder picks seats 0, 3, 6 of seven — and seat 0 is
+  // the slowest model on the measured roster, so the middle tier waited ~8.9s
+  // where the full council resolves in ~2.1s. A tier that is slower than the
+  // tier above it is absurd, and it is invisible without a stopwatch on both.
+  //
+  // Modelled on the real measurements, since the ROSTER above carries no
+  // latencies. What a turn actually waits for is the quorum-th FASTEST seat.
+  const MEASURED = [
+    { model: "super-120b", temperature: 0.2, medianMs: 23900 },
+    { model: "ling-tiny", temperature: 0.3, medianMs: 1200 },
+    { model: "gpt-oss-20b", temperature: 0.4, medianMs: 2500 },
+    { model: "laguna-s", temperature: 0.5, medianMs: 8900 },
+    { model: "gemma-31b", temperature: 0.6 }, // never completed a paced call
+    { model: "gemma-26b", temperature: 0.7, medianMs: 2400 },
+    { model: "nano-30b", temperature: 0.8, medianMs: 2100 },
+  ];
+  const waitOf = (sel) =>
+    sel.members
+      .map((m) => m.medianMs ?? 30000)
+      .sort((a, b) => a - b)[Math.max(1, sel.quorum) - 1];
+
+  const simple = waitOf(classifyRequest("what is 2+2", MEASURED));
+  const moderate = waitOf(classifyRequest("fix it", MEASURED));
+  const complex = waitOf(classifyRequest("compare React and Vue", MEASURED));
+  assert.ok(simple <= complex, `simple waits ${simple}ms vs complex ${complex}ms`);
+  assert.ok(moderate <= complex, `moderate waits ${moderate}ms vs complex ${complex}ms — narrowing made it SLOWER`);
+});
+
+test("the narrowed roster keeps the temperature spread", () => {
+  // Seats are narrowed by BAND, not by taking the n fastest, and this is why:
+  // the synthesiser's prompt is about reconciling disagreement, and three seats
+  // clustered at one end of the ladder are three ways of saying one thing. The
+  // multi-seat tiers must therefore span the ladder rather than huddle on it.
+  // Asserted as LADDER POSITIONS rather than as a temperature span, for two
+  // reasons. Positions are integers, so there is no float comparison to get
+  // wrong — the first draft of this test compared 0.5-0.2 against 0.6/2 and
+  // failed on the last bit of a double. And positions are what the design
+  // actually guarantees: bands are contiguous slices of the sorted roster, so
+  // "one seat per region" is exactly "no two picks share a band", whichever
+  // member of a band ends up being the fastest.
+  const { members } = classifyRequest("my code is not working", ROSTER);
+  assert.ok(members.length >= 2, "this assertion is meaningless on a single seat");
+
+  const ladder = [...ROSTER].sort((a, b) => a.temperature - b.temperature);
+  const positions = members.map((m) => ladder.indexOf(m));
+  assert.ok(!positions.includes(-1), "a picked seat is not in the roster");
+
+  const ascending = [...positions].sort((a, b) => a - b);
+  assert.deepEqual(positions, ascending, "picks are not in ladder order");
+  assert.equal(new Set(positions).size, positions.length, "two picks came from the same seat");
+
+  // Each pick sits in its own band, so together they cover the ladder rather
+  // than huddling at one end. A pick may be anywhere WITHIN its band — that is
+  // the latency rule doing its job — so the bound is the band, not the seat.
+  const n = members.length;
+  positions.forEach((pos, i) => {
+    const start = Math.floor((i * ladder.length) / n);
+    const end = Math.max(start + 1, Math.floor(((i + 1) * ladder.length) / n));
+    assert.ok(pos >= start && pos < end, `pick ${i} at ladder position ${pos} is outside its band [${start}, ${end})`);
+  });
+
+  // And the ends of the ladder are genuinely reachable: the first pick comes
+  // from the literal end, the last from the lateral end. Without this the test
+  // above would pass on three seats crammed into the bottom third.
+  assert.ok(positions[0] < ladder.length / n, "the first pick is not from the literal end of the ladder");
+  assert.ok(positions[n - 1] >= ladder.length - Math.ceil(ladder.length / n), "the last pick is not from the lateral end");
 });
 
 test("a missing roster does not throw", () => {

@@ -145,7 +145,13 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
   const createChat = useCallback(async () => {
     try {
       const r = await apiCall("/api/chats", { method: "POST", body: JSON.stringify({ title: "New Chat" }) });
-      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      if (!r.ok) {
+        const responseBody = await r.text().catch(() => "");
+        const error = new Error(`HTTP ${r.status}`);
+        error.status = r.status;
+        error.responseBody = responseBody;
+        throw error;
+      }
       const d = await r.json();
       if (!d?.id) throw new Error("Chat creation returned no id");
       // The POST response normally carries messages: [], but making that
@@ -155,7 +161,12 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
       setChats((p) => [chat, ...p]);
       setActiveChatId(d.id);
       return d.id;
-    } catch {
+    } catch (e) {
+      console.error("Failed to create chat", {
+        message: e?.message || String(e),
+        status: e?.status ?? null,
+        responseBody: e?.responseBody ?? null,
+      });
       setToast("Failed to create chat");
       return null;
     }

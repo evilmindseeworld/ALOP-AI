@@ -779,6 +779,31 @@ describe("the cached sidebar", () => {
 });
 
 describe("starting a new chat", () => {
+  it("logs the response status and body when chat creation fails", async () => {
+    const apiCallImpl = vi.fn(async (path, options = {}) => {
+      if (path === "/api/chats" && options.method === "POST") {
+        return { ok: false, status: 500, text: async () => '{"error":"Database unavailable"}' };
+      }
+      if (path === "/api/chats") return { ok: true, json: async () => [] };
+      return { ok: true, json: async () => ({}) };
+    });
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { result, setToast } = setup({ apiCallImpl });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+
+    await act(async () => {
+      expect(await result.current.createChat()).toBe(null);
+    });
+
+    expect(consoleError).toHaveBeenCalledWith("Failed to create chat", {
+      message: "HTTP 500",
+      status: 500,
+      responseBody: '{"error":"Database unavailable"}',
+    });
+    expect(setToast).toHaveBeenCalledWith("Failed to create chat");
+    consoleError.mockRestore();
+  });
+
   it("clears the selection without touching the server", async () => {
     // The row is created on the first message. Creating one here is what left
     // empty "New Chat" rows in the sidebar whenever a user changed their mind.

@@ -242,6 +242,15 @@ and good — see `docs/hookify-setup.md`. But:
   own false-positive check because it was tested against the string it had
   itself written** — the check tested the author's memory, not the rule.
 
+**The hook rules are NOT in the repository.** `.gitignore:13` ignores `.claude/`
+wholesale, so all four `hookify.*.local.md` files — Luna's originals and the
+corrections above — exist only on this machine and will not survive a fresh
+clone or reach anyone else. `docs/hookify-setup.md` is committed and describes
+them, which is the worst of both: a committed document describing local-only
+configuration reads as shared setup. If they should be shared, `.gitignore`
+needs an exception (`!.claude/hookify.*.local.md`) — the owner's call, since
+`.claude/` also holds `settings.local.json`.
+
 **Sign-in, measured rather than redesigned.** Four defects found on the live
 page, all fixed:
 

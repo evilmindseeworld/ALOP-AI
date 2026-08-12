@@ -77,7 +77,7 @@ flyctl secrets set \
   SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... \
   CLERK_SECRET_KEY=... CLERK_PUBLISHABLE_KEY=... \
   FRONTEND_URL=https://alop-ai.com ALLOWED_ORIGINS=... ALLOWED_ORIGIN_SUFFIXES=... \
-  OLLAMA_HOST=... OLLAMA_API_KEY=... \
+  OPENROUTER_HOST=... OPENROUTER_API_KEY=... \
   STRIPE_SECRET_KEY=... STRIPE_WEBHOOK_SECRET=... \
   STRIPE_PRICE_MONTHLY=... STRIPE_PRICE_YEARLY=... \
   SENTRY_DSN=... \
@@ -87,9 +87,10 @@ flyctl secrets set \
 ```
 
 `server.js` exits at import time if any of `SUPABASE_URL`,
-`SUPABASE_SERVICE_ROLE_KEY`, `CLERK_SECRET_KEY`, `FRONTEND_URL`, `OLLAMA_HOST`,
-`OLLAMA_API_KEY` is missing — so a forgotten secret is a boot crash in the logs,
-not a subtle bug. That is the good case.
+`SUPABASE_SERVICE_ROLE_KEY`, `CLERK_SECRET_KEY`, `FRONTEND_URL`, or
+`OPENROUTER_API_KEY` is missing — so a forgotten secret is a boot crash in the
+logs, not a subtle bug. `OPENROUTER_HOST` is defaulted to the public endpoint.
+That is the good case.
 
 `FRONTEND_URL` and `ALLOWED_ORIGINS` must keep their CURRENT values. Clerk's
 `authorizedParties` is derived from them, and the frontend origin is not moving.

@@ -88,7 +88,7 @@ Clerk `authorizedParties` is derived from exact allowed origins, `requireAuth` u
 
 - No authenticated browser session was available, so I did not read responses from signed-in routes or validate Clerk session revocation behavior end to end.
 - No production Supabase connection was available, so live tables, policies, grants, views, RPC definitions, and service-role grants were not queried.
-- No `OLLAMA_HOST` or provider dashboards/logs were available. I did not test the seven production models against injection, confirm live seat health, inspect spend, or verify the leaked-key rotation.
+- No `OLLAMA_HOST` or provider dashboards/logs were available. I did not test the seven production models against injection, confirm live seat health, inspect spend, or verify the leaked-key rotation. [At the time of this review, the gateway is now OpenRouter.]
 - `COUNCIL_TOOLS` and optional-provider state can only be established from the Render boot banner; it was not available here.
 - Read-only production checks showed the frontend healthy and Clerk loading without console errors. The backend was still serving the pre-fix SAMEORIGIN/`unsafe-inline` headers at the observation time; I excluded those already-fixed issues as directed. This is deployment lag to verify, not a new source finding.
 - Dependency advisories were not refreshed from third-party registries because this review stayed inside the named host/repository boundary.

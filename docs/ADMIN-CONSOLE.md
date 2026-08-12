@@ -10,7 +10,7 @@ accepts a **command id from a closed set** — never a command.
 ## Why not a real shell
 
 This process holds `SUPABASE_SERVICE_ROLE_KEY`, `STRIPE_SECRET_KEY`,
-`CLERK_SECRET_KEY` and `OLLAMA_API_KEY` in memory. Any command execution is a
+`CLERK_SECRET_KEY` and `OPENROUTER_API_KEY` in memory. Any command execution is a
 path to all four. The strongest mitigation is not to sanitise that path but to
 not have one.
 
@@ -132,9 +132,13 @@ needed a large screen and they rolled off with retention.
 
 `config` reports presence as `set` / `not set`. A short list of variables show
 their actual value — `COUNCIL_TOOLS`, `RATE_LIMIT_STORE`, `FRONTEND_URL`,
-`ALLOWED_ORIGINS`, `OLLAMA_HOST` — and that is a **list, not a pattern**. A rule
+`ALLOWED_ORIGINS`, `OPENROUTER_HOST` — and that is a **list, not a pattern**. A rule
 like "hide anything matching `_KEY$`" is a rule something eventually satisfies
 without meaning to; a list has to be edited deliberately.
+
+`OPENROUTER_HOST` is showable because it has one correct public default:
+`https://openrouter.ai/api/v1/chat/completions`. `OPENROUTER_API_KEY` is never
+showable.
 
 A test asserts no name on the showable list matches
 `SECRET|_KEY$|TOKEN|PASSWORD|DSN`.

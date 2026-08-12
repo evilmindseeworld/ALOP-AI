@@ -24,7 +24,7 @@ The error path also sets `spendReserved = reserved` at `server.js:1773`. Its `fi
 
 The claim at `spend.js:18-24` that telemetry knows model and tool calls exactly does not hold across a request:
 
-- `callModel` returns only text (`server.js:117-125`), and `streamModel` ignores provider usage (`server.js:128-150`). Cost-driving tokens or Ollama GPU time/model class never reach pricing.
+- `callModel` returns only text (`server.js:117-125`), and `streamModel` ignores provider usage (`server.js:128-150`). Cost-driving tokens or provider model class never reach pricing.
 - Ordinary non-greetings make two router model calls (`server.js:1917-1938`), but a no-seat snapshot receives one `fastTenths` charge (`spend.js:128-131`).
 - A search turn can make two multi-provider search fan-outs plus page reads (`server.js:785-928`, `server.js:1979-2012`); none of that becomes an agent-loop `toolRound`.
 - Semantic recall, Gemini vision, and shadow-probe seats spend outside the priced buckets (`server.js:1042-1064`, `server.js:1799`, `server.js:1888-1909`).
@@ -59,7 +59,7 @@ The stated “3.3¢ turn, about 150 turns/day” is not what the ledger records.
 
 The defaults are not demonstrably conservative for the providers in this code. Public retail rates include Brave and Google CSE at $5/1,000 requests, Tavily advanced at two $0.008 credits (1.6¢), and SerpApi Starter at $25/1,000: [Brave](https://brave.com/search/api/), [Google](https://developers.google.com/custom-search/v1/overview), [Tavily](https://docs.tavily.com/documentation/api-credits), [SerpApi](https://serpapi.com/pricing). One logical `web_search` can also try several providers, so the single 0.4¢ `searchTenths` is not an upper bound on owner cost.
 
-Ollama's public pricing meters cloud usage using model size and GPU time rather than a flat per-call tariff, so the 0.4¢/seat and 0.5¢/synthesis defaults cannot be validated publicly: [Ollama pricing](https://www.ollama.com/pricing). Fish lists paid TTS at $15/M UTF-8 bytes, making this route's 3,000-byte maximum about 4.5¢ if the free model is not used: [Fish pricing](https://docs.fish.audio/developer-guide/models-pricing/pricing-and-rate-limits). Settle the defaults from provider invoices/dashboard exports joined to model labels, durations, usage fields, TTS bytes, cache hits, and route/category; calibrate a conservative percentile rather than guessing.
+OpenRouter's public pricing meters model/provider token usage rather than a flat per-call tariff, so the 0.4¢/seat and 0.5¢/synthesis defaults cannot be validated publicly: [OpenRouter pricing](https://openrouter.ai/pricing). Fish lists paid TTS at $15/M UTF-8 bytes, making this route's 3,000-byte maximum about 4.5¢ if the free model is not used: [Fish pricing](https://docs.fish.audio/developer-guide/models-pricing/pricing-and-rate-limits). Settle the defaults from provider invoices/dashboard exports joined to model labels, durations, usage fields, TTS bytes, cache hits, and route/category; calibrate a conservative percentile rather than guessing.
 
 ### 6. LOW — a monthly refusal gives the wrong reset guidance
 
@@ -95,6 +95,6 @@ The property is coupled to duplicated literals: `server.js:1762` repeats `12, 4`
 - Ran `node --test lib/spend.test.js lib/agent-loop.test.js lib/turn-telemetry.test.js`: 49/49 passed.
 - Reproduced the reachable pure-model maximum locally: 23¢ reserved, 23¢ priced.
 - I accepted the owner's production SQL probe as runtime evidence; I did not mutate production or rerun it.
-- I could not verify Render's active tool/shadow configuration, provider keys or plans, invoices/dashboard costs, Ollama contract/extra-usage balance, signed-in HTTP behavior, outage behavior, process-kill recovery, or a real UTC-boundary turn. Public prices may differ from negotiated/free tiers.
+- I could not verify Render's active tool/shadow configuration, provider keys or plans, invoices/dashboard costs, Ollama contract/extra-usage balance, signed-in HTTP behavior, outage behavior, process-kill recovery, or a real UTC-boundary turn. [This historical review's gateway reference is now OpenRouter.] Public prices may differ from negotiated/free tiers.
 
 This AI-assisted review is a focused engineering control review, not a substitute for a professional security or financial audit.

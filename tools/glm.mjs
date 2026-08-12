@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 /**
  * Talk to GLM 5.2 through Ollama, so a second model can read this repo's diffs.
+ * This is deliberately the ONE remaining Ollama dependency: a development
+ * reviewer unrelated to the product's OpenRouter model layer. GLM 5.2 is not
+ * available on OpenRouter's permitted free tier, so this tool is not repointed
+ * at a different model and does not claim to be an OpenRouter client.
  *
  * WHY A WRAPPER AND NOT `ollama run`. `ollama run glm-5.2:cloud "..."` works,
  * but it renders a spinner and cursor-control escapes into stdout, so piping a

@@ -14,7 +14,7 @@
  *
  * WHAT THE PAGE SHOWS, AND WHY IT IS NOT THE MODEL ID.
  *
- * Each seat is a TITLE and a COMPANY. `glm-5.2` told a visitor nothing unless
+ * Each seat is a TITLE and a COMPANY. A raw model id tells a visitor nothing unless
  * they already knew it, and if they already knew it, our first screen was
  * advertising someone else's product. A title says what the seat is FOR.
  *
@@ -45,9 +45,8 @@
  * seat. It was removed, and the reasons are worth keeping because the line is
  * tempting and the objection is not obvious.
  *
- * 1. IT WAS FALSE ON TWO SEATS. Gemma is Google's open lightweight family, not
- *    its flagship — Gemini is. kimi-k2.7-code is a code-specialised variant, not
- *    Moonshot's top general model.
+ * 1. IT WAS FALSE ON TWO SEATS. north-mini-code is Cohere's small code model,
+ *    and gpt-oss-20b is OpenAI's open-weights model, not GPT.
  *
  * 2. IT WAS UNVERIFIABLE ON THE OTHER FIVE. Nobody here has checked that these
  *    versions are their vendors' flagships, and a claim you cannot check is one
@@ -76,7 +75,8 @@
  * ---
  *
  * WHAT DOES NOT CHANGE: the PRIVACY POLICY still names every subprocessor by
- * its real model and service name, including Ollama. Marketing may choose what
+ * its real model and service name, including OpenRouter and its upstream
+ * providers. Marketing may choose what
  * to foreground; a privacy policy may not. Hiding a subprocessor there was the
  * exact defect the legal rewrite in 00daf6a fixed.
  *
@@ -86,53 +86,53 @@
  */
 export const COUNCIL = [
   {
-    model: "glm-5.2",
+    model: "nvidia/nemotron-3-ultra-550b-a55b:free",
     temperature: 0.2,
     free: false,
     title: "The Architect",
-    company: "Zhipu AI",
-  },
-  {
-    model: "kimi-k2.7-code",
-    temperature: 0.3,
-    free: true,
-    title: "The Engineer",
-    company: "Moonshot AI",
-  },
-  {
-    model: "deepseek-v4-pro",
-    temperature: 0.4,
-    free: false,
-    title: "The Analyst",
-    company: "DeepSeek",
-  },
-  {
-    model: "qwen3.5",
-    temperature: 0.5,
-    free: true,
-    title: "The Strategist",
-    company: "Alibaba",
-  },
-  {
-    model: "nemotron-3-ultra",
-    temperature: 0.5,
-    free: false,
-    title: "The Scholar",
     company: "NVIDIA",
   },
   {
-    model: "gemma4",
+    model: "cohere/north-mini-code:free",
+    temperature: 0.3,
+    free: true,
+    title: "The Engineer",
+    company: "Cohere",
+  },
+  {
+    model: "openai/gpt-oss-20b:free",
+    temperature: 0.4,
+    free: false,
+    title: "The Analyst",
+    company: "OpenAI",
+  },
+  {
+    model: "poolside/laguna-s-2.1:free",
+    temperature: 0.5,
+    free: false,
+    title: "The Strategist",
+    company: "Poolside",
+  },
+  {
+    model: "inclusionai/ling-3.0-tiny:free",
+    temperature: 0.6,
+    free: false,
+    title: "The Scholar",
+    company: "InclusionAI",
+  },
+  {
+    model: "google/gemma-4-26b-a4b-it:free",
     temperature: 0.7,
     free: true,
     title: "The Alchemist",
     company: "Google",
   },
   {
-    model: "minimax-m3",
+    model: "nvidia/nemotron-3.5-lightning:free",
     temperature: 0.8,
     free: false,
     title: "The Explorer",
-    company: "MiniMax",
+    company: "NVIDIA",
   },
 ]
   // Sorted by temperature so the ladder reads literal at the top and lateral at

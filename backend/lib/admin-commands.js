@@ -10,7 +10,7 @@
  * database query.
  *
  * The reason is the threat model. This process holds SUPABASE_SERVICE_ROLE_KEY,
- * STRIPE_SECRET_KEY, CLERK_SECRET_KEY and OLLAMA_API_KEY in memory. Any command
+ * STRIPE_SECRET_KEY, CLERK_SECRET_KEY and OPENROUTER_API_KEY in memory. Any command
  * execution at all is a path to those, and the strongest mitigation is not to
  * sanitise the path but to not have one. An allowlist of BINARIES still takes
  * user input; an allowlist of NAMED OPERATIONS takes an identifier from a
@@ -46,8 +46,8 @@ const TRACKED_ENV = [
   "STRIPE_PRICE_YEARLY",
   "GOOGLE_API_KEY",
   "SENTRY_DSN",
-  "OLLAMA_HOST",
-  "OLLAMA_API_KEY",
+  "OPENROUTER_HOST",
+  "OPENROUTER_API_KEY",
   "BRAVE_API_KEY",
   "TAVILY_API_KEY",
   "GOOGLE_SEARCH_API_KEY",
@@ -65,7 +65,7 @@ const TRACKED_ENV = [
  * decision, which is why it is a list and not a pattern like /_KEY$/. A pattern
  * is a rule someone will accidentally satisfy.
  */
-const SHOWABLE = new Set(["COUNCIL_TOOLS", "RATE_LIMIT_STORE", "FRONTEND_URL", "ALLOWED_ORIGINS", "OLLAMA_HOST"]);
+const SHOWABLE = new Set(["COUNCIL_TOOLS", "RATE_LIMIT_STORE", "FRONTEND_URL", "ALLOWED_ORIGINS", "OPENROUTER_HOST"]);
 
 const fmtBytes = (n) => `${Math.round(n / 1024 / 1024)} MB`;
 const fmtDuration = (s) => {

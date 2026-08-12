@@ -10,7 +10,7 @@ things that cost someone an hour to find out.
 ## Layout
 
 - `backend/` — Node/Express, `server.js` plus `lib/`. Supabase for data, Clerk
-  for auth, Stripe for billing, a council of models behind an Ollama-compatible
+  for auth, Stripe for billing, a council of models behind the OpenRouter
   gateway.
 - `frontend/` — React + Vite.
 - Tests: `cd backend && npm test` (node:test, `lib/**/*.test.js`) and
@@ -255,8 +255,8 @@ stops being true.
 *"not supported when using Codex with a ChatGPT account"* — do not retry it.
 
 **Use GLM 5.2 as the second reviewer meanwhile.** `tools/glm.mjs`, through the
-local Ollama daemon, which routes `:cloud` models to the signed-in account. No
-key in the repo.
+local OpenRouter-compatible review path, which routes `:cloud` models to the
+signed-in account. No key in the repo.
 
 ```bash
 node tools/glm.mjs --check                        # round trip, asserts 42

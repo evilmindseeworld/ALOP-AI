@@ -18,6 +18,27 @@ something this file describes, change this file in the same commit.
 
 ---
 
+## OpenRouter migration (2026-08-12)
+
+The model layer moved from the Ollama-shaped gateway to OpenRouter. The
+frontend roster, backend environment names, admin configuration reporting and
+privacy policy now use `OPENROUTER_HOST` and `OPENROUTER_API_KEY`; the deployed
+policy copy was updated alongside the source. The seven seats are:
+
+`nvidia/nemotron-3-ultra-550b-a55b:free` (NVIDIA, 0.2),
+`cohere/north-mini-code:free` (Cohere, 0.3),
+`openai/gpt-oss-20b:free` (OpenAI, 0.4),
+`poolside/laguna-s-2.1:free` (Poolside, 0.5),
+`inclusionai/ling-3.0-tiny:free` (InclusionAI, 0.6),
+`google/gemma-4-26b-a4b-it:free` (Google, 0.7), and
+`nvidia/nemotron-3.5-lightning:free` (NVIDIA, 0.8).
+
+Live constraints: free-model requests are rate limited per minute and per day
+on the zero-credit account. A 429 from an upstream provider is transient and
+is retried.
+
+---
+
 ## The one thing to read before touching the frontend
 
 **The empty-state ornament set is the specification, and it has now been
@@ -153,7 +174,7 @@ council may be perfectly healthy in production, or badly broken, and this says
 nothing either way.
 
 **Why the production probe could not settle it either.** This runner has no
-`OLLAMA_HOST` and no `OLLAMA_API_KEY`; `backend/.env` does not carry them. The
+`OPENROUTER_HOST` and no `OPENROUTER_API_KEY`; `backend/.env` does not carry them. The
 gateway cannot be reached from here at all, so no measurement made on this
 machine can speak for production.
 
@@ -171,7 +192,7 @@ machine can speak for production.
   the thing any real probe has to establish first.
 
 **The one action that would settle it**, and it needs the owner: an
-authenticated probe of the real `OLLAMA_HOST` using the seven roster names and
+authenticated probe of the real `OPENROUTER_HOST` using the seven roster names and
 the exact payload above, measuring TTFT per seat over several runs. Until that
 exists, do not remove seats, do not raise the whip, and do not repeat the
 "one seat in six" number — it measured something else.
@@ -1074,7 +1095,7 @@ user, and anything older than seven days is ignored.
 
 - **The authenticated seat probe is STILL the owner's to run, and it is now the
   oldest open item.** Confirmed again 2026-08-12: this machine has no
-  `OLLAMA_HOST` and no `OLLAMA_API_KEY`, and `backend/.env` does not carry them,
+  `OPENROUTER_HOST` and no `OPENROUTER_API_KEY`, and `backend/.env` does not carry them,
   so nothing measured here can speak for production. The probe is the seven
   roster names against the real gateway with the exact payload
   `{ model, messages, stream, options: { temperature, num_predict } }`,

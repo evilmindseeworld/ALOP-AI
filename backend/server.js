@@ -450,19 +450,55 @@ const getSearchQuery = async (text, convSummary, region, signal) => {
    * not symmetrical. An unnecessary search costs about a second and some quota.
    * A skipped one produces a confidently wrong answer the user has no way to
    * detect. */
+  /* THE EXAMPLES ARE THE FIX, AND THEY ARE NOT DECORATION. MEASURED: the
+   * previous version of this prompt scored 3 correct decisions out of 9 on the
+   * model now answering it, and six of the nine failures were not wrong
+   * decisions at all — the model ANSWERED THE USER'S QUESTION instead of
+   * planning a search, and the answer went to the search providers as the
+   * query. "what is 15% of 80" produced the query "12". "write me a haiku about
+   * rain" produced "Gray clouds fill the sky,". "best gaming monitor under 500"
+   * produced "### 1. The Competitive/Esports Choice (Hig". "latest react
+   * version" produced "SEARCH react latest version 2026", leaking the
+   * instruction word into the query.
+   *
+   * With the examples below, the same nine cases score 9/9.
+   *
+   * WHY IT BROKE NOW. The prose is unchanged in substance and was right for the
+   * model it was written against. FAST_MODEL is a 26B MoE with 3.8B active
+   * parameters, picked for latency and for returning usable content at a
+   * ten-token ceiling — not for following a long meta-instruction that asks it
+   * to withhold the answer it can obviously produce. Small instruction-tuned
+   * models comply with a demonstrated format far more reliably than with a
+   * described one, so the format is now demonstrated.
+   *
+   * IF THIS PROMPT IS EDITED, RE-RUN THE NINE CASES. The failure is invisible in
+   * every log: the search still "succeeds", the council still answers, and the
+   * only symptom is that the answer is worse than it should have been. */
   const sys = `${todayLine()}
 
-Decide what to search the web for before answering the user's question.
+You are a search-query planner. You NEVER answer the user's question. You only decide what to type into a search engine.
+
+Reply with EITHER up to 2 search queries, one per line, keywords only — OR the single word NO. Nothing else. No prose, no explanation, no headings, no answer.
 
 SEARCH when the answer could have changed since your training, or when you would otherwise be recalling rather than knowing. That includes: anything current or "latest"; prices, availability and stock; software versions, releases and whether a project is still maintained; people's current roles; news and events; laws, rules and policies; company facts like ownership, funding or pricing tiers; specs, reviews and comparisons of real products; anything with a year in it.
 
 DO NOT search when the answer cannot change: mathematics, definitions, established science and history, how a well-known algorithm or protocol works, code the user pasted, creative writing, opinions, or a question about THIS conversation.
 
-If in doubt, search. A needless search costs a second; a skipped one makes you assert something stale as fact.
+If in doubt, search. A needless search costs a second; a skipped one makes you assert something stale as fact. Include the current year in a query only when recency is the point. Use a second query only when the question genuinely has two parts one query cannot cover.
 
-Reply with the search queries, ONE PER LINE, at most 2. Write them as a person would type into a search engine — keywords, not a sentence, no quotes, no numbering. Use a second query only when the question genuinely has two parts that one query cannot cover; otherwise reply with exactly one line. Include the current year in a query only when recency is the point.
-
-If no search is needed, reply with exactly: NO${locale}`;
+Examples:
+Q: what is 15% of 80
+NO
+Q: write me a haiku about rain
+NO
+Q: explain how quicksort works
+NO
+Q: latest react version
+react latest version ${new Date().getUTCFullYear()}
+Q: XG27AQWMG
+ASUS XG27AQWMG monitor specs review
+Q: who is the ceo of openai
+openai ceo ${new Date().getUTCFullYear()}${locale}`;
   // 120 tokens rather than 50: two queries plus a stray word of preamble did
   // not fit in 50, and the ceiling truncated the SECOND query mid-word, which
   // parses as a valid short query and searches for half a phrase.

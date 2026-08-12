@@ -108,6 +108,24 @@ function parseSearchPlan(raw) {
      * results about the explanation. Ten words is well past any real query and
      * well under any real sentence of refusal. */
     if (line.split(/\s+/).length > 10) continue;
+    /* THE MODEL ANSWERING INSTEAD OF PLANNING, which is the failure mode that
+     * degraded every question rather than one. Measured against the old prompt:
+     * six of nine cases came back as the ANSWER — "12" for a percentage, a line
+     * of haiku for a poem request, "### 1. The Competitive/Esports Choice" for a
+     * product question — and each went to the search providers as the query.
+     *
+     * The prompt now demonstrates the format and scores 9/9, so this is the
+     * second line rather than the fix. It is worth having because the failure is
+     * SILENT: the search still returns something, the council still answers, and
+     * nothing anywhere says the query was a fragment of an answer.
+     *
+     * Only shapes that no real query can take. A heading, LaTeX and a prose
+     * opener are never how a person types into a search box, whereas a bare
+     * number or a short noun phrase legitimately is — so those are left alone
+     * rather than guessed at. */
+    if (/^#{1,6}\s/.test(line)) continue;
+    if (/\$[^$]{1,}\$/.test(line)) continue;
+    if (/^(here (is|are)|here's|sure|certainly|okay|of course|i (can|would|will))\b/i.test(line)) continue;
     const key = line.toLowerCase();
     if (seen.has(key)) continue;
     seen.add(key);

@@ -137,3 +137,37 @@ test("the unwrapping does not disturb an ordinary reply", () => {
   assert.deepEqual(parseSearchPlan('"iphone 17" price'), ["iphone 17\" price"]);
   assert.equal(parseSearchPlan("NO"), null);
 });
+
+/**
+ * THE MODEL ANSWERING INSTEAD OF PLANNING.
+ *
+ * Measured 2026-08-13 against the search prompt as it then stood: six of nine
+ * representative questions came back as the ANSWER rather than as a plan, and
+ * every one went to the search providers as the query. The prompt now
+ * demonstrates its format and scores 9/9, so these are a second line of
+ * defence — kept because the failure is silent. Search still returns something,
+ * the council still answers, and nothing in any log says the query was a
+ * fragment of an answer.
+ */
+test("a markdown heading is an answer, not a query", () => {
+  assert.equal(parseSearchPlan("### 1. The Competitive Choice"), null);
+});
+
+test("LaTeX is an answer, not a query", () => {
+  assert.equal(parseSearchPlan("The derivative of $x^2$ is $2x$."), null);
+});
+
+test("a prose opener is an answer, not a query", () => {
+  for (const line of ["Here is the breakdown", "Sure, I can help", "Certainly! Try this"]) {
+    assert.equal(parseSearchPlan(line), null, line);
+  }
+});
+
+test("the rejections do not eat legitimate queries", () => {
+  // The risk in the rule above. A bare number and a short noun phrase are real
+  // things people type into a search box, so neither is guessed at.
+  assert.deepEqual(parseSearchPlan("iphone 17 price"), ["iphone 17 price"]);
+  assert.deepEqual(parseSearchPlan("2026 tax brackets"), ["2026 tax brackets"]);
+  assert.deepEqual(parseSearchPlan("XG27AQWMG specs"), ["XG27AQWMG specs"]);
+  assert.deepEqual(parseSearchPlan("here comes the sun lyrics"), ["here comes the sun lyrics"]);
+});

@@ -44,6 +44,77 @@ Live constraints: free-model requests are rate limited per minute and per day
 on the zero-credit account. A 429 from an upstream provider is transient and
 is retried.
 
+### THE DAILY CAP IS THE PRODUCT'S BINDING CONSTRAINT, AND IT IS THE OWNER'S CALL
+
+**50 model requests per UTC day, per ACCOUNT, shared across every user.**
+MEASURED, from a live response body rather than from the docs — the rendered
+docs page carries the table client-side and scrapes empty:
+
+```
+X-RateLimit-Limit: 50   X-RateLimit-Remaining: 0
+limit_source: openrouter_free_tier_daily
+"Add 10 credits to unlock 1000 free model requests per day"
+```
+
+A council turn spends seven seats plus synthesis plus the router's short calls,
+so **the whole product gets roughly five turns per day.** Probing the roster
+exhausted 2026-08-12's allowance, which is how the number was found.
+
+$10 of credits raises this to 1000 requests/day — about a hundred turns — and
+the models still cost $0, because the roster is entirely `:free` ids. That is
+one purchase, not a per-token bill. **It is the single decision that decides
+whether this product is usable, and it belongs to the owner.**
+
+Until it is made, `/api/council` refuses with a 503 and a `Retry-After` the
+moment the cap is observed, before the telemetry row and before the spend
+reservation. The latch lives above `callModel` in server.js; the reason it is a
+latch and not a plain catch is written there.
+
+**THE DOLLAR CEILING NO LONGER DESCRIBES THE REAL CONSTRAINT.** `spend.js`
+meters $5/day and $20/month, and every model call now costs exactly $0, so that
+ceiling cannot bind on models — only on search and page fetches, which do still
+cost money. The binding constraint became REQUESTS, account-wide. Sol's
+recommendation, unimplemented on purpose because the numbers are the owner's:
+keep the dollar ceilings as protection in case a paid model ever returns, and
+add a separate account-wide request allowance that reserves request units before
+a turn, reconciles against `GET /api/v1/key` periodically, and degrades the
+council size or refuses explicitly when fewer than the required requests remain.
+Do not delete the dollar ceiling to "simplify" — it is the thing that still works
+if one seat is ever swapped to a paid model.
+
+### Two things not to re-derive
+
+**An unpaced probe sweep measures our own rate limit, not the providers'.** The
+first sweep produced 429s on six models and every one was `free-models-per-min`
+— ours. Pace requests 5s apart before concluding anything about a provider. Two
+models still 429'd when paced (`gemma-4-31b`, `gpt-oss-20b`); those are real
+contention and are retried rather than dropped, because both had healthy samples.
+
+**Latencies were measured at `max_tokens: 200` and the council runs at 1000.**
+Generation time is roughly linear in tokens, so the numbers in server.js are a
+FLOOR, not a prediction. `nemotron-3-super-120b` at 23.9s measured is the seat
+this matters most for against a 30s whip — it is a Pro seat and quorum is 3, so
+the fast seats close the room without it.
+
+### Loose ends, stated rather than tidied away
+
+- `frontend/src/__tests__/useChats.test.jsx` "removes the row before the server
+  answers" failed once in a full-suite run and passes in isolation and on a
+  re-run of the full suite. Load-dependent flake, NOT caused by this migration —
+  checked against pre-migration `940e457` in a scratch worktree. Unrelated to
+  the model layer; recorded so the next red run is not mistaken for a new break.
+- `tools/glm.mjs` is deliberately still an Ollama client. GLM is not on
+  OpenRouter's free tier, and it is a dev-only diff reviewer, not part of the
+  product's model layer. It is the one remaining Ollama dependency in the repo.
+- `og.png` is a build artifact of `og.svg`. Confirm it was regenerated, or the
+  link preview still shows the old temperature ladder — that is the copy of the
+  roster the most people see and the only one invisible from inside the app.
+- Commit `43dafd3` was Claude's and was AMENDED by a peer to fold in
+  `tools/or-probe.mjs`, so one commit carries two authors' work. Left as-is
+  because four commits landed on top before it was noticed and nothing was
+  pushed yet. Do not amend another agent's commit in a shared tree; stage file by
+  file instead.
+
 ---
 
 ## The one thing to read before touching the frontend

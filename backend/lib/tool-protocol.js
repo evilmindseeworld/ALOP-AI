@@ -1,10 +1,9 @@
 /**
  * Reading tool requests out of a model reply.
  *
- * `callModel` talks to an Ollama-shaped gateway. Ollama's /api/chat accepts a
- * `tools` array and answers with `message.tool_calls`, but that support is per
- * model, and these are custom model names on a hosted gateway — so it cannot
- * be assumed for any given council member.
+ * `callModel` talks to OpenRouter's OpenAI-compatible chat-completions API.
+ * Native calls arrive at `choices[0].message.tool_calls`, but tool support is
+ * model-dependent and cannot be assumed for every council member.
  *
  * Both paths land behind one parser:
  *
@@ -36,9 +35,9 @@ const MAX_ARGS_CHARS = 4000;
 /**
  * Coerce a tool-call argument bag into a plain object.
  *
- * Ollama returns `arguments` as an object. OpenAI-shaped gateways return it as
- * a JSON STRING. Some models emit a string even in native mode. All three
- * arrive here, and a caller that assumed one shape would silently see `{}`.
+ * OpenRouter returns `arguments` as a JSON STRING. The legacy gateway shape
+ * used an object, and some models vary even in native mode. Both arrive here,
+ * and a caller that assumed one shape would silently see `{}`.
  */
 const asArgs = (raw) => {
   if (raw == null) return {};
@@ -63,14 +62,14 @@ const asCall = (name, rawArgs) => {
   return { name: trimmed, args };
 };
 
-/** Native path: message.tool_calls, in either the Ollama or OpenAI shape. */
+/** Native path: message.tool_calls, accepting OpenRouter and legacy flat shapes. */
 const fromNative = (message) => {
   const raw = message && message.tool_calls;
   if (!Array.isArray(raw)) return [];
   return raw
     .map((c) => {
       if (!c || typeof c !== "object") return null;
-      // Ollama nests under .function; some gateways put name/arguments flat.
+      // OpenRouter nests under .function; the legacy flat shape stays supported.
       const fn = c.function && typeof c.function === "object" ? c.function : c;
       return asCall(fn.name, fn.arguments ?? fn.args);
     })
@@ -111,8 +110,8 @@ const stripFences = (content) =>
   typeof content === "string" ? content.replace(new RegExp(FENCE.source, "gi"), "").trim() : "";
 
 /**
- * @param {object} response  a gateway reply: { message?: {content, tool_calls} }
- *                           or a bare string, which is what callModel returns today.
+ * @param {object} response  an OpenRouter reply with choices[0].message, a
+ *                           message-shaped reply, or a bare completion string.
  * @returns {{calls: Array<{name: string, args: object}>, text: string, isFinal: boolean}}
  *   `isFinal` means "this member is done and this text is its answer". A reply
  *   carrying calls is never final, even when it also carries prose — models
@@ -121,10 +120,11 @@ const stripFences = (content) =>
  *   round early with a sentence that answers nothing.
  */
 function parseToolRequests(response) {
+  const openRouterMessage = response?.choices?.[0]?.message;
   const message =
     typeof response === "string"
       ? { content: response }
-      : (response && response.message) || response || {};
+      : openRouterMessage || (response && response.message) || response || {};
 
   const content = typeof message.content === "string" ? message.content : "";
   const calls = [...fromNative(message), ...fromText(content)].slice(0, MAX_CALLS_PER_REPLY);

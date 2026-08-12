@@ -16,12 +16,11 @@
  * estimate errs toward protecting the owner.
  *
  * THE PRICES ARE ESTIMATES AND THEY ARE MEANT TO BE CALIBRATED. Nothing in this
- * codebase meters tokens — the Ollama gateway's responses are consumed for
- * their text and the counts are discarded — so a real per-token bill cannot be
- * computed from what the app currently knows. What it DOES know, exactly, is
- * how many model calls and tool calls a turn made, because `turn-telemetry`
- * already counts them for the latency work. So a turn is priced by what it did,
- * at a per-operation rate, and every rate is overridable by environment
+ * OpenRouter reports `usage.prompt_tokens`, `usage.completion_tokens`, and
+ * `usage.cost` on responses. The current `:free` model calls cost $0; search
+ * and page-fetch calls still cost real money. This ceiling deliberately keeps
+ * pricing model calls by operation so it remains protective if any seat is
+ * swapped to a paid model, and every rate is overridable by environment
  * variable without a deploy.
  *
  * Read the numbers as "roughly right and deliberately conservative", not as a

@@ -1,10 +1,11 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { parseToolRequests, MAX_CALLS_PER_REPLY } = require("./tool-protocol");
+const { callModel, parseOpenRouterSseLine } = require("./openrouter");
 
 // ===== native =====
 
-test("reads Ollama-shaped tool_calls", () => {
+test("keeps reading legacy object-shaped tool_call arguments", () => {
   const r = parseToolRequests({
     message: { content: "", tool_calls: [{ function: { name: "web_search", arguments: { query: "OLED burn-in" } } }] },
   });
@@ -20,6 +21,80 @@ test("reads arguments delivered as a JSON STRING", () => {
     message: { tool_calls: [{ function: { name: "web_search", arguments: '{"query":"QD-OLED"}' } }] },
   });
   assert.deepEqual(r.calls, [{ name: "web_search", args: { query: "QD-OLED" } }]);
+});
+
+test("reads OpenRouter choices[0].message tool calls with JSON-string arguments", () => {
+  const r = parseToolRequests({
+    choices: [{
+      message: {
+        content: null,
+        tool_calls: [{
+          id: "call_123",
+          type: "function",
+          function: { name: "web_search", arguments: '{"query":"OpenRouter free models"}' },
+        }],
+      },
+    }],
+  });
+  assert.deepEqual(r.calls, [{ name: "web_search", args: { query: "OpenRouter free models" } }]);
+  assert.equal(r.isFinal, false);
+});
+
+// ===== OpenRouter adapter =====
+
+test("OpenRouter SSE parser skips keepalives and recognizes provider completion", () => {
+  assert.deepEqual(parseOpenRouterSseLine(": OPENROUTER PROCESSING"), { skip: true, done: false, text: "" });
+  assert.deepEqual(parseOpenRouterSseLine("data: [DONE]"), { skip: false, done: true, text: "" });
+  assert.deepEqual(
+    parseOpenRouterSseLine('data: {"choices":[{"delta":{"content":"hello"},"finish_reason":null}]}'),
+    { skip: false, done: false, text: "hello" },
+  );
+  assert.deepEqual(
+    parseOpenRouterSseLine('data: {"choices":[{"delta":{"content":null,"reasoning":"thinking aloud"},"finish_reason":"stop"}]}'),
+    { skip: false, done: true, text: "thinking aloud" },
+  );
+});
+
+test("callModel falls back from empty content to reasoning details", async (t) => {
+  const originalFetch = global.fetch;
+  t.after(() => { global.fetch = originalFetch; });
+  let body;
+  global.fetch = async (_url, options) => {
+    body = JSON.parse(options.body);
+    return new Response(JSON.stringify({
+      choices: [{ message: { content: null, reasoning_details: [{ text: "usable answer" }] } }],
+    }), { status: 200, headers: { "content-type": "application/json" } });
+  };
+
+  const answer = await callModel("https://openrouter.ai/api/v1", "test-key", "model:free", [], 0.2, 1000, 200);
+  assert.equal(answer, "usable answer");
+  assert.deepEqual(body.reasoning, { exclude: true });
+  assert.equal(body.stream, false);
+  assert.equal(body.max_tokens, 200);
+});
+
+test("callModel retries a transient 429", async (t) => {
+  const originalFetch = global.fetch;
+  t.after(() => { global.fetch = originalFetch; });
+  let attempts = 0;
+  global.fetch = async () => {
+    attempts++;
+    if (attempts < 3) return new Response('{"error":{"metadata":{"provider_code":429}}}', { status: 429 });
+    return new Response('{"choices":[{"message":{"content":"recovered"}}]}', { status: 200 });
+  };
+  const answer = await callModel("https://openrouter.ai/api/v1", "test-key", "model:free", [], 0.2, 3000, 200);
+  assert.equal(answer, "recovered");
+  assert.equal(attempts, 3);
+});
+
+test("callModel returns an empty string without fetching when already aborted", async (t) => {
+  const originalFetch = global.fetch;
+  t.after(() => { global.fetch = originalFetch; });
+  global.fetch = async () => assert.fail("an aborted call must not reach fetch");
+  const controller = new AbortController();
+  controller.abort();
+  const answer = await callModel("https://openrouter.ai/api/v1", "test-key", "model:free", [], 0.2, 3000, 200, controller.signal);
+  assert.equal(answer, "");
 });
 
 test("reads a flat name/arguments shape with no .function nesting", () => {

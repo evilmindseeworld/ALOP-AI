@@ -32,6 +32,7 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const compression = require('compression');
+const { sseAwareFilter } = require('./lib/sse-compression');
 const rateLimit = require('express-rate-limit');
 const timeout = require('connect-timeout');
 const crypto = require('crypto');
@@ -1658,7 +1659,7 @@ app.post('/api/stripe/webhook', requireStripe, express.raw({ type: 'application/
   try { if (event.type === 'checkout.session.completed') { const s = event.data.object; const email = s.customer_email || s.customer_details?.email; if (email) await supabase.from('users').update({ plan:'pro', stripe_customer_id: s.customer, stripe_subscription_id: s.subscription }).eq('email', email.toLowerCase()); } if (event.type === 'invoice.paid') await supabase.from('users').update({ plan:'pro' }).eq('stripe_customer_id', event.data.object.customer); if (['customer.subscription.deleted','customer.subscription.updated'].includes(event.type)) { const sub = event.data.object; await supabase.from('users').update({ plan: sub.status === 'active' ? 'pro' : 'free' }).eq('stripe_subscription_id', sub.id); } invalidateUserRows(); res.json({ received: true }); } catch (err) { Sentry.captureException(err); res.status(500).send('Webhook failed'); }
 });
 
-app.use(compression());
+app.use(compression({ filter: sseAwareFilter }));
 app.use(timeout('300s'));
 app.use((req, res, next) => { if (req.timedout) return res.status(503).json({ error: 'Timeout' }); next(); });
 

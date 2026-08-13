@@ -113,6 +113,9 @@ function toolMessages(baseMsgs, registry, ctx) {
   const base = Array.isArray(baseMsgs) && baseMsgs.length ? baseMsgs : [{ role: "system", content: "" }];
   const head = base[0] && base[0].role === "system" ? base[0].content : "";
   const rest = base[0] && base[0].role === "system" ? base.slice(1) : base;
+  const hasSearchResults = !isFinalRound && toolResults.some(
+    ({ call, result }) => call?.name === "web_search" && result?.ok && /\[id: [0-9a-f-]{36}\]/i.test(result.content || ""),
+  );
 
   /* THE FINAL ROUND IS ANSWER-ONLY. It cannot request a tool, and anything it
    * asks for cannot run, so serialising every description into every member's
@@ -131,7 +134,10 @@ function toolMessages(baseMsgs, registry, ctx) {
   // researched. The loop passes isFinalRound precisely so this can be said.
   const instruction = isFinalRound
     ? "This is the final round. Do NOT request any more tools — anything you ask for now will not run. Answer with what you have."
-    : 'If you need information you do not have, request a tool INSTEAD of answering, by emitting exactly one fenced block:\n\n```tool_call\n{"name": "web_search", "args": {"query": "your query"}}\n```\n\nOtherwise answer normally. Do not do both. Do not request a tool for something you already know.';
+    : 'If you need information you do not have, request a tool INSTEAD of answering, by emitting exactly one fenced block:\n\n```tool_call\n{"name": "web_search", "args": {"query": "your query"}}\n```\n\nOtherwise answer normally. Do not do both. Do not request a tool for something you already know.' +
+      (hasSearchResults
+        ? "\n\nSearch results are available. If their snippets are not enough, request read_url for AT MOST ONE result for this question by passing the opaque id shown beside it exactly as written. Do not read every result. If the snippets are enough, answer normally."
+        : "");
 
   // read_file takes an opaque id, which means the ids have to be KNOWABLE or
   // the tool is unusable — a model cannot guess a UUID. This manifest is the

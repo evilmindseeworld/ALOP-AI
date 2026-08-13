@@ -141,6 +141,44 @@ test("results arrive as a USER turn, appended last", () => {
   assert.ok(last.content.includes("OLED"));
 });
 
+test("search results invite one follow-up read in SYSTEM position", () => {
+  const m = toolMessages(BASE, registry, {
+    round: 2,
+    toolResults: [{
+      call: { name: "web_search", args: { query: "OLED" } },
+      result: { ok: true, summary: "2 results", content: "1. [id: 11111111-2222-4333-8444-555555555555] OLED monitor\n   https://example.test\n   snippet" },
+    }],
+  });
+  assert.match(m[0].content, /AT MOST ONE/);
+  assert.match(m[0].content, /opaque id shown beside it/);
+  assert.doesNotMatch(m.at(-1).content, /AT MOST ONE/);
+  assert.doesNotMatch(m.at(-1).content, /opaque id shown beside it/);
+});
+
+test("the final round does not carry the search-to-read nudge", () => {
+  const m = toolMessages(BASE, registry, {
+    round: 3,
+    isFinalRound: true,
+    toolResults: [{
+      call: { name: "web_search", args: { query: "OLED" } },
+      result: { ok: true, summary: "2 results", content: "search results" },
+    }],
+  });
+  assert.doesNotMatch(m[0].content, /AT MOST ONE/);
+  assert.doesNotMatch(m[0].content, /opaque id shown beside it/);
+});
+
+test("a search result without a readable id does not invite read_url", () => {
+  const m = toolMessages(BASE, registry, {
+    round: 2,
+    toolResults: [{
+      call: { name: "web_search", args: { query: "OLED" } },
+      result: { ok: true, summary: "1 result", content: "1. Untitled\n   snippet without a URL" },
+    }],
+  });
+  assert.doesNotMatch(m[0].content, /AT MOST ONE/);
+});
+
 test("a failed result is shown as failed rather than omitted", () => {
   // A member that cannot see the search failed will assume it was never run
   // and ask again, burning a round against the ceiling.

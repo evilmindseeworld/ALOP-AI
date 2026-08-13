@@ -141,6 +141,14 @@ test("every offered tool carries a description and a schema", () => {
   }
 });
 
+test("read_url tells the model when and how to use a search result id", () => {
+  const read = full().list().find((tool) => tool.name === "read_url");
+  assert.match(read.description, /AT MOST ONE/);
+  assert.match(read.description, /when its snippet is not enough/);
+  assert.match(read.description, /opaque id shown beside that result/);
+  assert.match(read.description, /never pass or construct a URL/);
+});
+
 // ===== execution =====
 
 test("web_search renders results the model can act on", async () => {

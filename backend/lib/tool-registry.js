@@ -200,7 +200,7 @@ function buildRegistry(deps = {}) {
     tools.push({
       name: "read_url",
       description:
-        "Fetch and read one web_search result as text. Pass its opaque id exactly as shown; never pass or construct a URL.",
+        "Read AT MOST ONE web_search result for this question when its snippet is not enough. Pass the opaque id shown beside that result exactly as written; never pass or construct a URL.",
       schema: { id: { type: "string", required: true, maxLength: 64 } },
       run: async ({ id }, { signal } = {}) => {
         const url = readableResults.get(id);

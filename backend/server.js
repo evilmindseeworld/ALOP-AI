@@ -2828,7 +2828,10 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
      * provenance in the durable key so enabling seeded tools cannot replay a
      * Wikipedia/plain-council answer written before the flag changed. */
     const answerExecutionMode = SEEDED_SEARCH
-      ? 'tools-seeded'
+      /* v2 invalidates answers written while Wikipedia still intercepted the
+       * seeded path before commit 507b7b0. Keep this explicit: deleting shared
+       * durable rows is broader and less recoverable than a namespace bump. */
+      ? 'tools-seeded-v2'
       : TOOLS_ENABLED ? 'tools-live' : TOOLS_SHADOW ? 'tools-shadow' : 'tools-off';
     const cacheKey = personalised
       ? null

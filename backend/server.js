@@ -345,8 +345,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
       if (frame.text) {
         if (protocolCandidate) {
           held.push(frame.text);
-          const first = held.join('').trimStart()[0];
-          protocolCandidate = !first || first === '{' || first === '[' || first === '<' || first === '`';
+          protocolCandidate = looksLikeProtocolOpening(held.join(''));
           if (protocolCandidate) continue;
           frame.text = held.join('');
           held.length = 0;
@@ -948,7 +947,7 @@ const { boundedPage, pageInfo } = require('./lib/pagination');
 const { noStoreApi } = require('./lib/http-cache');
 const { detectRegion, regionHint } = require('./lib/region');
 const { firstWithResults, toolMessages, summariseProbe, UNTRUSTED_PREAMBLE } = require('./lib/council-tools');
-const { parseToolRequests, sanitizeAnswerText, userRequestedProtocolJson } = require('./lib/tool-protocol');
+const { parseToolRequests, sanitizeAnswerText, userRequestedProtocolJson, looksLikeProtocolOpening } = require('./lib/tool-protocol');
 const { prepareUpload, UploadRejected, MAX_FILES_PER_CHAT } = require('./lib/file-intake');
 
 /**

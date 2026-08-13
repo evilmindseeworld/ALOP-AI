@@ -174,6 +174,34 @@ const isWholeProtocolReply = (content) => {
   }
 };
 
+/**
+ * Could this partial stream still turn out to be a whole-reply protocol blob?
+ *
+ * The streamer holds text back while this is true, so that a blob is never
+ * half-painted before it can be rejected. It is therefore a LATENCY decision as
+ * much as a correctness one: every character it holds is a character the user
+ * is not reading yet, and answering "maybe" forever means no progressive
+ * streaming at all.
+ *
+ * WHICH IS WHAT A BARE FIRST-CHARACTER TEST DID. A backtick opens both a
+ * ```json blob and an ordinary ```js code block, so testing the first character
+ * alone held EVERY code answer to the end of the stream — on a product whose
+ * own starter card is "Debug some code". The fence has to be read as far as its
+ * info string before it can be judged, and undecided has to end the moment the
+ * newline arrives.
+ */
+const looksLikeProtocolOpening = (partial) => {
+  const text = typeof partial === "string" ? partial.trimStart() : "";
+  if (!text) return true; // nothing to judge yet
+  const first = text[0];
+  if (first === "{" || first === "[" || first === "<") return true;
+  if (first !== "`") return false;
+  const fence = text.match(/^`{1,3}[ \t]*([^\n]*)(\n?)/);
+  if (!fence) return true;              // still inside the opening backticks
+  if (!fence[2]) return fence[1].length < 12; // no newline yet: undecided, but bounded
+  return /^(?:json|tool[_-]?call)$/i.test(fence[1].trim());
+};
+
 /** The contextual escape hatch for a user who genuinely requested this shape. */
 const userRequestedProtocolJson = (message) => {
   const text = typeof message === "string" ? message : "";
@@ -218,6 +246,7 @@ module.exports = {
   parseToolRequests,
   sanitizeAnswerText,
   isWholeProtocolReply,
+  looksLikeProtocolOpening,
   userRequestedProtocolJson,
   MAX_CALLS_PER_REPLY,
   MAX_ARGS_CHARS,

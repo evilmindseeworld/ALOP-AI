@@ -80,12 +80,46 @@ with no address anywhere in the model-facing string.
   never went through the loop's parser at all, which is why the leak appeared
   there and not in a tool round.
 - **`cc1bf2d` — the embedding model is `gemini-embedding-001`**, 768 dimensions,
-  read off Google's current docs rather than guessed. **Every vector written by
-  `text-embedding-004` needs a full re-embed**; the dimension is unchanged, so
-  no schema migration, but old and new vectors are not comparable and semantic
-  recall will be wrong until that backfill runs. Nobody has run it.
+  read off Google's current docs rather than guessed. Confirmed live: **zero
+  `[EMBED] 404` lines since the restart**, against one on every turn before it.
 
-1018 backend tests green.
+  **THERE IS NO BACKFILL TO RUN, and the claim that there was is retracted.**
+  It was written here as "every `text-embedding-004` vector needs a re-embed",
+  which is what you would reason from a model swap and is not what the database
+  says. Counted against production through PostgREST on 2026-08-13:
+
+  ```
+  user_facts total rows            2
+  rows with a non-null embedding   0
+  ```
+
+  The 404 meant no vector was ever written, so there is nothing incomparable
+  and nothing to migrate. The re-embed was a prior asserted as a measurement —
+  the same mistake this file's own rules name. Two rows is also worth knowing
+  on its own: semantic fact recall has never had data to work with.
+
+- **`8174714` + the follow-up — a protocol blob is a FAILED ANSWER, not text to
+  strip.** A seat that replies with nothing but a tool request or a
+  `{"queries": […]}` plan is now reported as a seat that did not answer, so the
+  whip and the fallback pick another writer. Stripping it would have rendered a
+  blank reply, which looks worse than the leak. Applied at every answer boundary
+  — search, Wikipedia, memory, greeting, council, tool loop, fallback, solo and
+  synthesis — not only the search path where it was seen. A user who explicitly
+  asks for that JSON shape still gets it.
+
+  **THE FIRST CUT OF THAT HELD EVERY CODE ANSWER TO THE END OF THE STREAM, and
+  it is the interesting part.** To avoid half-painting a blob, the streamer
+  holds text back while the reply "might still be protocol" — and that test was
+  the FIRST CHARACTER. A backtick opens both a ```` ```json ```` blob and an
+  ordinary ```` ```js ```` code block, so the candidate flag never cleared and a
+  code answer arrived in one paint with zero progressive chunks, on a product
+  whose own starter card is "Debug some code". Measured that way before fixing
+  it: 4 frames in, 0 emitted. `looksLikeProtocolOpening` now reads the fence as
+  far as its info string and releases the moment the newline says `js` rather
+  than `json`. **A correctness guard that runs on the streaming path is a
+  latency change; judge it as one.**
+
+1025 backend tests green.
 
 ## Not a bug, a missing feature
 

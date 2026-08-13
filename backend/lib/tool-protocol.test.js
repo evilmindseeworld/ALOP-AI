@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { parseToolRequests, sanitizeAnswerText, userRequestedProtocolJson, MAX_CALLS_PER_REPLY } = require("./tool-protocol");
+const { parseToolRequests, sanitizeAnswerText, userRequestedProtocolJson, looksLikeProtocolOpening, MAX_CALLS_PER_REPLY } = require("./tool-protocol");
 const { callModel, parseOpenRouterSseLine } = require("./openrouter");
 
 // ===== native =====
@@ -274,4 +274,26 @@ test("an explicitly requested queries-array JSON reply remains an answer", () =>
   const raw = '{"queries":["OECD outlook"]}';
   assert.equal(userRequestedProtocolJson("Show me a JSON object with a queries array"), true);
   assert.deepEqual(sanitizeAnswerText(raw, { allowProtocolJson: true }), { text: raw, rejected: false });
+});
+
+/*
+ * A CODE ANSWER MUST NOT BE HELD TO THE END OF THE STREAM.
+ *
+ * The first version of the streaming hold tested only the first character, and
+ * a backtick opens both a ```json blob and an ordinary ```js code block — so
+ * every code answer was buffered whole and arrived in one paint. Measured
+ * against that version: 0 progressive chunks for a four-frame code answer.
+ */
+test("a fenced code answer stops being a protocol candidate at its info string", () => {
+  assert.equal(looksLikeProtocolOpening("```"), true, "undecided while the fence is still opening");
+  assert.equal(looksLikeProtocolOpening("```js\n"), false, "a js fence is an answer, not a protocol blob");
+  assert.equal(looksLikeProtocolOpening("```python\nprint(1)"), false);
+  assert.equal(looksLikeProtocolOpening("```json\n"), true, "a json fence still has to be judged");
+  assert.equal(looksLikeProtocolOpening("```tool_call\n"), true);
+});
+
+test("prose is released on the first frame", () => {
+  assert.equal(looksLikeProtocolOpening("Here is the answer"), false);
+  assert.equal(looksLikeProtocolOpening(""), true, "nothing to judge yet");
+  assert.equal(looksLikeProtocolOpening('{"queries"'), true);
 });

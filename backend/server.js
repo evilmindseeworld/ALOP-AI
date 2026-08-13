@@ -498,6 +498,7 @@ const {
   wantsDetailedAnswer,
   needsWikiCheck,
   classifyRequest,
+  routeByRule,
 } = require('./lib/router');
 // What makes a Wikipedia lookup answerable rather than merely non-empty.
 const { wikiSubject, isRelevantTitle } = require('./lib/wiki-relevance');
@@ -2818,8 +2819,30 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
      * memory, no search", which is the same pair of fallbacks the two separate
      * `.catch(() => false)` / `.catch(() => null)` handlers produced — a failed
      * router has never been allowed to fail the turn, only to route it plainly. */
-    const routeP = skipRouter
-      ? Promise.resolve(NO_ROUTE)
+    /* THE RULE ROUTER, WHICH IS ONLY A SAVING WHERE IT SITS — ABOVE THE MODEL
+     * ONE. Sol's `routeByRule` (bf4710b) settles the turns whose routing was
+     * never in doubt: code, direct transformations, creative writing, and short
+     * stable questions with no named entity in them. It returns null the moment
+     * anything is uncertain — a URL, a volatile "latest/today" phrasing, a named
+     * entity, anything over 200 characters — and null means the model router
+     * runs exactly as before. The rule can therefore only remove a call, never
+     * change a decision the model would have made differently on the turns it
+     * declines to answer.
+     *
+     * It sits below `skipRouter` on purpose: an image turn and a greeting skip
+     * routing altogether, and asking a rule about them would be work to decide
+     * nothing.
+     *
+     * `hasConversationContext` is what makes the memory branch safe to trigger
+     * from a rule. "What did I just say" is a memory question when there IS a
+     * conversation and an ordinary question when there is not, so the rule is
+     * told which it is looking at rather than guessing from the words. */
+    const ruleRoute = skipRouter
+      ? null
+      : routeByRule(pv.value, { hasConversationContext: Boolean(convSummary || histArr.length) });
+    if (ruleRoute) console.log(`[COUNCIL] Rule router: ${ruleRoute.memory ? 'memory' : 'no search'}. 0 model requests for routing.`);
+    const routeP = skipRouter || ruleRoute
+      ? Promise.resolve(ruleRoute || NO_ROUTE)
       : telemetry.measureRouter('route', () => planTurn(pv.value, convSummary, region, turnSignal)).catch(() => NO_ROUTE);
 
     if ((await routeP).memory) {

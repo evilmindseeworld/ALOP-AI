@@ -2828,10 +2828,10 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
      * provenance in the durable key so enabling seeded tools cannot replay a
      * Wikipedia/plain-council answer written before the flag changed. */
     const answerExecutionMode = SEEDED_SEARCH
-      /* v3 invalidates answers written before seeded turns required one page
-       * read and citations. Keep this explicit: deleting shared durable rows
+      /* v4 invalidates answers written before the server performed the seeded
+       * page read itself. Keep this explicit: deleting shared durable rows
        * is broader and less recoverable than a namespace bump. */
-      ? 'tools-seeded-v3'
+      ? 'tools-seeded-v4'
       : TOOLS_ENABLED ? 'tools-live' : TOOLS_SHADOW ? 'tools-shadow' : 'tools-off';
     const cacheKey = personalised
       ? null

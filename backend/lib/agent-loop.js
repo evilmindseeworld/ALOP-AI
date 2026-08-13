@@ -187,9 +187,10 @@ async function runAgentLoop({ members, askMember, registry, seededSearch, onEven
    * registry executes web_search, which mints the opaque result ids, and the
    * resulting entry is already in the same transcript every member receives.
    *
-   * `seededSearch` is not a model proposal. The execution record is therefore
-   * marked `seeded` for rendering and telemetry, while its real call shape is
-   * retained for the renderer, cache key, and read_url id manifest.
+   * `seededSearch` is not a model proposal. The server executes the search,
+   * selects its first opaque id, and executes read_url through the SAME
+   * registry boundary. Seats receive both results and answer; they never
+   * author an outbound call on this path.
    */
   const seedQuery = typeof seededSearch === "string" ? seededSearch.trim() : "";
   if (seedQuery && active.length > 0) {
@@ -245,11 +246,50 @@ async function runAgentLoop({ members, askMember, registry, seededSearch, onEven
         if (wallDeadlineReached) setTruncated(`Reached the ${cfg.totalWallMs}ms ceiling for this turn.`, "wall");
         else stopReason = stopReason || "aborted";
         active = [];
-      } else if (budgetLeft() < 250) {
-        // Let the council consume the evidence, but do not let it spend a
-        // non-existent tool budget trying to deepen it.
-        forceAnswerOnly = true;
+      } else if (result.ok) {
+        const firstId = String(result.content || "").match(/\[id:\s*([0-9a-f-]{36})\]/i)?.[1];
+        if (firstId) {
+          const rawReadCall = { name: "read_url", args: { id: firstId } };
+          const readCall = typeof registry?.normalize === "function"
+            ? (registry.normalize(rawReadCall) || rawReadCall)
+            : rawReadCall;
+          const readKey = callKey(readCall);
+          const readBudget = Math.min(cfg.perCallMs, budgetLeft(), wallLeft());
+
+          if (uniqueCallsUsed >= cfg.maxUniqueCalls) {
+            setTruncated(`Reached the ${cfg.maxUniqueCalls}-call ceiling for this turn.`, "unique_calls");
+            active = [];
+          } else if (readBudget < 250) {
+            setTruncated("Could not start deterministic read_url within its per-call budget.", "tool_budget");
+            active = [];
+          } else {
+            const seededReadCall = { ...readCall, seeded: true };
+            const readStartedAt = now();
+            onEvent({ type: "tool_start", round: 0, name: seededReadCall.name, summary: describe(seededReadCall), seeded: true });
+            let readResult;
+            try {
+              // This resolves the opaque id minted by web_search. The registry
+              // then performs DNS validation and calls readUrl/pinnedFetch;
+              // the loop never handles or constructs the destination URL.
+              readResult = await registry.execute(readCall, { timeoutMs: readBudget, signal: turnSignal });
+            } catch {
+              readResult = { ok: false, summary: "read_url failed. Use the search snippets and cite their URLs.", content: "" };
+            }
+            readResult = readResult || { ok: false, summary: "read_url returned no result.", content: "" };
+            const readDurationMs = now() - readStartedAt;
+            toolMsUsed += readDurationMs;
+            uniqueCallsUsed++;
+            toolRounds.push({ round: 0, durationMs: readDurationMs, calls: 1, aborted: turnSignal.aborted, seeded: true });
+            onEvent({ type: "tool_result", round: 0, name: seededReadCall.name, ok: readResult.ok, summary: readResult.summary, seeded: true });
+            const readEntry = { call: seededReadCall, result: readResult };
+            toolResultCache.set(readKey, readEntry);
+            transcript.push(readEntry);
+          }
+        }
       }
+      // Seeded turns are deterministic research followed by synthesis. No seat
+      // is ever asked to propose another tool call.
+      forceAnswerOnly = active.length > 0;
     }
   }
 

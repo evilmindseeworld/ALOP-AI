@@ -158,18 +158,60 @@ test("a seeded search executes before round one and is broadcast as tool results
   ]);
 });
 
-test("a seeded call is cached when a member asks for the same search", async () => {
+test("a seeded turn never asks a member to author another tool call", async () => {
   const registry = fakeRegistry();
+  let finalOnly;
   const r = await runAgentLoop({
     members: ["a"],
     seededSearch: "  OLED  burn-in ",
     registry,
-    askMember: async (_member, ctx) => (ctx.round === 1 ? toolCall("oled burn-in") : "done"),
+    askMember: async (_member, ctx) => { finalOnly = ctx.isFinalRound; return "done"; },
   });
 
-  assert.equal(registry.executed.length, 1, "seeding and the matching model proposal share one execution");
+  assert.equal(registry.executed.length, 1);
   assert.equal(r.uniqueCallsUsed, 1);
+  assert.equal(finalOnly, true);
   assert.equal(r.answers.a, "done");
+});
+
+test("seeded search deterministically reads the top opaque id and seats only synthesize a cited answer", async () => {
+  const id = "11111111-2222-4333-8444-555555555555";
+  const url = "https://source.example/report";
+  const executed = [];
+  const registry = {
+    list: () => [{ name: "web_search" }, { name: "read_url" }],
+    execute: async (call) => {
+      executed.push(call);
+      if (call.name === "web_search") {
+        return {
+          ok: true,
+          summary: "2 results",
+          content: `1. [id: ${id}] Report\n   ${url}\n   Search snippet\n\n2. [id: aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee] Other\n   https://other.example/\n   Other snippet`,
+        };
+      }
+      assert.deepEqual(call, { name: "read_url", args: { id } });
+      return { ok: true, summary: "Read source.example (HTTP 200)", content: "The fetched page says classroom copilots are teacher-led." };
+    },
+  };
+  let councilContext;
+  const result = await runAgentLoop({
+    members: ["seat"],
+    seededSearch: "latest classroom AI",
+    registry,
+    askMember: async (_member, ctx) => {
+      councilContext = ctx;
+      return `Teacher-led copilots are expanding ([Report](${url})).\n\n## Sources\n- [Report](${url})`;
+    },
+  });
+
+  assert.deepEqual(executed.map((call) => call.name), ["web_search", "read_url"]);
+  assert.equal(councilContext.isFinalRound, true, "seats synthesize; they never enter a research round");
+  assert.equal(councilContext.toolResults.length, 2);
+  assert.match(councilContext.toolResults[0].result.content, new RegExp(url.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  assert.match(councilContext.toolResults[0].result.content, /https:\/\/other\.example\//, "all search-result URLs reach the council");
+  assert.match(councilContext.toolResults[1].result.content, /fetched page says classroom copilots/);
+  assert.match(result.answers.seat, /https:\/\/source\.example\/report/);
+  assert.equal(result.uniqueCallsUsed, 2);
 });
 
 test("a seeded search does not consume maxRounds and forces an answer when it uses the tool budget", async () => {

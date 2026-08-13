@@ -117,7 +117,7 @@ function toolMessages(baseMsgs, registry, ctx) {
   const base = Array.isArray(baseMsgs) && baseMsgs.length ? baseMsgs : [{ role: "system", content: "" }];
   const head = base[0] && base[0].role === "system" ? base[0].content : "";
   const rest = base[0] && base[0].role === "system" ? base.slice(1) : base;
-  const hasSearchResults = !isFinalRound && toolResults.some(
+  const hasSearchResults = toolResults.some(
     ({ call, result }) => call?.name === "web_search" && result?.ok && /\[id: [0-9a-f-]{36}\]/i.test(result.content || ""),
   );
   const hasSeededSearchResults = hasSearchResults && toolResults.some(
@@ -129,8 +129,8 @@ function toolMessages(baseMsgs, registry, ctx) {
    * last prompt is pure input latency. This is especially expensive when the
    * optional SerpApi tool carries its full engine menu: the measured catalogue
    * is about 566 tokens before history or results, multiplied by every seat. */
-  const catalogue = isFinalRound
-    ? "No tools may be requested in this final round."
+  const catalogue = isFinalRound || hasSeededSearchResults
+    ? "No tools may be requested in this round."
     : (registry.list() || [])
         .filter((t) => !(hasSeededSearchResults && t.name === "web_search"))
         .map((t) => `- ${t.name}(${Object.keys(t.schema || {}).join(", ")}) — ${t.description}`)
@@ -141,9 +141,11 @@ function toolMessages(baseMsgs, registry, ctx) {
   // contributes nothing at all to the synthesis — it neither answered nor
   // researched. The loop passes isFinalRound precisely so this can be said.
   const instruction = isFinalRound
-    ? "This is the final round. Do NOT request any more tools — anything you ask for now will not run. Answer with what you have."
+    ? hasSeededSearchResults
+      ? "The server already completed web_search and read_url. Do not request or emit any tool call. Synthesize the answer from the supplied evidence, cite supporting result URLs as Markdown links, and end with a Sources section."
+      : "This is the final round. Do NOT request any more tools — anything you ask for now will not run. Answer with what you have."
     : hasSeededSearchResults
-      ? "The router already searched for this question and supplied the results below. Do NOT request web_search and do not author another search query. Before answering, request read_url for the FIRST result only by passing its opaque id exactly as written. Every seat receives the same first id, so identical requests are deduplicated into one fetch. After the page returns, answer with Markdown citations to supporting result URLs and end with a Sources section."
+      ? "The server already completed the seeded research. Do not request or emit any tool call. Synthesize the answer from the supplied evidence, cite supporting result URLs as Markdown links, and end with a Sources section."
     : 'If you need information you do not have, request a tool INSTEAD of answering, by emitting exactly one fenced block:\n\n```tool_call\n{"name": "web_search", "args": {"query": "your query"}}\n```\n\nOtherwise answer normally. Do not do both. Do not request a tool for something you already know.' +
       (hasSearchResults
         ? "\n\nSearch results are available. If their snippets are not enough, request read_url for AT MOST ONE result for this question by passing the opaque id shown beside it exactly as written. Do not read every result. If the snippets are enough, answer normally."

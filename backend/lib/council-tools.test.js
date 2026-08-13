@@ -110,6 +110,35 @@ test("THE FINAL ROUND FORBIDS TOOL REQUESTS", () => {
   assert.equal(m[0].content.includes("INSTEAD of answering"), false);
 });
 
+test("a seeded final round is answer-only and requires URL citations", () => {
+  const m = toolMessages(BASE, registry, {
+    round: 1,
+    isFinalRound: true,
+    toolResults: [{
+      call: { name: "web_search", args: { query: "latest" }, seeded: true },
+      result: { ok: true, summary: "1 result", content: "1. [id: 11111111-2222-4333-8444-555555555555] Report\nhttps://source.example/report" },
+    }],
+  });
+  assert.match(m[0].content, /server already completed web_search and read_url/);
+  assert.match(m[0].content, /Do not request or emit any tool call/);
+  assert.match(m[0].content, /Markdown links/);
+  assert.doesNotMatch(m[0].content, /web_search\(query\)/);
+});
+
+test("seeded evidence removes the tool catalogue even if final-round metadata is missing", () => {
+  const m = toolMessages(BASE, registry, {
+    round: 1,
+    isFinalRound: false,
+    toolResults: [{
+      call: { name: "web_search", args: { query: "latest" }, seeded: true },
+      result: { ok: true, summary: "1 result", content: "1. [id: 11111111-2222-4333-8444-555555555555] Report\nhttps://source.example/report" },
+    }],
+  });
+  assert.match(m[0].content, /No tools may be requested/);
+  assert.match(m[0].content, /Do not request or emit any tool call/);
+  assert.doesNotMatch(m[0].content, /read_url\(id\)/);
+});
+
 test("the final round does not pay for a catalogue it cannot use", () => {
   const normal = toolMessages(BASE, registry, { round: 1, isFinalRound: false })[0].content;
   const final = toolMessages(BASE, registry, { round: 3, isFinalRound: true })[0].content;
@@ -319,7 +348,7 @@ test("a seeded result names its server provenance without moving evidence to sys
   assert.equal(system.content.includes("A fetched snippet."), false);
 });
 
-test("seeded results make selection, not search authoring, the member's job", () => {
+test("seeded results leave only synthesis and citation to the member", () => {
   const msgs = toolMessages(BASE, registry, {
     round: 1,
     toolResults: [{
@@ -329,11 +358,10 @@ test("seeded results make selection, not search authoring, the member's job", ()
   });
   const system = msgs.find((message) => message.role === "system").content;
   assert.doesNotMatch(system, /web_search\(query\)/);
-  assert.match(system, /Do NOT request web_search/);
-  assert.match(system, /read_url/);
-  assert.match(system, /opaque id/);
-  assert.match(system, /FIRST result only/);
-  assert.match(system, /Markdown citations/);
+  assert.match(system, /No tools may be requested/);
+  assert.match(system, /Do not request or emit any tool call/);
+  assert.doesNotMatch(system, /read_url\(id\)/);
+  assert.match(system, /Markdown links/);
 });
 
 test("model-written arguments and executor summaries cannot forge a second tool call", () => {

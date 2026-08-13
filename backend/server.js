@@ -407,6 +407,12 @@ const {
   classifyRequest,
 } = require('./lib/router');
 
+/* The one decision in this route that no model is asked about. It sits above
+ * the router rather than beside it because a sum answered here costs zero
+ * OpenRouter requests, and requests — not dollars — are what this account runs
+ * out of. See lib/arithmetic.js for why it refuses far more than it answers. */
+const { tryArithmetic } = require('./lib/arithmetic');
+
 // ===== MEMORY DETECTION =====
 const isMemoryOrReferenceQuestion = async (text, signal) => {
   const response = await callModel(FAST_MODEL, [{ role: 'system', content: 'Is this question asking about a previous conversation or referencing something discussed earlier? Reply ONLY "YES" or "NO".' }, { role: 'user', content: text.slice(0, 500) }], 0.0, 3000, 10, signal);
@@ -2131,6 +2137,49 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     // while silently clipping a 100,000-character one, which is two different
     // answers to the same question; and the council slices to the last ten
     // anyway, so the rejection was refusing input it was about to discard.
+
+    /* THE ARITHMETIC FAST PATH, and its position in this file IS the feature.
+     *
+     * Above the router, above the spend and request reservations, above every
+     * model call. "80 squared" used to be classified, rostered, sent to seats
+     * polled non-streaming, and then synthesised — two OpenRouter round trips
+     * minimum, on seats measured between 2.1s and 23.9s, to compute something a
+     * CPU does in nanoseconds. It also spent 2-4 of the account's 50 daily
+     * requests, which is the budget hard questions need.
+     *
+     * Nothing below this branch changes. `tryArithmetic` returns null for
+     * anything it cannot parse WHOLE — one unknown word, one unit, one
+     * ambiguous percentage — and null means the turn proceeds exactly as it did
+     * before, through the same router and the same council. There is no partial
+     * mode: it answers a sum or it says nothing.
+     *
+     * An image skips it. A photo of a homework page with "80 squared" typed
+     * beside it is a question about the image, and the vision path is the one
+     * that can see that. Tested against `image` from the request body rather
+     * than `imageContext`: the latter is the vision model's OUTPUT and is not
+     * declared until 120 lines below this one, so reading it here is a
+     * temporal-dead-zone throw on every single turn — a 500 on the whole
+     * product, shipped by a branch that only meant to skip itself. */
+    const sum = image ? null : tryArithmetic(pv.value);
+    if (sum) {
+      console.log(`[COUNCIL] Arithmetic fast path: ${sum.answer}`);
+      openStream(res);
+      /* Written as an ordinary chunk frame followed by the ordinary terminator,
+       * so the frontend cannot tell this apart from a model's answer — same
+       * accumulator, same markdown rendering, same save path. A bespoke event
+       * type would have needed a frontend change to render at all, and an
+       * unknown type is silently dropped there, which is a blank answer.
+       *
+       * firstChunkAt is stamped by hand because streamModel — the only other
+       * thing that ever stamps it — is not involved. Left unstamped, every
+       * fast-path turn would report its latency as the time to the LAST byte in
+       * the telemetry that this feature exists to move. */
+      if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
+      sendEvent(res, { type: 'chunk', text: sum.answer });
+      if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
+      await auditBranch({ category: 'arithmetic', complexity: 'simple', models: 0, seats: 0, exact: sum.exact });
+      return;
+    }
 
     const userPlan = user.plan || 'free';
     const isDetailed = wantsDetailedAnswer(pv.value);

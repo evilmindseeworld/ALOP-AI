@@ -12,6 +12,13 @@ const LOOP = readFileSync(join(__dirname, "agent-loop.js"), "utf8");
 // fallback split the retry decision out of it.
 const STREAM_MODEL = SOURCE.slice(SOURCE.indexOf("const streamOnce"), SOURCE.indexOf("const callGeminiVision"));
 
+test("a seeded search reaches the tool loop instead of the Wikipedia shortcut", () => {
+  const searchGate = ROUTE.indexOf("if (searchQueries && !SEEDED_SEARCH)");
+  const wikiGate = ROUTE.indexOf("if (shouldCheckWiki && !(SEEDED_SEARCH && searchQueries?.length))");
+  const loop = ROUTE.indexOf("runAgentLoop({");
+  assert.ok(searchGate > 0 && wikiGate > searchGate && loop > wikiGate, "search, Wikipedia, and loop order changed");
+});
+
 test("council turns write one structured telemetry row through auditLog", () => {
   assert.match(ROUTE, /createTurnTelemetry\(\{ startedAt: t0 \}\)/);
   assert.match(ROUTE, /measureContext\('summary'/);

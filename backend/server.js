@@ -3119,7 +3119,10 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     }
 
     // 3. WIKIPEDIA
-    if (shouldCheckWiki) {
+    /* A seeded query belongs to the tool loop below. Wikipedia may still serve
+     * ordinary non-search encyclopedia questions, but it must not intercept a
+     * request whose server-side web_search is waiting to be injected. */
+    if (shouldCheckWiki && !(SEEDED_SEARCH && searchQueries?.length)) {
       const wiki = await searchWikipedia(pv.value, turnSignal);
       if (wiki) {
         const wikiSys = `${todayLine()}

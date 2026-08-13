@@ -1031,6 +1031,9 @@ const { parseRoutePlan } = require('./lib/search-plan');
 const { readSonar } = require('./lib/perplexity');
 const { createSearchCache, comprehensiveSearchKey } = require('./lib/search-cache');
 const { createAnswerCache, ttlFor } = require('./lib/answer-cache');
+// How a background job gets a real council turn without a socket. See the brain
+// seam under "THE BRAIN'S WAY IN", below the council route.
+const { createSinkResponse, createSinkRequest } = require('./lib/sink-response');
 const { createGreetingCache } = require('./lib/greeting-cache');
 const { createTtlCache } = require('./lib/ttl-cache');
 const { boundedPage, pageInfo } = require('./lib/pagination');
@@ -2381,7 +2384,28 @@ app.get('/health', (req, res) => res.json({
 }));
 
 // ===== COUNCIL =====
-app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
+/* THE COUNCIL TURN, NAMED so a background job can call it in process.
+ *
+ * It is registered below exactly as it was — same path, same middleware, same
+ * order — and the name is the only change to the request path. What it buys is
+ * that the brain jobs (refreshing a cached answer before it expires,
+ * pre-computing a common question overnight) can produce an answer through THIS
+ * function rather than through a reimplementation of it.
+ *
+ * That distinction is not tidiness. Everything that makes an answer correct
+ * lives in here: the router, the tier policy, the search branch, the tool loop,
+ * the synthesiser, both spend ceilings, the audit row and the cache write. A
+ * second path that duplicated any of them would drift, and because the cache is
+ * SHARED, a drifted background path does not write a worse background answer —
+ * it writes a worse answer into the row a real user reads.
+ *
+ * Nothing is exposed by naming it. There is no route, no port and no token: the
+ * job calls the function with a request-shaped object and a response that goes
+ * nowhere (lib/sink-response.js). Authentication is not bypassed because no
+ * request is being authenticated; the job supplies its own user row, and every
+ * ceiling inside still applies to it. */
+app.post('/api/council', requireAuth, checkSuspended, handleCouncilTurn);
+async function handleCouncilTurn(req, res) {
   /* Refused before anything is spent — no telemetry row, no spend reservation,
    * no seats dispatched — because the account's daily model quota is gone and
    * every one of those steps would be work done for an answer that cannot
@@ -3097,6 +3121,11 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
      * "council" answer and kept it for ninety days. The router's own decision is
      * the honest signal, and it is the one the owner asked to key this on. */
     const usedLiveWeb = Boolean(searchQueries?.length);
+    /* Reported to whoever called this handler. A background refresh needs to
+     * know whether the answer it just produced was search-backed, and deriving
+     * that a second time from the text would be a second copy of the router's
+     * decision — the kind that agrees today and disagrees after one edit. */
+    if (res.locals) res.locals.searched = usedLiveWeb;
     const shouldCheckWiki = needsWikiCheck(pv.value);
     /* Derived from the USER'S words, not from the query the model wrote.
      *
@@ -3745,7 +3774,65 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
       ).catch(() => {});
     }
   }
-});
+}
+
+/* ===== THE BRAIN'S WAY IN =====
+ *
+ * One question, answered by the real council turn, with nothing on the network.
+ * This is the seam the background jobs are built against: they never call a
+ * model, a router or a cache directly, so there is exactly one implementation of
+ * "how this product answers a question" and the jobs cannot drift from it.
+ *
+ * THE IDENTITY IS REAL AND DELIBERATELY BORING. The jobs run as an ordinary
+ * user row, which means every ceiling in the turn — the per-user spend
+ * reservation, the account-wide request budget, the daily cap latch — applies
+ * to them exactly as written. A background job that could not be refused is a
+ * background job that empties the account's daily quota while real users wait,
+ * and the fix for that is not a special case in the ceilings; it is not being a
+ * special case at all. BRAIN_USER_ID must therefore be a real row in `users`,
+ * and the flag stays off until it is.
+ *
+ * The answer is written to the cache by the turn itself, on the turn's own TTL
+ * rules — the job does not write, because a second writer would be a second
+ * opinion about how long an answer stays true. */
+const BRAIN_ENABLED = /^(1|true)$/i.test(process.env.COUNCIL_BRAIN || '');
+const BRAIN_USER_ID = process.env.BRAIN_USER_ID || '';
+const BRAIN_CLERK_ID = process.env.BRAIN_CLERK_ID || 'brain-internal';
+
+/**
+ * @param {object} q
+ * @param {string} q.question   the exact text a user would have typed.
+ * @param {string} [q.plan]     'free' or 'pro'. Part of the cache key, so a
+ *   refresh must use the plan the expiring row was written under.
+ * @param {string} [q.country]  ISO country. Also part of the key; see above.
+ * @returns {Promise<{answer: string, searched: boolean}>}
+ * @throws when the turn was REFUSED (a ceiling, the daily cap) or produced
+ *   nothing. A job must be able to tell "no answer" from "an empty answer":
+ *   swallowing the first writes a blank into a row a real user then reads.
+ */
+async function runQuestion({ question, plan = 'free', country = '' } = {}) {
+  if (!BRAIN_USER_ID) throw new Error('BRAIN_USER_ID is not set; the brain has no identity to spend against');
+  const req = createSinkRequest({
+    message: question,
+    userId: BRAIN_CLERK_ID,
+    /* Passed as the CACHED row, which is what stops ensureUser going to Clerk
+     * for a user Clerk has never heard of. */
+    userRow: { id: BRAIN_USER_ID, clerk_id: BRAIN_CLERK_ID, plan, email: 'brain@alop-ai.internal', name: 'Brain' },
+    country,
+  });
+  const res = createSinkResponse();
+  await handleCouncilTurn(req, res);
+  const out = res.result();
+  if (out.refusal) {
+    const err = new Error(out.refusal.error || `refused with ${out.status}`);
+    err.status = out.status;
+    err.refused = true;
+    err.reason = out.refusal.reason || null;
+    throw err;
+  }
+  if (!out.answer.trim()) throw new Error('the council produced no answer');
+  return { answer: out.answer, searched: Boolean(out.locals?.searched) };
+}
 
 // ===== OVERLAY (bulletproof — never returns 500) =====
 app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {

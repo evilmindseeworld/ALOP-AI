@@ -139,6 +139,55 @@ const stripFences = (content) => {
     .trim();
 };
 
+const unwrapWholeJsonFence = (text) => {
+  const match = text.match(/^```(?:json|tool[_-]?call)?\s*\r?\n([\s\S]*?)\r?\n```$/i);
+  return match ? match[1].trim() : text;
+};
+
+/**
+ * Whole protocol replies are not prose with an unfortunate decoration. They
+ * are a model doing the planner/tool job at the answer boundary, so deleting
+ * the blob would manufacture a blank answer. Report them as failed instead and
+ * let the caller's ordinary seat/fallback machinery choose another writer.
+ *
+ * This is deliberately broader than looksLikeToolRequest. Embedded JSON must
+ * carry a tool name AND args before it is stripped; at the whole-reply boundary
+ * a query-plan object is also impossible as an answer unless the user asked for
+ * that exact JSON shape.
+ */
+const isWholeProtocolReply = (content) => {
+  if (typeof content !== "string") return false;
+  const body = unwrapWholeJsonFence(content.trim());
+  if (!body || body.length > MAX_ARGS_CHARS) return false;
+  if (/^<\|?\s*tool_call|\bcall:[\w.-]+:[\w.-]+/i.test(body)) return true;
+  try {
+    const parsed = JSON.parse(body);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return false;
+    const keys = Object.keys(parsed);
+    const queryPlan = keys.length === 1
+      && /^(?:queries|search_queries)$/i.test(keys[0])
+      && Array.isArray(parsed[keys[0]])
+      && parsed[keys[0]].every((query) => typeof query === "string");
+    return queryPlan || looksLikeToolRequest(body);
+  } catch {
+    return false;
+  }
+};
+
+/** The contextual escape hatch for a user who genuinely requested this shape. */
+const userRequestedProtocolJson = (message) => {
+  const text = typeof message === "string" ? message : "";
+  return /\bjson\b/i.test(text)
+    && (/\bquer(?:y|ies)\b[\s_-]*(?:array|list)?/i.test(text)
+      || /\b(?:tool|function)[\s_-]*call\b/i.test(text));
+};
+
+const sanitizeAnswerText = (content, { allowProtocolJson = false } = {}) => {
+  const raw = typeof content === "string" ? content.trim() : "";
+  if (!allowProtocolJson && isWholeProtocolReply(raw)) return { text: "", rejected: true };
+  return { text: stripFences(raw), rejected: false };
+};
+
 /**
  * @param {object} response  an OpenRouter reply with choices[0].message, a
  *                           message-shaped reply, or a bare completion string.
@@ -149,7 +198,7 @@ const stripFences = (content) => {
  *   and treating that narration as an answer would end the member's turn one
  *   round early with a sentence that answers nothing.
  */
-function parseToolRequests(response) {
+function parseToolRequests(response, { allowProtocolJson = false } = {}) {
   const openRouterMessage = response?.choices?.[0]?.message;
   const message =
     typeof response === "string"
@@ -158,9 +207,18 @@ function parseToolRequests(response) {
 
   const content = typeof message.content === "string" ? message.content : "";
   const calls = [...fromNative(message), ...fromText(content)].slice(0, MAX_CALLS_PER_REPLY);
-  const text = stripFences(content);
+  const text = calls.length
+    ? stripFences(content)
+    : sanitizeAnswerText(content, { allowProtocolJson }).text;
 
   return { calls, text, isFinal: calls.length === 0 };
 }
 
-module.exports = { parseToolRequests, MAX_CALLS_PER_REPLY, MAX_ARGS_CHARS };
+module.exports = {
+  parseToolRequests,
+  sanitizeAnswerText,
+  isWholeProtocolReply,
+  userRequestedProtocolJson,
+  MAX_CALLS_PER_REPLY,
+  MAX_ARGS_CHARS,
+};

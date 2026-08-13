@@ -305,7 +305,7 @@ const callModel = (modelName, messages, temperature = 0.0, timeoutMs = 30000, ma
  * keeping those apart is what makes the retry's two conditions checkable rather
  * than tangled through the read loop.
  */
-const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, meta = {}) => {
+const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, meta = {}, answerOptions = {}) => {
   const response = await fetch(OPENROUTER_HOST, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_API_KEY}` }, body: JSON.stringify({ model: modelName, messages, temperature, stream: true, reasoning: { exclude: true }, ...(maxTokens ? { max_tokens: maxTokens } : {}) }), ...(signal ? { signal } : {}) });
   if (!response.ok || !response.body) throw new Error('Stream failed');
   const reader = response.body.getReader();
@@ -319,6 +319,8 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
    * answer is hundreds of small appends, and repeated `+=` on a growing string
    * is the shape that turns a long answer into a quadratic. */
   const emitted = [];
+  let protocolCandidate = true;
+  const held = [];
   /* Handed back to the caller BY REFERENCE, so that a throw halfway through
    * a stream can still be asked how much of the answer reached the socket.
    * `streamModel` needs that to decide whether a retry is safe, and a thrown
@@ -341,6 +343,14 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
       const frame = parseOpenRouterSseLine(line);
       if (frame.skip) continue;
       if (frame.text) {
+        if (protocolCandidate) {
+          held.push(frame.text);
+          const first = held.join('').trimStart()[0];
+          protocolCandidate = !first || first === '{' || first === '[' || first === '<' || first === '`';
+          if (protocolCandidate) continue;
+          frame.text = held.join('');
+          held.length = 0;
+        }
         /* The moment the ANSWER starts, which stopped being the same moment
          * the response opens once progress events were added. msToFirstByte
          * is the number every latency change is judged by; leaving it stamped
@@ -354,7 +364,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
        * finish_reason, then the `[DONE]` terminator — so the sentinel is
        * written once and only once. The client treats a second [DONE] as a
        * second turn ending. */
-      if (frame.done && !completed) { completed = true; res.write('data: [DONE]\n\n'); }
+      if (frame.done && !completed) { completed = true; }
     }
   }
   /* THROWN BEFORE THE TEXT IS RETURNED, deliberately. A stream that ended
@@ -364,6 +374,17 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
    * six hours. Returning after the throw is unreachable and that is the point:
    * there is no path by which an incomplete answer becomes a cached one. */
   if (!completed) throw new Error('Stream ended before provider completion');
+  if (held.length) {
+    const sanitised = sanitizeAnswerText(held.join(''), answerOptions);
+    if (sanitised.rejected) throw new Error('Model returned protocol instead of an answer');
+    if (sanitised.text) {
+      if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
+      emitted.push(sanitised.text);
+      res.write(`data: ${JSON.stringify({ type: 'chunk', text: sanitised.text })}\n\n`);
+    }
+  }
+  if (!emitted.length) throw new Error('Model returned no usable answer');
+  if (!res.writableEnded) res.write('data: [DONE]\n\n');
   return emitted.join('');
 };
 
@@ -396,15 +417,15 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
  *   spends a request writing an answer nobody is waiting for, which is exactly
  *   what the abort work existed to stop.
  */
-const streamModel = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null) => {
+const streamModel = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, answerOptions = {}) => {
   const meta = {};
   try {
-    return await streamOnce(res, modelName, messages, temperature, signal, maxTokens, meta);
+    return await streamOnce(res, modelName, messages, temperature, signal, maxTokens, meta, answerOptions);
   } catch (err) {
     const wrote = (meta.emitted || []).join('').length;
     if (modelName !== PRIMARY_MODEL || signal?.aborted || wrote > 0) throw err;
     console.warn(`[STREAM] ${modelName} failed before writing anything (${err.message}). Falling back to ${SMART_MODEL}.`);
-    return await streamOnce(res, SMART_MODEL, messages, temperature, signal, maxTokens);
+    return await streamOnce(res, SMART_MODEL, messages, temperature, signal, maxTokens, {}, answerOptions);
   }
 };
 
@@ -927,7 +948,7 @@ const { boundedPage, pageInfo } = require('./lib/pagination');
 const { noStoreApi } = require('./lib/http-cache');
 const { detectRegion, regionHint } = require('./lib/region');
 const { firstWithResults, toolMessages, summariseProbe, UNTRUSTED_PREAMBLE } = require('./lib/council-tools');
-const { parseToolRequests } = require('./lib/tool-protocol');
+const { parseToolRequests, sanitizeAnswerText, userRequestedProtocolJson } = require('./lib/tool-protocol');
 const { prepareUpload, UploadRejected, MAX_FILES_PER_CHAT } = require('./lib/file-intake');
 
 /**
@@ -2541,6 +2562,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     requestsReserved = reservedRequests;
 
     const truncatedPrompt = truncatePrompt(pv.value);
+    const answerOptions = { allowProtocolJson: userRequestedProtocolJson(truncatedPrompt) };
     const histArr = sanitizeHistory(history);
 
     // VISION. The council speaks to a text model, so an attached image is
@@ -2861,7 +2883,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       const memSys = `You are ALOP-AI. The user is asking about a previous conversation. The history below IS your memory. Do NOT say you can't remember. Reference what was discussed. Be concise.${convSummary ? `\n\nSummary: ${convSummary}` : ''}`;
       const memMsgs = [{ role: 'system', content: memSys }, ...histArr.slice(-10), { role: 'user', content: pv.value }];
       openStream(res);
-      await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0, turnSignal);
+      await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0, turnSignal, null, answerOptions);
       if (!res.writableEnded) res.end();
       rememberTurn(chatId, user.id, pv.value, 'Answered memory question.', telemetry);
       await auditBranch({ category: 'memory' });
@@ -2874,7 +2896,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       console.log('[COUNCIL] Greeting.');
       const greetMsgs = [{ role: 'system', content: `You are ALOP-AI. Greet briefly.${convSummary ? ` Context: ${convSummary}` : ''}` }, { role: 'user', content: pv.value }];
       openStream(res);
-      await streamModel(res, PRIMARY_MODEL, greetMsgs, 0.0, turnSignal);
+      await streamModel(res, PRIMARY_MODEL, greetMsgs, 0.0, turnSignal, null, answerOptions);
       if (!res.writableEnded) res.end();
       await auditBranch({ category: 'greeting' });
       return;
@@ -2973,7 +2995,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       const extSys = `${todayLine()}\n\nYou are a precision data extraction engine. Use ONLY the provided data.\n\nRULES:\n1. Only state facts from the data.\n2. No training data.\n3. No inferring/guessing.\n4. No comparing unless both products are in data.\n5. If not in data, say "I couldn't find this in the search results."\n6. Include URLs as Markdown: [Title](URL)\n7. No inventing specs/prices.\n8. Note contradictions between sources.\n9. Format in Markdown. Match answer length to question. Be concise for simple questions.\n10. List sources at bottom under "## Sources".\n11. Embed images if provided: ![Description](url)\n12. CONVERSATION CONTEXT and history are EXEMPT from rules 1-5.\n13. Each source carries a Published date. When sources disagree, prefer the most recent one and say that the older one is out of date — do not average them or pick the more detailed one.\n14. If every source on a time-dependent point is more than a year old, say so rather than presenting it as current.\n15. Attach the date to any fact that changes over time: "as of [date]". A price, version or ranking stated bare reads as current even when it is not.${lang !== 'English' ? `\n16. Respond in ${lang}.` : ''}`;
       const extMsgs = [{ role: 'system', content: extSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n\n=== SEARCH DATA ===\n${context}` }];
       openStream(res);
-      const searchAnswer = await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0, turnSignal);
+      const searchAnswer = await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0, turnSignal, null, answerOptions);
       if (!res.writableEnded) res.end();
       /* A SHORTER SHELF LIFE WHEN THE QUESTION ASKED FOR NOW. `fresh` is the
        * freshness window the user's own words implied — "right now", "this
@@ -2999,7 +3021,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         // need a site of their own.
         const wikiMsgs = [{ role: 'system', content: wikiSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n=== WIKIPEDIA ===\n${UNTRUSTED_PREAMBLE}\n\n${envelope('Wikipedia extract', wiki)}` }];
         openStream(res);
-        const wikiAnswer = await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0, turnSignal);
+        const wikiAnswer = await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0, turnSignal, null, answerOptions);
         if (!res.writableEnded) res.end();
         // An encyclopedia answer is still good next week.
         cacheAnswer(wikiAnswer, ANSWER_TTL_MS.wiki);
@@ -3147,8 +3169,11 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
         },
         onSeatTiming: reportCouncilTiming('tools'),
         signal: turnSignal,
-        askMember: (model, ctx, signal) =>
-          callModel(model, toolMessages(councilMsgs, registry, { ...ctx, attachedFiles: attached }), 0.0, selection.whipMs, selection.tokenLimit, signal),
+        askMember: async (model, ctx, signal) => {
+          const raw = await callModel(model, toolMessages(councilMsgs, registry, { ...ctx, attachedFiles: attached }), 0.0, selection.whipMs, selection.tokenLimit, signal);
+          const parsed = parseToolRequests(raw, answerOptions);
+          return parsed.calls.length === 0 && parsed.text === '' && String(raw || '').trim() ? '' : raw;
+        },
       });
       if (turnSignal.aborted) return;
       for (const row of loop.toolRounds) telemetry.recordToolRound(row);
@@ -3176,7 +3201,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
          * tool block is deliberately stripped, never executed. */
         const sanitisedFallbackCallModel = async (model, messages, temperature, whipMs, tokenLimit, signal) => {
           const raw = await callModel(model, messages, temperature, whipMs, tokenLimit, signal);
-          return parseToolRequests(raw).text;
+          return sanitizeAnswerText(raw, answerOptions).text;
         };
         validResponses = await runCouncilWithWhip(
           selection.members,
@@ -3221,7 +3246,13 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
         selection.quorum,
         selection.tokenLimit,
         sendSeatProgress,
-        { signal: turnSignal, onSeatTiming: reportCouncilTiming('council'), onFinish: reportCouncilFinish },
+        {
+          signal: turnSignal,
+          onSeatTiming: reportCouncilTiming('council'),
+          onFinish: reportCouncilFinish,
+          callModel: async (model, messages, temperature, whipMs, tokenLimit, signal) =>
+            sanitizeAnswerText(await callModel(model, messages, temperature, whipMs, tokenLimit, signal), answerOptions).text,
+        },
       );
     }
 
@@ -3234,7 +3265,7 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       const fbMsgs = [{ role: 'system', content: fbSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
       openStream(res);
       const fallbackStartedAt = Date.now();
-      await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0, turnSignal);
+      await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0, turnSignal, null, answerOptions);
       telemetry.recordFallback(Date.now() - fallbackStartedAt, 'post_council');
       if (turnSignal.aborted) return;
       if (!res.writableEnded) res.end();
@@ -3351,7 +3382,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     sendStage(res, 'synthesis', validResponses.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
     openStream(res);
     const synthesisStartedAt = Date.now();
-    const synthAnswer = await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate);
+    const synthAnswer = await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, answerOptions);
     telemetry.recordSynthesis(Date.now() - synthesisStartedAt);
     if (turnSignal.aborted) return;
     if (!res.writableEnded) res.end();

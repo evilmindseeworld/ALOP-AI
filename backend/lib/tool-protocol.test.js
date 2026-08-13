@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { parseToolRequests, MAX_CALLS_PER_REPLY } = require("./tool-protocol");
+const { parseToolRequests, sanitizeAnswerText, userRequestedProtocolJson, MAX_CALLS_PER_REPLY } = require("./tool-protocol");
 const { callModel, parseOpenRouterSseLine } = require("./openrouter");
 
 // ===== native =====
@@ -253,4 +253,25 @@ test("a fenced block that is not a tool_call is left alone", () => {
 test("ordinary JSON remains answer text", () => {
   const content = "Example payload:\n```json\n{\"title\":\"OECD report\"}\n```";
   assert.equal(parseToolRequests(content).text, content);
+});
+
+test("a whole query-plan object is a failed answer, not an empty rendered answer", () => {
+  const raw = '{\n  "queries": [\n    "OECD Digital Education Outlook 2026"\n  ]\n}';
+  assert.deepEqual(sanitizeAnswerText(raw), { text: "", rejected: true });
+});
+
+test("a whole tool request is a failed answer", () => {
+  const raw = '{"name":"web_search","arguments":{"query":"OECD outlook"}}';
+  assert.deepEqual(sanitizeAnswerText(raw), { text: "", rejected: true });
+});
+
+test("protocol-shaped JSON inside a legitimate answer is not damaged", () => {
+  const raw = 'Here is the requested object:\n```json\n{"queries":["OECD outlook"]}\n```';
+  assert.deepEqual(sanitizeAnswerText(raw), { text: raw, rejected: false });
+});
+
+test("an explicitly requested queries-array JSON reply remains an answer", () => {
+  const raw = '{"queries":["OECD outlook"]}';
+  assert.equal(userRequestedProtocolJson("Show me a JSON object with a queries array"), true);
+  assert.deepEqual(sanitizeAnswerText(raw, { allowProtocolJson: true }), { text: raw, rejected: false });
 });

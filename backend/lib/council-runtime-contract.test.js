@@ -198,6 +198,20 @@ test("one seat means no synthesis, and it is decided before synthesis runs", () 
   assert.match(branch, /!toolTruncated/);
 });
 
+test("every seat-answer boundary rejects whole protocol replies before use", () => {
+  assert.match(ROUTE, /const answerOptions = \{ allowProtocolJson: userRequestedProtocolJson\(truncatedPrompt\) \}/);
+  assert.match(ROUTE, /const parsed = parseToolRequests\(raw, answerOptions\)/,
+    "the tool loop must reject protocol blobs before they count toward quorum");
+  assert.match(ROUTE, /sanitizeAnswerText\(raw, answerOptions\)\.text/,
+    "the plain fallback council must reject protocol blobs before quorum");
+  assert.match(ROUTE, /callModel[\s\S]{0,180}?answerOptions\)\.text/,
+    "the plain council must reject protocol blobs before quorum");
+  assert.match(ROUTE, /const searchAnswer = await streamModel\([^\n]+answerOptions\)/,
+    "the observed search answer path must use the stream guard");
+  assert.match(ROUTE, /const wikiAnswer = await streamModel\([^\n]+answerOptions\)/);
+  assert.match(ROUTE, /const synthAnswer = await streamModel\([^\n]+answerOptions\)/);
+});
+
 test("a one-seat roster inherits the synthesiser's rules", () => {
   /* The seat's draft IS the answer on that path, and the length rule, the
    * closing rule and the inference rule live in the synthesis prompt. Without

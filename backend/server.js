@@ -918,6 +918,7 @@ const { parseRoutePlan } = require('./lib/search-plan');
 const { readSonar } = require('./lib/perplexity');
 const { createSearchCache, comprehensiveSearchKey } = require('./lib/search-cache');
 const { createAnswerCache, TTL_MS: ANSWER_TTL_MS } = require('./lib/answer-cache');
+const { createGreetingCache } = require('./lib/greeting-cache');
 const { createTtlCache } = require('./lib/ttl-cache');
 const { boundedPage, pageInfo } = require('./lib/pagination');
 const { noStoreApi } = require('./lib/http-cache');
@@ -1826,6 +1827,12 @@ const setCachedSearch = (q, d) => searchCache.set(q, d);
  * for a personalised turn. lib/answer-cache.js holds that contract and the
  * argument for it; the key is built in exactly one place below. */
 const answerCache = createAnswerCache({ supabase });
+/* Greetings sit in their own layer because they are not generated answers —
+ * the response is a product constant, so it can never be stale and can never
+ * be personal. It still reads through the answer cache so a new process serves
+ * the durable row, and falls back to the constant when that read fails, which
+ * is what keeps a greeting free of model calls even with Postgres down. */
+const greetingCache = createGreetingCache({ answerCache });
 // Rejected requests must carry a 401, not a 500, or the client cannot tell an expired
 // session from a server fault. clerk-sdk-node@5 made that our problem by ignoring its
 // own `onError` option and calling next() with a bare, status-less Error. @clerk/express
@@ -2380,6 +2387,49 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
         models: 0,
         seats: 0,
         exact: sum.exact,
+        msToFirstByte: Date.now() - t0,
+      });
+      return;
+    }
+
+    /* THE GREETING FAST PATH, and like the arithmetic one above it, its
+     * POSITION is the feature.
+     *
+     * `classifyRequest` has always recognised a greeting by regex and given it
+     * an empty roster, so "hi" never cost a seat. What it did cost was
+     * everything between here and there: two ceiling reservations, three
+     * Supabase context reads, a cache key and a cache lookup — round trips
+     * that decide nothing, because the answer to "hi" does not depend on the
+     * user's stored facts, their conversation summary or their spend. The owner
+     * measured the result as roughly thirty seconds on the word "hi"; most of
+     * that was the cold boot fixed in baf1dfe, and this is the rest.
+     *
+     * The answer is a product constant read through the answer cache, so it is
+     * served from the durable row when one exists and from the constant when
+     * Postgres is slow or down — a greeting can therefore never fail and can
+     * never spend a model request. lib/greeting-cache.js holds that contract.
+     *
+     * AN IMAGE SKIPS IT, on exactly the argument the arithmetic branch makes:
+     * "hi" typed under a screenshot is a question about the screenshot, and the
+     * vision path is the one that can see it. Tested against `image` from the
+     * request body, never `imageContext`, which is the vision model's OUTPUT
+     * and is not declared until far below this line.
+     *
+     * NOT `rememberTurn`, for the third time in this file and the same reason:
+     * a summary call plus a fact-extraction call is two model requests spent to
+     * record that someone said hello. */
+    const greeting = image ? null : await greetingCache.get(pv.value);
+    if (greeting) {
+      console.log('[COUNCIL] Greeting fast path. 0 model requests.');
+      openStream(res);
+      if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
+      sendEvent(res, { type: 'chunk', text: greeting });
+      if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
+      await auditBranch({
+        category: 'greeting',
+        complexity: 'simple',
+        models: 0,
+        seats: 0,
         msToFirstByte: Date.now() - t0,
       });
       return;

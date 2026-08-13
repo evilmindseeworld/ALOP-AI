@@ -295,8 +295,21 @@ test("read_url gives the fetcher the address that was actually vetted", async ()
   assert.equal(received.safe.address, "93.184.216.34");
   assert.equal(received.safe.family, 4);
   assert.equal(received.opts.assertSafeUrl instanceof Function, true, "redirect hops cannot be revalidated");
-  assert.equal(received.opts.maxRedirects, 4);
-  assert.equal(received.opts.maxChars, MAX_RESULT_CHARS);
+  assert.equal(received.opts.maxRedirects, 5);
+  assert.equal(received.opts.maxChars, 16000);
+});
+
+test("read_url renders the structured reader result and reports its final host and status", async () => {
+  const reg = buildRegistry({
+    search: async () => [{ title: "Page", url: "https://allowed.example/page", description: "x" }],
+    readUrl: async () => ({ body: "final body", finalUrl: "https://www.allowed.example/final", status: 200 }),
+    assertSafeUrl: async (url) => ({ url: new URL(url), address: "93.184.216.34", family: 4 }),
+  });
+  await reg.execute({ name: "web_search", args: { query: "page" } });
+  const result = await reg.execute({ name: "read_url", args: { url: "https://allowed.example/page" } });
+  assert.equal(result.ok, true);
+  assert.equal(result.content, "final body");
+  assert.equal(result.summary, "Read www.allowed.example (HTTP 200)");
 });
 
 // ===== bad calls from the model =====

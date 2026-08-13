@@ -902,6 +902,7 @@ const { buildRegistry } = require('./lib/tool-registry');
 const { runAgentLoop } = require('./lib/agent-loop');
 const { assertSafeUrl } = require('./lib/url-guard');
 const { pinnedFetch } = require('./lib/pinned-fetch');
+const { readUrl } = require('./lib/read-url');
 const { checkLinks } = require('./lib/link-check');
 const { extractPageSignal, rankReadTargets, hasReadableSignal } = require('./lib/page-extract');
 const { searchShopping, formatShopping, isShoppingQuery } = require('./lib/shopping');
@@ -2777,7 +2778,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     if (TOOLS_SHADOW && !imageContext && selection.category !== 'greeting' && selection.members.length) {
       const probeSys = `You are an elite AI expert in the ALOP-AI Council. If you answer, be direct. Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
       const probeMsgs = [{ role: 'system', content: probeSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
-      const probeRegistry = buildRegistry({ search: toolSearch, readUrl: readPageContent, assertSafeUrl, checkLinks: checkSearchLinks });
+      const probeRegistry = buildRegistry({ search: toolSearch, readUrl, assertSafeUrl, checkLinks: checkSearchLinks });
 
       Promise.all(
         selection.members.map(async ({ model }) => {
@@ -3090,7 +3091,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       if (turnSignal.aborted) return;
       const registry = buildRegistry({
         search: toolSearch,
-        readUrl: readPageContent,
+        readUrl,
         assertSafeUrl,
         checkLinks: checkSearchLinks,
         /* The specialised engines, offered only when SerpApi has a key. Each

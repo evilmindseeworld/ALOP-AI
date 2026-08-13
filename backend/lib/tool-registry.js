@@ -32,7 +32,7 @@ const fail = (summary) => ({ ok: false, summary, content: "" });
 /** A tool result is fed back into a prompt, so it has a hard size. */
 const MAX_RESULT_CHARS = 4000;
 const MAX_TOOL_TIMEOUT_MS = 8000;
-const MAX_REDIRECTS = 4;
+const MAX_REDIRECTS = 5;
 
 /** A caller may shorten a tool's patience, never lengthen the production cap. */
 const clampTimeoutMs = (value) => {
@@ -105,7 +105,8 @@ function validateArgs(tool, args) {
  *
  * @param {object} deps
  * @param {(query: string) => Promise<any>} [deps.search]   present ⇒ web_search offered
- * @param {(url: string) => Promise<string>} [deps.readUrl] present ⇒ read_url offered
+ * @param {(target: object, options: object) => Promise<{body:string,finalUrl:string,status:number}>} [deps.readUrl]
+ *        present ⇒ read_url offered
  * @param {(raw: string) => Promise<any>} [deps.assertSafeUrl] SSRF guard; read_url
  *        is NOT offered without it, because an unguarded read_url is the single
  *        thing this whole design was most careful about.
@@ -205,14 +206,17 @@ function buildRegistry(deps = {}) {
         /* The fetcher gets the address that was checked and the guard it must
          * apply again to every redirect. Passing only the hostname would reopen
          * DNS rebinding between validation and connection. */
-        const text = await deps.readUrl(safe, {
+        const read = await deps.readUrl(safe, {
           signal,
           assertSafeUrl: deps.assertSafeUrl,
           maxRedirects: MAX_REDIRECTS,
-          maxChars: MAX_RESULT_CHARS,
+          maxChars: 16000,
         });
+        const text = typeof read === "string" ? read : read && read.body;
         if (!text) return fail(`Nothing readable at ${safe.url.hostname}.`);
-        return ok(`Read ${safe.url.hostname}`, clamp(text));
+        const destination = read && read.finalUrl ? new URL(read.finalUrl).hostname : safe.url.hostname;
+        const status = read && Number.isInteger(read.status) ? ` (HTTP ${read.status})` : "";
+        return ok(`Read ${destination}${status}`, clamp(text));
       },
     });
   }

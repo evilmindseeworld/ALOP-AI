@@ -1,3 +1,101 @@
+# Handoff — 2026-08-13 (fourth pass): COUNCIL_TOOLS=1 IS LIVE, and the first real turn cost a fortune
+
+The owner set it in Render. `[BOOT] COUNCIL_TOOLS=1 -> tools LIVE` is in the
+logs from 22:10. This is the first time the tool loop has ever run against real
+models on the real gateway, and the shadow-probe question in
+`council-tools.js` — *do these particular models emit a parseable ```tool_call
+block?* — finally has a measured answer. It is worse than "no".
+
+## What was measured, end to end, against production
+
+**A plain search question never reaches the loop at all.** "Search the web for
+… and summarize" was classified by the ROUTER and answered above the council:
+2 router calls + 1 streamed answer, 22 cited URLs, correct. Good answer, but
+nothing about the tool path was exercised. **Any test of the tool loop that
+asks a search-shaped question is testing the router.**
+
+**Asked to open a result, the seats emitted nothing.**
+
+```
+[TOOLS] 1 round(s), 0 unique call(s), 1 answer(s) — 1 member(s) did not reply within the 18000ms round.
+```
+
+The seat replied *"I cannot fulfill this request because no search results or
+URLs were provided in the context"* — it did not occur to it to call
+`web_search`. The catalogue is in its prompt and it did not use it.
+
+**Told explicitly to emit the fence, the plumbing worked and the loop then ate
+itself:**
+
+```
+[TOOLS] r1 tool_start  web_search — OECD Digital Education Outlook 2026
+[TOOLS] r1 tool_result web_search — 6 results
+[TOOLS] r2 tool_start  web_search — OECD Digital Education Outlook 2026   <- identical
+[TOOLS] r3 tool_start  web_search — OECD Digital Education Outlook 2026   <- identical
+[TOOLS] 4 round(s), 3 unique call(s), 0 answer(s) — Stopped after 4 rounds; 1 member(s) still wanted to research.
+[TOOLS] no usable answers, falling back to the plain council.
+```
+
+Three identical searches executed three times, four rounds of seats, zero
+answers, then a whole fallback roster on top — against a 50-request/day
+account-wide cap. **The loop's own line says "3 unique call(s)" while running
+one query three times, so whatever it dedupes, it is not this.**
+
+**`read_url` has never been called by a seat, in any turn.** The id gate is
+correct and it is unexercised. Nothing in the search-result rendering tells a
+seat that reading one is the next move.
+
+## The two defects that fire on ordinary turns
+
+- **A tool-call block reached the user's answer**, rendered as ```` ```json ````
+  with `{"name": "web_search", …}` in it. `FENCE` in `tool-protocol.js` matches
+  only ` ```tool_call `/` ```tool-call ` while its own comment claims it tolerates
+  "json-ish casing" — so a `json` fence is neither run nor stripped. The
+  observed leak came from the FALLBACK council, which may not strip at all.
+- **`[EMBED] 404 models/text-embedding-004`** on every turn. The model name in
+  `embeddings.js:31` is dead at Google, so every turn buys a 404 and the memory
+  write behind it fails silently.
+
+## Verified good
+
+`read_url`'s refusals are clean, checked against the shipped registry: an
+unknown id returns *"That is not a result id from this turn…"* and a
+metadata-address hit returns *"That host is refused by network safety checks."*
+with no address anywhere in the model-facing string.
+
+## Fixed the same night
+
+- **`297b02e` — repeated tool calls are cached per turn.** Shared across the
+  turn's members, keyed on the registry-normalised name and args, and a repeat
+  costs no executor call, no unique-call slot and no tool-time budget. A member
+  that repeats its own call is told to answer next round, which is the half
+  that stops the 0-answer fallback above. The regression asserts ONE executor
+  invocation for two identical calls in different rounds — a test that counted
+  results would have passed against the bug.
+- **`cc1bf2d` — a ```` ```json ```` fence that has the SHAPE of a tool request is
+  stripped and never executed**, including a truncated one, which is what
+  actually leaked. An ordinary JSON example survives, because the strip requires
+  a name/tool key beside args. The plain-council fallback now runs its replies
+  through the same sanitiser before they can reach quorum or synthesis — it
+  never went through the loop's parser at all, which is why the leak appeared
+  there and not in a tool round.
+- **`cc1bf2d` — the embedding model is `gemini-embedding-001`**, 768 dimensions,
+  read off Google's current docs rather than guessed. **Every vector written by
+  `text-embedding-004` needs a full re-embed**; the dimension is unchanged, so
+  no schema migration, but old and new vectors are not comparable and semantic
+  recall will be wrong until that backfill runs. Nobody has run it.
+
+1018 backend tests green.
+
+## Not a bug, a missing feature
+
+**There is no `create_project` tool and no project-creation path in the repo.**
+`grep -rn "create_project\|createProject"` over `backend/` and `frontend/src`
+returns nothing; the registry is `web_search`, `read_url`, `read_file`,
+`search_specialized`. Any request to "create a project" cannot be served today.
+
+---
+
 # Handoff — 2026-08-13 (third pass): read_url stopped being a URL tool
 
 `d7cf174`, `8a62cc2`, `4082620`, `5b1fef2`, on top of `09fa8ef`. Backend

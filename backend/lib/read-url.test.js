@@ -123,6 +123,25 @@ test('response larger than maxChars is truncated and the upstream stream is canc
   assert.ok(chunksWritten < fullChunks, `server wrote all ${chunksWritten} chunks before cancellation`);
 });
 
+test('maxChars counts complete Unicode code points without splitting astral characters', async (t) => {
+  const server = await listen((_req, res) => res.end('😀😀'));
+  t.after(() => server.close());
+
+  const result = await readUrl(safeLocal(server.address().port), { maxChars: 1 });
+  assert.equal(result.body, '😀');
+  assert.equal([...result.body].length, 1);
+  assert.equal(result.truncated, true);
+});
+
+test('a body ending exactly at maxChars is not reported as truncated', async (t) => {
+  const server = await listen((_req, res) => res.end('x'.repeat(64)));
+  t.after(() => server.close());
+
+  const result = await readUrl(safeLocal(server.address().port), { maxChars: 64 });
+  assert.equal(result.body, 'x'.repeat(64));
+  assert.equal(result.truncated, false);
+});
+
 test('private address in the initial DNS result is rejected before a connection', async () => {
   let connections = 0;
   const guard = (raw) => assertSafeUrl(raw, {
@@ -144,7 +163,7 @@ test('file scheme is rejected', async () => {
   await assert.rejects(() => readUrl('file:///etc/passwd'), /Unsupported scheme/);
 });
 
-test('more than five redirects is rejected', async (t) => {
+test('maxRedirects bounds total HTTP hops, including the initial request', async (t) => {
   let hits = 0;
   const server = await listen((req, res) => {
     hits += 1;
@@ -156,9 +175,9 @@ test('more than five redirects is rejected', async (t) => {
 
   await assert.rejects(
     () => readUrl(safeLocal(server.address().port, '/0'), { assertSafeUrl: localGuard, maxRedirects: 5 }),
-    /more than 5 redirects/,
+    /more than 5 HTTP hops/,
   );
-  assert.equal(hits, 6, 'the sixth redirect response must be rejected, not followed to a seventh request');
+  assert.equal(hits, 5, 'a sixth connection must not be made');
 });
 
 test('both council tool registries use readUrl and the live one reaches runAgentLoop', () => {

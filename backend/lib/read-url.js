@@ -4,7 +4,10 @@ const { assertSafeUrl: defaultAssertSafeUrl } = require('./url-guard');
 const { pinnedFetch: defaultPinnedFetch } = require('./pinned-fetch');
 
 const DEFAULT_MAX_CHARS = 16_000;
-const DEFAULT_MAX_REDIRECTS = 5;
+const DEFAULT_MAX_HOPS = 5;
+// Backward-compatible name for callers that supplied this option before the
+// contract was tightened: the value now caps all HTTP hops, initial included.
+const DEFAULT_MAX_REDIRECTS = DEFAULT_MAX_HOPS;
 
 const positiveInt = (value, fallback) => {
   const number = Number(value);
@@ -29,6 +32,7 @@ async function readUrl(target, {
   pinnedFetch = defaultPinnedFetch,
   maxChars = DEFAULT_MAX_CHARS,
   maxRedirects = DEFAULT_MAX_REDIRECTS,
+  maxHops = maxRedirects,
   signal,
   headers = {},
 } = {}) {
@@ -36,12 +40,16 @@ async function readUrl(target, {
   if (typeof pinnedFetch !== 'function') throw new TypeError('readUrl: pinnedFetch must be a function');
 
   const charLimit = positiveInt(maxChars, DEFAULT_MAX_CHARS);
-  const redirectLimit = positiveInt(maxRedirects, DEFAULT_MAX_REDIRECTS);
+  const hopLimit = positiveInt(maxHops, DEFAULT_MAX_HOPS);
   let vetted = isVettedTarget(target) ? target : await assertSafeUrl(target, { signal });
-  let redirects = 0;
+  let hops = 0;
 
   while (true) {
     if (!isVettedTarget(vetted)) throw new Error('readUrl: safety check did not return a pinned address');
+    // The hop ceiling includes the initial request. Check before connecting so
+    // a redirect response on the last allowed hop cannot open one more socket.
+    if (hops >= hopLimit) throw new Error(`readUrl: more than ${hopLimit} HTTP hops`);
+    hops += 1;
     const response = await pinnedFetch(vetted.url, {
       address: vetted.address,
       family: vetted.family,
@@ -61,12 +69,8 @@ async function readUrl(target, {
       : null;
     if (location) {
       await response.body?.cancel().catch(() => {});
-      if (redirects >= redirectLimit) {
-        throw new Error(`readUrl: more than ${redirectLimit} redirects`);
-      }
       const nextUrl = new URL(location, vetted.url).toString();
       vetted = await assertSafeUrl(nextUrl, { signal });
-      redirects += 1;
       continue;
     }
 
@@ -76,29 +80,35 @@ async function readUrl(target, {
     }
 
     const decoder = new TextDecoder();
-    let body = '';
+    const chars = [];
     let truncated = false;
+    const append = (text) => {
+      for (const char of text) {
+        if (chars.length >= charLimit) {
+          truncated = true;
+          return;
+        }
+        chars.push(char);
+      }
+    };
     try {
-      while (body.length < charLimit) {
+      while (!truncated) {
         const { done, value } = await reader.read();
         if (done) {
-          body += decoder.decode();
+          append(decoder.decode());
           break;
         }
-        body += decoder.decode(value, { stream: true });
-        if (body.length >= charLimit) {
-          truncated = true;
-          body = body.slice(0, charLimit);
+        append(decoder.decode(value, { stream: true }));
+        if (truncated) {
           await reader.cancel('read_url character limit reached').catch(() => {});
-          break;
         }
       }
     } finally {
-      if (body.length >= charLimit) await reader.cancel().catch(() => {});
+      if (truncated) await reader.cancel().catch(() => {});
     }
 
     return {
-      body,
+      body: chars.join(''),
       finalUrl: vetted.url.toString(),
       status: response.status,
       truncated,
@@ -106,4 +116,4 @@ async function readUrl(target, {
   }
 }
 
-module.exports = { readUrl, DEFAULT_MAX_CHARS, DEFAULT_MAX_REDIRECTS };
+module.exports = { readUrl, DEFAULT_MAX_CHARS, DEFAULT_MAX_HOPS, DEFAULT_MAX_REDIRECTS };

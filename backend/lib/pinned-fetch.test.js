@@ -11,9 +11,31 @@ const { pinnedFetch } = require('./pinned-fetch');
  * body would pass on an implementation that resolved the name again, which is
  * the entire bug.
  */
-const listen = (handler) => new Promise((resolve) => {
+const listen = (handler, host = '127.0.0.1', port = 0) => new Promise((resolve) => {
   const server = http.createServer(handler);
-  server.listen(0, '127.0.0.1', () => resolve(server));
+  server.listen(port, host, () => resolve(server));
+});
+
+test('a second same-origin request connects to its different vetted address', async (t) => {
+  const hits = [];
+  const serverA = await listen((_req, res) => {
+    hits.push('A');
+    res.end('A');
+  });
+  const { port } = serverA.address();
+  const serverB = await listen((_req, res) => {
+    hits.push('B');
+    res.end('B');
+  }, '127.0.0.2', port);
+  t.after(() => serverA.close());
+  t.after(() => serverB.close());
+
+  const url = `http://same-origin.invalid:${port}/`;
+  const first = await pinnedFetch(url, { address: '127.0.0.1', family: 4 });
+  assert.equal(await new Response(first.body).text(), 'A');
+  const second = await pinnedFetch(url, { address: '127.0.0.2', family: 4 });
+  assert.equal(await new Response(second.body).text(), 'B');
+  assert.deepEqual(hits, ['A', 'B']);
 });
 
 test('connects to the pinned address and still sends the hostname as Host', async (t) => {

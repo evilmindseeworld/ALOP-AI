@@ -57,6 +57,11 @@ const pinnedFetch = (url, { address, family, signal, headers = {} } = {}) => {
       {
         method: 'GET',
         headers,
+        // A pooled same-origin socket may have been opened for a different
+        // vetted address; reuse would bypass `lookup` and defeat the pin.
+        // This reader is small and bounded, so make every request connect
+        // afresh through the lookup below.
+        agent: false,
         // SNI, explicitly. It defaults to the hostname, but the default is the
         // thing that would silently change if someone passed the address here.
         servername: target.hostname,

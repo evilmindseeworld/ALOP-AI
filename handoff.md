@@ -1,8 +1,8 @@
 # Handoff — 2026-08-14 (sixth pass): durable smart expiry and the bounded cache brain
 
-Local work is complete and migration `016_answer_cache_inputs.sql` is applied
-to production. Backend: 1089 tests passing. Deployment/live verification still
-has to be proven by `/health`; do not infer it from the migration or local tree.
+Code commit `38eb1ed` is live, confirmed by `/health`, and migration
+`016_answer_cache_inputs.sql` is applied to production. Backend: 1089 tests
+passing. The production boot log confirms `COUNCIL_BRAIN=1 -> brain ENABLED`.
 
 ## What changed
 
@@ -21,14 +21,15 @@ has to be proven by `/health`; do not infer it from the migration or local tree.
   admission. They are cancelled on shutdown; timers are unref'd. The normal
   turn remains the only cache writer and TTL authority.
 
-## Production switches and proof still required
+## Production proof and remaining live check
 
-- Set `COUNCIL_BRAIN=1` only when `BRAIN_USER_ID` names the provisioned real
-  `users` row. `BRAIN_CLERK_ID` may keep its documented internal default.
-- After deploy, `/health` must show the new commit. Then confirm the boot log
-  says whether the brain is enabled, make one unpersonalised turn, verify its
-  replay columns in `answer_cache`, and repeat it from a separate new chat for
-  an `[ANSWERS] HIT ... models=0` line.
+- `COUNCIL_BRAIN=1` and `BRAIN_USER_ID` are set in Render; the identity was
+  verified as a real `users` row before enabling. `BRAIN_CLERK_ID` keeps its
+  documented internal default.
+- Still owed: make one unpersonalised turn, verify its replay columns in
+  `answer_cache`, and repeat it from a separate new chat for an
+  `[ANSWERS] HIT ... models=0` line. That requires an authenticated product
+  session; boot, schema and health checks do not substitute for it.
 - The advisor run after migration added no migration-specific warning. The new
   index is reported unused because it has not yet had a deployed hourly query;
   the existing service-only/no-policy RLS infos and older function warnings are

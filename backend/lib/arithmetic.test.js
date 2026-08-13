@@ -131,6 +131,76 @@ test('the traps — arithmetic-shaped messages that are NOT sums', async (t) => 
   }
 });
 
+/**
+ * EVERY ONE OF THESE SHIPPED, and Sol found them reviewing the diff after it
+ * landed. They are grouped rather than scattered because what they have in
+ * common is the lesson: the parser was right about arithmetic and wrong about
+ * which strings ARE arithmetic, and about how to write down what it computed.
+ */
+test('the defects review found in the first version', async (t) => {
+  await t.test('percent-of binds like multiplication, not to the end of the line', () => {
+    /* Was: 15% of (80 + 2) = 12.3, echoed as "15% of 80 + 2" — the misgrouping
+     * invisible in the very line meant to reveal it. */
+    assert.equal(answer('15% of 80 + 2'), '15% of 80 + 2 = 14');
+    assert.equal(answer('15% of 80 * 2'), '15% of 80 × 2 = 24');
+  });
+
+  await t.test('a date is not a subtraction', () => {
+    /* Was: 2026 - 08 - 13 = 2005. */
+    assert.equal(tryArithmetic('2026-08-13'), null);
+    assert.equal(tryArithmetic('2026/08/13'), null);
+    assert.equal(tryArithmetic('13-08-2026'), null);
+    assert.equal(tryArithmetic('what is 2026-08-13'), null);
+  });
+
+  await t.test('a leading zero means the digits are a label, not a quantity', () => {
+    /* Was: 555 - 0100 = 455. */
+    assert.equal(tryArithmetic('555-0100'), null);
+    assert.equal(tryArithmetic('007 + 1'), null);
+    /* But a real decimal below one still computes — the zero there is a value. */
+    assert.equal(answer('0.5 + 0.25'), '0.5 + 0.25 = 0.75');
+    assert.equal(answer('0 + 1'), '0 + 1 = 1');
+  });
+
+  await t.test('a power raised to a power is parenthesised, never juxtaposed', () => {
+    /* Was: "2²³ = 64" — a true answer beside a false equation, since 2²³ reads
+     * as 2^23 = 8388608. */
+    assert.equal(answer('2 squared^3'), '(2²)³ = 64');
+    assert.equal(answer('2 squared squared'), '(2²)² = 16');
+    assert.equal(answer('2^3^2'), '2^3² = 512');
+  });
+
+  await t.test('a long but exact decimal prints exactly, and says =', () => {
+    /* Was: "1 ÷ 512 ≈ 0.00195313" — an approximation sign on an exact number. */
+    assert.equal(answer('1 / 512'), '1 ÷ 512 = 0.001953125');
+    assert.equal(answer('-1 / 1000000000'), '-1 ÷ 1000000000 = -0.000000001');
+    assert.equal(tryArithmetic('1 / 512').exact, true);
+  });
+
+  await t.test('a non-zero value that rounds to zero falls through', () => {
+    /* Was: "≈ -0", which is not a number anyone writes. */
+    assert.equal(tryArithmetic('-1 / 3000000000'), null);
+    assert.equal(tryArithmetic('1 / 3000000000'), null);
+  });
+
+  await t.test('the digit ceiling bounds the RESULT, not each power in it', () => {
+    /* Was: 33 copies of 9^999 multiplied together — inside every individual
+     * ceiling, 31,459 digits out. */
+    const bomb = Array(33).fill('9^999').join('*');
+    assert.ok(bomb.length < 200, 'the bomb has to fit inside the length ceiling to be a test');
+    assert.equal(tryArithmetic(bomb), null);
+  });
+
+  await t.test('"minus three squared" in words is ambiguous and refuses', () => {
+    /* Most people saying it mean (-3)² = 9; the symbols say -9. Neither, then. */
+    assert.equal(tryArithmetic('-3 squared'), null);
+    assert.equal(tryArithmetic('-2 cubed'), null);
+    /* Parenthesised or symbolic, it is not ambiguous and still computes. */
+    assert.equal(answer('(-3) squared'), '(-3)² = 9');
+    assert.equal(answer('-3^2'), '-3² = -9');
+  });
+});
+
 test('hostile input reaches no evaluator and no crash', async (t) => {
   const hostile = [
     '80^2; DROP TABLE users',
@@ -207,11 +277,17 @@ test('punctuation and phrasing around a genuine sum', async (t) => {
  *
  * Asserting "zero calls to callModel" directly is impossible here — server.js
  * calls process.exit(1) at import time without its env, so nothing defined in
- * it can be required from a test (see AGENTS.md). What CAN be proved is
- * stronger than a spy on one function: with global.fetch replaced by a throw,
- * every network call in this process fails loudly, and callModel, streamModel
- * and every OpenRouter helper are built on fetch. If any of them ran, this
- * test would error rather than pass.
+ * it can be required from a test (see AGENTS.md). With global.fetch replaced by
+ * a throw, every network call THIS MODULE could make fails loudly, and
+ * callModel, streamModel and every OpenRouter helper are built on fetch.
+ *
+ * WHAT THIS DOES NOT PROVE, because the first version of this comment claimed
+ * it did: nothing here exercises `/api/council`. The route still does its own
+ * Supabase work either side of this branch — `ensureUser` before it and
+ * `auditLog` after — and those are network calls this test never sees. The
+ * claim it supports is exactly "the parser asks no one anything", which is the
+ * claim that matters for the request budget. The ordering test below is what
+ * covers the route.
  */
 test('the fast path performs no network I/O whatsoever', () => {
   const realFetch = global.fetch;
@@ -247,6 +323,18 @@ test('server.js calls the fast path before the router and before any model', () 
   assert.ok(fast > 0, 'server.js never calls tryArithmetic');
   assert.ok(router > 0, 'the router call moved; this test needs updating');
   assert.ok(fast < router, 'the arithmetic fast path must run BEFORE classifyRequest');
+
+  /* AND THE DAILY-CAP LATCH LETS IT THROUGH. When the account's model quota is
+   * spent the route returns 503 before doing anything — which refused `80
+   * squared`, an answer needing no model at all. The latch must consult the
+   * parser before refusing. */
+  const latch = src.indexOf('dailyLimitActive()');
+  assert.ok(latch > 0, 'the daily-limit latch moved; this test needs updating');
+  assert.match(
+    src.slice(latch, latch + 120),
+    /tryArithmetic/,
+    'the daily-limit latch must not refuse a turn the fast path can answer for free',
+  );
 
   const firstModelCall = Math.min(
     ...['streamModel(res', 'runCouncilWithWhip(', 'runAgentLoop('].map((needle) => {

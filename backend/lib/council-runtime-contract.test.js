@@ -53,8 +53,20 @@ test("the account's daily model cap refuses the turn before anything is spent", 
   // row and the spend reservation, or the turn pays for an answer that cannot
   // arrive. Checking only that the guard exists would pass with it sitting
   // uselessly at the bottom of the route.
-  const guard = ROUTE.indexOf("if (dailyLimitActive())");
+  //
+  // ONE EXEMPTION, added 2026-08-13 with the arithmetic fast path: the guard
+  // now reads `dailyLimitActive() && !tryArithmetic(...)`. A sum is answered
+  // in-process and spends no model request, so refusing it for want of model
+  // quota refuses an answer that was already in hand. The ordering assertions
+  // below are unchanged and still carry the point of this test; only the shape
+  // of the condition moved.
+  const guard = ROUTE.indexOf("if (dailyLimitActive()");
   assert.ok(guard !== -1, "the daily-cap guard is missing from the council route");
+  assert.match(
+    ROUTE.slice(guard, guard + 120),
+    /!tryArithmetic/,
+    "the daily-cap guard must let a locally-answerable sum through",
+  );
   assert.ok(guard < ROUTE.indexOf("createTurnTelemetry("), "the daily-cap guard must precede the telemetry row");
   assert.match(ROUTE, /res\.status\(503\)/);
   assert.match(ROUTE, /Retry-After/);

@@ -241,10 +241,19 @@ function parse(tokens) {
       /* "15% of 80" and "15 percent of 80". The percent sign ALONE, with no
        * `of` after it, is not handled: "80 plus 15%" means "plus 15% of 80" to
        * a person and "plus 0.15" to a naive parser, and the two answers differ.
-       * Ambiguous — so it falls through. */
+       * Ambiguous — so it falls through.
+       *
+       * THE RIGHT OPERAND IS A `term`, NOT AN `expr`, and the difference is a
+       * wrong answer. Parsing it as a full expression made "of" swallow
+       * everything after it: `15% of 80 + 2` computed 15% of (80 + 2) = 12.3
+       * where a person means (15% of 80) + 2 = 14. Worse, the echo rendered as
+       * "15% of 80 + 2", which is exactly what the user typed, so the misgrouping
+       * was invisible in the one place designed to reveal it. Binding at `term`
+       * gives "of" the same reach as multiplication, which is how it reads
+       * aloud. */
       if (peek()?.t === 'pctof' || (peek()?.t === 'pct' && tokens[i + 1]?.t === 'of')) {
         i += peek().t === 'pctof' ? 1 : 2;
-        const rhs = expr();
+        const rhs = term();
         if (!rhs) return null;
         return { k: 'pctof', a: node, b: rhs };
       }
@@ -352,6 +361,11 @@ function evaluate(node) {
 const SUP = { 2: '²', 3: '³' };
 const PREC = { '+': 1, '-': 1, '*': 2, '/': 2, '^': 4 };
 
+/** The base of an exponent, wrapped when it is itself an exponent — see the
+ * `sq`/`cu`/`^` cases below for why juxtaposed superscripts lie. */
+const powBase = (node) =>
+  ['sq', 'cu', '^'].includes(node.k) ? `(${render(node)})` : render(node, 4);
+
 /** Parenthesise only where precedence demands it, so the echo reads the way a
  * person would write it: "2 + 3 × 4", not "(2 + (3 × 4))". */
 function render(node, parentPrec = 0) {
@@ -359,12 +373,17 @@ function render(node, parentPrec = 0) {
     case 'num': return node.raw;
     case 'paren': return `(${render(node.a)})`;
     case 'neg': return `-${render(node.a, 3)}`;
-    case 'sq': return `${render(node.a, 4)}²`;
-    case 'cu': return `${render(node.a, 4)}³`;
-    case 'pctof': return `${render(node.a, 4)}% of ${render(node.b)}`;
+    /* A POWER WHOSE BASE IS ITSELF A POWER MUST BE PARENTHESISED, because
+     * superscripts juxtapose into a different number. `2 squared^3` is (2²)³ =
+     * 64, and rendering it "2²³" reads as 2²³ = 2^23, which is 8388608 — the
+     * echo would have shown a true answer beside a false equation, which is
+     * worse than showing nothing. */
+    case 'sq': return `${powBase(node.a)}²`;
+    case 'cu': return `${powBase(node.a)}³`;
+    case 'pctof': return `${render(node.a, 4)}% of ${render(node.b, 2)}`;
     case '^': {
       const exp = node.b.k === 'num' && SUP[node.b.raw] ? SUP[node.b.raw] : null;
-      const body = exp ? `${render(node.a, 4)}${exp}` : `${render(node.a, 4)}^${render(node.b, 4)}`;
+      const body = exp ? `${powBase(node.a)}${exp}` : `${powBase(node.a)}^${render(node.b, 4)}`;
       return parentPrec > 4 ? `(${body})` : body;
     }
     default: {
@@ -388,6 +407,22 @@ function render(node, parentPrec = 0) {
  */
 const DECIMALS = 8;
 
+/**
+ * How far to look for an exact ending before giving up and rounding.
+ *
+ * A terminating decimal can be much longer than the eight places anyone wants
+ * to read: 1/512 is exactly 0.001953125, and stopping at eight digits rounded
+ * it to 0.00195313 and stamped it ≈ — an approximation sign on a number that
+ * has an exact form, which is the opposite of the honesty this formatter is
+ * for. So the expansion runs to 30 places looking for a clean end, and only a
+ * value that has not terminated by then is rounded to DECIMALS and marked.
+ *
+ * 30 rather than unbounded because a denominator of 2^100 terminates too, after
+ * a hundred digits nobody wants; past 30 the exact form has stopped being more
+ * useful than the rounded one.
+ */
+const EXACT_SCAN = 30;
+
 function formatValue(r) {
   const neg = r.n < 0n;
   const n = neg ? -r.n : r.n;
@@ -399,11 +434,20 @@ function formatValue(r) {
   let rem = n % r.d;
   let frac = '';
   let exact = false;
-  for (let k = 0; k < DECIMALS; k++) {
+  for (let k = 0; k < EXACT_SCAN; k++) {
     rem *= 10n;
     frac += (rem / r.d).toString();
     rem %= r.d;
     if (rem === 0n) { exact = true; break; }
+  }
+
+  /* Not exact within the scan: fall back to the readable ceiling, recomputing
+   * the remainder that DECIMALS digits would have left so the rounding below
+   * still asks the right question. */
+  if (!exact && frac.length > DECIMALS) {
+    frac = frac.slice(0, DECIMALS);
+    rem = n % r.d;
+    for (let k = 0; k < DECIMALS; k++) { rem = (rem * 10n) % r.d; }
   }
 
   /* Round the last digit rather than truncating: 2/3 is 0.66666667, not
@@ -432,6 +476,46 @@ function formatValue(r) {
 const MAX_LENGTH = 200;
 
 /**
+ * STRINGS THAT ARE NOT SUMS, however arithmetic they look to a tokeniser.
+ *
+ * `2026-08-13` parsed as 2026 − 8 − 13 and answered 2005. `2026/08/13` answered
+ * 19.48. `555-0100` answered 455. Every one of those is a date or an identifier
+ * a person typed to ASK ABOUT, and the fast path took it as a calculation and
+ * skipped the council entirely — the exact false-positive failure this module's
+ * header promises not to have, found by Sol in review rather than by a user.
+ *
+ * Two rules, because one is not enough:
+ *
+ * `DATE_LIKE` — three number groups joined by `-` or `/` with no spaces is a
+ * date in every convention there is, and nobody writes a subtraction that way.
+ *
+ * A LEADING ZERO on any operand means the digits are a LABEL, not a quantity:
+ * `08` in a date, `0100` in a phone number, `007`. Arithmetic does not write
+ * numbers that way, so the zero is evidence about what the string is FOR.
+ */
+const DATE_LIKE = /^\s*\d{1,4}\s*[-/]\s*\d{1,2}\s*[-/]\s*\d{1,4}\s*$/;
+const LEADING_ZERO = /(^|[^\d.])0\d/;
+
+/**
+ * "MINUS THREE SQUARED" IS TWO DIFFERENT NUMBERS, so it gets neither.
+ *
+ * Written as symbols, `-3^2` is -9 and every calculator agrees: the exponent
+ * binds tighter than the sign. Said in WORDS, "negative three squared" is what
+ * most people say when they mean (-3)² = 9. The symbolic form keeps the
+ * mathematical convention, because the person who typed `^` is working in
+ * symbols; the word form is genuinely ambiguous and this module's rule for
+ * ambiguity is to say nothing and let the council explain the distinction —
+ * which is a better answer to that question than either number alone.
+ *
+ * Parenthesise and it computes: `(-3) squared` is 9, `-(3 squared)` is -9.
+ */
+function hasAmbiguousNegativePower(node) {
+  if (!node || typeof node !== 'object') return false;
+  if (node.k === 'neg' && (node.a?.k === 'sq' || node.a?.k === 'cu')) return true;
+  return hasAmbiguousNegativePower(node.a) || hasAmbiguousNegativePower(node.b);
+}
+
+/**
  * @param {string} text the raw user message.
  * @returns {{expression: string, value: string, answer: string, exact: boolean}|null}
  *   null means NOT arithmetic — the caller must fall through to the council
@@ -450,6 +534,8 @@ function tryArithmetic(text) {
   s = s.replace(/\s*=\s*$/, '').replace(/\s+equals?$/i, '');
   if (!s) return null;
 
+  if (DATE_LIKE.test(s) || LEADING_ZERO.test(s)) return null;
+
   const tokens = tokenize(s);
   if (!tokens || !tokens.length) return null;
 
@@ -460,6 +546,7 @@ function tryArithmetic(text) {
 
   const tree = parse(tokens);
   if (!tree) return null;
+  if (hasAmbiguousNegativePower(tree)) return null;
 
   let value;
   try {
@@ -469,10 +556,24 @@ function tryArithmetic(text) {
   }
   if (!value) return null;
 
+  /* THE WHOLE RESULT, not each power in isolation. `pow` bounds what any one
+   * exponent may produce, and 33 copies of `9^999` multiplied together fit
+   * inside a 197-character message and inside every individual ceiling — Sol
+   * got a 31,459-digit answer out of it. Fast, but an answer nobody asked for
+   * measured in tens of kilobytes, streamed to the client and written to the
+   * logs. The bound has to be on what leaves the function. */
+  if (String(value.n).length > MAX_RESULT_DIGITS || String(value.d).length > MAX_RESULT_DIGITS) return null;
+
   const formatted = formatValue(value);
   const isString = typeof formatted === 'string';
   const shown = isString ? formatted : formatted.text;
   const exact = isString ? true : formatted.exact;
+
+  /* A non-zero value that rounds to zero has nothing useful to show. "-1 ÷
+   * 3000000000 ≈ -0" is a worse answer than no answer, and "-0" is not a number
+   * anyone writes. The council can explain the magnitude instead. */
+  if (!exact && /^-?0$/.test(shown)) return null;
+
   const expression = render(tree);
 
   return {

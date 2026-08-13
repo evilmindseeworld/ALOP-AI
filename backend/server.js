@@ -2058,7 +2058,15 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
    * arrive. 503 with a Retry-After is the honest shape: the service is
    * temporarily unable, it is not the request that is wrong. See the latch above
    * callModel for why one observation settles it for the whole window. */
-  if (dailyLimitActive()) {
+  /* THE LATCH DOES NOT APPLY TO A QUESTION THAT SPENDS NOTHING. The comment
+   * above says every step would be "work done for an answer that cannot
+   * arrive", and that stopped being true the moment a sum could be answered
+   * locally: `80 squared` needs no model request, so refusing it because the
+   * MODEL quota is gone is refusing an answer that was already in hand. Parsed
+   * from the raw body here rather than the validated prompt because validation
+   * happens further down, inside the try; the fast path below re-runs it
+   * against the validated text, which is the copy that reaches the user. */
+  if (dailyLimitActive() && !tryArithmetic(req.body?.message)) {
     res.set('Retry-After', String(Math.max(1, Math.ceil((dailyLimitUntil - Date.now()) / 1000))));
     return res.status(503).json({
       error: "The council is out of model requests for today. It resets at midnight UTC.",
@@ -2170,14 +2178,31 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
        * type would have needed a frontend change to render at all, and an
        * unknown type is silently dropped there, which is a blank answer.
        *
-       * firstChunkAt is stamped by hand because streamModel — the only other
-       * thing that ever stamps it — is not involved. Left unstamped, every
-       * fast-path turn would report its latency as the time to the LAST byte in
-       * the telemetry that this feature exists to move. */
+       * firstChunkAt is stamped for consistency with every other branch, and
+       * the latency is ALSO written into the audit row by hand. `auditBranch`
+       * writes bare metadata rather than `telemetry.snapshot()`, so a row from
+       * here carries neither `msToFirstByte` nor the `council_turn` marker the
+       * admin console filters on — the same shape the greeting and memory
+       * branches have always had. Without `msToFirstByte` below, the one turn
+       * whose latency this whole feature exists to move would be the one turn
+       * with no latency recorded. */
       if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
       sendEvent(res, { type: 'chunk', text: sum.answer });
       if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
-      await auditBranch({ category: 'arithmetic', complexity: 'simple', models: 0, seats: 0, exact: sum.exact });
+      /* NOT `rememberTurn`. It runs a summary and a fact-extraction call, which
+       * would spend two model requests to record that 80 squared is 6400 —
+       * more than the council turn this branch just replaced, for a fact worth
+       * nothing later. The cost of that choice, stated: a follow-up like
+       * "multiply that by 3" relies on the frontend's own history, and once
+       * that ages out the number is gone from the conversation summary. */
+      await auditBranch({
+        category: 'arithmetic',
+        complexity: 'simple',
+        models: 0,
+        seats: 0,
+        exact: sum.exact,
+        msToFirstByte: Date.now() - t0,
+      });
       return;
     }
 

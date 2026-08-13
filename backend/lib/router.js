@@ -258,6 +258,40 @@ function isGenerationRequest(text) {
   return GENERATION_RE.test(typeof text === "string" ? text : "");
 }
 
+/**
+ * A question about what THIS assistant can do — "can you access Canva?", "do
+ * you support plugins?", "are you able to browse the web?".
+ *
+ * These were landing in the three-seat middle tier, which is the wrong price for
+ * a one-sentence answer: LOOKUP_RE is anchored on what/who/when/where/which, and
+ * a capability question opens with a modal instead. Nothing about a panel helps
+ * here either — three models reconciling their guesses about one product's
+ * integrations is three chances to invent one.
+ *
+ * The object is REQUIRED, and it is what keeps this narrow. "Can you fix it" and
+ * "could you make a poster" open identically and are work, not questions about
+ * the assistant; they match the modal and not the object, so they stay in the
+ * middle tier. Escalation still runs first, so "can you compare X and Y" is
+ * complex before this is ever consulted.
+ *
+ * `use` IS NOT IN THE LIST and that is Sol's finding, not an oversight. "Can you
+ * use Bayes' theorem to calculate the probability that this diagnosis is
+ * correct" is under 200 characters, opens with the capability grammar, and is a
+ * hard question — the regex cannot tell invoking a capability from asking
+ * whether one exists. Every word left names the capability itself.
+ *
+ * ONE CLAUSE, which is the second half of the same finding. "Can you access the
+ * database and determine why these records disagree" still matches `access`, and
+ * a real capability question does not have a second verb after it. Ten words is
+ * the cut, and it is a chosen number, not a measured one: the longest genuine
+ * example here ("Do you have access to Google Drive?") is seven.
+ */
+const CAPABILITY_RE =
+  /^(?:can|could|do|does|are|is|will|would)\s+(?:you|alop[-\s]?ai)\b(?:\W+\w+){0,6}\W+\b(?:access|browse|connect|integrate|support|plugins?|integrations?|internet|api)\b/i;
+
+const isCapabilityQuestion = (t) =>
+  CAPABILITY_RE.test(t) && (t.match(/\S+/g) || []).length <= 10;
+
 /** Bare arithmetic — "15% of 80", "2+2", "144/12" — with no prose around it. */
 const ARITHMETIC_RE = /^[\s\d+\-*/^%().,=x×÷]+\??$/;
 
@@ -296,7 +330,7 @@ function assessComplexity(text, detailed = false) {
    * required: short AND shaped like a lookup or a sum. "Fix it" is short and is
    * not a lookup; it stays in the middle tier where it can still be argued
    * over. 200 characters is about two sentences. */
-  if (t.length <= 200 && (LOOKUP_RE.test(t) || ARITHMETIC_RE.test(t))) return "simple";
+  if (t.length <= 200 && (LOOKUP_RE.test(t) || ARITHMETIC_RE.test(t) || isCapabilityQuestion(t))) return "simple";
 
   return "moderate";
 }
@@ -499,6 +533,50 @@ function classifyRequest(text, members, detailed = false) {
   };
 }
 
+/**
+ * THE ROSTER THE TURN GETS ONCE THE ROUTER HAS SAID "THIS NEEDS LIVE RESEARCH".
+ *
+ * classifyRequest runs from the text alone, before anything knows whether the
+ * turn will search — it has to, because the roster decides the spend
+ * reservation. So a short lookup-shaped question that turns out to need current
+ * information was dispatched to ONE seat and then handed the agent tool loop:
+ * the most expensive path in the product, run by the smallest possible council,
+ * with no second seat to disagree when that one seat reads a bad source. Live
+ * research is the case where reconciling independent readings is worth the most,
+ * and it was getting the least.
+ *
+ * Pure, and it only ever WIDENS to the roster it is handed — the plan decision
+ * stays in the caller, exactly as it does for narrowRoster, so this cannot give
+ * a free user a seat their plan does not include.
+ *
+ * The caller must have RESERVED for this roster already. Re-expanding a budget
+ * below the layer that set it is the failure this codebase has hit three times;
+ * server.js reserves the pessimistic seat count up front for any turn that could
+ * reach here, and refunds the difference in its `finally`.
+ *
+ * @param {object} selection  a classifyRequest result.
+ * @param {Array} roster  the full set of seats this user is entitled to.
+ */
+function escalateForResearch(selection, roster) {
+  const full = Array.isArray(roster) ? roster : [];
+  const current = Array.isArray(selection?.members) ? selection.members : [];
+  if (full.length <= current.length) return selection;
+  return {
+    ...selection,
+    members: full,
+    quorum: Math.min(QUORUM, full.length),
+    /* The token ceiling comes back up with the roster. A 400-token draft is the
+     * simple tier's bargain — one seat, one sentence — and a seat that has just
+     * read three pages has more to report than that. Never DOWN: a turn the user
+     * asked for depth on keeps its 2000. */
+    tokenLimit: Math.max(Number(selection?.tokenLimit) || 0, 1000),
+    /* Reported, because the tier is what the logs and the audit row explain a
+     * turn by, and "simple" beside a seven-seat tool loop is a lie in the one
+     * place someone would go to find out what happened. */
+    complexity: "complex",
+  };
+}
+
 module.exports = {
   detectLanguage,
   wantsDetailedAnswer,
@@ -507,6 +585,7 @@ module.exports = {
   assessComplexity,
   routeByRule,
   narrowRoster,
+  escalateForResearch,
   GREETING_RE,
   DETAIL_PHRASES,
   GENERATION_RE,

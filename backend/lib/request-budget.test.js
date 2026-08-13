@@ -455,6 +455,18 @@ test("the synthesis cap is never below the council's own draft ceiling", () => {
 test("the reservation and the price are computed from the same turn shape", () => {
   // Two ceilings disagreeing about what a turn will do is how one of them ends
   // up wrong. Both take the same seat count and the same agent-loop literals.
-  assert.match(ROUTE, /reservationCents\(selection\.members\.length, 12, 4\)/);
-  assert.match(ROUTE, /reservationRequests\(selection\.members\.length, 12, 4\)/);
+  assert.match(ROUTE, /reservationCents\(maxSeats, 12, 4\)/);
+  assert.match(ROUTE, /reservationRequests\(maxSeats, 12, 4\)/);
+});
+
+test("the reservation covers the roster the research escalation can widen to", () => {
+  // The seat count is no longer the one classifyRequest returned: a turn the
+  // router sends to live research is re-selected onto the full council further
+  // down. Reserving against the narrow roster and widening afterwards is a
+  // downstream layer re-expanding a budget set above it — the money is gone
+  // before anything can refuse it — so the pessimism has to live at admission.
+  assert.match(ROUTE, /const maxSeats = mayEscalate[\s\S]{0,120}planRoster\.length/);
+  assert.match(ROUTE, /escalateForResearch\(selection, planRoster\)/);
+  // And it must not widen where a search turn never reaches the council at all.
+  assert.match(ROUTE, /const mayEscalate = SEEDED_SEARCH/);
 });

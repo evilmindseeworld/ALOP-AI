@@ -7,6 +7,7 @@ const {
   classifyRequest,
   routeByRule,
   DETAIL_PHRASES,
+  escalateForResearch,
 } = require("./router");
 
 // ===== language: the overlap bug =====
@@ -470,4 +471,80 @@ test("the labelled difficulty corpus routes 15 of 15 questions to the intended r
   ];
   const misses = labelled.filter(([text, expected]) => classifyRequest(text, ROSTER).complexity !== expected);
   assert.deepEqual(misses, [], `misrouted ${misses.length}/${labelled.length} labelled questions`);
+});
+
+// ===== capability questions =====
+//
+// "Can you access Canva?" was a three-seat question. It opens with a modal, so
+// LOOKUP_RE — anchored on what/who/when/where/which — never saw it, and the
+// middle tier is the default for anything with no signal either way. Three
+// models reconciling their guesses about one product's integrations is not a
+// better answer than one; it is three chances to invent an integration.
+
+test("a question about what the assistant can do is a one-seat question", () => {
+  for (const text of [
+    "Can you access Canva?",
+    "can you access canva",
+    "Do you have access to Google Drive?",
+    "Are you able to browse the web?",
+    "Do you support plugins?",
+    "Can you connect to my Notion?",
+    "Does ALOP-AI integrate with Figma?",
+    "Do you use the internet?",
+  ]) {
+    assert.equal(classifyRequest(text, ROSTER).complexity, "simple", text);
+    assert.equal(classifyRequest(text, ROSTER).members.length, 1, text);
+  }
+});
+
+// The object is what keeps the modal from swallowing ordinary work. Each of
+// these opens exactly like a capability question and is a task.
+test("a modal opening does not by itself make a request simple", () => {
+  for (const text of [
+    "Can you fix it?",
+    "Could you make a poster for the school fair?",
+    "Can you help me understand recursion?",
+    "Would you rewrite this paragraph for me?",
+    // Sol's two: the grammar of a capability question wrapped around real work.
+    "Can you use Bayes' theorem to calculate the probability that this diagnosis is correct?",
+    "Can you access the database and determine why these records disagree?",
+  ]) {
+    assert.notEqual(classifyRequest(text, ROSTER).complexity, "simple", text);
+  }
+});
+
+// ===== the research escalation =====
+//
+// classifyRequest runs on the text alone because the roster it returns decides
+// the spend reservation, so the search decision — which arrives from the router
+// hundreds of lines later — cannot be an input to it. This is where that fact
+// gets applied.
+
+test("a turn the router sends to live research gets the whole roster", () => {
+  const simple = classifyRequest("What is the price of a Canva Pro seat?", ROSTER);
+  assert.equal(simple.members.length, 1);
+
+  const widened = escalateForResearch(simple, ROSTER);
+  assert.equal(widened.members.length, ROSTER.length);
+  assert.equal(widened.quorum, 2);
+  assert.equal(widened.complexity, "complex");
+  // A 400-token draft is the one-seat bargain. A seat that has just read three
+  // pages has more to report than that.
+  assert.ok(widened.tokenLimit >= 1000, `tokenLimit ${widened.tokenLimit}`);
+});
+
+test("the research escalation only ever widens", () => {
+  const detailed = classifyRequest("Compare Postgres and MySQL in detail", ROSTER, true);
+  assert.equal(detailed.members.length, ROSTER.length);
+  // Same object back: nothing to widen, and the 2000-token depth ceiling the
+  // user asked for is not pulled down to 1000.
+  assert.equal(escalateForResearch(detailed, ROSTER), detailed);
+  assert.equal(escalateForResearch(detailed, ROSTER).tokenLimit, 2000);
+});
+
+test("the research escalation cannot reach past the plan's roster", () => {
+  const free = ROSTER.slice(0, 2);
+  const widened = escalateForResearch(classifyRequest("What is a monad?", free), free);
+  assert.equal(widened.members.length, 2);
+  for (const seat of widened.members) assert.ok(free.includes(seat), seat.model);
 });

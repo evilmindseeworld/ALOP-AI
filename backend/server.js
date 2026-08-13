@@ -598,6 +598,7 @@ const {
   needsWikiCheck,
   classifyRequest,
   routeByRule,
+  escalateForResearch,
 } = require('./lib/router');
 // What makes a Wikipedia lookup answerable rather than merely non-empty.
 const { wikiSubject, isRelevantTitle } = require('./lib/wiki-relevance');
@@ -2576,7 +2577,12 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const lang = detectLanguage(pv.value);
     // The plan decides the roster HERE, once, rather than inside the router —
     // which is what lets the router be called with a sentence and checked.
-    const selection = classifyRequest(pv.value, userPlan === 'pro' ? COUNCIL : FREE_COUNCIL, isDetailed);
+    const planRoster = userPlan === 'pro' ? COUNCIL : FREE_COUNCIL;
+    let selection = classifyRequest(pv.value, planRoster, isDetailed);
+    /* `let`, because a turn the router later sends to live research is
+     * re-selected onto the full roster below — see escalateForResearch. The
+     * reservation two blocks down covers that roster, not this one, so the
+     * widening cannot spend past what was admitted. */
 
     /* THE SPEND CEILING, RESERVED BEFORE THE FIRST PAID CALL.
      *
@@ -2612,7 +2618,35 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     /* Rounds passed explicitly, because every round re-asks every seat and the
      * reservation has to cover all of them — see the note in lib/spend.js. The
      * literals mirror `agent-loop.js`'s DEFAULTS; if those change, this must. */
-    const reserved = reservationCents(selection.members.length, 12, 4);
+    /* RESERVED FOR THE WIDEST ROSTER THIS TURN COULD REACH, which since the
+     * research escalation is not the roster it starts with.
+     *
+     * The router's search decision lands ~400 lines below this, and a turn that
+     * needs live research is re-selected onto the full council there. Reserving
+     * against the narrow roster and then widening would be a downstream layer
+     * re-expanding a budget set above it — the exact shape of the three bugs in
+     * CLAUDE.md rule 8 — and the money would be spent before anything noticed.
+     *
+     * So the pessimism moves up here, where the reservation already IS
+     * pessimistic by design: it covers a full roster, synthesis, a fallback
+     * council and the whole tool budget, and the `finally` refunds whatever the
+     * turn did not use. A greeting is exempt because it dispatches no seats and
+     * never reaches the council at all.
+     *
+     * CEILING: a user close to their daily limit can now be refused on a cheap
+     * turn that would have fitted. That is the safe direction — the alternative
+     * is admitting a turn and then spending past it.
+     *
+     * SEEDED_SEARCH gates it, because that is the only configuration where a
+     * search turn reaches the council at all: with it off, the search branch
+     * answers and returns before step 4, so a full-roster reservation would hold
+     * account-wide capacity for seats that can never be dispatched and refuse
+     * concurrent turns for it — Sol's finding. */
+    const mayEscalate = SEEDED_SEARCH && selection.category !== 'greeting';
+    const maxSeats = mayEscalate
+      ? Math.max(selection.members.length, planRoster.length)
+      : selection.members.length;
+    const reserved = reservationCents(maxSeats, 12, 4);
     const budget = await reserveSpend(user.id, reserved);
     if (!budget.allowed) {
       telemetry.markCeiling('spend');
@@ -2643,7 +2677,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
      * same moment. Same 402 and the same response shape — a client that already
      * handles the money refusal keeps working — with the reason as the field
      * that tells them apart. */
-    const reservedRequests = reservationRequests(selection.members.length, 12, 4);
+    const reservedRequests = reservationRequests(maxSeats, 12, 4);
     const requestBudget = await reserveRequests(reservedRequests);
     if (!requestBudget.allowed) {
       telemetry.markCeiling('requests');
@@ -3024,6 +3058,26 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     // The same promise the memory branch already read. It resolved above, so
     // this await is free.
     const searchQueries = (await routeP).queries;
+    /* THE ROUTER HAS NOW SAID THIS TURN NEEDS LIVE INFORMATION, and that is a
+     * fact classifyRequest could not have had: it ran on the text alone, before
+     * anything knew whether the answer was in the models or on the web.
+     *
+     * "What is the price of X today" is short and lookup-shaped, so it was
+     * classified simple and dispatched to ONE seat — which then got the search
+     * context and, with tools live, the agent loop. The most expensive and most
+     * error-prone path in the product was being run by the smallest council in
+     * it, with nobody to disagree when the one seat read a bad page. Research is
+     * where independent readings are worth the MOST.
+     *
+     * An image turn is excluded because its context is the picture, not the web.
+     * The budget for this roster was reserved above. */
+    if (mayEscalate && searchQueries?.length && !imageContext) {
+      const widened = escalateForResearch(selection, planRoster);
+      if (widened !== selection) {
+        console.log(`[COUNCIL] Research escalation: ${selection.members.length} -> ${widened.members.length} seats.`);
+        selection = widened;
+      }
+    }
     const shouldCheckWiki = needsWikiCheck(pv.value);
     /* Derived from the USER'S words, not from the query the model wrote.
      *

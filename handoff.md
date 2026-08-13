@@ -31,6 +31,104 @@ something this file describes, change this file in the same commit.
 
 ---
 
+## The arithmetic fast path, and what a turn actually costs (2026-08-13)
+
+`backend/lib/arithmetic.js`, landed at `1765e93`, with ten defects found in
+review and fixed at `38d7ffc` — read that commit message before changing this
+file, because most of what it fixed looks like an improvement to re-introduce.
+A sum is answered in-process and never reaches a model. The owner's report was that "80 squared" and "21600
+cubed" took as long as a hard question, which they did: the router rated both
+`moderate`, so three seats were polled non-streaming and then synthesised.
+
+**Its position in `/api/council` is the feature, not an implementation detail.**
+Above the router, above the spend and request reservations, above every model
+call. A test asserts that order against `server.js` as text, because a fast path
+that runs after the router still returns the right answer and saves nothing —
+no other test in the suite would notice. If you move it, that test is the one
+that should stop you.
+
+**It refuses far more readily than it answers**, because nothing downstream can
+disagree with it. One unknown word refuses the whole message; there is no way to
+express a partial parse. Luna produced forty adversarial inputs before the code
+existed and they are now the test file. The four worth knowing, because they
+look computable and are not: `15% off 80` means 68 to a person and is not
+`15% of 80`; `why is 15% of 80 the same as 80% of 15` is a reasoning question;
+`80 squared metres of carpet` is a unit; `what is 2 + 2 in binary` is asking for
+a representation. Arabic-Indic digits fall through on purpose — answering
+`٤٢ + ٨` in Western digits answers in the wrong script.
+
+**The review is the part worth reading.** Three of the ten would have reached
+users: `15% of 80 + 2` answered 12.3 because "of" swallowed the rest of the
+line; `2026-08-13` answered 2005 and `555-0100` answered 455, because a date
+and a phone number tokenise as arithmetic; and a quota-exhausted account
+returned 503 to `80 squared`, refusing an answer that costs no quota. The first
+two are the same lesson — the parser was right about arithmetic and wrong about
+which STRINGS are arithmetic — and it is the lesson to carry into any widening
+of the grammar. A leading zero now means "this is a label, not a quantity",
+which is the cheapest reliable signal there was.
+
+**Do not "simplify" the rationals to floats.** Every value is a BigInt
+numerator over a BigInt denominator. That is what makes `0.1 + 0.2` exactly
+`0.3`, `21600³` exact rather than `1.0077696e+13`, and division by zero a
+denominator test rather than an `Infinity` that would have been rendered and
+shipped. `=` means exact and `≈` means rounded, and the distinction is load
+bearing.
+
+### WHAT A TURN COSTS IN REQUESTS — Sol's count, 2026-08-13, against the 50/day
+
+Reasoned from the code, not measured from a bill:
+
+| turn | OpenRouter requests |
+| --- | --- |
+| arithmetic fast path | **0** |
+| greeting | 1 |
+| simple council | 2 router + 1 seat + 1 synthesis = **4** |
+| moderate council | 2 router + 3 seats + 1 synthesis = **6** |
+| complex, pro roster | 2 router + 7 seats + 1 synthesis = **10** |
+| search or memory | 2 router + 1 streamed answer = **3** |
+
+That is what "roughly five turns per day" meant, itemised. Two of every
+non-greeting turn's requests are the router's own — `isMemoryOrReferenceQuestion`
+and `getSearchQuery` — before a single seat is asked anything.
+
+### The optimisation plan, ranked, NOT IMPLEMENTED
+
+Sol's, on the explicit constraint of not making the product dumber. Recorded
+here so the next session does not re-derive it. Nothing below has been built.
+
+1. **Measure first.** Every later change is guesswork without per-tier request
+   counts and p50/p90 latency. Note while doing it: `medianMs` in `server.js` is
+   **not a median** — it is one hand-recorded sample per seat from 2026-08-12,
+   taken at `max_tokens: 200` while seats run at 1000, and `narrowRoster` ranks
+   the roster with it. Provider drift can pin it to yesterday's fastest seat
+   forever.
+2. **Combine the two router calls into one structured call.** Saves 1 request on
+   nearly every turn. Little latency change — they already run in parallel — so
+   this is a quota win, and the risk is coupling: one malformed response damages
+   both decisions. Needs a frozen routing corpus before it ships.
+3. **Skip synthesis when the router dispatched exactly ONE seat**, streaming a
+   final-answer call instead. Simple turns go 4 → 2 requests. The router's
+   comment that quorum cannot be 1 argues about a multi-seat council and does
+   not cover this case. The risk is real: the synthesis prompt carries the
+   length rule, the no-invented-facts rule and the formatting rules, so a direct
+   call has to inherit them deliberately rather than by accident.
+4. **Everything touching seat counts comes last**, and only with quality data.
+
+**Refused, with reasons — do not re-propose these as wins:**
+
+- *"Stream the seats."* The wait is the k-th usable completion, not the
+  transport. The synthesiser reconciles whole drafts; it cannot reconcile text
+  that does not exist yet. This is in the loose-ends list above as "the real
+  fix" and that entry is now considered wrong.
+- *Quorum 1 on a multi-seat turn.* Synthesis becomes a paraphrase of whichever
+  model finished first, and fast correlates with small.
+- *Cutting moderate to one seat, or complex to the three fastest.* A capability
+  cut wearing an optimisation's clothes.
+- *Lower token ceilings.* Saves no requests and truncates drafts.
+- *A model call to classify complexity.* Spends the budget it exists to protect.
+
+---
+
 ## OpenRouter migration (2026-08-12)
 
 The model layer moved from the Ollama-shaped gateway to OpenRouter. The

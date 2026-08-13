@@ -78,35 +78,47 @@ jobs:
       - name: Ping /health across the idle window
         run: |
           set -u
-          # Points at Fly (Mumbai) since the backend moved off Render.
+          # POINTS AT RENDER, WHICH IS WHERE THE BACKEND ACTUALLY IS.
           #
-          # THIS CRON IS NOW OPTIONAL AND SHOULD PROBABLY BE DELETED.
-          # It exists because Render's free tier spun the service down
-          # after an idle window. fly.toml sets auto_stop_machines=false
-          # with min_machines_running=1, so there is no idle window left
-          # to keep warm. What remains is an uptime check — worth keeping
-          # only if you actually read its failures, and this one has a
-          # recorded history of false reds (GitHub drops scheduled ticks,
-          # and the concurrency group cancels merely-QUEUED runs). Keep it
-          # as monitoring or remove it; do not keep it as a warmer.
-          URL="${KEEP_WARM_URL:-https://alop-ai-backend.fly.dev/health}"
+          # 4096c8f repointed this at Fly to PREPARE the Mumbai migration. That
+          # migration never landed — `alop-ai-backend.fly.dev` does not resolve
+          # (curl exit 6, code 000) — so from that commit until 2026-08-13 this
+          # job pinged a host that does not exist while the real service, on
+          # Render's free tier, spun down every idle window. The warmer was off
+          # for the whole time it was reporting itself as a warmer. That is the
+          # 22.5s cold boot landing on real arrivals, observed again on
+          # 2026-08-13 as a ~30 second wait on the word "hi".
+          #
+          # Do not repoint this at a host before that host serves traffic. When
+          # the Fly cutover is real, set the KEEP_WARM_URL repository variable
+          # instead of editing this line — then a wrong URL is a one-click
+          # revert rather than a commit hiding inside a migration prep.
+          URL="${KEEP_WARM_URL:-https://alop-ai.onrender.com/health}"
           # Five pings, five minutes apart, so one run spans a full Render idle
           # window and then some. /health is unauthenticated, does no database
           # work, and is rate limited at 120/min — this is nowhere near it.
-          # No `|| echo 000` here: curl already prints 000 on a connection
-          # failure, so the fallback produced "000000" and made the log lie
-          # about what came back. There is no `set -e`, so a non-zero curl
-          # exit does not abort the loop.
+          # `|| code=000` IS LOAD-BEARING, and the comment that used to sit here
+          # was wrong. It said "there is no `set -e`, so a non-zero curl exit
+          # does not abort the loop" — but GitHub runs every `run:` step as
+          # `bash -e` (the log prints `shell: /usr/bin/bash -e {0}`), so the
+          # first unresolvable host aborted the job on ping 1 with exit 6. That
+          # is why these runs died after 7 seconds instead of spanning twenty
+          # minutes, and why "failed pings: N/5" never printed once.
+          #
+          # The old objection to a fallback still stands and is why this
+          # ASSIGNS rather than echoes: `|| echo 000` appended to curl's own
+          # output and produced "000000", which made the log lie about what
+          # came back. Assignment keeps the log honest and the loop alive.
           FAILED=0
           for i in $(seq 1 5); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$URL")
+            code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$URL") || code=000
             if [ "$code" != "200" ]; then
               # Retry once before believing it. A cold boot can answer 502 for
               # a moment, and a keep-warm that cries wolf is one that gets
               # muted — at which point it stops being an uptime check at all.
               echo "ping $i: $code — retrying in 15s"
               sleep 15
-              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$URL")
+              code=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$URL") || code=000
             fi
             echo "ping $i/5 -> $code"
             [ "$code" = "200" ] || FAILED=$((FAILED + 1))

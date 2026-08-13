@@ -88,6 +88,46 @@ test("every member sees every result, including ones it did not ask for", async 
   assert.equal(seenByGemma.length, 2, "broadcast means all results, not just your own");
 });
 
+/**
+ * Production made this exact shape three times on 2026-08-13: the same seat
+ * asked the same search in three successive rounds, and round-local dedupe
+ * called the provider every time while reporting each repeat as "unique".
+ * Counting only returned results would pass against that bug, so the
+ * load-bearing assertion is the executor invocation count.
+ */
+test("an identical call in a later round executes once and tells its seat to answer", async () => {
+  const registry = fakeRegistry();
+  const answerOnly = [];
+  const r = await runAgentLoop({
+    members: ["looping"],
+    askMember: async (_member, ctx) => {
+      answerOnly.push(ctx.isFinalRound);
+      if (ctx.round === 1) return toolCall("OECD Digital Education Outlook 2026");
+      if (ctx.round === 2) return toolCall("  oecd  DIGITAL education outlook 2026  ");
+      return "answer from cached research";
+    },
+    registry,
+  });
+
+  assert.equal(registry.executed.length, 1, "the provider must be invoked once across rounds");
+  assert.equal(r.uniqueCallsUsed, 1, "a cached repeat is not a unique billed call");
+  assert.deepEqual(answerOnly, [false, false, true], "the repeat forces an answer-only prompt for that seat");
+  assert.equal(r.answers.looping, "answer from cached research");
+});
+
+test("tool result cache ends with the turn", async () => {
+  const registry = fakeRegistry();
+  const run = () => runAgentLoop({
+    members: ["a"],
+    askMember: async (_member, ctx) => (ctx.round === 1 ? toolCall("same request") : "done"),
+    registry,
+  });
+
+  await run();
+  await run();
+  assert.equal(registry.executed.length, 2, "separate turns may not share tool results");
+});
+
 // ===== ceilings =====
 
 test("stops at maxRounds and says so", async () => {
@@ -115,7 +155,7 @@ test("the final round is for answering, so no call is executed in it", async () 
   // A call proposed in the last round cannot be executed and then read. Running
   // it would spend budget on a result nobody sees.
   const registry = fakeRegistry();
-  await runAgentLoop({ members: ["a"], askMember: async () => toolCall("x"), registry });
+  await runAgentLoop({ members: ["a"], askMember: async (_m, ctx) => toolCall(`x-${ctx.round}`), registry });
   assert.equal(registry.executed.length, DEFAULTS.maxRounds - 1);
 });
 
@@ -123,7 +163,7 @@ test("isFinalRound is passed so a prompt can tell a member to stop asking", asyn
   const flags = [];
   await runAgentLoop({
     members: ["a"],
-    askMember: async (m, ctx) => { flags.push(ctx.isFinalRound); return toolCall("x"); },
+    askMember: async (m, ctx) => { flags.push(ctx.isFinalRound); return toolCall(`x-${ctx.round}`); },
     registry: fakeRegistry(),
   });
   // Every round but the last is a research round; the last says "answer now".
@@ -151,7 +191,7 @@ test("stops on the total tool budget and says so", async () => {
   let clock = 0;
   const r = await runAgentLoop({
     members: ["a"],
-    askMember: async () => toolCall("x"),
+    askMember: async (_m, ctx) => toolCall(`x-${ctx.round}`),
     registry: fakeRegistry({ execute: async () => { clock += 20000; return { ok: true, summary: "slow", content: "c" }; } }),
     now: () => clock,
     maxRounds: 10,

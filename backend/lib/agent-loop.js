@@ -139,6 +139,13 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
 
   const answers = new Map(); // member -> final text
   const transcript = []; // every executed call, for the synthesiser and the log
+  // Deliberately scoped to this invocation. Results are already broadcast to
+  // every seat, so a per-member cache would pay again for information every
+  // member has while providing no additional isolation. Never lift this map to
+  // module scope: a turn may contain one user's private file contents.
+  const toolResultCache = new Map(); // canonical call key -> { call, result }
+  const callsByMember = new Map(); // member -> canonical keys it requested
+  const answerNow = new Set(); // members that repeated one of their own calls
   const seatTimings = [];
   const toolRounds = [];
   let round = 0;
@@ -222,7 +229,11 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
         fallback: { member, calls: [], text: "", isFinal: false, timedOut: true },
         promise: (roundSignal) => (async () => {
           try {
-            const raw = await askMember(member, { round, toolResults: transcript, isFinalRound }, roundSignal);
+            const raw = await askMember(
+              member,
+              { round, toolResults: transcript, isFinalRound: isFinalRound || answerNow.has(member) },
+              roundSignal,
+            );
             const parsed = parseToolRequests(raw);
             report(roundSignal.aborted ? "aborted" : parsed.isFinal ? (isUsableAnswer(parsed.text) ? "answered" : "empty") : "tool_request");
             return { member, ...parsed };
@@ -309,6 +320,28 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
       break;
     }
 
+    // Canonicalise and dedupe the whole round before applying the ceiling.
+    // Cached calls cost neither a unique-call slot nor provider time, so the
+    // ceiling applies only to the cache misses that would actually execute.
+    const { unique } = dedupeCalls(stillAsking, Infinity, registry.normalize);
+    if (unique.length === 0) break;
+
+    const uncached = [];
+    for (const call of unique) {
+      const cached = toolResultCache.get(call.key);
+      for (const member of call.requestedBy) {
+        const prior = callsByMember.get(member);
+        if (cached && prior?.has(call.key)) answerNow.add(member);
+        if (prior) prior.add(call.key);
+        else callsByMember.set(member, new Set([call.key]));
+      }
+      if (!cached) uncached.push(call);
+    }
+
+    // A cache-only round still matters: on the next round the looping member
+    // receives an answer-only prompt and the already-broadcast result again.
+    if (uncached.length === 0) continue;
+
     const remaining = cfg.maxUniqueCalls - uniqueCallsUsed;
     if (remaining <= 0) {
       setTruncated(`Reached the ${cfg.maxUniqueCalls}-call ceiling for this turn.`, "unique_calls");
@@ -323,13 +356,10 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
       break;
     }
 
-    // Deduped on the canonical form, not on what the model wrote: see
-    // registry.normalize. A registry without one (a test double) still dedupes
-    // on the raw arguments, exactly as before.
-    const { unique, dropped } = dedupeCalls(stillAsking, remaining, registry.normalize);
-    if (unique.length === 0) break;
+    const executable = uncached.slice(0, remaining);
+    const dropped = uncached.length - executable.length;
     if (dropped > 0) setTruncated(`Dropped ${dropped} call(s) at the ${cfg.maxUniqueCalls}-call ceiling.`, "unique_calls");
-    uniqueCallsUsed += unique.length;
+    uniqueCallsUsed += executable.length;
 
     // Executed in parallel, once each, with the per-call ceiling additionally
     // clamped to whatever is left of the total budget — otherwise eight 8s
@@ -353,7 +383,7 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     let executed;
     try {
       executed = await Promise.all(
-        unique.map(async (call) => {
+        executable.map(async (call) => {
           onEvent({ type: "tool_start", round, name: call.name, summary: describe(call) });
           const result = await registry.execute(call, { timeoutMs: perCall, signal: turnSignal });
           onEvent({ type: "tool_result", round, name: call.name, ok: result.ok, summary: result.summary });
@@ -361,7 +391,7 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
         }),
       );
     } finally {
-      toolRounds.push({ round, durationMs: now() - toolsStartedAt, calls: unique.length, aborted: turnSignal.aborted });
+      toolRounds.push({ round, durationMs: now() - toolsStartedAt, calls: executable.length, aborted: turnSignal.aborted });
     }
     // The calls ran in parallel, so the round costs the SLOWEST of them, not
     // their sum — charging the budget the sum would bill eight parallel 2s
@@ -374,6 +404,7 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
       break;
     }
 
+    for (const entry of executed) toolResultCache.set(entry.call.key, entry);
     transcript.push(...executed);
 
     if (budgetLeft() <= 0 && round < cfg.maxRounds) {

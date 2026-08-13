@@ -2508,6 +2508,37 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
         .catch((error) => ({ error }));
     }
 
+    /* THE STREAM OPENS HERE, AND WHERE "HERE" IS WAS THE WHOLE BUG.
+     *
+     * Measured against production on 2026-08-13, on "Name one colour of the
+     * sky": response headers at 5244ms, first stage frame at 5245ms, answer
+     * chunk at 6591ms. Every stage event this route sends was therefore written
+     * AFTER five seconds of silence — the progress reporting worked perfectly
+     * and reported nothing for the part of the wait that felt longest. A
+     * skeleton with no text is exactly the "wait before the wait" this feature
+     * was built to remove.
+     *
+     * Nothing below this line can answer with an HTTP status anyway: the 402
+     * ceilings and the 400/503 image checks are all above it, and the error
+     * handler at the bottom already tests `res.headersSent`. So opening now
+     * costs no refusal path and buys back the three Supabase context reads, the
+     * cache lookup, and the whole router-to-first-seat stretch.
+     *
+     * ONLY ON TEXT TURNS. An image turn keeps its two 502s ("couldn't analyse
+     * the attached image"), which are real HTTP refusals the client renders as
+     * errors; converting those to SSE frames is a frontend change and belongs
+     * in its own commit, not smuggled into a latency fix. An image turn is also
+     * the one turn where the user knows they asked for something slow.
+     *
+     * The stage text is the honest one for this moment — the context reads are
+     * literally what is happening — and not a rotating spinner phrase. The rule
+     * from `sendStage`: a progress indicator that invents its own progress is a
+     * spinner that lies. */
+    if (!image) {
+      openStream(res);
+      sendStage(res, 'context', 'Reading your conversation');
+    }
+
     const contextReads = Promise.all([
       telemetry.measureContext('summary', () => readChatSummary(chatId, user.id, turnSignal)),
       telemetry.measureContext('feedback', () => getFeedbackGuidance(user.id, turnSignal)),

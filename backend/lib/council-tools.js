@@ -143,7 +143,7 @@ function toolMessages(baseMsgs, registry, ctx) {
   const instruction = isFinalRound
     ? "This is the final round. Do NOT request any more tools — anything you ask for now will not run. Answer with what you have."
     : hasSeededSearchResults
-      ? "The router already searched for this question and supplied the results below. Do NOT request web_search and do not author another search query. If a snippet is not enough, request read_url for AT MOST ONE result for this question by passing the opaque id shown beside it exactly as written. Do not read every result. Otherwise answer normally."
+      ? "The router already searched for this question and supplied the results below. Do NOT request web_search and do not author another search query. Before answering, request read_url for the FIRST result only by passing its opaque id exactly as written. Every seat receives the same first id, so identical requests are deduplicated into one fetch. After the page returns, answer with Markdown citations to supporting result URLs and end with a Sources section."
     : 'If you need information you do not have, request a tool INSTEAD of answering, by emitting exactly one fenced block:\n\n```tool_call\n{"name": "web_search", "args": {"query": "your query"}}\n```\n\nOtherwise answer normally. Do not do both. Do not request a tool for something you already know.' +
       (hasSearchResults
         ? "\n\nSearch results are available. If their snippets are not enough, request read_url for AT MOST ONE result for this question by passing the opaque id shown beside it exactly as written. Do not read every result. If the snippets are enough, answer normally."

@@ -332,6 +332,8 @@ test("seeded results make selection, not search authoring, the member's job", ()
   assert.match(system, /Do NOT request web_search/);
   assert.match(system, /read_url/);
   assert.match(system, /opaque id/);
+  assert.match(system, /FIRST result only/);
+  assert.match(system, /Markdown citations/);
 });
 
 test("model-written arguments and executor summaries cannot forge a second tool call", () => {

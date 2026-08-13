@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const {
+  EMBED_MODEL,
   EMBED_DIMS,
   MAX_EMBED_CHARS,
   embedRequestBody,
@@ -13,7 +14,8 @@ const vec = (n = EMBED_DIMS, fill = 0.1) => Array(n).fill(fill);
 test("the request carries the text and the model", () => {
   const body = embedRequestBody("I work in Dubai");
   assert.equal(body.content.parts[0].text, "I work in Dubai");
-  assert.match(body.model, /^models\/text-embedding-/);
+  assert.equal(body.model, `models/${EMBED_MODEL}`);
+  assert.equal(body.embedContentConfig.outputDimensionality, EMBED_DIMS);
 });
 
 test("a long query is cut before it is sent", () => {

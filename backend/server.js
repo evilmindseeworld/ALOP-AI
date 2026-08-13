@@ -3170,6 +3170,14 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       if (fellBack) {
         console.log('[TOOLS] no usable answers, falling back to the plain council.');
         const fallbackStartedAt = Date.now();
+        /* Plain council replies do not pass through agent-loop's parser. Keep
+         * this fallback text-only, but apply the same fence sanitiser before a
+         * reply can count toward quorum or reach synthesis. A JSON-looking
+         * tool block is deliberately stripped, never executed. */
+        const sanitisedFallbackCallModel = async (model, messages, temperature, whipMs, tokenLimit, signal) => {
+          const raw = await callModel(model, messages, temperature, whipMs, tokenLimit, signal);
+          return parseToolRequests(raw).text;
+        };
         validResponses = await runCouncilWithWhip(
           selection.members,
           councilMsgs,
@@ -3177,7 +3185,12 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
           selection.quorum,
           selection.tokenLimit,
           sendSeatProgress,
-          { signal: turnSignal, onSeatTiming: reportCouncilTiming('tool_plain_fallback'), onFinish: reportCouncilFinish },
+          {
+            signal: turnSignal,
+            onSeatTiming: reportCouncilTiming('tool_plain_fallback'),
+            onFinish: reportCouncilFinish,
+            callModel: sanitisedFallbackCallModel,
+          },
         );
         toolPlainFallback = { used: true, durationMs: Date.now() - fallbackStartedAt };
       }

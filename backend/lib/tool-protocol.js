@@ -23,8 +23,11 @@
  * over one is a worse answer than proceeding without that call.
  */
 
-/** A fenced ```tool_call block. Tolerates ```tool_call, ```tool-call, ```json-ish casing. */
+/** A fenced ```tool_call block. Tolerates spelling and casing variation. */
 const FENCE = /```[ \t]*tool[_-]?call[ \t]*\r?\n([\s\S]*?)```/gi;
+
+/** A JSON fence that may be a model's visible rendering of a tool request. */
+const JSON_FENCE = /```[ \t]*json[ \t]*\r?\n([\s\S]*?)(?:```|$)/gi;
 
 /** The most calls one model may request in one round. Beyond this it is looping. */
 const MAX_CALLS_PER_REPLY = 4;
@@ -105,9 +108,36 @@ const fromText = (content) => {
   return calls;
 };
 
-/** Everything outside the fenced blocks — the model's actual prose. */
-const stripFences = (content) =>
-  typeof content === "string" ? content.replace(new RegExp(FENCE.source, "gi"), "").trim() : "";
+/**
+ * A JSON fence is never an executable protocol. It is stripped only when it
+ * has the shape of a tool request, so an ordinary JSON example remains answer
+ * text. The prefix check also removes a truncated call block before it leaks
+ * into the answer; it still never returns a call for execution.
+ */
+const looksLikeToolRequest = (body) => {
+  if (typeof body !== "string" || body.length > MAX_ARGS_CHARS) return false;
+  try {
+    const parsed = JSON.parse(body);
+    const entries = Array.isArray(parsed) ? parsed : [parsed];
+    if (entries.some((entry) => entry && typeof entry === "object" && !Array.isArray(entry)
+      && (typeof entry.name === "string" || typeof entry.tool === "string")
+      && (Object.prototype.hasOwnProperty.call(entry, "args")
+        || Object.prototype.hasOwnProperty.call(entry, "arguments")
+        || Object.prototype.hasOwnProperty.call(entry, "parameters")))) return true;
+  } catch {
+    // A partial model reply is handled by the conservative prefix below.
+  }
+  return /^\s*[\[{]/.test(body) && /"(?:name|tool)"\s*:/i.test(body);
+};
+
+/** Everything outside tool-request fences — the model's actual prose. */
+const stripFences = (content) => {
+  if (typeof content !== "string") return "";
+  const withoutToolFences = content.replace(new RegExp(FENCE.source, "gi"), "");
+  return withoutToolFences
+    .replace(new RegExp(JSON_FENCE.source, "gi"), (whole, body) => looksLikeToolRequest(body) ? "" : whole)
+    .trim();
+};
 
 /**
  * @param {object} response  an OpenRouter reply with choices[0].message, a
@@ -128,7 +158,7 @@ function parseToolRequests(response) {
 
   const content = typeof message.content === "string" ? message.content : "";
   const calls = [...fromNative(message), ...fromText(content)].slice(0, MAX_CALLS_PER_REPLY);
-  const text = calls.length ? stripFences(content) : content.trim();
+  const text = stripFences(content);
 
   return { calls, text, isFinal: calls.length === 0 };
 }

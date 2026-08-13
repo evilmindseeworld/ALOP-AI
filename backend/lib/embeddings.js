@@ -3,10 +3,10 @@
  *
  * `user_facts.embedding` has existed since before `migrations/` as
  * `vector(1536)` — OpenAI's width, on a project with no OpenAI key. Nobody
- * chose it; it came in with the ad-hoc schema. `GOOGLE_API_KEY` is set and
- * already pays for vision, so the provider question answers itself, and 013
- * narrows the column to Google's 768 rather than padding vectors to fit a
- * number that was never a decision.
+ * chose it; it came in with the ad-hoc schema. Google documents
+ * `gemini-embedding-001` for `embedContent`, with configurable output width,
+ * so the request keeps the live column at 768 rather than padding vectors to
+ * fit a number that was never a decision.
  *
  * WHAT THIS FILE IS AND IS NOT. The request body, the response parse and the
  * width check — the parts that can be checked without a network. The `fetch`
@@ -22,13 +22,13 @@
  */
 
 /**
- * `text-embedding-004`, 768 dimensions, is Google's current general-purpose
- * text embedding and the width 013 sets the column to. If this model is ever
- * changed, the column width and every stored row change with it — a vector
- * from a different model in the same column is not comparable to its
- * neighbours, and nothing at the SQL layer can see that.
+ * `gemini-embedding-001` supports `embedContent` and can return 768 values.
+ * The model change from `text-embedding-004` keeps the SQL dimension unchanged,
+ * but the embedding spaces are not comparable: existing non-null rows need a
+ * full re-embed before semantic recall is trustworthy. Do not mix old and new
+ * rows in the column during that backfill.
  */
-const EMBED_MODEL = "text-embedding-004";
+const EMBED_MODEL = "gemini-embedding-001";
 
 /** Not configurable. It is the column's width. */
 const EMBED_DIMS = 768;
@@ -45,6 +45,7 @@ const MAX_EMBED_CHARS = 2000;
 const embedRequestBody = (text) => ({
   model: `models/${EMBED_MODEL}`,
   content: { parts: [{ text: String(text).slice(0, MAX_EMBED_CHARS) }] },
+  embedContentConfig: { outputDimensionality: EMBED_DIMS },
 });
 
 /**

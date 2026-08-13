@@ -167,6 +167,26 @@ test("the fence is stripped from the surrounding text", () => {
   assert.equal(r.text.includes("after"), true);
 });
 
+test("a JSON tool-call fence is stripped without becoming a live call", () => {
+  const content = 'before\n```json\n{"name":"web_search","arguments":{"query":"OECD Digital Education Outlook"}}\n```\nafter';
+  const r = parseToolRequests(content);
+  assert.deepEqual(r.calls, []);
+  assert.equal(r.text, "before\n\nafter");
+  assert.doesNotMatch(r.text, /web_search|OECD Digital Education/);
+});
+
+test("a truncated JSON tool-call fence is stripped without executing it", () => {
+  const r = parseToolRequests('answer\n```json\n{"name":"web_search","arguments":{"query":"OECD Digital Education Ou');
+  assert.deepEqual(r.calls, []);
+  assert.equal(r.text, "answer");
+});
+
+test("a JSON tool-call fence truncated inside the name is stripped", () => {
+  const r = parseToolRequests('answer\n```json\n{"name":"web_sear');
+  assert.deepEqual(r.calls, []);
+  assert.equal(r.text, "answer");
+});
+
 // ===== malformed input, none of which may throw =====
 
 test("a malformed block is dropped, not fatal", () => {
@@ -228,4 +248,9 @@ test("a fenced block that is not a tool_call is left alone", () => {
   const r = parseToolRequests(content);
   assert.deepEqual(r.calls, []);
   assert.equal(r.text, content);
+});
+
+test("ordinary JSON remains answer text", () => {
+  const content = "Example payload:\n```json\n{\"title\":\"OECD report\"}\n```";
+  assert.equal(parseToolRequests(content).text, content);
 });

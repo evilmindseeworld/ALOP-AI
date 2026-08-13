@@ -901,6 +901,7 @@ const sendStage = (res, key, text) => sendEvent(res, { type: 'stage', key, text 
 const { buildRegistry } = require('./lib/tool-registry');
 const { runAgentLoop } = require('./lib/agent-loop');
 const { assertSafeUrl } = require('./lib/url-guard');
+const { pinnedFetch } = require('./lib/pinned-fetch');
 const { checkLinks } = require('./lib/link-check');
 const { extractPageSignal, rankReadTargets, hasReadableSignal } = require('./lib/page-extract');
 const { searchShopping, formatShopping, isShoppingQuery } = require('./lib/shopping');
@@ -1016,13 +1017,9 @@ const TOOLS_SHADOW = TOOLS_MODE === 'shadow';
  * already turns a throw from here into UNREACHABLE, which is the honest answer:
  * we could not safely see it.
  *
- * STILL OPEN, AND NOT FIXED HERE: the second half of Sol's finding. Each hop is
- * validated by NAME and then fetched by NAME, so a name that resolves public
- * for the check and private for the connection still wins. `assertSafeUrl`
- * already returns `{ address, family }` for exactly this and every caller
- * discards it. Closing it means connecting to the vetted address while
- * preserving Host and SNI — a custom dispatcher, not a flag — and it is
- * recorded in handoff.md rather than half-done here. */
+ * Each hop is validated and then fetched through `pinnedFetch` using the exact
+ * address that passed `assertSafeUrl`. Keeping that address through the handoff
+ * closes the DNS-rebinding window while preserving Host and TLS SNI. */
 const REDIRECT_HOPS = 4;
 
 const fetchPageHead = async (url, { signal } = {}) => {
@@ -1034,8 +1031,15 @@ const fetchPageHead = async (url, { signal } = {}) => {
       // The FIRST hop is re-validated too. checkLinks vets the URL before
       // calling, but this function is exported to other callers and a guard
       // that depends on being called correctly is not a guard.
-      await assertSafeUrl(current, { signal: timed.signal });
-      res = await fetchOneHop(current, timed.signal);
+      /* THE ADDRESS IS KEPT, NOT THROWN AWAY. `assertSafeUrl` resolves the
+       * name and returns the address it approved; the old code discarded that
+       * and called `fetch(current)`, which resolved the name a SECOND time.
+       * An attacker who controls the zone can answer differently across those
+       * two lookups — public address for the check, 127.0.0.1 or
+       * 169.254.169.254 for the fetch — and walk straight past a guard that is
+       * otherwise correct. Sol's review, 2026-08-13. */
+      const vetted = await assertSafeUrl(current, { signal: timed.signal });
+      res = await fetchOneHop(current, timed.signal, vetted);
       const location = res.status >= 300 && res.status < 400 && res.headers.get('location');
       if (!location) break;
       if (hop >= REDIRECT_HOPS) throw new Error(`too many redirects from ${url}`);
@@ -1050,9 +1054,15 @@ const fetchPageHead = async (url, { signal } = {}) => {
   }
 };
 
-const fetchOneHop = (url, signal) =>
-  fetch(url, {
-    redirect: 'manual',
+/* `pinnedFetch`, not `fetch`, and the difference is the whole point: it
+ * connects to the address the guard just approved instead of resolving the
+ * name again. Redirects are still returned rather than followed, because the
+ * loop above re-validates every hop and a transport that followed them itself
+ * would skip that guard entirely. */
+const fetchOneHop = (url, signal, { address, family } = {}) =>
+  pinnedFetch(url, {
+    address,
+    family,
     signal,
     // Some CDNs serve a bot-check page to an unfamiliar agent, which would
     // read as a soft 404. Ask like a browser.

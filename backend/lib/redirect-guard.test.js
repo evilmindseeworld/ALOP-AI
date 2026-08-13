@@ -141,8 +141,26 @@ test('a redirect loop stops rather than hanging', async () => {
 test('server.js follows redirects manually and re-checks every hop', () => {
   const SOURCE = readFileSync(join(__dirname, '..', 'server.js'), 'utf8');
   const fn = SOURCE.slice(SOURCE.indexOf('const fetchPageHead'), SOURCE.indexOf('const readPageHead'));
-  assert.match(fn, /redirect: 'manual'/, 'redirect: follow lets the client outrun the guard');
+  /* This used to assert `redirect: 'manual'`, which was how the invariant was
+   * held while the transport was global `fetch`. The transport is now
+   * `pinnedFetch`, built on `node:https`, which cannot follow a redirect at
+   * all — `http.request` returns the 302 and stops. The invariant did not
+   * change; the mechanism that guarantees it did, from an option that could be
+   * flipped back to a transport with no follow behaviour to flip.
+   * `pinned-fetch.test.js` proves the 302 is returned rather than followed. */
+  assert.match(fn, /pinnedFetch\(url, \{/, 'the hop transport must be the pinned one, which cannot auto-follow');
   assert.doesNotMatch(fn, /redirect: 'follow'/);
   assert.match(fn, /await assertSafeUrl\(current/, 'every hop must be re-validated, not just the first');
   assert.match(fn, /hop >= REDIRECT_HOPS/, 'an unbounded chain holds the request open');
+});
+
+/* The rebinding window sol found: the guard resolved the name, and then the
+ * fetch resolved it again. Nothing in the loop's own logic shows that — it is
+ * visible only in whether the approved ADDRESS reaches the transport. */
+test('the address assertSafeUrl approved is the address the hop connects to', () => {
+  const SOURCE = readFileSync(join(__dirname, '..', 'server.js'), 'utf8');
+  const fn = SOURCE.slice(SOURCE.indexOf('const fetchPageHead'), SOURCE.indexOf('const readPageHead'));
+  assert.match(fn, /const vetted = await assertSafeUrl\(current/, 'the approved address must be kept, not discarded');
+  assert.match(fn, /fetchOneHop\(current, timed\.signal, vetted\)/, 'and handed to the transport');
+  assert.match(fn, /pinnedFetch\(url, \{\s*address,/, 'which must pin the connection to it');
 });

@@ -224,7 +224,7 @@ const QUORUM = 2;
  * brevity.
  */
 const COMPLEX_RE =
-  /\b(compare|comparison|contrast|versus|vs\.?|trade[- ]?offs?|pros and cons|evaluate|analy[sz]e|critique|assess|design|architect(ure)?|strategy|recommend|justify|prove|derive|optimi[sz]e|refactor|debug|troubleshoot|implement|migrate|refute|synthesi[sz]e)\b/i;
+  /\b(compare|comparison|contrast|difference between|versus|vs\.?|trade[- ]?offs?|pros and cons|advantages? and disadvantages?|evaluate|analy[sz]e|critique|assess|design|architect(ure)?|strategy|recommend|justify|prove|derive|optimi[sz]e|refactor|debug|troubleshoot|implement|migrate|refute|synthesi[sz]e|ethical implications?|which (?:database|framework|architecture|strategy|approach).{0,40}\b(?:use|choose))\b/i;
 
 /**
  * A question whose answer is looked up or computed rather than reasoned out.
@@ -299,6 +299,49 @@ function assessComplexity(text, detailed = false) {
   if (t.length <= 200 && (LOOKUP_RE.test(t) || ARITHMETIC_RE.test(t))) return "simple";
 
   return "moderate";
+}
+
+/**
+ * A route the text itself proves, or null when the search planner still has a
+ * real decision to make.
+ *
+ * The rule is intentionally asymmetric. A missed stable question costs one
+ * small model call; a false no-search answer can state stale facts with no
+ * visible warning. Volatility, URLs, years and named entities therefore fall
+ * through. The cases accepted here are shapes the planner's own prompt already
+ * declares stable: transformations, creative work, pasted code and lowercase
+ * definitions. This removes the model from the critical path of the measured
+ * trivial case without turning a regex into a current-affairs oracle.
+ */
+const MEMORY_REFERENCE_RE =
+  /\b(?:what did i (?:ask|say|tell you)|what (?:did|have) we discuss|earlier in (?:this|our) (?:chat|conversation)|previous (?:message|conversation)|summari[sz]e what we discussed|recap (?:this|our) conversation)\b/i;
+const VOLATILE_RE =
+  /\b(?:latest|current(?:ly)?|today|tonight|right now|this (?:week|month|year)|still|newest|recent|upcoming|price|cost|stock|available|availability|version|release|maintained|ceo|president|prime minister|law|regulation|policy|news|weather|score|schedule|market|funding|ownership|best|recommend|under\s+(?:\$|\d)|(?:19|20)\d{2})\b/i;
+const URL_RE = /\b(?:https?:\/\/|www\.)/i;
+const DIRECT_TRANSFORM_RE = /^(?:define|spell|translate)\b/i;
+const CREATIVE_RE = /^(?:write|compose|make|tell me)\b[\s\S]{0,160}\b(?:haiku|poem|story|joke|riddle|limerick|tweet|commit message)\b/i;
+const STABLE_QUESTION_RE = /^(?:what is (?:a|an|the)|what are|explain how|name (?:one|a|an|the))\b/i;
+
+const hasNamedEntity = (text) => {
+  const afterFirstWord = text.replace(/^\s*[A-Z][A-Za-z'-]*\b/, "");
+  return /\b(?:[A-Z][A-Za-z0-9]*|[a-z]+[A-Z][A-Za-z0-9]*)\b/.test(afterFirstWord);
+};
+
+function routeByRule(text, { hasConversationContext = false } = {}) {
+  const t = typeof text === "string" ? text.trim() : "";
+  if (!t) return null;
+  if (MEMORY_REFERENCE_RE.test(t)) {
+    return hasConversationContext ? { memory: true, queries: null } : null;
+  }
+  if (VOLATILE_RE.test(t) || URL_RE.test(t)) return null;
+
+  if (CODE_RE.test(t) || DIRECT_TRANSFORM_RE.test(t) || CREATIVE_RE.test(t)) {
+    return { memory: false, queries: null };
+  }
+  if (t.length <= 200 && STABLE_QUESTION_RE.test(t) && !hasNamedEntity(t)) {
+    return { memory: false, queries: null };
+  }
+  return null;
 }
 
 /** Seats per tier. `complex` is the whole roster, whatever size that is. */
@@ -442,6 +485,7 @@ module.exports = {
   needsWikiCheck,
   classifyRequest,
   assessComplexity,
+  routeByRule,
   narrowRoster,
   GREETING_RE,
   DETAIL_PHRASES,

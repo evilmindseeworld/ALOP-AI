@@ -5,6 +5,7 @@ const {
   wantsDetailedAnswer,
   needsWikiCheck,
   classifyRequest,
+  routeByRule,
   DETAIL_PHRASES,
 } = require("./router");
 
@@ -377,4 +378,79 @@ test("a missing roster does not throw", () => {
   const s = classifyRequest("q", undefined);
   assert.deepEqual(s.members, []);
   assert.equal(s.quorum, 0);
+});
+
+// ===== zero-model routing =====
+
+test("stable questions are settled without buying a router model call", () => {
+  const stable = [
+    "Name one colour of the sky",
+    "define photosynthesis",
+    "spell accommodation",
+    "translate hello to Spanish",
+    "write a haiku about rain",
+    "tell me a joke about penguins",
+    "explain how quicksort works",
+    "What is a monad?",
+    "What are prime numbers?",
+    "function add(a, b) { return a + b; } explain this code",
+  ];
+
+  const decided = stable.map((text) => routeByRule(text, { hasConversationContext: false }));
+  assert.equal(decided.filter(Boolean).length, stable.length, "the rule missed a labelled stable case");
+  assert.ok(decided.every((route) => route.memory === false && route.queries === null));
+});
+
+test("the zero-model rule does not swallow questions whose answer can move", () => {
+  const needsPlanner = [
+    "latest React version",
+    "who is the CEO of OpenAI",
+    "best gaming monitor under 500 dollars",
+    "iPhone 17 price in UAE",
+    "2026 tax brackets",
+    "what is OpenAI?",
+    "write a report about OpenAI's current strategy",
+    "is Framework 16 still available?",
+    "summarize https://example.com/release-notes",
+    "what is XG27AQWMG?",
+    "what is iPhone?",
+    "what is qzxwvb?",
+  ];
+
+  const decided = needsPlanner.filter((text) => routeByRule(text, { hasConversationContext: false }));
+  assert.deepEqual(decided, [], "a volatile or named-entity case bypassed the search planner");
+});
+
+test("generic improvement words do not buy the whole council", () => {
+  assert.equal(classifyRequest("make this better", ROSTER).complexity, "moderate");
+  assert.equal(classifyRequest("what are the implications of a semicolon", ROSTER).complexity, "simple");
+});
+
+test("explicit conversation references bypass the model only when context exists", () => {
+  for (const text of ["what did I ask you earlier?", "summarise what we discussed"]) {
+    assert.deepEqual(routeByRule(text, { hasConversationContext: true }), { memory: true, queries: null }, text);
+    assert.equal(routeByRule(text, { hasConversationContext: false }), null, text);
+  }
+});
+
+test("the labelled difficulty corpus routes 15 of 15 questions to the intended roster tier", () => {
+  const labelled = [
+    ["Name one colour of the sky", "simple"],
+    ["What is photosynthesis?", "simple"],
+    ["Who wrote Hamlet?", "simple"],
+    ["When was the Moon landing?", "simple"],
+    ["Translate hello to Arabic", "simple"],
+    ["Why is the sky blue?", "moderate"],
+    ["How does HTTP work?", "moderate"],
+    ["Tell me about the Ottoman Empire", "moderate"],
+    ["Can you help me understand recursion?", "moderate"],
+    ["What is the difference between TCP and UDP?", "complex"],
+    ["Which database should I use for this workload?", "complex"],
+    ["What are the ethical implications of generative AI?", "complex"],
+    ["Prove that the square root of two is irrational", "complex"],
+    ["Write a report about the causes of the financial crisis", "complex"],
+    ["Debug this function:\n```js\nconst x = () => {\n```", "complex"],
+  ];
+  const misses = labelled.filter(([text, expected]) => classifyRequest(text, ROSTER).complexity !== expected);
+  assert.deepEqual(misses, [], `misrouted ${misses.length}/${labelled.length} labelled questions`);
 });

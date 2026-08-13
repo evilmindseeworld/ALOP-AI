@@ -249,3 +249,13 @@ test("the orchestrator falls back to the strongest seat, and refuses three ways"
   assert.match(SOURCE, /const PRIMARY_MODEL = 'google\/gemma-4-26b-a4b-it:free'/,
     "PRIMARY_MODEL changed; the fallback model is ~10x slower and must not become the default orchestrator");
 });
+
+test("stream setup failures preserve the upstream cause in one bounded log line", () => {
+  const setup = SOURCE.slice(SOURCE.indexOf("const streamOnce = async"), SOURCE.indexOf("const reader = response.body.getReader()"));
+
+  assert.match(setup, /response\.status/, "an HTTP failure must report its status");
+  assert.match(setup, /await response\.text\(\)/, "an HTTP failure must retain OpenRouter's error detail");
+  assert.match(setup, /replace\(\/\\s\+\/g/, "upstream detail must be collapsed onto one log line");
+  assert.match(setup, /slice\(0,\s*300\)/, "upstream detail must be bounded before it reaches logs");
+  assert.match(setup, /missing stream body/i, "an HTTP-success response without a body must be distinguishable from a non-2xx response");
+});

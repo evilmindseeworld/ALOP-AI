@@ -307,7 +307,18 @@ const callModel = (modelName, messages, temperature = 0.0, timeoutMs = 30000, ma
  */
 const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, meta = {}, answerOptions = {}) => {
   const response = await fetch(OPENROUTER_HOST, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_API_KEY}` }, body: JSON.stringify({ model: modelName, messages, temperature, stream: true, reasoning: { exclude: true }, ...(maxTokens ? { max_tokens: maxTokens } : {}) }), ...(signal ? { signal } : {}) });
-  if (!response.ok || !response.body) throw new Error('Stream failed');
+  if (!response.ok) {
+    /* OpenRouter's body carries the distinction the status alone cannot: an
+     * account daily cap, our free-models-per-minute limit, upstream-provider
+     * contention and a gateway failure can all be 429/5xx. Keep enough of it
+     * to identify the policy from one log line, but never let an upstream HTML
+     * page or multiline payload flood production logs. */
+    let detail = '';
+    try { detail = (await response.text()).replace(/\s+/g, ' ').trim().slice(0, 300); }
+    catch { detail = 'response body unreadable'; }
+    throw new Error(`Stream HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}${detail ? `: ${detail}` : ''}`);
+  }
+  if (!response.body) throw new Error(`Stream HTTP ${response.status}: missing stream body`);
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';

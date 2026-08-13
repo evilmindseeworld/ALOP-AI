@@ -500,6 +500,10 @@ const {
 } = require('./lib/router');
 // What makes a Wikipedia lookup answerable rather than merely non-empty.
 const { wikiSubject, isRelevantTitle } = require('./lib/wiki-relevance');
+/* Making third-party text inert before it reaches a prompt. See that file for
+ * why the untrusted preamble was never sufficient on its own, and for the one
+ * place it deviates from the brief it was written to. */
+const { envelope } = require('./lib/untrusted-content');
 
 /* The one decision in this route that no model is asked about. It sits above
  * the router rather than beside it because a sum answered here costs zero
@@ -1317,8 +1321,20 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null, region = null
       reads.map((r) => ({ promise: r.promise, fallback: '', cancel: r.cancel })),
       { deadlineMs: 2500, signal: parentSignal },
     );
+    /* THE PAGE BODY IS THE HOSTILE HALF, and it is hostile on the LIVE path —
+     * this is the ordinary search branch, not the tool loop, so it reaches
+     * users today with COUNCIL_TOOLS off. `envelope` strips the shapes that
+     * carry authority (role markers, chat-template control tokens, tool-call
+     * fences) and wraps what is left in a per-render boundary the page cannot
+     * forge. See lib/untrusted-content.js.
+     *
+     * The URL stays OUTSIDE the envelope, in a header we wrote. Citations are
+     * built from `sources`, which is provider metadata rather than page text,
+     * so defanging the URLs inside the body costs a citation nothing. */
     results.forEach((pc, i) => {
-      if (typeof pc === 'string' && pc.length > 200) ctx += `FULL PAGE (${reads[i].url}):\n${pc}\n\n---\n\n`;
+      if (typeof pc === 'string' && pc.length > 200) {
+        ctx += `FULL PAGE (${reads[i].url}):\n${envelope(`page ${reads[i].url}`, pc)}\n\n---\n\n`;
+      }
     });
   } else if (warm) {
     warm.cancel();
@@ -2550,7 +2566,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       ...(feedbackGuidance ? [{ role: 'system', content: `USER PREFERENCES, learned from their past ratings. Honour these unless they conflict with accuracy:\n${feedbackGuidance}` }] : []),
       ...(imageContext ? [
         { role: 'system', content: 'THE USER ATTACHED AN IMAGE. A description of it follows in a user turn — treat it as something you can see, and answer with reference to it.' },
-        { role: 'user', content: `=== IMAGE DESCRIPTION ===\n${UNTRUSTED_PREAMBLE}\n\n${imageContext}` },
+        { role: 'user', content: `=== IMAGE DESCRIPTION ===\n${UNTRUSTED_PREAMBLE}\n\n${envelope('vision transcription of the attached image', imageContext)}` },
       ] : []),
       ...(region ? [{ role: 'system', content: regionHint(region) }] : []),
     ];
@@ -2865,7 +2881,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         // Its own fetch, not searchWeb's, so it needs its own label. Wikipedia is
         // world-editable: this is the one source where an attacker does not even
         // need a site of their own.
-        const wikiMsgs = [{ role: 'system', content: wikiSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n=== WIKIPEDIA ===\n${UNTRUSTED_PREAMBLE}\n\n${wiki}` }];
+        const wikiMsgs = [{ role: 'system', content: wikiSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n=== WIKIPEDIA ===\n${UNTRUSTED_PREAMBLE}\n\n${envelope('Wikipedia extract', wiki)}` }];
         openStream(res);
         const wikiAnswer = await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0, turnSignal);
         if (!res.writableEnded) res.end();

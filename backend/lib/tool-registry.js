@@ -31,6 +31,14 @@ const fail = (summary) => ({ ok: false, summary, content: "" });
 
 /** A tool result is fed back into a prompt, so it has a hard size. */
 const MAX_RESULT_CHARS = 4000;
+const MAX_TOOL_TIMEOUT_MS = 8000;
+const MAX_REDIRECTS = 4;
+
+/** A caller may shorten a tool's patience, never lengthen the production cap. */
+const clampTimeoutMs = (value) => {
+  const n = Number(value);
+  return Number.isFinite(n) && n >= 0 ? Math.min(n, MAX_TOOL_TIMEOUT_MS) : MAX_TOOL_TIMEOUT_MS;
+};
 
 const clamp = (text) => {
   const s = typeof text === "string" ? text : String(text ?? "");
@@ -66,7 +74,22 @@ function validateArgs(tool, args) {
       if (!trimmed && spec.required) return { valid: false, error: `${tool.name} needs a non-empty "${name}".` };
       // A model-written argument is unbounded; the cap is on the argument, not
       // on the reply, because the argument is what reaches a third-party API.
-      out[name] = trimmed.slice(0, spec.maxLength || 400);
+      const value = trimmed.slice(0, spec.maxLength || 400);
+      if (spec.enum && !spec.enum.includes(value)) {
+        return { valid: false, error: `${tool.name}: Unknown ${name} "${value}". Available: ${spec.enum.join(", ")}.` };
+      }
+      if (spec.format === "http-url") {
+        let parsed;
+        try {
+          parsed = new URL(value);
+        } catch {
+          return { valid: false, error: `${tool.name}: "${name}" must be an absolute http(s) URL.` };
+        }
+        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+          return { valid: false, error: `${tool.name}: "${name}" must be an absolute http(s) URL.` };
+        }
+      }
+      out[name] = value;
     } else if (spec.type === "number") {
       const n = typeof raw === "number" ? raw : Number(raw);
       if (!Number.isFinite(n)) return { valid: false, error: `${tool.name}: "${name}" must be a number.` };
@@ -89,6 +112,23 @@ function validateArgs(tool, args) {
  */
 function buildRegistry(deps = {}) {
   const tools = [];
+  /* read_url is a reader, not an arbitrary outbound-request primitive. Exact
+   * provenance closes the exfiltration route a host allowlist cannot: a page
+   * may influence the next call, but it cannot add conversation text to the
+   * path or query of a URL the search provider actually returned. */
+  const readableUrls = new Set();
+  const canonicalUrl = (raw) => {
+    try {
+      const url = new URL(raw);
+      if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+      url.hash = "";
+      url.username = "";
+      url.password = "";
+      return url.toString();
+    } catch {
+      return null;
+    }
+  };
 
   if (typeof deps.search === "function") {
     tools.push({
@@ -125,6 +165,10 @@ function buildRegistry(deps = {}) {
         const rendered = top
           .map((r, i) => `${i + 1}. ${r.title || "Untitled"}\n   ${r.url || ""}\n   ${(r.description || r.content || "").slice(0, 300)}`)
           .join("\n\n");
+        for (const row of top) {
+          const url = canonicalUrl(row && row.url);
+          if (url) readableUrls.add(url);
+        }
         const note = dropped ? ` (${dropped} dead or unavailable link${dropped === 1 ? "" : "s"} removed)` : "";
         return ok(`${top.length} results for "${query}"${note}`, clamp(rendered));
       },
@@ -139,7 +183,7 @@ function buildRegistry(deps = {}) {
       name: "read_url",
       description:
         "Fetch and read one web page as text. Use after web_search when a result's snippet is not enough. Takes one absolute http(s) URL.",
-      schema: { url: { type: "string", required: true, maxLength: 2048 } },
+      schema: { url: { type: "string", required: true, maxLength: 2048, format: "http-url" } },
       run: async ({ url }, { signal } = {}) => {
         // Throws UrlBlocked for loopback, link-local, private ranges and the
         // cloud metadata address. The error text is safe to hand back: it says
@@ -151,7 +195,22 @@ function buildRegistry(deps = {}) {
         } catch (err) {
           return fail(`Refused to fetch that URL: ${err.message}`);
         }
-        const text = await deps.readUrl(safe.url.toString(), { signal });
+        const canonical = canonicalUrl(safe.url.toString());
+        if (!canonical || !readableUrls.has(canonical)) {
+          return fail("Refused to fetch a URL that was not returned by this turn's web search.");
+        }
+        if (!safe.address || (safe.family !== 4 && safe.family !== 6)) {
+          return fail("Refused to fetch a URL whose network address was not pinned by the safety check.");
+        }
+        /* The fetcher gets the address that was checked and the guard it must
+         * apply again to every redirect. Passing only the hostname would reopen
+         * DNS rebinding between validation and connection. */
+        const text = await deps.readUrl(safe, {
+          signal,
+          assertSafeUrl: deps.assertSafeUrl,
+          maxRedirects: MAX_REDIRECTS,
+          maxChars: MAX_RESULT_CHARS,
+        });
         if (!text) return fail(`Nothing readable at ${safe.url.hostname}.`);
         return ok(`Read ${safe.url.hostname}`, clamp(text));
       },
@@ -218,7 +277,7 @@ function buildRegistry(deps = {}) {
         'Some engines need extra arguments, given as a JSON object string in "params" — e.g. {"departure_id":"DXB","arrival_id":"LHR","outbound_date":"2026-09-01"}. ' +
         "Each call costs money, so choose one engine deliberately rather than trying several.",
       schema: {
-        engine: { type: "string", required: true, maxLength: 40 },
+        engine: { type: "string", required: true, maxLength: 40, enum: deps.engineNames },
         query: { type: "string", required: false, maxLength: 300, default: "" },
         params: { type: "string", required: false, maxLength: 500, default: "" },
       },
@@ -278,7 +337,7 @@ function buildRegistry(deps = {}) {
      * result, not a failed turn. A single bad page must not take down a council
      * answer that has six other sources.
      */
-    execute: async (call, { timeoutMs = 8000, signal } = {}) => {
+    execute: async (call, { timeoutMs = MAX_TOOL_TIMEOUT_MS, signal } = {}) => {
       const tool = byName.get(call && call.name);
       if (!tool) {
         // Naming what DOES exist turns a wasted round into a corrected one.
@@ -292,6 +351,7 @@ function buildRegistry(deps = {}) {
       if (signal?.aborted) return fail(`${tool.name} cancelled.`);
 
       const child = childAbortController(signal);
+      const timeout = clampTimeoutMs(timeoutMs);
       let timer = null;
       let settled = false;
       let resolveResult;
@@ -314,7 +374,7 @@ function buildRegistry(deps = {}) {
       // executor, so a new tool cannot forget it. The timer aborts the
       // executor BEFORE resolving the failed result; a provider with a fetch
       // signal therefore stops doing work instead of merely being ignored.
-      timer = setTimeout(() => finish(fail(`${tool.name} timed out after ${timeoutMs}ms.`)), Math.max(0, timeoutMs));
+      timer = setTimeout(() => finish(fail(`${tool.name} timed out after ${timeout}ms.`)), timeout);
       timer.unref?.();
       Promise.resolve()
         .then(() => tool.run(checked.args, { signal: child.signal }))
@@ -325,4 +385,4 @@ function buildRegistry(deps = {}) {
   };
 }
 
-module.exports = { buildRegistry, validateArgs, MAX_RESULT_CHARS };
+module.exports = { buildRegistry, validateArgs, clampTimeoutMs, MAX_RESULT_CHARS, MAX_TOOL_TIMEOUT_MS };

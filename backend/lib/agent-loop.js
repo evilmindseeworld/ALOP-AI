@@ -61,8 +61,9 @@ const { dedupeCalls } = require("./tool-dedupe");
 const { settleByDeadline } = require("./deadline");
 const { isUsableAnswer } = require("./council-run");
 const { childAbortController } = require("./abort");
+const { renderToolResult, UNTRUSTED_PREAMBLE } = require("./council-tools");
 
-const DEFAULTS = {
+const DEFAULTS = Object.freeze({
   maxRounds: 4,
   maxUniqueCalls: 12,
   perCallMs: 8000,
@@ -71,7 +72,27 @@ const DEFAULTS = {
   totalWallMs: 75000,
   /* 0 = wait for every member. server.js passes the council's own quorum. */
   quorum: 0,
+});
+
+/** Limits are production ceilings. Callers may tighten them, never expand them. */
+const bounded = (value, ceiling, { integer = false } = {}) => {
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) return ceiling;
+  const clamped = Math.min(n, ceiling);
+  return integer ? Math.floor(clamped) : clamped;
 };
+
+function normaliseLimits(limits, memberCount) {
+  return {
+    maxRounds: bounded(limits.maxRounds, DEFAULTS.maxRounds, { integer: true }),
+    maxUniqueCalls: bounded(limits.maxUniqueCalls, DEFAULTS.maxUniqueCalls, { integer: true }),
+    perCallMs: bounded(limits.perCallMs, DEFAULTS.perCallMs),
+    totalToolMs: bounded(limits.totalToolMs, DEFAULTS.totalToolMs),
+    roundMs: bounded(limits.roundMs, DEFAULTS.roundMs),
+    totalWallMs: bounded(limits.totalWallMs, DEFAULTS.totalWallMs),
+    quorum: bounded(limits.quorum, Math.max(0, memberCount), { integer: true }),
+  };
+}
 
 /* The least wall time a round may be started with. A sliver left on the wall
  * ceiling is not a round: every active member would be asked, every model call
@@ -82,15 +103,9 @@ const MIN_ROUND_MS = 250;
 
 /** Tool results, rendered for the next round's prompt. */
 const renderResults = (executed) =>
-  executed
-    .map(({ call, result }) => {
-      const args = Object.entries(call.args)
-        .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
-        .join(" ");
-      const head = `[${call.name} ${args}] ${result.ok ? "OK" : "FAILED"} — ${result.summary}`;
-      return result.content ? `${head}\n${result.content}` : head;
-    })
-    .join("\n\n---\n\n");
+  `${UNTRUSTED_PREAMBLE}\n\n${executed
+    .map(({ call, result }) => renderToolResult(call, result))
+    .join("\n\n---\n\n")}`;
 
 /**
  * @param {object} opts
@@ -108,7 +123,8 @@ const renderResults = (executed) =>
  *                                             do not have to actually wait 25s
  */
 async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, onSeatTiming = () => {}, signal, now = Date.now, ...limits } = {}) {
-  const cfg = { ...DEFAULTS, ...limits };
+  const roster = [...(members || [])];
+  const cfg = normaliseLimits({ ...DEFAULTS, ...limits }, roster.length);
   const startedAt = now();
   const turn = childAbortController(signal);
   const turnSignal = turn.signal;
@@ -136,7 +152,7 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
   let toolMsUsed = 0;
   const budgetLeft = () => cfg.totalToolMs - toolMsUsed;
   const wallLeft = () => cfg.totalWallMs - (now() - startedAt);
-  let active = [...(members || [])];
+  let active = roster;
 
   const setTruncated = (message, reason) => {
     truncated = truncated || message;
@@ -402,4 +418,4 @@ const describe = (call) => {
   return typeof first === "string" ? `${call.name}: ${first.slice(0, 80)}` : call.name;
 };
 
-module.exports = { runAgentLoop, DEFAULTS };
+module.exports = { runAgentLoop, normaliseLimits, DEFAULTS };

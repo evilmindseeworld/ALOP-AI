@@ -44,6 +44,24 @@ const UNTRUSTED_PREAMBLE =
  * than the only one. */
 const { envelope } = require("./untrusted-content");
 
+/** One complete result record, including the model-written call and summary. */
+function renderToolResult(call, result, ctx = {}) {
+  let args = "{}";
+  try {
+    args = JSON.stringify(call && call.args ? call.args : {});
+  } catch {
+    args = "[unserialisable arguments]";
+  }
+  const name = typeof call?.name === "string" ? call.name : "unknown_tool";
+  const summary = typeof result?.summary === "string" ? result.summary : "No summary.";
+  const head = `[${name} ${args}] ${result?.ok ? "OK" : "FAILED"} — ${summary}`;
+  const body = result?.content ? `${head}\n${result.content}` : head;
+  /* Arguments originate in a model, file summaries can contain attacker-named
+   * files, and executor errors can echo remote text. Wrapping only `content`
+   * left three sibling paths around the fence neutraliser. */
+  return envelope(`${name} tool result`, body, ctx);
+}
+
 /**
  * First provider that returns anything wins.
  *
@@ -174,10 +192,7 @@ function toolMessages(baseMsgs, registry, ctx) {
    * result that follows it. */
   const rendered = toolResults
     .map(({ call, result }) => {
-      const head2 = `[${call.name} ${JSON.stringify(call.args)}] ${result.ok ? "OK" : "FAILED"} — ${result.summary}`;
-      return result.content
-        ? `${head2}\n${envelope(`${call.name} result`, result.content, ctx)}`
-        : head2;
+      return renderToolResult(call, result, ctx);
     })
     .join("\n\n---\n\n");
 
@@ -250,4 +265,4 @@ function summariseProbe(replies) {
   };
 }
 
-module.exports = { firstWithResults, toolMessages, summariseProbe, UNTRUSTED_PREAMBLE };
+module.exports = { firstWithResults, toolMessages, renderToolResult, summariseProbe, UNTRUSTED_PREAMBLE };

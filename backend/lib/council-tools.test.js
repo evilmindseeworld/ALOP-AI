@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { firstWithResults, toolMessages, summariseProbe, UNTRUSTED_PREAMBLE } = require("./council-tools");
+const { firstWithResults, toolMessages, summariseProbe, searchResultUrls, requiredCitationSuffix, UNTRUSTED_PREAMBLE } = require("./council-tools");
 const fs = require("node:fs");
 
 // ===== firstWithResults =====
@@ -137,6 +137,19 @@ test("seeded evidence removes the tool catalogue even if final-round metadata is
   assert.match(m[0].content, /No tools may be requested/);
   assert.match(m[0].content, /Do not request or emit any tool call/);
   assert.doesNotMatch(m[0].content, /read_url\(id\)/);
+});
+
+test("seeded search URLs are extracted and a missing final citation is repaired", () => {
+  const urls = searchResultUrls([{
+    call: { name: "web_search" },
+    result: { ok: true, content: "1. First\nhttps://one.example/report\n2. Second\nhttps://two.example/news" },
+  }, {
+    call: { name: "read_url" },
+    result: { ok: true, content: "Untrusted page text https://injected.example/" },
+  }]);
+  assert.deepEqual(urls, ["https://one.example/report", "https://two.example/news"]);
+  assert.equal(requiredCitationSuffix("Answer without links.", urls), "\n\n## Sources\n- [Source](https://one.example/report)");
+  assert.equal(requiredCitationSuffix("Already cited https://two.example/news", urls), "");
 });
 
 test("the final round does not pay for a catalogue it cannot use", () => {

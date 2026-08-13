@@ -438,6 +438,11 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     }
   }
   if (!emitted.length) throw new Error('Model returned no usable answer');
+  const citationSuffix = requiredCitationSuffix(emitted.join(''), answerOptions.requiredSourceUrls);
+  if (citationSuffix && !res.writableEnded) {
+    emitted.push(citationSuffix);
+    res.write(`data: ${JSON.stringify({ type: 'chunk', text: citationSuffix })}\n\n`);
+  }
   if (!res.writableEnded) res.write('data: [DONE]\n\n');
   return emitted.join('');
 };
@@ -1020,7 +1025,7 @@ const { createTtlCache } = require('./lib/ttl-cache');
 const { boundedPage, pageInfo } = require('./lib/pagination');
 const { noStoreApi } = require('./lib/http-cache');
 const { detectRegion, regionHint } = require('./lib/region');
-const { firstWithResults, toolMessages, summariseProbe, UNTRUSTED_PREAMBLE } = require('./lib/council-tools');
+const { firstWithResults, toolMessages, summariseProbe, searchResultUrls, requiredCitationSuffix, UNTRUSTED_PREAMBLE } = require('./lib/council-tools');
 const { parseToolRequests, sanitizeAnswerText, userRequestedProtocolJson, looksLikeProtocolOpening } = require('./lib/tool-protocol');
 const { prepareUpload, UploadRejected, MAX_FILES_PER_CHAT } = require('./lib/file-intake');
 
@@ -2828,10 +2833,10 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
      * provenance in the durable key so enabling seeded tools cannot replay a
      * Wikipedia/plain-council answer written before the flag changed. */
     const answerExecutionMode = SEEDED_SEARCH
-      /* v4 invalidates answers written before the server performed the seeded
-       * page read itself. Keep this explicit: deleting shared durable rows
-       * is broader and less recoverable than a namespace bump. */
-      ? 'tools-seeded-v4'
+      /* v5 invalidates seeded answers that completed without a source URL
+       * before the streaming boundary enforced one. Keep this explicit:
+       * deleting shared durable rows is broader and less recoverable. */
+      ? 'tools-seeded-v5'
       : TOOLS_ENABLED ? 'tools-live' : TOOLS_SHADOW ? 'tools-shadow' : 'tools-off';
     const cacheKey = personalised
       ? null
@@ -3187,7 +3192,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
     // COUNCIL_TOOLS is off by default and the router path below is untouched,
     // so this ships dark and a bad turn is one env var from being reverted
     // without a deploy.
-    let validResponses, toolResearch = '', toolTruncated = null;
+    let validResponses, toolResearch = '', toolTruncated = null, toolSourceUrls = [];
     let telemetryExtra = {};
     let toolPlainFallback = { used: false, durationMs: null };
     let councilRelease = null;
@@ -3301,6 +3306,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       if (loop.stopReason && loop.stopReason !== 'quorum') telemetry.markCeiling(loop.stopReason);
       toolResearch = loop.research;
       toolTruncated = loop.truncated;
+      toolSourceUrls = searchResultUrls(loop.toolResults);
       console.log(`[TOOLS] ${loop.rounds} round(s), ${loop.uniqueCallsUsed} unique call(s), ${Object.keys(loop.answers).length} answer(s)${loop.truncated ? ` — ${loop.truncated}` : ''}`);
       // The same predicate the council's quorum uses, rather than a third copy
       // of the skip regex. It was a second copy, and the agent loop had a third
@@ -3503,7 +3509,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     sendStage(res, 'synthesis', validResponses.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
     openStream(res);
     const synthesisStartedAt = Date.now();
-    const synthAnswer = await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, answerOptions, turnDeadlineAt);
+    const synthAnswer = await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, requiredSourceUrls: toolSourceUrls }, turnDeadlineAt);
     telemetry.recordSynthesis(Date.now() - synthesisStartedAt);
     if (turnSignal.aborted) return;
     if (!res.writableEnded) res.end();

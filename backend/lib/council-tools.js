@@ -291,4 +291,23 @@ function summariseProbe(replies) {
   };
 }
 
-module.exports = { firstWithResults, toolMessages, renderToolResult, summariseProbe, UNTRUSTED_PREAMBLE, MAX_PROVIDER_MS };
+function searchResultUrls(toolResults) {
+  const urls = [];
+  const seen = new Set();
+  for (const { call, result } of Array.isArray(toolResults) ? toolResults : []) {
+    if (call?.name !== "web_search" || !result?.ok) continue;
+    for (const match of String(result.content || "").matchAll(/https?:\/\/[^\s<>]+/gi)) {
+      const url = match[0].replace(/[),.;!?]+$/, "");
+      if (!seen.has(url)) { seen.add(url); urls.push(url); }
+    }
+  }
+  return urls;
+}
+
+function requiredCitationSuffix(answer, urls) {
+  const sources = [...new Set((Array.isArray(urls) ? urls : []).filter((url) => /^https?:\/\//i.test(url)))];
+  if (!sources.length || sources.some((url) => String(answer || "").includes(url))) return "";
+  return `\n\n## Sources\n- [Source](${sources[0]})`;
+}
+
+module.exports = { firstWithResults, toolMessages, renderToolResult, summariseProbe, searchResultUrls, requiredCitationSuffix, UNTRUSTED_PREAMBLE, MAX_PROVIDER_MS };

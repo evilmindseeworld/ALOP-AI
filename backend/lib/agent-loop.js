@@ -57,7 +57,7 @@
  */
 
 const { parseToolRequests } = require("./tool-protocol");
-const { dedupeCalls } = require("./tool-dedupe");
+const { dedupeCalls, callKey } = require("./tool-dedupe");
 const { settleByDeadline } = require("./deadline");
 const { isUsableAnswer } = require("./council-run");
 const { childAbortController } = require("./abort");
@@ -121,8 +121,10 @@ const renderResults = (executed) =>
  * @param {AbortSignal} [opts.signal]           request cancellation
  * @param {() => number} [opts.now]            injectable clock, so budget tests
  *                                             do not have to actually wait 25s
+ * @param {string} [opts.seededSearch]         one router-approved query to run
+ *                                             server-side before round 1
  */
-async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, onSeatTiming = () => {}, signal, now = Date.now, ...limits } = {}) {
+async function runAgentLoop({ members, askMember, registry, seededSearch, onEvent = () => {}, onSeatTiming = () => {}, signal, now = Date.now, ...limits } = {}) {
   const roster = [...(members || [])];
   const cfg = normaliseLimits({ ...DEFAULTS, ...limits }, roster.length);
   const startedAt = now();
@@ -152,6 +154,7 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
   let uniqueCallsUsed = 0;
   let truncated = null;
   let stopReason = null;
+  let forceAnswerOnly = false;
 
   // Only the time actually spent inside registry.execute. See the note at the
   // top: measuring this from the top of the loop counted the council's own
@@ -174,13 +177,89 @@ async function runAgentLoop({ members, askMember, registry, onEvent = () => {}, 
     seatTimings.push(row);
   };
 
+  /*
+   * ROUTER-SEEDED SEARCH
+   *
+   * This is deliberately one query, not the router's comprehensive fan-out.
+   * The existing router path remains the default and keeps its measured
+   * two-router-call + streamed-answer cost. An opt-in caller can use this
+   * seam when it wants the council to arbitrate over current evidence: the
+   * registry executes web_search, which mints the opaque result ids, and the
+   * resulting entry is already in the same transcript every member receives.
+   *
+   * `seededSearch` is not a model proposal. The execution record is therefore
+   * marked `seeded` for rendering and telemetry, while its real call shape is
+   * retained for the renderer, cache key, and read_url id manifest.
+   */
+  const seedQuery = typeof seededSearch === "string" ? seededSearch.trim() : "";
+  if (seedQuery && active.length > 0) {
+    const rawSeedCall = { name: "web_search", args: { query: seedQuery } };
+    const seedCall = typeof registry?.normalize === "function"
+      ? (registry.normalize(rawSeedCall) || rawSeedCall)
+      : rawSeedCall;
+    const seedKey = callKey(seedCall);
+    const perCall = Math.min(cfg.perCallMs, budgetLeft(), wallLeft());
+
+    // A seeded turn must not silently fall back to an unseeded answer. If the
+    // caller cannot afford the server-side search, stop and let the route's
+    // explicit fallback policy decide what the user sees.
+    if (uniqueCallsUsed >= cfg.maxUniqueCalls) {
+      setTruncated(`Reached the ${cfg.maxUniqueCalls}-call ceiling for this turn.`, "unique_calls");
+      active = [];
+    } else if (budgetLeft() <= 0) {
+      setTruncated(`Reached the ${cfg.totalToolMs}ms tool budget for this turn.`, "tool_budget");
+      active = [];
+    } else if (wallLeft() <= 0) {
+      setTruncated(`Reached the ${cfg.totalWallMs}ms ceiling for this turn.`, "wall");
+      active = [];
+    } else if (perCall < 250) {
+      setTruncated("Could not start seeded web_search within its per-call budget.", "tool_budget");
+      active = [];
+    } else {
+      const seededCall = { ...seedCall, seeded: true };
+      const toolsStartedAt = now();
+      onEvent({ type: "tool_start", round: 0, name: seededCall.name, summary: describe(seededCall), seeded: true });
+      let result;
+      try {
+        // The normal execute path is the security boundary: it validates the
+        // query, calls the configured provider, and mints read_url ids. Do not
+        // accept a pre-rendered result from the route.
+        result = await registry.execute(seedCall, { timeoutMs: perCall, signal: turnSignal });
+      } catch {
+        // Registries promise contained failures, but keep this optional seam
+        // just as failure-safe if a test or future adapter breaks that promise.
+        result = { ok: false, summary: "web_search failed. Do not retry the same request.", content: "" };
+      }
+      result = result || { ok: false, summary: "web_search returned no result.", content: "" };
+      const durationMs = now() - toolsStartedAt;
+      toolMsUsed += durationMs;
+      uniqueCallsUsed++;
+      toolRounds.push({ round: 0, durationMs, calls: 1, aborted: turnSignal.aborted, seeded: true });
+      onEvent({ type: "tool_result", round: 0, name: seededCall.name, ok: result.ok, summary: result.summary, seeded: true });
+
+      const entry = { call: seededCall, result };
+      toolResultCache.set(seedKey, entry);
+      transcript.push(entry);
+
+      if (turnSignal.aborted) {
+        if (wallDeadlineReached) setTruncated(`Reached the ${cfg.totalWallMs}ms ceiling for this turn.`, "wall");
+        else stopReason = stopReason || "aborted";
+        active = [];
+      } else if (budgetLeft() < 250) {
+        // Let the council consume the evidence, but do not let it spend a
+        // non-existent tool budget trying to deepen it.
+        forceAnswerOnly = true;
+      }
+    }
+  }
+
   while (active.length > 0 && round < cfg.maxRounds) {
     if (turnSignal.aborted) {
       if (wallDeadlineReached) setTruncated(`Reached the ${cfg.totalWallMs}ms ceiling for this turn.`, "wall");
       else stopReason = stopReason || "aborted";
       break;
     }
-    const isFinalRound = round + 1 === cfg.maxRounds;
+    const isFinalRound = forceAnswerOnly || round + 1 === cfg.maxRounds;
 
     // CUMULATIVE QUORUM PREFLIGHT. Do this before constructing the entries
     // passed to settleByDeadline: constructing one invokes askMember, so the

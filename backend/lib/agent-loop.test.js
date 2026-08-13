@@ -128,6 +128,74 @@ test("tool result cache ends with the turn", async () => {
   assert.equal(registry.executed.length, 2, "separate turns may not share tool results");
 });
 
+// ===== router-seeded search =====
+
+test("a seeded search executes before round one and is broadcast as tool results", async () => {
+  const registry = fakeRegistry();
+  let firstContext;
+  const events = [];
+  const r = await runAgentLoop({
+    members: ["a"],
+    seededSearch: "latest OLED release",
+    registry,
+    onEvent: (event) => events.push(event),
+    askMember: async (_member, ctx) => {
+      firstContext = ctx;
+      return "answer from seeded evidence";
+    },
+  });
+
+  assert.equal(registry.executed.length, 1);
+  assert.deepEqual(registry.executed[0], { name: "web_search", args: { query: "latest OLED release" } });
+  assert.equal(firstContext.toolResults.length, 1);
+  assert.equal(firstContext.toolResults[0].call.seeded, true);
+  assert.equal(r.uniqueCallsUsed, 1, "the server-side search is a real unique tool call");
+  assert.equal(r.rounds, 1, "seeding does not consume a council round");
+  assert.match(r.research, /SEEDED web_search/);
+  assert.deepEqual(events.map((event) => [event.type, event.round, event.seeded]), [
+    ["tool_start", 0, true],
+    ["tool_result", 0, true],
+  ]);
+});
+
+test("a seeded call is cached when a member asks for the same search", async () => {
+  const registry = fakeRegistry();
+  const r = await runAgentLoop({
+    members: ["a"],
+    seededSearch: "  OLED  burn-in ",
+    registry,
+    askMember: async (_member, ctx) => (ctx.round === 1 ? toolCall("oled burn-in") : "done"),
+  });
+
+  assert.equal(registry.executed.length, 1, "seeding and the matching model proposal share one execution");
+  assert.equal(r.uniqueCallsUsed, 1);
+  assert.equal(r.answers.a, "done");
+});
+
+test("a seeded search does not consume maxRounds and forces an answer when it uses the tool budget", async () => {
+  let clock = 0;
+  const registry = fakeRegistry({ execute: async (call) => {
+    clock += 1000;
+    return { ok: true, summary: `ran ${call.name}`, content: "seeded result" };
+  } });
+  let finalFlag;
+  const r = await runAgentLoop({
+    members: ["a"],
+    seededSearch: "current facts",
+    registry,
+    now: () => clock,
+    totalToolMs: 1000,
+    maxRounds: 4,
+    askMember: async (_member, ctx) => { finalFlag = ctx.isFinalRound; return "answer"; },
+  });
+
+  assert.equal(r.rounds, 1);
+  assert.equal(r.uniqueCallsUsed, 1);
+  assert.equal(r.toolMs, 1000);
+  assert.equal(finalFlag, true, "the evidence remains usable even when no more tool time exists");
+  assert.equal(r.truncated, null);
+});
+
 // ===== ceilings =====
 
 test("stops at maxRounds and says so", async () => {

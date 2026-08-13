@@ -47,7 +47,7 @@ const UNTRUSTED_PREAMBLE =
 const { envelope } = require("./untrusted-content");
 const { settleByDeadline } = require("./deadline");
 
-/** One complete result record, including the model-written call and summary. */
+/** One complete result record, including the execution call and summary. */
 function renderToolResult(call, result, ctx = {}) {
   let args = "{}";
   try {
@@ -57,7 +57,11 @@ function renderToolResult(call, result, ctx = {}) {
   }
   const name = typeof call?.name === "string" ? call.name : "unknown_tool";
   const summary = typeof result?.summary === "string" ? result.summary : "No summary.";
-  const head = `[${name} ${args}] ${result?.ok ? "OK" : "FAILED"} — ${summary}`;
+  // A router-seeded search has a real execution record, but no member asked
+  // for it. Keep that provenance visible instead of making the next reader
+  // infer a lie from an ordinary-looking model call header.
+  const provenance = call?.seeded === true ? "SEEDED " : "";
+  const head = `[${provenance}${name} ${args}] ${result?.ok ? "OK" : "FAILED"} — ${summary}`;
   const body = result?.content ? `${head}\n${result.content}` : head;
   /* Arguments originate in a model, file summaries can contain attacker-named
    * files, and executor errors can echo remote text. Wrapping only `content`
@@ -116,6 +120,9 @@ function toolMessages(baseMsgs, registry, ctx) {
   const hasSearchResults = !isFinalRound && toolResults.some(
     ({ call, result }) => call?.name === "web_search" && result?.ok && /\[id: [0-9a-f-]{36}\]/i.test(result.content || ""),
   );
+  const hasSeededSearchResults = hasSearchResults && toolResults.some(
+    ({ call, result }) => call?.name === "web_search" && call?.seeded === true && result?.ok && /\[id: [0-9a-f-]{36}\]/i.test(result.content || ""),
+  );
 
   /* THE FINAL ROUND IS ANSWER-ONLY. It cannot request a tool, and anything it
    * asks for cannot run, so serialising every description into every member's
@@ -125,6 +132,7 @@ function toolMessages(baseMsgs, registry, ctx) {
   const catalogue = isFinalRound
     ? "No tools may be requested in this final round."
     : (registry.list() || [])
+        .filter((t) => !(hasSeededSearchResults && t.name === "web_search"))
         .map((t) => `- ${t.name}(${Object.keys(t.schema || {}).join(", ")}) — ${t.description}`)
         .join("\n");
 
@@ -134,6 +142,8 @@ function toolMessages(baseMsgs, registry, ctx) {
   // researched. The loop passes isFinalRound precisely so this can be said.
   const instruction = isFinalRound
     ? "This is the final round. Do NOT request any more tools — anything you ask for now will not run. Answer with what you have."
+    : hasSeededSearchResults
+      ? "The router already searched for this question and supplied the results below. Do NOT request web_search and do not author another search query. If a snippet is not enough, request read_url for AT MOST ONE result for this question by passing the opaque id shown beside it exactly as written. Do not read every result. Otherwise answer normally."
     : 'If you need information you do not have, request a tool INSTEAD of answering, by emitting exactly one fenced block:\n\n```tool_call\n{"name": "web_search", "args": {"query": "your query"}}\n```\n\nOtherwise answer normally. Do not do both. Do not request a tool for something you already know.' +
       (hasSearchResults
         ? "\n\nSearch results are available. If their snippets are not enough, request read_url for AT MOST ONE result for this question by passing the opaque id shown beside it exactly as written. Do not read every result. If the snippets are enough, answer normally."

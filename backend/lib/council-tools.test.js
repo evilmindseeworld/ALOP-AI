@@ -42,10 +42,31 @@ test("the query reaches every provider it tries", async () => {
 test("the provider fan-out receives the caller's abort signal", async () => {
   const controller = new AbortController();
   let received;
-  await firstWithResults([
-    async (_query, signal) => { received = signal; return [{ url: "a" }]; },
-  ], "q", controller.signal);
-  assert.equal(received, controller.signal);
+  const pending = firstWithResults([
+    (_query, signal) => new Promise((resolve) => {
+      received = signal;
+      signal.addEventListener("abort", () => resolve([]), { once: true });
+    }),
+  ], "q", controller.signal, { providerMs: 500 });
+  controller.abort();
+  await pending;
+  assert.equal(received.aborted, true);
+});
+
+test("one slow provider cannot consume the whole tool deadline", async () => {
+  let slowAborted = false;
+  const slow = (_query, signal) => new Promise((resolve, reject) => {
+    signal.addEventListener("abort", () => { slowAborted = true; reject(new Error("whipped")); }, { once: true });
+  });
+  const parent = new AbortController();
+  const started = Date.now();
+  const result = await Promise.race([
+    firstWithResults([slow, async () => [{ url: "fallback" }]], "q", parent.signal, { providerMs: 25 }),
+    new Promise((_, reject) => setTimeout(() => reject(new Error("fallback provider was never reached")), 150)),
+  ]);
+  assert.deepEqual(result, [{ url: "fallback" }]);
+  assert.equal(slowAborted, true);
+  assert.ok(Date.now() - started < 150);
 });
 
 // ===== toolMessages =====

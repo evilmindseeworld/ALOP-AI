@@ -43,6 +43,7 @@ const UNTRUSTED_PREAMBLE =
  * because it costs a sentence and does help; it is now the second line rather
  * than the only one. */
 const { envelope } = require("./untrusted-content");
+const { settleByDeadline } = require("./deadline");
 
 /** One complete result record, including the model-written call and summary. */
 function renderToolResult(call, result, ctx = {}) {
@@ -73,15 +74,20 @@ function renderToolResult(call, result, ctx = {}) {
  * A provider that throws is treated as a provider with no results — one dead
  * API key must not take down search.
  */
-async function firstWithResults(providers, query, signal) {
+const MAX_PROVIDER_MS = 2500;
+
+async function firstWithResults(providers, query, signal, { providerMs = MAX_PROVIDER_MS } = {}) {
+  const providerDeadline = Number.isFinite(providerMs)
+    ? Math.min(Math.max(0, providerMs), MAX_PROVIDER_MS)
+    : MAX_PROVIDER_MS;
   for (const provider of providers || []) {
     if (signal?.aborted) return [];
     let raw;
-    try {
-      raw = await provider(query, signal);
-    } catch {
-      continue;
-    }
+    const settled = await settleByDeadline(
+      [{ fallback: null, promise: (providerSignal) => provider(query, providerSignal) }],
+      { deadlineMs: providerDeadline, signal },
+    );
+    raw = settled.results[0];
     // Brave and Google CSE return an array; Tavily returns {answer, results}.
     const results = Array.isArray(raw) ? raw : raw && raw.results;
     if (Array.isArray(results) && results.length) return results;
@@ -265,4 +271,4 @@ function summariseProbe(replies) {
   };
 }
 
-module.exports = { firstWithResults, toolMessages, renderToolResult, summariseProbe, UNTRUSTED_PREAMBLE };
+module.exports = { firstWithResults, toolMessages, renderToolResult, summariseProbe, UNTRUSTED_PREAMBLE, MAX_PROVIDER_MS };

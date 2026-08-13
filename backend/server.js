@@ -2985,7 +2985,10 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const ruleRoute = skipRouter
       ? null
       : routeByRule(pv.value, { hasConversationContext: Boolean(convSummary || histArr.length) });
-    if (ruleRoute) console.log(`[COUNCIL] Rule router: ${ruleRoute.memory ? 'memory' : 'no search'}. 0 model requests for routing.`);
+    if (ruleRoute) {
+      const ruleDecision = ruleRoute.memory ? 'memory' : ruleRoute.queries?.length ? 'web search' : 'no search';
+      console.log(`[COUNCIL] Rule router: ${ruleDecision}. 0 model requests for routing.`);
+    }
     const routeP = skipRouter || ruleRoute
       ? Promise.resolve(ruleRoute || NO_ROUTE)
       : telemetry.measureRouter('route', () => planTurn(pv.value, convSummary, region, turnSignal)).catch(() => NO_ROUTE);

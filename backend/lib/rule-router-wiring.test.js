@@ -41,6 +41,10 @@ test('a rule decision actually suppresses the model call', () => {
   );
 });
 
+test('an explicit rule-routed search is logged as web search, not no search', () => {
+  assert.match(SOURCE, /ruleRoute\.queries\?\.length \? 'web search' : 'no search'/);
+});
+
 test('the rule is told whether a conversation exists', () => {
   // "what did I just say" is a memory question with history and an ordinary
   // question without it. Passing this wrong turns the memory branch on for

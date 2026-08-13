@@ -187,9 +187,9 @@ test('both council tool registries use readUrl and the live one reaches runAgent
   const bindings = source.match(/\breadUrl(?:,|\s*:)/g) || [];
   assert.ok(bindings.length >= 2, `expected shadow and live registry bindings, found ${bindings.length}`);
 
-  const liveGate = source.indexOf('if (TOOLS_ENABLED && !imageContext)');
+  const liveGate = source.indexOf('if (TOOLS_ENABLED && SEEDED_SEARCH && searchQueries?.length && !imageContext)');
   const liveRegistry = source.indexOf('const registry = buildRegistry({', liveGate);
   const loop = source.indexOf('runAgentLoop({', liveRegistry);
   assert.ok(liveGate >= 0 && liveRegistry > liveGate && loop > liveRegistry,
-    'COUNCIL_TOOLS live mode must build the pinned registry before entering the tool loop');
+    'a router-approved current-info turn must build the pinned registry before entering the tool loop');
 });

@@ -19,6 +19,22 @@ test("a seeded search reaches the tool loop instead of the Wikipedia shortcut", 
   assert.ok(searchGate > 0 && wikiGate > searchGate && loop > wikiGate, "search, Wikipedia, and loop order changed");
 });
 
+test("only router-approved current-info turns enter the tool loop", () => {
+  const gate = ROUTE.indexOf("if (TOOLS_ENABLED && SEEDED_SEARCH && searchQueries?.length && !imageContext)");
+  const loop = ROUTE.indexOf("runAgentLoop({", gate);
+  const plainCouncil = ROUTE.indexOf("} else {", loop);
+  const catalogue = ROUTE.indexOf("toolMessages(councilMsgs", gate);
+
+  assert.ok(gate > 0, "the tool loop must require a router-produced search query");
+  assert.ok(loop > gate && catalogue > gate, "current-info turns must retain the seeded tool path");
+  assert.ok(plainCouncil > loop, "no-search turns must retain the direct plain-council branch");
+  assert.doesNotMatch(
+    ROUTE.slice(plainCouncil, ROUTE.indexOf("// 5. FALLBACK", plainCouncil)),
+    /toolMessages\(/,
+    "the plain council must not receive the tool catalogue",
+  );
+});
+
 test("council turns write one structured telemetry row through auditLog", () => {
   assert.match(ROUTE, /createTurnTelemetry\(\{ startedAt: t0 \}\)/);
   assert.match(ROUTE, /measureContext\('summary'/);

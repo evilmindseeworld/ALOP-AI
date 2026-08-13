@@ -3230,7 +3230,13 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
     };
     sendStage(res, 'council', seatCount === 1 ? 'Asking one seat' : `Asking ${seatCount} seats`);
 
-    if (TOOLS_ENABLED && !imageContext) {
+    /* TOOLS ARE A ROUTER DECISION, not a global tax. COUNCIL_TOOLS enables the
+     * capability; it does not put every ordinary question through the agent
+     * loop or expose the tool catalogue to seats that have no current-data
+     * work to do. A seeded search query is the router's explicit evidence that
+     * this turn needs current information. Everything else goes directly to
+     * the plain council below with `councilMsgs`, never `toolMessages`. */
+    if (TOOLS_ENABLED && SEEDED_SEARCH && searchQueries?.length && !imageContext) {
       // read_file is offered only when this conversation actually has files.
       // A tool that can only ever answer "no files" is a tool the council
       // wastes a round discovering is useless.

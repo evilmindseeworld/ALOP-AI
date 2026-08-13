@@ -119,7 +119,31 @@ with no address anywhere in the model-facing string.
   than `json`. **A correctness guard that runs on the streaming path is a
   latency change; judge it as one.**
 
-1025 backend tests green.
+- **`df2be19` — the search → read chain is now asked for.** `read_url` had never
+  been called by a seat, and the reason was not the model: nothing ever told it
+  that an id beside a search result was for anything. A seat that has search
+  results in hand is now invited, AT SYSTEM POSITION, to read AT MOST ONE of
+  them by id when the snippets are not enough. System position matters and is
+  not a style choice — an instruction rendered inside the untrusted result block
+  is an instruction an attacker's page can imitate. The final round still
+  carries neither the catalogue nor the nudge; a test pins that.
+
+  "At most one" is the cost rule: reading is a network fetch with a 16k ceiling,
+  and six reads a round is the cost problem `297b02e` just fixed wearing a
+  different hat.
+
+- **`eb81d97` — a failed stream now says WHY.** `[STREAM] … (Stream failed)` was
+  thrown for a 429, a 5xx and a provider that opens and closes alike, so two
+  observations of `gemma-4-26b` failing could not be classified at all — the old
+  log discarded the response. It now records the HTTP status and up to 300
+  characters of the gateway's own detail. **The policy is deliberately
+  unchanged**: one primary attempt, then fallback. No same-model retry, no
+  demotion, no seat removal — this file is explicit that seat health has been
+  misdiagnosed here before from a sample that measured the wrong thing, and two
+  observations is not a sample. The failure still costs exactly one wasted
+  request plus one fallback, which was the constraint.
+
+1030 backend tests green.
 
 ## Not a bug, a missing feature
 

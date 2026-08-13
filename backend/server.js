@@ -286,6 +286,31 @@ const callModel = (modelName, messages, temperature = 0.0, timeoutMs = 30000, ma
   orCallModel(OPENROUTER_HOST, OPENROUTER_API_KEY, modelName, messages, temperature, timeoutMs, maxTokens, parentSignal)
     .catch(noteDailyLimit);
 
+const STREAM_TURN_BUDGET_MS = 75_000;
+
+const normaliseResetEpoch = (value) => {
+  const epoch = Number(value);
+  if (!Number.isFinite(epoch) || epoch <= 0) return null;
+  /* Current Unix seconds are ten digits; milliseconds are thirteen. Accept
+   * either wire representation, while preserving the observed 13-digit body
+   * value as milliseconds rather than multiplying it a second time. */
+  return epoch < 100_000_000_000 ? epoch * 1_000 : epoch;
+};
+
+const abortableDelay = (ms, signal) => new Promise((resolve, reject) => {
+  if (signal?.aborted) return reject(signal.reason || new DOMException('Aborted', 'AbortError'));
+  let timer;
+  const onAbort = () => {
+    clearTimeout(timer);
+    reject(signal.reason || new DOMException('Aborted', 'AbortError'));
+  };
+  timer = setTimeout(() => {
+    signal?.removeEventListener('abort', onAbort);
+    resolve();
+  }, Math.max(0, ms));
+  signal?.addEventListener('abort', onAbort, { once: true });
+});
+
 /**
  * `maxTokens` is a SAFETY NET, not the length control. The length control is the
  * instruction in the prompt; this stops a model that ignores it from streaming
@@ -314,9 +339,28 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
      * to identify the policy from one log line, but never let an upstream HTML
      * page or multiline payload flood production logs. */
     let detail = '';
-    try { detail = (await response.text()).replace(/\s+/g, ' ').trim().slice(0, 300); }
-    catch { detail = 'response body unreadable'; }
-    throw new Error(`Stream HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}${detail ? `: ${detail}` : ''}`);
+    let payload = null;
+    try {
+      const raw = await response.text();
+      detail = raw.replace(/\s+/g, ' ').trim().slice(0, 300);
+      try { payload = JSON.parse(raw); } catch {}
+    } catch { detail = 'response body unreadable'; }
+    const metadata = payload?.error?.metadata || payload?.metadata || {};
+    const bodyHeaders = metadata.headers || {};
+    const header = (name) => response.headers?.get?.(name)
+      || bodyHeaders[name]
+      || bodyHeaders[name.toLowerCase()]
+      || Object.entries(bodyHeaders).find(([key]) => key.toLowerCase() === name.toLowerCase())?.[1];
+    const err = new Error(`Stream HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}${detail ? `: ${detail}` : ''}`);
+    err.status = response.status;
+    err.limitSource = metadata.limit_source
+      || payload?.error?.limit_source
+      || payload?.limit_source
+      || header('X-RateLimit-Limit-Source')
+      || header('X-RateLimit-Source')
+      || null;
+    err.resetAt = normaliseResetEpoch(header('X-RateLimit-Reset'));
+    throw err;
   }
   if (!response.body) throw new Error(`Stream HTTP ${response.status}: missing stream body`);
   const reader = response.body.getReader();
@@ -427,13 +471,32 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
  *   spends a request writing an answer nobody is waiting for, which is exactly
  *   what the abort work existed to stop.
  */
-const streamModel = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, answerOptions = {}) => {
+const streamModel = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, answerOptions = {}, turnDeadlineAt = null) => {
   const meta = {};
   try {
     return await streamOnce(res, modelName, messages, temperature, signal, maxTokens, meta, answerOptions);
   } catch (err) {
     const wrote = (meta.emitted || []).join('').length;
     if (modelName !== PRIMARY_MODEL || signal?.aborted || wrote > 0) throw err;
+    if (err.status === 429 && err.limitSource === 'openrouter_free_tier_per_minute') {
+      const resetAt = Number(err.resetAt);
+      /* No reset means there is no evidence for a safe wait. A reset at or
+       * beyond the admission deadline also leaves no budget for the retry.
+       * Both cases stop after the one failed request. */
+      if (!Number.isFinite(resetAt) || !Number.isFinite(turnDeadlineAt) || resetAt >= turnDeadlineAt) {
+        console.warn(`[STREAM] ${modelName} hit the account-wide per-minute limit; reset does not fit this turn. No second request made.`);
+        throw err;
+      }
+      console.warn(`[STREAM] ${modelName} hit the account-wide per-minute limit. Waiting until ${new Date(resetAt).toISOString()} and retrying the same model once.`);
+      await abortableDelay(Math.max(0, resetAt - Date.now()), signal);
+      /* Returned directly: if this second and final request fails, it escapes.
+       * Falling back after it would turn today's two-request failure into three. */
+      return await streamOnce(res, modelName, messages, temperature, signal, maxTokens, {}, answerOptions);
+    }
+    /* The daily cap is account-wide too, but its policy is the latch above
+     * callModel. Do not create a competing stream latch or spend a fallback
+     * request that the same daily gate must reject. */
+    if (err.status === 429 && err.limitSource === 'openrouter_free_tier_daily') throw err;
     console.warn(`[STREAM] ${modelName} failed before writing anything (${err.message}). Falling back to ${SMART_MODEL}.`);
     return await streamOnce(res, SMART_MODEL, messages, temperature, signal, maxTokens, {}, answerOptions);
   }
@@ -2309,6 +2372,9 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
   // audit row now carries the phase breakdown so the admin console can report
   // it without a second logging system or a log dashboard.
   const t0 = Date.now();
+  /* Admission deadline for a per-minute stream retry only. It does not abort
+   * ordinary council work or the deliberately unbounded recovery council. */
+  const turnDeadlineAt = t0 + STREAM_TURN_BUDGET_MS;
   const telemetry = createTurnTelemetry({ startedAt: t0 });
   const turnController = new AbortController();
   const turnSignal = turnController.signal;
@@ -2893,7 +2959,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       const memSys = `You are ALOP-AI. The user is asking about a previous conversation. The history below IS your memory. Do NOT say you can't remember. Reference what was discussed. Be concise.${convSummary ? `\n\nSummary: ${convSummary}` : ''}`;
       const memMsgs = [{ role: 'system', content: memSys }, ...histArr.slice(-10), { role: 'user', content: pv.value }];
       openStream(res);
-      await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0, turnSignal, null, answerOptions);
+      await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
       if (!res.writableEnded) res.end();
       rememberTurn(chatId, user.id, pv.value, 'Answered memory question.', telemetry);
       await auditBranch({ category: 'memory' });
@@ -2906,7 +2972,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       console.log('[COUNCIL] Greeting.');
       const greetMsgs = [{ role: 'system', content: `You are ALOP-AI. Greet briefly.${convSummary ? ` Context: ${convSummary}` : ''}` }, { role: 'user', content: pv.value }];
       openStream(res);
-      await streamModel(res, PRIMARY_MODEL, greetMsgs, 0.0, turnSignal, null, answerOptions);
+      await streamModel(res, PRIMARY_MODEL, greetMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
       if (!res.writableEnded) res.end();
       await auditBranch({ category: 'greeting' });
       return;
@@ -3005,7 +3071,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       const extSys = `${todayLine()}\n\nYou are a precision data extraction engine. Use ONLY the provided data.\n\nRULES:\n1. Only state facts from the data.\n2. No training data.\n3. No inferring/guessing.\n4. No comparing unless both products are in data.\n5. If not in data, say "I couldn't find this in the search results."\n6. Include URLs as Markdown: [Title](URL)\n7. No inventing specs/prices.\n8. Note contradictions between sources.\n9. Format in Markdown. Match answer length to question. Be concise for simple questions.\n10. List sources at bottom under "## Sources".\n11. Embed images if provided: ![Description](url)\n12. CONVERSATION CONTEXT and history are EXEMPT from rules 1-5.\n13. Each source carries a Published date. When sources disagree, prefer the most recent one and say that the older one is out of date — do not average them or pick the more detailed one.\n14. If every source on a time-dependent point is more than a year old, say so rather than presenting it as current.\n15. Attach the date to any fact that changes over time: "as of [date]". A price, version or ranking stated bare reads as current even when it is not.${lang !== 'English' ? `\n16. Respond in ${lang}.` : ''}`;
       const extMsgs = [{ role: 'system', content: extSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n\n=== SEARCH DATA ===\n${context}` }];
       openStream(res);
-      const searchAnswer = await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0, turnSignal, null, answerOptions);
+      const searchAnswer = await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
       if (!res.writableEnded) res.end();
       /* A SHORTER SHELF LIFE WHEN THE QUESTION ASKED FOR NOW. `fresh` is the
        * freshness window the user's own words implied — "right now", "this
@@ -3031,7 +3097,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         // need a site of their own.
         const wikiMsgs = [{ role: 'system', content: wikiSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n=== WIKIPEDIA ===\n${UNTRUSTED_PREAMBLE}\n\n${envelope('Wikipedia extract', wiki)}` }];
         openStream(res);
-        const wikiAnswer = await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0, turnSignal, null, answerOptions);
+        const wikiAnswer = await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
         if (!res.writableEnded) res.end();
         // An encyclopedia answer is still good next week.
         cacheAnswer(wikiAnswer, ANSWER_TTL_MS.wiki);
@@ -3275,7 +3341,7 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       const fbMsgs = [{ role: 'system', content: fbSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
       openStream(res);
       const fallbackStartedAt = Date.now();
-      await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0, turnSignal, null, answerOptions);
+      await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
       telemetry.recordFallback(Date.now() - fallbackStartedAt, 'post_council');
       if (turnSignal.aborted) return;
       if (!res.writableEnded) res.end();
@@ -3392,7 +3458,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     sendStage(res, 'synthesis', validResponses.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
     openStream(res);
     const synthesisStartedAt = Date.now();
-    const synthAnswer = await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, answerOptions);
+    const synthAnswer = await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, answerOptions, turnDeadlineAt);
     telemetry.recordSynthesis(Date.now() - synthesisStartedAt);
     if (turnSignal.aborted) return;
     if (!res.writableEnded) res.end();

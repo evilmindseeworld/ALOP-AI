@@ -206,10 +206,10 @@ test("every seat-answer boundary rejects whole protocol replies before use", () 
     "the plain fallback council must reject protocol blobs before quorum");
   assert.match(ROUTE, /callModel[\s\S]{0,180}?answerOptions\)\.text/,
     "the plain council must reject protocol blobs before quorum");
-  assert.match(ROUTE, /const searchAnswer = await streamModel\([^\n]+answerOptions\)/,
+  assert.match(ROUTE, /const searchAnswer = await streamModel\([^\n]+answerOptions/,
     "the observed search answer path must use the stream guard");
-  assert.match(ROUTE, /const wikiAnswer = await streamModel\([^\n]+answerOptions\)/);
-  assert.match(ROUTE, /const synthAnswer = await streamModel\([^\n]+answerOptions\)/);
+  assert.match(ROUTE, /const wikiAnswer = await streamModel\([^\n]+answerOptions/);
+  assert.match(ROUTE, /const synthAnswer = await streamModel\([^\n]+answerOptions/);
 });
 
 test("a one-seat roster inherits the synthesiser's rules", () => {
@@ -258,4 +258,89 @@ test("stream setup failures preserve the upstream cause in one bounded log line"
   assert.match(setup, /replace\(\/\\s\+\/g/, "upstream detail must be collapsed onto one log line");
   assert.match(setup, /slice\(0,\s*300\)/, "upstream detail must be bounded before it reaches logs");
   assert.match(setup, /missing stream body/i, "an HTTP-success response without a body must be distinguishable from a non-2xx response");
+});
+
+test("account-wide per-minute stream limits wait for reset and retry the same model only", () => {
+  const setup = SOURCE.slice(SOURCE.indexOf("const streamOnce = async"), SOURCE.indexOf("const reader = response.body.getReader()"));
+  const wrapper = SOURCE.slice(SOURCE.indexOf("const streamModel = async"), SOURCE.indexOf("const callGeminiVision"));
+
+  assert.match(setup, /limit_source/, "the 429 policy must read OpenRouter's structured limit source");
+  assert.match(setup, /X-RateLimit-Reset/i, "the 429 policy must read the reset from body metadata or response headers");
+  assert.match(setup, /X-RateLimit-(?:Limit-)?Source/i, "a response-header limit source must be accepted too");
+  assert.match(SOURCE, /epoch \* 1_000/, "second epochs must be normalised rather than mistaken for millisecond epochs");
+  assert.match(wrapper, /openrouter_free_tier_per_minute/, "the account-wide minute limit must be distinguished from provider and daily limits");
+  assert.match(wrapper, /await abortableDelay\(/, "the reset wait must be abortable");
+  assert.match(wrapper, /streamOnce\(res, modelName/, "the post-reset attempt must retry the same model");
+  assert.doesNotMatch(wrapper, /streamOnce\(res, modelName[\s\S]+streamOnce\(res, SMART_MODEL[\s\S]+streamOnce\(res, SMART_MODEL/,
+    "a same-model retry must never be followed by a third fallback request");
+});
+
+test("an account-minute reset outside the turn deadline makes no second request", () => {
+  const wrapper = SOURCE.slice(SOURCE.indexOf("const streamModel = async"), SOURCE.indexOf("const callGeminiVision"));
+
+  assert.match(wrapper, /resetAt\s*>\s*turnDeadlineAt|resetAt\s*>=\s*turnDeadlineAt/,
+    "the deadline check must happen before either retry or fallback dispatches");
+  assert.match(wrapper, /throw err;[\s\S]*await abortableDelay/,
+    "a reset that cannot fit must throw before starting the timer or making another request");
+});
+
+const loadStreamPolicy = (fetchImpl) => {
+  const policy = SOURCE.slice(SOURCE.indexOf("const normaliseResetEpoch"), SOURCE.indexOf("const callGeminiVision"));
+  return Function(
+    "fetch", "OPENROUTER_HOST", "OPENROUTER_API_KEY", "PRIMARY_MODEL", "SMART_MODEL",
+    "parseOpenRouterSseLine", "looksLikeProtocolOpening", "sanitizeAnswerText",
+    `${policy}\nreturn { streamModel, normaliseResetEpoch };`,
+  )(
+    fetchImpl, "https://openrouter.test", "secret", "primary:free", "smart:free",
+    () => ({ skip: true }), () => false, (text) => ({ text, rejected: false }),
+  );
+};
+
+const minute429 = (reset) => ({
+  ok: false,
+  status: 429,
+  statusText: "Too Many Requests",
+  headers: { get: () => null },
+  text: async () => JSON.stringify({
+    error: {
+      message: "Rate limit exceeded: free-models-per-min.",
+      metadata: {
+        limit_source: "openrouter_free_tier_per_minute",
+        headers: { "X-RateLimit-Reset": String(reset) },
+      },
+    },
+  }),
+});
+
+test("a reset beyond the deadline performs exactly one fetch", async () => {
+  let requests = 0;
+  const { streamModel } = loadStreamPolicy(async () => { requests++; return minute429(Date.now() + 10_000); });
+
+  await assert.rejects(streamModel({}, "primary:free", [], 0, undefined, null, {}, Date.now() + 100), /Stream HTTP 429/);
+  assert.equal(requests, 1, "a wait that cannot fit must not dispatch a retry or fallback");
+});
+
+test("a fitting reset retries the same model once and never falls back afterward", async () => {
+  const requestedModels = [];
+  const { streamModel, normaliseResetEpoch } = loadStreamPolicy(async (_url, options) => {
+    requestedModels.push(JSON.parse(options.body).model);
+    return minute429(Date.now());
+  });
+
+  assert.equal(normaliseResetEpoch(1_786_650_480_000), 1_786_650_480_000, "the observed reset is already milliseconds");
+  assert.equal(normaliseResetEpoch(1_786_650_480), 1_786_650_480_000, "a seconds header is converted to milliseconds");
+  await assert.rejects(streamModel({}, "primary:free", [], 0, undefined, null, {}, Date.now() + 5_000), /Stream HTTP 429/);
+  assert.deepEqual(requestedModels, ["primary:free", "primary:free"], "the second failure must escape without a third smart-model request");
+});
+
+test("aborting during the reset wait cancels the timer without another fetch", async () => {
+  let requests = 0;
+  const controller = new AbortController();
+  const { streamModel } = loadStreamPolicy(async () => { requests++; return minute429(Date.now() + 1_000); });
+  const pending = streamModel({}, "primary:free", [], 0, controller.signal, null, {}, Date.now() + 5_000);
+  await new Promise((resolve) => setImmediate(resolve));
+  controller.abort(new DOMException("Client disconnected", "AbortError"));
+
+  await assert.rejects(pending, (err) => err?.name === "AbortError");
+  assert.equal(requests, 1, "an abandoned turn must not remain waiting or dispatch the retry");
 });

@@ -291,7 +291,7 @@ test('a truncated stream cannot become a cached answer', () => {
    * failure may be retried. The completion check is still what guards the
    * return, and that is what this test is about. */
   const stream = src.indexOf('const streamOnce');
-  const body = src.slice(stream, stream + 6000);
+  const body = src.slice(stream, src.indexOf('const streamModel', stream));
 
   const throws = body.indexOf('Stream ended before provider completion');
   const returns = body.indexOf('return emitted.join');

@@ -12,7 +12,7 @@ const makeAnswerCache = ({ hit = null, reject = false } = {}) => {
       if (reject) throw new Error('database unavailable');
       return hit;
     },
-    setConstant: (key, answer, ttl) => calls.constants.push({ key, answer, ttl }),
+    setConstant: (key, answer, options) => calls.constants.push({ key, answer, options }),
   };
 };
 
@@ -22,11 +22,19 @@ test('greetings are deterministic and seed the durable answer cache', async () =
 
   assert.equal(await greetings.get('  HI!!! '), 'Hi! How can I help?');
   assert.equal(answerCache.calls.gets, 1);
-  assert.deepEqual(answerCache.calls.constants, [{
-    key: 'greeting:hi',
-    answer: 'Hi! How can I help?',
-    ttl: 365 * 24 * 60 * 60 * 1000,
-  }]);
+  assert.equal(answerCache.calls.constants.length, 1);
+  const [seed] = answerCache.calls.constants;
+  assert.equal(seed.key, 'greeting:hi');
+  assert.equal(seed.answer, 'Hi! How can I help?');
+  assert.equal(seed.options.ttlMs, 365 * 24 * 60 * 60 * 1000);
+  /* The row carries the inputs a refresh would need, because a write without
+   * them is REJECTED outright — a greeting that never lands durably is one
+   * model-free answer per deploy turned back into a model call. It is marked as
+   * not search-backed, which is what keeps a constant out of the refresh query
+   * it has no business being in. */
+  assert.equal(seed.options.inputs.question, 'hi');
+  assert.equal(seed.options.inputs.branch, 'greeting');
+  assert.equal(seed.options.inputs.usedLiveWeb, false);
 });
 
 test('a durable greeting hit avoids reseeding and remains model-free', async () => {

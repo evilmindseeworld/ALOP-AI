@@ -56,7 +56,26 @@ function createGreetingCache({ answerCache, log = console } = {}) {
 
       if (key && answerCache?.setConstant) {
         try {
-          answerCache.setConstant(key, greeting, TTL_MS.greeting);
+          /* The replay inputs are part of every write now, because a row the
+           * brain cannot re-ask is a row the brain silently skips. A greeting
+           * is never re-asked — `usedLiveWeb: false` keeps it out of the
+           * refresh query entirely — but the write is rejected outright without
+           * them, and a rejected greeting write is a durable seed that never
+           * lands. The values are the same ones `keyFor` was given above; they
+           * must not drift, or the row describes a different question than the
+           * one it is keyed on. */
+          answerCache.setConstant(key, greeting, {
+            ttlMs: TTL_MS.greeting,
+            inputs: {
+              question: normaliseGreeting(value),
+              lang: '',
+              country: '',
+              plan: '',
+              detailed: false,
+              branch: 'greeting',
+              usedLiveWeb: false,
+            },
+          });
         } catch (error) {
           warn(error);
         }

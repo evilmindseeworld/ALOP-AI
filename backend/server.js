@@ -2952,11 +2952,31 @@ async function handleCouncilTurn(req, res) {
       console.log('[ANSWERS] BYPASS personalised-context');
     }
 
-    /* How long the answer that is about to be written stays true. Passed to
-     * every `cacheAnswer` call below; the branch decides which shelf life it
-     * gets, because the branch is what knows where the facts came from. */
-    const cacheAnswer = (text, ttlMs) => {
-      if (cacheKey) answerCache.set(cacheKey, text, ttlMs);
+    /* ONE WRITE SITE, and the branch tells it only what it knows: whether the
+     * answer came from the live web, and whether the question named a freshness
+     * window. The shelf life and the replay inputs are derived HERE, from the
+     * same values `keyFor` was given a few lines above.
+     *
+     * That last part is the reason this is a closure rather than four calls.
+     * The row now carries the inputs a background refresh needs to ask the
+     * question again, and if those drifted from the key by even one field, the
+     * refresh would rewrite a DIFFERENT row than the one expiring — the job
+     * would log a success and leave the stale row exactly where it was. The
+     * only way to keep two lists identical is to not have two lists. */
+    const cacheAnswer = (text, { searched = false, fresh = false } = {}) => {
+      if (!cacheKey) return;
+      answerCache.set(cacheKey, text, {
+        ttlMs: ttlFor({ searched, fresh }),
+        inputs: {
+          question: pv.value,
+          lang,
+          country: region?.country || '',
+          plan: userPlan,
+          detailed: isDetailed,
+          branch: `turn:${answerExecutionMode}`,
+          usedLiveWeb: searched,
+        },
+      });
     };
 
     /* THE SHADOW PROBE RUNS HERE, ABOVE THE ROUTER — and that placement is the
@@ -3227,7 +3247,7 @@ async function handleCouncilTurn(req, res) {
        * week" — and an answer written under it carries "as of" dates that start
        * ageing immediately. Six hours for an ordinary search answer, one for a
        * question that said the present matters. */
-      cacheAnswer(searchAnswer, ttlFor({ searched: true, fresh }));
+      cacheAnswer(searchAnswer, { searched: true, fresh });
       const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
       rememberTurn(chatId, user.id, pv.value, lastA || 'Search response.', telemetry);
       await auditBranch({ category: 'search', sources: sources.length });
@@ -3254,7 +3274,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         // An encyclopedia answer is still good next week.
         /* An encyclopedia answer did not come from the live web, so it gets the
          * stable shelf life rather than a freshness window it does not need. */
-        cacheAnswer(wikiAnswer, ttlFor({ searched: false }));
+        cacheAnswer(wikiAnswer, { searched: false });
         rememberTurn(chatId, user.id, pv.value, 'Wikipedia response.', telemetry);
         await auditBranch({ category: 'wiki' });
         return;
@@ -3581,7 +3601,7 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       if (turnSignal.aborted) return;
       const lastSolo = histArr.filter((m) => m.role === 'assistant').slice(-1)[0]?.content || '';
       rememberTurn(chatId, user.id, pv.value, lastSolo || soleDraft.slice(0, 800), telemetry);
-      cacheAnswer(soleDraft, ttlFor({ searched: usedLiveWeb }));
+      cacheAnswer(soleDraft, { searched: usedLiveWeb });
       await auditTelemetry('council', 'council_solo', {
         ...telemetryExtra,
         seats: selection.members.length,
@@ -3640,7 +3660,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
      * answered from what the models know rather than from anything dated. If
      * that answer is going to go stale it was already stale when it was
      * written, and a shorter TTL would not have helped. */
-    cacheAnswer(synthAnswer, ttlFor({ searched: usedLiveWeb }));
+    cacheAnswer(synthAnswer, { searched: usedLiveWeb });
     const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
     rememberTurn(chatId, user.id, pv.value, lastA || validResponses[0]?.content?.slice(0,800) || 'Council response.', telemetry);
     /* msToFirstByte on THIS path too, not only on the tools path.

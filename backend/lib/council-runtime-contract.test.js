@@ -389,10 +389,21 @@ test("every cached answer's shelf life is decided by the router's search flag", 
   // tools on it is reached WITH a search decision in hand and searches from
   // inside the agent loop, so keying the TTL on the branch name would have kept
   // a tool-loop answer about a price for ninety days.
-  const writes = [...ROUTE.matchAll(/cacheAnswer\([^\n]*\)/g)].map((m) => m[0]);
+  const writes = [...ROUTE.matchAll(/cacheAnswer\((?!text)[^\n]*\)/g)].map((m) => m[0]);
   assert.ok(writes.length >= 4, `expected the four cache writes, found ${writes.length}`);
   for (const write of writes) {
-    assert.match(write, /ttlFor\(\{ searched:/, `a cache write set its own shelf life: ${write}`);
+    assert.match(write, /\{ searched:/, `a cache write did not declare its provenance: ${write}`);
+    assert.doesNotMatch(write, /ttlFor\(/,
+      `a call site computed its own shelf life: ${write} — that is what cacheAnswer exists to prevent`);
+  }
+  /* The row carries the inputs a refresh needs to re-ask the question, and they
+   * must be the same values the KEY was built from. Two lists that have to stay
+   * identical eventually do not, so there is one list: the write closure derives
+   * both from the same locals. */
+  const closure = ROUTE.slice(ROUTE.indexOf('const cacheAnswer ='), ROUTE.indexOf('const cacheAnswer =') + 900);
+  assert.match(closure, /ttlFor\(\{ searched, fresh \}\)/, 'the single write site must set the shelf life');
+  for (const field of ['question:', 'lang', 'country:', 'plan:', 'detailed:', 'branch:', 'usedLiveWeb:']) {
+    assert.ok(closure.includes(field), `the cached row cannot be refreshed without ${field}`);
   }
   assert.match(ROUTE, /const usedLiveWeb = Boolean\(searchQueries\?\.length\)/,
     "the council branch must read the router's decision, not its own branch name");

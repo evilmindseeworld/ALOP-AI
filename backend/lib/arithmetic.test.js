@@ -121,10 +121,22 @@ test('the traps — arithmetic-shaped messages that are NOT sums', async (t) => 
      * module getting to assert. */
     '0^0': '0^0',
     '0^-1': '0^-1',
-    /* Irrational: this module deals only in exact values. */
-    'a fractional exponent': '80^0.5',
-    'a square root request': 'square root of 80',
+    /* Outside every function's domain. Each of these has an answer that is a
+     * SENTENCE — a complex number, a limit, "undefined" — and a bare number
+     * would be the wrong shape of reply even if one existed. */
+    'the square root of a negative': 'sqrt -4',
+    'the log of a negative': 'ln -1',
+    'a bare constant': 'what is pi',
+    'a constant with no operation': 'tau',
   };
+
+  /* `'a fractional exponent': '80^0.5'` and `'a square root request': 'square
+   * root of 80'` USED TO BE IN THIS LIST, and their removal is the point of the
+   * 2026-08-13 widening rather than an oversight. The rule they encoded — this
+   * module deals only in exact values, so anything irrational falls through —
+   * was right while the grammar was four operators wide and wrong for a
+   * calculator. What made it safe to reverse is the float lane's contract: an
+   * approximation is never rendered with `=`. See the block below. */
 
   for (const [name, input] of Object.entries(fallsThrough)) {
     await t.test(name, () => assert.equal(tryArithmetic(input), null, `${JSON.stringify(input)} should fall through`));
@@ -343,4 +355,137 @@ test('server.js calls the fast path before the router and before any model', () 
     }),
   );
   assert.ok(fast < firstModelCall, 'the arithmetic fast path must run before any model call');
+});
+
+/**
+ * THE 2026-08-13 WIDENING: exponents, roots, trigonometry, logarithms,
+ * factorials, modulo, constants, and the shapes a person actually types.
+ *
+ * The owner's report was that the fast path answered "80 squared" and then sent
+ * "185 x 3 plus 100 divided by 2" to a council of language models — which got it
+ * right, slowly, for two model requests out of an account allowance of fifty a
+ * day. The refusals were correct under the old grammar and the grammar was too
+ * narrow.
+ *
+ * THE CONTRACT THAT MADE THIS SAFE, and the thing every test below is really
+ * checking: `=` still means exact and `≈` still means rounded. Nothing in the
+ * float lane may render with `=`.
+ */
+test('the widened grammar answers, and says which answers are exact', async (t) => {
+  const exact = {
+    // The two the owner reported.
+    '185 x 3 plus 100 divided by 2': '185 × 3 + 100 ÷ 2 = 605',
+    '182 multiplied by 3 divided by 2 exponent of 5': '182 × 3 ÷ 2^5 = 17.0625',
+
+    // Roots that come out whole stay whole — the reason bigRoot exists.
+    'sqrt 16': 'sqrt(16) = 4',
+    '√144': 'sqrt(144) = 12',
+    '∛27': 'cbrt(27) = 3',
+    'sqrt 16 + 9': 'sqrt(16) + 9 = 13',
+
+    '5!': '5! = 120',
+    'what is 12 factorial': '12! = 479001600',
+    'factorial of 5': '5! = 120',
+    '(2+3)!': '(2 + 3)! = 120',
+
+    '7 mod 3': '7 mod 3 = 1',
+    'abs -5': 'abs(-5) = 5',
+    'floor 7.8': 'floor(7.8) = 7',
+    'ceiling 7.2': 'ceil(7.2) = 8',
+
+    '2^10': '2^10 = 1024',
+    '2¹⁰': '2^10 = 1024',   // a superscript RUN, not two folds
+    // A word form reaching the same node the symbol does, superscript and all.
+    '80 to the power of 3': '80³ = 512000',
+    '80 raised to the power of 3': '80³ = 512000',
+  };
+
+  for (const [input, answer] of Object.entries(exact)) {
+    await t.test(input, () => {
+      const got = tryArithmetic(input);
+      assert.ok(got, `${JSON.stringify(input)} should be answered`);
+      assert.equal(got.answer, answer);
+      assert.equal(got.exact, true, 'an exact answer must not be marked ≈');
+    });
+  }
+
+  const approximate = {
+    'square root of 2': 'sqrt(2) ≈ 1.41421356',
+    '80 to the power of 0.5': '80^0.5 ≈ 8.94427191',
+    'sin 30 degrees': 'sin(30°) ≈ 0.5',
+    'tan 45 degrees': 'tan(45°) ≈ 1',
+    'arctan 1': 'atan(1) ≈ 0.78539816',
+    'log2 1024': 'log2(1024) ≈ 10',
+    '2 pi': '2 × π ≈ 6.28318531',
+    'pi squared': 'π² ≈ 9.8696044',
+  };
+
+  for (const [input, answer] of Object.entries(approximate)) {
+    await t.test(input, () => {
+      const got = tryArithmetic(input);
+      assert.ok(got, `${JSON.stringify(input)} should be answered`);
+      assert.equal(got.answer, answer);
+      assert.equal(got.exact, false, 'a float-lane answer must be marked ≈');
+    });
+  }
+});
+
+/**
+ * THE ANGLE MODE IS THE ONE THING A CALCULATOR CAN BE SILENTLY WRONG ABOUT.
+ *
+ * `sin 30` is 30 RADIANS, here as in every programming language, and it is
+ * -0.988 rather than the 0.5 a person expects. That cannot be fixed by guessing
+ * degrees — a guess is wrong for the other half of users and invisible either
+ * way — so it is fixed by SAYING which mode was used, in the echo the user
+ * already reads to check the machine understood them.
+ */
+test('every trig answer names the unit it used', async (t) => {
+  const cases = [
+    ['sin 30', 'sin(30 rad) ≈ -0.98803162'],
+    ['sin 30 degrees', 'sin(30°) ≈ 0.5'],
+    ['sin 30 radians', 'sin(30 rad) ≈ -0.98803162'],
+    ['cos(0)', 'cos(0 rad) ≈ 1'],           // one set of brackets, not two
+    ['cos(30 degrees)', 'cos(30°) ≈ 0.8660254'],
+    // The minus is OUTSIDE the degree marker in the parse tree; a unit test on
+    // the outermost node alone rendered this "sin(-30° rad)".
+    ['sin -30 degrees', 'sin(-30°) ≈ -0.5'],
+  ];
+
+  for (const [input, answer] of cases) {
+    await t.test(input, () => assert.equal(tryArithmetic(input)?.answer, answer));
+  }
+});
+
+/**
+ * `x` IS MULTIPLICATION ONLY WHERE IT CANNOT BE A VARIABLE. Accepting it
+ * generally would take every algebra question off the council, which is the one
+ * kind of question the council is better at than a calculator.
+ */
+test('x multiplies a value and is otherwise a variable', async (t) => {
+  await t.test('after a number', () =>
+    assert.equal(tryArithmetic('185 x 3')?.answer, '185 × 3 = 555'));
+  await t.test('after a function call', () =>
+    assert.equal(tryArithmetic('sqrt 16 x 3')?.answer, 'sqrt(16) × 3 = 12'));
+
+  for (const input of ['x + 1', '2x + 1', 'solve for x', 'x times 3']) {
+    await t.test(input, () => assert.equal(tryArithmetic(input), null));
+  }
+});
+
+/**
+ * The guards the widening had to leave standing. Each of these is bounded work
+ * on a hostile string from an authenticated stranger, and each was found by
+ * asking what the new grammar makes cheap to ask for.
+ */
+test('the widened grammar is still bounded', async (t) => {
+  // 1000! is 2568 digits: computed, then refused by MAX_RESULT_DIGITS.
+  await t.test('a large factorial', () => assert.equal(tryArithmetic('1000!'), null));
+  // Above the argument ceiling, so it is refused BEFORE the multiplies happen.
+  await t.test('an absurd factorial', () => assert.equal(tryArithmetic('99999999!'), null));
+  await t.test('a float too large to print', () =>
+    assert.equal(tryArithmetic('exp 500'), null));
+  await t.test('division by zero in the float lane', () =>
+    assert.equal(tryArithmetic('pi / 0'), null));
+  await t.test('a value that rounds to zero', () =>
+    assert.equal(tryArithmetic('tan(pi)'), null));
 });

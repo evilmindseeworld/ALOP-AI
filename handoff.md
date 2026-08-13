@@ -1,4 +1,58 @@
-# Handoff — 2026-08-13
+# Handoff — 2026-08-13 (second pass)
+
+State of play: the owner's six-item list from the 2026-08-13 session. Five
+shipped; the sixth is a design document. Backend 931 tests green, frontend 675
+green, both re-run after the last edit.
+
+**`migrations/015_answer_cache.sql` HAS NOT BEEN APPLIED.** Until it is, the
+answer cache runs in-process only, which means every Render deploy empties it —
+and Render deploys on every push, so in practice it is empty most of the time.
+The feature is correct either way and logs one line naming the file. Applying it
+is the single action that makes this session's biggest win actually land.
+
+## What shipped
+
+1. **The arithmetic grammar widened.** Exponents in every spelling, sqrt/cbrt,
+   sin/cos/tan and their inverses and hyperbolics, ln/log/log2/log10/exp,
+   abs/floor/ceil/round/sign, factorial, mod, π/τ/e, degrees and radians,
+   superscript runs (`2¹⁰`, folded as a RUN — folding per character gives
+   `2^1^0` = 1), and `x` as multiplication where it cannot be a variable. The
+   owner's two reported failures were `185 x 3 plus 100 divided by 2` (the `x`)
+   and `200 multipled by 6` (a typo, still refused, correctly). "divided by"
+   was never broken — measured before changing anything. See AGENTS.md for the
+   float lane's contract.
+
+2. **The answer cache.** `lib/answer-cache.js`, `migrations/015`. Shared across
+   users, keyed by question + language + country + plan + detail flag, refused
+   entirely for any turn that read something about the person asking. Read
+   before the router's two model calls, so a hit costs zero OpenRouter requests.
+   AGENTS.md has the safety contract; do not touch it without reading that.
+
+3. **The Wikipedia dead end.** `lib/wiki-relevance.js`. See AGENTS.md.
+
+4. **Sun in light mode, moon in dark.** `Sun.jsx` beside `Crescent.jsx`, both in
+   the DOM, the stylesheet chooses. The `.light .earring-wrap { opacity: 0.5 }`
+   rule is gone — the light ornament was being muted because it was the wrong
+   ornament, not because it was too loud.
+
+5. **Privacy policy and terms updated** for the answer cache: what it stores,
+   what it refuses to store, the three shelf lives, a legal-basis row, a
+   retention row, and a plain sentence in the terms saying output for a
+   non-personal question is deliberately not unique.
+
+## What did NOT ship, and why
+
+**Plugins.** `docs/PLUGINS-PLAN.md` is the design. It is four layers — a
+credential vault, a manifest-driven registry, a SELECTOR, and the panel — and
+the third is the one that decides whether the feature makes the product better
+or slower. Every tool's description goes into every seat's prompt on every turn;
+"dozens of plugins" is that cost with a UI on it. Do not build the registry
+first and the selector later, and do not start with Gmail because it demos well:
+it has the only irreversible action in the set.
+
+---
+
+## Previous handoff — 2026-08-13 (first pass)
 
 State of play at commit `6ce9c1b` on `main`, pushed — local and `origin/main`
 are level, nothing is being sat on. Read `AGENTS.md` first; this file is what

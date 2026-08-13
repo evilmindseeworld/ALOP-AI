@@ -47,7 +47,7 @@
 </head>
 <body>
   <h1>Privacy Policy</h1>
-  <p class="date">Last updated: 12 August 2026</p>
+  <p class="date">Last updated: 13 August 2026</p>
   <p class="intro">
     This policy explains what ALOP-AI collects, who it is shared with, and what you can do about it.
     It is written to be read, not to be skimmed past. If anything here is unclear, ask us.
@@ -110,12 +110,37 @@
     it does contain text derived from messages. It is never readable by other users directly.
   </div>
 
+  <div class="note">
+    <strong>Answer caching.</strong> When a question can be answered without anything specific to
+    you, we store the answer and reuse it for anyone who asks the same question. This makes the
+    second asking instant, and it is how the service stays inside the daily model allowance it
+    shares between all of its users.
+    <p>
+      A cached answer is stored against a fingerprint of the question, your language, your country,
+      your plan and whether you asked for detail. <strong>It carries no user identifier and cannot
+      be traced back to you.</strong>
+    </p>
+    <p>
+      <strong>We do not cache an answer that was shaped by anything about you.</strong> If the reply
+      drew on your conversation history, your chat summary, anything the service remembers about
+      you, your learned preferences, an image you attached or a file you uploaded, then no
+      fingerprint is calculated and nothing is stored or reused. That is enforced in the code
+      rather than by policy: those turns never produce a cache key at all.
+    </p>
+    <p>
+      Cached answers expire on their own — an hour for anything you asked about the present, six
+      hours for anything drawn from a web search, and seven days otherwise. They are never readable
+      by other users directly.
+    </p>
+  </div>
+
   <h2>4. Why we use it, and our legal basis</h2>
   <table>
     <tr><th>Purpose</th><th>Legal basis (UK/EU GDPR)</th></tr>
     <tr><td>Providing chat, search, image generation and screen analysis</td><td>Performance of our contract with you</td></tr>
     <tr><td>Managing your account and enforcing plan limits</td><td>Performance of our contract with you</td></tr>
     <tr><td>Taking payment and managing subscriptions</td><td>Performance of our contract with you</td></tr>
+    <tr><td>Caching search results and non-personal answers so the service stays fast and within its shared daily model allowance</td><td>Our legitimate interest in a service that works for everyone using it</td></tr>
     <tr><td>Preventing abuse, rate limiting, and security investigation</td><td>Our legitimate interest in keeping the service available and safe</td></tr>
     <tr><td>Diagnosing errors and improving reliability</td><td>Our legitimate interest in a working product</td></tr>
     <tr><td>Meeting tax, accounting and legal obligations</td><td>Compliance with a legal obligation</td></tr>
@@ -178,6 +203,7 @@
     <tr><td>Usage counts</td><td>For the current billing period, plus a rolling history for limit enforcement</td></tr>
     <tr><td>Audit log, including IP addresses</td><td>90 days</td></tr>
     <tr><td>Cached search queries and results</td><td>15 minutes</td></tr>
+    <tr><td>Cached answers to non-personal questions</td><td>1 hour, 6 hours or 7 days, depending on how quickly the answer goes out of date. No user identifier is stored with them</td></tr>
     <tr><td>Uploaded files</td><td>With the chat they belong to; deleted with it</td></tr>
     <tr><td>Screen captures</td><td>Not stored on our servers after the response is produced</td></tr>
     <tr><td>Billing records</td><td>As required by tax and accounting law, typically 5 years</td></tr>

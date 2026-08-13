@@ -1,5 +1,6 @@
 import { memo } from "react";
 import Crescent from "./Crescent";
+import Sun from "./Sun";
 
 /**
  * Purely decorative hanging ornament.
@@ -23,8 +24,16 @@ const Earring = memo(({ side, active = false }) => (
     data-testid={`earring-${side}`}
   >
     <div className="earring-chain" />
+    {/* BOTH ORNAMENTS RENDER; the stylesheet shows one. The theme is a class on
+        `.app-root` and an SVG's geometry is not something a media query or a
+        custom property can swap, so the alternative is a React theme hook —
+        a second source of truth for something CSS already knows, and one that
+        would flash the wrong ornament for a frame on first paint. Two inline
+        SVGs of about a kilobyte each is the cheaper trade. See
+        styles/decoration.css for the pair of display rules. */}
     <div className="earring-pivot">
       <Crescent side={side} />
+      <Sun side={side} />
     </div>
   </div>
 ));

@@ -42,6 +42,27 @@ describe("Earring", () => {
     expect(wrap.querySelector("model-viewer")).not.toBeInTheDocument();
   });
 
+  // The theme switch is CSS, so BOTH ornaments have to be in the DOM for it to
+  // have anything to switch between. If a future refactor picks one in React,
+  // this is the test that should stop it — the class on `.app-root` would then
+  // no longer be the source of truth, and the wrong ornament paints for a frame
+  // before the hook resolves.
+  it("hangs both ornaments so the stylesheet can choose", () => {
+    render(<Earring side="left" />);
+    const wrap = screen.getByTestId("earring-left");
+
+    expect(wrap.querySelector("svg.crescent")).toBeInTheDocument();
+    expect(wrap.querySelector("svg.sun")).toBeInTheDocument();
+  });
+
+  it("draws the sun to the crescent's box, so the pair hangs at one height", () => {
+    render(<Earring side="left" />);
+    const wrap = screen.getByTestId("earring-left");
+    const box = (sel) => wrap.querySelector(sel).getAttribute("viewBox");
+
+    expect(box("svg.sun")).toBe(box("svg.crescent"));
+  });
+
   it("loads no external asset", () => {
     render(<Earring side="left" />);
     const wrap = screen.getByTestId("earring-left");
@@ -62,19 +83,22 @@ describe("Earring", () => {
       </>
     );
 
-    const ids = [...document.querySelectorAll("svg.crescent [id]")].map((n) => n.id);
+    // Across BOTH ornaments and both sides — four SVGs share one document, so
+    // the sun's gradient ids have to be distinct from the crescent's too.
+    const ids = [...document.querySelectorAll("svg.crescent [id], svg.sun [id]")].map((n) => n.id);
     expect(ids.length).toBeGreaterThan(0);
     expect(new Set(ids).size, `duplicate ids: ${ids.join(", ")}`).toBe(ids.length);
   });
 
   it("resolves its own mask and gradient references", () => {
     render(<Earring side="left" />);
-    const svg = document.querySelector("svg.crescent");
 
-    for (const attr of ["mask", "fill"]) {
-      for (const node of svg.querySelectorAll(`[${attr}^="url("]`)) {
-        const id = node.getAttribute(attr).match(/url\(#(.+?)\)/)?.[1];
-        expect(svg.querySelector(`#${id}`), `${attr} points at missing #${id}`).toBeTruthy();
+    for (const svg of document.querySelectorAll("svg.crescent, svg.sun")) {
+      for (const attr of ["mask", "fill", "stroke"]) {
+        for (const node of svg.querySelectorAll(`[${attr}^="url("]`)) {
+          const id = node.getAttribute(attr).match(/url\(#(.+?)\)/)?.[1];
+          expect(svg.querySelector(`#${id}`), `${attr} points at missing #${id}`).toBeTruthy();
+        }
       }
     }
   });

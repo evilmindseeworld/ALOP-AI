@@ -218,6 +218,53 @@ What DID survive from those attempts is worth keeping and lives elsewhere in
 this file: the reduced-motion exception list, the skeleton work, the chat cache,
 and the council runner extraction.
 
+**THE ANSWER CACHE IS SHARED ACROSS USERS, AND ONE LINE IN `server.js` IS THE
+WHOLE REASON THAT IS SAFE.** `lib/answer-cache.js` stores finished answers and
+replays them to anybody who asks the same question — that is the feature, and it
+is what keeps repeated questions off the 50-requests-per-day account allowance.
+It is safe only because `const personalised = …` in the council route refuses to
+build a cache key when the turn read conversation history, the chat summary,
+stored user facts, learned feedback guidance, or an attached image or file. No
+key means no read and no write. If a new source of one person's data is ever
+injected into a prompt on that route, **it must be added to that gate**, and the
+list in `answer-cache.test.js` is what will notice if it is not. The failure
+mode if it is missed has no error, no log line and no visible symptom: one
+user's answer, built from their own memory, served verbatim to a stranger. It
+would look exactly like the cache working.
+
+Two consequences worth knowing. `streamModel` now RETURNS the assembled answer,
+and it throws on an incomplete stream *before* returning — so a truncated answer
+cannot be cached and served for six hours; that ordering is asserted. And the
+write for the synthesis branch sits below the abort check on purpose, because a
+cancelled turn holds a half-written answer.
+
+**A Wikipedia lookup that cannot recognise its own miss will answer the wrong
+question.** Asked to "write an biography about mohamed fateh the sultan of
+ottoman empire" the product replied "I couldn't find this on Wikipedia." and
+stopped — the council, which knows who Mehmed the Conqueror is, was never asked.
+Two causes: the RAW MESSAGE was the search query, so "write an biography about"
+was searched as though it were a subject (measured: Wikipedia returned Rumi,
+Khatri and a list of assassination survivors); and a miss was TERMINAL. The
+second is the load-bearing one — Wikipedia returns something for almost any
+input, so "did it find anything" was never the question. `lib/wiki-relevance.js`
+now strips the instruction and requires the article title to share a content
+word with the question, and returning `''` falls through to the council. Note
+the CJK clause: those scripts have no word boundaries to split on, so without a
+substring test the gate would reject every article for every Japanese or Chinese
+question and switch the whole path off for them.
+
+**The arithmetic module has a SECOND LANE as of 2026-08-13, and the `=` / `≈`
+distinction is what makes it safe.** Rationals stay exact; sin, cos, tan, ln,
+exp and roots that do not come out whole are doubles and ALWAYS render with `≈`.
+A rational is promoted to a float when it meets one and never the reverse, so
+one transcendental anywhere marks the whole answer approximate. The rule this
+replaced — "anything irrational falls through" — was right while the grammar was
+four operators wide and wrong for a calculator; two entries were removed from
+`arithmetic.test.js`'s falls-through list and the removal is documented in place.
+Roots are tried EXACTLY first (`bigRoot`, Newton on BigInts, then verified by
+raising back) so `√16 = 4` rather than `≈ 4` — without that, `≈` would appear on
+exact answers often enough to stop meaning anything.
+
 **The council runner lives in `lib/council-run.js`.** It moved out of
 `server.js` so it could be tested at all, and it is the most intricate
 concurrency in the product: seats race in parallel and it resolves on the first
@@ -225,6 +272,19 @@ of quorum, all-settled, or the whip timer. It also takes an optional `onSeat`
 reporter, best-effort by construction and wrapped so a dead client socket cannot
 lose an answer a model call was already paid for. Nothing renders those events
 yet, and the reporter is the seam if a live council view is ever wanted.
+
+**A COMMA IN A CSS COMMENT DIRECTLY ABOVE AN `@media` BREAKS
+`cssHygiene.test.js`, and the failure names an innocent rule.** Its parser only
+skips a comment when the scanner is standing exactly on `/*`; a comment sitting
+between two rules is instead swept into the next rule's *prelude*, and the
+prelude is then split on commas. So a comment containing a comma becomes several
+"selectors", and when the rule it precedes is `@media`, the `@media` is no longer
+the start of the prelude — the at-rule is never recognised, `depth` never
+increments, and **every rule inside that media block is counted as top-level**.
+The reported failure was `.earring-left x2, .earring-right x2` on a commit that
+touched neither. Cost 20 minutes. If the duplicate budget rises after an edit
+that added no duplicate selector, look at the COMMENTS you added, not the rules —
+and dump the top-level list before and after rather than reasoning about it.
 
 **`cssHygiene.test.js` counted keyframe steps as selectors.** `from`, `to` and
 percentage steps leaked out of `@keyframes` blocks and were counted as top-level

@@ -150,11 +150,11 @@ export const appTree = (theme) => `
              is where the sidebar and header are. -->
         <div class="earring-wrap earring-left" aria-hidden="true">
           <div class="earring-chain"></div>
-          <div class="earring-pivot"><svg class="crescent" width="96" height="132" viewBox="0 0 96 132"><defs><linearGradient><stop/></linearGradient></defs><path d="M0 0"/></svg></div>
+          <div class="earring-pivot"><svg class="crescent earring-face" width="96" height="132" viewBox="0 0 96 132"><defs><linearGradient><stop/></linearGradient></defs><path d="M0 0"/></svg><svg class="sun earring-face" width="96" height="132" viewBox="0 0 96 132"><defs><linearGradient><stop/></linearGradient></defs><circle/></svg></div>
         </div>
         <div class="earring-wrap earring-right is-active" aria-hidden="true">
           <div class="earring-chain"></div>
-          <div class="earring-pivot"><svg class="crescent" width="96" height="132" viewBox="0 0 96 132"><path d="M0 0"/></svg></div>
+          <div class="earring-pivot"><svg class="crescent earring-face" width="96" height="132" viewBox="0 0 96 132"><path d="M0 0"/></svg><svg class="sun earring-face" width="96" height="132" viewBox="0 0 96 132"><circle/></svg></div>
         </div>
 
         <div class="panel-overlay"></div>
@@ -458,8 +458,8 @@ export const outsideAppRoot = `
 <div class="signin-root">
   <div class="signin-noise"></div>
   <div class="signin-lattice" aria-hidden="true"></div>
-  <div class="earring-wrap earring-left" aria-hidden="true"><div class="earring-chain"></div><div class="earring-pivot"><svg class="crescent" width="96" height="132" viewBox="0 0 96 132"><path d="M0 0"/></svg></div></div>
-  <div class="earring-wrap earring-right" aria-hidden="true"><div class="earring-chain"></div><div class="earring-pivot"><svg class="crescent" width="96" height="132" viewBox="0 0 96 132"><path d="M0 0"/></svg></div></div>
+  <div class="earring-wrap earring-left" aria-hidden="true"><div class="earring-chain"></div><div class="earring-pivot"><svg class="crescent earring-face" width="96" height="132" viewBox="0 0 96 132"><path d="M0 0"/></svg><svg class="sun earring-face" width="96" height="132" viewBox="0 0 96 132"><circle/></svg></div></div>
+  <div class="earring-wrap earring-right" aria-hidden="true"><div class="earring-chain"></div><div class="earring-pivot"><svg class="crescent earring-face" width="96" height="132" viewBox="0 0 96 132"><path d="M0 0"/></svg><svg class="sun earring-face" width="96" height="132" viewBox="0 0 96 132"><circle/></svg></div></div>
 
   <div class="signin-wrap">
     <div class="signin-down" role="alert">

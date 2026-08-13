@@ -39,7 +39,7 @@ const Crescent = memo(({ side }) => {
 
   return (
     <svg
-      className="crescent"
+      className="crescent earring-face"
       viewBox="0 0 96 132"
       width="96"
       height="132"

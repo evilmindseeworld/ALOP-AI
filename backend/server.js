@@ -280,6 +280,13 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
   const decoder = new TextDecoder();
   let buffer = '';
   let completed = false;
+  /* THE ANSWER, ASSEMBLED AS IT IS SENT. The frames go out the moment they
+   * arrive — nothing here buffers the response — but the answer cache needs the
+   * finished text and this is the only place it exists in one piece. Collected
+   * into an array rather than concatenated onto a string because a streamed
+   * answer is hundreds of small appends, and repeated `+=` on a growing string
+   * is the shape that turns a long answer into a quadratic. */
+  const emitted = [];
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -303,6 +310,7 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
          * at openStream would have made this feature look like a 15-second
          * improvement while the user waited exactly as long. */
         if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
+        emitted.push(frame.text);
         res.write(`data: ${JSON.stringify({ type: 'chunk', text: frame.text })}\n\n`);
       }
       /* Completion arrives TWICE in this protocol — a delta carrying
@@ -312,7 +320,14 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
       if (frame.done && !completed) { completed = true; res.write('data: [DONE]\n\n'); }
     }
   }
+  /* THROWN BEFORE THE TEXT IS RETURNED, deliberately. A stream that ended
+   * without the provider's completion signal is a TRUNCATED answer, and the
+   * caller must not be handed one that looks finished — the answer cache would
+   * store the half of it that arrived and serve that to everybody for the next
+   * six hours. Returning after the throw is unreachable and that is the point:
+   * there is no path by which an incomplete answer becomes a cached one. */
   if (!completed) throw new Error('Stream ended before provider completion');
+  return emitted.join('');
 };
 
 const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'image/png', maxTokens = 2048, parentSignal) => {
@@ -406,6 +421,8 @@ const {
   needsWikiCheck,
   classifyRequest,
 } = require('./lib/router');
+// What makes a Wikipedia lookup answerable rather than merely non-empty.
+const { wikiSubject, isRelevantTitle } = require('./lib/wiki-relevance');
 
 /* The one decision in this route that no model is asked about. It sits above
  * the router rather than beside it because a sum answered here costs zero
@@ -688,9 +705,38 @@ const firecrawlFetch = async (url, parentSignal) => {
     return md ? extractPageSignal(md) : '';
   } catch { return ''; } finally { timed.dispose(); }
 };
+/**
+ * Wikipedia, searched by SUBJECT and answered only when the article is about
+ * the subject. Both halves are new as of 2026-08-13 and both fixed a real dead
+ * end — see lib/wiki-relevance.js, which holds the reasoning and the measured
+ * before-and-after, and is where these two decisions are tested. This function
+ * cannot be, because server.js exits at import time.
+ *
+ * Returning '' is a full refusal and the CALLER FALLS THROUGH TO THE COUNCIL.
+ * That is the behaviour this is for: an encyclopedia that does not have the
+ * article must hand the question on, not answer it with an apology.
+ */
 const searchWikipedia = async (query, parentSignal) => {
   const timed = timeoutSignal(parentSignal, 6000);
-  try { const sr = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(query.slice(0,100))}&format=json&origin=*`, { signal: timed.signal }); if (!sr.ok) return ''; const sd = await sr.json(); const titles = (sd.query?.search||[]).slice(0,2).map(s => s.title); if (titles.length === 0) return ''; const er = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=true&explaintext=true&titles=${encodeURIComponent(titles.join('|'))}&format=json&origin=*`, { signal: timed.signal }); if (!er.ok) return ''; const ed = await er.json(); return Object.values(ed.query?.pages||{}).map(p => p.extract||'').filter(e => e.length > 100).join('\n\n').slice(0, 5000); } catch { return ''; } finally { timed.dispose(); }
+  try {
+    const subject = wikiSubject(query).slice(0, 100);
+    if (!subject) return '';
+    const sr = await fetch(`https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(subject)}&format=json&origin=*`, { signal: timed.signal });
+    if (!sr.ok) return '';
+    const sd = await sr.json();
+    /* Filtered BEFORE the extract fetch, not after: an irrelevant title is
+     * known to be irrelevant from the search response alone, and fetching its
+     * intro would be a second round trip spent on text about to be discarded. */
+    const titles = (sd.query?.search || []).map((s) => s.title).filter((t) => isRelevantTitle(query, t)).slice(0, 2);
+    if (titles.length === 0) {
+      console.log(`[WIKI] No relevant article for "${subject}" — falling through.`);
+      return '';
+    }
+    const er = await fetch(`https://en.wikipedia.org/w/api.php?action=query&prop=extracts&exintro=true&explaintext=true&titles=${encodeURIComponent(titles.join('|'))}&format=json&origin=*`, { signal: timed.signal });
+    if (!er.ok) return '';
+    const ed = await er.json();
+    return Object.values(ed.query?.pages || {}).map((p) => p.extract || '').filter((e) => e.length > 100).join('\n\n').slice(0, 5000);
+  } catch { return ''; } finally { timed.dispose(); }
 };
 
 /**
@@ -763,6 +809,7 @@ const { todayLine, freshnessWindow, normalizeDate, dateLabel, BRAVE_FRESHNESS, G
 const { parseSearchPlan } = require('./lib/search-plan');
 const { readSonar } = require('./lib/perplexity');
 const { createSearchCache, comprehensiveSearchKey } = require('./lib/search-cache');
+const { createAnswerCache, TTL_MS: ANSWER_TTL_MS } = require('./lib/answer-cache');
 const { createTtlCache } = require('./lib/ttl-cache');
 const { boundedPage, pageInfo } = require('./lib/pagination');
 const { noStoreApi } = require('./lib/http-cache');
@@ -1647,6 +1694,18 @@ const searchCache = createSearchCache({
 });
 const getCachedSearch = (q, signal) => searchCache.get(q, { signal });
 const setCachedSearch = (q, d) => searchCache.set(q, d);
+
+/* THE ANSWER CACHE, which is a different thing from the search cache above and
+ * does not replace it. That one saves a provider fan-out and still spends every
+ * model request the turn needs; this one saves the whole turn. Model requests
+ * are what this account actually runs out of — fifty per UTC day, shared across
+ * every user — so a repeated question is a rationing problem before it is a
+ * latency one.
+ *
+ * SHARED ACROSS USERS BY DESIGN, and safe only because server.js builds no key
+ * for a personalised turn. lib/answer-cache.js holds that contract and the
+ * argument for it; the key is built in exactly one place below. */
+const answerCache = createAnswerCache({ supabase });
 // Rejected requests must carry a 401, not a 500, or the client cannot tell an expired
 // session from a server fault. clerk-sdk-node@5 made that our problem by ignoring its
 // own `onError` option and calling next() with a bare, status-less Error. @clerk/express
@@ -2395,6 +2454,93 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
 
     console.log(`[COUNCIL] ${user.email} | ${userPlan} | ${selection.category} | Mem: ${convSummary ? 'Y' : 'N'} | Facts: ${userFacts.length} | Lang: ${lang} | Region: ${region ? `${region.country} via ${region.source}` : 'unknown'}`);
 
+    /* ═══ THE ANSWER CACHE ═══════════════════════════════════════════════════
+     *
+     * HERE, and not higher up, because this is the first line at which the
+     * question "is this turn personalised?" can be answered. Everything the
+     * gate below reads — the summary, the facts, the preferences, the vision
+     * output — is resolved immediately above; the earlier positions in this
+     * route can see the request body but not the four Supabase reads that
+     * decide whether this answer would be about THIS person.
+     *
+     * And it is still early enough to be worth it. The next thing that happens
+     * is the router's two model calls, and every branch below spends at least
+     * one more. A hit here costs zero OpenRouter requests out of the fifty this
+     * whole account gets in a day.
+     *
+     * ─── THE GATE IS THE SECURITY PROPERTY, not an optimisation ────────────
+     *
+     * `personalised` false means the prompt about to be built contains nothing
+     * but the question, the language, the region and the plan — all of which
+     * are in the key. Anything else and NO KEY IS BUILT AT ALL, so the turn can
+     * neither read a shared answer nor write one. The failure mode this
+     * prevents has no error and no log line: one user's answer, assembled from
+     * their own chat summary and stored facts, served verbatim to a stranger
+     * who asked a similar question. It would look exactly like the feature
+     * working.
+     *
+     * `histArr.length` is in the list because a follow-up ("and the second
+     * one?") is not a question at all on its own, and the cached answer to the
+     * same words in another conversation would be a non-sequitur.
+     *
+     * Region is keyed as the COUNTRY only. It is the part of the region that
+     * changes an answer — prices, availability, what "here" means — and keying
+     * on the whole object would put the detection SOURCE in the key, so the
+     * same user on the same question would miss depending on whether the CDN
+     * header or the timezone answered first. */
+    const personalised = Boolean(
+      histArr.length || convSummary || userFacts.length || feedbackGuidance || imageContext || parsedImage,
+    );
+    const cacheKey = personalised
+      ? null
+      : answerCache.keyFor({
+        question: pv.value,
+        lang,
+        country: region?.country || '',
+        plan: userPlan,
+        detailed: isDetailed,
+        branch: 'turn',
+      });
+
+    if (cacheKey) {
+      const hit = await answerCache.get(cacheKey);
+      if (hit && !turnSignal.aborted) {
+        console.log(`[COUNCIL] Answer cache hit (${Math.round((Date.now() - hit.storedAt) / 60000)} min old). 0 model requests.`);
+        openStream(res);
+        /* Replayed as an ordinary chunk frame and the ordinary terminator, so
+         * the frontend cannot tell this from a model's answer — same
+         * accumulator, same markdown rendering, same save path. The arithmetic
+         * fast path replies the same way and for the same reason: a bespoke
+         * event type would need a frontend change to render at all, and an
+         * unknown type is silently dropped there, which is a blank answer. */
+        if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
+        sendEvent(res, { type: 'chunk', text: hit.answer });
+        if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
+        /* NOT `rememberTurn`, on the same argument the arithmetic branch makes:
+         * it spends a summary call and a fact-extraction call, which is two
+         * model requests to record a turn that just cost zero. The stated cost
+         * of that choice is that a cached turn leaves no conversation summary
+         * behind — and a turn with no history is the one where that matters
+         * least. */
+        await auditBranch({
+          category: 'answer_cache',
+          complexity: selection.complexity,
+          models: 0,
+          seats: 0,
+          ageMs: Date.now() - hit.storedAt,
+          msToFirstByte: Date.now() - t0,
+        });
+        return;
+      }
+    }
+
+    /* How long the answer that is about to be written stays true. Passed to
+     * every `cacheAnswer` call below; the branch decides which shelf life it
+     * gets, because the branch is what knows where the facts came from. */
+    const cacheAnswer = (text, ttlMs) => {
+      if (cacheKey) answerCache.set(cacheKey, text, ttlMs);
+    };
+
     /* THE SHADOW PROBE RUNS HERE, ABOVE THE ROUTER — and that placement is the
      * whole point of it.
      *
@@ -2582,8 +2728,14 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       const extSys = `${todayLine()}\n\nYou are a precision data extraction engine. Use ONLY the provided data.\n\nRULES:\n1. Only state facts from the data.\n2. No training data.\n3. No inferring/guessing.\n4. No comparing unless both products are in data.\n5. If not in data, say "I couldn't find this in the search results."\n6. Include URLs as Markdown: [Title](URL)\n7. No inventing specs/prices.\n8. Note contradictions between sources.\n9. Format in Markdown. Match answer length to question. Be concise for simple questions.\n10. List sources at bottom under "## Sources".\n11. Embed images if provided: ![Description](url)\n12. CONVERSATION CONTEXT and history are EXEMPT from rules 1-5.\n13. Each source carries a Published date. When sources disagree, prefer the most recent one and say that the older one is out of date — do not average them or pick the more detailed one.\n14. If every source on a time-dependent point is more than a year old, say so rather than presenting it as current.\n15. Attach the date to any fact that changes over time: "as of [date]". A price, version or ranking stated bare reads as current even when it is not.${lang !== 'English' ? `\n16. Respond in ${lang}.` : ''}`;
       const extMsgs = [{ role: 'system', content: extSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n\n=== SEARCH DATA ===\n${context}` }];
       openStream(res);
-      await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0, turnSignal);
+      const searchAnswer = await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0, turnSignal);
       if (!res.writableEnded) res.end();
+      /* A SHORTER SHELF LIFE WHEN THE QUESTION ASKED FOR NOW. `fresh` is the
+       * freshness window the user's own words implied — "right now", "this
+       * week" — and an answer written under it carries "as of" dates that start
+       * ageing immediately. Six hours for an ordinary search answer, one for a
+       * question that said the present matters. */
+      cacheAnswer(searchAnswer, fresh ? ANSWER_TTL_MS.recent : ANSWER_TTL_MS.search);
       const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
       rememberTurn(chatId, user.id, pv.value, lastA || 'Search response.', telemetry);
       await auditBranch({ category: 'search', sources: sources.length });
@@ -2596,14 +2748,16 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
       if (wiki) {
         const wikiSys = `${todayLine()}
 
-You are a data extraction engine. Use ONLY the Wikipedia content. No training data. If not found, say "I couldn't find this on Wikipedia." Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+You are a data extraction engine. Use ONLY the Wikipedia content. No training data. If the article does not cover what was asked, say what the article DOES cover and invite the user to ask again — never end on "I couldn't find this". Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
         // Its own fetch, not searchWeb's, so it needs its own label. Wikipedia is
         // world-editable: this is the one source where an attacker does not even
         // need a site of their own.
         const wikiMsgs = [{ role: 'system', content: wikiSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n=== WIKIPEDIA ===\n${UNTRUSTED_PREAMBLE}\n\n${wiki}` }];
         openStream(res);
-        await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0, turnSignal);
+        const wikiAnswer = await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0, turnSignal);
         if (!res.writableEnded) res.end();
+        // An encyclopedia answer is still good next week.
+        cacheAnswer(wikiAnswer, ANSWER_TTL_MS.wiki);
         rememberTurn(chatId, user.id, pv.value, 'Wikipedia response.', telemetry);
         await auditBranch({ category: 'wiki' });
         return;
@@ -2846,10 +3000,22 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     sendStage(res, 'synthesis', validResponses.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
     openStream(res);
     const synthesisStartedAt = Date.now();
-    await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate);
+    const synthAnswer = await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate);
     telemetry.recordSynthesis(Date.now() - synthesisStartedAt);
     if (turnSignal.aborted) return;
     if (!res.writableEnded) res.end();
+    /* CACHED AFTER THE ABORT CHECK, not before. A turn the user cancelled
+     * mid-answer has a partial synthesis in `synthAnswer`, and storing that
+     * would serve everyone who asks the question next a reply that stops in the
+     * middle of a sentence. The check above already returns; this line is
+     * simply below it, and that ordering is the guard.
+     *
+     * The COUNCIL shelf life, a week: this branch is the one the router chose
+     * when it decided the question needed no search, which means it is being
+     * answered from what the models know rather than from anything dated. If
+     * that answer is going to go stale it was already stale when it was
+     * written, and a shorter TTL would not have helped. */
+    cacheAnswer(synthAnswer, ANSWER_TTL_MS.council);
     const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
     rememberTurn(chatId, user.id, pv.value, lastA || validResponses[0]?.content?.slice(0,800) || 'Council response.', telemetry);
     /* msToFirstByte on THIS path too, not only on the tools path.

@@ -400,17 +400,32 @@
 }
 
 /* The intrinsic drawing is 96x132; every rendered size is set here so the
- * viewBox does the scaling and the edges stay crisp. */
-.earring-pivot .crescent {
+ * viewBox does the scaling and the edges stay crisp.
+ *
+ * `.earring-face` is on BOTH ornaments so that this is one rule rather than a
+ * grouped selector repeated at every breakpoint. Sizing the two by name put
+ * `.earring-pivot .sun` in two top-level blocks and pushed cssHygiene.test.js
+ * one over its duplicate budget — which was counting something real. */
+.earring-pivot .earring-face {
   width: 68px;
   height: 94px;
   display: block;
 }
 
-.light .earring-wrap { opacity: 0.5; }
+/* MOON AT NIGHT AND SUN BY DAY. Both SVGs are in the DOM (see Earring.jsx for
+ * why) and this is the whole of the switch. The sun is hidden by default and
+ * each theme names the one it hides, so neither ornament has to depend on
+ * source order to win.
+ *
+ * The light theme's ornament used to be the crescent at half opacity. It was
+ * muted because it was the WRONG ornament — a night mark hung at noon — so it
+ * now hangs at the same weight the moon does. */
+.earring-pivot .sun { display: none; }
+.app-root.light .earring-pivot .crescent { display: none; }
+.app-root.light .earring-pivot .sun { display: block; }
 
 @media (max-width: 1400px) {
-  .earring-pivot .crescent { width: 56px; height: 77px; }
+  .earring-pivot .earring-face { width: 56px; height: 77px; }
   .earring-chain { height: 34px; }
   .earring-left { left: 12px; }
   .earring-right { right: 12px; }

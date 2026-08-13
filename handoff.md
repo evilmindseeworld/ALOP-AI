@@ -1,3 +1,52 @@
+# Handoff — 2026-08-13 (third pass): read_url stopped being a URL tool
+
+`d7cf174`, `8a62cc2`, `4082620`, `5b1fef2`, on top of `09fa8ef`. Backend
+1012 tests green. Frontend NOT re-run — nothing in this pass touches it.
+
+**`COUNCIL_TOOLS` HAS NOT BEEN FLIPPED, and the reason is now a gate rather than
+a delay.** The whole pass exists because turning the tool loop on with
+`read_url` accepting a model-authored URL was the shape Sol ranked highest in
+`docs/attack-surface-sol.md`: a fetched page tells one seat of seven to encode
+the conversation into `https://attacker/collect?d=…`, and the fetch IS the
+exfiltration.
+
+**`read_url` no longer accepts a URL.** Every search result is minted a
+per-turn UUID in the registry; the tool's schema is `{ id }` and the lookup
+happens BEFORE DNS validation, so a forged argument cannot even reach a
+resolver query. This is the same split `read_file` already used, which is why
+it needed no new machinery — the ids sit next to the results the model can see,
+and the URL it cannot author is resolved server-side. Provenance matching (the
+previous defence: accept a URL only if this turn's search returned it) was
+replaced rather than kept, because it still let the model type a host.
+
+**Luna's adversarial review of `09fa8ef` is `docs/review-read-url-luna.md`, and
+it earned its keep.** Five findings, four of them from runtime probes rather
+than from reading. The one to remember:
+
+- **The pin was advisory whenever Node reused a socket.** `http.request()` with
+  the implicit global agent, keep-alive on in this runtime, will hand back a
+  pooled same-origin socket WITHOUT calling the `lookup` callback. Luna's probe
+  sent a request pinned to server B down the socket connected to server A. Every
+  test in the file made one request, and a single-request test cannot see this.
+  `agent: false` now, deliberately, for a reader this small.
+- The guard's refusal text carried the resolved address (`… resolves to
+  169.254.169.254`) straight back into the council prompt — a private-network
+  map handed out one refusal at a time. `UrlBlocked` now carries a separate
+  `modelMessage`; the address stays in the log and in Sentry. Every other path
+  in the registry that echoed `err.message` was redacted in the same pass.
+- `maxRedirects: 5` bounded redirect EDGES, so six connections were made. The
+  ceiling is `maxHops` now and counts the initial request.
+- The character ceiling was UTF-16 code units, so a page of emoji was cut in
+  half and could end on an unpaired surrogate. Counted in code points now.
+- `truncated` was true for a body that ended exactly at the limit.
+
+**What this does NOT close.** `UNTRUSTED_PREAMBLE` is still unmeasured. A
+copied `tool_call` fence still spends a round and can still name any other
+tool. The id gate is `read_url`'s, not the loop's — **the next tool added does
+not inherit it**, and that is the thing to remember when one is added.
+
+---
+
 # Handoff — 2026-08-13 (second pass)
 
 State of play: the owner's six-item list from the 2026-08-13 session. Five

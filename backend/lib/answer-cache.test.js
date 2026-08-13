@@ -13,6 +13,21 @@ function fakeClock(start = 1_700_000_000_000) {
   return { now: () => t, advance: (ms) => { t += ms; } };
 }
 
+const REPLAY_INPUTS = {
+  question: 'what is photosynthesis',
+  lang: 'en',
+  country: 'AE',
+  plan: 'free',
+  detailed: false,
+  branch: 'council',
+  usedLiveWeb: false,
+};
+
+const cacheOptions = (ttlMs, patch = {}) => ({
+  ttlMs,
+  inputs: { ...REPLAY_INPUTS, ...patch },
+});
+
 test('the basic contract', async (t) => {
   await t.test('a miss is null, not a throw', async () => {
     const c = createAnswerCache();
@@ -22,7 +37,7 @@ test('the basic contract', async (t) => {
   await t.test('what goes in comes out', async () => {
     const c = createAnswerCache();
     const k = keyFor({ question: 'what is photosynthesis' });
-    c.set(k, ANSWER, TTL_MS.council);
+    c.set(k, ANSWER, cacheOptions(TTL_MS.council));
     assert.equal((await c.get(k)).answer, ANSWER);
   });
 
@@ -30,14 +45,14 @@ test('the basic contract', async (t) => {
     const clock = fakeClock();
     const c = createAnswerCache({ now: clock.now });
     const k = keyFor({ question: 'what is photosynthesis' });
-    c.set(k, ANSWER, 1000);
+    c.set(k, ANSWER, cacheOptions(1000));
     clock.advance(1001);
     assert.equal(await c.get(k), null);
   });
 
   await t.test('a null key reads and writes nothing', async () => {
     const c = createAnswerCache();
-    c.set(null, ANSWER, TTL_MS.council);
+    c.set(null, ANSWER, cacheOptions(TTL_MS.council));
     assert.equal(await c.get(null), null);
     assert.equal(c.stats().writes, 0);
   });
@@ -160,24 +175,24 @@ test('an empty question has no key', () => {
 test('a short answer is not stored', async () => {
   const c = createAnswerCache();
   const k = keyFor({ question: 'what is photosynthesis' });
-  c.set(k, "I searched but couldn't find results. Could you rephrase?", TTL_MS.search);
+  c.set(k, "I searched but couldn't find results. Could you rephrase?", cacheOptions(TTL_MS.search));
   assert.equal(await c.get(k), null);
 });
 
 test('a non-string answer is not stored', async () => {
   const c = createAnswerCache();
   const k = keyFor({ question: 'what is photosynthesis' });
-  for (const bad of [null, undefined, 42, {}, ['a']]) c.set(k, bad, TTL_MS.council);
+  for (const bad of [null, undefined, 42, {}, ['a']]) c.set(k, bad, cacheOptions(TTL_MS.council));
   assert.equal(await c.get(k), null);
 });
 
 test('the memory tier evicts least-recently-used', async () => {
   const c = createAnswerCache({ memoryMax: 2 });
   const [a, b, d] = ['a', 'b', 'c'].map((q) => keyFor({ question: `question ${q}` }));
-  c.set(a, ANSWER, TTL_MS.council);
-  c.set(b, ANSWER, TTL_MS.council);
+  c.set(a, ANSWER, cacheOptions(TTL_MS.council));
+  c.set(b, ANSWER, cacheOptions(TTL_MS.council));
   await c.get(a);          // a is now the most recently used
-  c.set(d, ANSWER, TTL_MS.council);  // evicts b, not a
+  c.set(d, ANSWER, cacheOptions(TTL_MS.council));  // evicts b, not a
   assert.ok(await c.get(a), 'the recently read entry was evicted');
   assert.equal(await c.get(b), null);
 });
@@ -204,14 +219,14 @@ test('a broken database degrades to a miss', async (t) => {
   await t.test('a write still lands in memory', async () => {
     const c = createAnswerCache({ supabase: exploding, log: quiet });
     const k = keyFor({ question: 'what is photosynthesis' });
-    c.set(k, ANSWER, TTL_MS.council);
+    c.set(k, ANSWER, cacheOptions(TTL_MS.council));
     assert.equal((await c.get(k)).answer, ANSWER);
   });
 
   await t.test('and it complains exactly once', async () => {
     const lines = [];
     const c = createAnswerCache({ supabase: exploding, log: { warn: (m) => lines.push(m) } });
-    for (let i = 0; i < 5; i++) c.set(keyFor({ question: `question number ${i}` }), ANSWER, TTL_MS.council);
+    for (let i = 0; i < 5; i++) c.set(keyFor({ question: `question number ${i}` }), ANSWER, cacheOptions(TTL_MS.council));
     assert.equal(lines.length, 1);
     // Naming the likely fix is the difference between a useful log line at 3am
     // and one that says only that something is wrong.
@@ -329,10 +344,10 @@ test('a deterministic short constant can be persisted without weakening the answ
   const c = createAnswerCache();
   const k = keyFor({ question: 'hi', branch: 'greeting' });
 
-  c.set(k, 'Hi!', TTL_MS.council);
+  c.set(k, 'Hi!', cacheOptions(TTL_MS.council, { question: 'hi', branch: 'greeting' }));
   assert.equal(await c.get(k), null, 'ordinary short model output must stay uncached');
 
-  c.setConstant(k, 'Hi!', TTL_MS.greeting);
+  c.setConstant(k, 'Hi!', cacheOptions(TTL_MS.greeting, { question: 'hi', branch: 'greeting' }));
   assert.equal((await c.get(k)).answer, 'Hi!');
 });
 
@@ -340,7 +355,7 @@ test('answer cache emits a periodic hit-rate signal', async () => {
   const lines = [];
   const c = createAnswerCache({ log: { info: (line) => lines.push(line) }, reportEvery: 2 });
   const k = keyFor({ question: 'what is photosynthesis' });
-  c.set(k, ANSWER, TTL_MS.council);
+  c.set(k, ANSWER, cacheOptions(TTL_MS.council));
 
   await c.get(k);
   await c.get(keyFor({ question: 'a miss' }));
@@ -383,7 +398,7 @@ test('a stable answer survives long past the old weekly ceiling', () => {
   const clock = fakeClock();
   const cache = createAnswerCache({ now: clock.now, reportEvery: 0 });
   const key = keyFor({ question: 'what is a monad' });
-  cache.set(key, ANSWER, ttlFor({ searched: false }));
+  cache.set(key, ANSWER, cacheOptions(ttlFor({ searched: false })));
 
   clock.advance(30 * 24 * 60 * 60 * 1000);
   return cache.get(key).then((hit) => {
@@ -396,10 +411,150 @@ test('a search-backed answer is gone a day later', () => {
   const clock = fakeClock();
   const cache = createAnswerCache({ now: clock.now, reportEvery: 0 });
   const key = keyFor({ question: 'what does a canva pro seat cost', branch: 'search' });
-  cache.set(key, ANSWER, ttlFor({ searched: true }));
+  cache.set(key, ANSWER, cacheOptions(ttlFor({ searched: true }), { branch: 'search', usedLiveWeb: true }));
 
   clock.advance(24 * 60 * 60 * 1000 + 1);
   return cache.get(key).then((hit) => {
     assert.strictEqual(hit, null, 'a dated answer outlived its day');
   });
+});
+
+test('new writes persist the exact replay inputs', async () => {
+  const writes = [];
+  const db = {
+    from() {
+      return {
+        upsert(payload) { writes.push(payload); return Promise.resolve({ error: null }); },
+      };
+    },
+  };
+  const inputs = {
+    question: 'What is the weather?',
+    lang: 'en',
+    country: 'AE',
+    plan: 'free',
+    detailed: true,
+    branch: 'search',
+    usedLiveWeb: true,
+  };
+  const c = createAnswerCache({ supabase: db, reportEvery: 0 });
+  c.set(keyFor(inputs), ANSWER, { ttlMs: TTL_MS.search, inputs });
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(writes.length, 1);
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(writes[0]).filter(([key]) => key.endsWith('_text') ||
+      ['lang', 'country', 'plan', 'detailed', 'branch', 'used_live_web'].includes(key))),
+    {
+      question_text: inputs.question,
+      lang: inputs.lang,
+      country: inputs.country,
+      plan: inputs.plan,
+      detailed: inputs.detailed,
+      branch: inputs.branch,
+      used_live_web: inputs.usedLiveWeb,
+    },
+  );
+});
+
+test('a write without complete replay inputs changes neither tier', async () => {
+  const writes = [];
+  const db = {
+    from() {
+      return {
+        upsert(payload) { writes.push(payload); return Promise.resolve({ error: null }); },
+      };
+    },
+  };
+  const c = createAnswerCache({ supabase: db, reportEvery: 0 });
+  const key = keyFor({ question: 'what is photosynthesis' });
+  c.set(key, ANSWER, { ttlMs: TTL_MS.search });
+  await new Promise((resolve) => setImmediate(resolve));
+
+  assert.equal(await c.get(key), null);
+  assert.equal(writes.length, 0);
+  assert.equal(c.stats().writes, 0);
+});
+
+test('dueForRefresh returns only future search-backed rows with replay inputs', async () => {
+  const calls = [];
+  const due = {
+    key: 'due-key',
+    answer: ANSWER,
+    stored_at: '2026-08-14T00:00:00.000Z',
+    expires_at: '2026-08-14T01:00:00.000Z',
+    question_text: 'what is the weather?',
+    lang: 'en',
+    country: 'AE',
+    plan: 'free',
+    detailed: false,
+    branch: 'search',
+    used_live_web: true,
+  };
+  const legacy = { ...due, key: 'legacy-key', question_text: null };
+  const db = {
+    from(table) {
+      calls.push(table);
+      return {
+        select(fields) {
+          calls.push(fields);
+          return {
+            eq(field, value) {
+              calls.push(['eq', field, value]);
+              return this;
+            },
+            gt(field, value) {
+              calls.push(['gt', field, value]);
+              return this;
+            },
+            lte(field, value) {
+              calls.push(['lte', field, value]);
+              return this;
+            },
+            order(field, options) {
+              calls.push(['order', field, options]);
+              return {
+                limit(value) {
+                  calls.push(['limit', value]);
+                  return Promise.resolve({ data: [due, legacy], error: null });
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+  };
+  const c = createAnswerCache({ supabase: db, now: () => Date.parse('2026-08-14T00:00:00.000Z'), reportEvery: 0 });
+  const rows = await c.dueForRefresh({
+    before: Date.parse('2026-08-14T02:00:00.000Z'),
+    limit: 4,
+  });
+
+  assert.deepEqual(rows, [{
+    key: due.key,
+    answer: due.answer,
+    question: due.question_text,
+    lang: due.lang,
+    country: due.country,
+    plan: due.plan,
+    detailed: due.detailed,
+    branch: due.branch,
+    searched: due.used_live_web,
+    storedAt: Date.parse(due.stored_at),
+    expiresAt: Date.parse(due.expires_at),
+  }]);
+  assert.ok(calls.includes('answer_cache'));
+  assert.ok(calls.some((call) => call[0] === 'eq' && call[1] === 'used_live_web' && call[2] === true));
+});
+
+test('016 documents the user-derived question-text and search-expiry index boundary', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '..', 'migrations', '016_answer_cache_inputs.sql'), 'utf8');
+  assert.match(sql, /ADD COLUMN IF NOT EXISTS question_text TEXT/);
+  assert.match(sql, /ADD COLUMN IF NOT EXISTS used_live_web BOOLEAN/);
+  assert.match(sql, /CREATE INDEX IF NOT EXISTS answer_cache_search_expiry/);
+  assert.match(sql, /WHERE used_live_web IS TRUE/);
+  assert.match(sql, /user-derived QUESTION TEXT/i);
+  assert.match(sql, /non-personalised|non-personalized/i);
+  assert.match(sql, /FORCE ROW LEVEL SECURITY/);
 });

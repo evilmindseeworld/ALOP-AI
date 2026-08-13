@@ -122,6 +122,14 @@ const TTL_MS = {
 TTL_MS.council = TTL_MS.stable;
 TTL_MS.wiki = TTL_MS.stable;
 
+/* These are stored beside the answer so a service job can ask the same
+ * question again. They are deliberately a named object rather than more
+ * positional arguments: omitting one must reject the write, not create a row
+ * that looks refreshable until the brain tries to use it. */
+const REPLAY_INPUTS = Object.freeze([
+  'question', 'lang', 'country', 'plan', 'detailed', 'branch', 'usedLiveWeb',
+]);
+
 /**
  * THE SHELF LIFE, DECIDED BY WHERE THE FACTS CAME FROM.
  *
@@ -168,6 +176,36 @@ function keyFor({ question, lang = '', country = '', plan = '', detailed = false
   const material = [text, lang, country, plan, detailed ? 'd' : '', branch].join('\u0000');
   return crypto.createHash('sha256').update(material).digest('hex');
 }
+
+function replayInputs(inputs) {
+  if (!inputs || typeof inputs !== 'object' || Array.isArray(inputs)) return null;
+  if (!REPLAY_INPUTS.every((field) => Object.prototype.hasOwnProperty.call(inputs, field))) return null;
+  if (typeof inputs.question !== 'string' || !inputs.question.trim()) return null;
+  if (typeof inputs.lang !== 'string' || typeof inputs.country !== 'string' ||
+      typeof inputs.plan !== 'string' || typeof inputs.branch !== 'string' ||
+      !inputs.branch.trim() || typeof inputs.detailed !== 'boolean' ||
+      typeof inputs.usedLiveWeb !== 'boolean') return null;
+
+  return {
+    question: inputs.question,
+    lang: inputs.lang,
+    country: inputs.country,
+    plan: inputs.plan,
+    detailed: inputs.detailed,
+    branch: inputs.branch,
+    usedLiveWeb: inputs.usedLiveWeb,
+  };
+}
+
+const rowInputs = (row) => replayInputs({
+  question: row.question_text,
+  lang: row.lang,
+  country: row.country,
+  plan: row.plan,
+  detailed: row.detailed,
+  branch: row.branch,
+  usedLiveWeb: row.used_live_web,
+});
 
 function createAnswerCache({ supabase, log = console, ...opts } = {}) {
   const cfg = { ...DEFAULTS, ...opts };
@@ -292,11 +330,21 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
    * streamed to the user by the time this runs; nothing about their turn
    * depends on it landing.
    */
-  function store(key, answer, ttlMs, allowShort) {
+  function store(key, answer, options, allowShort) {
     if (!key || typeof answer !== 'string') return;
+    if (!options || typeof options !== 'object' || Array.isArray(options)) return;
+    const inputs = replayInputs(options.inputs);
+    if (!inputs) {
+      /* A missing replay contract is not safe to put in either tier. In
+       * particular, do not put it in memory and then leave Postgres without a
+       * corresponding row: the two tiers must represent the same cacheable
+       * answer. The caller still gets its answer; only the optimisation is
+       * declined. */
+      return;
+    }
     const text = answer.trim();
     if (!text || (!allowShort && text.length < cfg.minAnswerChars)) return;
-    const ttl = Number(ttlMs) > 0 ? Number(ttlMs) : TTL_MS.council;
+    const ttl = Number(options.ttlMs) > 0 ? Number(options.ttlMs) : TTL_MS.council;
 
     const storedAt = now();
     const expiresAt = storedAt + ttl;
@@ -312,6 +360,13 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
             answer: text,
             stored_at: new Date(storedAt).toISOString(),
             expires_at: new Date(expiresAt).toISOString(),
+            question_text: inputs.question,
+            lang: inputs.lang,
+            country: inputs.country,
+            plan: inputs.plan,
+            detailed: inputs.detailed,
+            branch: inputs.branch,
+            used_live_web: inputs.usedLiveWeb,
           },
           { onConflict: 'key' },
         ),
@@ -323,16 +378,97 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
     sweep();
   }
 
-  function set(key, answer, ttlMs) {
-    store(key, answer, ttlMs, false);
+  function set(key, answer, options) {
+    store(key, answer, options, false);
   }
 
   /**
    * Persist a known constant such as a greeting. This is separate from set()
    * so a short model refusal can never bypass the minimum-answer safeguard.
    */
-  function setConstant(key, answer, ttlMs = TTL_MS.greeting) {
-    store(key, answer, ttlMs, true);
+  function setConstant(key, answer, options) {
+    store(key, answer, {
+      ...(options && typeof options === 'object' ? options : {}),
+      ttlMs: options?.ttlMs ?? TTL_MS.greeting,
+    }, true);
+  }
+
+  /**
+   * Return future search-backed rows that are safe for the brain to replay.
+   * `before` is the end of the caller's refresh window; rows already expired
+   * are excluded here. Rows from before migration 016 have null inputs and
+   * are intentionally skipped rather than guessed at.
+   *
+   * This is a backend/service-role API by construction: the only database
+   * handle accepted by this module is the server's Supabase service-role
+   * client, and no user-controlled filter is accepted.
+   *
+   * @returns {Promise<Array<{key: string, answer: string, question: string,
+   *   lang: string, country: string, plan: string, detailed: boolean,
+   *   branch: string, searched: boolean, storedAt: number,
+   *   expiresAt: number}>>}
+   */
+  async function dueForRefresh({ before, limit = 50 } = {}) {
+    const endMs = Number(before);
+    const rowLimit = Number.isInteger(Number(limit)) ? Number(limit) : 50;
+    if (!supabase || !Number.isFinite(endMs) || endMs <= now() || rowLimit <= 0) return [];
+
+    const startMs = now();
+    try {
+      const result = await settleByDeadline(
+        [{
+          promise: (async () => {
+            let query = supabase
+              .from('answer_cache')
+              .select('key, answer, stored_at, expires_at, question_text, lang, country, plan, detailed, branch, used_live_web')
+              .eq('used_live_web', true)
+              .gt('expires_at', new Date(startMs).toISOString())
+              .lte('expires_at', new Date(endMs).toISOString());
+            query = query.order('expires_at', { ascending: true });
+            query = query.limit(rowLimit);
+            return query;
+          })(),
+          fallback: { data: [], error: null },
+        }],
+        { deadlineMs: cfg.readDeadlineMs },
+      ).then((r) => r.results[0]);
+
+      if (!result || result.error) {
+        if (result?.error) warnOnce('due read failed', result.error.message);
+        return [];
+      }
+
+      return (Array.isArray(result.data) ? result.data : []).flatMap((row) => {
+        const inputs = rowInputs(row);
+        const storedAt = new Date(row.stored_at).getTime();
+        const expiresAt = new Date(row.expires_at).getTime();
+        if (!inputs || !Number.isFinite(storedAt) || !Number.isFinite(expiresAt) ||
+            expiresAt <= startMs || expiresAt > endMs) return [];
+        return [{
+          key: row.key,
+          answer: row.answer,
+          question: inputs.question,
+          lang: inputs.lang,
+          country: inputs.country,
+          plan: inputs.plan,
+          detailed: inputs.detailed,
+          branch: inputs.branch,
+          searched: inputs.usedLiveWeb,
+          storedAt,
+          expiresAt,
+        }];
+      });
+    } catch (e) {
+      warnOnce('due read threw', e.message);
+      return [];
+    }
+  }
+
+  /** Convenience form for callers that naturally have a duration. */
+  async function getDue({ withinMs, limit = 50 } = {}) {
+    const windowMs = Number(withinMs);
+    if (!(windowMs > 0)) return [];
+    return dueForRefresh({ before: now() + windowMs, limit });
   }
 
   /** Drop everything. The user-facing lever behind "this answer is wrong" and
@@ -348,7 +484,7 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
     }
   }
 
-  return { get, set, setConstant, clear, keyFor, stats: () => ({ ...stats, size: memory.size }) };
+  return { get, getDue, dueForRefresh, set, setConstant, clear, keyFor, stats: () => ({ ...stats, size: memory.size }) };
 }
 
-module.exports = { createAnswerCache, keyFor, normalise, ttlFor, TTL_MS };
+module.exports = { createAnswerCache, keyFor, normalise, replayInputs, ttlFor, TTL_MS };

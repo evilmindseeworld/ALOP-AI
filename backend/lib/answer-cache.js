@@ -408,7 +408,7 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
    *   branch: string, searched: boolean, storedAt: number,
    *   expiresAt: number}>>}
    */
-  async function dueForRefresh({ before, limit = 50 } = {}) {
+  async function dueForRefresh({ before, limit = 50, branch } = {}) {
     const endMs = Number(before);
     const rowLimit = Number.isInteger(Number(limit)) ? Number(limit) : 50;
     if (!supabase || !Number.isFinite(endMs) || endMs <= now() || rowLimit <= 0) return [];
@@ -424,6 +424,7 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
               .eq('used_live_web', true)
               .gt('expires_at', new Date(startMs).toISOString())
               .lte('expires_at', new Date(endMs).toISOString());
+            if (typeof branch === 'string' && branch) query = query.eq('branch', branch);
             query = query.order('expires_at', { ascending: true });
             query = query.limit(rowLimit);
             return query;

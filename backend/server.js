@@ -1034,6 +1034,8 @@ const { createAnswerCache, ttlFor } = require('./lib/answer-cache');
 // How a background job gets a real council turn without a socket. See the brain
 // seam under "THE BRAIN'S WAY IN", below the council route.
 const { createSinkResponse, createSinkRequest } = require('./lib/sink-response');
+const { createBrain } = require('./lib/brain');
+const { createBrainQuestions } = require('./lib/brain-questions');
 const { createGreetingCache } = require('./lib/greeting-cache');
 const { createTtlCache } = require('./lib/ttl-cache');
 const { boundedPage, pageInfo } = require('./lib/pagination');
@@ -1118,6 +1120,10 @@ const TOOLS_SHADOW = TOOLS_MODE === 'shadow';
  * does nothing at all unless the tool loop is live.
  */
 const SEEDED_SEARCH = TOOLS_ENABLED && /^(1|true)$/i.test(process.env.COUNCIL_SEEDED_SEARCH || '');
+const ANSWER_EXECUTION_MODE = SEEDED_SEARCH
+  ? 'tools-seeded-v5'
+  : TOOLS_ENABLED ? 'tools-live' : TOOLS_SHADOW ? 'tools-shadow' : 'tools-off';
+const ANSWER_CACHE_BRANCH = `turn:${ANSWER_EXECUTION_MODE}`;
 
 // Cached because members in the same turn ask overlapping questions across
 // ROUNDS as well as within one — dedupe only unions a single round.
@@ -2900,12 +2906,6 @@ async function handleCouncilTurn(req, res) {
     /* Feature flags change how the SAME words are answered. Keep that
      * provenance in the durable key so enabling seeded tools cannot replay a
      * Wikipedia/plain-council answer written before the flag changed. */
-    const answerExecutionMode = SEEDED_SEARCH
-      /* v5 invalidates seeded answers that completed without a source URL
-       * before the streaming boundary enforced one. Keep this explicit:
-       * deleting shared durable rows is broader and less recoverable. */
-      ? 'tools-seeded-v5'
-      : TOOLS_ENABLED ? 'tools-live' : TOOLS_SHADOW ? 'tools-shadow' : 'tools-off';
     const cacheKey = personalised
       ? null
       : answerCache.keyFor({
@@ -2914,7 +2914,7 @@ async function handleCouncilTurn(req, res) {
         country: region?.country || '',
         plan: userPlan,
         detailed: isDetailed,
-        branch: `turn:${answerExecutionMode}`,
+        branch: ANSWER_CACHE_BRANCH,
       });
 
     if (cacheKey) {
@@ -2973,7 +2973,7 @@ async function handleCouncilTurn(req, res) {
           country: region?.country || '',
           plan: userPlan,
           detailed: isDetailed,
-          branch: `turn:${answerExecutionMode}`,
+          branch: ANSWER_CACHE_BRANCH,
           usedLiveWeb: searched,
         },
       });
@@ -3155,6 +3155,7 @@ async function handleCouncilTurn(req, res) {
      * time-ish in it at all. The question is the thing that knows whether the
      * present matters. See lib/recency. */
     const fresh = freshnessWindow(pv.value);
+    if (res.locals) res.locals.fresh = Boolean(fresh);
 
     if (turnSignal.aborted) return;
     /* SEEDED_SEARCH sends this traffic to the council instead, carrying the
@@ -3830,8 +3831,15 @@ const BRAIN_CLERK_ID = process.env.BRAIN_CLERK_ID || 'brain-internal';
  *   nothing. A job must be able to tell "no answer" from "an empty answer":
  *   swallowing the first writes a blank into a row a real user then reads.
  */
-async function runQuestion({ question, plan = 'free', country = '' } = {}) {
+async function runQuestion({ question, lang, plan = 'free', country = '', detailed, branch, signal } = {}) {
   if (!BRAIN_USER_ID) throw new Error('BRAIN_USER_ID is not set; the brain has no identity to spend against');
+  if (branch && branch !== ANSWER_CACHE_BRANCH) {
+    throw new Error(`cache branch ${branch} is not current`);
+  }
+  if (lang && lang !== detectLanguage(question)) throw new Error('cached language no longer matches the question');
+  if (typeof detailed === 'boolean' && detailed !== wantsDetailedAnswer(question)) {
+    throw new Error('cached detail mode no longer matches the question');
+  }
   const req = createSinkRequest({
     message: question,
     userId: BRAIN_CLERK_ID,
@@ -3841,7 +3849,11 @@ async function runQuestion({ question, plan = 'free', country = '' } = {}) {
     country,
   });
   const res = createSinkResponse();
-  await handleCouncilTurn(req, res);
+  const abort = () => req.emit('close');
+  if (signal?.aborted) abort();
+  else signal?.addEventListener('abort', abort, { once: true });
+  try { await handleCouncilTurn(req, res); }
+  finally { signal?.removeEventListener('abort', abort); }
   const out = res.result();
   if (out.refusal) {
     const err = new Error(out.refusal.error || `refused with ${out.status}`);
@@ -3851,7 +3863,7 @@ async function runQuestion({ question, plan = 'free', country = '' } = {}) {
     throw err;
   }
   if (!out.answer.trim()) throw new Error('the council produced no answer');
-  return { answer: out.answer, searched: Boolean(out.locals?.searched) };
+  return { answer: out.answer, searched: Boolean(out.locals?.searched), fresh: Boolean(out.locals?.fresh) };
 }
 
 // ===== OVERLAY (bulletproof — never returns 500) =====
@@ -4508,5 +4520,18 @@ const server = app.listen(PORT, () => {
   console.log(`[BOOT] admin console -> ${tc.enabled ? `ENABLED for ${tc.admins.length} allowlisted admin(s)` : `disabled (${tc.reason})`}\n`);
 });
 
-process.on('SIGTERM', () => server.close(() => process.exit(0)));
-process.on('SIGINT', () => server.close(() => process.exit(0)));
+const brain = createBrain({
+  cache: answerCache,
+  runQuestion,
+  questions: createBrainQuestions({ branch: ANSWER_CACHE_BRANCH }),
+  refreshBranch: ANSWER_CACHE_BRANCH,
+});
+const stopBrain = brain.start();
+console.log(`[BOOT] COUNCIL_BRAIN=${process.env.COUNCIL_BRAIN || '(unset)'} -> brain ${BRAIN_ENABLED ? 'ENABLED' : 'OFF'}`);
+
+const shutdown = () => {
+  stopBrain();
+  server.close(() => process.exit(0));
+};
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

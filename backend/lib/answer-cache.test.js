@@ -331,12 +331,14 @@ test('normalise is exported and does only what it says', () => {
 
 test('server.js separates durable answers produced by different tool modes', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
-  const mode = src.indexOf('const answerExecutionMode =');
-  const key = src.indexOf('branch: `turn:${answerExecutionMode}`');
+  const mode = src.indexOf('const ANSWER_EXECUTION_MODE =');
+  const branch = src.indexOf('const ANSWER_CACHE_BRANCH = `turn:${ANSWER_EXECUTION_MODE}`');
+  const key = src.indexOf('branch: ANSWER_CACHE_BRANCH');
   assert.ok(mode > 0, 'tool execution mode is absent from answer-cache identity');
+  assert.ok(branch > mode, 'the tool mode does not produce one shared cache branch');
   assert.ok(key > mode, 'the computed tool mode does not reach the answer-cache key');
   for (const flag of ['SEEDED_SEARCH', 'TOOLS_ENABLED', 'TOOLS_SHADOW']) {
-    assert.match(src.slice(mode, key), new RegExp(flag), `${flag} does not affect cache identity`);
+    assert.match(src.slice(mode, branch), new RegExp(flag), `${flag} does not affect cache identity`);
   }
 });
 

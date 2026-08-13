@@ -1,3 +1,41 @@
+# Handoff — 2026-08-14 (sixth pass): durable smart expiry and the bounded cache brain
+
+Local work is complete and migration `016_answer_cache_inputs.sql` is applied
+to production. Backend: 1089 tests passing. Deployment/live verification still
+has to be proven by `/health`; do not infer it from the migration or local tree.
+
+## What changed
+
+- Stable answers use the 90-day safety shelf; search-backed answers use 24
+  hours, and explicitly fresh questions use one hour. The router's actual
+  search decision controls all four write sites.
+- Durable cache rows now retain the non-personal replay inputs needed to ask the
+  same question again. Migration 016 added the seven columns and the partial
+  `answer_cache_search_expiry` index. Production verification confirmed every
+  column, the index predicate, and enabled + forced RLS.
+- The background brain is now wired into server boot. It refreshes only current
+  execution-mode search rows nearing expiry, pre-computes from 28 curated
+  product questions, paces work, stops on 429/daily refusal, and starts only
+  with `COUNCIL_BRAIN=1`.
+- Background turns go through the real council handler and real request/spend
+  admission. They are cancelled on shutdown; timers are unref'd. The normal
+  turn remains the only cache writer and TTL authority.
+
+## Production switches and proof still required
+
+- Set `COUNCIL_BRAIN=1` only when `BRAIN_USER_ID` names the provisioned real
+  `users` row. `BRAIN_CLERK_ID` may keep its documented internal default.
+- After deploy, `/health` must show the new commit. Then confirm the boot log
+  says whether the brain is enabled, make one unpersonalised turn, verify its
+  replay columns in `answer_cache`, and repeat it from a separate new chat for
+  an `[ANSWERS] HIT ... models=0` line.
+- The advisor run after migration added no migration-specific warning. The new
+  index is reported unused because it has not yet had a deployed hourly query;
+  the existing service-only/no-policy RLS infos and older function warnings are
+  unchanged project state.
+
+---
+
 # Handoff — 2026-08-14 (fifth pass): routing tiers corrected, and the 429 fallback that cost 20 seconds
 
 Live on `716f591`, confirmed by `/health`. 1061 tests passing.

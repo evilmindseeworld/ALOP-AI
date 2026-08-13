@@ -116,9 +116,10 @@ function createBrain({
   log = console,
   now = () => Date.now(),
   setTimeoutFn = setTimeout,
+  refreshBranch = '',
 } = {}) {
   const cfg = { ...DEFAULTS };
-  const enabled = process.env.COUNCIL_BRAIN === '1';
+  const enabled = /^(1|true)$/i.test(process.env.COUNCIL_BRAIN || '');
   const scheduleTimers = new Set();
   const sleepers = new Set();
   const controllers = new Set();
@@ -199,6 +200,7 @@ function createBrain({
         country: input.country,
         plan: input.plan,
         detailed: input.detailed,
+        branch: input.branch,
         signal: controller.signal,
       });
       if (typeof result?.answer !== 'string' || !result.answer.trim()) {
@@ -244,10 +246,12 @@ function createBrain({
           safeLog(log, 'warn', '[BRAIN] refresh selection unavailable');
           return;
         }
-        rows = await cache.dueForRefresh({
+        const selection = {
           before: time + cfg.refreshWindowMs,
           limit: cfg.refreshRunCap,
-        });
+        };
+        if (refreshBranch) selection.branch = refreshBranch;
+        rows = await cache.dueForRefresh(selection);
       } catch (error) {
         safeLog(log, 'warn', `[BRAIN] refresh selection failed: ${errorMessage(error)}`);
         return;

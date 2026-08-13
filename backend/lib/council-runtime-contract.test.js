@@ -408,3 +408,20 @@ test("every cached answer's shelf life is decided by the router's search flag", 
   assert.match(ROUTE, /const usedLiveWeb = Boolean\(searchQueries\?\.length\)/,
     "the council branch must read the router's decision, not its own branch name");
 });
+
+test("the background brain is wired to the same cache identity and stopped on shutdown", () => {
+  assert.match(SOURCE, /const ANSWER_CACHE_BRANCH = `turn:\$\{ANSWER_EXECUTION_MODE\}`/,
+    "request turns and background turns need one shared execution-mode identity");
+  assert.match(SOURCE, /createBrainQuestions\(\{ branch: ANSWER_CACHE_BRANCH \}\)/,
+    "curated questions must use the exact branch used by foreground cache keys");
+  assert.match(SOURCE, /refreshBranch: ANSWER_CACHE_BRANCH/,
+    "refresh selection must exclude durable rows written under an old execution mode");
+  assert.match(SOURCE, /const brain = createBrain\(\{[\s\S]*cache: answerCache,[\s\S]*runQuestion/,
+    "the scheduler must be instantiated against the production cache and council seam");
+  assert.match(SOURCE, /const stopBrain = brain\.start\(\)/,
+    "COUNCIL_BRAIN=1 must start the scheduler rather than only documenting it");
+  assert.match(SOURCE, /const shutdown = \(\) => \{[\s\S]*stopBrain\(\);[\s\S]*server\.close/,
+    "shutdown must stop background timers and abort active brain work before closing the server");
+  assert.match(SOURCE, /signal\?\.addEventListener\('abort', abort/,
+    "a stopped brain must cancel the real council turn it started");
+});

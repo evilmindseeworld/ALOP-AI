@@ -31,11 +31,17 @@ const dns = require('node:dns').promises;
 
 /** A URL longer than this is not a document reference, it is a payload. */
 const MAX_URL_LENGTH = 2048;
+const MODEL_URL_REFUSAL = 'That host is refused by network safety checks. Do not retry this URL.';
+const MODEL_URL_UNRESOLVED = 'That host could not be resolved. Do not retry this URL.';
 
 class UrlBlocked extends Error {
-  constructor(message) {
+  constructor(message, modelMessage = MODEL_URL_REFUSAL) {
     super(message);
     this.name = 'UrlBlocked';
+    // `message` is the server-side diagnostic. The registry uses this separate
+    // value for the council, so resolver details and resolved addresses never
+    // cross into a model prompt.
+    this.modelMessage = modelMessage;
   }
 }
 
@@ -137,18 +143,22 @@ const isBlockedAddress = (address) => {
  * @throws {UrlBlocked}
  */
 const assertSafeUrl = async (raw, { lookup = dns.lookup } = {}) => {
-  if (typeof raw !== 'string' || raw.length === 0) throw new UrlBlocked('No URL given.');
-  if (raw.length > MAX_URL_LENGTH) throw new UrlBlocked(`URL longer than ${MAX_URL_LENGTH} characters.`);
+  if (typeof raw !== 'string' || raw.length === 0) {
+    throw new UrlBlocked('No URL given.', 'That URL is missing. Provide an absolute http(s) URL.');
+  }
+  if (raw.length > MAX_URL_LENGTH) {
+    throw new UrlBlocked(`URL longer than ${MAX_URL_LENGTH} characters.`, `That URL is too long. Keep it under ${MAX_URL_LENGTH} characters.`);
+  }
 
   let url;
   try {
     url = new URL(raw);
   } catch {
-    throw new UrlBlocked('Not a valid URL.');
+    throw new UrlBlocked('Not a valid URL.', 'That URL is invalid. Provide an absolute http(s) URL.');
   }
 
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new UrlBlocked(`Unsupported scheme "${url.protocol}" — only http and https are fetched.`);
+    throw new UrlBlocked(`Unsupported scheme "${url.protocol}" — only http and https are fetched.`, 'That URL uses an unsupported scheme. Use http or https.');
   }
 
   // Nothing here has any business forwarding credentials, and user:pass@host
@@ -165,11 +175,11 @@ const assertSafeUrl = async (raw, { lookup = dns.lookup } = {}) => {
     results = await lookup(host, { all: true });
   } catch (err) {
     // A resolver failure is not permission to proceed.
-    throw new UrlBlocked(`Could not resolve "${host}": ${err.message}`);
+    throw new UrlBlocked(`Could not resolve "${host}": ${err.message}`, MODEL_URL_UNRESOLVED);
   }
 
   const addresses = (Array.isArray(results) ? results : [results]).filter(Boolean);
-  if (addresses.length === 0) throw new UrlBlocked(`"${host}" resolved to no addresses.`);
+  if (addresses.length === 0) throw new UrlBlocked(`"${host}" resolved to no addresses.`, MODEL_URL_UNRESOLVED);
 
   // EVERY address, not just the first. A name with several A records, one of
   // them internal, would otherwise be blocked or allowed depending on resolver

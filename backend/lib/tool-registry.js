@@ -24,11 +24,32 @@
 
 const { isCitable } = require("./link-check");
 const { childAbortController } = require("./abort");
+const { UrlBlocked } = require("./url-guard");
 const { randomUUID } = require("node:crypto");
+const Sentry = require("@sentry/node");
 
 /** Result shapes are uniform so the loop never has to know which tool ran. */
 const ok = (summary, content) => ({ ok: true, summary, content });
 const fail = (summary) => ({ ok: false, summary, content: "" });
+
+/**
+ * Exceptions are server-side diagnostics, not model-facing tool guidance.
+ * UrlBlocked supplies a deliberately safe recovery message; every other
+ * exception gets a generic no-retry response rather than exposing provider,
+ * resolver, or transport details.
+ */
+const modelErrorMessage = (toolName, err) => {
+  if (err instanceof UrlBlocked && typeof err.modelMessage === "string" && err.modelMessage) {
+    return err.modelMessage;
+  }
+  return `${toolName} failed. Do not retry the same request.`;
+};
+
+/** Keep the full exception on the server side while the result stays safe. */
+const defaultReportError = (toolName, err) => {
+  console.error(`[TOOLS] ${toolName} exception:`, err);
+  Sentry.captureException(err, { tags: { tool: toolName } });
+};
 
 /** A tool result is fed back into a prompt, so it has a hard size. */
 const MAX_RESULT_CHARS = 4000;
@@ -114,6 +135,15 @@ function validateArgs(tool, args) {
  */
 function buildRegistry(deps = {}) {
   const tools = [];
+  const reportError = typeof deps.reportError === "function" ? deps.reportError : defaultReportError;
+  const report = (toolName, err) => {
+    try {
+      reportError(toolName, err);
+    } catch {
+      // Diagnostics are best effort; a broken reporter must not lose a tool
+      // result or turn a contained failure into a failed council turn.
+    }
+  };
   /* A model that has read hostile text must never author an outbound address.
    * Search results get server-minted ids; read_url resolves only those ids in
    * this per-turn map. The lookup happens before DNS validation, so even a
@@ -178,14 +208,15 @@ function buildRegistry(deps = {}) {
           return fail("That is not a result id from this turn. Run web_search, then copy the id shown beside the result you want to read.");
         }
         // Throws UrlBlocked for loopback, link-local, private ranges and the
-        // cloud metadata address. The error text is safe to hand back: it says
-        // the host was refused, and a model that learns "that host is refused"
-        // stops asking, which is the behaviour we want.
+        // cloud metadata address. Keep its detailed message server-side and
+        // hand back only the safe recovery text: a model that learns "that
+        // host is refused" stops asking, which is the behaviour we want.
         let safe;
         try {
           safe = await deps.assertSafeUrl(url, { signal });
         } catch (err) {
-          return fail(`Refused to fetch that URL: ${err.message}`);
+          if (!signal?.aborted) report("read_url", err);
+          return fail(modelErrorMessage("read_url", err));
         }
         if (!safe.address || (safe.family !== 4 && safe.family !== 6)) {
           return fail("Refused to fetch a URL whose network address was not pinned by the safety check.");
@@ -369,7 +400,12 @@ function buildRegistry(deps = {}) {
       timer.unref?.();
       Promise.resolve()
         .then(() => tool.run(checked.args, { signal: child.signal }))
-        .then((value) => finish(value || fail(`${tool.name} returned no result.`)), (err) => finish(fail(`${tool.name} failed: ${err.message}`)));
+        .then((value) => finish(value || fail(`${tool.name} returned no result.`)), (err) => {
+          // Abort and timeout rejections are expected cleanup, not server
+          // faults. The original exception is still retained for real errors.
+          if (!child.signal.aborted && !signal?.aborted) report(tool.name, err);
+          finish(fail(modelErrorMessage(tool.name, err)));
+        });
 
       return result;
     },

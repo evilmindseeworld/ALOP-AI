@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { buildRegistry, MAX_RESULT_CHARS, clampTimeoutMs } = require("./tool-registry");
+const { UrlBlocked } = require("./url-guard");
 
 const RESULTS = [
   { title: "RTINGS OLED", url: "https://rtings.com/a", description: "Burn-in results." },
@@ -246,16 +247,22 @@ test("read_url passes the URL through the guard before fetching", async () => {
 
 test("a blocked URL never reaches the fetcher", async () => {
   let fetched = false;
+  const diagnostics = [];
+  const diagnostic = new UrlBlocked("resolves to 169.254.169.254, which is a private or reserved address.");
   const reg = buildRegistry({
     search: async () => [{ title: "metadata", url: "http://metadata.internal/", description: "x" }],
     readUrl: async () => { fetched = true; return "secrets"; },
-    assertSafeUrl: async () => { throw new Error("resolves to 169.254.169.254, which is a private or reserved address."); },
+    assertSafeUrl: async () => { throw diagnostic; },
+    reportError: (tool, err) => diagnostics.push({ tool, err }),
   });
   const search = await reg.execute({ name: "web_search", args: { query: "metadata" } });
   const r = await reg.execute({ name: "read_url", args: { id: resultId(search) } });
   assert.equal(fetched, false, "the guard must run BEFORE the fetch, not alongside it");
   assert.equal(r.ok, false);
-  assert.ok(r.summary.includes("169.254.169.254"));
+  assert.equal(r.summary, "That host is refused by network safety checks. Do not retry this URL.");
+  assert.equal(r.content.includes("169.254.169.254"), false);
+  assert.equal(diagnostics[0].tool, "read_url");
+  assert.match(diagnostics[0].err.message, /169\.254\.169\.254/);
 });
 
 test("read_url can only read an exact URL returned by this turn's search", async () => {
@@ -369,10 +376,17 @@ test("a result too large for a prompt is truncated and says so", async () => {
 // ===== an executor must never take down the turn =====
 
 test("an executor that throws is a failed result, not a thrown error", async () => {
-  const reg = buildRegistry({ search: async () => { throw new Error("network died"); } });
+  const diagnostics = [];
+  const reg = buildRegistry({
+    search: async () => { throw new Error("connect to 169.254.169.254:80 failed: network died"); },
+    reportError: (tool, err) => diagnostics.push({ tool, err }),
+  });
   const r = await reg.execute({ name: "web_search", args: { query: "a" } });
   assert.equal(r.ok, false);
-  assert.ok(r.summary.includes("network died"));
+  assert.equal(r.summary, "web_search failed. Do not retry the same request.");
+  assert.equal(r.summary.includes("169.254.169.254"), false);
+  assert.equal(diagnostics[0].tool, "web_search");
+  assert.match(diagnostics[0].err.message, /169\.254\.169\.254/);
 });
 
 test("an executor that hangs is cut off at the per-call ceiling", async () => {

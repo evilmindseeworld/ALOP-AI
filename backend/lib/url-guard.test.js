@@ -122,6 +122,7 @@ test('rejects a hostname that resolves to a private address', async () => {
     assertSafeUrl('http://internal.example.com/', { lookup: resolvesTo('10.1.2.3') })
   );
   assert.match(err.message, /private|blocked|internal/i);
+  assert.equal(err.modelMessage, 'That host is refused by network safety checks. Do not retry this URL.');
 });
 
 test('rejects when ANY resolved address is private, not just the first', async () => {
@@ -147,11 +148,13 @@ test('rejects a name that resolves to nothing', async () => {
 });
 
 test('rejects when the resolver itself fails, rather than proceeding', async () => {
-  await blocked(
+  const err = await blocked(
     assertSafeUrl('http://broken.example/', {
       lookup: async () => { throw new Error('ENOTFOUND'); },
     })
   );
+  assert.match(err.message, /ENOTFOUND/);
+  assert.equal(err.modelMessage, 'That host could not be resolved. Do not retry this URL.');
 });
 
 /**

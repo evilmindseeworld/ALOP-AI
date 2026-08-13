@@ -2,7 +2,12 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { callModel, getOpenRouterKeyStatus, OpenRouterRateLimitError } = require('./openrouter');
+const {
+  callModel,
+  fetchOpenRouterStream,
+  getOpenRouterKeyStatus,
+  OpenRouterRateLimitError,
+} = require('./openrouter');
 
 const originalFetch = global.fetch;
 test.afterEach(() => { global.fetch = originalFetch; });
@@ -76,6 +81,90 @@ test('provider 429 retains two retries', async () => {
 
   await assert.rejects(callModel('https://openrouter.ai/api/v1', 'key', 'model:free', [], 0, 3000, 20), /OpenRouter 429/);
   assert.equal(calls, 3);
+});
+
+test('stream provider 429 retries before any bytes are available', async () => {
+  let calls = 0;
+  global.fetch = async () => {
+    calls += 1;
+    if (calls === 1) return response(429, rateLimit('', { provider_code: 429 }), { 'retry-after': '0' });
+    return response(200, { choices: [{ delta: { content: 'recovered' } }] });
+  };
+
+  const stream = await fetchOpenRouterStream(
+    'https://openrouter.ai/api/v1',
+    'key',
+    'model:free',
+    [],
+    0,
+    undefined,
+    null,
+    { deadlineAt: Date.now() + 1000 },
+  );
+  assert.equal(stream.status, 200);
+  assert.equal(calls, 2);
+});
+
+test('stream provider 429 uses jittered backoff when Retry-After is absent', async () => {
+  const originalRandom = Math.random;
+  Math.random = () => 0;
+  const fetchTimes = [];
+  try {
+    global.fetch = async () => {
+      fetchTimes.push(Date.now());
+      if (fetchTimes.length === 1) return response(429, rateLimit('', { provider_code: 429 }));
+      return response(200, {});
+    };
+
+    await fetchOpenRouterStream(
+      'https://openrouter.ai/api/v1',
+      'key',
+      'model:free',
+      [],
+      0,
+      undefined,
+      null,
+      { deadlineAt: Date.now() + 1000 },
+    );
+  } finally {
+    Math.random = originalRandom;
+  }
+  assert.ok(fetchTimes[1] - fetchTimes[0] >= 180, `retry was not delayed: ${fetchTimes[1] - fetchTimes[0]}ms`);
+});
+
+test('stream provider Retry-After that misses the deadline makes no second request', async () => {
+  let calls = 0;
+  global.fetch = async () => {
+    calls += 1;
+    return response(429, rateLimit('', { provider_code: 429 }), { 'retry-after': '60' });
+  };
+
+  await assert.rejects(
+    fetchOpenRouterStream(
+      'https://openrouter.ai/api/v1',
+      'key',
+      'model:free',
+      [],
+      0,
+      undefined,
+      null,
+      { deadlineAt: Date.now() + 100 },
+    ),
+    (error) => error?.status === 429 && error?.retryAfterMs === 60_000,
+  );
+  assert.equal(calls, 1);
+});
+
+test('stream success uses the default deadline when none is supplied', async () => {
+  let calls = 0;
+  global.fetch = async () => {
+    calls += 1;
+    return response(200, {});
+  };
+
+  const stream = await fetchOpenRouterStream('https://openrouter.ai/api/v1', 'key', 'model:free', []);
+  assert.equal(stream.status, 200);
+  assert.equal(calls, 1);
 });
 
 test('abort still returns an empty string', async () => {

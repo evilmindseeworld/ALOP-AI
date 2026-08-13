@@ -56,10 +56,50 @@ const classify429 = (response, errorBody) => {
   if (source === 'openrouter_free_tier_daily' || /free-models-per-day/i.test(message)) {
     return { kind: 'daily', message, resetAt };
   }
-  if (!providerCode && (source.includes('free-models-per-min') || /free-models-per-min/i.test(message))) {
+  if (!providerCode && (source.includes('free-models-per-min')
+    || source === 'openrouter_free_tier_per_minute'
+    || /free-models-per-min/i.test(message))) {
     return { kind: 'per-minute', message, resetAt };
   }
   return { kind: 'provider', message, resetAt };
+};
+
+const responseHeader = (response, payload, name) => {
+  const bodyHeaders = payload?.error?.metadata?.headers || payload?.metadata?.headers || {};
+  return response.headers?.get?.(name)
+    || bodyHeaders[name]
+    || bodyHeaders[name.toLowerCase()]
+    || Object.entries(bodyHeaders).find(([key]) => key.toLowerCase() === name.toLowerCase())?.[1]
+    || null;
+};
+
+const retryAfterMs = (response, payload) => {
+  const raw = responseHeader(response, payload, 'retry-after');
+  if (raw == null || raw === '') return null;
+  const seconds = Number(raw);
+  if (Number.isFinite(seconds) && seconds >= 0) return seconds * 1000;
+  const timestamp = Date.parse(String(raw));
+  return Number.isFinite(timestamp) ? Math.max(0, timestamp - Date.now()) : null;
+};
+
+const jitteredRetryDelay = (attempt) => {
+  const base = RETRY_DELAYS_MS[Math.min(attempt, RETRY_DELAYS_MS.length - 1)];
+  return Math.max(0, Math.round(base * (0.5 + Math.random())));
+};
+
+const streamHttpError = (response, errorBody, payload, rateLimit) => {
+  const detail = String(errorBody || '').replace(/\s+/g, ' ').trim().slice(0, 300);
+  const error = new Error(`Stream HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}${detail ? `: ${detail}` : ''}`);
+  error.status = response.status;
+  error.limitSource = payload?.error?.metadata?.limit_source
+    || payload?.error?.limit_source
+    || payload?.limit_source
+    || responseHeader(response, payload, 'X-RateLimit-Limit-Source')
+    || responseHeader(response, payload, 'X-RateLimit-Source')
+    || null;
+  error.resetAt = rateLimit?.resetAt ?? rateLimitResetAt(response, payload);
+  error.retryAfterMs = retryAfterMs(response, payload);
+  return error;
 };
 
 const abortableDelay = (ms, signal) => new Promise((resolve) => {
@@ -132,6 +172,92 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
   return '';
 }
 
+/**
+ * Open a streaming completion, retrying only failures that happened before a
+ * response body was handed to the caller. The caller owns the reader and may
+ * already have written bytes by the time it sees a later stream error; this
+ * helper therefore never retries after returning a response.
+ *
+ * Provider 429s are transient and get one same-model retry. Account daily and
+ * per-minute limits are not treated as provider health: the former cannot be
+ * helped by another request, and the latter is handled by the turn-level
+ * reset policy. A Retry-After header wins over the local jittered backoff.
+ */
+async function fetchOpenRouterStream(
+  host,
+  apiKey,
+  modelName,
+  messages,
+  temperature = 0.0,
+  parentSignal,
+  maxTokens = null,
+  { deadlineAt = null, timeoutMs = 30_000, maxRetries = 1 } = {},
+) {
+  if (parentSignal?.aborted) throw parentSignal.reason || new DOMException('Aborted', 'AbortError');
+  const suppliedDeadline = deadlineAt == null ? null : Number(deadlineAt);
+  const fallbackTimeout = Number(timeoutMs);
+  const deadline = Number.isFinite(suppliedDeadline)
+    ? suppliedDeadline
+    : Date.now() + Math.max(0, Number.isFinite(fallbackTimeout) ? fallbackTimeout : 30_000);
+  const retryLimit = Math.max(0, Math.floor(Number(maxRetries) || 0));
+  const body = JSON.stringify({
+    model: modelName,
+    messages,
+    temperature,
+    stream: true,
+    reasoning: { exclude: true },
+    ...(maxTokens ? { max_tokens: maxTokens } : {}),
+  });
+
+  for (let attempt = 0; ; attempt += 1) {
+    const remainingMs = deadline - Date.now();
+    if (parentSignal?.aborted) throw parentSignal.reason || new DOMException('Aborted', 'AbortError');
+    if (remainingMs <= 0) {
+      const error = new Error('OpenRouter stream deadline exceeded');
+      error.code = 'OPENROUTER_DEADLINE';
+      throw error;
+    }
+
+    const controller = new AbortController();
+    const onParentAbort = () => controller.abort(parentSignal.reason);
+    parentSignal?.addEventListener('abort', onParentAbort, { once: true });
+    const timer = setTimeout(() => controller.abort('timeout'), remainingMs);
+    try {
+      let response;
+      try {
+        response = await fetch(endpointFor(host), {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          body,
+          signal: controller.signal,
+        });
+      } catch (error) {
+        if (controller.signal.aborted && (parentSignal?.aborted || Date.now() >= deadline)) throw error;
+        throw error;
+      }
+
+      if (response.ok) return response;
+
+      const errorBody = await response.text().catch(() => '');
+      const payload = parseErrorBody(errorBody);
+      const rateLimit = response.status === 429 ? classify429(response, errorBody) : null;
+      const error = streamHttpError(response, errorBody, payload, rateLimit);
+      if (response.status !== 429
+        || rateLimit.kind !== 'provider'
+        || attempt >= retryLimit) throw error;
+
+      const delay = error.retryAfterMs ?? jitteredRetryDelay(attempt);
+      if (delay >= deadline - Date.now()) throw error;
+      if (delay > 0 && !(await abortableDelay(delay, parentSignal))) {
+        throw parentSignal?.reason || new DOMException('Aborted', 'AbortError');
+      }
+    } finally {
+      clearTimeout(timer);
+      parentSignal?.removeEventListener('abort', onParentAbort);
+    }
+  }
+}
+
 async function getOpenRouterKeyStatus(host, apiKey, signal) {
   const response = await fetch(keyEndpointFor(host), {
     method: 'GET',
@@ -163,4 +289,10 @@ function parseOpenRouterSseLine(line) {
   return { skip: false, done: choice?.finish_reason != null, text };
 }
 
-module.exports = { callModel, getOpenRouterKeyStatus, OpenRouterRateLimitError, parseOpenRouterSseLine };
+module.exports = {
+  callModel,
+  fetchOpenRouterStream,
+  getOpenRouterKeyStatus,
+  OpenRouterRateLimitError,
+  parseOpenRouterSseLine,
+};

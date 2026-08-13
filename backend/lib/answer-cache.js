@@ -92,14 +92,50 @@ const DEFAULTS = {
  * is short enough to be honest and long enough to absorb a burst of people
  * asking the same thing about the same news.
  */
+const DAY_MS = 24 * 60 * 60 * 1000;
 const TTL_MS = {
-  council: 7 * 24 * 60 * 60 * 1000,
-  wiki: 7 * 24 * 60 * 60 * 1000,
-  search: 6 * 60 * 60 * 1000,
+  /* AN ANSWER THAT DID NOT COME FROM THE LIVE WEB DOES NOT GO STALE, so this is
+   * a safety net rather than a shelf life. It was seven days, which threw away
+   * most of the cache's value for nothing: "what is a monad" and "can you access
+   * Canva" are the same answer next month, and re-earning them every week costs
+   * model requests out of an account-wide daily budget.
+   *
+   * Ninety days rather than never, because the answer is not a pure function of
+   * the question alone in practice — the prompts, the roster and the product all
+   * change, and a row with no expiry would outlive the system that wrote it with
+   * nothing to notice. `clear()` remains the lever for an intentional
+   * invalidation; this is the one for the unintentional kind. */
+  stable: 90 * DAY_MS,
+  /* A DAY, up from six hours, at the owner's instruction and on the strength of
+   * the refresh job: a search answer that is about to expire is rewritten before
+   * anyone asks for it, so the TTL bounds how stale a row can get when the job
+   * is NOT running rather than how often the answer is re-earned. */
+  search: DAY_MS,
+  /* A question with an explicit freshness window — "right now", "this week" —
+   * is deliberately NOT given the search tier. An hour-old answer to "what
+   * happened today" is defensible; a day-old one presented as current is not,
+   * and no refresh job can make it true in between. */
   recent: 60 * 60 * 1000,
   /* Greetings are constants, so their durable seed can live for a year. */
-  greeting: 365 * 24 * 60 * 60 * 1000,
+  greeting: 365 * DAY_MS,
 };
+TTL_MS.council = TTL_MS.stable;
+TTL_MS.wiki = TTL_MS.stable;
+
+/**
+ * THE SHELF LIFE, DECIDED BY WHERE THE FACTS CAME FROM.
+ *
+ * One function so the four call sites in server.js cannot drift apart, and so
+ * the rule is testable without a server: no live web, no expiry worth the name.
+ *
+ * @param {boolean} searched  whether the answer used the live web. This is the
+ *   router's own search decision, not a guess made at the write site.
+ * @param {boolean} fresh  whether the question named a freshness window.
+ */
+function ttlFor({ searched = false, fresh = false } = {}) {
+  if (!searched) return TTL_MS.stable;
+  return fresh ? TTL_MS.recent : TTL_MS.search;
+}
 
 /**
  * The question, reduced to what makes it the same question.
@@ -315,4 +351,4 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
   return { get, set, setConstant, clear, keyFor, stats: () => ({ ...stats, size: memory.size }) };
 }
 
-module.exports = { createAnswerCache, keyFor, normalise, TTL_MS };
+module.exports = { createAnswerCache, keyFor, normalise, ttlFor, TTL_MS };

@@ -3,7 +3,7 @@ const assert = require('node:assert');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const { createAnswerCache, keyFor, normalise, TTL_MS } = require('./answer-cache');
+const { createAnswerCache, keyFor, normalise, ttlFor, TTL_MS } = require('./answer-cache');
 
 const ANSWER = 'x'.repeat(200); // comfortably over minAnswerChars
 
@@ -348,4 +348,58 @@ test('answer cache emits a periodic hit-rate signal', async () => {
   assert.equal(lines.length, 1);
   assert.match(lines[0], /\[ANSWERS\] cache stats/);
   assert.match(lines[0], /hitRate=50%/);
+});
+
+
+// ===== shelf life by provenance =====
+//
+// An answer that never touched the live web does not go stale, and re-earning
+// it every week spent model requests out of an account-wide daily budget for
+// nothing. The rule lives in one function so the four write sites in server.js
+// cannot drift apart from each other.
+
+test('an answer that did not search does not expire on a weekly clock', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  assert.strictEqual(ttlFor({ searched: false }), TTL_MS.stable);
+  assert.ok(ttlFor({ searched: false }) >= 90 * DAY, 'the stable tier must outlive a redeploy cycle by a wide margin');
+  // `fresh` is meaningless without a search and must not shorten a stable answer.
+  assert.strictEqual(ttlFor({ searched: false, fresh: true }), TTL_MS.stable);
+  // The default is the SAFE direction only because the caller always passes the
+  // router's decision; assert it anyway so a missing argument is visible.
+  assert.strictEqual(ttlFor({}), TTL_MS.stable);
+});
+
+test('a search-backed answer gets a day, and a freshness window gets an hour', () => {
+  const DAY = 24 * 60 * 60 * 1000;
+  assert.strictEqual(ttlFor({ searched: true }), DAY);
+  assert.strictEqual(ttlFor({ searched: true, fresh: true }), 60 * 60 * 1000);
+  assert.ok(ttlFor({ searched: true, fresh: true }) < ttlFor({ searched: true }),
+    'a question that said the present matters must not outlive an ordinary search answer');
+  assert.ok(ttlFor({ searched: true }) < ttlFor({ searched: false }),
+    'a dated answer must never outlive an undated one');
+});
+
+test('a stable answer survives long past the old weekly ceiling', () => {
+  const clock = fakeClock();
+  const cache = createAnswerCache({ now: clock.now, reportEvery: 0 });
+  const key = keyFor({ question: 'what is a monad' });
+  cache.set(key, ANSWER, ttlFor({ searched: false }));
+
+  clock.advance(30 * 24 * 60 * 60 * 1000);
+  return cache.get(key).then((hit) => {
+    assert.ok(hit, 'a month-old answer to a question with no live facts in it was thrown away');
+    assert.strictEqual(hit.answer, ANSWER);
+  });
+});
+
+test('a search-backed answer is gone a day later', () => {
+  const clock = fakeClock();
+  const cache = createAnswerCache({ now: clock.now, reportEvery: 0 });
+  const key = keyFor({ question: 'what does a canva pro seat cost', branch: 'search' });
+  cache.set(key, ANSWER, ttlFor({ searched: true }));
+
+  clock.advance(24 * 60 * 60 * 1000 + 1);
+  return cache.get(key).then((hit) => {
+    assert.strictEqual(hit, null, 'a dated answer outlived its day');
+  });
 });

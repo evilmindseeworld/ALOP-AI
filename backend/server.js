@@ -1030,7 +1030,7 @@ const { todayLine, freshnessWindow, normalizeDate, dateLabel, BRAVE_FRESHNESS, G
 const { parseRoutePlan } = require('./lib/search-plan');
 const { readSonar } = require('./lib/perplexity');
 const { createSearchCache, comprehensiveSearchKey } = require('./lib/search-cache');
-const { createAnswerCache, TTL_MS: ANSWER_TTL_MS } = require('./lib/answer-cache');
+const { createAnswerCache, ttlFor } = require('./lib/answer-cache');
 const { createGreetingCache } = require('./lib/greeting-cache');
 const { createTtlCache } = require('./lib/ttl-cache');
 const { boundedPage, pageInfo } = require('./lib/pagination');
@@ -3088,6 +3088,15 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
         selection = widened;
       }
     }
+    /* WHETHER THIS TURN'S FACTS CAME FROM THE LIVE WEB, which is what decides
+     * the cached answer's shelf life.
+     *
+     * The council branch below is reached with a search decision in hand once
+     * seeded tools are on — the agent loop searches from inside it — so reading
+     * the branch name would have called a tool-loop answer about a price a
+     * "council" answer and kept it for ninety days. The router's own decision is
+     * the honest signal, and it is the one the owner asked to key this on. */
+    const usedLiveWeb = Boolean(searchQueries?.length);
     const shouldCheckWiki = needsWikiCheck(pv.value);
     /* Derived from the USER'S words, not from the query the model wrote.
      *
@@ -3189,7 +3198,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
        * week" — and an answer written under it carries "as of" dates that start
        * ageing immediately. Six hours for an ordinary search answer, one for a
        * question that said the present matters. */
-      cacheAnswer(searchAnswer, fresh ? ANSWER_TTL_MS.recent : ANSWER_TTL_MS.search);
+      cacheAnswer(searchAnswer, ttlFor({ searched: true, fresh }));
       const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
       rememberTurn(chatId, user.id, pv.value, lastA || 'Search response.', telemetry);
       await auditBranch({ category: 'search', sources: sources.length });
@@ -3214,7 +3223,9 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         const wikiAnswer = await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
         if (!res.writableEnded) res.end();
         // An encyclopedia answer is still good next week.
-        cacheAnswer(wikiAnswer, ANSWER_TTL_MS.wiki);
+        /* An encyclopedia answer did not come from the live web, so it gets the
+         * stable shelf life rather than a freshness window it does not need. */
+        cacheAnswer(wikiAnswer, ttlFor({ searched: false }));
         rememberTurn(chatId, user.id, pv.value, 'Wikipedia response.', telemetry);
         await auditBranch({ category: 'wiki' });
         return;
@@ -3541,7 +3552,7 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       if (turnSignal.aborted) return;
       const lastSolo = histArr.filter((m) => m.role === 'assistant').slice(-1)[0]?.content || '';
       rememberTurn(chatId, user.id, pv.value, lastSolo || soleDraft.slice(0, 800), telemetry);
-      cacheAnswer(soleDraft, ANSWER_TTL_MS.council);
+      cacheAnswer(soleDraft, ttlFor({ searched: usedLiveWeb }));
       await auditTelemetry('council', 'council_solo', {
         ...telemetryExtra,
         seats: selection.members.length,
@@ -3600,7 +3611,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
      * answered from what the models know rather than from anything dated. If
      * that answer is going to go stale it was already stale when it was
      * written, and a shorter TTL would not have helped. */
-    cacheAnswer(synthAnswer, ANSWER_TTL_MS.council);
+    cacheAnswer(synthAnswer, ttlFor({ searched: usedLiveWeb }));
     const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
     rememberTurn(chatId, user.id, pv.value, lastA || validResponses[0]?.content?.slice(0,800) || 'Council response.', telemetry);
     /* msToFirstByte on THIS path too, not only on the tools path.

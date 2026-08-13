@@ -383,3 +383,17 @@ test("aborting during the reset wait cancels the timer without another fetch", a
   await assert.rejects(pending, (err) => err?.name === "AbortError");
   assert.equal(requests, 1, "an abandoned turn must not remain waiting or dispatch the retry");
 });
+
+test("every cached answer's shelf life is decided by the router's search flag", () => {
+  // Four write sites, one rule. The council branch is the trap: with seeded
+  // tools on it is reached WITH a search decision in hand and searches from
+  // inside the agent loop, so keying the TTL on the branch name would have kept
+  // a tool-loop answer about a price for ninety days.
+  const writes = [...ROUTE.matchAll(/cacheAnswer\([^\n]*\)/g)].map((m) => m[0]);
+  assert.ok(writes.length >= 4, `expected the four cache writes, found ${writes.length}`);
+  for (const write of writes) {
+    assert.match(write, /ttlFor\(\{ searched:/, `a cache write set its own shelf life: ${write}`);
+  }
+  assert.match(ROUTE, /const usedLiveWeb = Boolean\(searchQueries\?\.length\)/,
+    "the council branch must read the router's decision, not its own branch name");
+});

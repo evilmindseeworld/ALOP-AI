@@ -117,16 +117,14 @@ function wantsDetailedAnswer(text) {
 }
 
 /**
- * Whether a Wikipedia lookup should join the search fan-out.
- *
- * Word-bounded, which the original was not. Unbounded `history` matched
- * "browser history", `born` matched "airborne" and "reborn", and `origin`
- * matched "original" and "originally" — the single most common word in this
- * list. Each false positive is one more provider in the fan-out, so it costs
- * latency on the path the whip is already tuned for rather than correctness.
+ * Whether the user explicitly asked for encyclopedic material. Generic
+ * factual forms such as "what is" and "explain" belong to the plain council;
+ * treating them as lookup requests made almost every topic question a
+ * Wikipedia shortcut. The remaining terms are word-bounded to avoid matching
+ * "airborne", "reborn", or "original".
  */
 const WIKI_RE =
-  /\b(what is|what are|who is|who was|who were|history|explain|definition|meaning of|tell me about|biography|born|origins?)\b/i;
+  /\b(wikipedia|encyclop(?:a)?edia|encyclop(?:a)?edic|biography|history of|origins? of|born)\b/i;
 
 function needsWikiCheck(text) {
   return WIKI_RE.test(typeof text === "string" ? text : "");

@@ -2853,10 +2853,15 @@ async function handleCouncilTurn(req, res) {
     // reaches this list. lib/user-facts.js is where that rule is enforced and
     // explained; if it is ever relaxed, this line has to move down and get a
     // preamble.
+    const hasConversationHistory = Boolean(histArr.length || convSummary);
+    /* Standalone factual turns may use the shared cache. Keep durable profile
+     * material out of those prompts so a miss cannot store one user's name or
+     * learned style and replay it to somebody else. */
+    const profileContextAllowed = hasConversationHistory;
     const contextMsgs = [
       ...(convSummary ? [{ role: 'system', content: `CONVERSATION CONTEXT: ${convSummary}` }] : []),
-      ...(userFacts.length ? [{ role: 'system', content: factsBlock(userFacts) }] : []),
-      ...(feedbackGuidance ? [{ role: 'system', content: `USER PREFERENCES, learned from their past ratings. Honour these unless they conflict with accuracy:\n${feedbackGuidance}` }] : []),
+      ...(profileContextAllowed && userFacts.length ? [{ role: 'system', content: factsBlock(userFacts) }] : []),
+      ...(profileContextAllowed && feedbackGuidance ? [{ role: 'system', content: `USER PREFERENCES, learned from their past ratings. Honour these unless they conflict with accuracy:\n${feedbackGuidance}` }] : []),
       ...(imageContext ? [
         { role: 'system', content: 'THE USER ATTACHED AN IMAGE. A description of it follows in a user turn — treat it as something you can see, and answer with reference to it.' },
         { role: 'user', content: `=== IMAGE DESCRIPTION ===\n${UNTRUSTED_PREAMBLE}\n\n${envelope('vision transcription of the attached image', imageContext)}` },
@@ -2869,11 +2874,9 @@ async function handleCouncilTurn(req, res) {
     /* ═══ THE ANSWER CACHE ═══════════════════════════════════════════════════
      *
      * HERE, and not higher up, because this is the first line at which the
-     * question "is this turn personalised?" can be answered. Everything the
-     * gate below reads — the summary, the facts, the preferences, the vision
-     * output — is resolved immediately above; the earlier positions in this
-     * route can see the request body but not the four Supabase reads that
-     * decide whether this answer would be about THIS person.
+     * question "does this chat have prior conversation context?" can be
+     * answered. The earlier positions in this route can see the request body
+     * but not the per-chat summary read that participates in that decision.
      *
      * And it is still early enough to be worth it. The next thing that happens
      * is the router's two model calls, and every branch below spends at least
@@ -2882,14 +2885,12 @@ async function handleCouncilTurn(req, res) {
      *
      * ─── THE GATE IS THE SECURITY PROPERTY, not an optimisation ────────────
      *
-     * `personalised` false means the prompt about to be built contains nothing
-     * but the question, the language, the region and the plan — all of which
-     * are in the key. Anything else and NO KEY IS BUILT AT ALL, so the turn can
-     * neither read a shared answer nor write one. The failure mode this
-     * prevents has no error and no log line: one user's answer, assembled from
-     * their own chat summary and stored facts, served verbatim to a stranger
-     * who asked a similar question. It would look exactly like the feature
-     * working.
+     * `personalised` false means there is no earlier turn in this chat. Stored
+     * profile facts do not change that decision; instead they are omitted from
+     * standalone cacheable prompts above. This preserves cache hits for users
+     * who have facts while preventing their names or preferences from entering
+     * a shared row. Attachments independently suppress the cache because the
+     * image is not represented in the key.
      *
      * `histArr.length` is in the list because a follow-up ("and the second
      * one?") is not a question at all on its own, and the cached answer to the
@@ -2900,13 +2901,12 @@ async function handleCouncilTurn(req, res) {
      * on the whole object would put the detection SOURCE in the key, so the
      * same user on the same question would miss depending on whether the CDN
      * header or the timezone answered first. */
-    const personalised = Boolean(
-      histArr.length || convSummary || userFacts.length || feedbackGuidance || imageContext || parsedImage,
-    );
+    const personalised = hasConversationHistory;
+    const hasUncacheableAttachment = Boolean(imageContext || parsedImage);
     /* Feature flags change how the SAME words are answered. Keep that
      * provenance in the durable key so enabling seeded tools cannot replay a
      * Wikipedia/plain-council answer written before the flag changed. */
-    const cacheKey = personalised
+    const cacheKey = personalised || hasUncacheableAttachment
       ? null
       : answerCache.keyFor({
         question: pv.value,

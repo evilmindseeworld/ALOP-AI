@@ -133,21 +133,26 @@ test("word boundaries stop the substring false positives", () => {
   assert.equal(needsWikiCheck("reborn as a startup"), false);
 });
 
-test("what word boundaries do NOT fix, recorded so it is not mistaken for solved", () => {
-  // "clear my browser history" contains `history` as a whole word, so it still
-  // triggers. Separating this sense from the encyclopaedic one needs to know
-  // what the history is OF, which is not a job for a regex. The cost is one
-  // wasted provider in a fan-out that is already whipped, so it stays.
-  assert.equal(needsWikiCheck("clear my browser history"), true);
+test("generic factual questions stay with the plain council", () => {
+  for (const t of [
+    "What is machine learning?",
+    "what are neural networks?",
+    "explain photosynthesis",
+    "definition of entropy",
+    "tell me about caching",
+    "who is the CEO?",
+    "clear my browser history",
+  ]) {
+    assert.equal(needsWikiCheck(t), false, t);
+  }
 });
 
-test("the real lookups still fire", () => {
+test("explicit encyclopedic lookups still fire", () => {
   for (const t of [
-    "what is a black hole",
-    "who is Ada Lovelace",
-    "tell me about the Silk Road",
+    "look this up on Wikipedia: Ada Lovelace",
+    "give me an encyclopedic overview of black holes",
+    "write a biography of Ada Lovelace",
     "the history of the printing press",
-    "meaning of entropy",
     "where was she born",
     "the origins of jazz",
   ]) {

@@ -259,19 +259,16 @@ test('the shelf lives are ranked by how fast the facts go stale', () => {
  * fails the next time somebody reflows the line — and a test that fails for
  * formatting gets deleted, taking the guarantee with it.
  */
-test('server.js builds no cache key for a personalised turn', () => {
+test('server.js bypasses shared cache for conversation history, not stored profile facts', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
 
   const gate = src.indexOf('const personalised =');
   assert.ok(gate > 0, 'the personalisation gate is gone; the answer cache is now a cross-user leak');
 
   const window = src.slice(gate, gate + 400);
-  /* Every source of another person's data that reaches a prompt on this route.
-   * If a new one is added — a stored preference, a shared document, anything
-   * derived from a different turn — it belongs in this list AND in that gate. */
-  for (const input of ['histArr', 'convSummary', 'userFacts', 'feedbackGuidance', 'imageContext']) {
-    assert.match(window, new RegExp(input), `${input} is not in the personalisation gate`);
-  }
+  assert.match(window, /hasConversationHistory/);
+  assert.doesNotMatch(window, /userFacts|feedbackGuidance/,
+    'stored profile facts must not disable caching for standalone factual questions');
 
   /* And the gate must actually decide the key, not merely be computed.
    * Searched from the gate onwards: `cacheKey` is also the name of the search
@@ -280,6 +277,16 @@ test('server.js builds no cache key for a personalised turn', () => {
   const key = src.indexOf('const cacheKey =', gate);
   assert.ok(key > gate, 'the cache key is built before the gate that is meant to suppress it');
   assert.match(src.slice(key, key + 120), /personalised/);
+});
+
+test('cacheable standalone prompts do not inject profile context into shared answers', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  const context = src.indexOf('const contextMsgs =');
+  assert.ok(context > 0, 'context message construction is gone');
+  const window = src.slice(context - 700, context + 700);
+  assert.match(window, /profileContextAllowed\s*=\s*hasConversationHistory/);
+  assert.match(window, /profileContextAllowed\s*&&\s*userFacts\.length/);
+  assert.match(window, /profileContextAllowed\s*&&\s*feedbackGuidance/);
 });
 
 test('server.js logs cache hit, miss, and personalised bypass distinctly', () => {

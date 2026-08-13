@@ -247,7 +247,7 @@ const SMART_MODEL = process.env.ORCHESTRATOR_FALLBACK_MODEL || 'nvidia/nemotron-
  * in lib/openrouter.js so they can be unit tested — this file calls
  * process.exit(1) at import time on a missing env var, so nothing defined here
  * is reachable from a test. Only the socket and the telemetry stay here. */
-const { callModel: orCallModel, parseOpenRouterSseLine } = require('./lib/openrouter');
+const { callModel: orCallModel, parseOpenRouterSseLine, fetchOpenRouterStream } = require('./lib/openrouter');
 
 /**
  * THE ACCOUNT-WIDE DAILY CAP, LATCHED.
@@ -330,36 +330,46 @@ const abortableDelay = (ms, signal) => new Promise((resolve, reject) => {
  * keeping those apart is what makes the retry's two conditions checkable rather
  * than tangled through the read loop.
  */
-const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, meta = {}, answerOptions = {}) => {
-  const response = await fetch(OPENROUTER_HOST, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_API_KEY}` }, body: JSON.stringify({ model: modelName, messages, temperature, stream: true, reasoning: { exclude: true }, ...(maxTokens ? { max_tokens: maxTokens } : {}) }), ...(signal ? { signal } : {}) });
-  if (!response.ok) {
-    /* OpenRouter's body carries the distinction the status alone cannot: an
-     * account daily cap, our free-models-per-minute limit, upstream-provider
-     * contention and a gateway failure can all be 429/5xx. Keep enough of it
-     * to identify the policy from one log line, but never let an upstream HTML
-     * page or multiline payload flood production logs. */
-    let detail = '';
-    let payload = null;
-    try {
-      const raw = await response.text();
-      detail = raw.replace(/\s+/g, ' ').trim().slice(0, 300);
-      try { payload = JSON.parse(raw); } catch {}
-    } catch { detail = 'response body unreadable'; }
-    const metadata = payload?.error?.metadata || payload?.metadata || {};
-    const bodyHeaders = metadata.headers || {};
-    const header = (name) => response.headers?.get?.(name)
-      || bodyHeaders[name]
-      || bodyHeaders[name.toLowerCase()]
-      || Object.entries(bodyHeaders).find(([key]) => key.toLowerCase() === name.toLowerCase())?.[1];
-    const err = new Error(`Stream HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}${detail ? `: ${detail}` : ''}`);
-    err.status = response.status;
-    err.limitSource = metadata.limit_source
-      || payload?.error?.limit_source
-      || payload?.limit_source
-      || header('X-RateLimit-Limit-Source')
-      || header('X-RateLimit-Source')
-      || null;
-    err.resetAt = normaliseResetEpoch(header('X-RateLimit-Reset'));
+/* THE OPEN IS lib/openrouter.js's NOW, THE READ IS STILL THIS FUNCTION'S.
+ *
+ * This used to `fetch` directly, which is why the production log reads
+ * "[STREAM] gemma-4-26b failed before writing anything (Stream HTTP 429 … is
+ * temporarily rate-limited upstream) Falling back to nemotron". A provider 429
+ * before a single byte is the cheapest possible retry — nothing has reached the
+ * user, so a second attempt cannot contradict a first — and instead it bought
+ * the fallback: nemotron's measured median is 23.9s against gemma's 2.4s, so
+ * every transient upstream blip turned a two-second answer into a
+ * twenty-four-second one. `callModel` had this retry all along; the streaming
+ * path, which is every answer the user actually reads, did not.
+ *
+ * The helper retries only what happened BEFORE it returned a body, so the
+ * "never after a partial answer" rule below is untouched — by construction
+ * rather than by agreement. Account daily and per-minute limits are left to the
+ * policies underneath, which are about waiting for a window rather than about
+ * provider health. luna's a9d5356. */
+const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, meta = {}, answerOptions = {}, turnDeadlineAt = null) => {
+  let response;
+  try {
+    response = await fetchOpenRouterStream(
+      OPENROUTER_HOST,
+      OPENROUTER_API_KEY,
+      modelName,
+      messages,
+      temperature,
+      signal,
+      maxTokens,
+      /* The turn's admission deadline when there is one, so a retry can never
+       * outlive the turn it belongs to. */
+      Number.isFinite(turnDeadlineAt) ? { deadlineAt: turnDeadlineAt } : {},
+    );
+  } catch (err) {
+    /* `resetAt` arrives as whatever the wire said. Ten digits are seconds and
+     * thirteen are milliseconds, and the per-minute policy below reads this as
+     * a millisecond epoch — an unnormalised seconds value is a timestamp in
+     * 1970, which reads as "the window already reset" and retries instantly
+     * into the same limit. The helper deliberately does not guess at units; the
+     * consumer that has one does. */
+    if (err && err.resetAt != null) err.resetAt = normaliseResetEpoch(err.resetAt);
     throw err;
   }
   if (!response.body) throw new Error(`Stream HTTP ${response.status}: missing stream body`);
@@ -479,7 +489,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
 const streamModel = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, answerOptions = {}, turnDeadlineAt = null) => {
   const meta = {};
   try {
-    return await streamOnce(res, modelName, messages, temperature, signal, maxTokens, meta, answerOptions);
+    return await streamOnce(res, modelName, messages, temperature, signal, maxTokens, meta, answerOptions, turnDeadlineAt);
   } catch (err) {
     const wrote = (meta.emitted || []).join('').length;
     if (modelName !== PRIMARY_MODEL || signal?.aborted || wrote > 0) throw err;
@@ -496,14 +506,14 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
       await abortableDelay(Math.max(0, resetAt - Date.now()), signal);
       /* Returned directly: if this second and final request fails, it escapes.
        * Falling back after it would turn today's two-request failure into three. */
-      return await streamOnce(res, modelName, messages, temperature, signal, maxTokens, {}, answerOptions);
+      return await streamOnce(res, modelName, messages, temperature, signal, maxTokens, {}, answerOptions, turnDeadlineAt);
     }
     /* The daily cap is account-wide too, but its policy is the latch above
      * callModel. Do not create a competing stream latch or spend a fallback
      * request that the same daily gate must reject. */
     if (err.status === 429 && err.limitSource === 'openrouter_free_tier_daily') throw err;
     console.warn(`[STREAM] ${modelName} failed before writing anything (${err.message}). Falling back to ${SMART_MODEL}.`);
-    return await streamOnce(res, SMART_MODEL, messages, temperature, signal, maxTokens, {}, answerOptions);
+    return await streamOnce(res, SMART_MODEL, messages, temperature, signal, maxTokens, {}, answerOptions, turnDeadlineAt);
   }
 };
 

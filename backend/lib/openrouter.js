@@ -222,6 +222,19 @@ async function fetchOpenRouterStream(
     const onParentAbort = () => controller.abort(parentSignal.reason);
     parentSignal?.addEventListener('abort', onParentAbort, { once: true });
     const timer = setTimeout(() => controller.abort('timeout'), remainingMs);
+    /* THE RETURNED BODY OUTLIVES THIS FUNCTION, AND SO MUST THE ABORT LINK.
+     *
+     * The caller reads the stream in its own loop and cancels a turn by
+     * aborting the signal it passed in — nothing in that loop tests the signal
+     * itself, so the fetch is the only thing that can stop it. Dropping the
+     * parent listener on the way out would leave a handed-off response with no
+     * route from the turn's abort to its own reader: a user who closes the tab
+     * would keep paying for tokens nobody will read, which is the exact
+     * behaviour the abort work exists to prevent, and it would be invisible.
+     *
+     * The TIMEOUT is cleared either way. It bounds opening the stream, not
+     * reading it; leaving it armed would abort a healthy long answer mid-word. */
+    let handedOff = false;
     try {
       let response;
       try {
@@ -236,7 +249,10 @@ async function fetchOpenRouterStream(
         throw error;
       }
 
-      if (response.ok) return response;
+      if (response.ok) {
+        handedOff = true;
+        return response;
+      }
 
       const errorBody = await response.text().catch(() => '');
       const payload = parseErrorBody(errorBody);
@@ -253,7 +269,7 @@ async function fetchOpenRouterStream(
       }
     } finally {
       clearTimeout(timer);
-      parentSignal?.removeEventListener('abort', onParentAbort);
+      if (!handedOff) parentSignal?.removeEventListener('abort', onParentAbort);
     }
   }
 }

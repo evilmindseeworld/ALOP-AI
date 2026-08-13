@@ -8,6 +8,10 @@ const { join } = require("node:path");
 const SOURCE = readFileSync(join(__dirname, "..", "server.js"), "utf8");
 const ROUTE = SOURCE.slice(SOURCE.indexOf("app.post('/api/council'"), SOURCE.indexOf("// ===== OVERLAY"));
 const LOOP = readFileSync(join(__dirname, "agent-loop.js"), "utf8");
+// Half the stream-setup contract now lives here: opening the stream moved into
+// the helper so a pre-body 429 could be retried where it is cheap.
+const OPENROUTER = readFileSync(join(__dirname, "openrouter.js"), "utf8");
+const { fetchOpenRouterStream } = require("./openrouter");
 // The protocol loop, which lives in `streamOnce` since the orchestrator
 // fallback split the retry decision out of it.
 const STREAM_MODEL = SOURCE.slice(SOURCE.indexOf("const streamOnce"), SOURCE.indexOf("const callGeminiVision"));
@@ -276,10 +280,11 @@ test("the orchestrator falls back to the strongest seat, and refuses three ways"
 test("stream setup failures preserve the upstream cause in one bounded log line", () => {
   const setup = SOURCE.slice(SOURCE.indexOf("const streamOnce = async"), SOURCE.indexOf("const reader = response.body.getReader()"));
 
-  assert.match(setup, /response\.status/, "an HTTP failure must report its status");
-  assert.match(setup, /await response\.text\(\)/, "an HTTP failure must retain OpenRouter's error detail");
-  assert.match(setup, /replace\(\/\\s\+\/g/, "upstream detail must be collapsed onto one log line");
-  assert.match(setup, /slice\(0,\s*300\)/, "upstream detail must be bounded before it reaches logs");
+  assert.match(setup, /fetchOpenRouterStream\(/, "the open must go through the helper that retries a pre-body 429");
+  assert.match(OPENROUTER, /error\.status = response\.status/, "an HTTP failure must report its status");
+  assert.match(OPENROUTER, /await response\.text\(\)/, "an HTTP failure must retain OpenRouter's error detail");
+  assert.match(OPENROUTER, /replace\(\/\\s\+\/g/, "upstream detail must be collapsed onto one log line");
+  assert.match(OPENROUTER, /slice\(0,\s*300\)/, "upstream detail must be bounded before it reaches logs");
   assert.match(setup, /missing stream body/i, "an HTTP-success response without a body must be distinguishable from a non-2xx response");
 });
 
@@ -287,9 +292,11 @@ test("account-wide per-minute stream limits wait for reset and retry the same mo
   const setup = SOURCE.slice(SOURCE.indexOf("const streamOnce = async"), SOURCE.indexOf("const reader = response.body.getReader()"));
   const wrapper = SOURCE.slice(SOURCE.indexOf("const streamModel = async"), SOURCE.indexOf("const callGeminiVision"));
 
-  assert.match(setup, /limit_source/, "the 429 policy must read OpenRouter's structured limit source");
-  assert.match(setup, /X-RateLimit-Reset/i, "the 429 policy must read the reset from body metadata or response headers");
-  assert.match(setup, /X-RateLimit-(?:Limit-)?Source/i, "a response-header limit source must be accepted too");
+  assert.match(OPENROUTER, /limit_source/, "the 429 policy must read OpenRouter's structured limit source");
+  assert.match(OPENROUTER, /X-RateLimit-Reset/i, "the 429 policy must read the reset from body metadata or response headers");
+  assert.match(OPENROUTER, /X-RateLimit-(?:Limit-)?Source/i, "a response-header limit source must be accepted too");
+  assert.match(setup, /normaliseResetEpoch\(err\.resetAt\)/,
+    "the helper reports the reset in the unit the wire used; the consumer that reads it as milliseconds must normalise it");
   assert.match(SOURCE, /epoch \* 1_000/, "second epochs must be normalised rather than mistaken for millisecond epochs");
   assert.match(wrapper, /openrouter_free_tier_per_minute/, "the account-wide minute limit must be distinguished from provider and daily limits");
   assert.match(wrapper, /await abortableDelay\(/, "the reset wait must be abortable");
@@ -309,12 +316,21 @@ test("an account-minute reset outside the turn deadline makes no second request"
 
 const loadStreamPolicy = (fetchImpl) => {
   const policy = SOURCE.slice(SOURCE.indexOf("const normaliseResetEpoch"), SOURCE.indexOf("const callGeminiVision"));
+  /* The REAL helper, driven by the harness's fake fetch. A stub would test the
+   * harness: the policy deciding whether a second request happens at all now
+   * lives inside the helper, and every assertion below counts requests. */
+  const stream = async (...args) => {
+    const realFetch = global.fetch;
+    global.fetch = fetchImpl;
+    try { return await fetchOpenRouterStream(...args); }
+    finally { global.fetch = realFetch; }
+  };
   return Function(
-    "fetch", "OPENROUTER_HOST", "OPENROUTER_API_KEY", "PRIMARY_MODEL", "SMART_MODEL",
+    "fetch", "fetchOpenRouterStream", "OPENROUTER_HOST", "OPENROUTER_API_KEY", "PRIMARY_MODEL", "SMART_MODEL",
     "parseOpenRouterSseLine", "looksLikeProtocolOpening", "sanitizeAnswerText",
     `${policy}\nreturn { streamModel, normaliseResetEpoch };`,
   )(
-    fetchImpl, "https://openrouter.test", "secret", "primary:free", "smart:free",
+    fetchImpl, stream, "https://openrouter.test", "secret", "primary:free", "smart:free",
     () => ({ skip: true }), () => false, (text) => ({ text, rejected: false }),
   );
 };

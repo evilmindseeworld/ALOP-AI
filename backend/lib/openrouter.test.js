@@ -190,3 +190,30 @@ test('key status uses the account endpoint and returns only capacity fields', as
   assert.equal(request.options.method, 'GET');
   assert.equal(request.options.headers.Authorization, 'Bearer secret');
 });
+
+test('a handed-off stream is still aborted when the turn is', async () => {
+  // The caller reads the body in a loop that never tests the signal itself, so
+  // the fetch is the only route from a cancelled turn to a stopped generation.
+  // Dropping the parent listener at handoff leaves a user who closed the tab
+  // paying for tokens nobody will read, and nothing logs it.
+  const controller = new AbortController();
+  let seen = null;
+  global.fetch = async (_url, init) => {
+    seen = init.signal;
+    return response(200, {});
+  };
+
+  const stream = await fetchOpenRouterStream(
+    'https://openrouter.ai/api/v1',
+    'key',
+    'model:free',
+    [],
+    0,
+    controller.signal,
+  );
+  assert.equal(stream.status, 200);
+  assert.equal(seen.aborted, false);
+
+  controller.abort(new Error('client disconnected'));
+  assert.equal(seen.aborted, true, 'the returned body was left with no route from the turn abort');
+});

@@ -267,6 +267,13 @@ test('server.js builds no cache key for a personalised turn', () => {
   assert.match(src.slice(key, key + 120), /personalised/);
 });
 
+test('server.js logs cache hit, miss, and personalised bypass distinctly', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  assert.match(src, /\[ANSWERS\] HIT ageMin=/);
+  assert.match(src, /\[ANSWERS\] MISS/);
+  assert.match(src, /\[ANSWERS\] BYPASS personalised-context/);
+});
+
 test('the answer cache read runs before the router spends anything', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
 

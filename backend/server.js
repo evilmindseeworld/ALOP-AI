@@ -2852,7 +2852,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     if (cacheKey) {
       const hit = await answerCache.get(cacheKey);
       if (hit && !turnSignal.aborted) {
-        console.log(`[COUNCIL] Answer cache hit (${Math.round((Date.now() - hit.storedAt) / 60000)} min old). 0 model requests.`);
+        console.log(`[ANSWERS] HIT ageMin=${Math.round((Date.now() - hit.storedAt) / 60000)} models=0`);
         openStream(res);
         /* Replayed as an ordinary chunk frame and the ordinary terminator, so
          * the frontend cannot tell this from a model's answer — same
@@ -2879,6 +2879,9 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
         });
         return;
       }
+      console.log('[ANSWERS] MISS');
+    } else {
+      console.log('[ANSWERS] BYPASS personalised-context');
     }
 
     /* How long the answer that is about to be written stays true. Passed to

@@ -142,6 +142,12 @@ const MIGRATION_CHECKS = {
       expectEmpty: true,
     },
   ],
+  "015_answer_cache.sql": [
+    tableExists("answer_cache"),
+    indexExists("answer_cache_expiry"),
+    functionExists("sweep_answer_cache"),
+    rlsForced("answer_cache"),
+  ],
 };
 
 /**

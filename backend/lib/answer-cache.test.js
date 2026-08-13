@@ -307,6 +307,17 @@ test('normalise is exported and does only what it says', () => {
   assert.equal(normalise(null), '');
 });
 
+test('server.js separates durable answers produced by different tool modes', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  const mode = src.indexOf('const answerExecutionMode =');
+  const key = src.indexOf('branch: `turn:${answerExecutionMode}`');
+  assert.ok(mode > 0, 'tool execution mode is absent from answer-cache identity');
+  assert.ok(key > mode, 'the computed tool mode does not reach the answer-cache key');
+  for (const flag of ['SEEDED_SEARCH', 'TOOLS_ENABLED', 'TOOLS_SHADOW']) {
+    assert.match(src.slice(mode, key), new RegExp(flag), `${flag} does not affect cache identity`);
+  }
+});
+
 test('a deterministic short constant can be persisted without weakening the answer floor', async () => {
   const c = createAnswerCache();
   const k = keyFor({ question: 'hi', branch: 'greeting' });

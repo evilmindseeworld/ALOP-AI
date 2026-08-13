@@ -2824,6 +2824,12 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const personalised = Boolean(
       histArr.length || convSummary || userFacts.length || feedbackGuidance || imageContext || parsedImage,
     );
+    /* Feature flags change how the SAME words are answered. Keep that
+     * provenance in the durable key so enabling seeded tools cannot replay a
+     * Wikipedia/plain-council answer written before the flag changed. */
+    const answerExecutionMode = SEEDED_SEARCH
+      ? 'tools-seeded'
+      : TOOLS_ENABLED ? 'tools-live' : TOOLS_SHADOW ? 'tools-shadow' : 'tools-off';
     const cacheKey = personalised
       ? null
       : answerCache.keyFor({
@@ -2832,7 +2838,7 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
         country: region?.country || '',
         plan: userPlan,
         detailed: isDetailed,
-        branch: 'turn',
+        branch: `turn:${answerExecutionMode}`,
       });
 
     if (cacheKey) {

@@ -421,6 +421,23 @@ test("the zero-model rule does not swallow questions whose answer can move", () 
   assert.deepEqual(decided, [], "a volatile or named-entity case bypassed the search planner");
 });
 
+test("an explicit web-search instruction deterministically produces a bounded query", () => {
+  const route = routeByRule(
+    "What are the latest developments in AI classroom technology? Search the web and summarize what you find.",
+    { hasConversationContext: false },
+  );
+  assert.deepEqual(route, {
+    memory: false,
+    queries: ["What are the latest developments in AI classroom technology?"],
+  });
+
+  const prefixed = routeByRule("Please search the web for current classroom AI tools", {});
+  assert.deepEqual(prefixed, { memory: false, queries: ["current classroom AI tools"] });
+
+  const long = routeByRule(`Search the web for ${"x".repeat(400)}`, {});
+  assert.equal(long.queries[0].length, 200);
+});
+
 test("generic improvement words do not buy the whole council", () => {
   assert.equal(classifyRequest("make this better", ROSTER).complexity, "moderate");
   assert.equal(classifyRequest("what are the implications of a semicolon", ROSTER).complexity, "simple");

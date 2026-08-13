@@ -318,6 +318,7 @@ const MEMORY_REFERENCE_RE =
 const VOLATILE_RE =
   /\b(?:latest|current(?:ly)?|today|tonight|right now|this (?:week|month|year)|still|newest|recent|upcoming|price|cost|stock|available|availability|version|release|maintained|ceo|president|prime minister|law|regulation|policy|news|weather|score|schedule|market|funding|ownership|best|recommend|under\s+(?:\$|\d)|(?:19|20)\d{2})\b/i;
 const URL_RE = /\b(?:https?:\/\/|www\.)/i;
+const EXPLICIT_WEB_SEARCH_RE = /\b(?:search|browse)\s+(?:the\s+)?(?:live\s+)?web\b|\blook\s+(?:it|this|that)\s+up\s+online\b/i;
 const DIRECT_TRANSFORM_RE = /^(?:define|spell|translate)\b/i;
 const CREATIVE_RE = /^(?:write|compose|make|tell me)\b[\s\S]{0,160}\b(?:haiku|poem|story|joke|riddle|limerick|tweet|commit message)\b/i;
 const STABLE_QUESTION_RE = /^(?:what is (?:a|an|the)|what are|explain how|name (?:one|a|an|the))\b/i;
@@ -332,6 +333,25 @@ function routeByRule(text, { hasConversationContext = false } = {}) {
   if (!t) return null;
   if (MEMORY_REFERENCE_RE.test(t)) {
     return hasConversationContext ? { memory: true, queries: null } : null;
+  }
+  /* An explicit request to use the web is an instruction, not a classification
+   * problem. Sending it to the model router allowed a false NO to fall through
+   * to the Wikipedia shortcut, which produced an uncited encyclopedia extract
+   * for a request that literally said "Search the web". Remove a separate
+   * command sentence when possible; otherwise keep the bounded user text as
+   * the query. Provider adapters serialize it safely and clamp again. */
+  if (EXPLICIT_WEB_SEARCH_RE.test(t)) {
+    const withoutCommand = t
+      .split(/(?<=[.!?])\s+/)
+      .filter((sentence) => !EXPLICIT_WEB_SEARCH_RE.test(sentence))
+      .join(" ")
+      .trim();
+    const query = (withoutCommand || t)
+      .replace(/^(?:please\s+)?(?:search|browse)\s+(?:the\s+)?(?:live\s+)?web\s+(?:for\s+)?/i, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 200);
+    return { memory: false, queries: query ? [query] : null };
   }
   if (VOLATILE_RE.test(t) || URL_RE.test(t)) return null;
 

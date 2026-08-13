@@ -287,8 +287,14 @@ function isGenerationRequest(text) {
 const CAPABILITY_RE =
   /^(?:can|could|do|does|are|is|will|would)\s+(?:you|alop[-\s]?ai)\b(?:\W+\w+){0,6}\W+\b(?:access|browse|connect|integrate|support|plugins?|integrations?|internet|api)\b/i;
 
+/* `use` is safe only when its object is a known integration product. A broad
+ * match would mistake "Can you use Bayes' theorem?" for an availability
+ * question, while an unknown product is not confidently simple. */
+const KNOWN_INTEGRATION_USE_RE =
+  /^(?:can|could|do|does|will|would)\s+(?:you|alop[-\s]?ai)\s+use\s+(?:canva|figma|notion|google\s+drive|github|slack|microsoft\s+teams|airtable)\s*[?.!]*$/i;
+
 const isCapabilityQuestion = (t) =>
-  CAPABILITY_RE.test(t) && (t.match(/\S+/g) || []).length <= 10;
+  (CAPABILITY_RE.test(t) && (t.match(/\S+/g) || []).length <= 10) || KNOWN_INTEGRATION_USE_RE.test(t);
 
 /** Bare arithmetic — "15% of 80", "2+2", "144/12" — with no prose around it. */
 const ARITHMETIC_RE = /^[\s\d+\-*/^%().,=x×÷]+\??$/;
@@ -396,8 +402,9 @@ function routeByRule(text, { hasConversationContext = false } = {}) {
   return null;
 }
 
-/** Seats per tier. `complex` is the whole roster, whatever size that is. */
-const TIER_SEATS = { simple: 1, moderate: 3 };
+/** Only confidently simple questions narrow. Moderate means uncertain, so it
+ * keeps the whole roster just like explicitly complex work. */
+const TIER_SEATS = { simple: 1 };
 
 /**
  * An unmeasured seat's assumed latency, in ms. Deliberately pessimistic and

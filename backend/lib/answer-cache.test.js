@@ -92,6 +92,53 @@ test('a cold process serves a durable Postgres hit without a model call', async 
   assert.equal(cold.stats().hitsL1, 0);
 });
 
+test('semantic cache matches paraphrases and rejects a genuinely different question', async () => {
+  const paraphrase = Array(768).fill(0); paraphrase[0] = 1;
+  const different = Array(768).fill(0); different[1] = 1;
+  const calls = [];
+  const db = {
+    rpc(name, args) {
+      calls.push({ name, args });
+      const sameIntent = args.p_query_embedding.startsWith('[1,');
+      return Promise.resolve({
+        data: sameIntent ? [{
+          answer: ANSWER,
+          stored_at: new Date(Date.now() - 1000).toISOString(),
+          expires_at: new Date(Date.now() + 60_000).toISOString(),
+          similarity: 0.97,
+        }] : [],
+        error: null,
+      });
+    },
+  };
+  const cache = createAnswerCache({ supabase: db, reportEvery: 0 });
+  const dimensions = { lang: 'English', country: 'AE', plan: 'free', detailed: false, branch: 'turn:tools-live', threshold: 0.95 };
+
+  const hit = await cache.getSemantic({ embedding: paraphrase, ...dimensions });
+  const miss = await cache.getSemantic({ embedding: different, ...dimensions });
+
+  assert.equal(hit.answer, ANSWER);
+  assert.equal(hit.similarity, 0.97);
+  assert.equal(miss, null);
+  assert.equal(calls[0].name, 'match_answer_cache');
+  assert.deepEqual({ ...calls[0].args, p_query_embedding: '(vector)' }, {
+    p_query_embedding: '(vector)', p_lang: 'English', p_country: 'AE', p_plan: 'free',
+    p_detailed: false, p_branch: 'turn:tools-live', p_threshold: 0.95,
+  });
+});
+
+test('semantic cache fails open on invalid vectors and database errors', async () => {
+  let calls = 0;
+  const cache = createAnswerCache({
+    supabase: { rpc: () => { calls++; return Promise.resolve({ data: null, error: { message: 'unavailable' } }); } },
+    log: { warn() {} }, reportEvery: 0,
+  });
+  assert.equal(await cache.getSemantic({ embedding: [1], branch: 'turn' }), null);
+  assert.equal(calls, 0);
+  assert.equal(await cache.getSemantic({ embedding: Array(768).fill(0), branch: 'turn' }), null);
+  assert.equal(calls, 1);
+});
+
 /**
  * THE FAILURE THIS CACHE COULD CAUSE, and the only one worth writing a lot of
  * tests about: two different questions sharing a key, so one person's answer is
@@ -294,12 +341,28 @@ test('server.js logs cache hit, miss, and personalised bypass distinctly', () =>
   assert.match(src, /\[ANSWERS\] HIT ageMin=/);
   assert.match(src, /\[ANSWERS\] MISS/);
   assert.match(src, /\[ANSWERS\] BYPASS personalised-context/);
+  assert.match(src, /\[ANSWERS\] SEMANTIC HIT similarity=.*models=0/);
+  assert.match(src, /COUNCIL_SEMANTIC_CACHE/);
+});
+
+test('017 matches vectors only inside every answer-changing dimension', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '..', 'migrations', '017_answer_cache_embeddings.sql'), 'utf8');
+  assert.match(sql, /embedding public\.vector\(768\)/i);
+  assert.match(sql, /embedding OPERATOR\(public\.<=>\) p_query_embedding/);
+  assert.match(sql, /expires_at > NOW\(\)/i);
+  for (const field of ['lang', 'country', 'plan', 'detailed', 'branch']) {
+    assert.match(sql, new RegExp(`ac\\.${field} IS NOT DISTINCT FROM p_${field}`, 'i'), field);
+  }
+  assert.match(sql, />= p_threshold/);
+  assert.match(sql, /SECURITY INVOKER/i);
+  assert.match(sql, /REVOKE ALL[\s\S]*FROM PUBLIC, anon, authenticated/i);
+  assert.match(sql, /GRANT EXECUTE[\s\S]*TO service_role/i);
 });
 
 test('the answer cache read runs before the router spends anything', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
 
-  const read = src.indexOf('answerCache.get(cacheKey)');
+  const read = src.indexOf('answerCache.get(cacheKey,');
   assert.ok(read > 0, 'nothing reads the answer cache');
 
   /* A cache consulted after the model calls it exists to avoid still returns
@@ -385,7 +448,7 @@ test('answer cache emits a periodic hit-rate signal', async () => {
 test('an answer that did not search does not expire on a weekly clock', () => {
   const DAY = 24 * 60 * 60 * 1000;
   assert.strictEqual(ttlFor({ searched: false }), TTL_MS.stable);
-  assert.ok(ttlFor({ searched: false }) >= 90 * DAY, 'the stable tier must outlive a redeploy cycle by a wide margin');
+  assert.ok(ttlFor({ searched: false }) >= 100 * 365 * DAY, 'the stable tier must have no routine expiry');
   // `fresh` is meaningless without a search and must not shorten a stable answer.
   assert.strictEqual(ttlFor({ searched: false, fresh: true }), TTL_MS.stable);
   // The default is the SAFE direction only because the caller always passes the
@@ -446,11 +509,13 @@ test('new writes persist the exact replay inputs', async () => {
     branch: 'search',
     usedLiveWeb: true,
   };
+  const embedding = Array(768).fill(0); embedding[0] = 1;
   const c = createAnswerCache({ supabase: db, reportEvery: 0 });
-  c.set(keyFor(inputs), ANSWER, { ttlMs: TTL_MS.search, inputs });
+  c.set(keyFor(inputs), ANSWER, { ttlMs: TTL_MS.search, inputs, embedding });
   await new Promise((resolve) => setImmediate(resolve));
 
   assert.equal(writes.length, 1);
+  assert.match(writes[0].embedding, /^\[1,0,0,/);
   assert.deepEqual(
     Object.fromEntries(Object.entries(writes[0]).filter(([key]) => key.endsWith('_text') ||
       ['lang', 'country', 'plan', 'detailed', 'branch', 'used_live_web'].includes(key))),

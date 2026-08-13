@@ -8,6 +8,7 @@ const {
   routeByRule,
   DETAIL_PHRASES,
   escalateForResearch,
+  narrowRoster,
 } = require("./router");
 
 // ===== language: the overlap bug =====
@@ -276,7 +277,7 @@ test("a narrowed roster is always a SUBSET of the seats the caller allowed", () 
   }
 });
 
-test("an easy question costs fewer seats than a hard one", () => {
+test("only confidently simple questions narrow; uncertain questions keep the full council", () => {
   // The feature itself, stated as the inequality it has to satisfy. Written as
   // a comparison rather than as three exact counts so it keeps meaning if the
   // tier sizes are retuned — the ORDER is the contract, the numbers are policy.
@@ -284,7 +285,8 @@ test("an easy question costs fewer seats than a hard one", () => {
   const moderate = classifyRequest("my code is not working", ROSTER).members.length;
   const complex = classifyRequest("compare React and Vue", ROSTER).members.length;
   assert.ok(simple < moderate, `simple ${simple} is not fewer than moderate ${moderate}`);
-  assert.ok(moderate < complex, `moderate ${moderate} is not fewer than complex ${complex}`);
+  assert.equal(moderate, ROSTER.length, "an uncertain question must keep the whole roster");
+  assert.equal(moderate, complex, "uncertain and explicitly complex questions both use the full council");
   assert.equal(complex, ROSTER.length, "the hardest tier must still get the whole roster");
 });
 
@@ -352,7 +354,7 @@ test("the narrowed roster keeps the temperature spread", () => {
   // actually guarantees: bands are contiguous slices of the sorted roster, so
   // "one seat per region" is exactly "no two picks share a band", whichever
   // member of a band ends up being the fastest.
-  const { members } = classifyRequest("my code is not working", ROSTER);
+  const members = narrowRoster(ROSTER, 3);
   assert.ok(members.length >= 2, "this assertion is meaningless on a single seat");
 
   const ladder = [...ROSTER].sort((a, b) => a.temperature - b.temperature);
@@ -490,6 +492,8 @@ test("a question about what the assistant can do is a one-seat question", () => 
   for (const text of [
     "Can you access Canva?",
     "can you access canva",
+    "Can you use Canva?",
+    "can you use canva",
     "Do you have access to Google Drive?",
     "Are you able to browse the web?",
     "Do you support plugins?",
@@ -512,6 +516,8 @@ test("a modal opening does not by itself make a request simple", () => {
     "Would you rewrite this paragraph for me?",
     // Sol's two: the grammar of a capability question wrapped around real work.
     "Can you use Bayes' theorem to calculate the probability that this diagnosis is correct?",
+    "Can you use Bayes' theorem?",
+    "Can you use qzxwvb?",
     "Can you access the database and determine why these records disagree?",
   ]) {
     assert.notEqual(classifyRequest(text, ROSTER).complexity, "simple", text);

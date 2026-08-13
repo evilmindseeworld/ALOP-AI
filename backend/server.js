@@ -1030,7 +1030,7 @@ const { todayLine, freshnessWindow, normalizeDate, dateLabel, BRAVE_FRESHNESS, G
 const { parseRoutePlan } = require('./lib/search-plan');
 const { readSonar } = require('./lib/perplexity');
 const { createSearchCache, comprehensiveSearchKey } = require('./lib/search-cache');
-const { createAnswerCache, ttlFor } = require('./lib/answer-cache');
+const { createAnswerCache, ttlFor, normalise: normaliseAnswerQuestion } = require('./lib/answer-cache');
 // How a background job gets a real council turn without a socket. See the brain
 // seam under "THE BRAIN'S WAY IN", below the council route.
 const { createSinkResponse, createSinkRequest } = require('./lib/sink-response');
@@ -1124,6 +1124,11 @@ const ANSWER_EXECUTION_MODE = SEEDED_SEARCH
   ? 'tools-seeded-v5'
   : TOOLS_ENABLED ? 'tools-live' : TOOLS_SHADOW ? 'tools-shadow' : 'tools-off';
 const ANSWER_CACHE_BRANCH = `turn:${ANSWER_EXECUTION_MODE}`;
+const SEMANTIC_CACHE_ENABLED = /^(1|true)$/i.test(process.env.COUNCIL_SEMANTIC_CACHE || '');
+const semanticThresholdRaw = process.env.COUNCIL_SEMANTIC_CACHE_THRESHOLD;
+const parsedSemanticThreshold = semanticThresholdRaw ? Number(semanticThresholdRaw) : NaN;
+const SEMANTIC_CACHE_THRESHOLD = Number.isFinite(parsedSemanticThreshold) && parsedSemanticThreshold >= 0 && parsedSemanticThreshold <= 1
+  ? parsedSemanticThreshold : 0.95;
 
 // Cached because members in the same turn ask overlapping questions across
 // ROUNDS as well as within one — dedupe only unions a single round.
@@ -1635,11 +1640,13 @@ const embedText = async (text, parentSignal) => {
 };
 
 /** This user's facts, nearest first, by cosine distance. [] on any failure. */
-const readUserFactsByMeaning = async (userId, limit, queryText, parentSignal) => {
-  const { results: [vec] } = await settleByDeadline(
-    [{ promise: (signal) => embedText(queryText, signal), fallback: null }],
-    { deadlineMs: EMBED_DEADLINE_MS, signal: parentSignal },
-  );
+const readUserFactsByMeaning = async (userId, limit, queryText, parentSignal, suppliedEmbedding) => {
+  const vec = suppliedEmbedding === undefined
+    ? (await settleByDeadline(
+      [{ promise: (signal) => embedText(queryText, signal), fallback: null }],
+      { deadlineMs: EMBED_DEADLINE_MS, signal: parentSignal },
+    )).results[0]
+    : suppliedEmbedding;
   const literal = toVectorLiteral(vec);
   if (!literal) return [];
   try {
@@ -1671,11 +1678,11 @@ const readUserFactsByMeaning = async (userId, limit, queryText, parentSignal) =>
  * first and the newest fill whatever slots are left, deduplicated on the same
  * key the write path dedupes on.
  */
-const readUserFacts = async (userId, limit = FACTS_INJECT_LIMIT, queryText = null, parentSignal) => {
+const readUserFacts = async (userId, limit = FACTS_INJECT_LIMIT, queryText = null, parentSignal, queryEmbedding) => {
   if (!userId) return [];
 
   const [semantic, recent] = await Promise.all([
-    queryText ? readUserFactsByMeaning(userId, limit, queryText, parentSignal) : Promise.resolve([]),
+    queryText ? readUserFactsByMeaning(userId, limit, queryText, parentSignal, queryEmbedding) : Promise.resolve([]),
     (async () => {
       try {
         let query = supabase
@@ -2682,7 +2689,7 @@ async function handleCouncilTurn(req, res) {
      * answers and returns before step 4, so a full-roster reservation would hold
      * account-wide capacity for seats that can never be dispatched and refuse
      * concurrent turns for it — Sol's finding. */
-    const mayEscalate = SEEDED_SEARCH && selection.category !== 'greeting';
+    const mayEscalate = selection.category !== 'greeting';
     const maxSeats = mayEscalate
       ? Math.max(selection.members.length, planRoster.length)
       : selection.members.length;
@@ -2800,10 +2807,18 @@ async function handleCouncilTurn(req, res) {
       sendStage(res, 'context', 'Reading your conversation');
     }
 
+    /* One embedding per question serves both user-fact recall and the optional
+     * semantic answer cache. Starting it beside the context reads keeps it off
+     * the serial path and prevents enabling the cache from doubling embedding
+     * spend. */
+    const questionEmbeddingP = settleByDeadline(
+      [{ promise: (signal) => embedText(normaliseAnswerQuestion(pv.value), signal), fallback: null }],
+      { deadlineMs: EMBED_DEADLINE_MS, signal: turnSignal },
+    ).then((r) => r.results[0]).catch(() => null);
     const contextReads = Promise.all([
       telemetry.measureContext('summary', () => readChatSummary(chatId, user.id, turnSignal)),
       telemetry.measureContext('feedback', () => getFeedbackGuidance(user.id, turnSignal)),
-      telemetry.measureContext('facts', () => readUserFacts(user.id, FACTS_INJECT_LIMIT, pv.value, turnSignal)),
+      telemetry.measureContext('facts', async () => readUserFacts(user.id, FACTS_INJECT_LIMIT, pv.value, turnSignal, await questionEmbeddingP)),
     ]);
     const [contextResult, visionResult] = await Promise.all([
       contextReads,
@@ -2811,6 +2826,7 @@ async function handleCouncilTurn(req, res) {
     ]);
     if (turnSignal.aborted) return;
     const [convSummary, feedbackGuidance, userFacts] = contextResult;
+    const questionEmbedding = await questionEmbeddingP;
 
     if (parsedImage) {
       if (visionResult?.error) {
@@ -2918,7 +2934,8 @@ async function handleCouncilTurn(req, res) {
       });
 
     if (cacheKey) {
-      const hit = await answerCache.get(cacheKey);
+      const canTrySemantic = SEMANTIC_CACHE_ENABLED && Boolean(questionEmbedding);
+      const hit = await answerCache.get(cacheKey, { deferMiss: canTrySemantic });
       if (hit && !turnSignal.aborted) {
         console.log(`[ANSWERS] HIT ageMin=${Math.round((Date.now() - hit.storedAt) / 60000)} models=0`);
         openStream(res);
@@ -2947,6 +2964,29 @@ async function handleCouncilTurn(req, res) {
         });
         return;
       }
+      if (canTrySemantic && !turnSignal.aborted) {
+        const semanticHit = await answerCache.getSemantic({
+          embedding: questionEmbedding,
+          lang,
+          country: region?.country || '',
+          plan: userPlan,
+          detailed: isDetailed,
+          branch: ANSWER_CACHE_BRANCH,
+          threshold: SEMANTIC_CACHE_THRESHOLD,
+        });
+        if (semanticHit && !turnSignal.aborted) {
+          console.log(`[ANSWERS] SEMANTIC HIT similarity=${semanticHit.similarity.toFixed(2)} models=0`);
+          openStream(res);
+          if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
+          sendEvent(res, { type: 'chunk', text: semanticHit.answer });
+          if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
+          await auditBranch({
+            category: 'answer_cache_semantic', models: 0, seats: 0,
+            similarity: semanticHit.similarity, msToFirstByte: Date.now() - t0,
+          });
+          return;
+        }
+      }
       console.log('[ANSWERS] MISS');
     } else {
       console.log('[ANSWERS] BYPASS personalised-context');
@@ -2967,6 +3007,7 @@ async function handleCouncilTurn(req, res) {
       if (!cacheKey) return;
       answerCache.set(cacheKey, text, {
         ttlMs: ttlFor({ searched, fresh }),
+        embedding: SEMANTIC_CACHE_ENABLED ? questionEmbedding : null,
         inputs: {
           question: pv.value,
           lang,
@@ -3241,7 +3282,27 @@ async function handleCouncilTurn(req, res) {
       const extSys = `${todayLine()}\n\nYou are a precision data extraction engine. Use ONLY the provided data.\n\nRULES:\n1. Only state facts from the data.\n2. No training data.\n3. No inferring/guessing.\n4. No comparing unless both products are in data.\n5. If not in data, say "I couldn't find this in the search results."\n6. Include URLs as Markdown: [Title](URL)\n7. No inventing specs/prices.\n8. Note contradictions between sources.\n9. Format in Markdown. Match answer length to question. Be concise for simple questions.\n10. List sources at bottom under "## Sources".\n11. Embed images if provided: ![Description](url)\n12. CONVERSATION CONTEXT and history are EXEMPT from rules 1-5.\n13. Each source carries a Published date. When sources disagree, prefer the most recent one and say that the older one is out of date — do not average them or pick the more detailed one.\n14. If every source on a time-dependent point is more than a year old, say so rather than presenting it as current.\n15. Attach the date to any fact that changes over time: "as of [date]". A price, version or ranking stated bare reads as current even when it is not.${lang !== 'English' ? `\n16. Respond in ${lang}.` : ''}`;
       const extMsgs = [{ role: 'system', content: extSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n\n=== SEARCH DATA ===\n${context}` }];
       openStream(res);
-      const searchAnswer = await streamModel(res, PRIMARY_MODEL, extMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
+      const searchDrafts = await runCouncilWithWhip(
+        selection.members, extMsgs, selection.whipMs, selection.quorum,
+        selection.tokenLimit, null, {
+          signal: turnSignal,
+          onSeatTiming: (row) => telemetry.recordSeat({ ...row, phase: 'search_council' }),
+          onFinish: (event) => {
+            if (event?.reason === 'whip') telemetry.markCeiling('search_council_whip');
+          },
+        },
+      );
+      if (turnSignal.aborted) return;
+      const usableSearchDrafts = searchDrafts.filter((r) => r?.content?.trim());
+      if (!usableSearchDrafts.length) throw new Error('Search council returned no usable answers');
+      const searchSynthSys = `${todayLine()}\n\nReconcile these independent answers into one precise response. Use only facts present in the answers and their cited search data. Preserve Markdown source links, note material disagreements, and do not mention the council.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+      const searchSynthMsgs = [{ role: 'system', content: searchSynthSys }, {
+        role: 'user',
+        content: `Question: ${truncatedPrompt}\n\nResponses:\n${usableSearchDrafts.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}`,
+      }];
+      const searchSynthesisStartedAt = Date.now();
+      const searchAnswer = await streamModel(res, PRIMARY_MODEL, searchSynthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, answerOptions, turnDeadlineAt);
+      telemetry.recordSynthesis(Date.now() - searchSynthesisStartedAt);
       if (!res.writableEnded) res.end();
       /* A SHORTER SHELF LIFE WHEN THE QUESTION ASKED FOR NOW. `fresh` is the
        * freshness window the user's own words implied — "right now", "this
@@ -3251,7 +3312,10 @@ async function handleCouncilTurn(req, res) {
       cacheAnswer(searchAnswer, { searched: true, fresh });
       const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
       rememberTurn(chatId, user.id, pv.value, lastA || 'Search response.', telemetry);
-      await auditBranch({ category: 'search', sources: sources.length });
+      await auditTelemetry('council.search', 'search', {
+        sources: sources.length, seats: selection.members.length, quorum: selection.quorum,
+        tokenLimit: selection.tokenLimit, complexity: selection.complexity,
+      });
       return;
     }
 

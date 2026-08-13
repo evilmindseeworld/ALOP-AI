@@ -75,7 +75,13 @@ const DEFAULTS = {
   /* One line per hundred lookups gives a tuning signal without turning a
    * popular question into a log flood. Set to 0 in tests or a quiet deploy. */
   reportEvery: 100,
+  semanticReadDeadlineMs: 500,
 };
+
+const EMBEDDING_DIMS = 768;
+const validEmbedding = (value) => Array.isArray(value) && value.length === EMBEDDING_DIMS &&
+  value.every((n) => typeof n === 'number' && Number.isFinite(n));
+const vectorLiteral = (value) => validEmbedding(value) ? `[${value.join(',')}]` : null;
 
 /**
  * HOW LONG AN ANSWER STAYS TRUE, by where it came from.
@@ -105,7 +111,9 @@ const TTL_MS = {
    * change, and a row with no expiry would outlive the system that wrote it with
    * nothing to notice. `clear()` remains the lever for an intentional
    * invalidation; this is the one for the unintentional kind. */
-  stable: 90 * DAY_MS,
+  /* Postgres requires expires_at, so "no routine expiry" is represented by a
+   * century-long safety sentinel rather than nullable timestamp semantics. */
+  stable: 100 * 365 * DAY_MS,
   /* A DAY, up from six hours, at the owner's instruction and on the strength of
    * the refresh job: a search answer that is about to expire is rewritten before
    * anyone asks for it, so the TTL bounds how stale a row can get when the job
@@ -212,19 +220,19 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
   const now = opts.now || (() => Date.now());
   const memory = new Map();
   let writesSinceSweep = 0;
-  const stats = { lookups: 0, hitsL1: 0, hitsL2: 0, misses: 0, errors: 0, writes: 0 };
+  const stats = { lookups: 0, hitsL1: 0, hitsL2: 0, semanticLookups: 0, semanticHits: 0, misses: 0, errors: 0, writes: 0 };
 
   const report = () => {
     const every = Number(cfg.reportEvery);
     if (!(every > 0) || stats.lookups % every !== 0) return;
-    const hits = stats.hitsL1 + stats.hitsL2;
+    const hits = stats.hitsL1 + stats.hitsL2 + stats.semanticHits;
     const hitRate = Math.round((hits / stats.lookups) * 100);
     try {
       log.info?.(
         '[ANSWERS] cache stats lookups=' + stats.lookups +
         ' hits=' + hits + ' misses=' + stats.misses +
         ' hitRate=' + hitRate + '% l1=' + stats.hitsL1 +
-        ' l2=' + stats.hitsL2 + ' writes=' + stats.writes,
+        ' l2=' + stats.hitsL2 + ' semanticHits=' + stats.semanticHits + ' writes=' + stats.writes,
       );
     } catch {
       // Telemetry must never turn a cache optimisation into a failed question.
@@ -280,7 +288,7 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
   /**
    * @returns {Promise<{answer: string, storedAt: number}|null>}
    */
-  async function get(key) {
+  async function get(key, { deferMiss = false } = {}) {
     stats.lookups++;
     try {
       if (!key) return null;
@@ -288,7 +296,7 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
       const local = readMemory(key);
       if (local) { stats.hitsL1++; return { answer: local.answer, storedAt: local.storedAt }; }
 
-      if (!supabase) { stats.misses++; return null; }
+      if (!supabase) { if (!deferMiss) stats.misses++; return null; }
 
     /* On the leash, and a slow database is a MISS rather than a delay. The read
      * sits in front of the whole turn, so waiting on it costs the user directly
@@ -310,10 +318,10 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
         { deadlineMs: cfg.readDeadlineMs },
       ).then((r) => r.results[0]).catch((e) => { warnOnce('read threw', e.message); return null; });
 
-      if (!row) { stats.misses++; return null; }
+      if (!row) { if (!deferMiss) stats.misses++; return null; }
 
       const expiresAt = new Date(row.expires_at).getTime();
-      if (!Number.isFinite(expiresAt) || expiresAt <= now()) { stats.misses++; return null; }
+      if (!Number.isFinite(expiresAt) || expiresAt <= now()) { if (!deferMiss) stats.misses++; return null; }
 
       const storedAt = new Date(row.stored_at).getTime();
       stats.hitsL2++;
@@ -321,6 +329,49 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
       writeMemory(key, { answer: row.answer, storedAt, expiresAt });
       return { answer: row.answer, storedAt };
     } finally {
+      if (!deferMiss) report();
+    }
+  }
+
+  /** Best unexpired semantic match within the exact answer-changing dimensions. */
+  async function getSemantic({ embedding, lang = '', country = '', plan = '', detailed = false,
+    branch = '', threshold = 0.95 } = {}) {
+    const literal = vectorLiteral(embedding);
+    const cutoff = Number(threshold);
+    stats.semanticLookups++;
+    let hit = false;
+    try {
+      if (!supabase || !literal || !branch || !Number.isFinite(cutoff) || cutoff < 0 || cutoff > 1) return null;
+      const result = await settleByDeadline([{
+        promise: Promise.resolve(supabase.rpc('match_answer_cache', {
+          p_query_embedding: literal,
+          p_lang: String(lang),
+          p_country: String(country),
+          p_plan: String(plan),
+          p_detailed: Boolean(detailed),
+          p_branch: String(branch),
+          p_threshold: cutoff,
+        })),
+        fallback: { data: [], error: null },
+      }], { deadlineMs: cfg.semanticReadDeadlineMs }).then((r) => r.results[0]);
+      if (!result || result.error) {
+        if (result?.error) warnOnce('semantic read failed', result.error.message);
+        return null;
+      }
+      const row = Array.isArray(result.data) ? result.data[0] : null;
+      const similarity = Number(row?.similarity);
+      const expiresAt = new Date(row?.expires_at).getTime();
+      const storedAt = new Date(row?.stored_at).getTime();
+      if (!row || typeof row.answer !== 'string' || !Number.isFinite(similarity) || similarity < cutoff ||
+          !Number.isFinite(expiresAt) || expiresAt <= now() || !Number.isFinite(storedAt)) return null;
+      stats.semanticHits++;
+      hit = true;
+      return { answer: row.answer, storedAt, similarity };
+    } catch (e) {
+      warnOnce('semantic read threw', e.message);
+      return null;
+    } finally {
+      if (!hit) stats.misses++;
       report();
     }
   }
@@ -367,6 +418,7 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
             detailed: inputs.detailed,
             branch: inputs.branch,
             used_live_web: inputs.usedLiveWeb,
+            ...(vectorLiteral(options.embedding) ? { embedding: vectorLiteral(options.embedding) } : {}),
           },
           { onConflict: 'key' },
         ),
@@ -485,7 +537,7 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
     }
   }
 
-  return { get, getDue, dueForRefresh, set, setConstant, clear, keyFor, stats: () => ({ ...stats, size: memory.size }) };
+  return { get, getSemantic, getDue, dueForRefresh, set, setConstant, clear, keyFor, stats: () => ({ ...stats, size: memory.size }) };
 }
 
-module.exports = { createAnswerCache, keyFor, normalise, replayInputs, ttlFor, TTL_MS };
+module.exports = { createAnswerCache, keyFor, normalise, replayInputs, ttlFor, TTL_MS, validEmbedding };

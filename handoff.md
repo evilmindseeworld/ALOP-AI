@@ -1,3 +1,31 @@
+# Handoff — 2026-08-14 (seventh pass): one-seat routing and semantic answer reuse
+
+Migration `017_answer_cache_embeddings.sql` is applied to production. Code is
+locally complete with 1094 backend tests passing; commit, deploy, and the
+`COUNCIL_SEMANTIC_CACHE=1` production flag remain pending at this checkpoint.
+
+- Confidently simple questions use one lowest-latency seat. "Can you use
+  Canva?" qualifies without misclassifying analytical Bayes prompts. Uncertain,
+  complex, and search/current turns retain the full selected roster.
+- The legacy direct-search path now runs and records the full council before
+  synthesis. Its seat and synthesis requests participate in cost/request
+  settlement and structured audit telemetry.
+- Optional semantic lookup reuses the existing 768-dimension question
+  embedding, filters exact language/country/plan/detail/execution-mode
+  boundaries, and defaults to cosine similarity 0.95. Exact and semantic hits
+  are separately logged and counted; errors fail open to normal generation.
+- Stable no-search answers use a century-long sentinel because `expires_at` is
+  non-null. Search-backed answers retain their short shelf.
+- Production inspection confirmed the new vector column, invoker-rights RPC,
+  empty search path, revoked anon/authenticated execution, service-role access,
+  forced RLS, and a clean zero-match call. No approximate index was added for a
+  one-row live cache.
+- Verification: full backend suite 1094/1094, `node --check server.js`, and
+  `git diff --check`. Router and semantic regressions were observed red with
+  their implementations temporarily disabled, then green after restoration.
+
+---
+
 # Handoff — 2026-08-14 (sixth pass): durable smart expiry and the bounded cache brain
 
 Code commit `38eb1ed` is live, confirmed by `/health`, and migration

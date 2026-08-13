@@ -467,6 +467,7 @@ test("the reservation covers the roster the research escalation can widen to", (
   // before anything can refuse it — so the pessimism has to live at admission.
   assert.match(ROUTE, /const maxSeats = mayEscalate[\s\S]{0,120}planRoster\.length/);
   assert.match(ROUTE, /escalateForResearch\(selection, planRoster\)/);
-  // And it must not widen where a search turn never reaches the council at all.
-  assert.match(ROUTE, /const mayEscalate = SEEDED_SEARCH/);
+  // Both seeded and direct search now reach the council, so every non-greeting
+  // turn must reserve enough headroom to widen after the router decides.
+  assert.match(ROUTE, /const mayEscalate = selection\.category !== 'greeting'/);
 });

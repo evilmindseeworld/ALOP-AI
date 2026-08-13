@@ -177,9 +177,10 @@ test("one turn writes one audit row: every writer routes through the same flag",
   assert.doesNotMatch(ROUTE, /auditLog\(user\.id, 'council'/);
   assert.match(ROUTE, /const auditBranch = async \(metadata\) => \{\s*\n\s*if \(!auditUserId \|\| turnAudited\) return;\s*\n\s*turnAudited = true;/);
   assert.match(ROUTE, /const auditTelemetry = async \([\s\S]{0,80}?if \(!auditUserId \|\| turnAudited\) return;\s*\n\s*turnAudited = true;/);
-  for (const category of ["memory", "greeting", "no_results", "search", "wiki"]) {
+  for (const category of ["memory", "greeting", "no_results", "wiki"]) {
     assert.match(ROUTE, new RegExp(`auditBranch\\(\\{ category: '${category}'`), category);
   }
+  assert.match(ROUTE, /auditTelemetry\('council\.search', 'search'/, 'search');
 });
 
 // A 400 is not an abandoned turn. The `finally` runs for it too, and the
@@ -407,6 +408,18 @@ test("every cached answer's shelf life is decided by the router's search flag", 
   }
   assert.match(ROUTE, /const usedLiveWeb = Boolean\(searchQueries\?\.length\)/,
     "the council branch must read the router's decision, not its own branch name");
+});
+
+test("the direct search path asks the full selected council before synthesis", () => {
+  const direct = SOURCE.indexOf('if (searchQueries && !SEEDED_SEARCH)');
+  const end = SOURCE.indexOf('// 3. WIKIPEDIA', direct);
+  assert.ok(direct > 0 && end > direct, 'direct search branch not found');
+  const branch = SOURCE.slice(direct, end);
+  assert.match(branch, /runCouncilWithWhip\([\s\S]*selection\.members/);
+  assert.match(branch, /searchSynthMsgs/);
+  assert.match(branch, /streamModel\(res, PRIMARY_MODEL, searchSynthMsgs/);
+  assert.match(branch, /telemetry\.recordSynthesis\(Date\.now\(\) - searchSynthesisStartedAt\)/);
+  assert.match(branch, /auditTelemetry\('council\.search', 'search'/);
 });
 
 test("the background brain is wired to the same cache identity and stopped on shutdown", () => {

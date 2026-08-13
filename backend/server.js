@@ -1078,6 +1078,28 @@ const TOOLS_MODE = (process.env.COUNCIL_TOOLS || '').toLowerCase();
 const TOOLS_ENABLED = TOOLS_MODE === '1' || TOOLS_MODE === 'true';
 const TOOLS_SHADOW = TOOLS_MODE === 'shadow';
 
+/**
+ * SEEDED SEARCH — hand the council results it did not have to ask for.
+ *
+ * Measured 2026-08-13 in shadow mode: `emitted=0 unparsed=0` across seven
+ * seats. Not one requested a tool and not one even TRIED — there was no text
+ * the parser had to reject. The seats fail at AUTHORING a call, and nothing
+ * suggests they fail at SELECTING from a list they were handed; `read_file`
+ * already proves the selecting half works.
+ *
+ * The router intercepts every question needing current information and answers
+ * it above the council, so the council only ever sees questions that do not
+ * need a tool. This flag redirects that traffic INTO the loop with the router's
+ * own query already executed, so a seat's only job is to pick an id to read.
+ *
+ * OFF BY DEFAULT, and the default is not timidity. The router path it replaces
+ * is measured good — 2 router calls plus one streamed answer, 22 cited URLs —
+ * and this one spends a whole council on the same question. It is an
+ * experiment with an env var in front of it, exactly like COUNCIL_TOOLS, and it
+ * does nothing at all unless the tool loop is live.
+ */
+const SEEDED_SEARCH = TOOLS_ENABLED && /^(1|true)$/i.test(process.env.COUNCIL_SEEDED_SEARCH || '');
+
 // Cached because members in the same turn ask overlapping questions across
 // ROUNDS as well as within one — dedupe only unions a single round.
 /**
@@ -2993,7 +3015,12 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     const fresh = freshnessWindow(pv.value);
 
     if (turnSignal.aborted) return;
-    if (searchQueries) {
+    /* SEEDED_SEARCH sends this traffic to the council instead, carrying the
+     * router's first query into the loop. The whole branch is skipped rather
+     * than half-run: comprehensiveSearch fans out to five providers plus
+     * Wikipedia, and paying for that AND a council is the cost mistake this
+     * experiment exists to avoid. The loop runs ONE provider chain instead. */
+    if (searchQueries && !SEEDED_SEARCH) {
       /* THE SCREEN STOPS BEING BLANK HERE, not when the answer starts.
        *
        * The search path is the most common one and it showed nothing until the
@@ -3233,6 +3260,12 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       const loop = await runAgentLoop({
         members: selection.members.map((m) => m.model),
         registry,
+        /* The router's OWN query, not one a seat wrote. Only the first: the
+         * router may return several and each is a provider chain, and a seat
+         * that cannot pick one id from six results will not do better with
+         * eighteen. Undefined unless the flag is on, so the loop is unchanged
+         * for every other turn. */
+        ...(SEEDED_SEARCH && searchQueries?.length ? { seededSearch: searchQueries[0] } : {}),
         /* THE SAME QUORUM THE PLAIN COUNCIL RUNS ON. The tools path replaced
          * runCouncilWithWhip and did not replace its quorum release, so a turn
          * that used a tool waited on every seat where a turn that did not waited

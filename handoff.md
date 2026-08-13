@@ -143,7 +143,57 @@ with no address anywhere in the model-facing string.
   observations is not a sample. The failure still costs exactly one wasted
   request plus one fallback, which was the constraint.
 
-1030 backend tests green.
+- **`e48a9a1` — a 429 is now waited out, not raced.** `eb81d97` made the failure
+  legible and within the hour it told us what a year of `Stream failed` never
+  did: `limit_source: openrouter_free_tier_per_minute`, `X-RateLimit-Limit: 20`,
+  `Remaining: 0`. **The seat was never bad — that is our own account-wide 20/min
+  free-model ceiling**, and falling back to a different free model could not
+  possibly help because the fallback is behind the same gate. It didn't: the
+  fallback request is what killed the turn with `Council error: Stream HTTP
+  429`. Now: account-wide per-minute waits for the reset (abortably) and retries
+  the SAME model once when the wait fits the 75s admission budget; if it does
+  not fit, it fails immediately without spending a second request. A provider's
+  own 429 keeps the different-model fallback. The daily cap keeps its existing
+  latch. Maximum cost is still two requests.
+
+  `handoff.md` already warned *"an unpaced probe sweep measures our own rate
+  limit, not the providers'"* — and it caught us again anyway, this time
+  because a session of back-to-back test turns walked into it. Sol's earlier
+  refusal to demote the seat on two observations was right.
+
+- **The shadow probe finally answered its question, and the answer is
+  `emitted=0 unparsed=0` across seven seats.** Nobody requested a tool and
+  nobody even TRIED — no text the parser had to reject. This is not a parsing
+  problem and no wording of the nudge fixes it. Weakened only by the probe
+  question not needing a tool.
+
+  **And the probe has a structural blind spot worth knowing before anyone
+  leaves it on for a day: the router intercepts every question that needs
+  current information, so the council only ever sees questions that do not need
+  a tool.** The probe cannot observe the cases the feature exists for.
+
+- **`11d4a9b` + the wiring — SEEDED SEARCH, off by default behind
+  `COUNCIL_SEEDED_SEARCH=1`.** The response to the probe. Seats fail at
+  AUTHORING a call; nothing suggests they fail at SELECTING from a list, and
+  `read_file` already proves the selecting half works. With the flag on, a
+  router-classified search question goes to the COUNCIL with the router's first
+  query already executed through the registry, so a seat's only job is to pick
+  an id to read. Seeded results are enveloped as untrusted, stay out of system
+  position, count against tool time and the unique-call budget but not the round
+  budget, and `web_search` is hidden from the prompt so the only move available
+  is one `read_url`.
+
+  **The whole search branch is skipped rather than half-run** when the flag is
+  on: `comprehensiveSearch` fans out to five providers plus Wikipedia, and
+  paying for that AND a council is the cost mistake the experiment exists to
+  avoid. The loop runs one provider chain instead.
+
+  **Off is the honest default.** The router path it replaces is measured good —
+  2 router calls plus one streamed answer, 22 cited URLs — and this spends a
+  council on the same question. It is an experiment with an env var in front of
+  it, and it does nothing at all unless `COUNCIL_TOOLS=1`.
+
+1040 backend tests green.
 
 ## Not a bug, a missing feature
 

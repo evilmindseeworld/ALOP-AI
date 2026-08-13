@@ -1,3 +1,59 @@
+# Handoff — 2026-08-14 (fifth pass): routing tiers corrected, and the 429 fallback that cost 20 seconds
+
+Live on `716f591`, confirmed by `/health`. 1061 tests passing.
+
+## What was wrong, and is not now
+
+**Capability questions cost three seats.** `LOOKUP_RE` is anchored on
+what/who/when/where/which, so "can you access Canva?" matched nothing and took
+the default middle tier. Now `simple`: one seat, 400 tokens. The pattern needs a
+capability OBJECT and at most ten words, which is Sol's finding — "can you use
+Bayes' theorem to calculate…" and "can you access the database and determine
+why…" have identical grammar and are hard questions. Both are in the negative
+test.
+
+**Research turns ran on one seat.** `classifyRequest` runs on the text alone
+because the roster it returns sets the spend reservation, so the router's search
+decision could not be an input. A short lookup-shaped question that needed live
+information got ONE seat and then the search context and the agent loop — the
+most expensive path in the product run by the smallest council in it.
+`escalateForResearch` widens it once the router has decided, moving quorum, the
+token ceiling and the reported complexity in the same step so a seven-seat
+council cannot release on a quorum of one. The budget for the wider roster is
+reserved at ADMISSION (`maxSeats`), not claimed afterwards — widening below the
+layer that set the budget is rule 8, and the money would already be spent.
+`SEEDED_SEARCH` gates both halves, because with it off the search branch answers
+and returns before the council exists.
+
+**The 20-second 429.** `[STREAM] gemma-4-26b … Stream HTTP 429 … Falling back to
+nemotron` in the Render log: a provider 429 before a single byte was buying the
+fallback instead of a retry, and nemotron's median is 23.9s against gemma's
+2.4s. `callModel` had that retry all along; the STREAMING path — every answer a
+user reads — did not. luna's `fetchOpenRouterStream` (a9d5356) retries only what
+happened before a body was returned, so "never retry after a partial answer"
+holds by construction. Two defects found wiring it: the helper dropped its
+parent-abort listener at handoff (the read loop never tests the signal itself,
+so a closed tab kept generating), and it reports `X-RateLimit-Reset` in the
+wire's own unit while the per-minute policy reads milliseconds — a ten-digit
+seconds value is 1970, which reads as "already reset" and retries straight back
+into the limit.
+
+## Still open, both Sol's
+
+1. **The request ceiling undercounts.** `callModel` may make three HTTP attempts
+   for one recorded seat (`openrouter.js` retry loop), and settlement equates
+   `seats.length` with requests (`spend.js:321`). The stream retry added here
+   makes one more attempt the ceiling cannot see. Meter at dispatch, or reserve
+   for retries pessimistically.
+2. **No minute-aware pacing.** A seven-seat research turn can burst 7 requests
+   at once and 28 over four rounds against an account-wide 20/minute. The daily
+   reservation does not pace anything. Sol argued for three seats on
+   search+simple/moderate and the full roster only when the question is also
+   complex; the owner's instruction is full council on search, so pacing is the
+   fix and it is unbuilt. luna judged it does not belong in the per-call helper.
+
+---
+
 # Handoff — 2026-08-13 (fourth pass): COUNCIL_TOOLS=1 IS LIVE, and the first real turn cost a fortune
 
 The owner set it in Render. `[BOOT] COUNCIL_TOOLS=1 -> tools LIVE` is in the

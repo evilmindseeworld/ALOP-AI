@@ -2,8 +2,13 @@
 
 // SSRF guard for the council's read_url tool.
 //
-// read_url takes a URL a MODEL chose. That URL is attacker-controlled the
-// moment anyone can get text into a prompt, and this process can reach things
+// read_url no longer lets a model author a URL — it takes an opaque per-turn
+// id minted by the registry from a search result (`d7cf174`) — so the URLs
+// reaching this guard come from a search provider rather than from a seat.
+// That narrows the source; it does not make the guard optional. A provider can
+// return anything, `fetchPageHead` and the link checker call this on URLs from
+// elsewhere, and the address a hostname resolves to is nobody's choice at all.
+// This process can reach things
 // the internet cannot: the Render metadata endpoint, anything else bound on
 // localhost, and whatever else shares the private network. `169.254.169.254`
 // is one GET away from instance credentials.

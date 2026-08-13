@@ -35,8 +35,10 @@ const UNTRUSTED_PREAMBLE =
  * With the tool loop enabled, the specific failure is mechanical rather than
  * persuasive: a fetched page can contain the same ```tool_call fence the seat
  * has just been taught to emit, and the cheapest thing a model does with a
- * demonstrated format is repeat it — straight into a read_url of an
- * attacker-controlled address with the conversation in the query string.
+ * demonstrated format is repeat it. It can no longer be repeated into an
+ * attacker-controlled ADDRESS — read_url takes an opaque per-turn id from a
+ * search result, not a URL (`d7cf174`) — but a copied fence still spends a
+ * round and can still name any other tool.
  *
  * `lib/untrusted-content.js` removes those shapes and wraps what is left in a
  * per-render nonce boundary the content cannot forge. The preamble stays,

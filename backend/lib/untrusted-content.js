@@ -25,6 +25,14 @@ const crypto = require('node:crypto');
  * query string. Nothing throws, nothing is logged as an error, and the turn
  * looks like ordinary research.
  *
+ * THAT EXACT PAYLOAD NO LONGER WORKS. `read_url` takes an opaque id minted by
+ * the registry from a search result, not a URL (`d7cf174`), so a copied call
+ * carrying an attacker's address resolves to nothing and is refused before DNS
+ * is touched. The example above is kept as written because it is the clearest
+ * statement of the shape — and because this module still has to hold the line
+ * for every OTHER tool, and for the next tool added, which will not
+ * automatically inherit the id gate.
+ *
  * ═══════════════════════════════════════════════════════════════════════════
  * WHY THE PREAMBLE WAS NEVER GOING TO BE ENOUGH
  * ═══════════════════════════════════════════════════════════════════════════

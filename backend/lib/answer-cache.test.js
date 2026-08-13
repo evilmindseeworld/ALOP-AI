@@ -43,6 +43,40 @@ test('the basic contract', async (t) => {
   });
 });
 
+test('a cold process serves a durable Postgres hit without a model call', async () => {
+  const key = keyFor({ question: 'what is photosynthesis' });
+  const db = {
+    from() {
+      return {
+        select() {
+          return {
+            eq() {
+              return {
+                maybeSingle: () => Promise.resolve({
+                  data: {
+                    answer: ANSWER,
+                    stored_at: new Date(1_700_000_000_000).toISOString(),
+                    expires_at: new Date(Date.now() + 60_000).toISOString(),
+                  },
+                  error: null,
+                }),
+              };
+            },
+          };
+        },
+      };
+    },
+  };
+
+  // No in-process seed exists: this instance was created after a deploy.
+  const cold = createAnswerCache({ supabase: db, reportEvery: 0 });
+  const hit = await cold.get(key);
+
+  assert.equal(hit.answer, ANSWER);
+  assert.equal(cold.stats().hitsL2, 1);
+  assert.equal(cold.stats().hitsL1, 0);
+});
+
 /**
  * THE FAILURE THIS CACHE COULD CAUSE, and the only one worth writing a lot of
  * tests about: two different questions sharing a key, so one person's answer is
@@ -76,8 +110,10 @@ test('the key normalises only what makes a question the same question', async (t
   const same = [
     ['case', 'What Is Photosynthesis', 'what is photosynthesis'],
     ['trailing punctuation', 'what is photosynthesis?', 'what is photosynthesis'],
+    ['unicode trailing punctuation', 'what is photosynthesis？', 'what is photosynthesis'],
     ['surrounding space', '  what is photosynthesis  ', 'what is photosynthesis'],
     ['runs of space', 'what  is   photosynthesis', 'what is photosynthesis'],
+    ['unicode composition', 'Who is Jose\u0301?', 'who is Jos\u00e9'],
   ];
   for (const [name, a, b] of same) {
     await t.test(name, () => assert.equal(keyFor({ question: a }), keyFor({ question: b })));
@@ -269,4 +305,29 @@ test('a truncated stream cannot become a cached answer', () => {
 test('normalise is exported and does only what it says', () => {
   assert.equal(normalise('  What IS  This?? '), 'what is this');
   assert.equal(normalise(null), '');
+});
+
+test('a deterministic short constant can be persisted without weakening the answer floor', async () => {
+  const c = createAnswerCache();
+  const k = keyFor({ question: 'hi', branch: 'greeting' });
+
+  c.set(k, 'Hi!', TTL_MS.council);
+  assert.equal(await c.get(k), null, 'ordinary short model output must stay uncached');
+
+  c.setConstant(k, 'Hi!', TTL_MS.greeting);
+  assert.equal((await c.get(k)).answer, 'Hi!');
+});
+
+test('answer cache emits a periodic hit-rate signal', async () => {
+  const lines = [];
+  const c = createAnswerCache({ log: { info: (line) => lines.push(line) }, reportEvery: 2 });
+  const k = keyFor({ question: 'what is photosynthesis' });
+  c.set(k, ANSWER, TTL_MS.council);
+
+  await c.get(k);
+  await c.get(keyFor({ question: 'a miss' }));
+
+  assert.equal(lines.length, 1);
+  assert.match(lines[0], /\[ANSWERS\] cache stats/);
+  assert.match(lines[0], /hitRate=50%/);
 });

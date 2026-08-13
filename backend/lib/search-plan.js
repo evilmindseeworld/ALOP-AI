@@ -136,4 +136,41 @@ function parseSearchPlan(raw) {
   return queries.length ? queries : null;
 }
 
-module.exports = { parseSearchPlan, MAX_QUERIES, MAX_QUERY_LEN };
+/**
+ * ONE ROUTER REPLY, TWO DECISIONS.
+ *
+ * WHY. Every non-greeting turn used to open with TWO calls to the fast model —
+ * "is this about an earlier conversation?" and "what should I search for?" —
+ * before a single seat was asked anything. They ran concurrently, so the cost
+ * was never latency; it was a REQUEST, and requests are what this account runs
+ * out of. Sol's optimisation plan ranked combining them second, behind only
+ * "measure first", and the risk it named is the one this parser exists to
+ * contain: one malformed reply must not damage both decisions.
+ *
+ * THE OUTPUT CONTRACT IS THREE MUTUALLY EXCLUSIVE BRANCHES, and they were
+ * already almost that. The search prompt has always said not to search for "a
+ * question about THIS conversation", so a memory question already produced
+ * `NO` — the model was being asked to recognise the same case twice and its
+ * second answer was thrown away. `MEMORY` simply keeps it.
+ *
+ * MEMORY IS ACCEPTED ONLY AS THE ENTIRE FIRST LINE, and that is deliberately
+ * stricter than how `NO` is read. `NO` is honoured anywhere in the reply
+ * because a model that says "NO" and then muses has still decided; a stray
+ * `MEMORY` in the middle of a reply is far more likely to be the model
+ * discussing the word than routing on it. Getting this wrong sends a live
+ * question to the memory branch, which answers from conversation history and
+ * cannot search — a confidently empty answer with no error anywhere. So the
+ * bar is high, and anything short of it falls through to the search decision,
+ * which is the behaviour that existed before.
+ *
+ * @param {string} raw the model's reply
+ * @returns {{memory: boolean, queries: string[]|null}}
+ */
+function parseRoutePlan(raw) {
+  const text = typeof raw === "string" ? raw : "";
+  const first = text.split("\n").map(clean).find(Boolean) || "";
+  if (/^memory[.!]?$/i.test(first)) return { memory: true, queries: null };
+  return { memory: false, queries: parseSearchPlan(text) };
+}
+
+module.exports = { parseSearchPlan, parseRoutePlan, MAX_QUERIES, MAX_QUERY_LEN };

@@ -218,6 +218,29 @@ const FREE_COUNCIL = COUNCIL.filter((m) => m.free);
 const PRIMARY_MODEL = 'google/gemma-4-26b-a4b-it:free';
 const FAST_MODEL = 'google/gemma-4-26b-a4b-it:free';
 
+/**
+ * THE ORCHESTRATOR'S FALLBACK: the strongest seat on the council.
+ *
+ * `nvidia/nemotron-3-super-120b-a12b:free` is described in the roster above as
+ * "the strongest model on this list that answers at all". It is NOT the default
+ * orchestrator and must not become one: 23.9s measured against PRIMARY_MODEL's
+ * 2.4s, which is the whole reason a 26B MoE writes the answers.
+ *
+ * It is here for the case where the primary is unavailable — a provider outage,
+ * a per-minute rate limit, an upstream 5xx. Before this, that threw, and a
+ * throw at the streaming step is a turn the user watched load and then lose:
+ * the council had already deliberated and the work was already paid for. One
+ * slow answer is a better outcome than a lost one, and the trade only ever
+ * applies on the turn that was going to fail.
+ *
+ * TWO CONDITIONS GOVERN IT, both in `streamModel`. It fires only when NOTHING
+ * has been written to the socket yet — a retry after a partial answer would
+ * concatenate two different replies into one, which is worse than either — and
+ * never when the turn was cancelled, because a cancelled turn is not a failed
+ * one and re-dispatching it spends a request on an answer nobody is waiting for.
+ */
+const SMART_MODEL = process.env.ORCHESTRATOR_FALLBACK_MODEL || 'nvidia/nemotron-3-super-120b-a12b:free';
+
 // ===== AI HELPERS =====
 /* The request shape, the retry policy and the reasoning-field fallback all live
  * in lib/openrouter.js so they can be unit tested — this file calls
@@ -273,7 +296,15 @@ const callModel = (modelName, messages, temperature = 0.0, timeoutMs = 30000, ma
  * already short by construction and a wrong number there would truncate a
  * greeting.
  */
-const streamModel = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null) => {
+/**
+ * ONE ATTEMPT. `streamModel` below wraps this with the orchestrator fallback.
+ *
+ * Split so the retry has something to retry. Everything about the protocol
+ * lives here; everything about "what do we do when it fails" lives there, and
+ * keeping those apart is what makes the retry's two conditions checkable rather
+ * than tangled through the read loop.
+ */
+const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, meta = {}) => {
   const response = await fetch(OPENROUTER_HOST, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${OPENROUTER_API_KEY}` }, body: JSON.stringify({ model: modelName, messages, temperature, stream: true, reasoning: { exclude: true }, ...(maxTokens ? { max_tokens: maxTokens } : {}) }), ...(signal ? { signal } : {}) });
   if (!response.ok || !response.body) throw new Error('Stream failed');
   const reader = response.body.getReader();
@@ -287,6 +318,11 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
    * answer is hundreds of small appends, and repeated `+=` on a growing string
    * is the shape that turns a long answer into a quadratic. */
   const emitted = [];
+  /* Handed back to the caller BY REFERENCE, so that a throw halfway through
+   * a stream can still be asked how much of the answer reached the socket.
+   * `streamModel` needs that to decide whether a retry is safe, and a thrown
+   * error carries no return value to put it in. */
+  meta.emitted = emitted;
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -328,6 +364,47 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
    * there is no path by which an incomplete answer becomes a cached one. */
   if (!completed) throw new Error('Stream ended before provider completion');
   return emitted.join('');
+};
+
+/**
+ * THE SAME CALL, WITH THE ORCHESTRATOR'S FALLBACK BEHIND IT.
+ *
+ * A throw at the streaming step is the most expensive failure in this route:
+ * the router has run, the council has deliberated, the requests are spent, and
+ * the user has watched a spinner for all of it — and then gets an error. The
+ * work is already paid for by the time the last step fails.
+ *
+ * So when the primary orchestrator cannot write the answer, the strongest seat
+ * on the council writes it instead. See SMART_MODEL for why that is a fallback
+ * and never a default: it is roughly ten times slower, and a slow answer is
+ * only better than the alternative on the turn that had no answer at all.
+ *
+ * THREE REFUSALS, each one a way this could make things worse:
+ *
+ *   Only for PRIMARY_MODEL. A caller that named a specific model wanted that
+ *   model, and silently answering as a different one is not a retry — it is a
+ *   substitution nobody asked for. It also stops the fallback recursing into
+ *   itself when SMART_MODEL is the thing that failed.
+ *
+ *   Never after a partial answer. If any text reached the socket, a second
+ *   attempt appends a DIFFERENT reply to the first half of one, and the user
+ *   reads a single answer that changes its mind mid-sentence. `meta.emitted` is
+ *   how that is known, because the throw carries no return value.
+ *
+ *   Never on an aborted turn. A cancelled turn is not a failed one; retrying it
+ *   spends a request writing an answer nobody is waiting for, which is exactly
+ *   what the abort work existed to stop.
+ */
+const streamModel = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null) => {
+  const meta = {};
+  try {
+    return await streamOnce(res, modelName, messages, temperature, signal, maxTokens, meta);
+  } catch (err) {
+    const wrote = (meta.emitted || []).join('').length;
+    if (modelName !== PRIMARY_MODEL || signal?.aborted || wrote > 0) throw err;
+    console.warn(`[STREAM] ${modelName} failed before writing anything (${err.message}). Falling back to ${SMART_MODEL}.`);
+    return await streamOnce(res, SMART_MODEL, messages, temperature, signal, maxTokens);
+  }
 };
 
 const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'image/png', maxTokens = 2048, parentSignal) => {
@@ -430,13 +507,32 @@ const { wikiSubject, isRelevantTitle } = require('./lib/wiki-relevance');
  * out of. See lib/arithmetic.js for why it refuses far more than it answers. */
 const { tryArithmetic } = require('./lib/arithmetic');
 
-// ===== MEMORY DETECTION =====
-const isMemoryOrReferenceQuestion = async (text, signal) => {
-  const response = await callModel(FAST_MODEL, [{ role: 'system', content: 'Is this question asking about a previous conversation or referencing something discussed earlier? Reply ONLY "YES" or "NO".' }, { role: 'user', content: text.slice(0, 500) }], 0.0, 3000, 10, signal);
-  return response.trim().toUpperCase().startsWith('YES');
-};
-
-// ===== SEARCH DECISION =====
+// ===== THE ROUTER: ONE CALL, TWO DECISIONS =====
+/* IT USED TO BE TWO CALLS, and the second one was asking the same model to
+ * recognise the same case twice.
+ *
+ * `isMemoryOrReferenceQuestion` was its own FAST_MODEL round trip — a ten-token
+ * YES/NO on whether the question was about an earlier conversation. The search
+ * planner below has always been told not to search for "a question about THIS
+ * conversation", so it was already deciding the same thing and already
+ * answering `NO`; its answer was simply discarded and asked for again.
+ *
+ * Merging them saves ONE OPENROUTER REQUEST ON EVERY NON-GREETING TURN. It
+ * saves almost no time — the two ran concurrently — and time was never the
+ * problem. The account gets a fixed number of requests per UTC day, shared
+ * across every user, and two of every turn's requests were the router's own
+ * before a single seat was asked anything.
+ *
+ * The risk Sol's plan named when it ranked this second: one malformed reply now
+ * damages BOTH decisions where before it damaged one. That is contained in
+ * `parseRoutePlan`, not here — `MEMORY` is accepted only as the entire first
+ * line, and anything short of that falls through to exactly the search decision
+ * this prompt made before. The failure mode of a false MEMORY is the expensive
+ * one: a live question answered from conversation history, with no search and
+ * no error.
+ *
+ * IF THIS PROMPT IS EDITED, RE-RUN THE NINE CASES. That warning predates the
+ * merge and now covers a tenth case; see the note above the examples. */
 // The region reaches the QUERY, not just the answer. A prompt hint makes the
 // model *phrase* prices differently; it cannot make a search API return a
 // local retailer it was never asked for. "OLED monitor price" returns US shops
@@ -446,7 +542,7 @@ const isMemoryOrReferenceQuestion = async (text, signal) => {
 // Only where it helps: a query about tax law or a person is not improved by a
 // country appended to it, so the model is told to use it when the answer is
 // local and to leave it alone otherwise.
-const getSearchQuery = async (text, convSummary, region, signal) => {
+const planTurn = async (text, convSummary, region, signal) => {
   const userContent = convSummary ? `Context: ${convSummary}\n\nQuestion: ${text}` : text;
   const locale = region
     ? ` The user appears to be in ${region.place}. If — and only if — the answer depends on where they are (prices, availability, retailers, local services, regulations), include that country in the query. Otherwise ignore it.`
@@ -501,11 +597,14 @@ const getSearchQuery = async (text, convSummary, region, signal) => {
 
 You are a search-query planner. You NEVER answer the user's question. You only decide what to type into a search engine.
 
-Reply with EITHER up to 2 search queries, one per line, keywords only — OR the single word NO. Nothing else. No prose, no explanation, no headings, no answer.
+Reply with EXACTLY ONE of these three things. Nothing else. No prose, no explanation, no headings, no answer.
+1. The single word MEMORY — if the user is asking about THIS conversation, or about something said earlier in it.
+2. The single word NO — if no web search is needed.
+3. Up to 2 search queries, one per line, keywords only.
 
 SEARCH when the answer could have changed since your training, or when you would otherwise be recalling rather than knowing. That includes: anything current or "latest"; prices, availability and stock; software versions, releases and whether a project is still maintained; people's current roles; news and events; laws, rules and policies; company facts like ownership, funding or pricing tiers; specs, reviews and comparisons of real products; anything with a year in it.
 
-DO NOT search when the answer cannot change: mathematics, definitions, established science and history, how a well-known algorithm or protocol works, code the user pasted, creative writing, opinions, or a question about THIS conversation.
+DO NOT search when the answer cannot change: mathematics, definitions, established science and history, how a well-known algorithm or protocol works, code the user pasted, creative writing, or opinions. A question about THIS conversation is MEMORY, not NO.
 
 If in doubt, search. A needless search costs a second; a skipped one makes you assert something stale as fact. Include the current year in a query only when recency is the point. Use a second query only when the question genuinely has two parts one query cannot cover.
 
@@ -516,6 +615,10 @@ Q: write me a haiku about rain
 NO
 Q: explain how quicksort works
 NO
+Q: what did I ask you earlier
+MEMORY
+Q: summarise what we discussed
+MEMORY
 Q: latest react version
 react latest version ${new Date().getUTCFullYear()}
 Q: XG27AQWMG
@@ -526,7 +629,7 @@ openai ceo ${new Date().getUTCFullYear()}${locale}`;
   // not fit in 50, and the ceiling truncated the SECOND query mid-word, which
   // parses as a valid short query and searches for half a phrase.
   const response = await callModel(FAST_MODEL, [{ role: 'system', content: sys }, { role: 'user', content: userContent }], 0.0, 4000, 120, signal);
-  return parseSearchPlan(response);
+  return parseRoutePlan(response);
 };
 
 // ===== SEARCH FUNCTIONS =====
@@ -806,7 +909,7 @@ const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY || '';
 const PAGE_READ_LIMIT = Number(process.env.PAGE_READ_LIMIT) || 3;
 const { settleByDeadline } = require('./lib/deadline');
 const { todayLine, freshnessWindow, normalizeDate, dateLabel, BRAVE_FRESHNESS, GOOGLE_DATE_RESTRICT } = require('./lib/recency');
-const { parseSearchPlan } = require('./lib/search-plan');
+const { parseRoutePlan } = require('./lib/search-plan');
 const { readSonar } = require('./lib/perplexity');
 const { createSearchCache, comprehensiveSearchKey } = require('./lib/search-cache');
 const { createAnswerCache, TTL_MS: ANSWER_TTL_MS } = require('./lib/answer-cache');
@@ -2588,30 +2691,40 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     // build their own message arrays and never read contextMsgs, so routing here
     // would drop the image description on the floor. An attached image also means
     // the user wants that image looked at, not a recap.
-    /* THE TWO ROUTER CALLS RUN TOGETHER, not one after the other.
+    /* ONE ROUTER CALL, RETURNING BOTH DECISIONS.
      *
-     * Both are FAST_MODEL round trips to the gateway and both take only inputs
-     * that exist before either runs. In series they were the first two things
-     * on the critical path of every message, and nothing could start until both
-     * had returned.
+     * This was two concurrent FAST_MODEL round trips — a memory check and a
+     * search plan. Concurrency meant they never cost two waits, but they always
+     * cost two REQUESTS, and requests are the resource this account runs out of:
+     * every non-greeting turn spent two of them before a single seat had been
+     * asked anything. See the header on `planTurn` for why the second call was
+     * asking the model to decide something it had already decided.
      *
-     * The trade, stated plainly: a memory question now also pays for a search
-     * decision it will not use. That is one call to a fast model with a
-     * 50-token ceiling, on a minority of turns, against a full round trip saved
-     * on the majority. Worth it — but it IS a real cost, not a free win.
+     * The failure the merge could introduce, and where it is contained: a reply
+     * that is garbage now damages both decisions rather than one.
+     * `parseRoutePlan` handles that by making MEMORY hard to say by accident —
+     * it must be the whole first line — so anything ambiguous degrades to
+     * exactly the search decision that existed before.
      *
-     * Not awaited here. Each branch awaits the one it needs, so a memory
-     * question never blocks on the search decision finishing. */
-    // A greeting is decided by a regex in classifyRequest before either of
-    // these runs, and then answered by a branch that reads neither. Paying two
-    // model round trips to route "hi" was pure latency on the cheapest possible
-    // turn — and greetings are disproportionately a user's FIRST message, which
-    // is the one that forms their impression of how fast this is.
+     * Still not awaited here. The memory branch reads `.memory` immediately;
+     * the search branch awaits the same promise further down, by which time it
+     * has resolved and the await is free. */
+    // A greeting is decided by a regex in classifyRequest before this runs, and
+    // then answered by a branch that reads none of it. Paying a model round trip
+    // to route "hi" was pure latency on the cheapest possible turn — and
+    // greetings are disproportionately a user's FIRST message, which is the one
+    // that forms their impression of how fast this is.
     const skipRouter = Boolean(imageContext) || selection.category === 'greeting';
-    const memoryP = skipRouter ? Promise.resolve(false) : telemetry.measureRouter('memory', () => isMemoryOrReferenceQuestion(pv.value, turnSignal)).catch(() => false);
-    const searchQueryP = skipRouter ? Promise.resolve(null) : telemetry.measureRouter('search', () => getSearchQuery(pv.value, convSummary, region, turnSignal)).catch(() => null);
+    const NO_ROUTE = { memory: false, queries: null };
+    /* One `.catch` for one call. A router that fails now falls back to "no
+     * memory, no search", which is the same pair of fallbacks the two separate
+     * `.catch(() => false)` / `.catch(() => null)` handlers produced — a failed
+     * router has never been allowed to fail the turn, only to route it plainly. */
+    const routeP = skipRouter
+      ? Promise.resolve(NO_ROUTE)
+      : telemetry.measureRouter('route', () => planTurn(pv.value, convSummary, region, turnSignal)).catch(() => NO_ROUTE);
 
-    if (await memoryP) {
+    if ((await routeP).memory) {
       console.log('[COUNCIL] Memory question.');
       const memSys = `You are ALOP-AI. The user is asking about a previous conversation. The history below IS your memory. Do NOT say you can't remember. Reference what was discussed. Be concise.${convSummary ? `\n\nSummary: ${convSummary}` : ''}`;
       const memMsgs = [{ role: 'system', content: memSys }, ...histArr.slice(-10), { role: 'user', content: pv.value }];
@@ -2636,9 +2749,9 @@ app.post('/api/council', requireAuth, checkSuspended, async (req, res) => {
     }
 
     // 2. SEARCH
-    // Started above, alongside the memory check. By the time control reaches
-    // here it has usually already resolved, so this await is free.
-    const searchQueries = await searchQueryP;
+    // The same promise the memory branch already read. It resolved above, so
+    // this await is free.
+    const searchQueries = (await routeP).queries;
     const shouldCheckWiki = needsWikiCheck(pv.value);
     /* Derived from the USER'S words, not from the query the model wrote.
      *
@@ -2771,9 +2884,29 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
      * precisely the branch answering from recall — the one place a stale fact
      * has nothing to contradict it. Leaving the date out here would have fixed
      * staleness only where sources already existed to fix it. */
+    /* A ONE-SEAT ROSTER IS WRITING THE FINAL ANSWER, SO IT INHERITS THE
+     * SYNTHESISER'S RULES.
+     *
+     * When the router dispatches exactly one seat, the synthesis step below is
+     * skipped and that seat's draft is what the user reads — see step 6a. The
+     * risk in that, named in Sol's plan before it was built, is that the
+     * synthesis prompt is where the length rule, the "no invented facts" rule
+     * and the formatting rules live, so a direct answer has to inherit them
+     * DELIBERATELY rather than by accident.
+     *
+     * These three are exactly the synthesiser's rules 7, 9 and 10, and nothing
+     * else: rules 1 to 6 are about reconciling a panel and are meaningless to a
+     * seat that is the whole panel. Applied only when the roster is one, so
+     * multi-seat turns keep the prompt they were measured with.
+     *
+     * This costs no request. It is text in a prompt that was being sent
+     * anyway. */
+    const soloRules = selection.members.length === 1
+      ? `\n\nYou are the only expert answering, so your reply IS the final answer. ${LENGTH_RULE[selection.complexity] || LENGTH_RULE.moderate} End on the answer — no "let me know if", no closing offer of further help. If you are inferring rather than reporting — a price you did not see, a spec you are reasoning to — say so in the same sentence.`
+      : '';
     const councilSys = `${todayLine()}
 
-You are an elite AI expert in the ALOP-AI Council. If outside your expertise, reply ONLY "SKIP". If you answer, be direct. Match response length to question complexity. Use Markdown. Write maths in plain Unicode (x², √2, ½, π, ≈), never LaTeX. If context/history provided, use for continuity. ${isDetailed ? 'Be thorough.' : 'Be concise.'}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+You are an elite AI expert in the ALOP-AI Council. If outside your expertise, reply ONLY "SKIP". If you answer, be direct. Match response length to question complexity. Use Markdown. Write maths in plain Unicode (x², √2, ½, π, ≈), never LaTeX. If context/history provided, use for continuity. ${isDetailed ? 'Be thorough.' : 'Be concise.'}${lang !== 'English' ? ` Respond in ${lang}.` : ''}${soloRules}`;
     const councilMsgs = [{ role: 'system', content: councilSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
 
     // The agent loop, when enabled, replaces the single-shot council with
@@ -2966,6 +3099,79 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
         'fallback',
         { ...telemetryExtra, models: 0, seats: selection.members.length, quorum: selection.quorum, tokenLimit: selection.tokenLimit, complexity: selection.complexity, councilRelease },
       );
+      return;
+    }
+
+    /* 6a. ONE SEAT, NO SYNTHESIS.
+     *
+     * SYNTHESIS OF ONE RESPONSE IS A PARAPHRASE. Its own prompt is written
+     * around reconciling a panel — "where they agree", "where they disagree on
+     * a FACT", "give the strongest version of each" — and none of those
+     * instructions has anything to act on when there is one draft. What it
+     * actually did was rewrite a finished answer, for one OpenRouter request
+     * and a full round trip of latency, and rule 5 ("introduce no fact that
+     * appears in none of the responses") means the best possible outcome was
+     * saying the same thing again.
+     *
+     * This takes the simple tier from 4 requests to 2. It is not the same
+     * proposal as "quorum 1 on a multi-seat turn", which was refused and stays
+     * refused: that one makes synthesis a paraphrase of whichever model
+     * finished first, and fast correlates with small. Here there IS no second
+     * model to have been faster than.
+     *
+     * FOUR CONDITIONS, and each one is a way this could ship a worse answer:
+     *
+     *   The ROSTER was one seat, not merely one that answered. Three seats of
+     *   which two skipped is a council that disagreed about whether it could
+     *   help, and the synthesiser is the thing that reads a lone survivor in
+     *   that light.
+     *   Exactly one usable response. Zero already went to the fallback above.
+     *   The draft is not empty after trimming. An empty string streams as a
+     *   blank answer, which is the one outcome worse than a slow one.
+     *   No tool research this turn. The research and truncation blocks below
+     *   are appended to the SYNTHESIS prompt, and the truncation block is what
+     *   tells the writer to hedge a claim that was never verified. Skipping
+     *   synthesis would drop that instruction silently, so a tools turn always
+     *   synthesises however many seats it had.
+     *
+     * The seat's draft already carries the synthesiser's length, closing and
+     * inference rules, because `soloRules` above put them in the seat's own
+     * prompt when the roster is one. */
+    const soleDraft = validResponses.length === 1 ? String(validResponses[0]?.content || '').trim() : '';
+    if (
+      selection.members.length === 1 &&
+      validResponses.length === 1 &&
+      soleDraft &&
+      !toolResearch &&
+      !toolTruncated
+    ) {
+      console.log('[COUNCIL] One seat, no synthesis. 1 model request saved.');
+      openStream(res);
+      /* Written as an ordinary chunk frame and the ordinary terminator, the
+       * same shape the arithmetic fast path and the answer cache use, so the
+       * frontend cannot tell this from a streamed answer.
+       *
+       * The seat was polled with `stream: false`, so its text exists all at
+       * once and arrives here complete. That is still strictly faster than
+       * synthesis was: synthesis could not emit its first token until this
+       * draft had finished arriving, so the user now sees the answer at the
+       * moment synthesis would have STARTED. */
+      if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
+      sendEvent(res, { type: 'chunk', text: soleDraft });
+      if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
+      if (turnSignal.aborted) return;
+      const lastSolo = histArr.filter((m) => m.role === 'assistant').slice(-1)[0]?.content || '';
+      rememberTurn(chatId, user.id, pv.value, lastSolo || soleDraft.slice(0, 800), telemetry);
+      cacheAnswer(soleDraft, ANSWER_TTL_MS.council);
+      await auditTelemetry('council', 'council_solo', {
+        ...telemetryExtra,
+        seats: selection.members.length,
+        quorum: selection.quorum,
+        tokenLimit: selection.tokenLimit,
+        complexity: selection.complexity,
+        councilRelease,
+        synthesisSkipped: true,
+      });
       return;
     }
 

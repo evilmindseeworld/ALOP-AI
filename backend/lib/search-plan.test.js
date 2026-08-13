@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const { parseSearchPlan } = require("./search-plan");
+const { parseSearchPlan, parseRoutePlan } = require("./search-plan");
 
 test("a single query comes back as a single query", () => {
   assert.deepEqual(parseSearchPlan("iphone 17 pro price uae"), ["iphone 17 pro price uae"]);
@@ -170,4 +170,78 @@ test("the rejections do not eat legitimate queries", () => {
   assert.deepEqual(parseSearchPlan("2026 tax brackets"), ["2026 tax brackets"]);
   assert.deepEqual(parseSearchPlan("XG27AQWMG specs"), ["XG27AQWMG specs"]);
   assert.deepEqual(parseSearchPlan("here comes the sun lyrics"), ["here comes the sun lyrics"]);
+});
+
+/**
+ * ONE ROUTER CALL, TWO DECISIONS — `parseRoutePlan`, landed 2026-08-13.
+ *
+ * The turn used to open with two FAST_MODEL calls, a memory check and a search
+ * plan. They ran concurrently so the merge saves no time; it saves one
+ * OpenRouter REQUEST on every non-greeting turn, which is the resource the
+ * account actually runs out of.
+ *
+ * THE RISK THE MERGE INTRODUCES is that one malformed reply now damages both
+ * decisions. Everything below is about containing that, and the asymmetry is
+ * the point: a false MEMORY sends a live question to a branch that answers from
+ * conversation history and cannot search — a confidently empty answer with no
+ * error anywhere. A missed MEMORY merely costs the turn a search it did not
+ * need. So MEMORY is hard to say by accident and anything ambiguous degrades to
+ * the search decision that existed before the merge.
+ */
+test("parseRoutePlan — the memory branch", () => {
+  assert.deepEqual(parseRoutePlan("MEMORY"), { memory: true, queries: null });
+  assert.deepEqual(parseRoutePlan("memory"), { memory: true, queries: null });
+  assert.deepEqual(parseRoutePlan("  MEMORY.  "), { memory: true, queries: null });
+  // Decorated as a list item, which is how a model volunteers structure.
+  assert.deepEqual(parseRoutePlan("- MEMORY"), { memory: true, queries: null });
+  // A memory turn never carries queries: the branch returns before search.
+  assert.equal(parseRoutePlan("MEMORY\nsomething else").queries, null);
+});
+
+test("parseRoutePlan — MEMORY must be the whole first line", () => {
+  /* Stricter than how `NO` is read, deliberately. `NO` is honoured anywhere in
+   * the reply because a model that decides and then muses has still decided.
+   * A stray `MEMORY` mid-reply is far more likely to be the model discussing
+   * the word — and acting on it routes a live question to the wrong branch. */
+  const notMemory = [
+    "memory bandwidth ddr5 2026",           // a legitimate query about memory
+    "what is MEMORY in computing",
+    "NO\nMEMORY",                            // decided NO first
+    "The answer is MEMORY",
+    "MEMORY: yes",
+  ];
+  for (const raw of notMemory) {
+    assert.equal(parseRoutePlan(raw).memory, false, raw);
+  }
+});
+
+test("parseRoutePlan — everything that is not MEMORY routes exactly as before", () => {
+  /* The containment property, asserted directly: for any reply that does not
+   * open with MEMORY, the queries must be identical to what the two-call
+   * version produced, because they come from the same parser on the same text.
+   * If this ever diverges, the merge has changed routing rather than merging
+   * requests. */
+  const replies = [
+    "iphone 17 pro price uae",
+    "framework 16 availability 2026\nframework 16 price uae",
+    "NO",
+    "NO\nBut you could search for tcp slow start",
+    "no fault divorce uk",
+    '1. "iphone 17 price"\n2. iphone 17 release date',
+    "- rust async runtime 2026\n* tokio vs smol",
+    "This question does not require a web search because the answer is stable.",
+    "",
+    "memory bandwidth ddr5 2026",
+  ];
+  for (const raw of replies) {
+    assert.deepEqual(parseRoutePlan(raw).queries, parseSearchPlan(raw), raw);
+  }
+});
+
+test("parseRoutePlan — a non-string reply is not a crash", () => {
+  // The router's `.catch` already covers a failed call; this covers a call that
+  // succeeded and returned something unexpected.
+  for (const bad of [null, undefined, 42, {}]) {
+    assert.deepEqual(parseRoutePlan(bad), { memory: false, queries: null });
+  }
 });

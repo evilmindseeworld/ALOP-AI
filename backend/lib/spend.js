@@ -268,12 +268,19 @@ function reservationCents(seatCount, maxToolCalls, maxRounds) {
  *   The feedback note is a separate endpoint that fires only when a user rates
  *   an answer.
  *
- * What a turn actually spends outside the council is FOUR: two router MODEL
- * calls — `isMemoryOrReferenceQuestion` and `getSearchQuery` — and the two
- * `rememberTurn` fires after answering, `updateChatSummary` and
- * `updateUserFacts`. The count was nearly right while being composed of
- * entirely the wrong things, which is the most durable kind of wrong: a number
- * that survives every review because it looks about right.
+ * What a turn actually spends outside the council is THREE: ONE router model
+ * call — `planTurn`, which returns the memory decision and the search plan
+ * together — and the two `rememberTurn` fires after answering,
+ * `updateChatSummary` and `updateUserFacts`. The count was nearly right while
+ * being composed of entirely the wrong things, which is the most durable kind
+ * of wrong: a number that survives every review because it looks about right.
+ *
+ * IT WAS FOUR UNTIL 2026-08-13, when the two router calls became one. The
+ * constant below is left at 4 ON PURPOSE: it is the RESERVATION's upper bound,
+ * it is only ever refunded against what the turn really recorded, and lowering
+ * a ceiling to exactly the expected value removes the margin that makes it a
+ * ceiling. Lower it only with settlement data showing the reservation is the
+ * thing binding.
  *
  * So the number is no longer asserted. The settlement reads what the turn
  * recorded — `routerReads` for the router calls, `fastCalls` for the

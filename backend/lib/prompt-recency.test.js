@@ -49,7 +49,11 @@ test("the search DECISION knows the date too", () => {
   // that believes its training is current judges "what is the latest X" to be
   // answerable from memory and returns NO, so no source is ever fetched and
   // every later rule about preferring recent sources has nothing to act on.
-  const decision = SOURCE.slice(SOURCE.indexOf("const getSearchQuery"), SOURCE.indexOf("// ===== SEARCH FUNCTIONS"));
+  // `planTurn` since 2026-08-13, when the memory check and the search plan
+  // became one call. The prompt is the same one; only the function around it
+  // was renamed and given a third output branch.
+  const decision = SOURCE.slice(SOURCE.indexOf("const planTurn"), SOURCE.indexOf("// ===== SEARCH FUNCTIONS"));
+  assert.ok(decision, "planTurn is gone; the search decision has moved and this test needs updating");
   assert.match(decision, /\$\{todayLine\(\)\}/);
   assert.match(decision, /If in doubt, search/i);
 });

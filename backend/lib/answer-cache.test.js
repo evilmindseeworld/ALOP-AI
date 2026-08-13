@@ -250,7 +250,11 @@ test('the answer cache read runs before the router spends anything', () => {
 
 test('a truncated stream cannot become a cached answer', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
-  const stream = src.indexOf('const streamModel');
+  /* `streamOnce` since the orchestrator fallback landed: the protocol loop
+   * moved there and `streamModel` is now the wrapper that decides whether a
+   * failure may be retried. The completion check is still what guards the
+   * return, and that is what this test is about. */
+  const stream = src.indexOf('const streamOnce');
   const body = src.slice(stream, stream + 6000);
 
   const throws = body.indexOf('Stream ended before provider completion');

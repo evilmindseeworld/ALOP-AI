@@ -8,15 +8,27 @@ const { join } = require("node:path");
 const SOURCE = readFileSync(join(__dirname, "..", "server.js"), "utf8");
 const ROUTE = SOURCE.slice(SOURCE.indexOf("app.post('/api/council'"), SOURCE.indexOf("// ===== OVERLAY"));
 const LOOP = readFileSync(join(__dirname, "agent-loop.js"), "utf8");
-const STREAM_MODEL = SOURCE.slice(SOURCE.indexOf("const streamModel"), SOURCE.indexOf("const callGeminiVision"));
+// The protocol loop, which lives in `streamOnce` since the orchestrator
+// fallback split the retry decision out of it.
+const STREAM_MODEL = SOURCE.slice(SOURCE.indexOf("const streamOnce"), SOURCE.indexOf("const callGeminiVision"));
 
 test("council turns write one structured telemetry row through auditLog", () => {
   assert.match(ROUTE, /createTurnTelemetry\(\{ startedAt: t0 \}\)/);
   assert.match(ROUTE, /measureContext\('summary'/);
   assert.match(ROUTE, /measureContext\('feedback'/);
   assert.match(ROUTE, /measureContext\('facts'/);
-  assert.match(ROUTE, /measureRouter\('memory'/);
-  assert.match(ROUTE, /measureRouter\('search'/);
+  /* ONE router read since 2026-08-13, not two. It was `measureRouter('memory')`
+   * and `measureRouter('search')`; `planTurn` now returns both decisions from a
+   * single model call, which is one OpenRouter request saved on every
+   * non-greeting turn. The measurement still has to exist — without it the
+   * settlement has no router time to reconcile and the reservation's refund is
+   * computed from nothing. */
+  assert.match(ROUTE, /measureRouter\('route'/);
+  assert.doesNotMatch(
+    ROUTE,
+    /measureRouter\('(memory|search)'/,
+    'the router split back into two calls; that is two requests per turn again',
+  );
   assert.match(ROUTE, /onSeatTiming/);
   assert.match(ROUTE, /recordToolRound/);
   assert.match(ROUTE, /recordSynthesis/);
@@ -148,4 +160,78 @@ test("one turn writes one audit row: every writer routes through the same flag",
 test("only an aborted turn writes from the finally", () => {
   const tail = ROUTE.slice(ROUTE.lastIndexOf("} finally {"));
   assert.match(tail, /turnSignal\.aborted &&/);
+});
+
+/**
+ * THE TWO REQUEST OPTIMISATIONS, 2026-08-13. Both were Sol's, both ranked as
+ * safe wins, and both are about REQUESTS rather than latency — the account gets
+ * a fixed number per UTC day, shared across every user, and two of every turn's
+ * requests were the router's own before a seat was asked anything.
+ *
+ * Per tier, after both:
+ *
+ *   simple   1 router + 1 seat  + 0 synthesis = 2   (was 4)
+ *   moderate 1 router + 3 seats + 1 synthesis = 5   (was 6)
+ *   complex  1 router + 7 seats + 1 synthesis = 9   (was 10)
+ *
+ * These are source-shape assertions because server.js cannot be required in a
+ * test — see AGENTS.md. They cannot prove the counts; they prove the two
+ * structural facts the counts depend on, and each one is a fact that would
+ * otherwise be silently undone by a refactor.
+ */
+test("one seat means no synthesis, and it is decided before synthesis runs", () => {
+  const solo = ROUTE.indexOf("const soleDraft");
+  const synth = ROUTE.indexOf("// 6. SYNTHESIS");
+  assert.ok(solo > 0, "the one-seat branch is gone; the simple tier pays for a synthesis of one draft again");
+  assert.ok(synth > 0, "the synthesis step moved; this test needs updating");
+  assert.ok(solo < synth, "the one-seat branch must be decided before synthesis, or it saves nothing");
+
+  /* THE FOUR GUARDS. Each is a way this could ship a worse answer than the
+   * synthesis it replaces, so each is named rather than counted. */
+  const branch = ROUTE.slice(solo, synth);
+  assert.match(branch, /selection\.members\.length === 1/,
+    "the ROSTER must be one seat — three seats of which two skipped is a council that disagreed");
+  assert.match(branch, /validResponses\.length === 1/);
+  assert.match(branch, /soleDraft &&/, "an empty draft must not stream as a blank answer");
+  assert.match(branch, /!toolResearch/,
+    "a tools turn must synthesise: the truncation block that tells the writer to hedge is appended to the SYNTHESIS prompt");
+  assert.match(branch, /!toolTruncated/);
+});
+
+test("a one-seat roster inherits the synthesiser's rules", () => {
+  /* The seat's draft IS the answer on that path, and the length rule, the
+   * closing rule and the inference rule live in the synthesis prompt. Without
+   * this the simple tier would silently lose all three — an answer that trails
+   * off into "let me know if you need anything else" and states an inference as
+   * a fact. It costs no request: it is text in a prompt already being sent. */
+  const solo = ROUTE.indexOf("const soloRules");
+  assert.ok(solo > 0, "soloRules is gone; a single seat now writes the final answer without the synthesiser's rules");
+  const rules = ROUTE.slice(solo, solo + 900);
+  assert.match(rules, /selection\.members\.length === 1/, "soloRules must apply ONLY to a one-seat roster");
+  assert.match(rules, /LENGTH_RULE\[selection\.complexity\]/);
+  assert.match(rules, /inferring rather than reporting/i);
+  assert.match(ROUTE, /\$\{soloRules\}/, "soloRules is computed but never reaches the prompt");
+});
+
+/**
+ * THE ORCHESTRATOR'S FALLBACK. A throw at the streaming step is the most
+ * expensive failure in the route: the council has already deliberated and the
+ * requests are already spent. The strongest seat writes the answer instead.
+ *
+ * Every assertion here is a refusal, because the danger is the fallback firing
+ * when it should not — a second attempt appended to half an answer reads as one
+ * reply that changes its mind mid-sentence.
+ */
+test("the orchestrator falls back to the strongest seat, and refuses three ways", () => {
+  const wrapper = SOURCE.slice(SOURCE.indexOf("const streamModel = async"), SOURCE.indexOf("const callGeminiVision"));
+  assert.ok(wrapper, "streamModel is gone; the orchestrator fallback has no home");
+  assert.match(wrapper, /streamOnce\(res, SMART_MODEL/, "nothing ever retries with the strong model");
+  assert.match(wrapper, /modelName !== PRIMARY_MODEL/,
+    "a caller that named a model must get that model, and SMART_MODEL must not retry itself");
+  assert.match(wrapper, /signal\?\.aborted/, "a cancelled turn must not be re-dispatched");
+  assert.match(wrapper, /wrote > 0/, "a partial answer must never be retried into a second, different one");
+
+  // And the strong model must not have quietly become the default.
+  assert.match(SOURCE, /const PRIMARY_MODEL = 'google\/gemma-4-26b-a4b-it:free'/,
+    "PRIMARY_MODEL changed; the fallback model is ~10x slower and must not become the default orchestrator");
 });

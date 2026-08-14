@@ -357,6 +357,11 @@ const VOLATILE_RE =
   /\b(?:latest|current(?:ly)?|today|tonight|right now|this (?:week|month|year)|still|newest|recent|upcoming|price|cost|stock|available|availability|version|release|maintained|ceo|president|prime minister|law|regulation|policy|news|weather|score|schedule|market|funding|ownership|best|recommend|under\s+(?:\$|\d)|(?:19|20)\d{2})\b/i;
 const URL_RE = /\b(?:https?:\/\/|www\.)/i;
 const EXPLICIT_WEB_SEARCH_RE = /\b(?:search|browse)\s+(?:the\s+)?(?:live\s+)?web\b|\blook\s+(?:it|this|that)\s+up\s+online\b/i;
+/* First-party product questions are answered from the platform identity prompt,
+ * not from web snippets about unrelated companies with similar names. Keep an
+ * explicit request to search authoritative: that branch runs before this one. */
+const ALOP_IDENTITY_QUESTION_RE =
+  /\balop[-\s]?ai\b[\s\S]{0,100}\b(?:what|who|features?|capabilit(?:y|ies)|tools?|can (?:it|you)|does it|how (?:it|does it) work|platform|assistant)\b|^(?:what|who|how|tell me about)[\s\S]{0,100}\balop[-\s]?ai\b/i;
 const DIRECT_TRANSFORM_RE = /^(?:define|spell|translate)\b/i;
 const CREATIVE_RE = /^(?:write|compose|make|tell me)\b[\s\S]{0,160}\b(?:haiku|poem|story|joke|riddle|limerick|tweet|commit message)\b/i;
 const STABLE_QUESTION_RE = /^(?:what is (?:a|an|the)|what are|explain how|name (?:one|a|an|the))\b/i;
@@ -391,6 +396,7 @@ function routeByRule(text, { hasConversationContext = false } = {}) {
       .slice(0, 200);
     return { memory: false, queries: query ? [query] : null };
   }
+  if (ALOP_IDENTITY_QUESTION_RE.test(t)) return { memory: false, queries: null };
   if (VOLATILE_RE.test(t) || URL_RE.test(t)) return null;
 
   if (CODE_RE.test(t) || DIRECT_TRANSFORM_RE.test(t) || CREATIVE_RE.test(t)) {
@@ -602,6 +608,7 @@ module.exports = {
   GREETING_RE,
   DETAIL_PHRASES,
   GENERATION_RE,
+  ALOP_IDENTITY_QUESTION_RE,
   TIER_SEATS,
   MAX_FREE_SEATS,
   rosterForPlan,

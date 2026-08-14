@@ -459,6 +459,27 @@ test("an explicit web-search instruction deterministically produces a bounded qu
   assert.equal(long.queries[0].length, 200);
 });
 
+test("first-party ALOP-AI identity questions never go to web search", () => {
+  for (const text of [
+    "What is ALOP-AI?",
+    "What can ALOP AI do?",
+    "Tell me about ALOP-AI",
+    "What features does ALOP-AI have?",
+    "What tools are available in ALOP-AI?",
+    "How does ALOP-AI work?",
+    "ALOP-AI platform capabilities",
+  ]) {
+    assert.deepEqual(routeByRule(text, {}), { memory: false, queries: null }, text);
+  }
+});
+
+test("an explicit request to search for ALOP-AI still honors the user's instruction", () => {
+  assert.deepEqual(routeByRule("Search the web for ALOP-AI", {}), {
+    memory: false,
+    queries: ["ALOP-AI"],
+  });
+});
+
 test("generic improvement words do not buy the whole council", () => {
   assert.equal(classifyRequest("make this better", ROSTER).complexity, "moderate");
   assert.equal(classifyRequest("what are the implications of a semicolon", ROSTER).complexity, "simple");

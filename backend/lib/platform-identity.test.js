@@ -20,15 +20,12 @@ test('the shared identity names the platform, capabilities, boundaries, and prio
 });
 
 test('every user-facing model path receives the shared ALOP-AI identity', () => {
-  assert.match(SERVER, /const probeSys = `\$\{ALOP_IDENTITY\}/);
-  assert.match(SERVER, /const memSys = `\$\{ALOP_IDENTITY\}/);
-  assert.match(SERVER, /const greetMsgs = \[\{ role: 'system', content: `\$\{ALOP_IDENTITY\}/);
-  for (const name of ['extMsgs', 'searchSynthMsgs', 'wikiMsgs', 'fbMsgs', 'synthMsgs']) {
-    assert.ok(
-      SERVER.includes(`const ${name} = [{ role: 'system', content: withIdentity(`),
-      `${name} lost the shared identity system message`,
-    );
+  for (const path of [
+    'shadow_probe', 'memory', 'greeting', 'search_council', 'search_synthesis',
+    'wikipedia', 'plain_council', 'fallback', 'synthesis', 'overlay',
+  ]) {
+    assert.match(SERVER, new RegExp(`identityPrompt\\([^\\n]+, '${path}'\\)`), `${path} lost identity injection`);
   }
-  assert.match(SERVER, /const councilMsgs = \[\{ role: 'system', content: `\$\{ALOP_IDENTITY\}\\n\\n\$\{councilSys\}`/);
-  assert.match(SERVER, /\$\{todayLine\(\)\}\\n\\n\$\{ALOP_IDENTITY\}[\s\S]*You are ALOP-AI Overlay/);
+  assert.match(SERVER, /\[SYSTEM PROMPT\] identity injected path=\$\{path\} content=\$\{JSON\.stringify\(ALOP_IDENTITY\)\}/);
+  assert.match(SERVER, /if \(!identityPromptLogged\)/);
 });

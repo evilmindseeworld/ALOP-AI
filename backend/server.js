@@ -45,6 +45,19 @@ const { priceTurn, reservationCents, LIMITS, countTurnRequests, reservationReque
 const { createRequestBudget } = require('./lib/request-budget');
 const { ALOP_IDENTITY, withIdentity } = require('./lib/platform-identity');
 
+/* One diagnostic per process proves that the shared identity section reached
+ * a real model request without logging user text or the rest of the private
+ * system prompt. The section itself describes public product behaviour. */
+let identityPromptLogged = false;
+const identityPrompt = (taskPrompt, path) => {
+  const content = withIdentity(taskPrompt);
+  if (!identityPromptLogged) {
+    identityPromptLogged = true;
+    console.log(`[SYSTEM PROMPT] identity injected path=${path} content=${JSON.stringify(ALOP_IDENTITY)}`);
+  }
+  return content;
+};
+
 const app = express();
 app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
@@ -3092,7 +3105,7 @@ async function handleCouncilTurn(req, res) {
      * Greetings and image turns are skipped — a greeting has nothing to
      * research, and an image turn is not a path the live loop ever takes. */
     if (TOOLS_SHADOW && !imageContext && selection.category !== 'greeting' && selection.members.length) {
-      const probeSys = `${ALOP_IDENTITY}\n\nYou are an elite AI expert in the ALOP-AI Council. If you answer, be direct. Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+      const probeSys = identityPrompt(`You are an elite AI expert in the ALOP-AI Council. If you answer, be direct. Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`, 'shadow_probe');
       const probeMsgs = [{ role: 'system', content: probeSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
       const probeRegistry = buildRegistry({ search: toolSearch, readUrl, assertSafeUrl, checkLinks: checkSearchLinks });
 
@@ -3177,7 +3190,7 @@ async function handleCouncilTurn(req, res) {
 
     if ((await routeP).memory) {
       console.log('[COUNCIL] Memory question.');
-      const memSys = `${ALOP_IDENTITY}\n\nThe user is asking about a previous conversation. The history below IS your memory. Do NOT say you can't remember. Reference what was discussed. Be concise.${convSummary ? `\n\nSummary: ${convSummary}` : ''}`;
+      const memSys = identityPrompt(`The user is asking about a previous conversation. The history below IS your memory. Do NOT say you can't remember. Reference what was discussed. Be concise.${convSummary ? `\n\nSummary: ${convSummary}` : ''}`, 'memory');
       const memMsgs = [{ role: 'system', content: memSys }, ...histArr.slice(-10), { role: 'user', content: pv.value }];
       openStream(res);
       await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
@@ -3191,7 +3204,7 @@ async function handleCouncilTurn(req, res) {
     // 1. GREETING (see the note above on why an image skips this)
     if (!imageContext && selection.category === 'greeting') {
       console.log('[COUNCIL] Greeting.');
-      const greetMsgs = [{ role: 'system', content: `${ALOP_IDENTITY}\n\nGreet briefly.${convSummary ? ` Context: ${convSummary}` : ''}` }, { role: 'user', content: pv.value }];
+      const greetMsgs = [{ role: 'system', content: identityPrompt(`Greet briefly.${convSummary ? ` Context: ${convSummary}` : ''}`, 'greeting') }, { role: 'user', content: pv.value }];
       openStream(res);
       await streamModel(res, PRIMARY_MODEL, greetMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
       if (!res.writableEnded) res.end();
@@ -3331,7 +3344,7 @@ async function handleCouncilTurn(req, res) {
        * claim with "as of" attached lets them judge for themselves, which is
        * the whole point of having searched. */
       const extSys = `${todayLine()}\n\nYou are a precision data extraction engine. Use ONLY the provided data.\n\nRULES:\n1. Only state facts from the data.\n2. No training data.\n3. No inferring/guessing.\n4. No comparing unless both products are in data.\n5. If not in data, say "I couldn't find this in the search results."\n6. Include URLs as Markdown: [Title](URL)\n7. No inventing specs/prices.\n8. Note contradictions between sources.\n9. Format in Markdown. Match answer length to question. Be concise for simple questions.\n10. List sources at bottom under "## Sources".\n11. Embed images if provided: ![Description](url)\n12. CONVERSATION CONTEXT and history are EXEMPT from rules 1-5.\n13. Each source carries a Published date. When sources disagree, prefer the most recent one and say that the older one is out of date — do not average them or pick the more detailed one.\n14. If every source on a time-dependent point is more than a year old, say so rather than presenting it as current.\n15. Attach the date to any fact that changes over time: "as of [date]". A price, version or ranking stated bare reads as current even when it is not.${lang !== 'English' ? `\n16. Respond in ${lang}.` : ''}`;
-      const extMsgs = [{ role: 'system', content: withIdentity(extSys) }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n\n=== SEARCH DATA ===\n${context}` }];
+      const extMsgs = [{ role: 'system', content: identityPrompt(extSys, 'search_council') }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n\n=== SEARCH DATA ===\n${context}` }];
       openStream(res);
       const searchDrafts = await runCouncilWithWhip(
         selection.members, extMsgs, selection.whipMs, selection.quorum,
@@ -3347,7 +3360,7 @@ async function handleCouncilTurn(req, res) {
       const usableSearchDrafts = searchDrafts.filter((r) => r?.content?.trim());
       if (!usableSearchDrafts.length) throw new Error('Search council returned no usable answers');
       const searchSynthSys = `${todayLine()}\n\nReconcile these independent answers into one precise response. Use only facts present in the answers and their cited search data. Preserve Markdown source links, note material disagreements, and do not mention the council.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
-      const searchSynthMsgs = [{ role: 'system', content: withIdentity(searchSynthSys) }, {
+      const searchSynthMsgs = [{ role: 'system', content: identityPrompt(searchSynthSys, 'search_synthesis') }, {
         role: 'user',
         content: `Question: ${truncatedPrompt}\n\nResponses:\n${usableSearchDrafts.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}`,
       }];
@@ -3383,7 +3396,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         // Its own fetch, not searchWeb's, so it needs its own label. Wikipedia is
         // world-editable: this is the one source where an attacker does not even
         // need a site of their own.
-        const wikiMsgs = [{ role: 'system', content: withIdentity(wikiSys) }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n=== WIKIPEDIA ===\n${UNTRUSTED_PREAMBLE}\n\n${envelope('Wikipedia extract', wiki)}` }];
+        const wikiMsgs = [{ role: 'system', content: identityPrompt(wikiSys, 'wikipedia') }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: `${truncatedPrompt}\n=== WIKIPEDIA ===\n${UNTRUSTED_PREAMBLE}\n\n${envelope('Wikipedia extract', wiki)}` }];
         openStream(res);
         const wikiAnswer = await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
         if (!res.writableEnded) res.end();
@@ -3427,7 +3440,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
     const councilSys = `${todayLine()}
 
 You are an elite AI expert in the ALOP-AI Council. If outside your expertise, reply ONLY "SKIP". If you answer, be direct. Match response length to question complexity. Use Markdown. Write maths in plain Unicode (x², √2, ½, π, ≈), never LaTeX. If context/history provided, use for continuity. ${isDetailed ? 'Be thorough.' : 'Be concise.'}${lang !== 'English' ? ` Respond in ${lang}.` : ''}${soloRules}`;
-    const councilMsgs = [{ role: 'system', content: `${ALOP_IDENTITY}\n\n${councilSys}` }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
+    const councilMsgs = [{ role: 'system', content: identityPrompt(councilSys, 'plain_council') }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
 
     // The agent loop, when enabled, replaces the single-shot council with
     // propose → dedupe → broadcast. It only ever runs HERE, after the router
@@ -3641,7 +3654,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       const fbSys = `${todayLine()}
 
 You are a helpful AI assistant. Answer directly. Match length to question. If you don't know, say "I don't have enough information." Don't guess. Use context if provided. Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
-      const fbMsgs = [{ role: 'system', content: withIdentity(fbSys) }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
+      const fbMsgs = [{ role: 'system', content: identityPrompt(fbSys, 'fallback') }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
       openStream(res);
       const fallbackStartedAt = Date.now();
       const fallbackAnswer = await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
@@ -3756,7 +3769,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     const truncationBlock = toolTruncated
       ? `\n\n=== NOTE ===\nResearch was cut short: ${toolTruncated} Where the experts' claims rest on something that was not verified, say so plainly rather than asserting it.`
       : '';
-    const synthMsgs = [{ role: 'system', content: withIdentity(synthSys) }, { role: 'user', content: `Question: ${truncatedPrompt}\n\nResponses:\n${validResponses.map((r,i) => `[Expert ${i+1}]: ${r.content}`).join('\n\n')}${researchBlock}${truncationBlock}` }];
+    const synthMsgs = [{ role: 'system', content: identityPrompt(synthSys, 'synthesis') }, { role: 'user', content: `Question: ${truncatedPrompt}\n\nResponses:\n${validResponses.map((r,i) => `[Expert ${i+1}]: ${r.content}`).join('\n\n')}${researchBlock}${truncationBlock}` }];
     // The last thing that happens before words appear, and the longest single
     // step on a turn where the seats came back quickly.
     sendStage(res, 'synthesis', validResponses.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
@@ -4019,9 +4032,7 @@ app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
       // The overlay answers questions like any other surface, so it gets the
       // same date anchor. It was the last prompt in the app still asserting
       // time-dependent facts from recall with nothing to check them against.
-      { role: 'system', content: `${todayLine()}\n\n${ALOP_IDENTITY}
-
-You are ALOP-AI Overlay. Give concise answers. For coding, provide working code. If screen description provided, use it.` },
+      { role: 'system', content: identityPrompt(`${todayLine()}\n\nYou are ALOP-AI Overlay. Give concise answers. For coding, provide working code. If screen description provided, use it.`, 'overlay') },
       ...histArr,
       { role: 'user', content: ctx ? `Screen: ${ctx}\n\nQuestion: ${pv.value}` : `Question: ${pv.value}` }
     ];

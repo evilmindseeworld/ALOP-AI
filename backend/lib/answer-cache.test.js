@@ -233,12 +233,14 @@ test('a router-confirmed brief answer can be stored without weakening ordinary w
   const options = cacheOptions(TTL_MS.stable, { question: 'can you use canva' });
   c.setBrief(k, 'Yes — I can help you create and edit Canva designs.', options);
   assert.match((await c.get(k)).answer, /Canva/);
+  c.setBrief(k, 'I cannot directly operate Canva, but I can help create designs for it.', options);
+  assert.match((await c.get(k)).answer, /cannot directly operate Canva/);
 });
 
 test('a brief refusal is never stored even through the simple-answer path', async () => {
   const c = createAnswerCache();
   const k = keyFor({ question: 'can you use canva' });
-  c.setBrief(k, "Sorry, I can't do that. Try again.", cacheOptions(TTL_MS.stable, { question: 'can you use canva' }));
+  c.setBrief(k, "Sorry, I couldn't complete that. Try again.", cacheOptions(TTL_MS.stable, { question: 'can you use canva' }));
   assert.equal(await c.get(k), null);
 });
 

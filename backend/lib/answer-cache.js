@@ -439,7 +439,8 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
   /** A router-confirmed simple answer may be useful while still being brief. */
   function setBrief(key, answer, options) {
     const text = typeof answer === 'string' ? answer.trim() : '';
-    if (text.length < 20 || /\b(?:sorry|cannot|can't|couldn't|unable|error|failed|try again|rephrase)\b/i.test(text)) return;
+    if (text.length < 20 || /\b(?:error|failed|try again|rephrase)\b/i.test(text) ||
+        /\b(?:sorry|couldn't)\b[^.]{0,50}\b(?:find|complete|answer|help)\b/i.test(text)) return;
     store(key, answer, options, true);
   }
 

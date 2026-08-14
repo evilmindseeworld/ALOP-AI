@@ -152,12 +152,29 @@ async function runCouncil(members, messages, whipMs, quorum, tokenLimit, deps = 
     if (signal) signal.addEventListener("abort", onParentAbort, { once: true });
     if (signal?.aborted) return finish("aborted");
 
-    for (const { model, temperature } of members) {
+    for (const { model, temperature, effort } of members) {
       const record = { model, startedAt: now(), timingDone: false };
       seatRecords.push(record);
       report(model, SEAT_STATES.THINKING);
       Promise.resolve()
-        .then(() => callModel(model, messages, temperature, whipMs, tokenLimit, councilSignal))
+        /* `effort` IS A PER-SEAT PROPERTY, not a council-wide one, and this is
+         * the only place it can be applied. Every seat on the free roster
+         * ignores it — reasoning effort is not among their supported
+         * parameters — but the native tool seat is on this path too whenever a
+         * complex question does NOT need tools, and it was added to the council
+         * precisely because it thinks harder. Without this it would sit here at
+         * the provider's default effort: the expensive seat, bought and not
+         * used. `exclude` keeps the reasoning out of the draft, exactly as the
+         * default request already does. */
+        .then(() => callModel(
+          model,
+          messages,
+          temperature,
+          whipMs,
+          tokenLimit,
+          councilSignal,
+          effort ? { reasoning: { effort, exclude: true } } : undefined,
+        ))
         .then((content) => {
           if (resolved) return;
           settledCount++;

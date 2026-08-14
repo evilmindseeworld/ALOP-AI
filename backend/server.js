@@ -219,6 +219,58 @@ const COUNCIL = [
   { model: 'nvidia/nemotron-3-nano-30b-a3b:free',   temperature: 0.8, free: true,  medianMs: 2100 },
 ];
 
+/**
+ * THE NATIVE TOOL SEAT — the one member that calls tools through a real
+ * function-calling interface instead of by writing a fenced block into prose.
+ *
+ * It is NOT in the COUNCIL array above, and that is deliberate. Every seat in
+ * that array is a `:free` id billed at $0 and eligible for narrowing by
+ * temperature band; this one is METERED, is added by policy rather than by the
+ * ladder, and must never be picked as a substitute for a free seat. It joins a
+ * turn through `withToolSeat` and only when the turn earns it — see the policy
+ * comment in lib/router.js.
+ *
+ * `openai/gpt-5.6-luna` is the default because it is what was measured: the
+ * catalogue reports `tools`, `tool_choice` and `reasoning_effort` among its
+ * supported parameters, and a live round trip on 2026-08-14 confirmed all
+ * three — it emitted `tool_calls` with `finish_reason: "tool_calls"`, accepted
+ * a `role: "tool"` reply against the id it had asked with, and returned prose
+ * with `finish_reason: "stop"` when sent `tool_choice: "none"`.
+ *
+ * COST, STATED PLAINLY BECAUSE IT IS THE THING MOST LIKELY TO BE ASSUMED AWAY:
+ * through OpenRouter this model is $0.10/M prompt and $0.60/M completion. A
+ * ChatGPT/Codex subscription covers `gpt-5.6-luna` when it is called through
+ * THAT account — this is a different account and a different bill. Reasoning
+ * tokens are billed as completion, and this seat runs at high effort, so the
+ * completion side is the expensive half. lib/spend.js prices it separately for
+ * exactly this reason; the request ceiling counts it like any other seat,
+ * because OpenRouter's request quota does not care what a request cost.
+ */
+const TOOL_SEAT_MODEL = (process.env.COUNCIL_TOOL_SEAT_MODEL || 'openai/gpt-5.6-luna').trim();
+const TOOL_SEAT_EFFORT = (process.env.COUNCIL_TOOL_SEAT_EFFORT || 'high').trim();
+/* PRO ONLY BY DEFAULT, and this is a spend boundary rather than a product one.
+ * Every other seat costs $0, so `rosterForPlan` has never had money riding on
+ * it. Handing a metered model to an unbounded free tier is how a $20/month
+ * ceiling becomes a surprise, and the per-user spend ceiling is the only thing
+ * that would catch it — after the fact. Set COUNCIL_TOOL_SEAT_FREE_PLAN=1 to
+ * extend it, deliberately, once the numbers are known. */
+const TOOL_SEAT_FREE_PLAN = /^(1|true)$/i.test(process.env.COUNCIL_TOOL_SEAT_FREE_PLAN || '');
+const TOOL_SEAT_ENABLED = Boolean(TOOL_SEAT_MODEL) && !/^(off|none|0|false)$/i.test(TOOL_SEAT_MODEL);
+const TOOL_SEAT = TOOL_SEAT_ENABLED
+  ? {
+      model: TOOL_SEAT_MODEL,
+      /* Low, like the 120B seat above: this member's job is to hold to what the
+       * evidence literally says. The lateral seats are already on the board. */
+      temperature: 0.2,
+      /* `free` means "included in the FREE PLAN", not "costs nothing" — see
+       * rosterForPlan. This seat is the first place those two readings come
+       * apart, and reading it the other way is a metered model on a free tier. */
+      free: TOOL_SEAT_FREE_PLAN,
+      nativeTools: true,
+      effort: TOOL_SEAT_EFFORT,
+    }
+  : null;
+
 const FREE_COUNCIL = COUNCIL.filter((m) => m.free).slice(0, 3);
 // The single model used for streaming: synthesis, greetings, fallback and
 // search extraction all speak with one voice, so it stays deterministic.
@@ -298,11 +350,32 @@ const noteDailyLimit = (err) => {
   throw err;
 };
 
-const callModel = (modelName, messages, temperature = 0.0, timeoutMs = 30000, maxTokens = 1000, parentSignal) =>
-  orCallModel(OPENROUTER_HOST, OPENROUTER_API_KEY, modelName, messages, temperature, timeoutMs, maxTokens, parentSignal)
+/* `options` is the seam to lib/model-reply.js. Without `{ structured: true }`
+ * this returns the same string it always has; with it, the caller gets native
+ * `tool_calls`, `refusal`, `finish_reason` and token usage, all of which the
+ * old string contract deleted silently. */
+const callModel = (modelName, messages, temperature = 0.0, timeoutMs = 30000, maxTokens = 1000, parentSignal, options) =>
+  orCallModel(OPENROUTER_HOST, OPENROUTER_API_KEY, modelName, messages, temperature, timeoutMs, maxTokens, parentSignal, options)
     .catch(noteDailyLimit);
 
 const STREAM_TURN_BUDGET_MS = 75_000;
+
+/* Whether a streamed generation asks the gateway to report its token usage.
+ *
+ * ON BY DEFAULT AS OF 2026-08-14, because it has now been MEASURED rather than
+ * assumed. It shipped off for one reason — `usage: {include: true}` is an
+ * OpenRouter extension riding in the body of the request that writes every
+ * answer, and there was no key on the development machine to test it with, so
+ * an unverified field there would have failed as a product-wide outage rather
+ * than as missing telemetry. A live probe against the real gateway returned
+ * HTTP 200, streamed content normally, and delivered a usage frame carrying
+ * prompt, completion, total and cost. The reason for the flag is gone; the
+ * flag stays as an off switch (`STREAM_USAGE_ACCOUNTING=0`) rather than as a
+ * gate, because that is the shape that is useful at 3am.
+ *
+ * The boot banner prints it either way — a flag that is silent when off is
+ * indistinguishable from one that is on and broken. */
+const STREAM_USAGE_ACCOUNTING = process.env.STREAM_USAGE_ACCOUNTING !== '0';
 
 const normaliseResetEpoch = (value) => {
   const epoch = Number(value);
@@ -376,7 +449,10 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
       maxTokens,
       /* The turn's admission deadline when there is one, so a retry can never
        * outlive the turn it belongs to. */
-      Number.isFinite(turnDeadlineAt) ? { deadlineAt: turnDeadlineAt } : {},
+      {
+        ...(Number.isFinite(turnDeadlineAt) ? { deadlineAt: turnDeadlineAt } : {}),
+        includeUsage: STREAM_USAGE_ACCOUNTING,
+      },
     );
   } catch (err) {
     /* `resetAt` arrives as whatever the wire said. Ten digits are seconds and
@@ -423,6 +499,14 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
        * flag does not exist in this shape at all. */
       const frame = parseOpenRouterSseLine(line);
       if (frame.skip) continue;
+      /* The synthesis is the longest generation of a turn and was the one call
+       * whose token cost nothing could see: `callModel` gets `usage` in its JSON
+       * body, a stream only sends it if asked, and it was not asked. It arrives
+       * on its own frame after finish_reason, so this sits above the text and
+       * done branches rather than inside either. */
+      if (frame.usage) {
+        try { answerOptions.onUsage?.(frame.usage); } catch { /* telemetry must never fail a stream */ }
+      }
       if (frame.text) {
         if (protocolCandidate) {
           held.push(frame.text);
@@ -626,6 +710,7 @@ const {
   rosterForPlan,
   routeByRule,
   escalateForResearch,
+  withToolSeat,
 } = require('./lib/router');
 // What makes a Wikipedia lookup answerable rather than merely non-empty.
 const { wikiSubject, isRelevantTitle } = require('./lib/wiki-relevance');
@@ -998,6 +1083,18 @@ const openStream = (res) => {
   // progress. Without this the trail arrives all at once, at the end.
   res.setHeader('X-Accel-Buffering', 'no');
   res.flushHeaders?.();
+  /* THE ID, ON THE STREAM, AS THE FIRST FRAME.
+   *
+   * A streamed turn cannot use the response body to carry it and an
+   * EventSource-style reader does not surface response headers, so without this
+   * frame the one request class that most needs correlation — the long one that
+   * can fail halfway — is the one with no id the client can quote. Sent as an
+   * ordinary event; the frontend drops unknown `type`s silently, so this is
+   * additive on the wire. */
+  const operationId = res.req?.operationId;
+  if (operationId && !res.writableEnded) {
+    try { res.write(`data: ${JSON.stringify({ type: 'meta', operationId })}\n\n`); } catch { /* client went away */ }
+  }
 };
 
 /** One SSE frame. Never throws: a dead socket must not become a 500. */
@@ -1058,8 +1155,11 @@ const { createGreetingCache } = require('./lib/greeting-cache');
 const { createTtlCache } = require('./lib/ttl-cache');
 const { boundedPage, pageInfo } = require('./lib/pagination');
 const { noStoreApi } = require('./lib/http-cache');
+const { errorEnvelope, sendError } = require('./lib/error-envelope');
+const { resolveStripeTarget } = require('./lib/stripe-identity');
 const { detectRegion, regionHint } = require('./lib/region');
 const { firstWithResults, toolMessages, summariseProbe, searchResultUrls, requiredCitationSuffix, UNTRUSTED_PREAMBLE } = require('./lib/council-tools');
+const { createNativeToolSeat } = require('./lib/native-tool-seat');
 const { parseToolRequests, sanitizeAnswerText, userRequestedProtocolJson, looksLikeProtocolOpening } = require('./lib/tool-protocol');
 const { prepareUpload, UploadRejected, MAX_FILES_PER_CHAT } = require('./lib/file-intake');
 
@@ -1825,7 +1925,28 @@ app.use(helmet(helmetOptions));
 // clientFingerprint used to be computed here and used as the rate-limit key.
 // It hashed the User-Agent, so it was not an identity — it was a bucket the
 // caller could change at will. Nothing derives from a client-chosen header now.
-app.use((req, res, next) => { req.requestId = crypto.randomUUID(); next(); });
+/* ONE ID, MINTED ONCE, AND NOW ACTUALLY SENT SOMEWHERE.
+ *
+ * `req.requestId` existed and was read by nothing: it reached no response, no
+ * log line and no audit row, so the one thing it is for — a user quoting an id
+ * that can be found in the logs — was impossible. `operationId` is the same
+ * value under the name the rest of the system uses for it; `requestId` is kept
+ * as an alias because a few call sites already read it.
+ *
+ * A CLIENT MAY SUPPLY ITS OWN, and it is validated rather than trusted: the
+ * frontend mints one per turn so a retry, a reconnect and the original attempt
+ * correlate, and an id that is not a plain UUID is discarded and replaced. It
+ * is echoed into responses and log lines, so an unvalidated one is a log
+ * injection.
+ */
+app.use((req, res, next) => {
+  const supplied = req.get('X-Operation-Id');
+  const id = typeof supplied === 'string' && UUID_RE.test(supplied) ? supplied.toLowerCase() : crypto.randomUUID();
+  req.operationId = id;
+  req.requestId = id;
+  res.set('X-Operation-Id', id);
+  next();
+});
 
 // There is no public cacheable API response today. Authenticated GETs carry
 // user data, and a response without an explicit Cache-Control policy can be
@@ -1855,7 +1976,44 @@ app.post('/api/stripe/webhook', requireStripe, express.raw({ type: 'application/
     if (dupe) console.error('[stripe] event ledger unavailable, processing anyway:', dupe.message);
   } catch (e) { console.error('[stripe] event ledger threw, processing anyway:', e.message); }
 
-  try { if (event.type === 'checkout.session.completed') { const s = event.data.object; const email = s.customer_email || s.customer_details?.email; if (email) await supabase.from('users').update({ plan:'pro', stripe_customer_id: s.customer, stripe_subscription_id: s.subscription }).eq('email', email.toLowerCase()); } if (event.type === 'invoice.paid') await supabase.from('users').update({ plan:'pro' }).eq('stripe_customer_id', event.data.object.customer); if (['customer.subscription.deleted','customer.subscription.updated'].includes(event.type)) { const sub = event.data.object; await supabase.from('users').update({ plan: sub.status === 'active' ? 'pro' : 'free' }).eq('stripe_subscription_id', sub.id); } invalidateUserRows(); res.json({ received: true }); } catch (err) { Sentry.captureException(err); res.status(500).send('Webhook failed'); }
+  /* IDENTITY IS NO LONGER INFERRED FROM AN EMAIL STRING.
+   *
+   * What this replaced resolved the paying user with
+   * `.eq('email', s.customer_email.toLowerCase())`, and it failed silently
+   * three ways — the money arrives, `plan` stays `free`, nothing logs:
+   *
+   *   1. The session email is whatever the payer typed at checkout. Pay with a
+   *      work card and a different address and no row matches.
+   *   2. `users.email` is refreshed in the BACKGROUND from Clerk
+   *      (`refreshProfile`). Change it mid-checkout and the match is stale.
+   *   3. `.eq` is not `.single()`. Two rows sharing an email both get updated.
+   *
+   * The correct identity was already on the session and was being discarded:
+   * `create-checkout-session` puts the Clerk user id in `metadata.userId`, and
+   * now in `client_reference_id` as well. `lib/stripe-identity.js` decides which
+   * column to address and how much it trusts the answer; email survives as a
+   * last-resort fallback so a checkout already in flight is not stranded, but it
+   * is reported as `weak` and logged as such. */
+  const decision = resolveStripeTarget(event);
+  try {
+    if (decision.handled && decision.match && Object.keys(decision.patch).length > 0) {
+      const { error } = await supabase.from('users').update(decision.patch).eq(decision.match.column, decision.match.value);
+      if (error) throw error;
+      /* The value is NOT logged. `reason` is written to be safe to print and
+       * carries no address; the column name is what a reader needs. */
+      const line = `[stripe] ${event.type} -> ${Object.keys(decision.patch).join(',')} by ${decision.match.column} (${decision.confidence}: ${decision.reason})`;
+      if (decision.confidence === 'weak') console.warn(`${line} — WEAK match; this checkout predates client_reference_id`);
+      else console.log(line);
+      invalidateUserRows();
+    } else if (decision.handled && !decision.match) {
+      /* Loud, because it is the failure the old code had and could not report:
+       * a paid event that matched nobody. */
+      console.error(`[stripe] ${event.type} could not be attributed to a user (${decision.reason}). op=${req.operationId}`);
+    } else if (decision.handled) {
+      console.log(`[stripe] ${event.type} handled with no change (${decision.reason})`);
+    }
+    res.json({ received: true });
+  } catch (err) { Sentry.captureException(err); res.status(500).send('Webhook failed'); }
 });
 
 app.use(compression({ filter: sseAwareFilter }));
@@ -2664,7 +2822,19 @@ async function handleCouncilTurn(req, res) {
     // The plan decides the roster HERE, once, rather than inside the router —
     // which is what lets the router be called with a sentence and checked.
     const planRoster = rosterForPlan(userPlan, COUNCIL);
+    /* THE TOOL SEAT'S PLAN GATE, and it is applied HERE for the same reason the
+     * roster's is: the plan decision belongs to the caller, so that the router
+     * can be handed a sentence and checked without a subscription. `null` means
+     * this user does not get the seat, and every function downstream treats
+     * null as "no seat" rather than as "use the default". */
+    const toolSeat = TOOL_SEAT && (userPlan === 'pro' || TOOL_SEAT_FREE_PLAN) ? TOOL_SEAT : null;
     let selection = classifyRequest(pv.value, planRoster, isDetailed);
+    /* THE COMPLEXITY HALF OF THE TOOL-SEAT POLICY, applied before the
+     * reservation because the reservation has to know it is paying for a
+     * metered seat. The SEARCH half cannot be decided yet — the router has not
+     * run — so it lands with the research escalation ~400 lines below, and the
+     * reservation is taken against the worst case of both. */
+    selection = withToolSeat(selection, toolSeat);
     /* `let`, because a turn the router later sends to live research is
      * re-selected onto the full roster below — see escalateForResearch. The
      * reservation two blocks down covers that roster, not this one, so the
@@ -2729,10 +2899,20 @@ async function handleCouncilTurn(req, res) {
      * account-wide capacity for seats that can never be dispatched and refuse
      * concurrent turns for it — Sol's finding. */
     const mayEscalate = selection.category !== 'greeting';
+    /* THE TOOL SEAT WIDENS THE WORST CASE BY ONE, and it has to be counted here
+     * or the widening below spends past the admission.
+     *
+     * `planRoster` does NOT contain the tool seat — it is added by policy, not
+     * drawn from the ladder — so `Math.max(members, planRoster)` cannot see it.
+     * A turn classified simple reserves for the plan roster and can still be
+     * escalated onto the full council PLUS this seat when the router asks for
+     * research, which is one seat more than either number. */
+    const mayAddToolSeat = Boolean(toolSeat) && mayEscalate;
+    const toolSeatCount = mayAddToolSeat ? 1 : 0;
     const maxSeats = mayEscalate
-      ? Math.max(selection.members.length, planRoster.length)
+      ? Math.max(selection.members.length, planRoster.length + toolSeatCount)
       : selection.members.length;
-    const reserved = reservationCents(maxSeats, 12, 4);
+    const reserved = reservationCents(maxSeats, 12, 4, toolSeatCount);
     const budget = await reserveSpend(user.id, reserved);
     if (!budget.allowed) {
       telemetry.markCeiling('spend');
@@ -2774,7 +2954,23 @@ async function handleCouncilTurn(req, res) {
        * user for the turn it refused is worse than no ceiling. */
       settleSpend(user.id, spendReserved, 0);
       spendReserved = 0;
-      await auditBranch({ category: 'request_ceiling', usedRequests: requestBudget.used });
+      await auditBranch({ category: 'request_ceiling', usedRequests: requestBudget.used, degraded: Boolean(requestBudget.degraded) });
+      /* TWO REFUSALS THAT MEAN DIFFERENT THINGS, and telling a user the wrong
+       * one is worse than a vague message. The day's quota being gone resets at
+       * midnight and there is nothing to do until then. The DEGRADED refusal
+       * means the ledger is unreachable and the small local allowance that
+       * covers such a window is spent — the day's real budget may be untouched,
+       * and it will clear as soon as the store answers, which is minutes rather
+       * than hours. A 503 rather than a 402: nothing is wrong with the account. */
+      if (requestBudget.degraded) {
+        res.set('Retry-After', '60');
+        return res.status(503).json({
+          error: "The council cannot check its request budget right now. Try again in a minute.",
+          reason: 'request_ledger_degraded',
+          code: 'upstream_unavailable',
+          operationId: req.operationId,
+        });
+      }
       return res.status(402).json({
         error: "The council is out of model requests for today. It resets at midnight UTC.",
         reason: 'daily_request_limit',
@@ -2785,7 +2981,13 @@ async function handleCouncilTurn(req, res) {
     requestsReserved = reservedRequests;
 
     const truncatedPrompt = truncatePrompt(pv.value);
-    const answerOptions = { allowProtocolJson: userRequestedProtocolJson(truncatedPrompt) };
+    /* `onUsage` reaches streamOnce unchanged through every streamModel call on
+     * this route, which is why it lives here rather than being threaded as a
+     * ninth positional argument through four call sites. */
+    const answerOptions = {
+      allowProtocolJson: userRequestedProtocolJson(truncatedPrompt),
+      onUsage: (usage) => telemetry.recordUsage(usage, { phase: 'synthesis' }),
+    };
     const histArr = sanitizeHistory(history);
 
     // VISION. The council speaks to a text model, so an attached image is
@@ -3133,8 +3335,15 @@ async function handleCouncilTurn(req, res) {
       Promise.all(
         selection.members.map(async ({ model }) => {
           try {
-            const raw = await callModel(model, toolMessages(probeMsgs, probeRegistry, { round: 1, isFinalRound: false }), 0.0, selection.whipMs, selection.tokenLimit, turnSignal);
-            return { member: model, ...parseToolRequests(raw) };
+            /* STRUCTURED for the same reason the live path is, and it matters
+             * more here: this probe exists to measure how many members emit a
+             * readable tool call, and the string contract made a NATIVE emitter
+             * indistinguishable from a member that answered nothing. The
+             * verdict it printed was therefore an undercount of exactly the
+             * models the feature most wants to find. */
+            const reply = await callModel(model, toolMessages(probeMsgs, probeRegistry, { round: 1, isFinalRound: false }), 0.0, selection.whipMs, selection.tokenLimit, turnSignal, { structured: true });
+            telemetry.recordUsage(reply.usage, { phase: 'probe' });
+            return { member: model, ...parseToolRequests(reply) };
           } catch (err) {
             return { member: model, calls: [], text: '', error: err.message };
           }
@@ -3251,10 +3460,22 @@ async function handleCouncilTurn(req, res) {
      * An image turn is excluded because its context is the picture, not the web.
      * The budget for this roster was reserved above. */
     if (mayEscalate && searchQueries?.length && !imageContext) {
+      const before = selection.members.length;
       const widened = escalateForResearch(selection, planRoster);
-      if (widened !== selection) {
-        console.log(`[COUNCIL] Research escalation: ${selection.members.length} -> ${widened.members.length} seats.`);
-        selection = widened;
+      if (widened !== selection) selection = widened;
+      /* THE SEARCH HALF OF THE TOOL-SEAT POLICY. This is the case the seat
+       * exists for: the router has just said the answer is on the web, and this
+       * is the only member that can go and get it through a real tool
+       * interface. Applied AFTER escalateForResearch so it survives the
+       * re-selection — that function rebuilds `members` from the plan roster,
+       * which the tool seat is deliberately not part of, so adding the seat
+       * first would silently drop it again.
+       *
+       * `mayAddToolSeat` was computed above the reservation, so this cannot
+       * widen past what was admitted. */
+      if (mayAddToolSeat) selection = withToolSeat(selection, toolSeat, { needsTools: true });
+      if (selection.members.length !== before) {
+        console.log(`[COUNCIL] Research escalation: ${before} -> ${selection.members.length} seats${selection.toolSeatModel ? ` (native tool seat: ${selection.toolSeatModel})` : ''}.`);
       }
     }
     console.log(`[COUNCIL] seats=${selection.members.length} tier=${userPlan}`);
@@ -3560,6 +3781,31 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       // spinner for that long is worse than the router path it replaced. From here on every failure is an SSE frame,
       // never a 500 — see the catch at the end of this route.
       openStream(res);
+      /* THE NATIVE SEAT'S PRIVATE CONVERSATION, created once per turn.
+       *
+       * It has to live outside `askMember` because it is STATE: the assistant
+       * turn carrying `tool_calls` and the `role: "tool"` replies that answer
+       * them accumulate across the loop's rounds, and a fresh object per round
+       * would send the model a first round every time — it would re-request the
+       * same tool forever and never see a result. Created only when this turn
+       * actually seated it; null otherwise, and every use below is guarded. */
+      /* ADOPTION, COUNTED RATHER THAN ASSUMED. Keyed by the protocol that
+       * produced each executed call — `native`, `fence`, `seeded`, or a `+`
+       * join when one deduped call was proposed both ways. This is the number
+       * the whole native path has to justify itself with. */
+      const toolCallsBySource = {};
+      const nativeSeat = selection.toolSeatModel
+        ? createNativeToolSeat({
+            model: selection.toolSeatModel,
+            callModel,
+            registry,
+            effort: TOOL_SEAT_EFFORT,
+            onUsage: (usage) => telemetry.recordUsage(usage, { phase: 'tool_seat' }),
+          })
+        : null;
+      if (nativeSeat) {
+        console.log(`[TOOLS] native seat ${nativeSeat.model} armed with ${nativeSeat.tools.length} tool schema(s), effort=${TOOL_SEAT_EFFORT}`);
+      }
       const loop = await runAgentLoop({
         members: selection.members.map((m) => m.model),
         registry,
@@ -3576,15 +3822,66 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
          * council; there is no second policy here. */
         quorum: selection.quorum,
         onEvent: (e) => {
-          console.log(`[TOOLS] r${e.round} ${e.type} ${e.name}${e.ok === false ? ' FAILED' : ''} — ${e.summary}`);
-          sendEvent(res, e);
+          /* PROVENANCE IN THE LOG LINE, which is the only way "is the native
+           * path actually being used" can be answered after the fact. A native
+           * seat that quietly degrades to writing fenced blocks produces
+           * identical answers, identical timings and identical costs — the
+           * ONLY difference is this word. `seeded` is the third source: a
+           * server-issued search that no model asked for. */
+          const via = e.seeded ? 'seeded' : (e.sources || []).join('+') || 'fence';
+          if (e.type === 'tool_start') toolCallsBySource[via] = (toolCallsBySource[via] || 0) + 1;
+          console.log(`[TOOLS] r${e.round} ${e.type} ${e.name} via=${via}${e.ok === false ? ' FAILED' : ''} — ${e.summary}`);
+          /* `sources` stays OUT of the SSE frame. Which protocol a seat used is
+           * an implementation detail of the council, and the seat progress
+           * events deliberately never name models to the client. */
+          const { sources, ...clientEvent } = e;
+          sendEvent(res, clientEvent);
         },
         onSeatTiming: reportCouncilTiming('tools'),
         signal: turnSignal,
         askMember: async (model, ctx, signal) => {
-          const raw = await callModel(model, toolMessages(councilMsgs, registry, { ...ctx, attachedFiles: attached }), 0.0, selection.whipMs, selection.tokenLimit, signal);
-          const parsed = parseToolRequests(raw, answerOptions);
-          return parsed.calls.length === 0 && parsed.text === '' && String(raw || '').trim() ? '' : raw;
+          /* STRUCTURED, because this is the one path where a model may answer
+           * with a tool call instead of prose. The string contract turned
+           * `content: null` + a populated `tool_calls` array into '', so a seat
+           * that requested a tool natively was scored `empty` and dropped —
+           * silently, with no error and no log line. See lib/model-reply.js. */
+          /* THE NATIVE SEAT TAKES A DIFFERENT ROUTE THROUGH THE SAME LOOP.
+           *
+           * Same round, same whip, same transcript, same dedupe — the loop does
+           * not know or care which protocol a member speaks. What differs is
+           * the prompt (no rendered catalogue, no results block: it gets a
+           * `tools` array and `role: "tool"` messages instead) and the fact
+           * that its conversation persists across rounds. See
+           * lib/native-tool-seat.js for why that state cannot live here. */
+          if (nativeSeat && model === nativeSeat.model) {
+            const nativeReply = await nativeSeat.ask(
+              toolMessages(councilMsgs, registry, { ...ctx, attachedFiles: attached, native: true }),
+              ctx,
+              signal,
+              { timeoutMs: selection.whipMs, maxTokens: selection.tokenLimit },
+            );
+            const nativeParsed = parseToolRequests(nativeReply, answerOptions);
+            return nativeParsed.calls.length === 0 && nativeParsed.text === '' && nativeReply.content.trim()
+              ? ''
+              : nativeReply;
+          }
+          const reply = await callModel(
+            model,
+            toolMessages(councilMsgs, registry, { ...ctx, attachedFiles: attached }),
+            0.0,
+            selection.whipMs,
+            selection.tokenLimit,
+            signal,
+            { structured: true },
+          );
+          telemetry.recordUsage(reply.usage, { phase: 'council' });
+          const parsed = parseToolRequests(reply, answerOptions);
+          /* A whole-protocol reply is rejected by the parser, which leaves both
+           * calls and text empty while the model DID say something. That is an
+           * unusable seat, not a silent one, and the loop is told so. Tested
+           * against `reply.content` rather than the reply object: stringifying
+           * the object gives "[object Object]", which is always truthy. */
+          return parsed.calls.length === 0 && parsed.text === '' && reply.content.trim() ? '' : reply;
         },
       });
       if (turnSignal.aborted) return;
@@ -3594,6 +3891,26 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       toolTruncated = loop.truncated;
       toolSourceUrls = searchResultUrls(loop.toolResults);
       console.log(`[TOOLS] ${loop.rounds} round(s), ${loop.uniqueCallsUsed} unique call(s), ${Object.keys(loop.answers).length} answer(s)${loop.truncated ? ` — ${loop.truncated}` : ''}`);
+      /* THE ADOPTION LINE. Printed whenever a tool call ran at all, including
+       * on turns with no native seat — a turn where the native seat was armed
+       * and every call still came from a fence is the finding, and it is only
+       * visible if the fence-only case is printed too. */
+      if (Object.keys(toolCallsBySource).length) {
+        const seatStats = nativeSeat ? nativeSeat.stats() : null;
+        console.log(
+          `[TOOLS] call sources: ${Object.entries(toolCallsBySource).map(([k, v]) => `${k}=${v}`).join(' ')}`
+          + (seatStats
+            ? ` | native seat: ${seatStats.nativeRounds}/${seatStats.rounds} round(s) emitted ${seatStats.calls} call(s)`
+              + `${seatStats.textFallbackRounds ? `, ${seatStats.textFallbackRounds} fell back to a text fence` : ''}`
+              + `${seatStats.unmatched ? `, ${seatStats.unmatched} id(s) answered "not executed"` : ''}`
+            : ' | no native seat on this turn'),
+        );
+        telemetryExtra = {
+          ...telemetryExtra,
+          toolCallsBySource,
+          ...(seatStats ? { nativeToolSeat: { model: nativeSeat.model, ...seatStats } } : {}),
+        };
+      }
       // The same predicate the council's quorum uses, rather than a third copy
       // of the skip regex. It was a second copy, and the agent loop had a third
       // rule again — any non-empty string — which is how a bare "skip" came to
@@ -3848,7 +4165,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     if (turnSignal.aborted) return;
     console.error('Council error:', err.message);
     Sentry.captureException(err);
-    if (!res.headersSent) return res.status(500).json({ error: err.message });
+    if (!res.headersSent) return sendError(res, err);
     // The stream was already open, so a 500 is no longer available. Ending it
     // silently — which is what this used to do — leaves the client's reader to
     // hit `done` with no [DONE] and no error, and the frontend then SAVES the
@@ -3856,8 +4173,13 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     // message with no indication anything went wrong.
     //
     // The error text is the same one a pre-stream failure would have put in a
-    // 500 body, so the client sees a failure either way.
-    sendEvent(res, { type: 'error', text: err.message });
+    // 500 body, so the client sees a failure either way — and it is the same
+    // SAFE one now. `err.message` here was the identical leak the 500 bodies
+    // had, on the path that is harder to notice: a stream error is rendered
+    // into the chat, so a Postgres or gateway message was being shown to the
+    // user as though it were part of the answer.
+    const streamed = errorEnvelope(err, { operationId: req.operationId });
+    sendEvent(res, { type: 'error', text: streamed.body.error, code: streamed.body.code, operationId: req.operationId });
     if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
   } finally {
     cleanupDisconnect();
@@ -3879,7 +4201,12 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
      * `.catch` because an unhandled rejection in a `finally` ends the process
      * under Node's default policy. */
     if (spendReserved > 0 && auditUserId) {
-      const actual = priceTurn(telemetry.snapshot({ category: 'settle' }));
+      /* PRICED AGAINST THE TOOL SEAT'S MODEL ID, or the settlement refunds the
+       * difference between a metered seat and a free one straight back to the
+       * user. The reservation above already held the metered figure, so getting
+       * this wrong does not overcharge — it silently UNDER-charges, and the
+       * ceiling stops seeing the only seat that can reach it. */
+      const actual = priceTurn(telemetry.snapshot({ category: 'settle' }), { toolSeatModel: TOOL_SEAT_MODEL });
       settleSpend(auditUserId, spendReserved, actual);
     }
     /* AND THE REQUEST BUDGET, settled from the same snapshot on the same
@@ -4179,7 +4506,7 @@ app.post('/api/chats/:id/files', requireAuth, checkSuspended, requireOwnership('
     // message is written to be shown to them verbatim.
     if (err instanceof UploadRejected) return res.status(400).json({ error: err.message });
     Sentry.captureException(err);
-    res.status(500).json({ error: err.message });
+    sendError(res, err);
   }
 });
 
@@ -4187,7 +4514,7 @@ app.get('/api/chats/:id/files', requireAuth, requireOwnership('chats'), async (r
   try {
     const user = await ensureUser(req.auth.userId);
     res.json(await fileStoreFor(user.id, req.params.id).list());
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); sendError(res, err); }
 });
 
 app.delete('/api/chats/:id/files/:fileId', requireAuth, requireOwnership('chats'), uuidParam('fileId'), async (req, res) => {
@@ -4196,7 +4523,7 @@ app.delete('/api/chats/:id/files/:fileId', requireAuth, requireOwnership('chats'
     const { error } = await supabase.from('chat_files').delete().eq('id', req.params.fileId).eq('user_id', user.id).eq('chat_id', req.params.id);
     if (error) throw error;
     res.json({ deleted: true });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); sendError(res, err); }
 });
 
 // ===== FEEDBACK =====
@@ -4309,7 +4636,7 @@ app.post('/api/feedback', requireAuth, checkSuspended, async (req, res) => {
       }
     } catch (e) { console.error('[LEARN] Failed:', e.message); }
     res.json({ ok: true });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); sendError(res, err); }
   });
 });
 
@@ -4416,7 +4743,7 @@ app.get('/api/chats', requireAuth, async (req, res) => {
     // same rows, and the only question the sidebar asks is whether to fetch
     // another page.
     res.json({ chats: data || [], hasMore: (data || []).length === limit && offset + limit <= MAX_CHAT_OFFSET, limit, offset });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); sendError(res, err); }
 });
 
 // One conversation, with its messages. requireOwnership re-checks the row
@@ -4433,9 +4760,9 @@ app.get('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, re
       .single();
     if (error) throw error;
     res.json(data);
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); sendError(res, err); }
 });
-app.post('/api/chats', requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); const title = sanitizeString(req.body.title, 120) || 'New Chat'; const { data, error } = await supabase.from('chats').insert({ user_id: user.id, title, messages: [] }).select().single(); if (error) throw error; res.json(data); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+app.post('/api/chats', requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); const title = sanitizeString(req.body.title, 120) || 'New Chat'; const { data, error } = await supabase.from('chats').insert({ user_id: user.id, title, messages: [] }).select().single(); if (error) throw error; res.json(data); } catch (err) { Sentry.captureException(err); sendError(res, err); } });
 app.put('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => {
   try {
     const user = await ensureUser(req.auth.userId);
@@ -4455,10 +4782,10 @@ app.put('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, re
     res.json({ ok: true });
   } catch (err) {
     Sentry.captureException(err);
-    res.status(500).json({ error: err.message });
+    sendError(res, err);
   }
 });
-app.delete('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => { try { const user = await ensureUser(req.auth.userId); const { error } = await supabase.from('chats').delete().eq('id', req.params.id).eq('user_id', user.id); if (error) throw error; res.json({ deleted: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+app.delete('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, res) => { try { const user = await ensureUser(req.auth.userId); const { error } = await supabase.from('chats').delete().eq('id', req.params.id).eq('user_id', user.id); if (error) throw error; res.json({ deleted: true }); } catch (err) { Sentry.captureException(err); sendError(res, err); } });
 
 // ===== ADMIN =====
 const MAX_ADMIN_PAGE_OFFSET = 10000;
@@ -4482,16 +4809,16 @@ app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => { try
   if (error) throw error;
   const users = data || [];
   res.json({ users, ...pageInfo(users, page, MAX_ADMIN_PAGE_OFFSET) });
-} catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+} catch (err) { Sentry.captureException(err); sendError(res, err); } });
 // Admin routes take a Supabase users.id in :id. Validating the shape keeps a
 // malformed value from reaching Postgres and coming back as a 500 that reads
 // like a server fault. requireOwnership already does this for user routes; the
 // admin routes did not.
 // (uuidParam is defined above, next to the other route guards.)
 
-app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, uuidParam(), async (req, res) => { try { const { data: t } = await supabase.from('users').select('is_admin,email').eq('id', req.params.id).single(); if (!t) return res.status(404).json({ error: 'Not found' }); if (t.is_admin) return res.status(403).json({ error: 'Cannot suspend admin' }); const { error } = await supabase.from('users').update({ suspended: true }).eq('id', req.params.id); if (error) throw error; invalidateUserRows(); await auditLog(req.adminUserId, 'admin.suspend', { target: req.params.id, targetEmail: t.email }, req.ip); res.json({ suspended: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, uuidParam(), async (req, res) => { try { const { data: t } = await supabase.from('users').select('is_admin,email').eq('id', req.params.id).single(); if (!t) return res.status(404).json({ error: 'Not found' }); if (t.is_admin) return res.status(403).json({ error: 'Cannot suspend admin' }); const { error } = await supabase.from('users').update({ suspended: true }).eq('id', req.params.id); if (error) throw error; invalidateUserRows(); await auditLog(req.adminUserId, 'admin.suspend', { target: req.params.id, targetEmail: t.email }, req.ip); res.json({ suspended: true }); } catch (err) { Sentry.captureException(err); sendError(res, err); } });
 
-app.post('/api/admin/users/:id/unsuspend', requireAuth, requireAdmin, uuidParam(), async (req, res) => { try { const { error } = await supabase.from('users').update({ suspended: false }).eq('id', req.params.id); if (error) throw error; invalidateUserRows(); await auditLog(req.adminUserId, 'admin.unsuspend', { target: req.params.id }, req.ip); res.json({ unsuspended: true }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+app.post('/api/admin/users/:id/unsuspend', requireAuth, requireAdmin, uuidParam(), async (req, res) => { try { const { error } = await supabase.from('users').update({ suspended: false }).eq('id', req.params.id); if (error) throw error; invalidateUserRows(); await auditLog(req.adminUserId, 'admin.unsuspend', { target: req.params.id }, req.ip); res.json({ unsuspended: true }); } catch (err) { Sentry.captureException(err); sendError(res, err); } });
 
 app.delete('/api/admin/users/:id', requireAuth, requireAdmin, uuidParam(), async (req, res) => { try {
   // The old self-delete guard compared req.auth.userId (a Clerk id, "user_2ab…")
@@ -4514,7 +4841,7 @@ app.delete('/api/admin/users/:id', requireAuth, requireAdmin, uuidParam(), async
   // a user cannot take the record of their deletion with them.
   await auditLog(req.adminUserId, 'admin.delete_user', { target: req.params.id, targetEmail: t.email }, req.ip);
   res.json({ deleted: true });
-} catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+} catch (err) { Sentry.captureException(err); sendError(res, err); } });
 app.get('/api/admin/chats/:userId', requireAuth, requireAdmin, uuidParam('userId'), async (req, res) => { try {
   const page = boundedPage(req.query, {
     defaultLimit: ADMIN_PAGE_DEFAULT_LIMIT,
@@ -4534,8 +4861,8 @@ app.get('/api/admin/chats/:userId', requireAuth, requireAdmin, uuidParam('userId
   if (error) throw error;
   const chats = data || [];
   res.json({ chats, ...pageInfo(chats, page, MAX_ADMIN_PAGE_OFFSET) });
-} catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
-app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) => { try { const { data, error } = await supabase.from('usage').select('*').eq('user_id', req.params.userId).order('date', { ascending: false }).limit(30); if (error) throw error; res.json(data || []); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+} catch (err) { Sentry.captureException(err); sendError(res, err); } });
+app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) => { try { const { data, error } = await supabase.from('usage').select('*').eq('user_id', req.params.userId).order('date', { ascending: false }).limit(30); if (error) throw error; res.json(data || []); } catch (err) { Sentry.captureException(err); sendError(res, err); } });
 
 // ===== STRIPE =====
 
@@ -4575,9 +4902,9 @@ app.get('/api/billing/prices', requireStripe, requireAuth, async (req, res) => {
   }
 });
 
-app.post('/api/create-checkout-session', requireStripe, requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); const cu = await clerkClient.users.getUser(req.auth.userId); const email = cu?.emailAddresses?.[0]?.emailAddress; const priceId = req.body.plan === 'yearly' ? process.env.STRIPE_PRICE_YEARLY : process.env.STRIPE_PRICE_MONTHLY; if (!priceId) throw new Error('Price ID not configured'); const session = await stripe.checkout.sessions.create({ customer_email: user.stripe_customer_id ? undefined : email, customer: user.stripe_customer_id || undefined, line_items: [{ price: priceId, quantity: 1 }], mode: 'subscription', success_url: `${process.env.FRONTEND_URL}/?payment=success`, cancel_url: `${process.env.FRONTEND_URL}/?payment=cancelled`, metadata: { userId: req.auth.userId } }); res.json({ url: session.url }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
-app.post('/api/create-portal-session', requireStripe, requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); if (!user.stripe_customer_id) return res.status(400).json({ error: 'No subscription' }); const session = await stripe.billingPortal.sessions.create({ customer: user.stripe_customer_id, return_url: `${process.env.FRONTEND_URL}/` }); res.json({ url: session.url }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
-app.get('/api/user/plan', requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); res.json({ plan: user.plan || 'free', subscription_id: user.stripe_subscription_id }); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); } });
+app.post('/api/create-checkout-session', requireStripe, requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); const cu = await clerkClient.users.getUser(req.auth.userId); const email = cu?.emailAddresses?.[0]?.emailAddress; const priceId = req.body.plan === 'yearly' ? process.env.STRIPE_PRICE_YEARLY : process.env.STRIPE_PRICE_MONTHLY; if (!priceId) throw new Error('Price ID not configured'); const session = await stripe.checkout.sessions.create({ customer_email: user.stripe_customer_id ? undefined : email, customer: user.stripe_customer_id || undefined, line_items: [{ price: priceId, quantity: 1 }], mode: 'subscription', success_url: `${process.env.FRONTEND_URL}/?payment=success`, cancel_url: `${process.env.FRONTEND_URL}/?payment=cancelled`, /* BOTH, and not by accident. `metadata.userId` is what the old webhook never read; `client_reference_id` is Stripe's own field for exactly this and is the one that survives into the Dashboard and the CSV export, where metadata does not. lib/stripe-identity.js prefers the reference and falls back to the metadata, so a session created by either version of this line is attributable. */ client_reference_id: req.auth.userId, metadata: { userId: req.auth.userId } }); res.json({ url: session.url }); } catch (err) { Sentry.captureException(err); sendError(res, err); } });
+app.post('/api/create-portal-session', requireStripe, requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); if (!user.stripe_customer_id) return res.status(400).json({ error: 'No subscription' }); const session = await stripe.billingPortal.sessions.create({ customer: user.stripe_customer_id, return_url: `${process.env.FRONTEND_URL}/` }); res.json({ url: session.url }); } catch (err) { Sentry.captureException(err); sendError(res, err); } });
+app.get('/api/user/plan', requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); res.json({ plan: user.plan || 'free', subscription_id: user.stripe_subscription_id }); } catch (err) { Sentry.captureException(err); sendError(res, err); } });
 
 /* The user's own memory, readable and deletable by them.
  *
@@ -4600,7 +4927,7 @@ app.get('/api/user/facts', requireAuth, checkSuspended, async (req, res) => {
       .limit(200);
     if (error) throw error;
     res.json({ facts: data || [] });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); sendError(res, err); }
 });
 
 app.delete('/api/user/facts/:id', requireAuth, checkSuspended, async (req, res) => {
@@ -4620,7 +4947,7 @@ app.delete('/api/user/facts/:id', requireAuth, checkSuspended, async (req, res) 
     // both, so this cannot be used to ask whether an id exists.
     if (!data || !data.length) return res.status(404).json({ error: 'Not found' });
     res.json({ deleted: data[0].id });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); sendError(res, err); }
 });
 
 app.delete('/api/user/facts', requireAuth, checkSuspended, async (req, res) => {
@@ -4629,20 +4956,22 @@ app.delete('/api/user/facts', requireAuth, checkSuspended, async (req, res) => {
     const { data, error } = await supabase.from('user_facts').delete().eq('user_id', user.id).select('id');
     if (error) throw error;
     res.json({ deleted: (data || []).length });
-  } catch (err) { Sentry.captureException(err); res.status(500).json({ error: err.message }); }
+  } catch (err) { Sentry.captureException(err); sendError(res, err); }
 });
 
 // ===== ERRORS =====
 app.use((req, res) => res.status(404).json({ error: 'Not found' }));
 Sentry.setupExpressErrorHandler(app);
 app.use((err, req, res, next) => {
-  const isCors = Boolean(err.message && err.message.includes('CORS'));
-  const status = isCors ? 403 : (err.status || err.statusCode || 500);
+  const { status, body } = errorEnvelope(err, { operationId: req.operationId });
   // 4xx is expected traffic (expired tokens, bad input) — paging on it buries real faults.
   if (status >= 500) Sentry.captureException(err);
-  // Only mask 5xx: a 4xx reason is the client's own and is safe to return.
-  const masked = status >= 500 && process.env.NODE_ENV === 'production';
-  res.status(status).json({ error: masked ? 'Internal server error' : err.message });
+  /* The one line that makes the id worth minting. The client is told
+   * `operationId`; this is where that string appears next to what actually
+   * happened, which is the whole correlation loop. */
+  if (status >= 500) console.error(`[ERROR] op=${req.operationId} ${status} ${body.code} — ${err && err.message}`);
+  if (res.headersSent || res.writableEnded) return;
+  res.status(status).json(body);
 });
 
 // ===== START =====
@@ -4663,6 +4992,9 @@ const server = app.listen(PORT, () => {
   // indistinguishable from a shared one until the limits are already wrong.
   console.log(`[BOOT] RATE_LIMIT_STORE=${process.env.RATE_LIMIT_STORE || '(unset)'} -> ${USE_PG_RATE_LIMIT ? 'postgres, shared across instances' : 'in-memory, PER PROCESS — set RATE_LIMIT_STORE=postgres before scaling past one instance'}`);
   console.log(`[BOOT] COUNCIL_SEMANTIC_CACHE=${process.env.COUNCIL_SEMANTIC_CACHE || '(unset)'} -> semantic cache ${SEMANTIC_CACHE_ENABLED ? `ENABLED threshold=${SEMANTIC_CACHE_THRESHOLD}` : 'OFF'}`);
+  // Same rule again. Off means streamed answers have NO token accounting; the
+  // non-streaming council seats are counted either way.
+  console.log(`[BOOT] STREAM_USAGE_ACCOUNTING=${process.env.STREAM_USAGE_ACCOUNTING || '(unset)'} -> streamed synthesis token usage ${STREAM_USAGE_ACCOUNTING ? 'REPORTED' : 'OFF (STREAM_USAGE_ACCOUNTING=0)'}`);
   // Third flag, same rule. The console being disabled is the SAFE state, so it
   // says so plainly rather than staying quiet and looking like it works.
   const tc = terminalConfig();

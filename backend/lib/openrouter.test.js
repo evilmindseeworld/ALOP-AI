@@ -217,3 +217,55 @@ test('a handed-off stream is still aborted when the turn is', async () => {
   controller.abort(new Error('client disconnected'));
   assert.equal(seen.aborted, true, 'the returned body was left with no route from the turn abort');
 });
+
+test('structured mode returns the whole reply; default mode still returns a string', async () => {
+  const body = {
+    id: 'gen-9',
+    model: 'test/model',
+    choices: [{
+      message: {
+        role: 'assistant',
+        content: null,
+        tool_calls: [{ id: 'call_7', type: 'function', function: { name: 'web_search', arguments: '{"query":"q"}' } }],
+      },
+      finish_reason: 'tool_calls',
+    }],
+    usage: { prompt_tokens: 40, completion_tokens: 12, total_tokens: 52 },
+  };
+  global.fetch = async () => response(200, body);
+
+  const asString = await callModel('https://openrouter.ai/api/v1', 'key', 'm', [], 0, 1000, 100);
+  assert.equal(asString, '', 'the legacy contract is unchanged');
+
+  const reply = await callModel('https://openrouter.ai/api/v1', 'key', 'm', [], 0, 1000, 100, undefined, { structured: true });
+  assert.equal(reply.toolCalls.length, 1, 'the native tool call reached the caller');
+  assert.equal(reply.toolCalls[0].id, 'call_7');
+  assert.equal(reply.finishReason, 'tool_calls');
+  assert.equal(reply.usage.totalTokens, 52);
+});
+
+test('structured mode returns an empty reply rather than a string on abort', async () => {
+  const controller = new AbortController();
+  controller.abort(new Error('gone'));
+  global.fetch = async () => { throw new Error('should not be called'); };
+
+  const reply = await callModel('https://openrouter.ai/api/v1', 'key', 'm', [], 0, 1000, 100, controller.signal, { structured: true });
+  assert.equal(typeof reply, 'object');
+  assert.equal(reply.content, '');
+  assert.equal(reply.finishReason, 'aborted');
+  assert.equal(await callModel('https://openrouter.ai/api/v1', 'key', 'm', [], 0, 1000, 100, controller.signal), '');
+});
+
+test('a stream asks the gateway for usage accounting ONLY when told to', async () => {
+  let sent = null;
+  global.fetch = async (_url, init) => { sent = JSON.parse(init.body); return response(200, {}); };
+
+  // Default OFF. This field goes in the body of the request that writes every
+  // answer, and it could not be measured against the live gateway from a
+  // machine with no key — see the comment on the request body.
+  await fetchOpenRouterStream('https://openrouter.ai/api/v1', 'key', 'm', [], 0, undefined);
+  assert.equal('usage' in sent, false, 'the default request body must be byte-identical to what shipped before');
+
+  await fetchOpenRouterStream('https://openrouter.ai/api/v1', 'key', 'm', [], 0, undefined, null, { includeUsage: true });
+  assert.deepEqual(sent.usage, { include: true });
+});

@@ -29,6 +29,8 @@
  * quietly stream to nowhere.
  */
 
+const { randomUUID } = require('node:crypto');
+
 const DONE = 'data: [DONE]';
 
 function createSinkResponse({ onEvent } = {}) {
@@ -119,13 +121,20 @@ function createSinkResponse({ onEvent } = {}) {
  * that could hide a missing one: a job that forgets to say who it is should not
  * silently borrow somebody's identity.
  */
-function createSinkRequest({ message, userId, userRow, history = [], country = '' }) {
+function createSinkRequest({ message, userId, userRow, history = [], country = '', operationId = null }) {
   const listeners = new Map();
   return {
     body: { message, history },
     auth: { userId },
     userRow,
     ip: '127.0.0.1',
+    /* A BACKGROUND TURN NEEDS ONE TOO. The route reads `req.operationId` for
+     * its error envelopes and its log lines, and a brain refresh reaches that
+     * code by the same path a user does — without an id here, the one class of
+     * turn nobody is watching is also the one with nothing to grep for. Minted
+     * rather than defaulted to a constant, so two concurrent refreshes are
+     * still distinguishable. */
+    operationId: operationId || randomUUID(),
     /* THE COUNTRY IS PART OF THE CACHE KEY, so a refresh that could not set it
      * would rewrite a DIFFERENT row than the one that was expiring — the job
      * would run, log a success, and leave the stale row untouched. The route

@@ -9,7 +9,8 @@
 # Nothing about the application changes. Same server.js, same routes, same
 # council, same .env variable names.
 
-FROM node:22-slim
+# Node 26 matches CI's pinned node-version; change this and .github/workflows/ci.yml together.
+FROM node:26-slim
 
 # dumb-init, because Node as PID 1 does not reap children or forward signals.
 # Fly sends SIGINT to drain a machine before replacing it; without this the

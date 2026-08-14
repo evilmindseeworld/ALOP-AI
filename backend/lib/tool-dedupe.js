@@ -96,10 +96,21 @@ function dedupeCalls(proposals, limit = Infinity, normalise) {
       const key = callKey(call);
       if (key === "invalid") continue;
 
+      /* PROVENANCE SURVIVES THE DEDUPE, and it has to be a SET rather than a
+       * single value. One canonical call can be proposed by a native seat and
+       * by a fenced one in the same round — that is the dedupe working — so
+       * "which protocol produced this call" has more than one answer, and
+       * keeping only the first would report adoption as whichever seat happened
+       * to reply first. `source` is not part of `callKey` and must never
+       * become part of it: two members asking the same thing by different
+       * protocols is still one execution. */
+      const source = typeof call.source === "string" ? call.source : "fence";
+
       const existing = byKey.get(key);
       if (existing) {
         // Same call, another member. No new execution; record the interest.
         if (!existing.requestedBy.includes(member)) existing.requestedBy.push(member);
+        if (!existing.sources.includes(source)) existing.sources.push(source);
         continue;
       }
       // The ceiling is applied to UNIQUE calls, after dedupe — a round where
@@ -109,7 +120,7 @@ function dedupeCalls(proposals, limit = Infinity, normalise) {
         dropped++;
         continue;
       }
-      byKey.set(key, { key, name: call.name, args: call.args || {}, requestedBy: [member] });
+      byKey.set(key, { key, name: call.name, args: call.args || {}, requestedBy: [member], sources: [source] });
     }
   }
 

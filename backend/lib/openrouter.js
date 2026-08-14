@@ -1,5 +1,7 @@
 'use strict';
 
+const { normaliseCompletion, emptyReply, normaliseUsage } = require('./model-reply');
+
 const RETRY_DELAYS_MS = [400, 1200];
 const RATE_LIMIT_RESET_SAFETY_MS = 50;
 
@@ -14,15 +16,16 @@ class OpenRouterRateLimitError extends Error {
   }
 }
 
-const completionText = (message) => {
-  if (!message || typeof message !== 'object') return '';
-  if (typeof message.content === 'string' && message.content.trim()) return message.content;
-  if (typeof message.reasoning === 'string' && message.reasoning.trim()) return message.reasoning;
-  if (Array.isArray(message.reasoning_details)) {
-    return message.reasoning_details.map((part) => part && typeof part.text === 'string' ? part.text : '').filter(Boolean).join('');
-  }
-  return '';
-};
+/* THE COLLAPSE TO A STRING IS NOW OPT-OUT RATHER THAN UNCONDITIONAL.
+ *
+ * `completionText` used to be the only thing between the provider payload and
+ * the caller, and it returned a string — which silently deleted
+ * `message.tool_calls`, `message.refusal` and the distinction between an answer
+ * and internal reasoning. See lib/model-reply.js for what that cost.
+ *
+ * The string is still the DEFAULT so that the twelve existing call sites are
+ * unchanged; `{ structured: true }` asks for the whole reply instead. */
+const completionText = (payload) => normaliseCompletion(payload).content;
 
 const endpointFor = (host) => {
   const base = String(host || '').replace(/\/+$/, '');
@@ -109,14 +112,46 @@ const abortableDelay = (ms, signal) => new Promise((resolve) => {
   signal?.addEventListener('abort', onAbort, { once: true });
 });
 
-async function callModel(host, apiKey, modelName, messages, temperature, timeoutMs, maxTokens, parentSignal) {
-  if (parentSignal?.aborted) return '';
+/**
+ * @param {object} [options]
+ * @param {boolean} [options.structured]  return the whole reply (see
+ *        lib/model-reply.js) instead of just its text. Native `tool_calls`,
+ *        `refusal`, `finish_reason` and token usage survive only on this path.
+ * @param {Array} [options.tools]  OpenAI-style tool schemas. Sending these is
+ *        what makes native `tool_calls` possible at all — a model that is not
+ *        offered any tools will never emit one, however capable it is.
+ * @param {string} [options.toolChoice]  'auto' | 'none' | 'required'. 'none' is
+ *        how the loop's final round is ENFORCED rather than merely requested.
+ * @param {object} [options.reasoning]  overrides the default `{exclude: true}`,
+ *        e.g. `{effort: 'high', exclude: true}` for the native tool seat: think
+ *        hard, but do not return the thinking as the answer.
+ */
+async function callModel(host, apiKey, modelName, messages, temperature, timeoutMs, maxTokens, parentSignal, options = {}) {
+  const structured = Boolean(options && options.structured);
+  /* Every early exit below used to be the bare string ''. In structured mode it
+   * has to be an object or each caller grows a type check it will forget. */
+  const blank = (reason) => (structured ? emptyReply(reason) : '');
+  if (parentSignal?.aborted) return blank('aborted');
   const deadline = Date.now() + Math.max(0, Number(timeoutMs) || 0);
-  const body = JSON.stringify({ model: modelName, messages, temperature, max_tokens: maxTokens, stream: false, reasoning: { exclude: true } });
+  const tools = Array.isArray(options?.tools) && options.tools.length ? options.tools : null;
+  const body = JSON.stringify({
+    model: modelName,
+    messages,
+    temperature,
+    max_tokens: maxTokens,
+    stream: false,
+    reasoning: options?.reasoning && typeof options.reasoning === 'object' ? options.reasoning : { exclude: true },
+    /* Omitted entirely rather than sent empty. `tools: []` is a different
+     * request from no tools at all on some providers, and every seat except the
+     * native one must keep the byte-identical body it has always had. */
+    ...(tools ? { tools } : {}),
+    ...(tools && options.toolChoice ? { tool_choice: options.toolChoice } : {}),
+  });
 
   for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
     const remainingMs = deadline - Date.now();
-    if (parentSignal?.aborted || remainingMs <= 0) return '';
+    if (parentSignal?.aborted) return blank('aborted');
+    if (remainingMs <= 0) return blank('deadline');
     const controller = new AbortController();
     const onParentAbort = () => controller.abort(parentSignal.reason);
     parentSignal?.addEventListener('abort', onParentAbort, { once: true });
@@ -132,7 +167,7 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
       });
       if (response.ok) {
         const payload = await response.json();
-        return completionText(payload?.choices?.[0]?.message);
+        return structured ? normaliseCompletion(payload) : completionText(payload);
       }
       const errorBody = await response.text().catch(() => '');
       if (response.status === 429) {
@@ -159,7 +194,9 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
         throw new Error(`OpenRouter ${response.status}: ${errorBody.slice(0, 500)}`);
       }
     } catch (error) {
-      if (controller.signal.aborted || parentSignal?.aborted || Date.now() >= deadline) return '';
+      if (controller.signal.aborted || parentSignal?.aborted || Date.now() >= deadline) {
+        return blank(parentSignal?.aborted ? 'aborted' : 'timeout');
+      }
       if (!retryable) throw error;
       if (attempt >= RETRY_DELAYS_MS.length) throw error;
     } finally {
@@ -167,9 +204,9 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
       parentSignal?.removeEventListener('abort', onParentAbort);
     }
     const delay = Math.min(retryDelayMs ?? RETRY_DELAYS_MS[attempt], deadline - Date.now());
-    if (delay > 0 && !(await abortableDelay(delay, parentSignal))) return '';
+    if (delay > 0 && !(await abortableDelay(delay, parentSignal))) return blank('aborted');
   }
-  return '';
+  return blank('deadline');
 }
 
 /**
@@ -191,7 +228,7 @@ async function fetchOpenRouterStream(
   temperature = 0.0,
   parentSignal,
   maxTokens = null,
-  { deadlineAt = null, timeoutMs = 30_000, maxRetries = 1 } = {},
+  { deadlineAt = null, timeoutMs = 30_000, maxRetries = 1, includeUsage = false } = {},
 ) {
   if (parentSignal?.aborted) throw parentSignal.reason || new DOMException('Aborted', 'AbortError');
   const suppliedDeadline = deadlineAt == null ? null : Number(deadlineAt);
@@ -206,6 +243,24 @@ async function fetchOpenRouterStream(
     temperature,
     stream: true,
     reasoning: { exclude: true },
+    /* WITHOUT THIS OPENROUTER SENDS NO USAGE FRAME ON A STREAM, so the
+     * synthesis — the single longest generation of a turn — is the one call
+     * whose token count nothing can see. `callModel` gets `usage` in its JSON
+     * body for free; a stream has to ask.
+     *
+     * OFF BY DEFAULT, and that is not timidity. It is an OpenRouter extension
+     * rather than an OpenAI field (OpenAI spells it
+     * `stream_options.include_usage`), and it goes in the body of the request
+     * that writes every answer this product produces. There is no OpenRouter
+     * key on the development machine, so the claim "the gateway accepts this"
+     * could not be MEASURED here — and an unverified body field on that path
+     * fails as a product-wide outage rather than as missing telemetry.
+     *
+     * To turn it on: probe the live gateway once (one request), confirm HTTP
+     * 200 and a frame carrying `usage`, then set `STREAM_USAGE_ACCOUNTING=1`.
+     * The parser and the telemetry sink are already wired and tested; the flag
+     * is the only thing between them and real numbers. */
+    ...(includeUsage ? { usage: { include: true } } : {}),
     ...(maxTokens ? { max_tokens: maxTokens } : {}),
   });
 
@@ -302,7 +357,19 @@ function parseOpenRouterSseLine(line) {
   const text = typeof delta?.content === 'string' && delta.content
     ? delta.content
     : typeof delta?.reasoning === 'string' ? delta.reasoning : '';
-  return { skip: false, done: choice?.finish_reason != null, text };
+  /* USAGE ARRIVES ON ITS OWN FRAME, AFTER the frame that carries
+   * finish_reason. Returning it here is what lets the streaming path account
+   * for tokens at all: `callModel` gets `usage` in its single JSON body, the
+   * streamed synthesis had no equivalent and was billed as an unknown. A frame
+   * that carries only usage has no text and no finish_reason, so it must not be
+   * reported as `done` — the terminator is still `[DONE]`. */
+  return {
+    skip: false,
+    done: choice?.finish_reason != null,
+    text,
+    finishReason: typeof choice?.finish_reason === 'string' ? choice.finish_reason : null,
+    usage: normaliseUsage(payload?.usage),
+  };
 }
 
 module.exports = {

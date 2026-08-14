@@ -55,14 +55,30 @@ const asArgs = (raw) => {
   }
 };
 
-/** One well-formed call, or null. Name must be a non-empty string. */
-const asCall = (name, rawArgs) => {
+/**
+ * One well-formed call, or null. Name must be a non-empty string.
+ *
+ * `source` records WHICH of the two protocols produced this call, and `id` the
+ * provider's `tool_call_id` where there was one. Neither participates in the
+ * dedupe key — `callKey` reads name and args only, so a native call and a
+ * fenced one asking the same thing still cost one execution, which is the whole
+ * point of the dedupe. They exist so the turn can be measured: without them
+ * "how often does the native seat actually emit native calls" is unanswerable,
+ * and a native path that silently degraded to the text fence would look
+ * identical to one that was working.
+ *
+ * The id is load-bearing beyond telemetry: a native round trip has to return
+ * each result against the id that requested it. See lib/native-tool-seat.js.
+ */
+const asCall = (name, rawArgs, { source = "fence", id = null } = {}) => {
   if (typeof name !== "string") return null;
   const trimmed = name.trim();
   if (!trimmed) return null;
   const args = asArgs(rawArgs);
   if (args === null) return null;
-  return { name: trimmed, args };
+  const call = { name: trimmed, args, source };
+  if (id) call.id = id;
+  return call;
 };
 
 /** Native path: message.tool_calls, accepting OpenRouter and legacy flat shapes. */
@@ -74,7 +90,10 @@ const fromNative = (message) => {
       if (!c || typeof c !== "object") return null;
       // OpenRouter nests under .function; the legacy flat shape stays supported.
       const fn = c.function && typeof c.function === "object" ? c.function : c;
-      return asCall(fn.name, fn.arguments ?? fn.args);
+      return asCall(fn.name, fn.arguments ?? fn.args, {
+        source: "native",
+        id: typeof c.id === "string" && c.id ? c.id : null,
+      });
     })
     .filter(Boolean);
 };
@@ -101,7 +120,7 @@ const fromText = (content) => {
     }
     for (const entry of Array.isArray(parsed) ? parsed : [parsed]) {
       if (!entry || typeof entry !== "object") continue;
-      const call = asCall(entry.name ?? entry.tool, entry.args ?? entry.arguments ?? entry.parameters);
+      const call = asCall(entry.name ?? entry.tool, entry.args ?? entry.arguments ?? entry.parameters, { source: "fence" });
       if (call) calls.push(call);
     }
   }

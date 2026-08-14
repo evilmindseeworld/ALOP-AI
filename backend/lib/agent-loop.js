@@ -503,9 +503,14 @@ async function runAgentLoop({ members, askMember, registry, seededSearch, onEven
     try {
       executed = await Promise.all(
         executable.map(async (call) => {
-          onEvent({ type: "tool_start", round, name: call.name, summary: describe(call) });
+          /* `sources` rides along so the caller can report which PROTOCOL asked
+           * for this call — native tool_calls, a text fence, or the server's own
+           * seeded search. It is carried rather than derived because by this
+           * point the call has been canonicalised and deduped: the member that
+           * asked, and how, is no longer recoverable from the call itself. */
+          onEvent({ type: "tool_start", round, name: call.name, summary: describe(call), sources: call.sources });
           const result = await registry.execute(call, { timeoutMs: perCall, signal: turnSignal });
-          onEvent({ type: "tool_result", round, name: call.name, ok: result.ok, summary: result.summary });
+          onEvent({ type: "tool_result", round, name: call.name, ok: result.ok, summary: result.summary, sources: call.sources });
           return { call, result };
         }),
       );

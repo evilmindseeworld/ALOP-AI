@@ -19,13 +19,34 @@
  * they cost money from the cents ceiling and none of this quota. Two ceilings
  * over disjoint sets of operations, which is why both exist.
  *
- * FAILS OPEN, deliberately, and the reasoning is the same one
+ * IT FAILED OPEN WITHOUT A BOUND, AND THAT IS THE PART THAT WAS WRONG.
+ *
+ * The reasoning for failing open is sound and is kept, and it is the same one
  * `pg-rate-limit-store.js` argues at length: failing closed converts a partial
- * dependency failure into a total outage. The exposure here is a window in which
- * the account could overrun its free-model quota — and OpenRouter's own 429 is
- * still behind us, caught by the latch above `callModel` in server.js, which
- * refuses subsequent turns outright. This ceiling exists to refuse politely
- * BEFORE the provider refuses rudely, not to be the only thing in the way.
+ * dependency failure into a total outage. OpenRouter's own 429 is still behind
+ * us, caught by the latch above `callModel` in server.js, which refuses
+ * subsequent turns outright. This ceiling exists to refuse politely BEFORE the
+ * provider refuses rudely, not to be the only thing in the way.
+ *
+ * What was wrong is that "open" meant UNLIMITED. A Supabase outage of any
+ * length admitted every turn from every user with no counter of any kind, so
+ * the account's whole daily allowance could be spent inside it — and invisibly,
+ * because the only number anyone can look at lives in the store that is down.
+ * "Temporarily unmetered" is a reasonable trade for a few seconds and is not
+ * one for an hour.
+ *
+ * SO THERE IS NOW A DEGRADED MODE WITH A CEILING OF ITS OWN. When the store is
+ * unreachable, admission continues from a small local allowance
+ * (`degradedRequests`, defaulting to a strict fraction of the day's) and STOPS
+ * when that is gone. The service keeps answering through a blip and cannot
+ * empty the account through an outage. A successful reservation clears the
+ * state, so recovery needs no intervention.
+ *
+ * ponytail: the local counter is per PROCESS. Two instances in degraded mode
+ * admit two allowances. That is bounded and known, where the previous behaviour
+ * was neither; if this ever runs on more than a couple of instances, divide
+ * `degradedRequests` by the instance count at boot rather than adding
+ * coordination to the path whose dependency is already down.
  *
  * Every failure is logged. A ceiling that has quietly stopped applying is worse
  * than no ceiling, because the graphs stay reassuring.
@@ -35,13 +56,37 @@
  * @param {object} deps
  * @param {(fn: string, args: object) => Promise<{data: any, error: any}>} deps.rpc
  *        Supabase's rpc(), or anything with that shape.
- * @param {{dayRequests: number, warnRequests: number}} deps.limits
+ * @param {{dayRequests: number, warnRequests: number, degradedRequests?: number}} deps.limits
  * @param {(msg: string) => void} [deps.onError]
  * @param {(msg: string) => void} [deps.onWarn]
+ * @param {() => number} [deps.now]  injectable clock, so the UTC-day reset is testable
  */
-function createRequestBudget({ rpc, limits, onError = (m) => console.error(m), onWarn = (m) => console.warn(m) }) {
+function createRequestBudget({ rpc, limits, onError = (m) => console.error(m), onWarn = (m) => console.warn(m), now = Date.now }) {
   if (typeof rpc !== 'function') throw new TypeError('createRequestBudget needs an rpc function');
   if (!limits || !Number.isFinite(limits.dayRequests)) throw new TypeError('createRequestBudget needs numeric limits');
+
+  /* THE DEGRADED ALLOWANCE. Five per cent of the day, floor of one, so a small
+   * limit still admits something rather than failing closed the moment the
+   * store blinks. Overridable because the right fraction depends on how much of
+   * the day's quota the owner is willing to spend blind. */
+  const degradedRequests = Number.isFinite(limits.degradedRequests)
+    ? Math.max(0, Math.floor(limits.degradedRequests))
+    : Math.max(1, Math.floor(limits.dayRequests * 0.05));
+
+  /* Reset with the UTC day, matching the store's own key. Without this a
+   * process that degraded once would carry a spent local allowance across
+   * midnight and refuse on a day whose real budget is untouched. */
+  const utcDay = () => new Date(now()).toISOString().slice(0, 10);
+  let degradedUsed = 0;
+  let degradedDay = utcDay();
+  let degraded = false;
+
+  const recovered = () => {
+    if (!degraded) return;
+    degraded = false;
+    degradedUsed = 0;
+    onWarn('[REQUESTS] Store reachable again; metered admission resumed.');
+  };
 
   /**
    * Take `requests` out of today's budget before the turn runs.
@@ -52,7 +97,7 @@ function createRequestBudget({ rpc, limits, onError = (m) => console.error(m), o
    * `reserve_user_spend` — would enforce a 1000/day cap as 1000 PER USER, which
    * is the limit multiplied by the user count and therefore no limit at all.
    *
-   * @returns {Promise<{allowed: boolean, used: number|null, unmetered?: true}>}
+   * @returns {Promise<{allowed: boolean, used: number|null, unmetered?: true, degraded?: true, degradedUsed?: number, degradedLimit?: number}>}
    */
   const reserve = async (requests) => {
     try {
@@ -64,10 +109,31 @@ function createRequestBudget({ rpc, limits, onError = (m) => console.error(m), o
       // Postgres RETURNS TABLE arrives as an array of one row.
       const row = Array.isArray(data) ? data[0] : data;
       if (!row) throw new Error('reserve_or_requests returned no row');
+      recovered();
       return { allowed: row.allowed !== false, used: row.used ?? null };
     } catch (e) {
-      onError(`[REQUESTS] Reservation failed, ADMITTING UNMETERED: ${e.message}`);
-      return { allowed: true, used: null, unmetered: true };
+      const today = utcDay();
+      if (today !== degradedDay) { degradedDay = today; degradedUsed = 0; }
+      degraded = true;
+
+      const asked = Math.max(0, Math.floor(Number(requests) || 0));
+      /* Counted against the LOCAL allowance before the decision, so a turn is
+       * either fully covered by it or refused. Admitting a turn that overruns
+       * the degraded ceiling by half would make the ceiling a suggestion. */
+      if (degradedUsed + asked > degradedRequests) {
+        onError(
+          '[REQUESTS] Reservation failed and the degraded allowance is spent '
+          + `(${degradedUsed}/${degradedRequests}); REFUSING. Cause: ${e.message}`,
+        );
+        return { allowed: false, used: null, degraded: true, degradedUsed, degradedLimit: degradedRequests };
+      }
+
+      degradedUsed += asked;
+      onError(
+        '[REQUESTS] Reservation failed, admitting DEGRADED and UNMETERED '
+        + `(${degradedUsed}/${degradedRequests} of the local allowance): ${e.message}`,
+      );
+      return { allowed: true, used: null, unmetered: true, degraded: true, degradedUsed, degradedLimit: degradedRequests };
     }
   };
 
@@ -81,9 +147,22 @@ function createRequestBudget({ rpc, limits, onError = (m) => console.error(m), o
    */
   const settle = (reserved, actual) =>
     Promise.resolve()
-      .then(() => rpc('settle_or_requests', { p_reserved: reserved, p_actual: actual }))
+      .then(() => {
+        /* THE LOCAL LEDGER IS SETTLED TOO, or the degraded allowance measures
+         * turns rather than requests. `reserve` charges it the WORST case and
+         * most turns spend less; without this refund a handful of cheap turns
+         * would exhaust an allowance they barely touched. Applied before the
+         * store call because it is local bookkeeping either way — whether the
+         * store answers has no bearing on what this process actually spent. */
+        if (degraded) {
+          const refund = Math.max(0, Math.floor(Number(reserved) || 0) - Math.max(0, Math.floor(Number(actual) || 0)));
+          degradedUsed = Math.max(0, degradedUsed - refund);
+        }
+        return rpc('settle_or_requests', { p_reserved: reserved, p_actual: actual });
+      })
       .then(({ data, error } = {}) => {
         if (error) return onError(`[REQUESTS] Settlement failed: ${error.message || String(error)}`);
+        recovered();
         const row = Array.isArray(data) ? data[0] : data;
         const used = Number(row?.used);
         /* VISIBILITY, NOT ENFORCEMENT — it refuses nothing. This is the line

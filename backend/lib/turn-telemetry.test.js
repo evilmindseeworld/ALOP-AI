@@ -75,3 +75,32 @@ test("compression telemetry clamps non-finite sizes", () => {
   assert.equal(telemetry.snapshot().contextCompression.originalChars, 0);
   assert.equal(telemetry.snapshot().contextCompression.retainedMessages, 0);
 });
+
+test("token usage is summed per phase and absent when no provider reported it", () => {
+  const bare = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  assert.equal(bare.snapshot().usage, null, "a zero would read as 'this turn cost nothing'");
+
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordUsage({ promptTokens: 100, completionTokens: 20, totalTokens: 120, costUsd: 0.001 }, { phase: "council" });
+  t.recordUsage({ promptTokens: 50, completionTokens: 10, totalTokens: 60, costUsd: 0.0005 }, { phase: "council" });
+  t.recordUsage({ promptTokens: 900, completionTokens: 400, totalTokens: 1300, costUsd: 0.004 }, { phase: "synthesis" });
+  t.recordUsage(null);
+  t.recordUsage(undefined, { phase: "synthesis" });
+
+  const { usage } = t.snapshot();
+  assert.equal(usage.calls, 3, "a null usage is not a call");
+  assert.equal(usage.totalTokens, 1480);
+  assert.equal(usage.promptTokens, 1050);
+  assert.equal(usage.completionTokens, 430);
+  assert.equal(usage.costUsd, 0.0055);
+  assert.equal(usage.byPhase.council.calls, 2);
+  assert.equal(usage.byPhase.synthesis.totalTokens, 1300);
+});
+
+test("a provider that reports no numbers does not poison the sums", () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordUsage({ promptTokens: null, completionTokens: null, totalTokens: null, costUsd: null });
+  const { usage } = t.snapshot();
+  assert.equal(usage.calls, 1, "the call still happened");
+  assert.equal(usage.totalTokens, 0);
+});

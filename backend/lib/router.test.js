@@ -11,6 +11,7 @@ const {
   narrowRoster,
   rosterForPlan,
   MAX_FREE_SEATS,
+  withToolSeat,
 } = require("./router");
 
 // ===== language: the overlap bug =====
@@ -592,4 +593,75 @@ test("the research escalation cannot reach past the plan's roster", () => {
   const widened = escalateForResearch(classifyRequest("What is a monad?", free), free);
   assert.equal(widened.members.length, 2);
   for (const seat of widened.members) assert.ok(free.includes(seat), seat.model);
+});
+
+// ===== the native tool seat =====
+
+const TOOL_SEAT = { model: 'openai/gpt-5.6-luna', temperature: 0.2, free: false, nativeTools: true };
+const baseSelection = (over = {}) => ({
+  members: [{ model: 'free-a', temperature: 0.3 }],
+  quorum: 1,
+  whipMs: 30000,
+  tokenLimit: 400,
+  complexity: 'simple',
+  category: 'council',
+  ...over,
+});
+
+test('a simple question stays on the free roster', () => {
+  // "Free models handle simple questions only" is the owner's rule, and this is
+  // the half of it that keeps a metered model off a lookup.
+  const out = withToolSeat(baseSelection(), TOOL_SEAT);
+  assert.equal(out.members.length, 1);
+  assert.equal(out.toolSeatModel, undefined);
+});
+
+test('a turn that needs live information gets the seat even when it looked simple', () => {
+  // The case the seat exists for. classifyRequest ran on the text alone, before
+  // anything knew the answer was on the web.
+  const out = withToolSeat(baseSelection(), TOOL_SEAT, { needsTools: true });
+  assert.equal(out.members[0].model, TOOL_SEAT.model, 'the seat leads the roster; narrowing has already run');
+  assert.equal(out.members.length, 2, 'it is ADDITIVE — a council of one strong model is not a council');
+  assert.equal(out.toolSeatModel, TOOL_SEAT.model);
+});
+
+test('a complex question gets the seat without needing a search', () => {
+  for (const complexity of ['moderate', 'complex']) {
+    const out = withToolSeat(baseSelection({ complexity }), TOOL_SEAT);
+    assert.equal(out.toolSeatModel, TOOL_SEAT.model, complexity);
+  }
+});
+
+test('a greeting still spends nothing', () => {
+  const out = withToolSeat(baseSelection({ category: 'greeting', members: [] }), TOOL_SEAT, { needsTools: true });
+  assert.equal(out.members.length, 0);
+});
+
+test('no seat means no change, and that is how the plan gate is enforced', () => {
+  // The caller passes null for a user whose plan does not include it. Reaching
+  // into a roster from here would put a METERED model on a free tier.
+  const selection = baseSelection({ complexity: 'complex' });
+  assert.equal(withToolSeat(selection, null, { needsTools: true }), selection);
+  assert.equal(withToolSeat(selection, {}, { needsTools: true }), selection);
+});
+
+test('adding the seat twice does not seat it twice', () => {
+  // escalateForResearch re-selects members, and the server calls this on both
+  // sides of that. A duplicate is a second metered request per round.
+  const once = withToolSeat(baseSelection({ complexity: 'complex' }), TOOL_SEAT);
+  const twice = withToolSeat(once, TOOL_SEAT, { needsTools: true });
+  assert.equal(twice.members.filter((m) => m.model === TOOL_SEAT.model).length, 1);
+});
+
+test('the seat raises the whip and the quorum with it', () => {
+  const out = withToolSeat(baseSelection({ complexity: 'complex' }), TOOL_SEAT);
+  assert.ok(out.whipMs >= 45000, 'a native round trip at high effort is slower than a 2.4s free draft');
+  assert.equal(out.quorum, Math.min(2, out.members.length), 'quorum must not let the free seats close the room first');
+  assert.ok(out.tokenLimit >= 1000, 'a 400-token lookup ceiling is not a research draft');
+});
+
+test('a detailed turn keeps its larger ceiling', () => {
+  const out = withToolSeat(baseSelection({ complexity: 'complex', tokenLimit: 2000, whipMs: 60000 }), TOOL_SEAT);
+  assert.equal(out.tokenLimit, 2000, 'never DOWN');
+  assert.equal(out.whipMs, 60000);
 });

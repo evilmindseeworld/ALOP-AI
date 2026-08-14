@@ -247,3 +247,32 @@ test("refuses to run without a way to call a model", async () => {
   // would get the fallback answer with no indication the council never ran.
   await assert.rejects(() => runCouncil([seat("a")], [], 100, 1, 10, {}), /callModel/);
 });
+
+test("a seat's reasoning effort reaches the provider, and only that seat's", async () => {
+  // `effort` is a per-seat property. The free roster ignores it — reasoning
+  // effort is not among their supported parameters — but the native tool seat
+  // sits on THIS path whenever a complex question does not need tools, and it
+  // is on the council precisely because it thinks harder. Without this it runs
+  // at the provider default: the expensive seat, bought and not used.
+  const seen = [];
+  const callModel = async (model, _messages, _temperature, _whipMs, _tokenLimit, _signal, options) => {
+    seen.push({ model, options });
+    return "a usable answer from this seat";
+  };
+  await runCouncil(
+    [
+      { model: "free-a", temperature: 0.3 },
+      { model: "openai/gpt-5.6-luna", temperature: 0.2, effort: "high" },
+    ],
+    [{ role: "user", content: "q" }],
+    5000,
+    2,
+    1000,
+    { callModel },
+  );
+
+  const plain = seen.find((s) => s.model === "free-a");
+  const metered = seen.find((s) => s.model === "openai/gpt-5.6-luna");
+  assert.equal(plain.options, undefined, "a seat with no effort must send the byte-identical body it always has");
+  assert.deepEqual(metered.options, { reasoning: { effort: "high", exclude: true } });
+});

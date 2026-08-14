@@ -47,6 +47,39 @@ const PRICES = {
   seatTenths: int(process.env.SPEND_SEAT_TENTHS, 4),
   /* The synthesis pass. Longer output than a seat, so priced above one. */
   synthesisTenths: int(process.env.SPEND_SYNTHESIS_TENTHS, 5),
+  /* THE NATIVE TOOL SEAT, WHICH IS THE FIRST SEAT ON THIS COUNCIL THAT COSTS
+   * REAL MONEY. Everything else is a `:free` id billed at $0, which is why the
+   * dollar ceiling has not bound on a model call since 2026-08-12. The header
+   * above says the per-operation pricing exists so this ceiling "remains
+   * protective the moment any seat is swapped to a paid model". This is that
+   * moment; do not let it be the moment the sentence turned out to be untrue.
+   *
+   * MEASURED, and the distinction from "reasoned" matters here because the
+   * first number written into this line was reasoned and was ~40x too high.
+   *
+   * RATES (read from OpenRouter's model catalogue, 2026-08-14):
+   *   openai/gpt-5.6-luna — $0.10/M prompt, $0.60/M completion.
+   *
+   * MEASURED (a live four-round research turn through this exact seat, same
+   * date, reasoning effort high): the four calls reported 209, 593, 1435 and
+   * 1959 total tokens and cost $0.0000424, $0.0001228, $0.000220 and $0.000385
+   * — $0.00077 for the WHOLE turn, about 0.077c, or under 0.2 tenths per call.
+   *
+   * REASONED, for the headroom the measurement does not cover: that turn's tool
+   * results were short fixtures. A real one carries fetched pages, so call it
+   * 30k prompt (0.3c = 3 tenths) plus 4k completion at high effort — reasoning
+   * tokens bill as completion — (0.24c = 2.4 tenths), so ~5.4 tenths.
+   *
+   * The default is 8: comfortably above that reasoned worst case, and still
+   * ~40x the measured typical. It is deliberately NOT the measured figure,
+   * because a ceiling that under-estimates is not a ceiling and this is the one
+   * seat that can run a bill up. It is also no longer 12, because an
+   * over-estimate is not free either: `priceTurn` charges this per seat record
+   * PER ROUND, so every unnecessary tenth is taken off a real user's daily
+   * allowance for a turn that did not cost it. Calibrate against the provider
+   * dashboard, in that order of preference: measurement, then reasoning, then
+   * argument. */
+  toolSeatTenths: int(process.env.SPEND_TOOL_SEAT_TENTHS, 8),
   /* FAST_MODEL: chat titles, feedback notes, the router's short calls. Small
    * prompts and a 100-token ceiling. */
   fastTenths: int(process.env.SPEND_FAST_TENTHS, 1),
@@ -81,7 +114,19 @@ const LIMITS = {
  * @param {object} snapshot `telemetry.snapshot()` output, or any subset of it.
  * @returns {number} cents, rounded up, never negative.
  */
-function priceTurn(snapshot) {
+/**
+ * Is this seat record the metered native tool seat?
+ *
+ * Compared by MODEL ID against what the caller says the tool seat is, rather
+ * than by a flag on the record: `telemetry.recordSeat` stores a model string
+ * and nothing else, and adding a boolean to it would put the same fact in two
+ * places that can disagree. A caller that passes nothing prices every seat at
+ * the free rate, which is the behaviour every existing call site expects.
+ */
+const isToolSeat = (seat, toolSeatModel) =>
+  Boolean(toolSeatModel) && seat && seat.model === toolSeatModel;
+
+function priceTurn(snapshot, { toolSeatModel = null } = {}) {
   /* `snapshot = {}` as a default parameter was WRONG and Luna's test caught it:
    * a default fires on `undefined` only, so `priceTurn(null)` went straight
    * through it and threw on `null.seats`. Reachable — the settlement path
@@ -95,7 +140,15 @@ function priceTurn(snapshot) {
    * out was still dispatched and the provider still ran it — charging only for
    * usable answers would make the expensive failure case free, which is exactly
    * backwards for a ceiling meant to catch runaway spend. */
-  let tenths = seats.length * PRICES.seatTenths;
+  /* Priced PER SEAT RECORD rather than as `seats.length * rate`, because the
+   * roster is no longer one price. One metered seat among six free ones is the
+   * expected shape now, and multiplying a count by a single rate would charge
+   * the whole council at whichever rate was picked — three times too much at
+   * the tool-seat rate, or, far worse, nothing like enough at the free one. */
+  let tenths = seats.reduce(
+    (sum, seat) => sum + (isToolSeat(seat, toolSeatModel) ? PRICES.toolSeatTenths : PRICES.seatTenths),
+    0,
+  );
 
   if (snap.synthesisMs) tenths += PRICES.synthesisTenths;
 
@@ -115,8 +168,17 @@ function priceTurn(snapshot) {
    * are no seat records at all, since the fallback cannot have run without a
    * council to fall back from. */
   if (snap.fallbackCouncil?.used) {
-    const roster = new Set(seats.map((s) => s?.model)).size || 7;
-    tenths += roster * PRICES.seatTenths + PRICES.synthesisTenths;
+    const models = new Set(seats.map((s) => s?.model));
+    const roster = models.size || 7;
+    /* The fallback re-runs the ROSTER, so it re-runs the tool seat too if the
+     * tool seat was on it. Charging the whole fallback at the free rate was the
+     * shape of the bug this codebase already fixed once here (`seats.length`
+     * instead of the roster size); getting the RATE wrong is the same class of
+     * mistake one column over. */
+    const meteredSeats = toolSeatModel && models.has(toolSeatModel) ? 1 : 0;
+    tenths += (roster - meteredSeats) * PRICES.seatTenths
+      + meteredSeats * PRICES.toolSeatTenths
+      + PRICES.synthesisTenths;
   }
 
   for (const round of toolRounds) {
@@ -167,7 +229,20 @@ function priceTurn(snapshot) {
  * @param {number} maxRounds   `agent-loop.js` maxRounds. Every round re-asks
  *        every seat, so this multiplies the roster.
  */
-function reservationCents(seatCount, maxToolCalls, maxRounds) {
+/**
+ * @param {number} [toolSeatCount] how many of `seatCount` are the metered
+ *        native tool seat. Defaults to 0, which is what every turn without one
+ *        is, and what every pre-existing caller means.
+ *
+ *        IT IS PART OF THE UPPER-BOUND PROPERTY, not a refinement of it. The
+ *        reservation must bound `priceTurn` for every turn the loop can
+ *        produce, and `priceTurn` now charges one seat at three times the free
+ *        rate. A reservation that assumed a uniform roster would under-reserve
+ *        by exactly the difference, on the one path that can actually spend
+ *        money — which is the failure mode this whole function exists to
+ *        prevent, arriving through the door that was just opened for it.
+ */
+function reservationCents(seatCount, maxToolCalls, maxRounds, toolSeatCount = 0) {
   /* COERCED, BECAUSE NaN CENTS WOULD SILENTLY DISABLE THE CEILING. Luna's test
    * passed 'not-a-number' and got NaN back, which is the worst possible return
    * value here: it travels into `reserve_user_spend` as the amount to charge,
@@ -199,8 +274,15 @@ function reservationCents(seatCount, maxToolCalls, maxRounds) {
    * loop, so it does not add to this worst case.) */
   const rosters = rounds + 2;
 
+  /* Clamped to the roster: a caller that says "two tool seats" on a one-seat
+   * roster must not be able to reserve for seats that cannot exist, and — the
+   * direction that matters — must not produce a negative count of free seats
+   * and therefore a SMALLER reservation than a plain turn. */
+  const metered = Math.min(int(toolSeatCount, 0), seats);
+  const free = Math.max(0, seats - metered);
+
   const tenths =
-    rosters * seats * PRICES.seatTenths +
+    rosters * (free * PRICES.seatTenths + metered * PRICES.toolSeatTenths) +
     /* Two synthesis passes: the turn's own, and the post-council fallback's. */
     2 * PRICES.synthesisTenths +
     /* maxUniqueCalls is per TURN across all rounds, so it is not multiplied. */

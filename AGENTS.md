@@ -305,6 +305,182 @@ reading it as current state would have believed this backend had three live
 high-severity advisories, and either re-planned finished work or panicked about
 nothing. Do not restore it.
 
+**`callModel` RETURNS A STRING BY DEFAULT, AND THAT STRING USED TO BE THE ONLY
+THING THERE WAS.** `lib/openrouter.js` collapsed the provider message through a
+helper that took `content`, else `reasoning`, else the `reasoning_details`
+parts, else `''` — so three things were deleted at that boundary with no error
+and no log line. The load-bearing one: a message with `content: null` and a
+populated `tool_calls` array became `''`. `fromNative` in `lib/tool-protocol.js`
+could always read that array and could never be reached, because the array was
+gone one function earlier; the seat was then scored `empty` and dropped from the
+round. It looks exactly like a model that declined to answer.
+
+`{ structured: true }` as the ninth argument returns the whole reply instead —
+see `lib/model-reply.js`. It is MESSAGE-SHAPED on purpose (`role`, `content`,
+`tool_calls` where an OpenAI-compatible message carries them) so
+`parseToolRequests` reads it with no change. Two consequences worth knowing.
+The fallback from content to `reasoning` is KEPT, because removing it blanks
+every seat on a model that writes its answer there — but it is now labelled
+`textSource`, so a caller that must not cache or show internal reasoning can
+test rather than guess. And the tools path in `server.js` tests
+`reply.content.trim()` rather than `String(raw)`: stringifying the reply object
+gives `"[object Object]"`, which is always truthy and would mark every seat
+unusable.
+
+The default string contract is unchanged for the other eleven call sites. Do not
+"simplify" by making structured the default without walking all of them.
+
+**ONE SEAT NOW SENDS A `tools` ARRAY, and it is the only one.**
+`COUNCIL_TOOL_SEAT_MODEL` (default `openai/gpt-5.6-luna`) is a member that gets
+real tool schemas, emits real `tool_calls`, and receives real `role: "tool"`
+results against the ids it asked with. `lib/native-tool-seat.js` owns it. Every
+other seat still speaks the fenced-text protocol, and that stays the floor: it
+is the only thing that works on a model with no tool template, which is most of
+this roster.
+
+This paragraph used to say native mode could not be wired at all, because the
+loop broadcasts one deduped result set to EVERY seat while a native round trip
+must answer one seat's `tool_call_id`. That tension is real and the resolution
+is the shape of the module: **the seat keeps its own message list across rounds
+while still drawing its results from the loop's shared transcript**, matched by
+CANONICAL KEY. The loop still executes each unique call exactly once — the
+dedupe saving survives — and only the spelling differs per seat.
+
+Four things about it that are not derivable from reading the code:
+
+- **The seat is NOT in the `COUNCIL` array**, deliberately. Every id in that
+  array is `:free` and eligible for temperature-band narrowing; this one is
+  metered and is added by policy (`withToolSeat`). Putting it in the array makes
+  it a substitute for a free seat on turns that never asked for it.
+- **`free: true` on a seat means "included in the free PLAN", not "costs
+  nothing".** `rosterForPlan` has always read it the first way and it has never
+  mattered, because everything was $0. This seat is where the two readings come
+  apart, and reading it the second way puts a metered model on an unbounded free
+  tier. It is Pro-only unless `COUNCIL_TOOL_SEAT_FREE_PLAN=1`.
+- **An assistant message with N `tool_calls` MUST be followed by N `role:
+  "tool"` messages** or the provider rejects the next request. The loop can
+  decline to execute a call (a ceiling, a budget, a whip), so "the result
+  exists" is not safe: every pending id is answered, and an unexecuted one is
+  told so in words. Dropping it surfaces as the seat failing rather than as the
+  ceiling that caused it.
+- **`tool_choice: "none"` is how the final round is ENFORCED.** The text path
+  can only ask a model not to call a tool. Measured against the live gateway on
+  2026-08-14: the same prompt that had been emitting calls returned prose and
+  `finish_reason: "stop"`.
+
+**IT COSTS MONEY, AND IT IS THE FIRST SEAT ON THIS COUNCIL THAT DOES.** A
+ChatGPT/Codex subscription covers `gpt-5.6-luna` through THAT account; this is
+OpenRouter, which is a different account and a different bill — $0.10/M prompt,
+$0.60/M completion, reasoning tokens billed as completion, and this seat runs at
+high effort. `lib/spend.js` prices it separately (`toolSeatTenths`) and
+`reservationCents` takes a `toolSeatCount` so the reservation still bounds
+`priceTurn`, which is that function's whole load-bearing property.
+
+A live four-round research turn measured **$0.00077 in total** (209, 593, 1435
+and 1959 tokens across the four calls). The price constant is 8 tenths per call
+— ~40x the measured typical and ~1.5x a reasoned worst case with real fetched
+pages in the prompt. It was 12 first, which was ~60x, and that is not free
+either: `priceTurn` charges it per seat record PER ROUND, off a real user's
+daily allowance.
+
+**ADOPTION IS COUNTED, because it cannot be inferred.** A native seat that
+quietly degrades to writing fenced blocks produces identical answers, identical
+timings and identical costs. `source` on every parsed call (`native` / `fence`,
+plus `seeded` for a server-issued search) is the only difference, and it rides
+through the dedupe as a `sources` ARRAY — one canonical call can be proposed by
+a native seat and a fenced one at once, and keeping only the first would report
+adoption as whichever seat replied first. It is deliberately NOT part of
+`callKey`: two members asking the same thing by different protocols is still one
+execution. The `[TOOLS] call sources:` line is where it lands.
+
+**STREAM USAGE ACCOUNTING IS ON, AND IT WAS OFF FOR A REASON WORTH KEEPING.**
+`usage: {include: true}` is an OpenRouter extension, not an OpenAI field
+(OpenAI spells it `stream_options.include_usage`), and it rides in the body of
+the request that writes every answer. It shipped OFF behind
+`STREAM_USAGE_ACCOUNTING` because there was no OpenRouter key on the
+development machine, and an unverified body field on that path fails as a
+product-wide outage rather than as missing telemetry. It was probed against the
+live gateway on 2026-08-14 — HTTP 200, content streamed normally, a usage frame
+carrying prompt, completion, total and cost — and is now on by default, with
+`=0` as the off switch. Note the frame that carries usage ALSO carries
+`finish_reason`; the terminator is still `[DONE]` and the completion latch is
+what stops a second one being written.
+
+**`engines.node` IS `>=26.0.0` AS OF 2026-08-14, and Render reads it.** It said
+`>=18.0.0` while CI tested only 26 and the Dockerfile pinned 22 — three
+declarations, no two agreeing. `lib/deployment-config.test.js` now enforces that
+the floor is not BELOW the tested major and that the Dockerfile matches every CI
+pin. If a Render build fails to find the runtime, that is this line: Render keeps
+the previous deployment alive when a new one fails, so lower the floor, ci.yml
+and the Dockerfile together rather than one of them.
+
+**EVERY 5xx BODY IS NOW A SAFE TYPED ENVELOPE, and the thrown message never
+reaches a client in production.** `lib/error-envelope.js`. Twenty-two routes
+ended in `res.status(500).json({ error: err.message })`, and the express handler
+masked that only when `NODE_ENV === 'production'` — so a deploy with the
+variable unset returned Supabase prose, unreachable hostnames and Postgres
+constraint names. `sendError(res, err)` replaces all of them. The wire shape is
+ADDITIVE: `error` is still a plain string at the same key, with `code` (branch on
+this, not the prose), `operationId`, and `detail` only outside production.
+
+4xx prose IS still returned, deliberately — a 4xx reason describes the caller's
+own request. The stream path was the same leak and was easier to miss: a failed
+turn renders `type: 'error'` into the chat, so a gateway message was being shown
+to the user as part of the answer.
+
+**`req.operationId` IS THE SAME VALUE `req.requestId` ALWAYS WAS, and the
+difference is that it now goes somewhere.** It was minted per request and read by
+nothing — no response, no log line, no audit row — so the one thing an id is for
+was impossible. It is echoed as the `X-Operation-Id` header, in every error
+body, as the first SSE frame (`type: 'meta'`), and in the 5xx log line.
+
+The CLIENT mints it (`frontend/src/lib/operationId.js`) and the server validates
+it as a UUID before echoing it anywhere — an unvalidated id that reaches a log
+line is a log injection. Client-minted is what makes a retry correlate with the
+attempt it replaced; a server-minted id changes on every request, which cannot
+answer the only question a failed turn raises. The frontend shows the first eight
+characters on the failure message, and that message is persisted, so it is still
+there when the user comes back to report it.
+
+**THE REQUEST BUDGET STILL FAILS OPEN, BUT NO LONGER WITHOUT A BOUND.**
+`lib/request-budget.js`. The argument for failing open is right and is kept:
+failing closed turns a partial dependency failure into a total outage. What was
+wrong is that "open" meant UNLIMITED — a Supabase outage of any length admitted
+every turn from every user with no counter, so the account's whole daily
+allowance could be spent inside it, invisibly, because the only number anyone can
+look at lives in the store that is down.
+
+There is now a local degraded allowance (5% of the day, floor of one) that
+admits through a blip and refuses past it, resets with the UTC day, clears the
+moment a reservation succeeds, and is refunded at settlement so a cheap turn does
+not cost its worst case. It is PER PROCESS: two instances in degraded mode admit
+two allowances. That is bounded and known; the previous behaviour was neither.
+
+The refusal it produces is a **503, not the 402** the daily ceiling returns, and
+that distinction is the user-facing half. "Out of model requests for today" is
+false when the day's budget is untouched and the ledger is simply unreachable —
+one resets at midnight, the other in about a minute.
+
+**STRIPE IDENTITY IS `clerk_id`, NEVER AN EMAIL.** `lib/stripe-identity.js`
+decides which column a webhook event may address; the route only applies the
+decision. What it replaced was `.eq('email', s.customer_email.toLowerCase())`,
+which failed silently three ways — the money arrives, `plan` stays `free`, and
+nothing logs: the session email is whatever the payer typed at checkout;
+`users.email` is refreshed in the BACKGROUND from Clerk by `refreshProfile`, so
+it can be stale mid-checkout; and `.eq` is not `.single()`, so two rows sharing
+an email both get updated.
+
+The right identity was already on the session and was being discarded —
+`create-checkout-session` has always put the Clerk id in `metadata.userId`, and
+now also in `client_reference_id`, which is the field that survives into the
+Dashboard and the CSV export where metadata does not. Email survives as a
+last-resort fallback so a checkout already in flight is not stranded, and it is
+reported as `weak` and logged as such. Two rules that are easy to undo: an
+unpaid `checkout.session.completed` stores the Stripe ids and does NOT grant
+pro (delayed payment methods are a real Stripe state), and
+`invoice.payment_failed` patches NOTHING — Stripe retries, and downgrading on a
+first decline cancels a paying customer over a temporarily declined card.
+
 ## Handoff — 2026-08-07 (second pass)
 
 Read this first; it is the state of play, not history. Delete a line once it

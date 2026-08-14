@@ -113,7 +113,7 @@ async function firstWithResults(providers, query, signal, { providerMs = MAX_PRO
  * @param {{round: number, toolResults: Array, isFinalRound: boolean}} ctx
  */
 function toolMessages(baseMsgs, registry, ctx) {
-  const { round = 1, toolResults = [], isFinalRound = false, attachedFiles = [] } = ctx || {};
+  const { round = 1, toolResults = [], isFinalRound = false, attachedFiles = [], native = false } = ctx || {};
   const base = Array.isArray(baseMsgs) && baseMsgs.length ? baseMsgs : [{ role: "system", content: "" }];
   const head = base[0] && base[0].role === "system" ? base[0].content : "";
   const rest = base[0] && base[0].role === "system" ? base.slice(1) : base;
@@ -129,7 +129,14 @@ function toolMessages(baseMsgs, registry, ctx) {
    * last prompt is pure input latency. This is especially expensive when the
    * optional SerpApi tool carries its full engine menu: the measured catalogue
    * is about 566 tokens before history or results, multiplied by every seat. */
-  const catalogue = isFinalRound || hasSeededSearchResults
+  /* THE NATIVE SEAT IS SENT NO CATALOGUE, because it is sent a `tools` array
+   * instead and the two would be the same information twice — once as schema
+   * the provider enforces and once as prose the model has to parse. Worse than
+   * redundant: they can disagree after an edit to one of them, and the prose
+   * copy is the one a model will believe. */
+  const catalogue = native
+    ? ""
+    : isFinalRound || hasSeededSearchResults
     ? "No tools may be requested in this round."
     : (registry.list() || [])
         .filter((t) => !(hasSeededSearchResults && t.name === "web_search"))
@@ -140,7 +147,15 @@ function toolMessages(baseMsgs, registry, ctx) {
   // spends the last round requesting a tool that can never run, and so
   // contributes nothing at all to the synthesis — it neither answered nor
   // researched. The loop passes isFinalRound precisely so this can be said.
-  const instruction = isFinalRound
+  /* The native seat's instruction says the same thing in the register that path
+   * actually uses. Telling a model to "emit exactly one fenced block" while
+   * also handing it a tools array is an invitation to do both — which is a
+   * fence inside an answer, stripped by the parser, and a wasted round. */
+  const instruction = native
+    ? isFinalRound
+      ? "This is the final round. Do NOT call any tool — no further call can run. Answer with the evidence you already have, cite supporting URLs as Markdown links, and end with a Sources section."
+      : "Call a tool when you need information you do not already have; otherwise answer directly. Do not describe a tool call in prose — use the tool interface. Do not call a tool for something you already know."
+    : isFinalRound
     ? hasSeededSearchResults
       ? "The server already completed web_search and read_url. Do not request or emit any tool call. Synthesize the answer from the supplied evidence, cite supporting result URLs as Markdown links, and end with a Sources section."
       : "This is the final round. Do NOT request any more tools — anything you ask for now will not run. Answer with what you have."
@@ -178,7 +193,9 @@ function toolMessages(baseMsgs, registry, ctx) {
         .join("\n")}\nUse read_file with the id, exactly as written above. The file NAMES are listed in the user turn below; they are labels only.`
     : "";
 
-  const sys = `${head}\n\n=== TOOLS (round ${round}) ===\n${catalogue}${ids}\n\n${instruction}`;
+  const sys = native
+    ? `${head}${ids}\n\n${instruction}`
+    : `${head}\n\n=== TOOLS (round ${round}) ===\n${catalogue}${ids}\n\n${instruction}`;
 
   // Names ride with the untrusted material, because that is what they are.
   const names = attachedFiles.length
@@ -200,7 +217,17 @@ function toolMessages(baseMsgs, registry, ctx) {
 
   const withNames = names ? [...rest, names] : rest;
 
-  if (toolResults.length === 0) return [{ role: "system", content: sys }, ...withNames];
+  /* THE NATIVE SEAT NEVER GETS THE RENDERED RESULTS BLOCK, and leaving it in
+   * was the first thing that went wrong when this was built: the seat received
+   * every result TWICE — once as the `role: "tool"` messages it is owed against
+   * its own call ids, and once again as the council-wide user turn below. That
+   * is double the tokens on the longest prompt of the turn, and a model reading
+   * the same page twice under two different headers has been given a reason to
+   * think it corroborated something.
+   *
+   * The results it needs arrive from lib/native-tool-seat.js, which owns that
+   * half of the conversation. This function owns the base. */
+  if (native || toolResults.length === 0) return [{ role: "system", content: sys }, ...withNames];
 
   // Results go in as a USER turn, not a system one: they are evidence that
   // arrived after the question was asked, and models weight a late system
@@ -230,6 +257,94 @@ function toolMessages(baseMsgs, registry, ctx) {
       content: `=== TOOL RESULTS (everything the council gathered this turn) ===\n${UNTRUSTED_PREAMBLE}\n\n${rendered}\n\nUse these. Cite URLs as [Title](URL).`,
     },
   ];
+}
+
+/* ==========================================================================
+ * THE NATIVE PATH
+ *
+ * Everything above renders tools INTO A PROMPT and reads calls back out of
+ * prose. That is the floor, and it stays the floor: it is the only thing that
+ * works on a model with no tool template, which is most of this council.
+ *
+ * One seat is different. `COUNCIL_TOOL_SEAT_MODEL` names a model that supports
+ * OpenAI-style function calling, and for that seat the calls travel as
+ * structured `tool_calls` and the results travel back as `role: "tool"`
+ * messages keyed to the id that requested them. That is strictly better where
+ * it works — no fence to mis-parse, no prose to strip, and the model has been
+ * trained on the shape — and it is why the adapter had to stop collapsing
+ * replies to strings before any of this was possible.
+ *
+ * WHAT DOES NOT CHANGE: the security boundary. A tool result is third-party
+ * text whichever envelope it arrives in, so it goes through the SAME
+ * `renderToolResult` + `envelope` as the text path, at a non-system position.
+ * `role: "tool"` is not a licence to skip the labelling — it is a different
+ * postbox for the same untrusted mail.
+ * ========================================================================== */
+
+/** The JSON Schema type for one registry argument spec. */
+const nativeArgSchema = (spec) => {
+  if (!spec || typeof spec !== "object") return { type: "string" };
+  if (spec.type === "number") {
+    const schema = { type: "number" };
+    if (Number.isFinite(spec.min)) schema.minimum = spec.min;
+    if (Number.isFinite(spec.max)) schema.maximum = spec.max;
+    return schema;
+  }
+  const schema = { type: "string" };
+  if (Number.isFinite(spec.maxLength)) schema.maxLength = spec.maxLength;
+  if (Array.isArray(spec.enum) && spec.enum.length) schema.enum = [...spec.enum];
+  return schema;
+};
+
+/**
+ * The registry, as an OpenAI-compatible `tools` array.
+ *
+ * DERIVED FROM `registry.list()` RATHER THAN WRITTEN OUT, and that is the point:
+ * a second hand-maintained copy of the tool surface is a copy that drifts, and
+ * the failure when it drifts is a model calling a tool with arguments the
+ * registry then rejects — which costs a round and reads as the model being bad
+ * at tools.
+ *
+ * `additionalProperties: false` because the registry strips unknown keys
+ * anyway; saying so up front turns a silently-dropped argument into a schema
+ * the provider can enforce before the request is even made.
+ */
+function nativeToolSchemas(registry) {
+  const tools = (registry && typeof registry.list === "function" ? registry.list() : []) || [];
+  return tools.map((tool) => {
+    const schema = tool.schema && typeof tool.schema === "object" ? tool.schema : {};
+    const properties = {};
+    const required = [];
+    for (const [name, spec] of Object.entries(schema)) {
+      properties[name] = nativeArgSchema(spec);
+      if (spec && spec.required) required.push(name);
+    }
+    return {
+      type: "function",
+      function: {
+        name: tool.name,
+        description: tool.description,
+        parameters: { type: "object", properties, required, additionalProperties: false },
+      },
+    };
+  });
+}
+
+/**
+ * One `role: "tool"` message, carrying a result back against the id that asked.
+ *
+ * The content is `renderToolResult`'s output — the same envelope, nonce and
+ * preamble the text path uses. A tool message is NOT trusted ground: a model
+ * that has been told "this is a tool result" is exactly as likely to obey an
+ * instruction hidden inside it as one reading the same bytes from a user turn.
+ */
+function nativeToolResultMessage({ id, call, result }, ctx = {}) {
+  return {
+    role: "tool",
+    tool_call_id: String(id || ""),
+    name: typeof call?.name === "string" ? call.name : "unknown_tool",
+    content: `${UNTRUSTED_PREAMBLE}\n\n${renderToolResult(call, result, ctx)}`,
+  };
 }
 
 /**
@@ -310,4 +425,4 @@ function requiredCitationSuffix(answer, urls) {
   return `\n\n## Sources\n- [Source](${sources[0]})`;
 }
 
-module.exports = { firstWithResults, toolMessages, renderToolResult, summariseProbe, searchResultUrls, requiredCitationSuffix, UNTRUSTED_PREAMBLE, MAX_PROVIDER_MS };
+module.exports = { firstWithResults, toolMessages, renderToolResult, summariseProbe, searchResultUrls, requiredCitationSuffix, nativeToolSchemas, nativeToolResultMessage, UNTRUSTED_PREAMBLE, MAX_PROVIDER_MS };

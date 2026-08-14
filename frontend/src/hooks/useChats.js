@@ -3,6 +3,7 @@ import { API_BASE, clientTimezone, untilAborted } from "../lib/api";
 import { uid, generateChatTitle, parseImagePrompt, buildImageUrl } from "../lib/format";
 import { createReveal } from "../lib/streamReveal";
 import { readChats, writeChats } from "../lib/chatCache";
+import { newOperationId, withOperationId, shortOperationId } from "../lib/operationId";
 
 const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
@@ -887,16 +888,39 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
         // "streaming", the composer stays disabled, the catch below never
         // runs, and pressing Stop changes nothing at all.
         const token = await Promise.race([getToken(), untilAborted(abortRef.current.signal)]);
+        /* ONE ID FOR THIS TURN, minted here rather than server-side.
+         *
+         * The server accepts it, validates it as a UUID, and echoes it into
+         * every log line, error body and audit row for this request. Minting it
+         * on the client is what makes a RETRY correlatable with the attempt it
+         * replaced — a server-minted id changes on every request, so the one
+         * question worth asking of a failed turn ("what else did this user try
+         * in the same breath?") cannot be answered from it. */
+        const operationId = newOperationId();
         const res = await fetch(`${API_BASE}/api/council`, {
           method: "POST",
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+            "X-Operation-Id": operationId,
+          },
           body: JSON.stringify({ message: cleanText, history, chatId, timezone: clientTimezone(), ...(image ? { image } : {}) }),
           signal: abortRef.current.signal,
         });
 
         if (!res.ok) {
           const d = await res.json().catch(() => ({}));
-          throw new Error(d.error || `Server error: ${res.status}`);
+          // The id the user can quote. Server-supplied wins: a proxy that
+          // rewrote the request would make ours a lie.
+          // `res.headers?.get?.()` rather than a bare call: this is the FAILURE
+          // path, and a response object without a Headers instance — a mock, a
+          // polyfill, an opaque cross-origin response — would turn a readable
+          // server error into "Cannot read properties of undefined".
+          throw withOperationId(
+            new Error(d.error || `Server error: ${res.status}`),
+            d.operationId || res.headers?.get?.("X-Operation-Id") || operationId,
+            d.code,
+          );
         }
         if (!res.body) throw new Error("No stream");
 
@@ -914,6 +938,11 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
          * stays and carries whatever the server last said it was doing. */
         let started = false;
         let stage = null;
+        /* The server echoes the id it settled on as the first SSE frame. It is
+         * normally the one sent above; it differs if a proxy rewrote the header
+         * or the value failed the server's UUID check and was replaced. Prefer
+         * the server's — it is the one written into the logs. */
+        let turnOperationId = operationId;
         const paintPending = () =>
           setStreamDraft({
             chatId,
@@ -1033,7 +1062,12 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
               }
               acc += frame.text;
             }
-            else if (frame.type === "error") throw new Error(frame.text);
+            else if (frame.type === "meta") {
+              if (frame.operationId) turnOperationId = frame.operationId;
+            }
+            else if (frame.type === "error") {
+              throw withOperationId(new Error(frame.text), frame.operationId || turnOperationId, frame.code);
+            }
             // What the council is doing while it is doing it. Latest wins —
             // this is a status line, not a log; the tool trail below is the
             // part that keeps its history because a search that ran is a fact
@@ -1142,10 +1176,18 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
 
         sendInFlightRef.current = false;
         setStatus("error");
+        /* THE ID IS SHOWN, and it is shown HERE because this is the only place
+         * the user can see it at all — the message is persisted, so it is still
+         * there when they come back to report the failure. Eight characters is
+         * enough to find the request in the logs and short enough to read out;
+         * the full id is in `X-Operation-Id` and in the audit row. Appended
+         * rather than replacing the message: what went wrong still matters more
+         * than which request it was. */
+        const ref = shortOperationId(err.operationId);
         const errorMessage = {
           ...assistantMsg,
           typing: false,
-          content: `⚠️ ${err.message || "Connection failed"}`,
+          content: `⚠️ ${err.message || "Connection failed"}${ref ? `\n\n\`ref ${ref}\`` : ""}`,
         };
         setStreamDraft({ chatId, message: errorMessage, persisted: true });
         const saved = await updateChatMessages(chatId, [

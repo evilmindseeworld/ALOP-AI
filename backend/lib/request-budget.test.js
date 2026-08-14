@@ -455,8 +455,27 @@ test("the synthesis cap is never below the council's own draft ceiling", () => {
 test("the reservation and the price are computed from the same turn shape", () => {
   // Two ceilings disagreeing about what a turn will do is how one of them ends
   // up wrong. Both take the same seat count and the same agent-loop literals.
-  assert.match(ROUTE, /reservationCents\(maxSeats, 12, 4\)/);
+  //
+  // The MONEY reservation takes one argument the request reservation does not,
+  // and the asymmetry is correct rather than drift: a metered tool seat costs
+  // three times a free seat in cents and exactly the same in OpenRouter
+  // requests, because the request quota does not care what a request cost.
+  assert.match(ROUTE, /reservationCents\(maxSeats, 12, 4, toolSeatCount\)/);
   assert.match(ROUTE, /reservationRequests\(maxSeats, 12, 4\)/);
+});
+
+test("THE METERED SEAT IS PRICED AS ONE, at reservation and at settlement", () => {
+  // Every other seat on this council is a `:free` id billed at $0, so the money
+  // ceiling has never bound on a model call. The native tool seat is the first
+  // that can. Reserving it at the free rate under-reserves by exactly the
+  // difference on the one path that can actually spend money — and an
+  // under-reservation is only discovered at settlement, after several
+  // concurrent turns have each been admitted on it.
+  assert.match(ROUTE, /const toolSeatCount = mayAddToolSeat \? 1 : 0/);
+  assert.match(ROUTE, /planRoster\.length \+ toolSeatCount/,
+    "the tool seat is not in planRoster — it is added by policy — so the worst case is one seat wider than either");
+  assert.match(ROUTE, /priceTurn\([\s\S]{0,80}?\{ toolSeatModel: TOOL_SEAT_MODEL \}\)/,
+    "settling at the free rate refunds the difference straight back to the user");
 });
 
 test("the reservation covers the roster the research escalation can widen to", () => {
@@ -470,4 +489,110 @@ test("the reservation covers the roster the research escalation can widen to", (
   // Both seeded and direct search now reach the council, so every non-greeting
   // turn must reserve enough headroom to widen after the router decides.
   assert.match(ROUTE, /const mayEscalate = selection\.category !== 'greeting'/);
+});
+
+// ===== degraded mode: fail open, but not forever =====
+
+const dead = () => async () => { throw new Error('supabase unreachable'); };
+const QUIET = { onError: () => {}, onWarn: () => {} };
+
+test("the first failure still admits — a blip must not be an outage", async () => {
+  const { reserve } = createRequestBudget({ rpc: dead(), limits: LIMITS, ...QUIET });
+  const result = await reserve(10);
+  assert.equal(result.allowed, true);
+  assert.equal(result.unmetered, true);
+  assert.equal(result.degraded, true, "the caller must be able to tell this apart from a metered admission");
+});
+
+test("THE FAIL-OPEN IS BOUNDED. An outage can no longer empty the account", async () => {
+  // The defect: `allowed: true` was returned for every request for as long as
+  // the store was down, with no counter of any kind. A Supabase outage of an
+  // hour could spend the whole day's allowance, invisibly — the only number
+  // anyone could look at lived in the store that was down.
+  const { reserve } = createRequestBudget({ rpc: dead(), limits: { ...LIMITS, degradedRequests: 25 }, ...QUIET });
+
+  let admitted = 0;
+  for (let i = 0; i < 20; i++) if ((await reserve(5)).allowed) admitted++;
+
+  assert.equal(admitted, 5, "25 degraded requests at 5 per turn is five turns, then it refuses");
+  const refused = await reserve(5);
+  assert.equal(refused.allowed, false);
+  assert.equal(refused.degraded, true);
+  assert.equal(refused.degradedLimit, 25);
+  assert.notEqual(refused.unmetered, true, "a refusal is not an unmetered admission");
+});
+
+test("a turn is either fully covered by the degraded allowance or refused", async () => {
+  const { reserve } = createRequestBudget({ rpc: dead(), limits: { ...LIMITS, degradedRequests: 10 }, ...QUIET });
+  assert.equal((await reserve(8)).allowed, true);
+  // 2 left, 8 asked. Admitting it would make the ceiling a suggestion.
+  assert.equal((await reserve(8)).allowed, false);
+  assert.equal((await reserve(2)).allowed, true, "a turn that DOES fit is still admitted");
+});
+
+test("the default degraded allowance is a strict fraction of the day", async () => {
+  const { reserve } = createRequestBudget({ rpc: dead(), limits: LIMITS, ...QUIET });
+  assert.equal((await reserve(1)).degradedLimit, 50, "5% of 1000");
+
+  const tiny = createRequestBudget({ rpc: dead(), limits: { dayRequests: 4, warnRequests: 3 }, ...QUIET });
+  assert.equal((await tiny.reserve(1)).degradedLimit, 1, "a small day still admits something rather than failing closed");
+});
+
+test("recovery needs no intervention, and clears the spent allowance", async () => {
+  let up = false;
+  const rpc = async () => {
+    if (!up) throw new Error('down');
+    return { data: [{ allowed: true, used: 3 }], error: null };
+  };
+  const { reserve } = createRequestBudget({ rpc, limits: { ...LIMITS, degradedRequests: 2 }, ...QUIET });
+
+  assert.equal((await reserve(2)).allowed, true);
+  assert.equal((await reserve(2)).allowed, false, "allowance spent");
+
+  up = true;
+  const metered = await reserve(2);
+  assert.equal(metered.allowed, true);
+  assert.equal(metered.degraded, undefined, "a metered admission is not degraded");
+
+  up = false;
+  assert.equal((await reserve(2)).allowed, true, "the allowance was reset by the recovery");
+});
+
+test("settlement refunds the local ledger, so a cheap turn does not cost a worst case", async () => {
+  const budget = createRequestBudget({ rpc: dead(), limits: { ...LIMITS, degradedRequests: 10 }, ...QUIET });
+  // Reserve charges the worst case (8); the turn actually spent 2.
+  assert.equal((await budget.reserve(8)).allowed, true);
+  await budget.settle(8, 2);
+  // 8 - 6 refunded = 2 spent, so an 8-request turn still fits.
+  assert.equal((await budget.reserve(8)).allowed, true);
+});
+
+test("the local allowance resets with the UTC day", async () => {
+  let clock = Date.parse('2026-08-14T23:59:00Z');
+  const { reserve } = createRequestBudget({
+    rpc: dead(),
+    limits: { ...LIMITS, degradedRequests: 1 },
+    now: () => clock,
+    ...QUIET,
+  });
+  assert.equal((await reserve(1)).allowed, true);
+  assert.equal((await reserve(1)).allowed, false);
+
+  clock = Date.parse('2026-08-15T00:01:00Z');
+  assert.equal((await reserve(1)).allowed, true, "a new day's real budget is untouched, so this one must be too");
+});
+
+test("degraded refusals are logged — a ceiling nobody can see is not a ceiling", async () => {
+  const errors = [];
+  const { reserve } = createRequestBudget({
+    rpc: dead(),
+    limits: { ...LIMITS, degradedRequests: 1 },
+    onError: (m) => errors.push(m),
+    onWarn: () => {},
+  });
+  await reserve(1);
+  await reserve(1);
+  assert.match(errors[0], /DEGRADED/);
+  assert.match(errors[1], /REFUSING/);
+  assert.match(errors[1], /supabase unreachable/, "the cause has to survive to the log");
 });

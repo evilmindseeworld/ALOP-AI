@@ -596,7 +596,68 @@ function escalateForResearch(selection, roster) {
   };
 }
 
+/**
+ * ADD THE NATIVE TOOL SEAT, when the turn is the kind that benefits from it.
+ *
+ * THE POLICY, and each clause is a different reason:
+ *
+ *   needsTools  — the router has said this turn needs live information. This is
+ *                 the case the seat exists for: it is the only member that can
+ *                 call a tool through a real function-calling interface rather
+ *                 than by writing a fenced block and hoping the parser agrees.
+ *   complexity  — anything not `simple`. The free roster is measured, fast and
+ *                 adequate for lookups; it is not the right council for a
+ *                 question that was classified as needing one. "Free models
+ *                 handle simple questions only" is the owner's rule and this is
+ *                 the whole of its implementation.
+ *
+ * IT IS ADDITIVE AND IT IS FIRST. The seat is prepended rather than replacing a
+ * member: a council of one strong model is not a council, and the disagreement
+ * between seats is what the synthesiser is for. First because `narrowRoster`
+ * has already run — this is not a candidate to be narrowed away, it is a
+ * decision that has been made.
+ *
+ * IT IS NOT A PLAN DECISION AND MUST NOT BECOME ONE. The caller passes `seat`
+ * as null for a user whose plan does not include it. Reaching into a plan
+ * roster from here is the mistake `narrowRoster` and `escalateForResearch` both
+ * carry a warning about, and it matters more here: this seat is METERED, so a
+ * leak is somebody else's bill rather than somebody else's latency.
+ *
+ * @param {object} selection  a classifyRequest (or escalateForResearch) result.
+ * @param {object|null} seat  the tool seat, already checked against the plan.
+ * @param {{needsTools?: boolean}} [signals]
+ */
+function withToolSeat(selection, seat, { needsTools = false } = {}) {
+  if (!seat || !seat.model) return selection;
+  const members = Array.isArray(selection?.members) ? selection.members : [];
+  if (members.some((m) => m?.model === seat.model)) return selection;
+
+  const complexity = selection?.complexity;
+  if (!needsTools && complexity === "simple") return selection;
+  // A greeting has an empty roster on purpose and must stay that way: it is the
+  // path that exists to spend nothing at all.
+  if (selection?.category === "greeting") return selection;
+
+  const widened = [seat, ...members];
+  return {
+    ...selection,
+    members: widened,
+    /* Quorum rises with the roster, capped as everywhere else. Left alone it
+     * would let the free seats satisfy the room before the strong seat — the
+     * one the turn was escalated FOR — has finished thinking. */
+    quorum: Math.min(QUORUM, widened.length),
+    toolSeatModel: seat.model,
+    /* A native round trip is several sequential provider calls inside one
+     * round, and high reasoning effort is slower per call than any free seat.
+     * A ceiling sized for a 2.4s draft would whip this seat out of every round
+     * it was added to, which is a metered request paid for and discarded. */
+    whipMs: Math.max(Number(selection?.whipMs) || 0, 45000),
+    tokenLimit: Math.max(Number(selection?.tokenLimit) || 0, 1000),
+  };
+}
+
 module.exports = {
+  withToolSeat,
   detectLanguage,
   wantsDetailedAnswer,
   needsWikiCheck,

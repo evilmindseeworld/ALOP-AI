@@ -1,6 +1,17 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { parseToolRequests, sanitizeAnswerText, userRequestedProtocolJson, looksLikeProtocolOpening, MAX_CALLS_PER_REPLY } = require("./tool-protocol");
+
+/**
+ * A call WITHOUT its provenance, for the assertions that are about parsing
+ * rather than about where the call came from.
+ *
+ * `source` (and `id`, on the native path) were added so adoption of the native
+ * tool protocol can be measured — see lib/native-tool-seat.js. They are not
+ * part of what these tests are checking, and they are deliberately not part of
+ * the dedupe key either. The provenance itself is asserted separately below.
+ */
+const bare = (calls) => calls.map(({ source, id, ...rest }) => rest);
 const { callModel, parseOpenRouterSseLine } = require("./openrouter");
 
 // ===== native =====
@@ -9,7 +20,7 @@ test("keeps reading legacy object-shaped tool_call arguments", () => {
   const r = parseToolRequests({
     message: { content: "", tool_calls: [{ function: { name: "web_search", arguments: { query: "OLED burn-in" } } }] },
   });
-  assert.deepEqual(r.calls, [{ name: "web_search", args: { query: "OLED burn-in" } }]);
+  assert.deepEqual(bare(r.calls), [{ name: "web_search", args: { query: "OLED burn-in" } }]);
   assert.equal(r.isFinal, false);
 });
 
@@ -20,7 +31,7 @@ test("reads arguments delivered as a JSON STRING", () => {
   const r = parseToolRequests({
     message: { tool_calls: [{ function: { name: "web_search", arguments: '{"query":"QD-OLED"}' } }] },
   });
-  assert.deepEqual(r.calls, [{ name: "web_search", args: { query: "QD-OLED" } }]);
+  assert.deepEqual(bare(r.calls), [{ name: "web_search", args: { query: "QD-OLED" } }]);
 });
 
 test("reads OpenRouter choices[0].message tool calls with JSON-string arguments", () => {
@@ -36,7 +47,7 @@ test("reads OpenRouter choices[0].message tool calls with JSON-string arguments"
       },
     }],
   });
-  assert.deepEqual(r.calls, [{ name: "web_search", args: { query: "OpenRouter free models" } }]);
+  assert.deepEqual(bare(r.calls), [{ name: "web_search", args: { query: "OpenRouter free models" } }]);
   assert.equal(r.isFinal, false);
 });
 
@@ -47,12 +58,24 @@ test("OpenRouter SSE parser skips keepalives and recognizes provider completion"
   assert.deepEqual(parseOpenRouterSseLine("data: [DONE]"), { skip: false, done: true, text: "" });
   assert.deepEqual(
     parseOpenRouterSseLine('data: {"choices":[{"delta":{"content":"hello"},"finish_reason":null}]}'),
-    { skip: false, done: false, text: "hello" },
+    { skip: false, done: false, text: "hello", finishReason: null, usage: null },
   );
   assert.deepEqual(
     parseOpenRouterSseLine('data: {"choices":[{"delta":{"content":null,"reasoning":"thinking aloud"},"finish_reason":"stop"}]}'),
-    { skip: false, done: true, text: "thinking aloud" },
+    { skip: false, done: true, text: "thinking aloud", finishReason: "stop", usage: null },
   );
+});
+
+test("a usage-only frame reports tokens and is NOT a completion", () => {
+  // OpenRouter sends usage on its own frame AFTER the one carrying
+  // finish_reason. Treating it as `done` would write a second terminator, which
+  // the client reads as a second turn ending.
+  const frame = parseOpenRouterSseLine(
+    'data: {"choices":[{"delta":{}}],"usage":{"prompt_tokens":900,"completion_tokens":120,"total_tokens":1020,"cost":0.0013}}',
+  );
+  assert.equal(frame.done, false);
+  assert.equal(frame.text, "");
+  assert.deepEqual(frame.usage, { promptTokens: 900, completionTokens: 120, totalTokens: 1020, costUsd: 0.0013 });
 });
 
 test("callModel falls back from empty content to reasoning details", async (t) => {
@@ -99,7 +122,7 @@ test("callModel returns an empty string without fetching when already aborted", 
 
 test("reads a flat name/arguments shape with no .function nesting", () => {
   const r = parseToolRequests({ message: { tool_calls: [{ name: "read_url", arguments: { url: "https://x.test" } }] } });
-  assert.deepEqual(r.calls, [{ name: "read_url", args: { url: "https://x.test" } }]);
+  assert.deepEqual(bare(r.calls), [{ name: "read_url", args: { url: "https://x.test" } }]);
 });
 
 // ===== text fallback =====
@@ -107,7 +130,7 @@ test("reads a flat name/arguments shape with no .function nesting", () => {
 test("reads a fenced tool_call block", () => {
   const content = 'Let me check.\n```tool_call\n{"name":"web_search","args":{"query":"rtings"}}\n```';
   const r = parseToolRequests(content);
-  assert.deepEqual(r.calls, [{ name: "web_search", args: { query: "rtings" } }]);
+  assert.deepEqual(bare(r.calls), [{ name: "web_search", args: { query: "rtings" } }]);
 });
 
 test("accepts the shapes models actually emit for the same block", () => {
@@ -117,7 +140,7 @@ test("accepts the shapes models actually emit for the same block", () => {
     '{"name":"web_search","parameters":{"query":"a"}}',
   ]) {
     const r = parseToolRequests("```tool_call\n" + body + "\n```");
-    assert.deepEqual(r.calls, [{ name: "web_search", args: { query: "a" } }], body);
+    assert.deepEqual(bare(r.calls), [{ name: "web_search", args: { query: "a" } }], body);
   }
 });
 
@@ -204,7 +227,7 @@ test("one broken block does not lose a good one beside it", () => {
   const r = parseToolRequests(
     '```tool_call\nnot json\n```\n```tool_call\n{"name":"web_search","args":{"query":"good"}}\n```',
   );
-  assert.deepEqual(r.calls, [{ name: "web_search", args: { query: "good" } }]);
+  assert.deepEqual(bare(r.calls), [{ name: "web_search", args: { query: "good" } }]);
 });
 
 test("a call with no usable name is dropped", () => {
@@ -221,7 +244,7 @@ test("a call with a non-object argument bag is dropped rather than guessed at", 
 
 test("missing args means no args, not a dropped call", () => {
   const r = parseToolRequests('```tool_call\n{"name":"web_search"}\n```');
-  assert.deepEqual(r.calls, [{ name: "web_search", args: {} }]);
+  assert.deepEqual(bare(r.calls), [{ name: "web_search", args: {} }]);
 });
 
 test("survives every empty and wrong-typed response shape", () => {
@@ -296,4 +319,46 @@ test("prose is released on the first frame", () => {
   assert.equal(looksLikeProtocolOpening("Here is the answer"), false);
   assert.equal(looksLikeProtocolOpening(""), true, "nothing to judge yet");
   assert.equal(looksLikeProtocolOpening('{"queries"'), true);
+});
+
+// ===== provenance =====
+
+test("a native call is tagged native and keeps its provider id", () => {
+  // The id is not decoration: a native round trip has to return each result
+  // against the id that requested it, and there is nowhere else to get it from.
+  const r = parseToolRequests({
+    choices: [{
+      message: {
+        content: null,
+        tool_calls: [{ id: "call_abc", type: "function", function: { name: "web_search", arguments: '{"query":"a"}' } }],
+      },
+    }],
+  });
+  assert.equal(r.calls[0].source, "native");
+  assert.equal(r.calls[0].id, "call_abc");
+});
+
+test("a fenced call is tagged fence and carries no id", () => {
+  const r = parseToolRequests('```tool_call\n{"name":"web_search","args":{"query":"a"}}\n```');
+  assert.equal(r.calls[0].source, "fence");
+  assert.equal(r.calls[0].id, undefined, "there is no provider id to invent");
+});
+
+test("a native call with no id still parses", () => {
+  // Some gateways omit it. Dropping the call would turn a cosmetic gap into a
+  // seat that silently contributed nothing.
+  const r = parseToolRequests({ message: { tool_calls: [{ function: { name: "web_search", arguments: '{"query":"a"}' } }] } });
+  assert.equal(r.calls.length, 1);
+  assert.equal(r.calls[0].source, "native");
+  assert.equal(r.calls[0].id, undefined);
+});
+
+test("one reply carrying both protocols keeps them distinguishable", () => {
+  const r = parseToolRequests({
+    message: {
+      content: '```tool_call\n{"name":"read_url","args":{"id":"x"}}\n```',
+      tool_calls: [{ id: "call_1", function: { name: "web_search", arguments: '{"query":"a"}' } }],
+    },
+  });
+  assert.deepEqual(r.calls.map((c) => c.source), ["native", "fence"]);
 });

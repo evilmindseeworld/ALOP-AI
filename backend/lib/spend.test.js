@@ -5,6 +5,7 @@ const assert = require('node:assert/strict');
 
 const SPEND_ENV_KEYS = [
   'SPEND_SEAT_TENTHS',
+  'SPEND_TOOL_SEAT_TENTHS',
   'SPEND_SYNTHESIS_TENTHS',
   'SPEND_FAST_TENTHS',
   'SPEND_SEARCH_TENTHS',
@@ -218,6 +219,7 @@ test('malformed reservation arguments do not produce invalid cents', () => {
 test('valid SPEND environment overrides are read when the module loads', () => {
   const configured = loadSpendWithEnv({
     SPEND_SEAT_TENTHS: 7,
+    SPEND_TOOL_SEAT_TENTHS: 21,
     SPEND_SYNTHESIS_TENTHS: 8,
     SPEND_FAST_TENTHS: 9,
     SPEND_SEARCH_TENTHS: 10,
@@ -228,6 +230,7 @@ test('valid SPEND environment overrides are read when the module loads', () => {
 
   assert.deepEqual(configured.PRICES, {
     seatTenths: 7,
+    toolSeatTenths: 21,
     synthesisTenths: 8,
     fastTenths: 9,
     searchTenths: 10,
@@ -239,6 +242,7 @@ test('valid SPEND environment overrides are read when the module loads', () => {
 test('garbage SPEND environment values fall back to finite defaults', () => {
   const configured = loadSpendWithEnv({
     SPEND_SEAT_TENTHS: 'garbage',
+    SPEND_TOOL_SEAT_TENTHS: 'garbage',
     SPEND_SYNTHESIS_TENTHS: 'NaN',
     SPEND_FAST_TENTHS: 'Infinity',
     SPEND_SEARCH_TENTHS: '-1',
@@ -249,6 +253,7 @@ test('garbage SPEND environment values fall back to finite defaults', () => {
 
   assert.deepEqual(configured.PRICES, {
     seatTenths: 4,
+    toolSeatTenths: 8,
     synthesisTenths: 5,
     fastTenths: 1,
     searchTenths: 4,

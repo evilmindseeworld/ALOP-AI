@@ -227,8 +227,11 @@ test("one seat means no synthesis, and it is decided before synthesis runs", () 
 });
 
 test("every seat-answer boundary rejects whole protocol replies before use", () => {
-  assert.match(ROUTE, /const answerOptions = \{ allowProtocolJson: userRequestedProtocolJson\(truncatedPrompt\) \}/);
-  assert.match(ROUTE, /const parsed = parseToolRequests\(raw, answerOptions\)/,
+  /* Proximity rather than one exact line: answerOptions grew an `onUsage` sink
+   * when token accounting arrived, and a literal match on the old single-line
+   * form failed on a change that altered nothing this test is about. */
+  assert.match(ROUTE, /const answerOptions = \{[\s\S]{0,240}?allowProtocolJson: userRequestedProtocolJson\(truncatedPrompt\)/);
+  assert.match(ROUTE, /const parsed = parseToolRequests\(reply, answerOptions\)/,
     "the tool loop must reject protocol blobs before they count toward quorum");
   assert.match(ROUTE, /sanitizeAnswerText\(raw, answerOptions\)\.text/,
     "the plain fallback council must reject protocol blobs before quorum");
@@ -329,10 +332,15 @@ const loadStreamPolicy = (fetchImpl) => {
   return Function(
     "fetch", "fetchOpenRouterStream", "OPENROUTER_HOST", "OPENROUTER_API_KEY", "PRIMARY_MODEL", "SMART_MODEL",
     "parseOpenRouterSseLine", "looksLikeProtocolOpening", "sanitizeAnswerText",
+    /* Declared above the slice, read inside it. Injected rather than widening
+     * the slice: the parameter list is the honest statement of what this policy
+     * depends on from the rest of server.js, and `false` is the shipped default. */
+    "STREAM_USAGE_ACCOUNTING",
     `${policy}\nreturn { streamModel, normaliseResetEpoch };`,
   )(
     fetchImpl, stream, "https://openrouter.test", "secret", "primary:free", "smart:free",
     () => ({ skip: true }), () => false, (text) => ({ text, rejected: false }),
+    false,
   );
 };
 

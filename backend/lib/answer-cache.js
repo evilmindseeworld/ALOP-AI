@@ -335,7 +335,7 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
 
   /** Best unexpired semantic match within the exact answer-changing dimensions. */
   async function getSemantic({ embedding, lang = '', country = '', plan = '', detailed = false,
-    branch = '', threshold = 0.95 } = {}) {
+    branch = '', threshold = 0.84 } = {}) {
     const literal = vectorLiteral(embedding);
     const cutoff = Number(threshold);
     stats.semanticLookups++;

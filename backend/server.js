@@ -1128,7 +1128,7 @@ const SEMANTIC_CACHE_ENABLED = /^(1|true)$/i.test(process.env.COUNCIL_SEMANTIC_C
 const semanticThresholdRaw = process.env.COUNCIL_SEMANTIC_CACHE_THRESHOLD;
 const parsedSemanticThreshold = semanticThresholdRaw ? Number(semanticThresholdRaw) : NaN;
 const SEMANTIC_CACHE_THRESHOLD = Number.isFinite(parsedSemanticThreshold) && parsedSemanticThreshold >= 0 && parsedSemanticThreshold <= 1
-  ? parsedSemanticThreshold : 0.95;
+  ? parsedSemanticThreshold : 0.84;
 
 // Cached because members in the same turn ask overlapping questions across
 // ROUNDS as well as within one — dedupe only unions a single round.

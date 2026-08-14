@@ -363,6 +363,8 @@ test('server.js logs cache hit, miss, and personalised bypass distinctly', () =>
   assert.match(src, /COUNCIL_SEMANTIC_CACHE/);
   assert.match(src, /selection\.complexity === 'simple'.*setBrief/s);
   assert.match(src, /persist\(null\).*durableQuestionEmbeddingP\.then/s);
+  assert.match(src, /durableQuestionEmbeddingP = embedText\(normaliseAnswerQuestion\(pv\.value\)\);/);
+  assert.doesNotMatch(src, /durableQuestionEmbeddingP = embedText\([^;]*turnSignal/);
 });
 
 test('018 returns the nearest eligible row so misses have a diagnostic similarity', () => {

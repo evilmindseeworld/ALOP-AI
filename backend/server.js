@@ -2811,7 +2811,10 @@ async function handleCouncilTurn(req, res) {
      * semantic answer cache. Starting it beside the context reads keeps it off
      * the serial path and prevents enabling the cache from doubling embedding
      * spend. */
-    const durableQuestionEmbeddingP = embedText(normaliseAnswerQuestion(pv.value), turnSignal);
+    /* This promise also enriches the cache after the response. Do not bind it
+     * to turnSignal: normal response completion aborts that signal and used to
+     * cancel every embedding that missed the 600ms foreground budget. */
+    const durableQuestionEmbeddingP = embedText(normaliseAnswerQuestion(pv.value));
     const questionEmbeddingP = settleByDeadline(
       [{ promise: durableQuestionEmbeddingP, fallback: null }],
       { deadlineMs: EMBED_DEADLINE_MS, signal: turnSignal },

@@ -9,7 +9,7 @@
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
     },
     {
-      "source": "/(favicon.png|logo.png|logo-mark.png|og.png|og.svg|icons.svg)",
+      "source": "/(favicon.ico|favicon.png|logo.png|logo.svg|logo-mark.png|og.png|og.svg|icons.svg|site.webmanifest)",
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=604800" }]
     },
     {

@@ -2811,8 +2811,9 @@ async function handleCouncilTurn(req, res) {
      * semantic answer cache. Starting it beside the context reads keeps it off
      * the serial path and prevents enabling the cache from doubling embedding
      * spend. */
+    const durableQuestionEmbeddingP = embedText(normaliseAnswerQuestion(pv.value), turnSignal);
     const questionEmbeddingP = settleByDeadline(
-      [{ promise: (signal) => embedText(normaliseAnswerQuestion(pv.value), signal), fallback: null }],
+      [{ promise: durableQuestionEmbeddingP, fallback: null }],
       { deadlineMs: EMBED_DEADLINE_MS, signal: turnSignal },
     ).then((r) => r.results[0]).catch(() => null);
     const contextReads = Promise.all([
@@ -2827,6 +2828,9 @@ async function handleCouncilTurn(req, res) {
     if (turnSignal.aborted) return;
     const [convSummary, feedbackGuidance, userFacts] = contextResult;
     const questionEmbedding = await questionEmbeddingP;
+    if (SEMANTIC_CACHE_ENABLED) {
+      console.log(`[ANSWERS] EMBEDDING ${questionEmbedding ? 'READY' : 'TIMEOUT'} deadlineMs=${EMBED_DEADLINE_MS}`);
+    }
 
     if (parsedImage) {
       if (visionResult?.error) {
@@ -2974,7 +2978,7 @@ async function handleCouncilTurn(req, res) {
           branch: ANSWER_CACHE_BRANCH,
           threshold: SEMANTIC_CACHE_THRESHOLD,
         });
-        if (semanticHit && !turnSignal.aborted) {
+        if (semanticHit?.answer && !turnSignal.aborted) {
           console.log(`[ANSWERS] SEMANTIC HIT similarity=${semanticHit.similarity.toFixed(2)} models=0`);
           openStream(res);
           if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
@@ -2986,6 +2990,9 @@ async function handleCouncilTurn(req, res) {
           });
           return;
         }
+        console.log(`[ANSWERS] SEMANTIC MISS similarity=${Number.isFinite(semanticHit?.similarity) ? semanticHit.similarity.toFixed(4) : 'none'} threshold=${SEMANTIC_CACHE_THRESHOLD}`);
+      } else if (SEMANTIC_CACHE_ENABLED && !turnSignal.aborted) {
+        console.log(`[ANSWERS] SEMANTIC SKIP embedding=unavailable deadlineMs=${EMBED_DEADLINE_MS}`);
       }
       console.log('[ANSWERS] MISS');
     } else {
@@ -3005,19 +3012,30 @@ async function handleCouncilTurn(req, res) {
      * only way to keep two lists identical is to not have two lists. */
     const cacheAnswer = (text, { searched = false, fresh = false } = {}) => {
       if (!cacheKey) return;
-      answerCache.set(cacheKey, text, {
-        ttlMs: ttlFor({ searched, fresh }),
-        embedding: SEMANTIC_CACHE_ENABLED ? questionEmbedding : null,
-        inputs: {
-          question: pv.value,
-          lang,
-          country: region?.country || '',
-          plan: userPlan,
-          detailed: isDetailed,
-          branch: ANSWER_CACHE_BRANCH,
-          usedLiveWeb: searched,
-        },
-      });
+      const persist = (embedding) => {
+        const method = selection.complexity === 'simple' && !searched ? 'setBrief' : 'set';
+        answerCache[method](cacheKey, text, {
+          ttlMs: ttlFor({ searched, fresh }),
+          embedding: SEMANTIC_CACHE_ENABLED ? embedding : null,
+          inputs: {
+            question: pv.value,
+            lang,
+            country: region?.country || '',
+            plan: userPlan,
+            detailed: isDetailed,
+            branch: ANSWER_CACHE_BRANCH,
+            usedLiveWeb: searched,
+          },
+        });
+      };
+      if (SEMANTIC_CACHE_ENABLED && !questionEmbedding) {
+        /* Exact caching must not wait on the provider. Persist now, then upsert
+         * the identical row with its vector if the already-running call lands. */
+        persist(null);
+        durableQuestionEmbeddingP.then((embedding) => { if (embedding) persist(embedding); }).catch(() => {});
+      } else {
+        persist(questionEmbedding);
+      }
     };
 
     /* THE SHADOW PROBE RUNS HERE, ABOVE THE ROUTER — and that placement is the
@@ -4578,6 +4596,7 @@ const server = app.listen(PORT, () => {
   // Same reasoning as the line above: a store that is silently per-process is
   // indistinguishable from a shared one until the limits are already wrong.
   console.log(`[BOOT] RATE_LIMIT_STORE=${process.env.RATE_LIMIT_STORE || '(unset)'} -> ${USE_PG_RATE_LIMIT ? 'postgres, shared across instances' : 'in-memory, PER PROCESS — set RATE_LIMIT_STORE=postgres before scaling past one instance'}`);
+  console.log(`[BOOT] COUNCIL_SEMANTIC_CACHE=${process.env.COUNCIL_SEMANTIC_CACHE || '(unset)'} -> semantic cache ${SEMANTIC_CACHE_ENABLED ? `ENABLED threshold=${SEMANTIC_CACHE_THRESHOLD}` : 'OFF'}`);
   // Third flag, same rule. The console being disabled is the SAFE state, so it
   // says so plainly rather than staying quiet and looking like it works.
   const tc = terminalConfig();

@@ -41,13 +41,36 @@ describe("brand assets", () => {
     expect(html).toContain(`href="/favicon.png" type="image/png" sizes="${w}x${w}"`);
   });
 
+  it("the supplied SVG is the single raster-generation source", () => {
+    expect(existsSync(join(ROOT, "public", "logo.svg"))).toBe(true);
+    const generator = readFileSync(join(ROOT, "scripts", "render-og.mjs"), "utf8");
+    expect(generator).toContain('readFileSync("public/logo.svg", "utf8")');
+    expect(generator).not.toContain('readFileSync("public/logo.png")');
+  });
+
+  it("the standalone 404 declares the real favicon dimensions", () => {
+    const { w } = pngSize("favicon.png");
+    const notFound = readFileSync(join(ROOT, "public", "404.html"), "utf8");
+    expect(notFound).toContain(`href="/favicon.png" type="image/png" sizes="${w}x${w}"`);
+  });
+
+  it("the installable app uses the same 512px mark", () => {
+    const manifest = JSON.parse(readFileSync(join(ROOT, "public", "site.webmanifest"), "utf8"));
+    expect(html).toContain('rel="manifest" href="/site.webmanifest"');
+    expect(manifest.icons).toContainEqual(expect.objectContaining({
+      src: "/logo-mark.png",
+      sizes: "512x512",
+      type: "image/png",
+    }));
+  });
+
   /**
    * logo.png is a #040404 square with the mark drawn nearly black inside it.
    * Anywhere it is composited on white — a search result, a home screen — it
    * is a black tile. Every outward-facing reference must use the keyed mark
    * on its own tile instead.
    */
-  it("nothing outward-facing points at the black-on-black logo.png", () => {
+  it("outward-facing metadata points at the purpose-sized logo mark", () => {
     expect(existsSync(join(ROOT, "public", "logo-mark.png"))).toBe(true);
     expect(html).toContain('"logo": "https://alop-ai.com/logo-mark.png"');
     expect(html).not.toContain('rel="apple-touch-icon" href="/logo.png"');
@@ -69,7 +92,7 @@ describe("brand assets", () => {
    * loading, the sign-in page only while signed out — so a render test would
    * need four setups to assert one rule.
    */
-  it("no component renders the black-on-black logo.png", () => {
+  it("no component bypasses the purpose-sized logo assets", () => {
     const offenders = globSync("src/**/*.{jsx,js}", { cwd: ROOT })
       .filter((f) => !f.includes("__tests__") && !f.includes("/test/"))
       .filter((f) => /src=["']\/logo\.png["']/.test(readFileSync(join(ROOT, f), "utf8")));

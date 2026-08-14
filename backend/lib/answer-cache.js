@@ -362,8 +362,10 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
       const similarity = Number(row?.similarity);
       const expiresAt = new Date(row?.expires_at).getTime();
       const storedAt = new Date(row?.stored_at).getTime();
-      if (!row || typeof row.answer !== 'string' || !Number.isFinite(similarity) || similarity < cutoff ||
-          !Number.isFinite(expiresAt) || expiresAt <= now() || !Number.isFinite(storedAt)) return null;
+      if (!row || !Number.isFinite(similarity)) return null;
+      if (similarity < cutoff) return { answer: null, storedAt: null, similarity };
+      if (typeof row.answer !== 'string' || !Number.isFinite(expiresAt) || expiresAt <= now() ||
+          !Number.isFinite(storedAt)) return null;
       stats.semanticHits++;
       hit = true;
       return { answer: row.answer, storedAt, similarity };
@@ -432,6 +434,13 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
 
   function set(key, answer, options) {
     store(key, answer, options, false);
+  }
+
+  /** A router-confirmed simple answer may be useful while still being brief. */
+  function setBrief(key, answer, options) {
+    const text = typeof answer === 'string' ? answer.trim() : '';
+    if (text.length < 20 || /\b(?:sorry|cannot|can't|couldn't|unable|error|failed|try again|rephrase)\b/i.test(text)) return;
+    store(key, answer, options, true);
   }
 
   /**
@@ -537,7 +546,7 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
     }
   }
 
-  return { get, getSemantic, getDue, dueForRefresh, set, setConstant, clear, keyFor, stats: () => ({ ...stats, size: memory.size }) };
+  return { get, getSemantic, getDue, dueForRefresh, set, setBrief, setConstant, clear, keyFor, stats: () => ({ ...stats, size: memory.size }) };
 }
 
 module.exports = { createAnswerCache, keyFor, normalise, replayInputs, ttlFor, TTL_MS, validEmbedding };

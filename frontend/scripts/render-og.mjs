@@ -20,31 +20,28 @@ import { Resvg } from "@resvg/resvg-js";
 import { PNG } from "pngjs";
 
 /**
- * logo.png is 721x720 and almost all of it is invisible. The chip body and the
- * brain behind it are drawn at #000 on a #040404 field, so against any dark
- * surface - the card, the app, the sign-in header - the only thing that
- * actually reads is the penguin, which occupies x 260..410, y 218..487.
- *
- * Dropped whole into a 56px box that penguin is four pixels wide and looks
- * like dirt. So the mark is cropped to it here, with a small even margin, and
- * placed at a size where the bird is recognisable. Measured, not eyeballed:
- * the numbers below are the bounding box of every pixel brighter than #12.
+ * public/logo.svg is the supplied master artwork. Its 1500-square canvas has
+ * generous export padding around the actual mark, so every raster surface is
+ * made from the measured artwork bounds below. Keeping the crop here makes
+ * the favicon, in-app logo, structured-data logo and social card one source.
  */
-const CROP = { x: 244, y: 202, w: 182, h: 301 };
+const CROP = { x: 438, y: 425, w: 586, h: 601 };
 
 function croppedMark() {
-  const full = PNG.sync.read(readFileSync("public/logo.png"));
-  const out = new PNG({ width: CROP.w, height: CROP.h });
-  PNG.bitblt(full, out, CROP.x, CROP.y, CROP.w, CROP.h, 0, 0);
+  const master = readFileSync("public/logo.svg", "utf8")
+    .replace(/viewBox="[^"]+"/, `viewBox="${CROP.x} ${CROP.y} ${CROP.w} ${CROP.h}"`)
+    .replace(/width="[^"]+"/, `width="${CROP.w}"`)
+    .replace(/height="[^"]+"/, `height="${CROP.h}"`);
+  const out = PNG.sync.read(new Resvg(master, {
+    fitTo: { mode: "width", value: CROP.w },
+  }).render().asPng());
 
-  // logo.png has an OPAQUE #040404 field, which is darker than the card's
-  // #0a0a0a. Pasted as-is the crop shows up as a faintly darker rectangle
-  // around the bird - the exact "someone slapped a logo on it" look this card
-  // was made to avoid. Keying the field out lets the penguin sit on the card's
-  // own background, which is what the mark looks like everywhere else.
+  // The master has an opaque black field. Key it out here so the artwork can
+  // sit cleanly on the app/card background; markTile adds the dark field back
+  // for favicons and search results, where a white mark needs contrast.
   for (let i = 0; i < out.data.length; i += 4) {
     const max = Math.max(out.data[i], out.data[i + 1], out.data[i + 2]);
-    if (max <= 18) out.data[i + 3] = 0;
+    if (max <= 8) out.data[i + 3] = 0;
   }
   return PNG.sync.write(out).toString("base64");
 }
@@ -103,9 +100,8 @@ writeFileSync("public/og.png", png);
  * product's mark, and purple is a colour this design system does not contain.
  * It was declared as the icon, so every tab showed someone else's logo.
  *
- * logo.png cannot be used directly either: it is an opaque #040404 square, so
- * as a favicon it is a black tile with a four-pixel smudge in the middle. The
- * keyed crop above is the mark that actually reads at 16px.
+ * The padded master cannot be used directly at tab size: the artwork would be
+ * too small. The keyed crop above is the mark that actually reads at 16px.
  */
 /**
  * The mark on its tile, at whatever size the consumer needs.
@@ -197,4 +193,6 @@ console.log(`favicon.ico: ${ICO_SIZES.join(", ")}`);
 const LOGO = 512;
 writeFileSync("public/logo-mark.png", markTile(LOGO));
 console.log(`logo-mark.png: ${LOGO}x${LOGO}`);
+writeFileSync("public/logo.png", markTile(LOGO));
+console.log(`logo.png: ${LOGO}x${LOGO}`);
 console.log(`og.png: ${png.readUInt32BE(16)}x${png.readUInt32BE(20)}, ${(png.length / 1024).toFixed(0)} KB`);

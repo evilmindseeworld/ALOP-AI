@@ -101,12 +101,12 @@ test('semantic cache matches paraphrases and rejects a genuinely different quest
       calls.push({ name, args });
       const sameIntent = args.p_query_embedding.startsWith('[1,');
       return Promise.resolve({
-        data: sameIntent ? [{
+        data: [{
           answer: ANSWER,
           stored_at: new Date(Date.now() - 1000).toISOString(),
           expires_at: new Date(Date.now() + 60_000).toISOString(),
-          similarity: 0.97,
-        }] : [],
+          similarity: sameIntent ? 0.97 : 0.2,
+        }],
         error: null,
       });
     },
@@ -119,7 +119,8 @@ test('semantic cache matches paraphrases and rejects a genuinely different quest
 
   assert.equal(hit.answer, ANSWER);
   assert.equal(hit.similarity, 0.97);
-  assert.equal(miss, null);
+  assert.equal(miss.answer, null);
+  assert.equal(miss.similarity, 0.2);
   assert.equal(calls[0].name, 'match_answer_cache');
   assert.deepEqual({ ...calls[0].args, p_query_embedding: '(vector)' }, {
     p_query_embedding: '(vector)', p_lang: 'English', p_country: 'AE', p_plan: 'free',
@@ -223,6 +224,21 @@ test('a short answer is not stored', async () => {
   const c = createAnswerCache();
   const k = keyFor({ question: 'what is photosynthesis' });
   c.set(k, "I searched but couldn't find results. Could you rephrase?", cacheOptions(TTL_MS.search));
+  assert.equal(await c.get(k), null);
+});
+
+test('a router-confirmed brief answer can be stored without weakening ordinary writes', async () => {
+  const c = createAnswerCache();
+  const k = keyFor({ question: 'can you use canva' });
+  const options = cacheOptions(TTL_MS.stable, { question: 'can you use canva' });
+  c.setBrief(k, 'Yes — I can help you create and edit Canva designs.', options);
+  assert.match((await c.get(k)).answer, /Canva/);
+});
+
+test('a brief refusal is never stored even through the simple-answer path', async () => {
+  const c = createAnswerCache();
+  const k = keyFor({ question: 'can you use canva' });
+  c.setBrief(k, "Sorry, I can't do that. Try again.", cacheOptions(TTL_MS.stable, { question: 'can you use canva' }));
   assert.equal(await c.get(k), null);
 });
 
@@ -342,7 +358,20 @@ test('server.js logs cache hit, miss, and personalised bypass distinctly', () =>
   assert.match(src, /\[ANSWERS\] MISS/);
   assert.match(src, /\[ANSWERS\] BYPASS personalised-context/);
   assert.match(src, /\[ANSWERS\] SEMANTIC HIT similarity=.*models=0/);
+  assert.match(src, /\[ANSWERS\] SEMANTIC MISS similarity=/);
+  assert.match(src, /\[ANSWERS\] EMBEDDING/);
   assert.match(src, /COUNCIL_SEMANTIC_CACHE/);
+  assert.match(src, /selection\.complexity === 'simple'.*setBrief/s);
+  assert.match(src, /persist\(null\).*durableQuestionEmbeddingP\.then/s);
+});
+
+test('018 returns the nearest eligible row so misses have a diagnostic similarity', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '..', 'migrations', '018_answer_cache_similarity_diagnostics.sql'), 'utf8');
+  assert.match(sql, /ORDER BY ac\.embedding OPERATOR\(public\.<=>\) p_query_embedding/i);
+  assert.doesNotMatch(sql, /similarity\s*>?=\s*p_threshold/i);
+  for (const field of ['lang', 'country', 'plan', 'detailed', 'branch']) {
+    assert.match(sql, new RegExp(`ac\\.${field} IS NOT DISTINCT FROM p_${field}`, 'i'));
+  }
 });
 
 test('017 matches vectors only inside every answer-changing dimension', () => {

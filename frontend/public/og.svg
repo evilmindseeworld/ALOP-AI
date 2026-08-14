@@ -41,10 +41,8 @@
 
   <g font-family="Segoe UI, Helvetica Neue, Arial, sans-serif">
     <!-- The brand block: mark then wordmark, the order the sign-in page opens
-         with. The mark is the penguin ALONE and not the full logo square,
-         because the chip and brain around it are black on black and vanish
-         against this background at any size. render-og.mjs does the crop and
-         records the measurement. -->
+         with. render-og.mjs crops the supplied master artwork to its measured
+         content bounds before placing it here. -->
     <image id="mark" x="80" y="70" width="63" height="104" href="" xlink:href=""/>
     <text x="163" y="133" fill="#f5f1ee" font-size="32" font-weight="700" letter-spacing="-0.6">ALOP-AI</text>
 

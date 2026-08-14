@@ -1030,7 +1030,7 @@ const { todayLine, freshnessWindow, normalizeDate, dateLabel, BRAVE_FRESHNESS, G
 const { parseRoutePlan } = require('./lib/search-plan');
 const { readSonar } = require('./lib/perplexity');
 const { createSearchCache, comprehensiveSearchKey } = require('./lib/search-cache');
-const { createAnswerCache, ttlFor, normalise: normaliseAnswerQuestion } = require('./lib/answer-cache');
+const { createAnswerCache, ttlFor, normalise: normaliseAnswerQuestion, validEmbedding } = require('./lib/answer-cache');
 // How a background job gets a real council turn without a socket. See the brain
 // seam under "THE BRAIN'S WAY IN", below the council route.
 const { createSinkResponse, createSinkRequest } = require('./lib/sink-response');
@@ -1613,7 +1613,8 @@ const FACTS_DEDUPE_LIMIT = 200;
  * recency-ranked memory rather than late relevance-ranked memory — the same
  * trade `settleByDeadline` exists for on the search fan-out. Nothing on the
  * WRITE path has a deadline; it runs after the user has been answered. */
-const EMBED_DEADLINE_MS = 2500;
+const EMBED_DEADLINE_MS = 600;
+const SEMANTIC_EMBED_DEADLINE_MS = 2500;
 
 /**
  * One string to one vector, or null.
@@ -1637,6 +1638,26 @@ const embedText = async (text, parentSignal) => {
     return parseEmbedding(await res.json());
   } catch (e) { if (!timed.signal.aborted) console.error('[EMBED] Failed:', e.message); return null; }
   finally { timed.dispose(); }
+};
+
+/** Answer-cache embeddings use the already-configured OpenRouter account. */
+const embedAnswerText = async (text) => {
+  if (!OPENROUTER_API_KEY || !text) return null;
+  const timed = timeoutSignal(undefined, 30000);
+  try {
+    const res = await fetch('https://openrouter.ai/api/v1/embeddings', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: 'openai/text-embedding-3-small', input: String(text).slice(0, 2000), dimensions: 768 }),
+      signal: timed.signal,
+    });
+    if (!res.ok) { console.error(`[ANSWERS] EMBEDDING ERROR status=${res.status}`); return null; }
+    const values = (await res.json())?.data?.[0]?.embedding;
+    return validEmbedding(values) ? values : null;
+  } catch (e) {
+    console.error(`[ANSWERS] EMBEDDING ERROR reason=${timed.signal.aborted ? 'timeout' : e.message}`);
+    return null;
+  } finally { timed.dispose(); }
 };
 
 /** This user's facts, nearest first, by cosine distance. [] on any failure. */
@@ -2814,15 +2835,18 @@ async function handleCouncilTurn(req, res) {
     /* This promise also enriches the cache after the response. Do not bind it
      * to turnSignal: normal response completion aborts that signal and used to
      * cancel every embedding that missed the 600ms foreground budget. */
-    const durableQuestionEmbeddingP = embedText(normaliseAnswerQuestion(pv.value));
+    const durableQuestionEmbeddingP = SEMANTIC_CACHE_ENABLED
+      ? embedAnswerText(normaliseAnswerQuestion(pv.value)) : Promise.resolve(null);
+    const factQuestionEmbeddingP = embedText(normaliseAnswerQuestion(pv.value), turnSignal);
     const questionEmbeddingP = settleByDeadline(
       [{ promise: durableQuestionEmbeddingP, fallback: null }],
-      { deadlineMs: EMBED_DEADLINE_MS, signal: turnSignal },
+      { deadlineMs: SEMANTIC_EMBED_DEADLINE_MS, signal: turnSignal },
     ).then((r) => r.results[0]).catch(() => null);
     const contextReads = Promise.all([
       telemetry.measureContext('summary', () => readChatSummary(chatId, user.id, turnSignal)),
       telemetry.measureContext('feedback', () => getFeedbackGuidance(user.id, turnSignal)),
-      telemetry.measureContext('facts', async () => readUserFacts(user.id, FACTS_INJECT_LIMIT, pv.value, turnSignal, await questionEmbeddingP)),
+      telemetry.measureContext('facts', async () => readUserFacts(user.id, FACTS_INJECT_LIMIT, pv.value, turnSignal,
+        await settleByDeadline([{ promise: factQuestionEmbeddingP, fallback: null }], { deadlineMs: EMBED_DEADLINE_MS, signal: turnSignal }).then((r) => r.results[0]).catch(() => null))),
     ]);
     const [contextResult, visionResult] = await Promise.all([
       contextReads,
@@ -2832,7 +2856,7 @@ async function handleCouncilTurn(req, res) {
     const [convSummary, feedbackGuidance, userFacts] = contextResult;
     const questionEmbedding = await questionEmbeddingP;
     if (SEMANTIC_CACHE_ENABLED) {
-      console.log(`[ANSWERS] EMBEDDING ${questionEmbedding ? 'READY' : 'TIMEOUT'} deadlineMs=${EMBED_DEADLINE_MS}`);
+      console.log(`[ANSWERS] EMBEDDING ${questionEmbedding ? 'READY' : 'TIMEOUT'} deadlineMs=${SEMANTIC_EMBED_DEADLINE_MS}`);
     }
 
     if (parsedImage) {
@@ -2998,7 +3022,7 @@ async function handleCouncilTurn(req, res) {
         }
         console.log(`[ANSWERS] SEMANTIC MISS similarity=${Number.isFinite(semanticHit?.similarity) ? semanticHit.similarity.toFixed(4) : 'none'} threshold=${SEMANTIC_CACHE_THRESHOLD}`);
       } else if (SEMANTIC_CACHE_ENABLED && !turnSignal.aborted) {
-        console.log(`[ANSWERS] SEMANTIC SKIP embedding=unavailable deadlineMs=${EMBED_DEADLINE_MS}`);
+        console.log(`[ANSWERS] SEMANTIC SKIP embedding=unavailable deadlineMs=${SEMANTIC_EMBED_DEADLINE_MS}`);
       }
       console.log('[ANSWERS] MISS');
     } else {

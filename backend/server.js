@@ -49,6 +49,8 @@ const { ALOP_IDENTITY, withIdentity } = require('./lib/platform-identity');
  * a real model request without logging user text or the rest of the private
  * system prompt. The section itself describes public product behaviour. */
 let identityPromptLogged = false;
+// Operational cache epoch: 2026-08-14 identity-cache purge. Changing this
+// comment forces one process restart after the matching durable rows are gone.
 const identityPrompt = (taskPrompt, path) => {
   const content = withIdentity(taskPrompt);
   if (!identityPromptLogged) {

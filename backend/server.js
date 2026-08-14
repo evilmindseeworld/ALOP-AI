@@ -1915,7 +1915,7 @@ const rememberTurn = (chatId, userId, userMsg, assistantMsg, telemetry) => {
 const { isOriginAllowed, originPolicyFromEnv } = require('./lib/origin-guard');
 const originPolicy = originPolicyFromEnv();
 if (!originPolicy.exact.length && !originPolicy.allowAll) console.warn('[BOOT] FRONTEND_URL not set — every cross-origin browser request will be refused.');
-app.use(cors({ origin: (origin, cb) => isOriginAllowed(origin, originPolicy) ? cb(null, true) : cb(new Error(`CORS: ${origin}`)), credentials: true, methods: ['GET','POST','PUT','DELETE','OPTIONS'], allowedHeaders: ['Content-Type','Authorization','X-Requested-With'], maxAge: 86400 }));
+app.use(cors({ origin: (origin, cb) => isOriginAllowed(origin, originPolicy) ? cb(null, true) : cb(new Error(`CORS: ${origin}`)), credentials: true, methods: ['GET','POST','PUT','DELETE','OPTIONS'], allowedHeaders: ['Content-Type','Authorization','X-Requested-With','X-Operation-Id'], maxAge: 86400 }));
 // The options moved to lib/security-headers.js so a test can mount them and
 // read the headers off a real response. Two of them were wrong here, and
 // `xFrameOptions: 'DENY'` was wrong SILENTLY — helmet ignored the string and

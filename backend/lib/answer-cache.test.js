@@ -439,6 +439,11 @@ test('a truncated stream cannot become a cached answer', () => {
   assert.ok(throws < returns, 'streamModel returns its text before checking the stream completed');
 });
 
+test('a successful fallback answer reaches the same cache write funnel', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  assert.match(src, /const fallbackAnswer = await streamModel[\s\S]*cacheAnswer\(fallbackAnswer, \{ searched: usedLiveWeb \}\)/);
+});
+
 test('normalise is exported and does only what it says', () => {
   assert.equal(normalise('  What IS  This?? '), 'what is this');
   assert.equal(normalise(null), '');

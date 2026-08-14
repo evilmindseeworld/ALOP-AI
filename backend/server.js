@@ -3641,10 +3641,11 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       const fbMsgs = [{ role: 'system', content: fbSys }, ...contextMsgs, ...histArr.slice(-10), { role: 'user', content: truncatedPrompt }];
       openStream(res);
       const fallbackStartedAt = Date.now();
-      await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
+      const fallbackAnswer = await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
       telemetry.recordFallback(Date.now() - fallbackStartedAt, 'post_council');
       if (turnSignal.aborted) return;
       if (!res.writableEnded) res.end();
+      cacheAnswer(fallbackAnswer, { searched: usedLiveWeb });
       rememberTurn(chatId, user.id, pv.value, 'Fallback response.', telemetry);
       await auditTelemetry(
         telemetryExtra.rounds !== undefined ? 'council.tools' : 'council',

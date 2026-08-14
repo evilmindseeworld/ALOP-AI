@@ -254,7 +254,7 @@ test('garbage SPEND environment values fall back to finite defaults', () => {
   assert.deepEqual(configured.PRICES, {
     seatTenths: 4,
     toolSeatTenths: 8,
-    synthesisTenths: 5,
+    synthesisTenths: 8,
     fastTenths: 1,
     searchTenths: 4,
     fetchTenths: 1,

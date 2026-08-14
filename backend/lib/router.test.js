@@ -625,10 +625,11 @@ test('a turn that needs live information gets the seat even when it looked simpl
   assert.equal(out.toolSeatModel, TOOL_SEAT.model);
 });
 
-test('a complex question gets the seat without needing a search', () => {
+test('a complex question keeps the free draft roster without tools', () => {
   for (const complexity of ['moderate', 'complex']) {
     const out = withToolSeat(baseSelection({ complexity }), TOOL_SEAT);
-    assert.equal(out.toolSeatModel, TOOL_SEAT.model, complexity);
+    assert.equal(out.members.length, 1, complexity);
+    assert.equal(out.toolSeatModel, undefined, complexity);
   }
 });
 
@@ -648,20 +649,20 @@ test('no seat means no change, and that is how the plan gate is enforced', () =>
 test('adding the seat twice does not seat it twice', () => {
   // escalateForResearch re-selects members, and the server calls this on both
   // sides of that. A duplicate is a second metered request per round.
-  const once = withToolSeat(baseSelection({ complexity: 'complex' }), TOOL_SEAT);
+  const once = withToolSeat(baseSelection({ complexity: 'complex' }), TOOL_SEAT, { needsTools: true });
   const twice = withToolSeat(once, TOOL_SEAT, { needsTools: true });
   assert.equal(twice.members.filter((m) => m.model === TOOL_SEAT.model).length, 1);
 });
 
 test('the seat raises the whip and the quorum with it', () => {
-  const out = withToolSeat(baseSelection({ complexity: 'complex' }), TOOL_SEAT);
+  const out = withToolSeat(baseSelection({ complexity: 'complex' }), TOOL_SEAT, { needsTools: true });
   assert.ok(out.whipMs >= 45000, 'a native round trip at high effort is slower than a 2.4s free draft');
   assert.equal(out.quorum, Math.min(2, out.members.length), 'quorum must not let the free seats close the room first');
   assert.ok(out.tokenLimit >= 1000, 'a 400-token lookup ceiling is not a research draft');
 });
 
 test('a detailed turn keeps its larger ceiling', () => {
-  const out = withToolSeat(baseSelection({ complexity: 'complex', tokenLimit: 2000, whipMs: 60000 }), TOOL_SEAT);
+  const out = withToolSeat(baseSelection({ complexity: 'complex', tokenLimit: 2000, whipMs: 60000 }), TOOL_SEAT, { needsTools: true });
   assert.equal(out.tokenLimit, 2000, 'never DOWN');
   assert.equal(out.whipMs, 60000);
 });

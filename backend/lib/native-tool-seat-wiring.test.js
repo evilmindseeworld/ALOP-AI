@@ -21,6 +21,7 @@ const ROUTE = SERVER.slice(SERVER.indexOf("app.post('/api/council'"));
 test('the seat is configurable and defaults to the model that was measured', () => {
   assert.match(SERVER, /COUNCIL_TOOL_SEAT_MODEL \|\| 'openai\/gpt-5\.6-luna'/);
   assert.match(SERVER, /COUNCIL_TOOL_SEAT_EFFORT \|\| 'high'/);
+  assert.match(SERVER, /COUNCIL_SYNTHESIS_MODEL/);
   assert.match(SERVER, /const TOOL_SEAT_ENABLED = /, 'it must be possible to turn the seat off entirely');
 });
 
@@ -41,14 +42,13 @@ test('the plan gate is applied by the caller, not inside the router', () => {
   assert.match(ROUTE, /const toolSeat = TOOL_SEAT && \(userPlan === 'pro' \|\| TOOL_SEAT_FREE_PLAN\) \? TOOL_SEAT : null/);
 });
 
-test('both halves of the policy are applied, and in the order that survives', () => {
-  const complexityCall = ROUTE.indexOf('selection = withToolSeat(selection, toolSeat);');
+test('the tool seat is reserved before use and added only after research escalation', () => {
   const escalate = ROUTE.indexOf('escalateForResearch(selection, planRoster)');
   const searchCall = ROUTE.indexOf("withToolSeat(selection, toolSeat, { needsTools: true })");
 
-  assert.ok(complexityCall > 0, 'the complexity half is missing');
+  assert.equal(ROUTE.includes('selection = withToolSeat(selection, toolSeat);'), false,
+    'complex turns must use free drafts and reserve Luna for synthesis');
   assert.ok(searchCall > 0, 'the search half is missing');
-  assert.ok(complexityCall < escalate, 'complexity must be decided before the reservation, which sits between them');
   assert.ok(escalate < searchCall,
     'escalateForResearch rebuilds members from planRoster, which the tool seat is not part of — adding it first drops it again');
 });

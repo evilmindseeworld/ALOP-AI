@@ -44,6 +44,11 @@ const { createTurnTelemetry } = require('./lib/turn-telemetry');
 const { priceTurn, reservationCents, LIMITS, countTurnRequests, reservationRequests, REQUEST_LIMITS } = require('./lib/spend');
 const { createRequestBudget } = require('./lib/request-budget');
 const { ALOP_IDENTITY, withIdentity } = require('./lib/platform-identity');
+const {
+  DEFAULT_SYNTHESIS_MODEL,
+  configuredSynthesisModel,
+  chooseSynthesis,
+} = require('./lib/synthesis-policy');
 
 /* One diagnostic per process proves that the shared identity section reached
  * a real model request without logging user text or the rest of the private
@@ -272,20 +277,18 @@ const TOOL_SEAT = TOOL_SEAT_ENABLED
   : null;
 
 const FREE_COUNCIL = COUNCIL.filter((m) => m.free).slice(0, 3);
-// The single model used for streaming: synthesis, greetings, fallback and
-// search extraction all speak with one voice, so it stays deterministic.
+// The fast model used for routing and simple direct answers. Non-simple and
+// tool-backed turns use the configurable head model for final synthesis.
 //
-// BOTH ARE THE SAME MODEL NOW, and deliberately. gemma-4-26b-a4b is the only id
-// measured to do BOTH jobs: 2.4s on a 200-token answer, and — the part that
-// eliminated everything else — it returns usable content at a TEN-token ceiling.
-// Every reasoning model on the free list returns `content: null` at that budget
-// and puts its text in `reasoning` instead, so FAST_MODEL's YES/NO router calls
-// come back empty and the router silently misroutes every turn. That is the
-// single most dangerous trap in this migration, because nothing throws: the
-// council still runs, still streams, and answers the wrong shape of question.
-// If either of these is ever swapped, re-check the 10-token case first.
+// Gemma is deliberately retained for the short routing call and simple answers:
+// it was the only measured free model that returns usable content at a TEN-token
+// ceiling. Every reasoning model on the free list returns `content: null` at
+// that budget and puts its text in `reasoning` instead, so replacing FAST_MODEL
+// silently misroutes every turn. Complex and tool-backed synthesis is separate
+// and uses COUNCIL_SYNTHESIS_MODEL below at high reasoning effort.
 const PRIMARY_MODEL = 'google/gemma-4-26b-a4b-it:free';
 const FAST_MODEL = 'google/gemma-4-26b-a4b-it:free';
+const SYNTHESIS_MODEL = configuredSynthesisModel(process.env.COUNCIL_SYNTHESIS_MODEL, DEFAULT_SYNTHESIS_MODEL);
 
 /**
  * THE ORCHESTRATOR'S FALLBACK: the strongest seat on the council.
@@ -436,7 +439,7 @@ const abortableDelay = (ms, signal) => new Promise((resolve, reject) => {
  * rather than by agreement. Account daily and per-minute limits are left to the
  * policies underneath, which are about waiting for a window rather than about
  * provider health. luna's a9d5356. */
-const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, meta = {}, answerOptions = {}, turnDeadlineAt = null) => {
+const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, meta = {}, answerOptions = {}, turnDeadlineAt = null, modelOptions = {}) => {
   let response;
   try {
     response = await fetchOpenRouterStream(
@@ -452,6 +455,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
       {
         ...(Number.isFinite(turnDeadlineAt) ? { deadlineAt: turnDeadlineAt } : {}),
         includeUsage: STREAM_USAGE_ACCOUNTING,
+        reasoning: modelOptions?.reasoning,
       },
     );
   } catch (err) {
@@ -565,17 +569,19 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
  * the user has watched a spinner for all of it — and then gets an error. The
  * work is already paid for by the time the last step fails.
  *
- * So when the primary orchestrator cannot write the answer, the strongest seat
- * on the council writes it instead. See SMART_MODEL for why that is a fallback
- * and never a default: it is roughly ten times slower, and a slow answer is
- * only better than the alternative on the turn that had no answer at all.
+ * So when the selected writer cannot write the answer, its caller-selected
+ * fallback writes it instead. Head synthesis explicitly falls back to the
+ * strongest measured free recovery model; PRIMARY_MODEL keeps its existing
+ * SMART_MODEL recovery. A fallback is never a default: a slower recovery
+ * answer is only better than the alternative on the turn that had no answer.
  *
  * THREE REFUSALS, each one a way this could make things worse:
  *
- *   Only for PRIMARY_MODEL. A caller that named a specific model wanted that
- *   model, and silently answering as a different one is not a retry — it is a
- *   substitution nobody asked for. It also stops the fallback recursing into
- *   itself when SMART_MODEL is the thing that failed.
+ *   Only when a fallback was explicitly named, or for PRIMARY_MODEL's existing
+ *   SMART_MODEL fallback. A caller that named a specific model wanted that
+ *   model, and silently answering as a different one is not a retry unless the
+ *   caller opted into that degradation. It also stops the fallback recursing
+ *   into itself.
  *
  *   Never after a partial answer. If any text reached the socket, a second
  *   attempt appends a DIFFERENT reply to the first half of one, and the user
@@ -586,13 +592,15 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
  *   spends a request writing an answer nobody is waiting for, which is exactly
  *   what the abort work existed to stop.
  */
-const streamModel = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, answerOptions = {}, turnDeadlineAt = null) => {
+const streamModel = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, answerOptions = {}, turnDeadlineAt = null, modelOptions = {}) => {
   const meta = {};
+  const fallbackModel = modelOptions?.fallbackModel || (modelName === PRIMARY_MODEL ? SMART_MODEL : null);
+  try { modelOptions?.onModelUsed?.(modelName); } catch { /* diagnostics must never fail a turn */ }
   try {
-    return await streamOnce(res, modelName, messages, temperature, signal, maxTokens, meta, answerOptions, turnDeadlineAt);
+    return await streamOnce(res, modelName, messages, temperature, signal, maxTokens, meta, answerOptions, turnDeadlineAt, modelOptions);
   } catch (err) {
     const wrote = (meta.emitted || []).join('').length;
-    if (modelName !== PRIMARY_MODEL || signal?.aborted || wrote > 0) throw err;
+    if (!fallbackModel || fallbackModel === modelName || signal?.aborted || wrote > 0) throw err;
     if (err.status === 429 && err.limitSource === 'openrouter_free_tier_per_minute') {
       const resetAt = Number(err.resetAt);
       /* No reset means there is no evidence for a safe wait. A reset at or
@@ -606,14 +614,26 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
       await abortableDelay(Math.max(0, resetAt - Date.now()), signal);
       /* Returned directly: if this second and final request fails, it escapes.
        * Falling back after it would turn today's two-request failure into three. */
-      return await streamOnce(res, modelName, messages, temperature, signal, maxTokens, {}, answerOptions, turnDeadlineAt);
+      return await streamOnce(res, modelName, messages, temperature, signal, maxTokens, {}, answerOptions, turnDeadlineAt, modelOptions);
     }
     /* The daily cap is account-wide too, but its policy is the latch above
      * callModel. Do not create a competing stream latch or spend a fallback
      * request that the same daily gate must reject. */
     if (err.status === 429 && err.limitSource === 'openrouter_free_tier_daily') throw err;
-    console.warn(`[STREAM] ${modelName} failed before writing anything (${err.message}). Falling back to ${SMART_MODEL}.`);
-    return await streamOnce(res, SMART_MODEL, messages, temperature, signal, maxTokens, {}, answerOptions, turnDeadlineAt);
+    console.warn(`[STREAM] ${modelName} failed before writing anything (${err.message}). Falling back to ${fallbackModel}.`);
+    try { modelOptions?.onModelUsed?.(fallbackModel); } catch { /* diagnostics must never fail a turn */ }
+    return await streamOnce(
+      res,
+      fallbackModel,
+      messages,
+      temperature,
+      signal,
+      maxTokens,
+      {},
+      answerOptions,
+      turnDeadlineAt,
+      { ...modelOptions, reasoning: { exclude: true } },
+    );
   }
 };
 
@@ -2829,16 +2849,15 @@ async function handleCouncilTurn(req, res) {
      * null as "no seat" rather than as "use the default". */
     const toolSeat = TOOL_SEAT && (userPlan === 'pro' || TOOL_SEAT_FREE_PLAN) ? TOOL_SEAT : null;
     let selection = classifyRequest(pv.value, planRoster, isDetailed);
-    /* THE COMPLEXITY HALF OF THE TOOL-SEAT POLICY, applied before the
-     * reservation because the reservation has to know it is paying for a
-     * metered seat. The SEARCH half cannot be decided yet — the router has not
-     * run — so it lands with the research escalation ~400 lines below, and the
-     * reservation is taken against the worst case of both. */
-    selection = withToolSeat(selection, toolSeat);
-    /* `let`, because a turn the router later sends to live research is
-     * re-selected onto the full roster below — see escalateForResearch. The
-     * reservation two blocks down covers that roster, not this one, so the
-     * widening cannot spend past what was admitted. */
+    /* COMPLEXITY DOES NOT ARM THE METERED TOOL SEAT. Complex turns use the free
+     * council for parallel drafts, then the configured head model synthesises
+     * them. The router's later search decision is the only thing that adds Luna
+     * as a native tool operator; the reservation below still covers that
+     * possible widening before the router has run. */
+    /* `let`, because a turn the router later sends to live research is re-selected
+     * onto the full roster below — see escalateForResearch. The reservation two
+     * blocks down covers that roster, not this one, so the widening cannot spend
+     * past what was admitted. */
 
     /* THE SPEND CEILING, RESERVED BEFORE THE FIRST PAID CALL.
      *
@@ -3606,9 +3625,24 @@ async function handleCouncilTurn(req, res) {
         role: 'user',
         content: `Question: ${truncatedPrompt}\n\nResponses:\n${usableSearchDrafts.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}`,
       }];
+      const searchSynthesis = chooseSynthesis({
+        complexity: selection.complexity,
+        toolQuestion: true,
+        primaryModel: PRIMARY_MODEL,
+        configuredModel: SYNTHESIS_MODEL,
+      });
+      const searchSynthesisOptions = {
+        ...(searchSynthesis.highEffort ? { reasoning: { effort: 'high', exclude: true } } : {}),
+        ...(searchSynthesis.model !== PRIMARY_MODEL ? { fallbackModel: SMART_MODEL } : {}),
+      };
+      let searchSynthesisModelUsed = searchSynthesis.model;
+      searchSynthesisOptions.onModelUsed = (model) => { searchSynthesisModelUsed = model; };
+      console.log(`[SYNTHESIS] requested=${searchSynthesis.model} effort=${searchSynthesis.highEffort ? 'high' : 'default'} complexity=${selection.complexity} tools=true`);
       const searchSynthesisStartedAt = Date.now();
-      const searchAnswer = await streamModel(res, PRIMARY_MODEL, searchSynthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, answerOptions, turnDeadlineAt);
+      const searchAnswer = await streamModel(res, searchSynthesis.model, searchSynthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, answerOptions, turnDeadlineAt, searchSynthesisOptions);
       telemetry.recordSynthesis(Date.now() - searchSynthesisStartedAt);
+      const searchSynthesisEffort = searchSynthesisModelUsed === searchSynthesis.model && searchSynthesis.highEffort ? 'high' : 'default';
+      console.log(`[SYNTHESIS] model=${searchSynthesisModelUsed} effort=${searchSynthesisEffort} complexity=${selection.complexity} tools=true`);
       if (!res.writableEnded) res.end();
       /* A SHORTER SHELF LIFE WHEN THE QUESTION ASKED FOR NOW. `fresh` is the
        * freshness window the user's own words implied — "right now", "this
@@ -3621,6 +3655,8 @@ async function handleCouncilTurn(req, res) {
       await auditTelemetry('council.search', 'search', {
         sources: sources.length, seats: selection.members.length, quorum: selection.quorum,
         tokenLimit: selection.tokenLimit, complexity: selection.complexity,
+        synthesisModel: searchSynthesisModelUsed,
+        synthesisEffort: searchSynthesisEffort,
       });
       return;
     }
@@ -3639,15 +3675,36 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         // world-editable: this is the one source where an attacker does not even
         // need a site of their own.
         const wikiMsgs = [{ role: 'system', content: identityPrompt(wikiSys, 'wikipedia') }, ...contextMsgs, ...promptHistory, { role: 'user', content: `${truncatedPrompt}\n=== WIKIPEDIA ===\n${UNTRUSTED_PREAMBLE}\n\n${envelope('Wikipedia extract', wiki)}` }];
+        const wikiSynthesis = chooseSynthesis({
+          complexity: selection.complexity,
+          toolQuestion: true,
+          primaryModel: PRIMARY_MODEL,
+          configuredModel: SYNTHESIS_MODEL,
+        });
+        const wikiSynthesisOptions = {
+          ...(wikiSynthesis.highEffort ? { reasoning: { effort: 'high', exclude: true } } : {}),
+          ...(wikiSynthesis.model !== PRIMARY_MODEL ? { fallbackModel: SMART_MODEL } : {}),
+        };
+        let wikiSynthesisModelUsed = wikiSynthesis.model;
+        wikiSynthesisOptions.onModelUsed = (model) => { wikiSynthesisModelUsed = model; };
+        console.log(`[SYNTHESIS] requested=${wikiSynthesis.model} effort=${wikiSynthesis.highEffort ? 'high' : 'default'} complexity=${selection.complexity} tools=true`);
         openStream(res);
-        const wikiAnswer = await streamModel(res, PRIMARY_MODEL, wikiMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
+        const wikiSynthesisStartedAt = Date.now();
+        const wikiAnswer = await streamModel(res, wikiSynthesis.model, wikiMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt, wikiSynthesisOptions);
+        telemetry.recordSynthesis(Date.now() - wikiSynthesisStartedAt);
+        const wikiSynthesisEffort = wikiSynthesisModelUsed === wikiSynthesis.model && wikiSynthesis.highEffort ? 'high' : 'default';
+        console.log(`[SYNTHESIS] model=${wikiSynthesisModelUsed} effort=${wikiSynthesisEffort} complexity=${selection.complexity} tools=true`);
         if (!res.writableEnded) res.end();
         // An encyclopedia answer is still good next week.
         /* An encyclopedia answer did not come from the live web, so it gets the
          * stable shelf life rather than a freshness window it does not need. */
         cacheAnswer(wikiAnswer, { searched: false });
         rememberTurn(chatId, user.id, pv.value, 'Wikipedia response.', telemetry);
-        await auditBranch({ category: 'wiki' });
+        await auditBranch({
+          category: 'wiki',
+          synthesisModel: wikiSynthesisModelUsed,
+          synthesisEffort: wikiSynthesisEffort,
+        });
         return;
       }
     }
@@ -4052,7 +4109,9 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       !toolResearch &&
       !toolTruncated
     ) {
-      console.log('[COUNCIL] One seat, no synthesis. 1 model request saved.');
+      const soloModelUsed = validResponses[0]?.model || selection.members[0]?.model || PRIMARY_MODEL;
+      console.log(`[COUNCIL] One seat, no synthesis. 1 model request saved.`);
+      console.log(`[SYNTHESIS] skipped model=${soloModelUsed} effort=none complexity=${selection.complexity} tools=false`);
       openStream(res);
       /* Written as an ordinary chunk frame and the ordinary terminator, the
        * same shape the arithmetic fast path and the answer cache use, so the
@@ -4078,6 +4137,8 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
         complexity: selection.complexity,
         councilRelease,
         synthesisSkipped: true,
+        synthesisModel: soloModelUsed,
+        synthesisEffort: 'skipped',
       });
       return;
     }
@@ -4107,14 +4168,43 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     const truncationBlock = toolTruncated
       ? `\n\n=== NOTE ===\nResearch was cut short: ${toolTruncated} Where the experts' claims rest on something that was not verified, say so plainly rather than asserting it.`
       : '';
+    const toolQuestion = Boolean(
+      selection.toolSeatModel
+      || toolResearch
+      || toolTruncated
+      || toolSourceUrls.length
+      || usedLiveWeb,
+    );
+    const synthesis = chooseSynthesis({
+      complexity: selection.complexity,
+      toolQuestion,
+      primaryModel: PRIMARY_MODEL,
+      configuredModel: SYNTHESIS_MODEL,
+    });
+    const synthesisOptions = {
+      ...(synthesis.highEffort ? { reasoning: { effort: 'high', exclude: true } } : {}),
+      ...(synthesis.model !== PRIMARY_MODEL ? { fallbackModel: SMART_MODEL } : {}),
+    };
+    let synthesisModelUsed = synthesis.model;
+    synthesisOptions.onModelUsed = (model) => { synthesisModelUsed = model; };
+    console.log(`[SYNTHESIS] requested=${synthesis.model} effort=${synthesis.highEffort ? 'high' : 'default'} complexity=${selection.complexity} tools=${toolQuestion}`);
+    telemetryExtra = {
+      ...telemetryExtra,
+      synthesisModel: synthesisModelUsed,
+      synthesisEffort: synthesis.highEffort ? 'high' : 'default',
+    };
     const synthMsgs = [{ role: 'system', content: identityPrompt(synthSys, 'synthesis') }, { role: 'user', content: `Question: ${truncatedPrompt}\n\nResponses:\n${validResponses.map((r,i) => `[Expert ${i+1}]: ${r.content}`).join('\n\n')}${researchBlock}${truncationBlock}` }];
     // The last thing that happens before words appear, and the longest single
     // step on a turn where the seats came back quickly.
     sendStage(res, 'synthesis', validResponses.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
     openStream(res);
     const synthesisStartedAt = Date.now();
-    const synthAnswer = await streamModel(res, PRIMARY_MODEL, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, requiredSourceUrls: toolSourceUrls }, turnDeadlineAt);
+    const synthAnswer = await streamModel(res, synthesis.model, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, requiredSourceUrls: toolSourceUrls }, turnDeadlineAt, synthesisOptions);
     telemetry.recordSynthesis(Date.now() - synthesisStartedAt);
+    const synthesisEffort = synthesisModelUsed === synthesis.model && synthesis.highEffort ? 'high' : 'default';
+    console.log(`[SYNTHESIS] model=${synthesisModelUsed} effort=${synthesisEffort} complexity=${selection.complexity} tools=${toolQuestion}`);
+    telemetryExtra.synthesisModel = synthesisModelUsed;
+    telemetryExtra.synthesisEffort = synthesisEffort;
     if (turnSignal.aborted) return;
     if (!res.writableEnded) res.end();
     /* CACHED AFTER THE ABORT CHECK, not before. A turn the user cancelled
@@ -4988,6 +5078,7 @@ const server = app.listen(PORT, () => {
   // set correctly, the probe was in unreachable code, and nothing on either
   // side of the boot said so.
   console.log(`[BOOT] COUNCIL_TOOLS=${process.env.COUNCIL_TOOLS || '(unset)'} -> tools ${TOOLS_ENABLED ? 'LIVE' : TOOLS_SHADOW ? 'SHADOW (probe only, answers unchanged)' : 'OFF'}`);
+  console.log(`[BOOT] COUNCIL_SYNTHESIS_MODEL=${process.env.COUNCIL_SYNTHESIS_MODEL || '(default)'} -> ${SYNTHESIS_MODEL || 'disabled'} for non-simple/tool synthesis${SYNTHESIS_MODEL ? ' at high effort' : ''}`);
   // Same reasoning as the line above: a store that is silently per-process is
   // indistinguishable from a shared one until the limits are already wrong.
   console.log(`[BOOT] RATE_LIMIT_STORE=${process.env.RATE_LIMIT_STORE || '(unset)'} -> ${USE_PG_RATE_LIMIT ? 'postgres, shared across instances' : 'in-memory, PER PROCESS — set RATE_LIMIT_STORE=postgres before scaling past one instance'}`);

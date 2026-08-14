@@ -78,7 +78,17 @@ test("the council request aborts every long-running layer on disconnect", () => 
    * The trailing `[,)]` allows a sixth argument (the per-tier token cap) without
    * allowing the signal to move. The original pinned the call's exact arity,
    * which made adding any later parameter look like removing the abort. */
-  assert.match(ROUTE, /streamModel\(res, PRIMARY_MODEL, synthMsgs, 0\.0, turnSignal[,)]/);
+  assert.match(ROUTE, /streamModel\(res, synthesis\.model, synthMsgs, 0\.0, turnSignal[,)]/);
+});
+
+test('the head model owns complex/tool synthesis and its production identity is logged', () => {
+  assert.match(SOURCE, /COUNCIL_SYNTHESIS_MODEL/);
+  assert.match(SOURCE, /DEFAULT_SYNTHESIS_MODEL/);
+  assert.match(ROUTE, /chooseSynthesis\(/);
+  assert.match(ROUTE, /toolQuestion/);
+  assert.match(ROUTE, /\[SYNTHESIS\].*model=\$\{/);
+  assert.match(ROUTE, /synthesisModel: synthesisModelUsed/);
+  assert.match(ROUTE, /reasoning: \{ effort: 'high', exclude: true \}/);
 });
 
 test("the account's daily model cap refuses the turn before anything is spent", () => {
@@ -178,7 +188,7 @@ test("one turn writes one audit row: every writer routes through the same flag",
   assert.match(ROUTE, /const auditBranch = async \(metadata\) => \{\s*\n\s*if \(!auditUserId \|\| turnAudited\) return;\s*\n\s*turnAudited = true;/);
   assert.match(ROUTE, /const auditTelemetry = async \([\s\S]{0,80}?if \(!auditUserId \|\| turnAudited\) return;\s*\n\s*turnAudited = true;/);
   for (const category of ["memory", "greeting", "no_results", "wiki"]) {
-    assert.match(ROUTE, new RegExp(`auditBranch\\(\\{ category: '${category}'`), category);
+    assert.match(ROUTE, new RegExp(`auditBranch\\(\\{[\\s\\S]{0,180}?category: '${category}'`), category);
   }
   assert.match(ROUTE, /auditTelemetry\('council\.search', 'search'/, 'search');
 });
@@ -261,18 +271,19 @@ test("a one-seat roster inherits the synthesiser's rules", () => {
 /**
  * THE ORCHESTRATOR'S FALLBACK. A throw at the streaming step is the most
  * expensive failure in the route: the council has already deliberated and the
- * requests are already spent. The strongest seat writes the answer instead.
+ * requests are already spent. The caller-selected recovery model writes the
+ * answer instead.
  *
  * Every assertion here is a refusal, because the danger is the fallback firing
  * when it should not — a second attempt appended to half an answer reads as one
  * reply that changes its mind mid-sentence.
  */
-test("the orchestrator falls back to the strongest seat, and refuses three ways", () => {
+test("the orchestrator falls back to its configured recovery model, and refuses three ways", () => {
   const wrapper = SOURCE.slice(SOURCE.indexOf("const streamModel = async"), SOURCE.indexOf("const callGeminiVision"));
   assert.ok(wrapper, "streamModel is gone; the orchestrator fallback has no home");
-  assert.match(wrapper, /streamOnce\(res, SMART_MODEL/, "nothing ever retries with the strong model");
-  assert.match(wrapper, /modelName !== PRIMARY_MODEL/,
-    "a caller that named a model must get that model, and SMART_MODEL must not retry itself");
+  assert.match(wrapper, /streamOnce\(\s*res,\s*fallbackModel/, "an explicit fallback must be dispatched when the selected model fails before output");
+  assert.match(wrapper, /!fallbackModel|fallbackModel === modelName/,
+    "a caller that named a model must opt into a different fallback, and the fallback must not retry itself");
   assert.match(wrapper, /signal\?\.aborted/, "a cancelled turn must not be re-dispatched");
   assert.match(wrapper, /wrote > 0/, "a partial answer must never be retried into a second, different one");
 
@@ -425,9 +436,20 @@ test("the direct search path asks the full selected council before synthesis", (
   const branch = SOURCE.slice(direct, end);
   assert.match(branch, /runCouncilWithWhip\([\s\S]*selection\.members/);
   assert.match(branch, /searchSynthMsgs/);
-  assert.match(branch, /streamModel\(res, PRIMARY_MODEL, searchSynthMsgs/);
+  assert.match(branch, /streamModel\(res, searchSynthesis\.model, searchSynthMsgs/);
   assert.match(branch, /telemetry\.recordSynthesis\(Date\.now\(\) - searchSynthesisStartedAt\)/);
   assert.match(branch, /auditTelemetry\('council\.search', 'search'/);
+});
+
+test("the Wikipedia tool path also uses the configurable head synthesizer", () => {
+  const wiki = SOURCE.indexOf("if (shouldCheckWiki && !(SEEDED_SEARCH && searchQueries?.length))");
+  const end = SOURCE.indexOf('// 4. COUNCIL', wiki);
+  assert.ok(wiki > 0 && end > wiki, 'Wikipedia branch not found');
+  const branch = SOURCE.slice(wiki, end);
+  assert.match(branch, /toolQuestion: true/);
+  assert.match(branch, /streamModel\(res, wikiSynthesis\.model, wikiMsgs/);
+  assert.match(branch, /telemetry\.recordSynthesis\(Date\.now\(\) - wikiSynthesisStartedAt\)/);
+  assert.match(branch, /synthesisModel: wikiSynthesisModelUsed/);
 });
 
 test("the background brain is wired to the same cache identity and stopped on shutdown", () => {

@@ -251,8 +251,8 @@ test("refuses to run without a way to call a model", async () => {
 test("a seat's reasoning effort reaches the provider, and only that seat's", async () => {
   // `effort` is a per-seat property. The free roster ignores it — reasoning
   // effort is not among their supported parameters — but the native tool seat
-  // sits on THIS path whenever a complex question does not need tools, and it
-  // is on the council precisely because it thinks harder. Without this it runs
+  // sits on THIS path when a tool question needs model-authored tool calls, and
+  // it is on the council precisely because it thinks harder. Without this it runs
   // at the provider default: the expensive seat, bought and not used.
   const seen = [];
   const callModel = async (model, _messages, _temperature, _whipMs, _tokenLimit, _signal, options) => {

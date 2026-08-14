@@ -45,8 +45,10 @@ const PRICES = {
   /* A council seat answering, or any other non-streaming model call at the
    * council's token ceiling. Seven of these is the bulk of a turn. */
   seatTenths: int(process.env.SPEND_SEAT_TENTHS, 4),
-  /* The synthesis pass. Longer output than a seat, so priced above one. */
-  synthesisTenths: int(process.env.SPEND_SYNTHESIS_TENTHS, 5),
+  /* The synthesis pass. Complex/tool turns now default to high-effort Luna, so
+   * the conservative default is aligned with the native tool-seat estimate.
+   * Override this when COUNCIL_SYNTHESIS_MODEL points at a cheaper model. */
+  synthesisTenths: int(process.env.SPEND_SYNTHESIS_TENTHS, 8),
   /* THE NATIVE TOOL SEAT, WHICH IS THE FIRST SEAT ON THIS COUNCIL THAT COSTS
    * REAL MONEY. Everything else is a `:free` id billed at $0, which is why the
    * dollar ceiling has not bound on a model call since 2026-08-12. The header

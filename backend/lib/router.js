@@ -597,19 +597,17 @@ function escalateForResearch(selection, roster) {
 }
 
 /**
- * ADD THE NATIVE TOOL SEAT, when the turn is the kind that benefits from it.
+ * ADD THE NATIVE TOOL SEAT, when the router has established that the turn needs
+ * tools.
  *
- * THE POLICY, and each clause is a different reason:
+ * THE POLICY: `needsTools` is the router's evidence that this turn needs live
+ * information. This is the case the seat exists for: it is the only member that
+ * can call a tool through a real function-calling interface rather than by
+ * writing a fenced block and hoping the parser agrees.
  *
- *   needsTools  — the router has said this turn needs live information. This is
- *                 the case the seat exists for: it is the only member that can
- *                 call a tool through a real function-calling interface rather
- *                 than by writing a fenced block and hoping the parser agrees.
- *   complexity  — anything not `simple`. The free roster is measured, fast and
- *                 adequate for lookups; it is not the right council for a
- *                 question that was classified as needing one. "Free models
- *                 handle simple questions only" is the owner's rule and this is
- *                 the whole of its implementation.
+ * Complexity alone deliberately does NOT add this seat. Complex turns use the
+ * free council for parallel drafts and the configured head model for synthesis;
+ * Luna is a tool operator only when the turn actually needs tools.
  *
  * IT IS ADDITIVE AND IT IS FIRST. The seat is prepended rather than replacing a
  * member: a council of one strong model is not a council, and the disagreement
@@ -632,8 +630,7 @@ function withToolSeat(selection, seat, { needsTools = false } = {}) {
   const members = Array.isArray(selection?.members) ? selection.members : [];
   if (members.some((m) => m?.model === seat.model)) return selection;
 
-  const complexity = selection?.complexity;
-  if (!needsTools && complexity === "simple") return selection;
+  if (!needsTools) return selection;
   // A greeting has an empty roster on purpose and must stay that way: it is the
   // path that exists to spend nothing at all.
   if (selection?.category === "greeting") return selection;

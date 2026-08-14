@@ -161,8 +161,8 @@ async function runCouncil(members, messages, whipMs, quorum, tokenLimit, deps = 
          * the only place it can be applied. Every seat on the free roster
          * ignores it — reasoning effort is not among their supported
          * parameters — but the native tool seat is on this path too whenever a
-         * complex question does NOT need tools, and it was added to the council
-         * precisely because it thinks harder. Without this it would sit here at
+         * a tool question needs model-authored tool calls, and it was added to
+         * the council precisely because it thinks harder. Without this it would
          * the provider's default effort: the expensive seat, bought and not
          * used. `exclude` keeps the reasoning out of the draft, exactly as the
          * default request already does. */

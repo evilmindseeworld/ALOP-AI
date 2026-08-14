@@ -228,7 +228,7 @@ async function fetchOpenRouterStream(
   temperature = 0.0,
   parentSignal,
   maxTokens = null,
-  { deadlineAt = null, timeoutMs = 30_000, maxRetries = 1, includeUsage = false } = {},
+  { deadlineAt = null, timeoutMs = 30_000, maxRetries = 1, includeUsage = false, reasoning } = {},
 ) {
   if (parentSignal?.aborted) throw parentSignal.reason || new DOMException('Aborted', 'AbortError');
   const suppliedDeadline = deadlineAt == null ? null : Number(deadlineAt);
@@ -242,7 +242,7 @@ async function fetchOpenRouterStream(
     messages,
     temperature,
     stream: true,
-    reasoning: { exclude: true },
+    reasoning: reasoning && typeof reasoning === 'object' ? reasoning : { exclude: true },
     /* WITHOUT THIS OPENROUTER SENDS NO USAGE FRAME ON A STREAM, so the
      * synthesis — the single longest generation of a turn — is the one call
      * whose token count nothing can see. `callModel` gets `usage` in its JSON

@@ -269,3 +269,21 @@ test('a stream asks the gateway for usage accounting ONLY when told to', async (
   await fetchOpenRouterStream('https://openrouter.ai/api/v1', 'key', 'm', [], 0, undefined, null, { includeUsage: true });
   assert.deepEqual(sent.usage, { include: true });
 });
+
+test('a streamed head synthesis can request high reasoning effort without exposing it', async () => {
+  let sent = null;
+  global.fetch = async (_url, init) => { sent = JSON.parse(init.body); return response(200, {}); };
+
+  await fetchOpenRouterStream(
+    'https://openrouter.ai/api/v1',
+    'key',
+    'openai/gpt-5.6-luna',
+    [],
+    0,
+    undefined,
+    null,
+    { reasoning: { effort: 'high', exclude: true } },
+  );
+
+  assert.deepEqual(sent.reasoning, { effort: 'high', exclude: true });
+});

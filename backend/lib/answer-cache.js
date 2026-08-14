@@ -443,6 +443,17 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
     store(key, answer, options, true);
   }
 
+  /** Backfill a vector on an exact-hit row without changing its answer or TTL. */
+  function enrichEmbedding(key, embedding) {
+    const literal = vectorLiteral(embedding);
+    if (!supabase || !key || !literal) return;
+    try {
+      Promise.resolve(supabase.from('answer_cache').update({ embedding: literal }).eq('key', key))
+        .then((r) => { if (r?.error) warnOnce('embedding backfill failed', r.error.message); })
+        .catch((e) => warnOnce('embedding backfill threw', e.message));
+    } catch (e) { warnOnce('embedding backfill threw', e.message); }
+  }
+
   /**
    * Persist a known constant such as a greeting. This is separate from set()
    * so a short model refusal can never bypass the minimum-answer safeguard.
@@ -546,7 +557,7 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
     }
   }
 
-  return { get, getSemantic, getDue, dueForRefresh, set, setBrief, setConstant, clear, keyFor, stats: () => ({ ...stats, size: memory.size }) };
+  return { get, getSemantic, getDue, dueForRefresh, set, setBrief, setConstant, enrichEmbedding, clear, keyFor, stats: () => ({ ...stats, size: memory.size }) };
 }
 
 module.exports = { createAnswerCache, keyFor, normalise, replayInputs, ttlFor, TTL_MS, validEmbedding };

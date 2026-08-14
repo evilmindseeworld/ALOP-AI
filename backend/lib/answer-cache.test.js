@@ -242,6 +242,18 @@ test('a brief refusal is never stored even through the simple-answer path', asyn
   assert.equal(await c.get(k), null);
 });
 
+test('an exact-hit row can be enriched without rewriting its answer or expiry', async () => {
+  let update;
+  const db = { from: () => ({ update: (value) => ({ eq: (field, key) => { update = { value, field, key }; return Promise.resolve({ error: null }); } }) }) };
+  const c = createAnswerCache({ supabase: db, reportEvery: 0 });
+  c.enrichEmbedding('cache-key', Array(768).fill(0.01));
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(update.field, 'key');
+  assert.equal(update.key, 'cache-key');
+  assert.match(update.value.embedding, /^\[0\.01,/);
+  assert.deepEqual(Object.keys(update.value), ['embedding']);
+});
+
 test('a non-string answer is not stored', async () => {
   const c = createAnswerCache();
   const k = keyFor({ question: 'what is photosynthesis' });
@@ -365,6 +377,7 @@ test('server.js logs cache hit, miss, and personalised bypass distinctly', () =>
   assert.match(src, /persist\(null\).*durableQuestionEmbeddingP\.then/s);
   assert.match(src, /durableQuestionEmbeddingP = embedText\(normaliseAnswerQuestion\(pv\.value\)\);/);
   assert.doesNotMatch(src, /durableQuestionEmbeddingP = embedText\([^;]*turnSignal/);
+  assert.match(src, /durableQuestionEmbeddingP\.then\(\(embedding\) => answerCache\.enrichEmbedding\(cacheKey, embedding\)\)/);
 });
 
 test('018 returns the nearest eligible row so misses have a diagnostic similarity', () => {

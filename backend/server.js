@@ -2945,6 +2945,9 @@ async function handleCouncilTurn(req, res) {
       const hit = await answerCache.get(cacheKey, { deferMiss: canTrySemantic });
       if (hit && !turnSignal.aborted) {
         console.log(`[ANSWERS] HIT ageMin=${Math.round((Date.now() - hit.storedAt) / 60000)} models=0`);
+        if (SEMANTIC_CACHE_ENABLED) {
+          durableQuestionEmbeddingP.then((embedding) => answerCache.enrichEmbedding(cacheKey, embedding)).catch(() => {});
+        }
         openStream(res);
         /* Replayed as an ordinary chunk frame and the ordinary terminator, so
          * the frontend cannot tell this from a model's answer — same

@@ -43,6 +43,8 @@ const { timeoutSignal, childAbortController } = require('./lib/abort');
 const { createTurnTelemetry } = require('./lib/turn-telemetry');
 const { rescueReasoning } = require('./lib/reasoning-rescue');
 const { createTurnContext } = require('./lib/turn-context');
+const { createTurnLedger } = require('./lib/turn-ledger');
+const { createReservationLedger } = require('./lib/reservation-ledger');
 const { priceTurn, reservationCents, LIMITS, countTurnRequests, reservationRequests, REQUEST_LIMITS } = require('./lib/spend');
 const { createRequestBudget } = require('./lib/request-budget');
 const { ALOP_IDENTITY, withIdentity } = require('./lib/platform-identity');
@@ -544,6 +546,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
          * improvement while the user waited exactly as long. */
         if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
         emitted.push(frame.text);
+        try { answerOptions.onChunk?.(frame.text); } catch { /* a recorder must never fail a stream */ }
         res.write(`data: ${JSON.stringify({ type: 'chunk', text: frame.text })}\n\n`);
       }
       /* Completion arrives TWICE in this protocol — a delta carrying
@@ -566,6 +569,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     if (sanitised.text) {
       if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
       emitted.push(sanitised.text);
+      try { answerOptions.onChunk?.(sanitised.text); } catch { /* never fail a stream */ }
       res.write(`data: ${JSON.stringify({ type: 'chunk', text: sanitised.text })}\n\n`);
     }
   }
@@ -588,12 +592,14 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     try { answerOptions.onTextSource?.('reasoning'); } catch { /* telemetry must never fail a stream */ }
     if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
     emitted.push(rescued.text);
+    try { answerOptions.onChunk?.(rescued.text); } catch { /* never fail a stream */ }
     res.write(`data: ${JSON.stringify({ type: 'chunk', text: rescued.text })}\n\n`);
   }
   if (!emitted.length) throw new Error('Model returned no usable answer');
   const citationSuffix = requiredCitationSuffix(emitted.join(''), answerOptions.requiredSourceUrls);
   if (citationSuffix && !res.writableEnded) {
     emitted.push(citationSuffix);
+    try { answerOptions.onChunk?.(citationSuffix); } catch { /* never fail a stream */ }
     res.write(`data: ${JSON.stringify({ type: 'chunk', text: citationSuffix })}\n\n`);
   }
   if (!res.writableEnded) res.write('data: [DONE]\n\n');
@@ -2492,31 +2498,29 @@ const auditLog = async (userId, action, metadata = {}, ip = null) => {
  *
  * The failure is logged every time. A ceiling that has silently stopped
  * applying is worse than no ceiling, because the graphs stay reassuring. */
-const reserveSpend = async (userId, cents) => {
-  try {
-    const { data, error } = await supabase.rpc('reserve_user_spend', {
-      p_user_id: userId,
-      p_cents: cents,
-      p_day_limit: LIMITS.dayCents,
-      p_month_limit: LIMITS.monthCents,
-    });
-    if (error) throw new Error(error.message || String(error));
-    // Postgres RETURNS TABLE arrives as an array of one row.
-    const row = Array.isArray(data) ? data[0] : data;
-    if (!row) throw new Error('reserve_user_spend returned no row');
-    return { allowed: row.allowed !== false, dayCents: row.day_cents, monthCents: row.month_cents };
-  } catch (e) {
-    console.error(`[SPEND] Reservation failed, ADMITTING UNMETERED: ${e.message}`);
-    return { allowed: true, dayCents: null, monthCents: null, unmetered: true };
-  }
-};
+/* ADMISSION, THROUGH A LEDGER THAT CAN ONLY CHARGE ONCE AND CANNOT FAIL OPEN
+ * WITHOUT A BOUND.
+ *
+ * The two functions this replaces were a thin wrapper each. What they lacked
+ * was a record that a given turn had already reserved — `reserve_user_spend` is
+ * atomic, which is not the same as once — and a ceiling on the "admit
+ * everything" branch their catch fell into. A Postgres blip of any length
+ * admitted every turn from every user, unmetered, and the only number anyone
+ * could look at lived in the store that was down.
+ *
+ * lib/reservation-ledger.js holds both fixes and is deliberately the same shape
+ * as lib/request-budget.js: two ceilings that fail differently are two ceilings
+ * someone has to reason about twice. */
+const reservationLedger = createReservationLedger({
+  rpc: (fn, args) => supabase.rpc(fn, args),
+  limits: LIMITS,
+});
 
-const settleSpend = (userId, reserved, actual) => {
-  supabase
-    .rpc('settle_user_spend', { p_user_id: userId, p_reserved: reserved, p_actual: actual })
-    .then(({ error }) => { if (error) console.error(`[SPEND] Settlement failed: ${error.message}`); })
-    .catch((e) => console.error(`[SPEND] Settlement failed: ${e.message}`));
-};
+/* THE SERVER'S OWN RECORD OF A TURN — canonical history, checkpoints, and the
+ * partial answer a reconnecting client recovers. Every write is best-effort:
+ * this is a recorder attached to the path that answers a user, and a Postgres
+ * blip must degrade the recovery story rather than the product. */
+const turnLedger = createTurnLedger({ supabase });
 
 /* THE OPENROUTER REQUEST BUDGET, which is a different ceiling from the one
  * above and is deliberately kept alongside it rather than folded into it.
@@ -2673,6 +2677,139 @@ app.get('/health', (req, res) => res.json({
  * nowhere (lib/sink-response.js). Authentication is not bypassed because no
  * request is being authenticated; the job supplies its own user row, and every
  * ceiling inside still applies to it. */
+/* ===== RESUMING A TURN =====
+ *
+ * WHAT THIS IS FOR. A turn used to exist only inside one HTTP response: a phone
+ * changing network mid-answer got nothing, the user saw a broken reply, and the
+ * tokens were paid for either way. The turn ledger writes the partial answer to
+ * Postgres at checkpoints, and these two routes are how a client gets it back.
+ *
+ * THE OPERATION ID IS THE KEY, AND IT IS GUESSABLE BY CONSTRUCTION — it is a
+ * correlation handle minted in a browser and echoed in a response header. So
+ * ownership is part of the QUERY rather than a check after it
+ * (`lib/turn-ledger.js`, `findForResume`), and both routes sit behind
+ * `requireAuth` and `checkSuspended` like every other authenticated route. A
+ * guessed UUID must return 404, never somebody else's answer.
+ *
+ * REGISTERED ABOVE `/api/council` on purpose. `stream-open-order.test.js` reads
+ * the source between the council route and the overlay route and fails any
+ * `res.status().json()` it finds there, because on that route a status response
+ * below the early `openStream` is silently unsendable. These routes are not
+ * that route and must not be inside that slice. */
+const RESUME_POLL_MS = 400;
+const RESUME_MAX_WAIT_MS = 60_000;
+const resumeLimiter = createLimiter(60_000, 60, 'Too many resume requests.');
+
+const findResumableTurn = async (req, res) => {
+  const operationId = req.params.operationId;
+  if (!UUID_RE.test(String(operationId || ''))) {
+    res.status(400).json({ error: 'Invalid operation id', code: 'bad_request', operationId: req.operationId });
+    return null;
+  }
+  const user = await ensureUser(req.auth.userId, { cached: req.userRow });
+  const row = await turnLedger.findForResume({ operationId, userId: user.id });
+  if (!row) {
+    res.status(404).json({ error: 'No turn to resume', code: 'not_found', operationId: req.operationId });
+    return null;
+  }
+  return { row, user, operationId };
+};
+
+/** The whole state of a turn, once. What a client polls when it cannot stream. */
+app.get('/api/turns/:operationId', requireAuth, checkSuspended, resumeLimiter, async (req, res) => {
+  try {
+    const found = await findResumableTurn(req, res);
+    if (!found) return;
+    const { row } = found;
+    res.json({
+      turnId: row.id,
+      state: row.state,
+      answer: row.answer || '',
+      complete: Boolean(row.answer_complete),
+      lastEventId: row.last_event_id || 0,
+      category: row.category || null,
+    });
+  } catch (err) {
+    Sentry.captureException(err);
+    sendError(res, err);
+  }
+});
+
+/**
+ * THE SAME THING AS A STREAM, so a reconnecting client uses the code path it
+ * already has rather than a second one.
+ *
+ * `Last-Event-ID` is the standard SSE reconnect header and the browser sends it
+ * for free on an `EventSource`; a `?lastEventId=` query is accepted too because
+ * the app streams over `fetch` rather than `EventSource` (it needs POST and
+ * Authorization). Anything already delivered is skipped — the client gets the
+ * TAIL, not the answer over again, which would otherwise paint it twice.
+ *
+ * IT POLLS. A turn is being written by whichever process took the original
+ * request, which is not necessarily this one, so there is nothing in memory to
+ * subscribe to. Polling Postgres every 400ms for at most a minute is the
+ * boring version that works across instances; it is bounded, it is cancelled
+ * when the client leaves, and it costs one indexed primary-key read per tick.
+ * ponytail: swap for LISTEN/NOTIFY if resume traffic ever shows up in the
+ * database load, which at this size it will not.
+ */
+app.get('/api/turns/:operationId/stream', requireAuth, checkSuspended, resumeLimiter, async (req, res) => {
+  let closed = false;
+  res.once('close', () => { closed = true; });
+  try {
+    const found = await findResumableTurn(req, res);
+    if (!found) return;
+    let { row } = found;
+
+    const suppliedId = Number(req.get('Last-Event-ID') || req.query.lastEventId || 0);
+    /* Characters already painted by the client. `last_event_id` counts CHUNKS,
+     * which is the right handle for "which frames have you seen" but the wrong
+     * one for "where do I resume the text" — chunks are not fixed width. The
+     * client therefore sends how many characters it holds; the header is only
+     * used to decide whether it holds anything at all. */
+    const alreadyHave = Math.max(0, Number(req.query.chars) || 0);
+
+    openStream(res);
+    const deadline = Date.now() + RESUME_MAX_WAIT_MS;
+    let sentChars = alreadyHave;
+
+    const flush = () => {
+      const answer = row.answer || '';
+      if (answer.length > sentChars) {
+        sendEvent(res, { type: 'chunk', text: answer.slice(sentChars) });
+        sentChars = answer.length;
+      }
+    };
+
+    flush();
+    while (!closed && row.state === 'running' && Date.now() < deadline) {
+      await new Promise((resolve) => setTimeout(resolve, RESUME_POLL_MS));
+      if (closed) break;
+      const next = await turnLedger.findForResume({ operationId: found.operationId, userId: found.user.id });
+      /* A failed read leaves `row` as it was rather than dropping the loop.
+       * The ledger already logged it; a resume that gives up on one slow query
+       * is a resume that fails in exactly the conditions it exists for. */
+      if (next) row = next;
+      flush();
+    }
+
+    if (!closed) {
+      if (row.state === 'running') {
+        /* The turn outlived the resume window. Not an error — the client can
+         * come back — but it must not be told the answer is finished. */
+        sendEvent(res, { type: 'stage', key: 'resume', text: 'Still writing. Reconnect to keep watching.' });
+      } else if (row.state !== 'complete') {
+        sendEvent(res, { type: 'error', text: 'That answer did not finish.', code: 'turn_incomplete', operationId: req.operationId });
+      }
+      if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
+    }
+  } catch (err) {
+    Sentry.captureException(err);
+    if (!res.headersSent) return sendError(res, err);
+    if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
+  }
+});
+
 app.post('/api/council', requireAuth, checkSuspended, handleCouncilTurn);
 async function handleCouncilTurn(req, res) {
   /* Refused before anything is spent — no telemetry row, no spend reservation,
@@ -2747,6 +2884,54 @@ async function handleCouncilTurn(req, res) {
    * have produced two rows for one turn. Everything that can write the turn's
    * row now routes through `auditBranch` or `auditTelemetry` and sets this. */
   let turnAudited = false;
+  /* THE ANSWER, AS FAR AS IT HAS GOT. Written to the turn ledger at checkpoints
+   * while it streams and once more when the turn closes, so a connection that
+   * dies mid-sentence leaves something a reconnect can recover. Before this it
+   * existed only inside one HTTP response and was thrown away with it — and the
+   * tokens were paid for either way.
+   *
+   * Accumulated into an array, not concatenated onto a string: a streamed
+   * answer is hundreds of small appends and repeated `+=` on a growing string
+   * is what turns a long answer into a quadratic. Same reasoning as `emitted`
+   * inside streamOnce. */
+  const answerParts = [];
+  let answerChars = 0;
+  let turnEventId = 0;
+  let turnBegun = false;
+  let lastCheckpointAt = 0;
+  let checkpointedChars = 0;
+  const CHECKPOINT_EVERY_MS = 1_500;
+  const CHECKPOINT_EVERY_CHARS = 1_200;
+  const turnAnswerText = () => answerParts.join('');
+  /* One streamed chunk. Throttled two ways because either alone is wrong: by
+   * time, so a slow trickle still checkpoints; by length, so a fast burst does
+   * not write once and then lose four thousand characters. */
+  const noteChunk = (text) => {
+    if (typeof text !== 'string' || !text) return;
+    answerParts.push(text);
+    answerChars += text.length;
+    turnEventId += 1;
+    if (!turnBegun) return;
+    if (Date.now() - lastCheckpointAt < CHECKPOINT_EVERY_MS
+      && answerChars - checkpointedChars < CHECKPOINT_EVERY_CHARS) return;
+    lastCheckpointAt = Date.now();
+    checkpointedChars = answerChars;
+    /* Deliberately not awaited. A checkpoint is a recorder; making the answer
+     * wait on Postgres would put a database round trip between the user and
+     * every twelve hundred characters of their answer. */
+    turnLedger.checkpoint({ turnId: turnContext.turnId, answer: turnAnswerText(), lastEventId: turnEventId });
+  };
+  /* A whole answer written in one frame — the arithmetic fast path, a greeting,
+   * a cache hit, a solo seat's draft. There is nothing to stream and nothing to
+   * throttle; the ledger learns about it when the turn closes. */
+  const noteWholeAnswer = (text) => {
+    if (typeof text !== 'string' || !text) return text;
+    answerParts.length = 0;
+    answerParts.push(text);
+    answerChars = text.length;
+    turnEventId += 1;
+    return text;
+  };
   const auditBranch = async (metadata) => {
     if (!auditUserId || turnAudited) return;
     turnAudited = true;
@@ -2833,7 +3018,7 @@ async function handleCouncilTurn(req, res) {
        * whose latency this whole feature exists to move would be the one turn
        * with no latency recorded. */
       if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
-      sendEvent(res, { type: 'chunk', text: sum.answer });
+      sendEvent(res, { type: 'chunk', text: noteWholeAnswer(sum.answer) });
       if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
       /* NOT `rememberTurn`. It runs a summary and a fact-extraction call, which
        * would spend two model requests to record that 80 squared is 6400 —
@@ -2883,7 +3068,7 @@ async function handleCouncilTurn(req, res) {
       console.log('[COUNCIL] Greeting fast path. 0 model requests.');
       openStream(res);
       if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
-      sendEvent(res, { type: 'chunk', text: greeting });
+      sendEvent(res, { type: 'chunk', text: noteWholeAnswer(greeting) });
       if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
       await auditBranch({
         category: 'greeting',
@@ -2991,7 +3176,13 @@ async function handleCouncilTurn(req, res) {
       ? Math.max(selection.members.length, planRoster.length + toolSeatCount)
       : selection.members.length;
     const reserved = reservationCents(maxSeats, 12, 4, toolSeatCount);
-    const budget = await reserveSpend(user.id, reserved);
+    const budget = await reservationLedger.reserve({
+      turnId: turnContext.turnId,
+      operationId: turnContext.operationId,
+      userId: user.id,
+      cents: reserved,
+      requests: reservationRequests(maxSeats, 12, 4),
+    });
     if (!budget.allowed) {
       telemetry.markCeiling('spend');
       await auditBranch({ category: 'spend_ceiling', dayCents: budget.dayCents, monthCents: budget.monthCents });
@@ -3030,7 +3221,10 @@ async function handleCouncilTurn(req, res) {
        * settled it — and the `finally` skips settlement when the turn never
        * started, so it would never come back at all. A ceiling that charges a
        * user for the turn it refused is worse than no ceiling. */
-      settleSpend(user.id, spendReserved, 0);
+      reservationLedger.settle({
+        turnId: turnContext.turnId, userId: user.id,
+        reservedCents: spendReserved, actualCents: 0,
+      });
       spendReserved = 0;
       await auditBranch({ category: 'request_ceiling', usedRequests: requestBudget.used, degraded: Boolean(requestBudget.degraded) });
       /* TWO REFUSALS THAT MEAN DIFFERENT THINGS, and telling a user the wrong
@@ -3057,6 +3251,24 @@ async function handleCouncilTurn(req, res) {
       });
     }
     requestsReserved = reservedRequests;
+
+    /* THE TURN ROW, OPENED ONCE ADMISSION HAS PASSED.
+     *
+     * Below the ceilings on purpose: a refused turn executes nothing and has
+     * nothing to resume, so a row for it would be a row that only ever says
+     * "refused". Awaited, unlike the checkpoints, because a checkpoint that
+     * arrives before the row exists updates nothing — `checkpoint_turn` matches
+     * on the id and silently affects zero rows. One round trip, once per
+     * admitted turn, against a partial answer that survives a dropped
+     * connection. */
+    turnBegun = await turnLedger.begin({
+      turnId: turnContext.turnId,
+      operationId: turnContext.operationId,
+      userId: user.id,
+      chatId: chatId || null,
+      question: pv.value,
+      category: selection.category,
+    });
 
     /* THE METERED `callModel`, DEFINED BELOW BOTH ADMISSION GATES.
      *
@@ -3089,8 +3301,26 @@ async function handleCouncilTurn(req, res) {
        * before its first byte is re-issued — two. Neither was counted. */
       onAttempt: recordAttempt('synthesis'),
       onTextSource: (source) => telemetry.recordTextSource(source),
+      /* THE TURN LEDGER'S SEAM. Reported per frame rather than as a growing
+       * string, so checkpointing a long answer stays linear. */
+      onChunk: noteChunk,
     };
-    const histArr = sanitizeHistory(history);
+    /* THE CLIENT'S COPY IS THE FALLBACK NOW, NOT THE SOURCE.
+     *
+     * `sanitizeHistory` is kept and still runs first: it refuses a
+     * caller-supplied `system` role, bounds the total size and rejects
+     * non-string content, and all three of those defences matter for the case
+     * where the client's copy IS what gets used. What it cannot do is make the
+     * transcript TRUE — a caller could always describe a conversation that never
+     * happened, and the model would be told it did.
+     *
+     * The server already persisted the real transcript to `chats.messages` after
+     * every turn. The canonical read lands in the context fan-out below, where
+     * it costs no extra wall clock, and wins when it returns rows. A null from
+     * it means "nothing to read" — no chat id, a brand-new chat, or a failed
+     * read — and falls back to the client's copy, which is exactly the behaviour
+     * that existed before this. */
+    const clientHistory = sanitizeHistory(history);
 
     // VISION. The council speaks to a text model, so an attached image is
     // described first and the description travels as context — the same shape
@@ -3166,6 +3396,7 @@ async function handleCouncilTurn(req, res) {
     ).then((r) => r.results[0]).catch(() => null);
     const contextReads = Promise.all([
       telemetry.measureContext('summary', () => readChatSummary(chatId, user.id, turnSignal)),
+      telemetry.measureContext('canonicalHistory', () => turnLedger.canonicalHistory({ chatId, userId: user.id })),
       telemetry.measureContext('feedback', () => getFeedbackGuidance(user.id, turnSignal)),
       telemetry.measureContext('facts', async () => readUserFacts(user.id, FACTS_INJECT_LIMIT, pv.value, turnSignal,
         await settleByDeadline([{ promise: factQuestionEmbeddingP, fallback: null }], { deadlineMs: EMBED_DEADLINE_MS, signal: turnSignal }).then((r) => r.results[0]).catch(() => null))),
@@ -3175,7 +3406,15 @@ async function handleCouncilTurn(req, res) {
       visionP,
     ]);
     if (turnSignal.aborted) return;
-    const [convSummary, feedbackGuidance, userFacts] = contextResult;
+    const [convSummary, canonicalHistory, feedbackGuidance, userFacts] = contextResult;
+    /* Sanitised either way. The canonical rows come from our own database, but
+     * they were WRITTEN from client input, and a row that predates
+     * `sanitizeHistory` could still carry a `system` role. Trusting a store
+     * because it is ours is how a stored injection becomes a live one. */
+    const histArr = canonicalHistory ? sanitizeHistory(canonicalHistory) : clientHistory;
+    if (canonicalHistory) {
+      console.log(`${turnContext.tag('COUNCIL')} history=server(${histArr.length}) client=${clientHistory.length}`);
+    }
     /* Prompt context is a separate projection from cache identity. Keep the
      * original history for the personalisation gate and route decisions, but
      * send a relevance-budgeted projection to every model prompt. This is the
@@ -3320,7 +3559,7 @@ async function handleCouncilTurn(req, res) {
          * event type would need a frontend change to render at all, and an
          * unknown type is silently dropped there, which is a blank answer. */
         if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
-        sendEvent(res, { type: 'chunk', text: hit.answer });
+        sendEvent(res, { type: 'chunk', text: noteWholeAnswer(hit.answer) });
         if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
         /* NOT `rememberTurn`, on the same argument the arithmetic branch makes:
          * it spends a summary call and a fact-extraction call, which is two
@@ -3352,7 +3591,7 @@ async function handleCouncilTurn(req, res) {
           console.log(`[ANSWERS] SEMANTIC HIT similarity=${semanticHit.similarity.toFixed(2)} models=0`);
           openStream(res);
           if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
-          sendEvent(res, { type: 'chunk', text: semanticHit.answer });
+          sendEvent(res, { type: 'chunk', text: noteWholeAnswer(semanticHit.answer) });
           if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
           await auditBranch({
             category: 'answer_cache_semantic', models: 0, seats: 0,
@@ -4214,7 +4453,7 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
        * draft had finished arriving, so the user now sees the answer at the
        * moment synthesis would have STARTED. */
       if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
-      sendEvent(res, { type: 'chunk', text: soleDraft });
+      sendEvent(res, { type: 'chunk', text: noteWholeAnswer(soleDraft) });
       if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
       if (turnSignal.aborted) return;
       const lastSolo = histArr.filter((m) => m.role === 'assistant').slice(-1)[0]?.content || '';
@@ -4365,6 +4604,26 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
   } finally {
     cleanupDisconnect();
+    /* CLOSE THE TURN ROW, ALWAYS, AND FROM ONE PLACE.
+     *
+     * There are eleven exits from the try above — two fast paths, two cache
+     * hits, memory, greeting, no-results, search, wiki, solo, synthesis — plus a
+     * throw and an abort. Closing the row at each of them is eleven chances to
+     * miss one, and a row left in `running` forever is a row a resume endpoint
+     * will wait on.
+     *
+     * The STATE is derived rather than passed: aborted if the signal fired,
+     * failed if nothing was written, complete otherwise. Not awaited, for the
+     * same reason the settlement above is not — the client may already be gone. */
+    if (turnBegun) {
+      const finalAnswer = turnAnswerText();
+      turnLedger.finish({
+        turnId: turnContext.turnId,
+        state: turnSignal.aborted ? 'aborted' : finalAnswer ? 'complete' : 'failed',
+        answer: finalAnswer,
+        lastEventId: turnEventId,
+      });
+    }
     /* SETTLE THE RESERVATION DOWN TO WHAT THE TURN ACTUALLY COST.
      *
      * In the `finally` and not at the end of the happy path, because every
@@ -4388,8 +4647,13 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
        * user. The reservation above already held the metered figure, so getting
        * this wrong does not overcharge — it silently UNDER-charges, and the
        * ceiling stops seeing the only seat that can reach it. */
-      const actual = priceTurn(telemetry.snapshot({ category: 'settle' }), { toolSeatModel: TOOL_SEAT_MODEL });
-      settleSpend(auditUserId, spendReserved, actual);
+      const settleSnapshot = telemetry.snapshot({ category: 'settle' });
+      const actual = priceTurn(settleSnapshot, { toolSeatModel: TOOL_SEAT_MODEL });
+      reservationLedger.settle({
+        turnId: turnContext.turnId, userId: auditUserId,
+        reservedCents: spendReserved, actualCents: actual,
+        reservedRequests: requestsReserved, actualRequests: countTurnRequests(settleSnapshot),
+      });
     }
     /* AND THE REQUEST BUDGET, settled from the same snapshot on the same
      * reserve-then-settle contract.

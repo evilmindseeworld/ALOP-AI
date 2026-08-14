@@ -102,7 +102,7 @@ test('every route that calls a model behind auth also checks suspension', () => 
  */
 test('the council reserves against the ceiling BEFORE it spends anything', () => {
   const route = SOURCE.slice(at("app.post('/api/council'"), at("// ===== OVERLAY"));
-  const reserve = route.indexOf('await reserveSpend(');
+  const reserve = route.indexOf('await reservationLedger.reserve(');
   assert.notEqual(reserve, -1, 'no reservation on the council route');
 
   // The first thing that costs money. If a provider call ever moves above the
@@ -131,16 +131,27 @@ test('the reservation is settled from a finally, so an abort cannot leave it cha
   const route = SOURCE.slice(at("app.post('/api/council'"), at("// ===== OVERLAY"));
   const tail = route.slice(route.lastIndexOf('} finally {'));
   assert.match(tail, /spendReserved > 0 && auditUserId/);
-  assert.match(tail, /settleSpend\(auditUserId, spendReserved, actual\)/);
+  assert.match(tail, /reservationLedger\.settle\(\{[\s\S]{0,200}?reservedCents: spendReserved, actualCents: actual/);
   // Priced from the telemetry, so an aborted turn is charged for the calls it
   // did make rather than for a full turn or for nothing.
-  assert.match(tail, /priceTurn\(telemetry\.snapshot\(/);
+  assert.match(tail, /priceTurn\(settleSnapshot/);
+  assert.match(tail, /telemetry\.snapshot\(\{ category: 'settle' \}\)/);
 });
 
-test('both ledger calls fail OPEN and say so, rather than taking the product down', () => {
-  const reserveFn = SOURCE.slice(at('const reserveSpend'), at('const settleSpend'));
-  // A Supabase blip must not stop the app. The exposure is a window of
-  // unmetered spend; the alternative is a total outage from a partial failure.
-  assert.match(reserveFn, /allowed: true/, 'reserveSpend must admit on database error');
-  assert.match(reserveFn, /console\.error\(`\[SPEND\]/, 'a ceiling that stopped applying must not be silent');
+/* IT STILL FAILS OPEN, AND NOW IT FAILS OPEN WITH A CEILING.
+ *
+ * The argument for admitting through a database blip is unchanged and is kept:
+ * failing closed converts a partial dependency failure into a total outage. What
+ * was wrong is that "open" meant UNLIMITED — an outage of any length admitted
+ * every turn from every user, unmetered, and the only number anyone could look
+ * at lived in the store that was down. The degraded allowance bounds that
+ * window; a ceiling that has quietly stopped applying must not also be quiet. */
+test('the spend ledger fails OPEN, says so, and stops when the degraded allowance is gone', () => {
+  const ledger = readFileSync(join(__dirname, 'reservation-ledger.js'), 'utf8');
+  assert.match(ledger, /allowed: true/, 'a database error must still admit');
+  assert.match(ledger, /\[SPEND\] Reservation failed, admitting DEGRADED/);
+  assert.match(ledger, /degradedUsed \+ asked > degradedCents/, 'the open branch must have a ceiling of its own');
+  assert.match(ledger, /allowed: false[\s\S]{0,120}?degraded: true/, 'and it must refuse once that ceiling is reached');
+  assert.match(SOURCE, /createReservationLedger\(\{/, 'the route must use the ledger, not a bare rpc');
+  assert.doesNotMatch(SOURCE, /const reserveSpend = /, 'the unbounded fail-open wrapper must be gone');
 });

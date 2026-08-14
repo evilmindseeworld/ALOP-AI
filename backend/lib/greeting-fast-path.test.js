@@ -29,7 +29,7 @@ const at = (needle) => {
 test('the greeting fast path runs BEFORE the router, the ceilings and the context reads', () => {
   const greeting = at('const greeting = image ? null : await greetingCache.get(pv.value);');
   assert.ok(greeting < at('classifyRequest(pv.value'), 'greeting must short-circuit above the router');
-  assert.ok(greeting < at('const budget = await reserveSpend('), 'a greeting must not reserve spend');
+  assert.ok(greeting < at('const budget = await reservationLedger.reserve('), 'a greeting must not reserve spend');
   assert.ok(greeting < at('const requestBudget = await reserveRequests('), 'a greeting must not reserve requests');
   assert.ok(greeting < at('const contextReads = Promise.all(['), 'a greeting must not wait on summary/feedback/facts');
 });
@@ -43,7 +43,7 @@ test('an image turn skips the greeting path', () => {
 
 test('the greeting branch terminates the stream like every other branch', () => {
   const branch = SOURCE.slice(at("console.log('[COUNCIL] Greeting fast path"), at('const userPlan = user.plan'));
-  assert.match(branch, /sendEvent\(res, \{ type: 'chunk', text: greeting \}\)/);
+  assert.match(branch, /sendEvent\(res, \{ type: 'chunk', text: noteWholeAnswer\(greeting\) \}\)/);
   assert.match(branch, /\[DONE\]/);
   // Without this the one turn the fast path exists to speed up is the one turn
   // with no latency recorded — the note the arithmetic branch already carries.

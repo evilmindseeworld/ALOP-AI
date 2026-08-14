@@ -303,7 +303,13 @@ test("a turn refused by the request ceiling does not keep the user's money reser
     ROUTE.indexOf("if (!requestBudget.allowed)"),
     ROUTE.indexOf("requestsReserved = reservedRequests"),
   );
-  assert.match(refusal, /settleSpend\(user\.id, spendReserved, 0\)/);
+  assert.match(refusal, /reservationLedger\.settle\(\{[\s\S]{0,200}?actualCents: 0,/);
+  /* THROUGH THE LEDGER, so the early settlement and the one in the route's
+   * `finally` cannot both apply. Two paths reach a settlement for this turn and
+   * the second used to be stopped only by `spendReserved` being zeroed — a
+   * guard one edit away from being wrong. `settle_turn_reservation` transitions
+   * the row once and reports FALSE to the loser. */
+  assert.match(refusal, /turnId: turnContext\.turnId/);
   assert.match(refusal, /spendReserved = 0/);
 });
 

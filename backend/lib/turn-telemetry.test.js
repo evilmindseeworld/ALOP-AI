@@ -17,6 +17,17 @@ test("records each turn phase without retaining prompts or answers", async () =>
     }),
     /router failed/,
   );
+  telemetry.recordContextCompression({
+    compressed: true,
+    originalMessages: 20,
+    retainedMessages: 8,
+    originalChars: 48_000,
+    retainedChars: 11_000,
+    droppedMessages: 12,
+    relevantTurns: 2,
+    maxChars: 12_000,
+    maxMessages: 10,
+  });
   telemetry.recordSeat({ phase: "council", round: 1, model: "alpha", durationMs: 120, outcome: "answered" });
   telemetry.recordSeat({ phase: "tools", round: 2, model: "beta", durationMs: 80, outcome: "timed_out" });
   telemetry.recordToolRound({ round: 1, durationMs: 210, calls: 2, aborted: false });
@@ -31,6 +42,17 @@ test("records each turn phase without retaining prompts or answers", async () =>
   assert.deepEqual(row.contextReads.summary, { ms: 4, ok: true });
   assert.deepEqual(row.routerReads.search, { ms: 6, ok: false });
   assert.equal(row.contextMs, 4);
+  assert.deepEqual(row.contextCompression, {
+    compressed: true,
+    originalMessages: 20,
+    retainedMessages: 8,
+    originalChars: 48_000,
+    retainedChars: 11_000,
+    droppedMessages: 12,
+    relevantTurns: 2,
+    maxChars: 12_000,
+    maxMessages: 10,
+  });
   assert.equal(row.synthesisMs, 330);
   assert.equal(row.toolMs, 210);
   assert.equal(row.toolRounds[0].calls, 2);
@@ -45,4 +67,11 @@ test("the first ceiling reason wins", () => {
   telemetry.markCeiling("wall");
   telemetry.markCeiling("tool_budget");
   assert.deepEqual(telemetry.snapshot().ceiling, { hit: true, reason: "wall" });
+});
+
+test("compression telemetry clamps non-finite sizes", () => {
+  const telemetry = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  telemetry.recordContextCompression({ originalChars: Infinity, retainedMessages: Number.NaN });
+  assert.equal(telemetry.snapshot().contextCompression.originalChars, 0);
+  assert.equal(telemetry.snapshot().contextCompression.retainedMessages, 0);
 });

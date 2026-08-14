@@ -10,6 +10,7 @@
 
 function createTurnTelemetry({ now = Date.now, startedAt = now() } = {}) {
   const contextReads = {};
+  let contextCompression = null;
   const routerReads = {};
   const seats = [];
   const toolRounds = [];
@@ -48,6 +49,27 @@ function createTurnTelemetry({ now = Date.now, startedAt = now() } = {}) {
   return {
     measureContext(name, work) {
       return measure(contextReads, name, work);
+    },
+    /**
+    * Record only shape and size. Context itself is user data and must never
+     * enter the audit row or a diagnostic log.
+     */
+    recordContextCompression(stats = {}) {
+      const nonNegative = (value) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? Math.max(0, numeric) : 0;
+      };
+      contextCompression = {
+        compressed: Boolean(stats.compressed),
+        originalMessages: nonNegative(stats.originalMessages),
+        retainedMessages: nonNegative(stats.retainedMessages),
+        originalChars: nonNegative(stats.originalChars),
+        retainedChars: nonNegative(stats.retainedChars),
+        droppedMessages: nonNegative(stats.droppedMessages),
+        relevantTurns: nonNegative(stats.relevantTurns),
+        maxChars: nonNegative(stats.maxChars),
+        maxMessages: nonNegative(stats.maxMessages),
+      };
     },
     measureRouter(name, work) {
       return measure(routerReads, name, work);
@@ -114,6 +136,7 @@ function createTurnTelemetry({ now = Date.now, startedAt = now() } = {}) {
         msToFirstProgress: Number.isFinite(msToFirstProgress) ? msToFirstProgress : null,
         contextReads,
         contextMs,
+        contextCompression,
         routerReads,
         fastCalls,
         seats: [...seats],

@@ -1,4 +1,5 @@
 import "@testing-library/jest-dom/vitest";
+import { beforeEach } from "vitest";
 
 
 // jsdom implements no layout, so it ships no scrollIntoView at all — calling it
@@ -87,3 +88,21 @@ if (typeof globalThis.localStorage === "undefined") {
     },
   });
 }
+
+/* AND IT IS CLEARED BEFORE EVERY TEST, which is not belt-and-braces.
+ *
+ * vitest runs several test FILES in one worker, and this setup file's guard
+ * above only installs the shim when `globalThis.localStorage` is undefined — so
+ * the second file in a worker inherits the FIRST file's Map, rows and all.
+ * That is how `useChats.test.jsx` came to read a `chat-1` row it never wrote:
+ * `deleteChat("doomed")` found no such chat and returned early, and the whole
+ * suite failed only when run together and passed when run alone. Any
+ * localStorage-backed cache (chatCache, the theme, the sidebar state) can do
+ * the same to any file that runs after it. */
+beforeEach(() => {
+  try {
+    globalThis.localStorage?.clear();
+  } catch {
+    /* A test may have replaced localStorage with its own stub. Not ours to fix. */
+  }
+});

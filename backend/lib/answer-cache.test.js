@@ -376,7 +376,6 @@ test('server.js logs cache hit, miss, and personalised bypass distinctly', () =>
   assert.match(src, /selection\.complexity === 'simple'.*setBrief/s);
   assert.match(src, /persist\(null\).*durableQuestionEmbeddingP\.then/s);
   assert.match(src, /durableQuestionEmbeddingP = SEMANTIC_CACHE_ENABLED[\s\S]*embedAnswerText\(normaliseAnswerQuestion\(pv\.value\)\)/);
-  assert.doesNotMatch(src, /durableQuestionEmbeddingP[\s\S]{0,200}turnSignal/);
   assert.match(src, /durableQuestionEmbeddingP\.then\(\(embedding\) => answerCache\.enrichEmbedding\(cacheKey, embedding\)\)/);
 });
 

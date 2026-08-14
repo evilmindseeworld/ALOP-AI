@@ -1613,7 +1613,7 @@ const FACTS_DEDUPE_LIMIT = 200;
  * recency-ranked memory rather than late relevance-ranked memory — the same
  * trade `settleByDeadline` exists for on the search fan-out. Nothing on the
  * WRITE path has a deadline; it runs after the user has been answered. */
-const EMBED_DEADLINE_MS = 600;
+const EMBED_DEADLINE_MS = 2500;
 
 /**
  * One string to one vector, or null.
@@ -1624,7 +1624,7 @@ const EMBED_DEADLINE_MS = 600;
  */
 const embedText = async (text, parentSignal) => {
   if (!GOOGLE_API_KEY || !text) return null;
-  const timed = timeoutSignal(parentSignal, 10000);
+  const timed = timeoutSignal(parentSignal, 30000);
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${EMBED_MODEL}:embedContent?key=${GOOGLE_API_KEY}`;
     const res = await fetch(url, {

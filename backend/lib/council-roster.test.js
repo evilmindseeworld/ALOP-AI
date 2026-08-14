@@ -87,8 +87,14 @@ test("the free tier is a real subset, not the whole council", () => {
   // If every seat were free, the Pro tag on the sign-in page and the plan split
   // in classifyRequest would both be decoration.
   const free = backendSeats.filter((s) => s.endsWith("free"));
+  assert.ok(free.length <= 3, `free plan exposes ${free.length} seats; its maximum is 3`);
   assert.ok(free.length > 0, "no free seats — the free plan would have no council");
   assert.ok(free.length < backendSeats.length, "every seat is free — Pro buys nothing");
+});
+
+test("the server applies the plan boundary and logs the selected tier", () => {
+  assert.match(BACKEND, /const planRoster = rosterForPlan\(userPlan, COUNCIL\)/);
+  assert.match(BACKEND, /\[COUNCIL\] seats=\$\{selection\.members\.length\} tier=\$\{userPlan\}/);
 });
 
 test("the social preview card shows the roster the server runs", () => {

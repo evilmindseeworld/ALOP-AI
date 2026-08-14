@@ -203,7 +203,7 @@ const COUNCIL = [
   { model: 'nvidia/nemotron-3-nano-30b-a3b:free',   temperature: 0.8, free: true,  medianMs: 2100 },
 ];
 
-const FREE_COUNCIL = COUNCIL.filter((m) => m.free);
+const FREE_COUNCIL = COUNCIL.filter((m) => m.free).slice(0, 3);
 // The single model used for streaming: synthesis, greetings, fallback and
 // search extraction all speak with one voice, so it stays deterministic.
 //
@@ -607,6 +607,7 @@ const {
   wantsDetailedAnswer,
   needsWikiCheck,
   classifyRequest,
+  rosterForPlan,
   routeByRule,
   escalateForResearch,
 } = require('./lib/router');
@@ -1030,7 +1031,8 @@ const { todayLine, freshnessWindow, normalizeDate, dateLabel, BRAVE_FRESHNESS, G
 const { parseRoutePlan } = require('./lib/search-plan');
 const { readSonar } = require('./lib/perplexity');
 const { createSearchCache, comprehensiveSearchKey } = require('./lib/search-cache');
-const { createAnswerCache, ttlFor, normalise: normaliseAnswerQuestion, validEmbedding } = require('./lib/answer-cache');
+const { createAnswerCache, ttlFor, normalise: normaliseAnswerQuestion } = require('./lib/answer-cache');
+const { requestBody: answerEmbeddingRequest, parseEmbedding: parseAnswerEmbedding } = require('./lib/answer-embeddings');
 // How a background job gets a real council turn without a socket. See the brain
 // seam under "THE BRAIN'S WAY IN", below the council route.
 const { createSinkResponse, createSinkRequest } = require('./lib/sink-response');
@@ -1648,12 +1650,11 @@ const embedAnswerText = async (text) => {
     const res = await fetch('https://openrouter.ai/api/v1/embeddings', {
       method: 'POST',
       headers: { Authorization: `Bearer ${OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ model: 'openai/text-embedding-3-small', input: String(text).slice(0, 2000), dimensions: 768 }),
+      body: JSON.stringify(answerEmbeddingRequest(text)),
       signal: timed.signal,
     });
     if (!res.ok) { console.error(`[ANSWERS] EMBEDDING ERROR status=${res.status}`); return null; }
-    const values = (await res.json())?.data?.[0]?.embedding;
-    return validEmbedding(values) ? values : null;
+    return parseAnswerEmbedding(await res.json());
   } catch (e) {
     console.error(`[ANSWERS] EMBEDDING ERROR reason=${timed.signal.aborted ? 'timeout' : e.message}`);
     return null;
@@ -2645,7 +2646,7 @@ async function handleCouncilTurn(req, res) {
     const lang = detectLanguage(pv.value);
     // The plan decides the roster HERE, once, rather than inside the router —
     // which is what lets the router be called with a sentence and checked.
-    const planRoster = userPlan === 'pro' ? COUNCIL : FREE_COUNCIL;
+    const planRoster = rosterForPlan(userPlan, COUNCIL);
     let selection = classifyRequest(pv.value, planRoster, isDetailed);
     /* `let`, because a turn the router later sends to live research is
      * re-selected onto the full roster below — see escalateForResearch. The
@@ -3221,6 +3222,7 @@ async function handleCouncilTurn(req, res) {
         selection = widened;
       }
     }
+    console.log(`[COUNCIL] seats=${selection.members.length} tier=${userPlan}`);
     /* WHETHER THIS TURN'S FACTS CAME FROM THE LIVE WEB, which is what decides
      * the cached answer's shelf life.
      *

@@ -405,6 +405,14 @@ function routeByRule(text, { hasConversationContext = false } = {}) {
 /** Only confidently simple questions narrow. Moderate means uncertain, so it
  * keeps the whole roster just like explicitly complex work. */
 const TIER_SEATS = { simple: 1 };
+const MAX_FREE_SEATS = 3;
+
+/** Apply the subscription boundary before complexity narrows or research widens. */
+function rosterForPlan(plan, council) {
+  const roster = Array.isArray(council) ? council : [];
+  if (plan === "pro") return roster;
+  return roster.filter((seat) => seat?.free).slice(0, MAX_FREE_SEATS);
+}
 
 /**
  * An unmeasured seat's assumed latency, in ms. Deliberately pessimistic and
@@ -595,4 +603,6 @@ module.exports = {
   DETAIL_PHRASES,
   GENERATION_RE,
   TIER_SEATS,
+  MAX_FREE_SEATS,
+  rosterForPlan,
 };

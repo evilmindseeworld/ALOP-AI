@@ -9,6 +9,8 @@ const {
   DETAIL_PHRASES,
   escalateForResearch,
   narrowRoster,
+  rosterForPlan,
+  MAX_FREE_SEATS,
 } = require("./router");
 
 // ===== language: the overlap bug =====
@@ -386,6 +388,17 @@ test("a missing roster does not throw", () => {
   const s = classifyRequest("q", undefined);
   assert.deepEqual(s.members, []);
   assert.equal(s.quorum, 0);
+});
+
+test("the plan boundary caps free users while pro retains the full roster", () => {
+  const configured = ROSTER.map((seat) => ({ ...seat, free: true }));
+  const free = rosterForPlan("free", configured);
+  const pro = rosterForPlan("pro", configured);
+
+  assert.equal(MAX_FREE_SEATS, 3);
+  assert.equal(free.length, 3);
+  assert.deepEqual(free, configured.slice(0, 3));
+  assert.equal(pro, configured);
 });
 
 // ===== zero-model routing =====

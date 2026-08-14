@@ -41,6 +41,8 @@ const { clerkMiddleware, getAuth, clerkClient } = require('@clerk/express');
 const Stripe = require('stripe');
 const { timeoutSignal, childAbortController } = require('./lib/abort');
 const { createTurnTelemetry } = require('./lib/turn-telemetry');
+const { rescueReasoning } = require('./lib/reasoning-rescue');
+const { createTurnContext } = require('./lib/turn-context');
 const { priceTurn, reservationCents, LIMITS, countTurnRequests, reservationRequests, REQUEST_LIMITS } = require('./lib/spend');
 const { createRequestBudget } = require('./lib/request-budget');
 const { ALOP_IDENTITY, withIdentity } = require('./lib/platform-identity');
@@ -456,6 +458,10 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
         ...(Number.isFinite(turnDeadlineAt) ? { deadlineAt: turnDeadlineAt } : {}),
         includeUsage: STREAM_USAGE_ACCOUNTING,
         reasoning: modelOptions?.reasoning,
+        /* One POST per attempt, including the retry a pre-body 429 triggers.
+         * Without this the streamed answer — the single request every turn
+         * makes — was invisible to the account-wide request ceiling. */
+        ...(typeof answerOptions?.onAttempt === 'function' ? { onAttempt: answerOptions.onAttempt } : {}),
       },
     );
   } catch (err) {
@@ -480,6 +486,17 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
    * answer is hundreds of small appends, and repeated `+=` on a growing string
    * is the shape that turns a long answer into a quadratic. */
   const emitted = [];
+  /* INTERNAL REASONING, HELD AND NEVER WRITTEN AS IT ARRIVES.
+   *
+   * `parseOpenRouterSseLine` used to return `content || reasoning` as one
+   * `text`, so a model that streams its thinking had that thinking rendered as
+   * the answer, revealed by the same cadence, saved into the chat and written
+   * into the SHARED answer cache — where the next user with a similar question
+   * would read it. The rescue itself is worth keeping (some models put the
+   * whole answer in `reasoning` when it is excluded) so it is kept, but as the
+   * same rule lib/model-reply.js applies off-stream: promote reasoning to an
+   * answer only if the stream ends having emitted no content at all. */
+  const reasoningParts = [];
   let protocolCandidate = true;
   const held = [];
   /* Handed back to the caller BY REFERENCE, so that a throw halfway through
@@ -511,6 +528,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
       if (frame.usage) {
         try { answerOptions.onUsage?.(frame.usage); } catch { /* telemetry must never fail a stream */ }
       }
+      if (frame.reasoning) reasoningParts.push(frame.reasoning);
       if (frame.text) {
         if (protocolCandidate) {
           held.push(frame.text);
@@ -550,6 +568,27 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
       emitted.push(sanitised.text);
       res.write(`data: ${JSON.stringify({ type: 'chunk', text: sanitised.text })}\n\n`);
     }
+  }
+  /* THE RESCUE, AND IT FIRES ONCE, AT THE END, OR NOT AT ALL.
+   *
+   * A model asked to exclude its reasoning sometimes writes the whole answer
+   * into `reasoning` and leaves `content` empty for the entire stream. Blanking
+   * those seats would be a regression, so the text is promoted here — after the
+   * stream is known to have produced no content — and it goes through the same
+   * protocol sanitiser every other answer does. `meta.textSource` tells the
+   * caller which it got; the answer cache and the chat write are the consumers
+   * that care. */
+  const rescued = rescueReasoning({
+    emittedLength: emitted.join('').length,
+    reasoningParts,
+    sanitize: (text) => sanitizeAnswerText(text, answerOptions),
+  });
+  if (rescued) {
+    meta.textSource = 'reasoning';
+    try { answerOptions.onTextSource?.('reasoning'); } catch { /* telemetry must never fail a stream */ }
+    if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
+    emitted.push(rescued.text);
+    res.write(`data: ${JSON.stringify({ type: 'chunk', text: rescued.text })}\n\n`);
   }
   if (!emitted.length) throw new Error('Model returned no usable answer');
   const citationSuffix = requiredCitationSuffix(emitted.join(''), answerOptions.requiredSourceUrls);
@@ -780,7 +819,7 @@ const { tryArithmetic } = require('./lib/arithmetic');
 // Only where it helps: a query about tax law or a person is not improved by a
 // country appended to it, so the model is told to use it when the answer is
 // local and to leave it alone otherwise.
-const planTurn = async (text, convSummary, region, signal) => {
+const planTurn = async (text, convSummary, region, signal, onAttempt) => {
   const userContent = convSummary ? `Context: ${convSummary}\n\nQuestion: ${text}` : text;
   const locale = region
     ? ` The user appears to be in ${region.place}. If — and only if — the answer depends on where they are (prices, availability, retailers, local services, regulations), include that country in the query. Otherwise ignore it.`
@@ -866,7 +905,7 @@ openai ceo ${new Date().getUTCFullYear()}${locale}`;
   // 120 tokens rather than 50: two queries plus a stray word of preamble did
   // not fit in 50, and the ceiling truncated the SECOND query mid-word, which
   // parses as a valid short query and searches for half a phrase.
-  const response = await callModel(FAST_MODEL, [{ role: 'system', content: sys }, { role: 'user', content: userContent }], 0.0, 4000, 120, signal);
+  const response = await callModel(FAST_MODEL, [{ role: 'system', content: sys }, { role: 'user', content: userContent }], 0.0, 4000, 120, signal, onAttempt ? { onAttempt } : undefined);
   return parseRoutePlan(response);
 };
 
@@ -2667,7 +2706,22 @@ async function handleCouncilTurn(req, res) {
   /* Admission deadline for a per-minute stream retry only. It does not abort
    * ordinary council work or the deliberately unbounded recovery council. */
   const turnDeadlineAt = t0 + STREAM_TURN_BUDGET_MS;
-  const telemetry = createTurnTelemetry({ startedAt: t0 });
+  const turnContext = createTurnContext({
+    operationId: req.operationId,
+    chatId: typeof req.body?.chatId === 'string' ? req.body.chatId : null,
+    startedAt: t0,
+    deadlineAt: t0 + STREAM_TURN_BUDGET_MS,
+  });
+  const telemetry = createTurnTelemetry({ startedAt: t0, context: turnContext });
+  /* EVERY PHYSICAL POST TO THE GATEWAY IS RECORDED, RETRIES INCLUDED.
+   *
+   * `recordAttempt(phase)` is the sink lib/openrouter.js calls once per request
+   * on both the streaming and non-streaming paths. Before it existed the only
+   * count anyone had was DERIVED — one per seat record, one for synthesis —
+   * which cannot see a retry, and retries are real requests against an
+   * account-wide daily cap. `countTurnRequests` now settles against the higher
+   * of the two. */
+  const recordAttempt = (phase) => (row) => telemetry.recordProviderAttempt({ ...row, phase });
   const turnController = new AbortController();
   const turnSignal = turnController.signal;
   let auditUserId = null;
@@ -2711,6 +2765,11 @@ async function handleCouncilTurn(req, res) {
   };
   const abortOnDisconnect = () => {
     if (!res.writableEnded && !res.writableFinished && !turnSignal.aborted) {
+      /* WHY, not just THAT. `aborted: true` was one number for a user closing a
+       * tab, a deadline expiring and an upstream hanging up — three different
+       * problems with three different fixes, and the row could not tell them
+       * apart. */
+      telemetry.markCancelled('client_disconnected');
       turnController.abort(new DOMException('Client disconnected', 'AbortError'));
     }
   };
@@ -2999,6 +3058,26 @@ async function handleCouncilTurn(req, res) {
     }
     requestsReserved = reservedRequests;
 
+    /* THE METERED `callModel`, DEFINED BELOW BOTH ADMISSION GATES.
+     *
+     * The same call every seat already made, with the physical-attempt sink
+     * attached. Its POSITION is deliberate and is pinned by
+     * middleware-order.test.js: nothing capable of spending is even constructed
+     * until the money ceiling and the account-wide request ceiling have both
+     * admitted the turn.
+     *
+     * Every call site inside this handler goes through it. The ones outside —
+     * `rememberTurn`'s summary and fact extraction — are fire-and-forget and are
+     * counted at dispatch by `recordFastCalls` instead, because they settle
+     * after this turn's row has been written. */
+    const meteredCallModel = (model, messages, temperature, timeoutMs, maxTokens, signal, options = {}) => {
+      const { phase, ...rest } = options || {};
+      return callModel(model, messages, temperature, timeoutMs, maxTokens, signal, {
+        ...rest,
+        onAttempt: recordAttempt(phase || 'council'),
+      });
+    };
+
     const truncatedPrompt = truncatePrompt(pv.value);
     /* `onUsage` reaches streamOnce unchanged through every streamModel call on
      * this route, which is why it lives here rather than being threaded as a
@@ -3006,6 +3085,10 @@ async function handleCouncilTurn(req, res) {
     const answerOptions = {
       allowProtocolJson: userRequestedProtocolJson(truncatedPrompt),
       onUsage: (usage) => telemetry.recordUsage(usage, { phase: 'synthesis' }),
+      /* The streamed answer is one physical request, and a stream that 429s
+       * before its first byte is re-issued — two. Neither was counted. */
+      onAttempt: recordAttempt('synthesis'),
+      onTextSource: (source) => telemetry.recordTextSource(source),
     };
     const histArr = sanitizeHistory(history);
 
@@ -3360,7 +3443,7 @@ async function handleCouncilTurn(req, res) {
              * indistinguishable from a member that answered nothing. The
              * verdict it printed was therefore an undercount of exactly the
              * models the feature most wants to find. */
-            const reply = await callModel(model, toolMessages(probeMsgs, probeRegistry, { round: 1, isFinalRound: false }), 0.0, selection.whipMs, selection.tokenLimit, turnSignal, { structured: true });
+            const reply = await meteredCallModel(model, toolMessages(probeMsgs, probeRegistry, { round: 1, isFinalRound: false }), 0.0, selection.whipMs, selection.tokenLimit, turnSignal, { structured: true, phase: 'probe' });
             telemetry.recordUsage(reply.usage, { phase: 'probe' });
             return { member: model, ...parseToolRequests(reply) };
           } catch (err) {
@@ -3435,7 +3518,7 @@ async function handleCouncilTurn(req, res) {
     }
     const routeP = skipRouter || ruleRoute
       ? Promise.resolve(ruleRoute || NO_ROUTE)
-      : telemetry.measureRouter('route', () => planTurn(pv.value, convSummary, region, turnSignal)).catch(() => NO_ROUTE);
+      : telemetry.measureRouter('route', () => planTurn(pv.value, convSummary, region, turnSignal, recordAttempt('router'))).catch(() => NO_ROUTE);
 
     if ((await routeP).memory) {
       console.log('[COUNCIL] Memory question.');
@@ -3856,7 +3939,8 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       const nativeSeat = selection.toolSeatModel
         ? createNativeToolSeat({
             model: selection.toolSeatModel,
-            callModel,
+            callModel: (m, msgs, temp, ms, tokens, sig, opts) =>
+              meteredCallModel(m, msgs, temp, ms, tokens, sig, { ...opts, phase: 'tool_seat' }),
             registry,
             effort: TOOL_SEAT_EFFORT,
             onUsage: (usage) => telemetry.recordUsage(usage, { phase: 'tool_seat' }),
@@ -3889,6 +3973,11 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
            * server-issued search that no model asked for. */
           const via = e.seeded ? 'seeded' : (e.sources || []).join('+') || 'fence';
           if (e.type === 'tool_start') toolCallsBySource[via] = (toolCallsBySource[via] || 0) + 1;
+          /* TOOL SUCCESS, which nothing counted. `toolRounds` records how many
+           * calls a round made and how long it took; whether they WORKED is the
+           * number that decides whether a tool earns its ~1,500 tokens per seat
+           * per turn, and it was only ever a console line. */
+          if (e.type === 'tool_result') telemetry.recordToolOutcome({ name: e.name, ok: e.ok !== false, ms: e.ms, round: e.round });
           console.log(`[TOOLS] r${e.round} ${e.type} ${e.name} via=${via}${e.ok === false ? ' FAILED' : ''} — ${e.summary}`);
           /* `sources` stays OUT of the SSE frame. Which protocol a seat used is
            * an implementation detail of the council, and the seat progress
@@ -3924,14 +4013,14 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
               ? ''
               : nativeReply;
           }
-          const reply = await callModel(
+          const reply = await meteredCallModel(
             model,
             toolMessages(councilMsgs, registry, { ...ctx, attachedFiles: attached }),
             0.0,
             selection.whipMs,
             selection.tokenLimit,
             signal,
-            { structured: true },
+            { structured: true, phase: 'tools' },
           );
           telemetry.recordUsage(reply.usage, { phase: 'council' });
           const parsed = parseToolRequests(reply, answerOptions);
@@ -3989,7 +4078,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
          * reply can count toward quorum or reach synthesis. A JSON-looking
          * tool block is deliberately stripped, never executed. */
         const sanitisedFallbackCallModel = async (model, messages, temperature, whipMs, tokenLimit, signal) => {
-          const raw = await callModel(model, messages, temperature, whipMs, tokenLimit, signal);
+          const raw = await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, { phase: 'tool_plain_fallback' });
           return sanitizeAnswerText(raw, answerOptions).text;
         };
         validResponses = await runCouncilWithWhip(
@@ -4040,7 +4129,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
           onSeatTiming: reportCouncilTiming('council'),
           onFinish: reportCouncilFinish,
           callModel: async (model, messages, temperature, whipMs, tokenLimit, signal) =>
-            sanitizeAnswerText(await callModel(model, messages, temperature, whipMs, tokenLimit, signal), answerOptions).text,
+            sanitizeAnswerText(await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, { phase: 'council' }), answerOptions).text,
         },
       );
     }

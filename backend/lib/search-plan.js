@@ -22,6 +22,8 @@
  * one gets a test rather than a hope.
  */
 
+const { validate, ROUTE_PLAN } = require("./schemas");
+
 /** Longer than any real query; the providers themselves cut off around here. */
 const MAX_QUERY_LEN = 200;
 const MAX_QUERIES = 2;
@@ -169,8 +171,21 @@ function parseSearchPlan(raw) {
 function parseRoutePlan(raw) {
   const text = typeof raw === "string" ? raw : "";
   const first = text.split("\n").map(clean).find(Boolean) || "";
-  if (/^memory[.!]?$/i.test(first)) return { memory: true, queries: null };
-  return { memory: false, queries: parseSearchPlan(text) };
+  const plan = /^memory[.!]?$/i.test(first)
+    ? { memory: true, queries: null }
+    : { memory: false, queries: parseSearchPlan(text) };
+  /* THE PLAN IS VALIDATED BEFORE IT LEAVES, and the fallback is NO_ROUTE rather
+   * than a throw.
+   *
+   * Everything above this line is defensive parsing of a model's prose, and each
+   * guard was added after a specific silent failure. The schema is the check
+   * that survives the NEXT one: a plan that does not match the contract routes
+   * the turn to the plain council — which is the behaviour a router timeout
+   * already produces and which the route handler already knows how to run —
+   * rather than sending a malformed value into the search providers or the
+   * memory branch. Both of those failures are answers, not errors, which is why
+   * they cost two investigations before the parser existed. */
+  return validate(ROUTE_PLAN, plan).ok ? plan : { memory: false, queries: null };
 }
 
 module.exports = { parseSearchPlan, parseRoutePlan, MAX_QUERIES, MAX_QUERY_LEN };

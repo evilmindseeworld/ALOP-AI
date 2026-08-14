@@ -265,3 +265,47 @@ test('garbage SPEND environment values fall back to finite defaults', () => {
     assert.equal(Number.isInteger(value), true);
   }
 });
+
+/* ---- physical requests beat derived ones ------------------------------ */
+
+const { countTurnRequests } = defaultSpend;
+
+test('a measured request count overrides the derived one when it is higher', () => {
+  /* Two seats, one synthesis: the derivation says 3. The socket says 6 —
+   * lib/openrouter.js retried a 5xx twice on one seat and the streamed answer
+   * was re-issued once. Those are real POSTs against an account-wide daily cap,
+   * and until the attempt sink existed they were free. */
+  const snapshot = {
+    seats: [{ model: 'a' }, { model: 'b' }],
+    synthesisMs: 900,
+    providerRequests: 6,
+  };
+  assert.equal(countTurnRequests(snapshot), 6);
+});
+
+test('the derived count still wins when it is higher, so a truncated row cannot under-charge', () => {
+  /* The fire-and-forget pair are counted at DISPATCH and settle after the row
+   * is written, so a measured count can legitimately be short. Under-counting a
+   * SHARED cap lets one user exhaust the day for everybody, which is why this
+   * takes the max rather than trusting the measurement outright. */
+  const snapshot = {
+    seats: [{ model: 'a' }, { model: 'b' }, { model: 'c' }],
+    synthesisMs: 900,
+    routerReads: { route: { ms: 10 } },
+    providerRequests: 2,
+  };
+  assert.equal(countTurnRequests(snapshot), 5);
+});
+
+test('fire-and-forget calls are added on top of the measured count', () => {
+  assert.equal(
+    countTurnRequests({ seats: [{ model: 'a' }], providerRequests: 4, fastCalls: 2 }),
+    6,
+  );
+});
+
+test('a row with no measurement behaves exactly as it did before', () => {
+  const before = { seats: [{ model: 'a' }, { model: 'b' }], synthesisMs: 100, fastCalls: 2 };
+  assert.equal(countTurnRequests(before), 5);
+  assert.equal(countTurnRequests({ ...before, providerRequests: 0 }), 5);
+});

@@ -8,7 +8,30 @@
  * prompts, answers or provider payloads.
  */
 
-function createTurnTelemetry({ now = Date.now, startedAt = now() } = {}) {
+function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null } = {}) {
+  /* THE IDS, CARRIED RATHER THAN RE-DERIVED. Every row this produces is read
+   * later by someone asking "what happened on this turn", and until the ids
+   * were in the row itself the answer required joining an audit row to a log
+   * line by timestamp. See lib/turn-context.js for why there are two of them. */
+  const ids = context && typeof context.ids === 'function' ? context.ids() : null;
+  /* PHYSICAL provider requests, one record per POST that reached a gateway —
+   * retries included. `seats` counts LOGICAL asks: a seat retried twice inside
+   * lib/openrouter.js is one seat record and three requests against an
+   * account-wide daily cap, and the ceiling built to bound that cap could not
+   * see the difference. */
+  const providerAttempts = [];
+  const MAX_ATTEMPT_RECORDS = 200;
+  const attemptTotals = { total: 0, ok: 0, failed: 0, retries: 0, byOutcome: {}, byProvider: {} };
+  /* Tool executions, by name and outcome. The agent loop already reports rounds
+   * and call counts; what nothing recorded is whether the calls WORKED, which
+   * is the number that decides whether a tool is worth its tokens. */
+  const toolOutcomes = [];
+  let cancellation = null;
+  /* Where the answer's text came from. 'content' is a model writing an answer;
+   * 'reasoning' is an answer rescued from excluded thinking (see
+   * lib/reasoning-rescue.js) and is a WEAKER result — worth knowing about
+   * before it is cached and served to somebody else. */
+  let textSource = null;
   const contextReads = {};
   let contextCompression = null;
   const routerReads = {};
@@ -126,6 +149,74 @@ function createTurnTelemetry({ now = Date.now, startedAt = now() } = {}) {
       usageByPhase.set(key, bucket);
       usageCalls += 1;
     },
+    /**
+     * One physical request to a model gateway.
+     *
+     * Fed by `options.onAttempt` in lib/openrouter.js, which fires once per POST
+     * on both the streaming and non-streaming paths. Bounded so that a pathological
+     * retry storm cannot grow an audit row without limit; the COUNTS below are
+     * kept exactly either way, because they are what the spend ceiling reads.
+     *
+     * @param {{provider?: string, model?: string, attempt?: number,
+     *          outcome?: string, status?: number|null, ms?: number,
+     *          streamed?: boolean, phase?: string}} row
+     */
+    recordProviderAttempt(row) {
+      if (!row || typeof row !== 'object') return;
+      attemptTotals.total += 1;
+      if (row.outcome === 'ok') attemptTotals.ok += 1; else attemptTotals.failed += 1;
+      if (Number(row.attempt) > 1) attemptTotals.retries += 1;
+      const outcome = String(row.outcome || 'unknown');
+      const provider = String(row.provider || 'openrouter');
+      attemptTotals.byOutcome[outcome] = (attemptTotals.byOutcome[outcome] || 0) + 1;
+      attemptTotals.byProvider[provider] = (attemptTotals.byProvider[provider] || 0) + 1;
+      /* The COUNTS above are exact; the per-attempt DETAIL below is capped. A
+       * retry storm must not grow this object without limit, and the counts are
+       * what the spend ceiling settles against — losing detail costs a
+       * diagnostic, losing a count costs money. */
+      if (providerAttempts.length >= MAX_ATTEMPT_RECORDS) return;
+      providerAttempts.push({
+        provider: String(row.provider || 'openrouter'),
+        model: String(row.model || 'unknown'),
+        phase: row.phase ? String(row.phase) : null,
+        attempt: Number.isFinite(row.attempt) ? row.attempt : 1,
+        outcome: String(row.outcome || 'unknown'),
+        status: Number.isFinite(row.status) ? row.status : null,
+        ms: Math.max(0, Number(row.ms) || 0),
+        streamed: Boolean(row.streamed),
+      });
+    },
+    /**
+     * Did a tool call do what it was asked?
+     *
+     * @param {{name?: string, ok?: boolean, ms?: number, round?: number, error?: string}} row
+     */
+    recordToolOutcome(row) {
+      if (!row || typeof row !== 'object') return;
+      toolOutcomes.push({
+        name: String(row.name || 'unknown'),
+        ok: row.ok !== false,
+        ms: Math.max(0, Number(row.ms) || 0),
+        round: Number.isFinite(row.round) ? row.round : null,
+      });
+    },
+    /**
+     * Why the turn stopped early, when it did.
+     *
+     * `aborted: true` on the snapshot has always said THAT a turn was cancelled
+     * and never WHY, so a user closing a tab, a deadline expiring and an
+     * upstream disconnect were one number. They call for three different fixes.
+     */
+    recordTextSource(source) {
+      if (typeof source === 'string' && source) textSource = source;
+    },
+    markCancelled(reason, { atMs = null } = {}) {
+      if (cancellation) return;
+      cancellation = {
+        reason: String(reason || 'unknown'),
+        atMs: Number.isFinite(atMs) ? atMs : Math.max(0, now() - startedAt),
+      };
+    },
     recordSeat(row) {
       if (!row || typeof row !== "object") return;
       seats.push({
@@ -189,9 +280,40 @@ function createTurnTelemetry({ now = Date.now, startedAt = now() } = {}) {
         // Sub-cent sums accumulate float noise that reads as false precision.
         usage.costUsd = Math.round(usage.costUsd * 1e6) / 1e6;
       }
+      /* Summed, not just listed. `providerRequests` is what lib/spend.js reads
+       * to settle the account-wide request ceiling, and a settlement that had
+       * to walk an array to find its own number would be a settlement that
+       * silently returns 0 for a truncated row. */
+      const toolTotals = toolOutcomes.length === 0 ? null : {
+        calls: toolOutcomes.length,
+        ok: toolOutcomes.filter((t) => t.ok).length,
+        failed: toolOutcomes.filter((t) => !t.ok).length,
+        byName: toolOutcomes.reduce((acc, t) => {
+          const entry = acc[t.name] || { calls: 0, ok: 0, ms: 0 };
+          entry.calls += 1;
+          if (t.ok) entry.ok += 1;
+          entry.ms += t.ms;
+          acc[t.name] = entry;
+          return acc;
+        }, {}),
+      };
       return {
         usage,
         telemetry: "council_turn",
+        ...(ids || {}),
+        providerAttempts: {
+          ...attemptTotals,
+          byOutcome: { ...attemptTotals.byOutcome },
+          byProvider: { ...attemptTotals.byProvider },
+          truncatedDetail: providerAttempts.length >= MAX_ATTEMPT_RECORDS,
+        },
+        /* The number the ceiling settles against. Named separately from the
+         * breakdown so a reader of lib/spend.js does not have to know the
+         * breakdown's shape to know which field is the count. */
+        providerRequests: attemptTotals.byProvider.openrouter || 0,
+        toolOutcomes: toolTotals,
+        cancellation,
+        textSource,
         category,
         turnMs: Math.max(0, now() - startedAt),
         msToFirstByte: Number.isFinite(msToFirstByte) ? msToFirstByte : null,

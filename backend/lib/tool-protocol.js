@@ -24,6 +24,8 @@
  */
 
 /** A fenced ```tool_call block. Tolerates spelling and casing variation. */
+const { validate, TOOL_CALL } = require('./schemas');
+
 const FENCE = /```[ \t]*tool[_-]?call[ \t]*\r?\n([\s\S]*?)```/gi;
 
 /** A JSON fence that may be a model's visible rendering of a tool request. */
@@ -78,7 +80,14 @@ const asCall = (name, rawArgs, { source = "fence", id = null } = {}) => {
   if (args === null) return null;
   const call = { name: trimmed, args, source };
   if (id) call.id = id;
-  return call;
+  /* THE SHAPE IS ASSERTED, NOT ASSUMED, because everything above this line came
+   * out of a model. The checks in this function cover the failures already seen
+   * in production; the schema covers the next one — a provider that starts
+   * sending `source: "builtin"`, an id as a number, args as an array — by
+   * refusing it here rather than letting it reach the executor as something
+   * that merely looks like a call. A refused call is dropped, which is the same
+   * outcome an unparseable one has always had. */
+  return validate(TOOL_CALL, call).ok ? call : null;
 };
 
 /** Native path: message.tool_calls, accepting OpenRouter and legacy flat shapes. */

@@ -445,6 +445,31 @@ function countTurnRequests(snapshot) {
    * two functions cannot disagree about what kind of turn they were handed. */
   if (!seats.length && !snap.synthesisMs) requests += 1;
 
+  /* MEASURED BEATS DERIVED, AND THE HIGHER OF THE TWO WINS.
+   *
+   * Everything above this line INFERS requests from what the turn is known to
+   * have done — one per seat record, one for synthesis, one per router read.
+   * That inference cannot see a RETRY: lib/openrouter.js retries a 5xx and a
+   * provider 429 inside one `callModel`, and a streamed answer that fails
+   * before its first byte is re-issued against a fallback model. Each of those
+   * is a real POST against an account-wide daily cap, and each was free.
+   *
+   * `providerRequests` is now counted at the socket — one per POST that reached
+   * the gateway, retries included (lib/turn-telemetry.js, fed by
+   * `options.onAttempt`). It is the honest number.
+   *
+   * THE MAX, NOT THE MEASUREMENT ALONE, and the asymmetry is deliberate. The
+   * measured count misses the fire-and-forget calls that are counted at
+   * DISPATCH rather than at completion — `rememberTurn`'s summary and fact
+   * extraction settle after the response, so a turn's row can be written before
+   * their attempts land. Taking the max means the ceiling can never settle for
+   * LESS than it does today: under-counting a shared cap is the failure that
+   * lets one user exhaust the day for everyone. */
+  const measured = Number(snap.providerRequests);
+  if (Number.isFinite(measured) && measured > 0) {
+    requests = Math.max(requests, measured + Math.max(0, Number(snap.fastCalls) || 0));
+  }
+
   return Math.max(0, requests);
 }
 

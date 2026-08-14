@@ -152,6 +152,26 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
     const remainingMs = deadline - Date.now();
     if (parentSignal?.aborted) return blank('aborted');
     if (remainingMs <= 0) return blank('deadline');
+    /* ONE PHYSICAL REQUEST TO THE GATEWAY, REPORTED AS ONE.
+     *
+     * The retries in this loop are real POSTs against an account-wide daily
+     * request cap, and nothing outside this function could see them: the caller
+     * gets one reply and counts one seat, so a seat that was retried twice was
+     * billed as one request by the ceiling built to bound exactly that. The
+     * hook is optional and every failure in it is swallowed — telemetry must
+     * never fail a model call. */
+    const attemptStartedAt = Date.now();
+    let attemptReported = false;
+    const reportAttempt = (outcome, status = null) => {
+      if (attemptReported) return;
+      attemptReported = true;
+      try {
+        options?.onAttempt?.({
+          provider: 'openrouter', model: modelName, attempt: attempt + 1,
+          outcome, status, ms: Date.now() - attemptStartedAt, streamed: false,
+        });
+      } catch { /* a recorder must never break the call it is recording */ }
+    };
     const controller = new AbortController();
     const onParentAbort = () => controller.abort(parentSignal.reason);
     parentSignal?.addEventListener('abort', onParentAbort, { once: true });
@@ -167,9 +187,11 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
       });
       if (response.ok) {
         const payload = await response.json();
+        reportAttempt('ok', response.status);
         return structured ? normaliseCompletion(payload) : completionText(payload);
       }
       const errorBody = await response.text().catch(() => '');
+      reportAttempt('http_error', response.status);
       if (response.status === 429) {
         const rateLimit = classify429(response, errorBody);
         if (rateLimit.kind === 'daily') {
@@ -195,8 +217,14 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
       }
     } catch (error) {
       if (controller.signal.aborted || parentSignal?.aborted || Date.now() >= deadline) {
+        /* Reported only when the socket was actually opened — an abort BEFORE
+         * the fetch (checked at the top of the loop) never reached the gateway
+         * and must not be charged as an attempt. Here the request was already
+         * in flight, so the provider saw it whether or not we read the reply. */
+        reportAttempt(parentSignal?.aborted ? 'aborted' : 'timeout', null);
         return blank(parentSignal?.aborted ? 'aborted' : 'timeout');
       }
+      reportAttempt('network_error', null);
       if (!retryable) throw error;
       if (attempt >= RETRY_DELAYS_MS.length) throw error;
     } finally {
@@ -228,7 +256,7 @@ async function fetchOpenRouterStream(
   temperature = 0.0,
   parentSignal,
   maxTokens = null,
-  { deadlineAt = null, timeoutMs = 30_000, maxRetries = 1, includeUsage = false, reasoning } = {},
+  { deadlineAt = null, timeoutMs = 30_000, maxRetries = 1, includeUsage = false, reasoning, onAttempt } = {},
 ) {
   if (parentSignal?.aborted) throw parentSignal.reason || new DOMException('Aborted', 'AbortError');
   const suppliedDeadline = deadlineAt == null ? null : Number(deadlineAt);
@@ -290,6 +318,21 @@ async function fetchOpenRouterStream(
      * The TIMEOUT is cleared either way. It bounds opening the stream, not
      * reading it; leaving it armed would abort a healthy long answer mid-word. */
     let handedOff = false;
+    /* Same accounting as the non-streaming loop: one POST to the gateway is one
+     * physical request against the account's daily cap, retry or not. A stream
+     * that 429s and is retried was two requests and used to be counted as one. */
+    const attemptStartedAt = Date.now();
+    let attemptReported = false;
+    const reportAttempt = (outcome, status = null) => {
+      if (attemptReported) return;
+      attemptReported = true;
+      try {
+        onAttempt?.({
+          provider: 'openrouter', model: modelName, attempt: attempt + 1,
+          outcome, status, ms: Date.now() - attemptStartedAt, streamed: true,
+        });
+      } catch { /* a recorder must never break the call it is recording */ }
+    };
     try {
       let response;
       try {
@@ -300,15 +343,18 @@ async function fetchOpenRouterStream(
           signal: controller.signal,
         });
       } catch (error) {
+        reportAttempt(parentSignal?.aborted ? 'aborted' : 'network_error', null);
         if (controller.signal.aborted && (parentSignal?.aborted || Date.now() >= deadline)) throw error;
         throw error;
       }
 
       if (response.ok) {
         handedOff = true;
+        reportAttempt('ok', response.status);
         return response;
       }
 
+      reportAttempt('http_error', response.status);
       const errorBody = await response.text().catch(() => '');
       const payload = parseErrorBody(errorBody);
       const rateLimit = response.status === 429 ? classify429(response, errorBody) : null;
@@ -347,16 +393,33 @@ async function getOpenRouterKeyStatus(host, apiKey, signal) {
 
 function parseOpenRouterSseLine(line) {
   const value = typeof line === 'string' ? line.trim() : '';
-  if (!value || value.startsWith(':') || !value.startsWith('data:')) return { skip: true, done: false, text: '' };
+  if (!value || value.startsWith(':') || !value.startsWith('data:')) return { skip: true, done: false, text: '', reasoning: '' };
   const data = value.slice(5).trim();
-  if (data === '[DONE]') return { skip: false, done: true, text: '' };
+  if (data === '[DONE]') return { skip: false, done: true, text: '', reasoning: '' };
   let payload;
-  try { payload = JSON.parse(data); } catch { return { skip: true, done: false, text: '' }; }
+  try { payload = JSON.parse(data); } catch { return { skip: true, done: false, text: '', reasoning: '' }; }
   const choice = payload?.choices?.[0];
   const delta = choice?.delta;
-  const text = typeof delta?.content === 'string' && delta.content
-    ? delta.content
-    : typeof delta?.reasoning === 'string' ? delta.reasoning : '';
+  /* CONTENT AND REASONING ARE TWO FIELDS, AND THIS USED TO RETURN ONE.
+   *
+   * The old expression was `content || reasoning`, so a model streaming its
+   * chain-of-thought had that thinking written to the socket as `type: 'chunk'`
+   * — rendered as the answer, revealed by the same cadence, saved into the chat
+   * and written to the shared answer cache. lib/model-reply.js had already made
+   * this distinction on the NON-streaming path (`textSource`); the streaming
+   * path, which writes every answer a user actually reads, had not.
+   *
+   * The rescue is kept, but it moves to the consumer: streamOnce holds the
+   * reasoning and only promotes it to an answer if the stream ends having
+   * emitted no content at all. That is the same rule normaliseCompletion
+   * applies, and it can only fire once, at the end, rather than interleaving
+   * thinking with the answer it was thinking about. */
+  const text = typeof delta?.content === 'string' ? delta.content : '';
+  const reasoning = typeof delta?.reasoning === 'string' && delta.reasoning
+    ? delta.reasoning
+    : Array.isArray(delta?.reasoning_details)
+      ? delta.reasoning_details.map((p) => (p && typeof p.text === 'string' ? p.text : '')).join('')
+      : '';
   /* USAGE ARRIVES ON ITS OWN FRAME, AFTER the frame that carries
    * finish_reason. Returning it here is what lets the streaming path account
    * for tokens at all: `callModel` gets `usage` in its single JSON body, the
@@ -367,6 +430,7 @@ function parseOpenRouterSseLine(line) {
     skip: false,
     done: choice?.finish_reason != null,
     text,
+    reasoning,
     finishReason: typeof choice?.finish_reason === 'string' ? choice.finish_reason : null,
     usage: normaliseUsage(payload?.usage),
   };

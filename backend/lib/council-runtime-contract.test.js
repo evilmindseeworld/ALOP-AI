@@ -40,7 +40,10 @@ test("only router-approved current-info turns enter the tool loop", () => {
 });
 
 test("council turns write one structured telemetry row through auditLog", () => {
-  assert.match(ROUTE, /createTurnTelemetry\(\{ startedAt: t0 \}\)/);
+  assert.match(ROUTE, /createTurnTelemetry\(\{ startedAt: t0, context: turnContext \}\)/);
+  /* The two ids are minted BEFORE the telemetry that carries them, or the row
+   * is written without the handles that make it findable. */
+  assert.match(ROUTE, /const turnContext = createTurnContext\(\{/);
   assert.match(ROUTE, /measureContext\('summary'/);
   assert.match(ROUTE, /measureContext\('feedback'/);
   assert.match(ROUTE, /measureContext\('facts'/);
@@ -69,7 +72,7 @@ test("the council request aborts every long-running layer on disconnect", () => 
   assert.match(ROUTE, /res\.once\('close', abortOnDisconnect\)/);
   assert.match(ROUTE, /signal: turnSignal/);
   assert.match(LOOP, /registry\.execute\(call, \{ timeoutMs: perCall, signal: turnSignal \}\)/);
-  assert.match(ROUTE, /callModel\(model, toolMessages\([\s\S]*?, signal\)/);
+  assert.match(ROUTE, /meteredCallModel\(\s*model,\s*toolMessages\([\s\S]*?signal,/);
   /* `turnSignal` must be the FIFTH argument — that is the whole assertion, and
    * the position is the part that matters, because streamModel takes the signal
    * positionally and a shifted argument would silently pass `undefined` as the
@@ -245,7 +248,7 @@ test("every seat-answer boundary rejects whole protocol replies before use", () 
     "the tool loop must reject protocol blobs before they count toward quorum");
   assert.match(ROUTE, /sanitizeAnswerText\(raw, answerOptions\)\.text/,
     "the plain fallback council must reject protocol blobs before quorum");
-  assert.match(ROUTE, /callModel[\s\S]{0,180}?answerOptions\)\.text/,
+  assert.match(ROUTE, /[cC]allModel[\s\S]{0,200}?answerOptions\)\.text/,
     "the plain council must reject protocol blobs before quorum");
   assert.match(ROUTE, /const searchAnswer = await streamModel\([^\n]+answerOptions/,
     "the observed search answer path must use the stream guard");

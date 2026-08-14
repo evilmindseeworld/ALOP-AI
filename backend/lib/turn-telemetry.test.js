@@ -104,3 +104,87 @@ test("a provider that reports no numbers does not poison the sums", () => {
   assert.equal(usage.calls, 1, "the call still happened");
   assert.equal(usage.totalTokens, 0);
 });
+
+/* ---- physical provider attempts, tool outcomes, cancellation ---------- */
+
+const { createTurnContext } = require("./turn-context");
+
+test("the ids that make a row findable are carried into the snapshot", () => {
+  const context = createTurnContext({ operationId: "op-1", newId: () => "turn-1" });
+  const snap = createTurnTelemetry({ now: () => 0, startedAt: 0, context }).snapshot({});
+  assert.equal(snap.operationId, "op-1");
+  assert.equal(snap.turnId, "turn-1");
+});
+
+test("a turn with no context still snapshots, without inventing ids", () => {
+  const snap = createTurnTelemetry({ now: () => 0, startedAt: 0 }).snapshot({});
+  assert.equal("operationId" in snap, false);
+  assert.equal("turnId" in snap, false);
+});
+
+/* THE NUMBER THE CEILING SETTLES AGAINST. A seat retried twice inside
+ * lib/openrouter.js is ONE seat record and THREE requests against an
+ * account-wide daily cap; before this the ceiling could only see the seat. */
+test("physical provider attempts are counted separately from logical seats", () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordSeat({ model: "a", durationMs: 10, outcome: "ok" });
+  t.recordProviderAttempt({ model: "a", attempt: 1, outcome: "http_error", status: 503 });
+  t.recordProviderAttempt({ model: "a", attempt: 2, outcome: "http_error", status: 503 });
+  t.recordProviderAttempt({ model: "a", attempt: 3, outcome: "ok", status: 200 });
+  const snap = t.snapshot({});
+  assert.equal(snap.seats.length, 1, "one seat was asked");
+  assert.equal(snap.providerRequests, 3, "three POSTs reached the gateway");
+  assert.equal(snap.providerAttempts.retries, 2);
+  assert.equal(snap.providerAttempts.ok, 1);
+  assert.equal(snap.providerAttempts.failed, 2);
+  assert.deepEqual(snap.providerAttempts.byOutcome, { http_error: 2, ok: 1 });
+});
+
+test("a non-OpenRouter attempt is counted but never charged to the OpenRouter quota", () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordProviderAttempt({ provider: "google", model: "gemini", outcome: "ok" });
+  const snap = t.snapshot({});
+  assert.equal(snap.providerAttempts.total, 1);
+  assert.equal(snap.providerRequests, 0, "vision does not spend the OpenRouter day");
+});
+
+test("attempt DETAIL is capped while the counts stay exact", () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  for (let i = 0; i < 250; i++) t.recordProviderAttempt({ outcome: "ok", attempt: 1 });
+  const snap = t.snapshot({});
+  assert.equal(snap.providerRequests, 250, "the count a ceiling reads is never truncated");
+  assert.equal(snap.providerAttempts.truncatedDetail, true);
+});
+
+test("tool success is recorded, not just tool count", () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordToolOutcome({ name: "web_search", ok: true, ms: 400, round: 1 });
+  t.recordToolOutcome({ name: "read_url", ok: false, ms: 900, round: 1 });
+  t.recordToolOutcome({ name: "web_search", ok: true, ms: 200, round: 2 });
+  const snap = t.snapshot({});
+  assert.equal(snap.toolOutcomes.calls, 3);
+  assert.equal(snap.toolOutcomes.ok, 2);
+  assert.equal(snap.toolOutcomes.failed, 1);
+  assert.deepEqual(snap.toolOutcomes.byName.web_search, { calls: 2, ok: 2, ms: 600 });
+});
+
+test("a turn that used no tools reports null rather than a zeroed object", () => {
+  assert.equal(createTurnTelemetry({ now: () => 0, startedAt: 0 }).snapshot({}).toolOutcomes, null);
+});
+
+/* `aborted: true` was one number for three different problems. */
+test("cancellation records why, once, and the first reason wins", () => {
+  const t = createTurnTelemetry({ now: () => 100, startedAt: 0 });
+  assert.equal(t.snapshot({}).cancellation, null);
+  t.markCancelled("client_disconnected");
+  t.markCancelled("deadline");
+  const snap = t.snapshot({ aborted: true });
+  assert.deepEqual(snap.cancellation, { reason: "client_disconnected", atMs: 100 });
+});
+
+test("the answer's provenance is recorded so a rescued answer is not silently cached as a written one", () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  assert.equal(t.snapshot({}).textSource, null);
+  t.recordTextSource("reasoning");
+  assert.equal(t.snapshot({}).textSource, "reasoning");
+});

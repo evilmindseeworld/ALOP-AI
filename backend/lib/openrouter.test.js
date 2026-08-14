@@ -287,3 +287,85 @@ test('a streamed head synthesis can request high reasoning effort without exposi
 
   assert.deepEqual(sent.reasoning, { effort: 'high', exclude: true });
 });
+
+/* ---- physical attempt accounting -------------------------------------- */
+
+/* WHY THIS MATTERS AND WHY IT IS HERE. The account-wide ceiling counts
+ * OpenRouter REQUESTS, and it derived that count from what the turn was known
+ * to have done — one per seat, one for synthesis. That derivation cannot see a
+ * retry, and every retry in this file is a real POST against the same daily
+ * cap. The hook is the only place the true number exists. */
+
+test('every physical POST is reported once, retries included', async () => {
+  const attempts = [];
+  let calls = 0;
+  global.fetch = async () => {
+    calls += 1;
+    return calls < 3
+      ? response(500, { error: 'upstream' })
+      : response(200, { choices: [{ message: { content: 'ok' } }] });
+  };
+
+  const text = await callModel(
+    'https://openrouter.ai/api/v1', 'key', 'model:free', [], 0, 5000, 20, undefined,
+    { onAttempt: (row) => attempts.push(row) },
+  );
+
+  assert.equal(text, 'ok');
+  assert.equal(calls, 3);
+  assert.deepEqual(attempts.map((a) => a.attempt), [1, 2, 3]);
+  assert.deepEqual(attempts.map((a) => a.outcome), ['http_error', 'http_error', 'ok']);
+  assert.deepEqual(attempts.map((a) => a.status), [500, 500, 200]);
+  assert.equal(attempts.every((a) => a.provider === 'openrouter' && a.model === 'model:free'), true);
+  assert.equal(attempts.every((a) => a.streamed === false), true);
+});
+
+test('one POST is reported exactly once, even when it also throws', async () => {
+  const attempts = [];
+  global.fetch = async () => response(400, { error: 'bad request' });
+  await assert.rejects(
+    callModel('https://openrouter.ai/api/v1', 'key', 'm', [], 0, 1000, 20, undefined,
+      { onAttempt: (row) => attempts.push(row) }),
+  );
+  assert.equal(attempts.length, 1, 'the http_error report must not be followed by a network_error one');
+  assert.equal(attempts[0].outcome, 'http_error');
+});
+
+test('a request refused before it is sent is not charged as an attempt', async () => {
+  const attempts = [];
+  let fetched = 0;
+  global.fetch = async () => { fetched += 1; return response(200, {}); };
+  const controller = new AbortController();
+  controller.abort();
+  await callModel('https://openrouter.ai/api/v1', 'key', 'm', [], 0, 1000, 20, controller.signal,
+    { onAttempt: (row) => attempts.push(row) });
+  assert.equal(fetched, 0);
+  assert.deepEqual(attempts, [], 'nothing reached the gateway, so nothing may be counted');
+});
+
+test('a recorder that throws cannot break the model call', async () => {
+  global.fetch = async () => response(200, { choices: [{ message: { content: 'fine' } }] });
+  const text = await callModel('https://openrouter.ai/api/v1', 'key', 'm', [], 0, 1000, 20, undefined,
+    { onAttempt: () => { throw new Error('telemetry exploded'); } });
+  assert.equal(text, 'fine');
+});
+
+test('the streaming path reports its own POSTs, including the pre-body 429 retry', async () => {
+  const attempts = [];
+  let calls = 0;
+  global.fetch = async () => {
+    calls += 1;
+    return calls === 1
+      ? response(429, rateLimit('provider_rate_limit', { provider_code: 'x' }), { 'retry-after': '0' })
+      : { ...response(200, {}), body: { getReader: () => ({}) } };
+  };
+
+  const res = await fetchOpenRouterStream(
+    'https://openrouter.ai/api/v1', 'key', 'm', [], 0, undefined, null,
+    { timeoutMs: 5000, maxRetries: 1, onAttempt: (row) => attempts.push(row) },
+  );
+
+  assert.equal(res.ok, true);
+  assert.deepEqual(attempts.map((a) => [a.attempt, a.outcome]), [[1, 'http_error'], [2, 'ok']]);
+  assert.equal(attempts.every((a) => a.streamed === true), true);
+});

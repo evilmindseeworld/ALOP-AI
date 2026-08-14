@@ -54,15 +54,36 @@ test("reads OpenRouter choices[0].message tool calls with JSON-string arguments"
 // ===== OpenRouter adapter =====
 
 test("OpenRouter SSE parser skips keepalives and recognizes provider completion", () => {
-  assert.deepEqual(parseOpenRouterSseLine(": OPENROUTER PROCESSING"), { skip: true, done: false, text: "" });
-  assert.deepEqual(parseOpenRouterSseLine("data: [DONE]"), { skip: false, done: true, text: "" });
+  assert.deepEqual(parseOpenRouterSseLine(": OPENROUTER PROCESSING"), { skip: true, done: false, text: "", reasoning: "" });
+  assert.deepEqual(parseOpenRouterSseLine("data: [DONE]"), { skip: false, done: true, text: "", reasoning: "" });
   assert.deepEqual(
     parseOpenRouterSseLine('data: {"choices":[{"delta":{"content":"hello"},"finish_reason":null}]}'),
-    { skip: false, done: false, text: "hello", finishReason: null, usage: null },
+    { skip: false, done: false, text: "hello", reasoning: "", finishReason: null, usage: null },
   );
+});
+
+/* REASONING IS NOT THE ANSWER, and this parser used to say it was.
+ *
+ * `content || reasoning` meant a model that streams its thinking had that
+ * thinking written to the socket as an answer chunk: rendered as the reply,
+ * saved into the chat, and written into the answer cache other users read. The
+ * rescue for models that put the whole answer in `reasoning` still exists — it
+ * moved to streamOnce, which can only apply it once the stream has ended with
+ * no content at all. */
+test("the SSE parser keeps reasoning out of the answer text", () => {
   assert.deepEqual(
     parseOpenRouterSseLine('data: {"choices":[{"delta":{"content":null,"reasoning":"thinking aloud"},"finish_reason":"stop"}]}'),
-    { skip: false, done: true, text: "thinking aloud", finishReason: "stop", usage: null },
+    { skip: false, done: true, text: "", reasoning: "thinking aloud", finishReason: "stop", usage: null },
+  );
+  // Both at once: the answer streams, the thinking is reported beside it.
+  assert.deepEqual(
+    parseOpenRouterSseLine('data: {"choices":[{"delta":{"content":"Paris.","reasoning":"France, capital"},"finish_reason":null}]}'),
+    { skip: false, done: false, text: "Paris.", reasoning: "France, capital", finishReason: null, usage: null },
+  );
+  // The array form OpenRouter uses on some providers.
+  assert.equal(
+    parseOpenRouterSseLine('data: {"choices":[{"delta":{"reasoning_details":[{"text":"one "},{"text":"two"}]}}]}').reasoning,
+    "one two",
   );
 });
 

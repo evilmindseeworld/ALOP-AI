@@ -21,6 +21,7 @@ const { join } = require("node:path");
  */
 
 const SOURCE = readFileSync(join(__dirname, "..", "server.js"), "utf8");
+const SYNTHESIS_SOURCE = SOURCE.slice(SOURCE.indexOf("const synthSys"), SOURCE.indexOf("const synthMsgs"));
 
 /** The system-prompt variables that end up in front of a user's question. */
 const ANSWERING_PROMPTS = [
@@ -74,6 +75,19 @@ test("search results reach the prompt with their publication dates attached", ()
   // disagree is to prefer the more detailed one, and stale pages are usually
   // the more detailed ones.
   assert.match(SOURCE, /prefer the most recent one/i);
+});
+
+test("answer synthesis resolves exact product facts with an evidence hierarchy", () => {
+  assert.match(SOURCE, /exact-model manufacturer page\/manual\/support page/i);
+  assert.match(SOURCE, /nearby model or a product family member/i);
+  assert.match(SOURCE, /first-party source resolves a disagreement/i);
+  assert.match(SYNTHESIS_SOURCE, /synthSysForAnswer[\s\S]*SOURCE_TRUTH_RULES/);
+});
+
+test("answer synthesis does not invent the user's circumstances", () => {
+  assert.match(SOURCE, /Never invent personal context or purchase facts/i);
+  assert.match(SOURCE, /label assumptions as conditional/i);
+  assert.match(SYNTHESIS_SOURCE, /synthSysForAnswer[\s\S]*SOURCE_TRUTH_RULES/);
 });
 
 test("the freshness window is derived from the user's question, not the generated query", () => {

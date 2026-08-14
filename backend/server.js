@@ -3529,6 +3529,7 @@ async function handleCouncilTurn(req, res) {
      * than half-run: comprehensiveSearch fans out to five providers plus
      * Wikipedia, and paying for that AND a council is the cost mistake this
      * experiment exists to avoid. The loop runs ONE provider chain instead. */
+    const SOURCE_TRUTH_RULES = `\n\nSOURCE AND FACT DISCIPLINE:\n- For product specifications, compatibility, and warranty, rank evidence as: exact-model manufacturer page/manual/support page > official certification > reputable retailer > reputable review > forum or social post.\n- Match the exact model identifier before applying a specification. Never transfer a specification from a nearby model or a product family member.\n- When an exact-model first-party source resolves a disagreement, use the verified value instead of repeating the disagreement. Report an unresolved conflict only when first-party sources genuinely disagree or no authoritative source is available.\n- For price and availability, use a dated seller or manufacturer listing and never infer whether something is a deal without an actual price.\n- Never invent personal context or purchase facts. Use facts stated by the user or the evidence; label assumptions as conditional.\n- Research data supplied in this turn is evidence even when a draft omitted the fact; use it when relevant and supported by the hierarchy above.\n- Keep citations attached to sourced claims. If a claim is absent from the user message and the evidence, call it unverified instead of guessing.`;
     if (searchQueries && !SEEDED_SEARCH) {
       /* THE SCREEN STOPS BEING BLANK HERE, not when the answer starts.
        *
@@ -3621,7 +3622,8 @@ async function handleCouncilTurn(req, res) {
       const usableSearchDrafts = searchDrafts.filter((r) => r?.content?.trim());
       if (!usableSearchDrafts.length) throw new Error('Search council returned no usable answers');
       const searchSynthSys = `${todayLine()}\n\nReconcile these independent answers into one precise response. Use only facts present in the answers and their cited search data. Preserve Markdown source links, note material disagreements, and do not mention the council.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
-      const searchSynthMsgs = [{ role: 'system', content: identityPrompt(searchSynthSys, 'search_synthesis') }, {
+      const searchSynthSysForAnswer = `${searchSynthSys}${SOURCE_TRUTH_RULES}`;
+      const searchSynthMsgs = [{ role: 'system', content: identityPrompt(searchSynthSysForAnswer, 'search_synthesis') }, {
         role: 'user',
         content: `Question: ${truncatedPrompt}\n\nResponses:\n${usableSearchDrafts.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}`,
       }];
@@ -4193,7 +4195,8 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
       synthesisModel: synthesisModelUsed,
       synthesisEffort: synthesis.highEffort ? 'high' : 'default',
     };
-    const synthMsgs = [{ role: 'system', content: identityPrompt(synthSys, 'synthesis') }, { role: 'user', content: `Question: ${truncatedPrompt}\n\nResponses:\n${validResponses.map((r,i) => `[Expert ${i+1}]: ${r.content}`).join('\n\n')}${researchBlock}${truncationBlock}` }];
+    const synthSysForAnswer = `${synthSys}${SOURCE_TRUTH_RULES}`;
+    const synthMsgs = [{ role: 'system', content: identityPrompt(synthSysForAnswer, 'synthesis') }, { role: 'user', content: `Question: ${truncatedPrompt}\n\nResponses:\n${validResponses.map((r,i) => `[Expert ${i+1}]: ${r.content}`).join('\n\n')}${researchBlock}${truncationBlock}` }];
     // The last thing that happens before words appear, and the longest single
     // step on a turn where the seats came back quickly.
     sendStage(res, 'synthesis', validResponses.length === 1 ? 'Writing the reply' : 'Reconciling the answers');

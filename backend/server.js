@@ -49,6 +49,8 @@ const { planWork } = require('./lib/work-plan');
 const { runDag } = require('./lib/execution-dag');
 const { planRoute, applyPlan } = require('./lib/adaptive-routing');
 const { runProgressiveCouncil } = require('./lib/progressive-council');
+const { createEvidenceLedger } = require('./lib/evidence-ledger');
+const { resolveConflicts, verifyAnswer } = require('./lib/contradiction');
 
 /* WHETHER THIS CONVERSATION HAS A PAST, from whichever source answered first.
  *
@@ -1384,6 +1386,10 @@ const ANSWER_CACHE_BRANCH = `turn:${ANSWER_EXECUTION_MODE}`;
  * Turn it on, read the [PROGRESSIVE] lines, then decide.
  */
 const ADAPTIVE_ROUTING = /^(1|true)$/i.test(process.env.COUNCIL_ADAPTIVE || '');
+/* ENFORCEMENT of the answer verifier. The MEASUREMENT runs either way: a check
+ * whose refusals have never been counted is a check nobody can decide to turn
+ * on. See the ledger above cacheAnswer. */
+const ANSWER_VERIFICATION = /^(1|true)$/i.test(process.env.ANSWER_VERIFICATION || '');
 const PROGRESSIVE_COUNCIL = /^(1|true)$/i.test(process.env.COUNCIL_PROGRESSIVE || '');
 const SEMANTIC_CACHE_ENABLED = /^(1|true)$/i.test(process.env.COUNCIL_SEMANTIC_CACHE || '');
 const semanticThresholdRaw = process.env.COUNCIL_SEMANTIC_CACHE_THRESHOLD;
@@ -1705,10 +1711,10 @@ const runComprehensiveSearch = async (query, needsWiki, fresh, region, parentSig
    * sources say "unknown" in words rather than being left blank; see dateLabel
    * for why silence is the worse of the two. */
   if (td.answer) ctx += `TAVILY ANSWER: ${td.answer}\n\n---\n\n`;
-  if (td.results?.length > 0) { ctx += `TAVILY RESULTS:\n${td.results.map((r,i) => `SOURCE ${i+1}:\nTitle: ${r.title}\nURL: ${r.url}\n${dateLabel(r.date)}\nContent: ${r.content}`).join('\n\n---\n\n')}\n\n---\n\n`; td.results.forEach(r => sources.push({title:r.title,url:r.url,date:r.date||''})); }
+  if (td.results?.length > 0) { ctx += `TAVILY RESULTS:\n${td.results.map((r,i) => `SOURCE ${i+1}:\nTitle: ${r.title}\nURL: ${r.url}\n${dateLabel(r.date)}\nContent: ${r.content}`).join('\n\n---\n\n')}\n\n---\n\n`; td.results.forEach(r => sources.push({title:r.title,url:r.url,date:r.date||'',text:r.content||'',via:'tavily'})); }
   if (td.images?.length > 0) allImages.push(...td.images.filter(u => u && u.startsWith('http')));
-  if (braveResults.length > 0) { ctx += `BRAVE:\n${braveResults.map((r,i) => `SOURCE ${i+1}:\nTitle: ${r.title}\nURL: ${r.url}\n${dateLabel(r.date)}\nContent: ${r.description}`).join('\n\n---\n\n')}\n\n---\n\n`; braveResults.forEach(r => { if (!sources.find(s => s.url === r.url)) sources.push({title:r.title,url:r.url,date:r.date||''}); }); }
-  if (googleResults.length > 0) { ctx += `GOOGLE:\n${googleResults.map((r,i) => `SOURCE ${i+1}:\nTitle: ${r.title}\nURL: ${r.url}\n${dateLabel(r.date)}\nContent: ${r.description}`).join('\n\n---\n\n')}\n\n---\n\n`; googleResults.forEach(r => { if (!sources.find(s => s.url === r.url)) sources.push({title:r.title,url:r.url,date:r.date||''}); }); }
+  if (braveResults.length > 0) { ctx += `BRAVE:\n${braveResults.map((r,i) => `SOURCE ${i+1}:\nTitle: ${r.title}\nURL: ${r.url}\n${dateLabel(r.date)}\nContent: ${r.description}`).join('\n\n---\n\n')}\n\n---\n\n`; braveResults.forEach(r => { if (!sources.find(s => s.url === r.url)) sources.push({title:r.title,url:r.url,date:r.date||'',text:r.description||'',via:'brave'}); }); }
+  if (googleResults.length > 0) { ctx += `GOOGLE:\n${googleResults.map((r,i) => `SOURCE ${i+1}:\nTitle: ${r.title}\nURL: ${r.url}\n${dateLabel(r.date)}\nContent: ${r.description}`).join('\n\n---\n\n')}\n\n---\n\n`; googleResults.forEach(r => { if (!sources.find(s => s.url === r.url)) sources.push({title:r.title,url:r.url,date:r.date||'',text:r.description||'',via:'google'}); }); }
   if (googleImages.length > 0) allImages.push(...googleImages.map(img => img.url).filter(u => u && u.startsWith('http')));
   if (wikiContent) ctx += `WIKIPEDIA:\n${wikiContent}\n\n---\n\n`;
   /* Perplexity last in the context, and that is on purpose: it is the one
@@ -1721,7 +1727,7 @@ const runComprehensiveSearch = async (query, needsWiki, fresh, region, parentSig
     ctx += `PERPLEXITY (a search model's own written answer, with its citations below):\n${pplx.answer}\n\n---\n\n`;
     if (pplx.results.length) {
       ctx += `PERPLEXITY SOURCES:\n${pplx.results.map((r, i) => `SOURCE ${i + 1}:\nTitle: ${r.title || '(untitled)'}\nURL: ${r.url}\n${dateLabel(r.date)}`).join('\n\n')}\n\n---\n\n`;
-      pplx.results.forEach((r) => { if (r.url && !sources.find((s) => s.url === r.url)) sources.push({ title: r.title || r.url, url: r.url, date: r.date || '' }); });
+      pplx.results.forEach((r) => { if (r.url && !sources.find((s) => s.url === r.url)) sources.push({ title: r.title || r.url, url: r.url, date: r.date || '', text: r.snippet || r.title || '', via: 'perplexity' }); });
     }
   }
   // The deep read, on a leash. It used to be an unbounded await after the
@@ -1745,7 +1751,7 @@ const runComprehensiveSearch = async (query, needsWiki, fresh, region, parentSig
   const shop = shopResult && Array.isArray(shopResult.results) ? shopResult.results : [];
   if (shop.length) {
     ctx += `${formatShopping(shop, { asOf: new Date().toISOString().slice(0, 10) })}\n\n---\n\n`;
-    shop.forEach((r) => { if (r.url && !sources.find((s) => s.url === r.url)) sources.push({ title: r.title || r.source || r.url, url: r.url, date: '' }); });
+    shop.forEach((r) => { if (r.url && !sources.find((s) => s.url === r.url)) sources.push({ title: r.title || r.source || r.url, url: r.url, date: '', text: [r.title, r.price, r.source].filter(Boolean).join(' — '), via: 'shopping' }); });
   }
   //
   // THREE pages, not one, and not necessarily the top one. `sources[0]` on a
@@ -3917,8 +3923,57 @@ async function handleCouncilTurn(req, res) {
      * refresh would rewrite a DIFFERENT row than the one expiring — the job
      * would log a success and leave the stale row exactly where it was. The
      * only way to keep two lists identical is to not have two lists. */
+    /* THE TURN'S EVIDENCE LEDGER, and the check that decides whether an answer
+     * is good enough to serve to somebody ELSE.
+     *
+     * Every source this turn actually read goes in; the answer's checkable
+     * sentences are matched back against them, and the sources are compared to
+     * each other for conflicts. Three outcomes reach the audit row: how much of
+     * the answer is grounded, which sentences are not, and whether the answer
+     * states one side of a disagreement the sources never resolved.
+     *
+     * IT NEVER CHANGES THE ANSWER THE USER SEES. The user asked a question and
+     * a hedge they did not ask for is not an improvement — and a text-only
+     * check is not certain enough to overrule a model. What it does is refuse
+     * to CACHE, because a cached answer is a promise that it was good enough to
+     * repeat, to a different person, for up to ninety days.
+     *
+     * Enforcement is behind a flag; the measurement is not. With the flag off
+     * the numbers are still computed and logged, which is the only way to know
+     * what turning it on would refuse before it refuses it. */
+    /* `freshnessWindow` reports DAYS; the ledger takes milliseconds. Passing
+     * `.ms` — which that object does not have — would have been silently
+     * undefined and every source would have been judged against the 30-day
+     * default, on exactly the questions that asked for today. */
+    const turnFreshness = freshnessWindow(pv.value);
+    const evidence = createEvidenceLedger({
+      freshnessWindowMs: turnFreshness ? turnFreshness.days * 24 * 3600 * 1000 : null,
+    });
+    let verification = null;
+
+    const verifyBeforeCache = (text, { searched = false } = {}) => {
+      if (!evidence.size && !searched) return true;
+      const audit = evidence.audit(text);
+      const { conflicts, unresolved } = resolveConflicts(evidence.all());
+      const verdict = verifyAnswer({ answer: text, audit, conflicts, searched });
+      verification = {
+        claims: audit.claims.length,
+        grounded: audit.supported,
+        coverage: Number(audit.coverage.toFixed(2)),
+        sources: evidence.size,
+        conflicts: conflicts.length,
+        unresolved: unresolved.length,
+        problems: verdict.problems.map((p) => p.kind),
+      };
+      if (!verdict.ok) {
+        console.log(`[VERIFY] ${verdict.problems.map((p) => p.kind).join(',')} — coverage=${verification.coverage} sources=${evidence.size} unresolved=${unresolved.length}${ANSWER_VERIFICATION ? ' — NOT CACHED' : ' (measuring only)'}`);
+      }
+      return ANSWER_VERIFICATION ? verdict.cacheable : true;
+    };
+
     const cacheAnswer = (text, { searched = false, fresh = false } = {}) => {
       if (!cacheKey) return;
+      if (!verifyBeforeCache(text, { searched })) return;
       const persist = (embedding) => {
         const method = selection.complexity === 'simple' && !searched ? 'setBrief' : 'set';
         answerCache[method](cacheKey, text, {
@@ -4239,6 +4294,15 @@ async function handleCouncilTurn(req, res) {
         await auditBranch({ category: 'no_results' });
         return;
       }
+      /* EVERY SOURCE THE TURN READ, RECORDED BEFORE THE MODEL SEES IT. The
+       * ledger has to be filled here rather than from the answer's citation
+       * list: a citation says the answer NAMED a page, and what the check needs
+       * is what the page SAID. `s.text` is the provider's own snippet — the same
+       * text rendered into the prompt, so a claim is checked against exactly
+       * what the model was shown. */
+      for (const s of sources) {
+        evidence.record({ text: s.text || s.title, url: s.url, title: s.title, date: s.date || null, via: s.via || 'search', confidence: 0.6 });
+      }
       console.log(`[COUNCIL] ${searchQueries.length} quer${searchQueries.length === 1 ? 'y' : 'ies'}, ${sources.length} sources, ${context.length} chars${fresh ? `, freshness=${fresh.label}` : ''}.`);
       /* Rules 13 to 15 are the recency half, and they are separate rules rather
        * than a clause bolted onto rule 1 because each fails on its own.
@@ -4303,6 +4367,7 @@ async function handleCouncilTurn(req, res) {
       const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
       rememberTurn(chatId, user.id, pv.value, lastA || 'Search response.', telemetry);
       await auditTelemetry('council.search', 'search', {
+        ...(verification ? { verification } : {}),
         sources: sources.length, seats: selection.members.length, quorum: selection.quorum,
         tokenLimit: selection.tokenLimit, complexity: selection.complexity,
         synthesisModel: searchSynthesisModelUsed,
@@ -4826,6 +4891,7 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       cacheAnswer(soleDraft, { searched: usedLiveWeb });
       await auditTelemetry('council', 'council_solo', {
         ...telemetryExtra,
+        ...(verification ? { verification } : {}),
         seats: selection.members.length,
         quorum: selection.quorum,
         tokenLimit: selection.tokenLimit,
@@ -4932,6 +4998,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
       'council',
       {
         ...telemetryExtra,
+        ...(verification ? { verification } : {}),
         models: validResponses.length,
         seats: selection.members.length,
         quorum: selection.quorum,

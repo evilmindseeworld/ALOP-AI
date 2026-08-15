@@ -32,62 +32,10 @@
  * rules testable without a provider.
  */
 
-const STOPWORDS = new Set([
-  'the', 'a', 'an', 'and', 'or', 'but', 'if', 'then', 'is', 'are', 'was', 'were', 'be', 'been',
-  'to', 'of', 'in', 'on', 'at', 'for', 'with', 'as', 'by', 'from', 'that', 'this', 'it', 'its',
-  'you', 'your', 'i', 'we', 'they', 'he', 'she', 'can', 'will', 'would', 'should', 'may', 'might',
-]);
-
-/* Words that flip a claim. Two answers can share every content word and mean
- * the opposite; a bag-of-words score cannot see that and would report perfect
- * agreement on "it is safe" against "it is not safe". */
-const NEGATIONS = /\b(not|no|never|cannot|can't|isn't|aren't|won't|doesn't|don't|without|unsafe|incorrect|false)\b/gi;
-
-const words = (text) => String(text || '')
-  .toLowerCase()
-  .replace(/[^\p{L}\p{N}\s.%-]/gu, ' ')
-  .split(/\s+/)
-  .filter((w) => w.length > 2 && !STOPWORDS.has(w));
-
-/** Numbers, kept with their unit-ish suffix so "8gb" and "8" are not the same. */
-const numbers = (text) => (String(text || '').match(/\d[\d,.]*\s*(?:%|[a-z]{1,4})?/gi) || [])
-  .map((n) => n.replace(/[\s,]/g, '').toLowerCase());
-
-const jaccard = (a, b) => {
-  if (!a.size && !b.size) return 1;
-  if (!a.size || !b.size) return 0;
-  let shared = 0;
-  for (const item of a) if (b.has(item)) shared += 1;
-  return shared / (a.size + b.size - shared);
-};
-
-/**
- * How much two answers agree, 0..1.
- *
- * Three signals, weighted by how badly each one being wrong hurts:
- * the numeric claims (a price, a version, a dose — the thing a user acts on),
- * the negation balance (whether the two answers point the same way at all),
- * and the content words (everything else).
- */
-function agreementScore(a, b) {
-  const wa = new Set(words(a));
-  const wb = new Set(words(b));
-  const na = new Set(numbers(a));
-  const nb = new Set(numbers(b));
-
-  const wordScore = jaccard(wa, wb);
-  /* No numbers on either side is not a disagreement about numbers. Numbers on
-   * one side only IS one — an answer that commits to a figure and one that does
-   * not are not the same answer. */
-  const numberScore = (!na.size && !nb.size) ? null : jaccard(na, nb);
-
-  const negA = (String(a || '').match(NEGATIONS) || []).length;
-  const negB = (String(b || '').match(NEGATIONS) || []).length;
-  const negationScore = negA === negB ? 1 : 1 - Math.min(1, Math.abs(negA - negB) / Math.max(3, negA + negB));
-
-  if (numberScore === null) return wordScore * 0.7 + negationScore * 0.3;
-  return numberScore * 0.45 + wordScore * 0.3 + negationScore * 0.25;
-}
+/* The three signals that decide whether two texts say the same thing live in
+ * text-similarity.js, because the contradiction resolver scores SOURCES with
+ * exactly the same machinery. Two copies would be two sets of thresholds. */
+const { agreementScore } = require('./text-similarity');
 
 /** The weakest pairwise agreement in a set — one dissenter must not be averaged away. */
 function consensus(drafts, { ignoreThin = false } = {}) {

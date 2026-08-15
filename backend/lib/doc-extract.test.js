@@ -62,7 +62,7 @@ const docxXml = [
   '<w:p><w:r><w:t>Hello &amp; goodbye</w:t></w:r></w:p>',
   '<w:p><w:r><w:t>Next</w:t><w:tab/><w:t>cell</w:t></w:r></w:p>',
   '</w:body></w:document>',
-].join("");
+].join("\n  ");
 
 test("PDF extraction delegates attacker bytes to the injected Gemini boundary", async () => {
   const bytes = Buffer.from("%PDF-1.7\nnot parsed locally", "utf8");
@@ -146,6 +146,29 @@ test("a ZIP must contain the member required by its declared document kind", () 
   const unrelated = makeZip([{ name: "other.xml", data: "<x>hello</x>" }]);
   assert.throws(() => extractDocx(unrelated), (error) => error instanceof DocumentRejected && /document\.xml/i.test(error.message));
   assert.throws(() => extractXlsx(unrelated), (error) => error instanceof DocumentRejected && /worksheet/i.test(error.message));
+});
+
+test("malformed XLSX XML is rejected by a forward-only scan", () => {
+  const archive = makeZip([
+    { name: "xl/sharedStrings.xml", data: `<sst>${"<si><t>x".repeat(20000)}</sst>`, method: "deflate" },
+    { name: "xl/worksheets/sheet1.xml", data: '<worksheet><sheetData><row><c t="s"><v>0</v></c></row></sheetData></worksheet>' },
+  ]);
+  assert.throws(
+    () => extractXlsx(archive),
+    (error) => error instanceof DocumentRejected && /malformed XML/i.test(error.message),
+  );
+});
+
+test("malformed DOCX XML is rejected instead of repeatedly rescanning tags", () => {
+  const archive = makeZip([{
+    name: "word/document.xml",
+    data: `<w:document><w:p><w:t>text</w:t>${"<w:tab".repeat(20000)}`,
+    method: "deflate",
+  }]);
+  assert.throws(
+    () => extractDocx(archive),
+    (error) => error instanceof DocumentRejected && /malformed XML/i.test(error.message),
+  );
 });
 
 test("malformed, encrypted and duplicate-member ZIPs are refused clearly", () => {

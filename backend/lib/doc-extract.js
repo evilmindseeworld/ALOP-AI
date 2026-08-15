@@ -188,27 +188,98 @@ function tidyText(text) {
     .trim();
 }
 
+function stripXmlTags(xml) {
+  const pieces = [];
+  let cursor = 0;
+  while (cursor < xml.length) {
+    const start = xml.indexOf('<', cursor);
+    if (start < 0) {
+      pieces.push(xml.slice(cursor));
+      break;
+    }
+    pieces.push(xml.slice(cursor, start));
+    const end = xml.indexOf('>', start + 1);
+    if (end < 0) reject('The document contains malformed XML.');
+    cursor = end + 1;
+  }
+  return pieces.join('');
+}
+
 function wordXmlToText(xml) {
-  return tidyText(decodeXml(xml
-    .replace(/<w:tab\b[^>]*\/?\s*>/gi, '\t')
-    .replace(/<w:(?:br|cr)\b[^>]*\/?\s*>/gi, '\n')
-    .replace(/<\/w:p\s*>/gi, '\n')
-    .replace(/<\/w:tc\s*>/gi, '\t')
-    .replace(/<\/w:tr\s*>/gi, '\n')
-    .replace(/<[^>]*>/g, '')));
+  const pieces = [];
+  let cursor = 0;
+  let captureText = false;
+  while (cursor < xml.length) {
+    const start = xml.indexOf('<', cursor);
+    if (start < 0) {
+      if (captureText) pieces.push(xml.slice(cursor));
+      break;
+    }
+    if (captureText) pieces.push(xml.slice(cursor, start));
+    const end = xml.indexOf('>', start + 1);
+    if (end < 0) reject('The document contains malformed XML.');
+    const tag = xml.slice(start + 1, end).trim();
+    const rawName = tag.split(/\s/, 1)[0].replace(/\/$/, '').toLowerCase();
+    const textNode = rawName === 'w:t' || rawName === 'w:instrtext' || rawName === 'w:deltext';
+    const closingTextNode = rawName === '/w:t' || rawName === '/w:instrtext' || rawName === '/w:deltext';
+    if (textNode) captureText = !/\/\s*$/.test(tag);
+    else if (closingTextNode) captureText = false;
+    if (rawName === 'w:tab') pieces.push('\t');
+    else if (rawName === 'w:br' || rawName === 'w:cr' || rawName === '/w:p' || rawName === '/w:tr') pieces.push('\n');
+    else if (rawName === '/w:tc') pieces.push('\t');
+    cursor = end + 1;
+  }
+  return tidyText(decodeXml(pieces.join('')));
+}
+
+function* xmlBlocks(xml, tag) {
+  const openNeedle = `<${tag}`;
+  const closeNeedle = `</${tag}`;
+  let cursor = 0;
+  while (cursor < xml.length) {
+    const start = xml.indexOf(openNeedle, cursor);
+    if (start < 0) return;
+    const boundary = xml[start + openNeedle.length];
+    if (boundary && !/[\s/>]/.test(boundary)) {
+      cursor = start + openNeedle.length;
+      continue;
+    }
+    const openEnd = xml.indexOf('>', start + openNeedle.length);
+    if (openEnd < 0) reject(`The XLSX contains malformed XML in ${tag}.`);
+    const attributes = xml.slice(start + openNeedle.length, openEnd);
+    if (/\/\s*$/.test(attributes)) {
+      yield { attributes, body: '' };
+      cursor = openEnd + 1;
+      continue;
+    }
+
+    let closeStart = xml.indexOf(closeNeedle, openEnd + 1);
+    while (closeStart >= 0) {
+      const closeBoundary = xml[closeStart + closeNeedle.length];
+      if (!closeBoundary || /[\s>]/.test(closeBoundary)) break;
+      closeStart = xml.indexOf(closeNeedle, closeStart + closeNeedle.length);
+    }
+    if (closeStart < 0) reject(`The XLSX contains malformed XML in ${tag}.`);
+    const closeEnd = xml.indexOf('>', closeStart + closeNeedle.length);
+    if (closeEnd < 0) reject(`The XLSX contains malformed XML in ${tag}.`);
+    yield { attributes, body: xml.slice(openEnd + 1, closeStart) };
+    cursor = closeEnd + 1;
+  }
 }
 
 function textRuns(xml) {
   const values = [];
-  const pattern = /<t(?:\s[^>]*)?>([\s\S]*?)<\/t\s*>/gi;
-  let match;
-  while ((match = pattern.exec(xml))) values.push(decodeXml(match[1].replace(/<[^>]*>/g, '')));
+  for (const block of xmlBlocks(xml, 't')) {
+    values.push(decodeXml(stripXmlTags(block.body)));
+  }
   return values.join('');
 }
 
 function tagValue(xml, tag) {
-  const match = new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)<\\/${tag}\\s*>`, 'i').exec(xml);
-  return match ? decodeXml(match[1].replace(/<[^>]*>/g, '')) : '';
+  for (const block of xmlBlocks(xml, tag)) {
+    return decodeXml(stripXmlTags(block.body));
+  }
+  return '';
 }
 
 function extractDocx(bytes, limitOverrides) {
@@ -225,23 +296,16 @@ function sharedStringsFrom(archive) {
   if (!member) return [];
   const xml = member.toString('utf8');
   const strings = [];
-  const pattern = /<si(?:\s[^>]*)?>([\s\S]*?)<\/si\s*>/gi;
-  let match;
-  while ((match = pattern.exec(xml))) strings.push(textRuns(match[1]));
+  for (const block of xmlBlocks(xml, 'si')) strings.push(textRuns(block.body));
   return strings;
 }
 
 function worksheetRows(xml, sharedStrings) {
   const rows = [];
-  const rowPattern = /<row(?:\s[^>]*)?>([\s\S]*?)<\/row\s*>/gi;
-  let rowMatch;
-  while ((rowMatch = rowPattern.exec(xml))) {
+  for (const row of xmlBlocks(xml, 'row')) {
     const values = [];
-    const cellPattern = /<c\b([^>]*)>([\s\S]*?)<\/c\s*>/gi;
-    let cellMatch;
-    while ((cellMatch = cellPattern.exec(rowMatch[1]))) {
-      const attributes = cellMatch[1];
-      const body = cellMatch[2];
+    for (const cell of xmlBlocks(row.body, 'c')) {
+      const { attributes, body } = cell;
       const typeMatch = /\bt\s*=\s*(["'])(.*?)\1/i.exec(attributes);
       const type = typeMatch ? typeMatch[2] : '';
       let value;
@@ -315,4 +379,3 @@ module.exports = {
   DocumentRejected,
   ZIP_LIMITS,
 };
-

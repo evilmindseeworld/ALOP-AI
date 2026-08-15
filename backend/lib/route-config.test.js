@@ -68,7 +68,7 @@ test("every 50 MB body exemption names a route that exists", () => {
 test("the 50 MB body is granted only where an image can legitimately arrive", () => {
   // The ceiling exists for base64 image data URLs. Any other route on this list
   // is an endpoint that can be made to buffer fifty megabytes for no reason.
-  assert.deepEqual([...bigBody].sort(), ["/api/council", "/api/overlay"]);
+  assert.deepEqual([...bigBody].sort(), ["/api/council", "/api/image", "/api/overlay"]);
 });
 
 test("council vision starts before its independent context reads", () => {

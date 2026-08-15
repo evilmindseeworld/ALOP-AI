@@ -41,6 +41,7 @@ const { clerkMiddleware, getAuth, clerkClient } = require('@clerk/express');
 const Stripe = require('stripe');
 const { timeoutSignal, childAbortController } = require('./lib/abort');
 const { describeImage, visionModels } = require('./lib/vision');
+const { generateImage } = require('./lib/image-gen');
 const { createTurnTelemetry } = require('./lib/turn-telemetry');
 const { rescueReasoning } = require('./lib/reasoning-rescue');
 const { createTurnContext } = require('./lib/turn-context');
@@ -2618,6 +2619,9 @@ app.use('/api/chat-title', createLimiter(60000, 30, 'Too many title requests.'))
 // Tighter than the rest, because this is the only route where a single request
 // bills a third party per character. Nobody listens to twenty answers a minute.
 app.use('/api/speech', createLimiter(60000, 20, 'Too many speech requests.'));
+// Drawing is the most expensive thing a single request can ask for here, and
+// unlike a council turn it has no cheaper tier to fall back to.
+app.use('/api/image', createLimiter(60000, 10, 'Too many image requests.'));
 app.use('/api/create-checkout-session', createLimiter(300000, 5, 'Too many billing requests.'));
 app.use('/api/create-portal-session', createLimiter(300000, 5, 'Too many billing requests.'));
 app.use('/api/admin/', createLimiter(60000, 60, 'Too many admin requests.'));
@@ -2636,12 +2640,12 @@ app.use('/health', createLimiter(60000, 120, 'Too many requests.'));
 // only where an image can legitimately arrive; everything else gets 1 MB.
 // (The Stripe webhook is mounted above this with express.raw and is unaffected.)
 //
-// `/api/vision` and `/api/image` were on this list and have no handler. Body
+// `/api/vision` and `/api/image` were once on this list with no handler. Body
 // parsing runs before routing, so a POST to either buffered 50 MB and then
-// 404'd — the ceiling was granted to a door that was not there. Their rate
-// limiters, and `/api/quick`'s, are gone with them. Nothing in the frontend
-// called any of the three.
-const IMAGE_ROUTES = ['/api/council', '/api/overlay'];
+// 404'd — the ceiling was granted to a door that was not there. `/api/vision`
+// and `/api/quick` are still gone; `/api/image` is back and this time it has a
+// handler, because editing an image means sending one.
+const IMAGE_ROUTES = ['/api/council', '/api/overlay', '/api/image'];
 const bigJson = express.json({ limit: '50mb' });
 const smallJson = express.json({ limit: '1mb' });
 app.use((req, res, next) => (IMAGE_ROUTES.some((p) => req.path.startsWith(p)) ? bigJson : smallJson)(req, res, next));
@@ -5895,6 +5899,66 @@ app.post('/api/chat-title', requireAuth, checkSuspended, async (req, res) => {
  * council answer is a user's private conversation, and any shared cache in
  * front of this must not hold one.
  */
+/* DRAWING, not reading. The council's vision path turns a picture into text;
+ * this turns text into a picture, through the same Google key and the same
+ * candidate-list discipline (lib/image-gen.js).
+ *
+ * The spend note from /api/overlay applies unchanged: this call goes to
+ * Google, not OpenRouter, so it does NOT touch the OpenRouter spend ledger.
+ * It still costs one request against the account's daily budget, because the
+ * budget is also the abuse ceiling and an unmetered generate endpoint is an
+ * unmetered generate endpoint.
+ *
+ * ponytail: the image comes back as a data URL and the client owns it from
+ * there. No object storage, so a generated image saved into a conversation is
+ * base64 inside the chat row — fine for one or two, not for a gallery. Upgrade
+ * path is a Supabase Storage bucket and an id, which is also what would let a
+ * generated image be re-edited later.
+ */
+app.post('/api/image', requireAuth, checkSuspended, async (req, res) => {
+  await withRequestBudget(res, 1, async (spend) => {
+    try {
+      const user = await ensureUser(req.auth.userId, { cached: req.userRow });
+      if (!GOOGLE_API_KEY) return res.status(503).json({ error: 'Image generation is not configured on this server.' });
+      const pv = validatePrompt(req.body?.prompt);
+      if (!pv.valid) return res.status(400).json({ error: pv.error });
+
+      // Editing: the same attachment rules as a council turn, because it is the
+      // same untrusted input arriving through the same door.
+      const attached = collectAttachedImages(req.body || {});
+      if (attached.length > MAX_IMAGES_PER_TURN) {
+        return res.status(400).json({ error: `Attach at most ${MAX_IMAGES_PER_TURN} images.` });
+      }
+      const inputImages = [];
+      for (const dataUrl of attached) {
+        const parsed = parseDataUrl(dataUrl);
+        if (!parsed) return res.status(400).json({ error: 'Attached images must be base64-encoded PNG, JPEG, WebP or GIF under 8 MB each.' });
+        inputImages.push({ base64: parsed.base64, mime: parsed.mime });
+      }
+
+      const timed = timeoutSignal(null, 60000);
+      let out;
+      try {
+        spend();
+        out = await generateImage({ apiKey: GOOGLE_API_KEY, prompt: pv.value, inputImages, signal: timed.signal });
+      } finally {
+        timed.dispose();
+      }
+
+      await auditLog(user.id, 'image.generate', { prompt: pv.value.slice(0, 500), edited: inputImages.length, model: out.model }, req.ip);
+      res.set('Cache-Control', 'no-store');
+      return res.json({ image: `data:${out.mime};base64,${out.base64}`, model: out.model });
+    } catch (err) {
+      /* The message carries the model's own refusal when there was one ("I
+       * can't create that image"), and that is the most useful thing the user
+       * can be told. It is a Google-side string about the user's own prompt,
+       * not internal state. */
+      console.error('[IMAGE] Failed:', err.message);
+      return res.status(502).json({ error: `Couldn't make that image. ${err.message.replace(/^Gemini [\w.-]+[: ]*/, '')}`.trim() });
+    }
+  });
+});
+
 app.post('/api/speech', requireAuth, checkSuspended, async (req, res) => {
   const text = boundText(req.body?.text);
   if (!text) return res.status(400).json({ error: 'Nothing to speak.' });

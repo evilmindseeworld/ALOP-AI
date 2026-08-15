@@ -79,6 +79,7 @@ test('every route that calls a model behind auth also checks suspension', () => 
     "app.post('/api/overlay'",
     "app.post('/api/chat-title'",
     "app.post('/api/speech'",
+    "app.post('/api/image'",
     "app.post('/api/feedback'",
   ];
   for (const route of PAID) {

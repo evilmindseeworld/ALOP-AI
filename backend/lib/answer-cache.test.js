@@ -672,6 +672,41 @@ test('dueForRefresh returns only future search-backed rows with replay inputs', 
   assert.ok(calls.some((call) => call[0] === 'eq' && call[1] === 'used_live_web' && call[2] === true));
 });
 
+test('usageCandidates ranks durable replay rows for the brain', async () => {
+  const rows = [
+    {
+      key: 'quiet', question_text: 'quiet question', lang: 'en', country: 'AE', plan: 'free', detailed: false,
+      branch: 'turn:tools-off', used_live_web: false, stored_at: '2026-08-14T00:00:00.000Z',
+      expires_at: '2026-08-16T00:00:00.000Z', hit_count: 0, quality: 0.5, provenance: { estimated_request_cost: 1 },
+    },
+    {
+      key: 'popular', question_text: 'popular question', lang: 'en', country: 'AE', plan: 'free', detailed: false,
+      branch: 'turn:tools-off', used_live_web: true, stored_at: '2026-08-14T00:00:00.000Z',
+      expires_at: '2026-08-15T00:10:00.000Z', hit_count: 40, quality: 0.9, provenance: { estimated_request_cost: 8 },
+    },
+  ];
+  const calls = [];
+  const db = {
+    from(table) {
+      calls.push(table);
+      const query = {
+        select(fields) { calls.push(fields); return query; },
+        is(...args) { calls.push(['is', ...args]); return query; },
+        eq(...args) { calls.push(['eq', ...args]); return query; },
+        order(...args) { calls.push(['order', ...args]); return query; },
+        limit(value) { calls.push(['limit', value]); return query; },
+        then(resolve, reject) { return Promise.resolve({ data: rows, error: null }).then(resolve, reject); },
+      };
+      return query;
+    },
+  };
+  const cache = createAnswerCache({ supabase: db, now: () => Date.parse('2026-08-15T00:00:00.000Z'), reportEvery: 0 });
+  const candidates = await cache.usageCandidates({ branch: 'turn:tools-off', limit: 2, quotaRemaining: 10 });
+  assert.deepEqual(candidates.map((candidate) => candidate.key), ['popular', 'quiet']);
+  assert.ok(calls.includes('answer_cache'));
+  assert.ok(calls.some((call) => call[0] === 'is' && call[1] === 'invalidated_at' && call[2] === null));
+});
+
 test('016 documents the user-derived question-text and search-expiry index boundary', () => {
   const sql = fs.readFileSync(path.join(__dirname, '..', 'migrations', '016_answer_cache_inputs.sql'), 'utf8');
   assert.match(sql, /ADD COLUMN IF NOT EXISTS question_text TEXT/);

@@ -276,6 +276,32 @@ test('runQuestion owns the cache write; the brain never double-writes', async ()
   assert.equal(writes, 0);
 });
 
+test('production scheduler can enqueue cache work without running a model inline', async () => {
+  const c = clock();
+  const queued = [];
+  const cache = {
+    dueForRefresh: async () => [due('durable refresh', c.now() + HOUR_MS)],
+    keyFor: ({ question }) => question,
+  };
+  const brain = createBrain({
+    cache,
+    questions: [],
+    now: c.now,
+    setTimeoutFn: immediateTimeout,
+    log: quietLog(),
+    enqueueJob: async (job) => { queued.push(job); return true; },
+    queueUserId: 'brain-user',
+    runQuestion: async () => { throw new Error('must not run inline'); },
+  });
+
+  await brain.runRefresh();
+
+  assert.equal(queued.length, 1);
+  assert.equal(queued[0].kind, 'brain_refresh');
+  assert.equal(queued[0].userId, 'brain-user');
+  assert.equal(queued[0].payload.question, 'durable refresh');
+});
+
 test('successful work logs only the required hashed question labels', async () => {
   const c = clock();
   const lines = [];

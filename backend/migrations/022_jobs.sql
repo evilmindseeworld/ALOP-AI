@@ -1,9 +1,8 @@
 -- 022_jobs.sql
 --
--- Additive and re-runnable. NOT YET APPLIED — read the live schema through the
--- Supabase MCP first; `migrations/` is not what production looks like (004, 005
--- and 006 have never run). Apply with `apply_migration`, dropping CONCURRENTLY,
--- as 007 records.
+-- Additive and re-runnable. Applied to the connected APOL-AI Supabase project on
+-- 2026-08-15 as `20260815034322 jobs` after a live schema inspection. The MCP
+-- apply wrapper drops CONCURRENTLY because it runs migrations transactionally.
 --
 --
 -- THE WORK A TURN LEAVES BEHIND, AND WHY LOSING IT STOPPED BEING ACCEPTABLE.

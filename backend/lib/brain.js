@@ -113,6 +113,8 @@ function createBrain({
   cache,
   runQuestion,
   questions = [],
+  enqueueJob = null,
+  queueUserId = null,
   log = console,
   now = () => Date.now(),
   setTimeoutFn = setTimeout,
@@ -186,6 +188,33 @@ function createBrain({
 
   const ask = async (input, label) => {
     if (!reserveBackgroundQuestion()) return { stop: true };
+
+    /* In production the scheduler only creates durable work. The queue worker
+     * runs the same `runQuestion` seam later, so a deploy or sleeping instance
+     * cannot lose a refresh after the scheduler selected it. Tests and small
+     * embedders that do not provide a queue retain the direct seam. */
+    if (typeof enqueueJob === 'function') {
+      const kind = label === 'refresh' ? 'brain_refresh' : 'cache_warm';
+      try {
+        const accepted = await enqueueJob({
+          kind,
+          userId: queueUserId || null,
+          priority: label === 'refresh' ? 8 : 9,
+          keyParts: [input.question, input.lang, input.country, input.plan, input.detailed, input.branch],
+          payload: { ...input },
+        });
+        if (!accepted) {
+          safeLog(log, 'warn', `[BRAIN] ${label} queue unavailable: ${hashQuestion(input.question)}`);
+          return { stop: true };
+        }
+        safeLog(log, 'info', `[BRAIN] ${label} queued: ${hashQuestion(input.question)}`);
+        return { stop: false };
+      } catch (error) {
+        safeLog(log, 'warn', `[BRAIN] ${label} queue failed: ${hashQuestion(input.question)} (${errorMessage(error)})`);
+        return { stop: true };
+      }
+    }
+
     if (typeof runQuestion !== 'function') {
       safeLog(log, 'warn', `[BRAIN] ${label} failed: ${hashQuestion(input.question)} (runQuestion unavailable)`);
       return { stop: true };

@@ -1,5 +1,6 @@
 const crypto = require('node:crypto');
 const { settleByDeadline } = require('./deadline');
+const { rankPrefetchCandidates } = require('./usage-prefetch');
 
 /**
  * A cache of finished ANSWERS, not of search results.
@@ -680,6 +681,49 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
     }
   }
 
+  /**
+   * Return replayable rows for usage-driven prefetching. This replaces a
+   * curated product-question list as the brain's cold-fill source: the rows
+   * carry demand (`hit_count`), freshness (`expires_at`), quality and the
+   * provenance-derived cost of a miss. No user id is accepted here because
+   * shared answer-cache rows are deliberately public, non-personalised
+   * artefacts; the replay identity is still checked field by field.
+   */
+  async function usageCandidates({ limit = 50, branch, quotaRemaining = null, quotaCapacity = 50 } = {}) {
+    const rowLimit = Number.isInteger(Number(limit)) ? Number(limit) : 50;
+    if (!supabase || rowLimit <= 0) return [];
+    try {
+      const result = await settleByDeadline(
+        [{
+          promise: (async () => {
+            let query = supabase
+              .from('answer_cache')
+              .select('key, question_text, lang, country, plan, detailed, branch, used_live_web, stored_at, expires_at, hit_count, last_hit_at, quality, provenance, invalidated_at')
+              .is('invalidated_at', null);
+            if (typeof branch === 'string' && branch) query = query.eq('branch', branch);
+            query = query.order('last_hit_at', { ascending: false, nullsLast: true });
+            query = query.order('hit_count', { ascending: false });
+            query = query.limit(Math.min(Math.max(rowLimit * 4, rowLimit), 200));
+            return query;
+          })(),
+          fallback: { data: [], error: null },
+        }],
+        { deadlineMs: cfg.readDeadlineMs },
+      ).then((r) => r.results[0]);
+
+      if (!result || result.error) {
+        if (result?.error) warnOnce('usage candidate read failed', result.error.message);
+        return [];
+      }
+      return rankPrefetchCandidates(result.data, {
+        now: now(), limit: rowLimit, quotaRemaining, quotaCapacity,
+      });
+    } catch (e) {
+      warnOnce('usage candidate read threw', e.message);
+      return [];
+    }
+  }
+
   /** Convenience form for callers that naturally have a duration. */
   async function getDue({ withinMs, limit = 50 } = {}) {
     const windowMs = Number(withinMs);
@@ -700,7 +744,7 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
     }
   }
 
-  return { get, getSemantic, getDue, dueForRefresh, set, setBrief, setConstant, enrichEmbedding, invalidate, clear, keyFor, stats: () => ({ ...stats, size: memory.size }) };
+  return { get, getSemantic, getDue, dueForRefresh, usageCandidates, set, setBrief, setConstant, enrichEmbedding, invalidate, clear, keyFor, stats: () => ({ ...stats, size: memory.size }) };
 }
 
 module.exports = {

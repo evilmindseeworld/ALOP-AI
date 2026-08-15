@@ -4,12 +4,10 @@
 -- be in — the ad-hoc schema that predates migrations/ and a fresh build from
 -- this directory. See 008 for why that is the rule here.
 --
--- NOT APPLIED TO PRODUCTION YET. Every statement is additive and nullable, but
--- `migrations/` is not what production looks like (004, 005 and 006 have never
--- run), so read `pg_indexes` and `information_schema.columns` through the
--- Supabase MCP before applying, and apply with `apply_migration`, which wraps
--- statements in a transaction — CONCURRENTLY is kept in the file and dropped at
--- apply time, exactly as 007 records.
+-- Applied to the connected APOL-AI Supabase project on 2026-08-15 as
+-- `20260815034253 memory_tiers` after a live schema/index inspection. Every
+-- statement remains additive and re-runnable; `CONCURRENTLY` is dropped by the
+-- MCP apply wrapper because it runs migrations transactionally.
 --
 --
 -- ONE TABLE OF "FACTS" WAS FOUR DIFFERENT THINGS.

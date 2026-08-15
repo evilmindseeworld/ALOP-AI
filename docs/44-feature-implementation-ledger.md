@@ -220,3 +220,37 @@ an adjacent foundation. No Phase 3 implementation work was added here.
 44. **blocked** — Authenticated browser release matrix for SSE, reconnects,
     speech, camera, screen sharing, mobile/touch, attachments, themes, billing,
     and tools. No Phase 3 browser release run was started.
+
+## 2026-08-16 — vision, multi-image and image generation
+
+Added outside the 44-item numbering because none of the items covers "the
+council can see and draw"; the closest, item 32, is document ingestion and is
+tracked separately below.
+
+- **Vision no longer pins a retired model id.** `backend/lib/vision.js` (new,
+  with `vision.test.js`) takes a candidate list, stable id first, and falls
+  through only on a model-not-found; a 429 or 500 still fails the turn rather
+  than silently downgrading the model. Both call sites in `backend/server.js`
+  (council and overlay) previously pinned `gemini-2.5-flash-preview-05-06` /
+  `gemini-2.5-pro-preview-05-06`. Commit `af92359`.
+
+  **Not verified against production.** There is no `GOOGLE_API_KEY` in the
+  local environment, so the claim "the reported failure was a retired id" is
+  reasoned from the 502 path (the 503 no-key gate sits above it, so the key is
+  set and the call itself failed), not measured. What is measured: the code no
+  longer fails permanently when one id is retired, and errors now name the
+  model and status they came from.
+
+- **Several images per turn.** `backend/lib/attached-images.js` (new, with
+  tests); `images` is an array, `image` still works, vision describes them
+  concurrently and fails as a unit, and over the limit (4) is a 400 rather than
+  a silent slice. Commit `a3df273`.
+
+- **Image generation and editing.** `backend/lib/image-gen.js` (new, with
+  tests) and `POST /api/image` — auth + suspension check + its own 10/min
+  limiter + one request against the daily budget; a 200 carrying no image is
+  treated as the refusal it is. No object storage: the image returns as a data
+  URL. Commit `bdc43aa`.
+
+- Frontend surfaces for all three (multi-attach UI, generated-image rendering)
+  are **not built**. The backend accepts them; nothing sends them yet.

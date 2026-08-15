@@ -27,7 +27,7 @@ const at = (needle) => {
 };
 
 test('the greeting fast path runs BEFORE the router, the ceilings and the context reads', () => {
-  const greeting = at('const greeting = image ? null : await greetingCache.get(pv.value);');
+  const greeting = at('const greeting = attachedImages.length ? null : await greetingCache.get(pv.value);');
   assert.ok(greeting < at('classifyRequest(pv.value'), 'greeting must short-circuit above the router');
   assert.ok(greeting < at('const budget = await reservationLedger.reserve('), 'a greeting must not reserve spend');
   assert.ok(greeting < at('const requestBudget = await reserveRequests('), 'a greeting must not reserve requests');
@@ -38,7 +38,7 @@ test('an image turn skips the greeting path', () => {
   // "hi" typed under a screenshot is a question about the screenshot. Tested
   // against `image` from the body, never `imageContext` — that one is the
   // vision model's output and is declared hundreds of lines below.
-  assert.match(SOURCE, /const greeting = image \? null : await greetingCache\.get\(pv\.value\);/);
+  assert.match(SOURCE, /const greeting = attachedImages\.length \? null : await greetingCache\.get\(pv\.value\);/);
 });
 
 test('the greeting branch terminates the stream like every other branch', () => {

@@ -2651,6 +2651,7 @@ app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 const MAX_PROMPT = 100000;
 const { buildChatUpdate, mergeMessages, sanitizeString } = require('./lib/chat-update');
 const { parseDataUrl } = require('./lib/data-url');
+const { collectAttachedImages, combineImageDescriptions, MAX_IMAGES_PER_TURN } = require('./lib/attached-images');
 // History is INPUT, not state. Both routes that take it now go through one
 // function — /api/overlay previously spread client objects straight into the
 // message array, so a caller could supply `role: "system"` and override the
@@ -3501,9 +3502,24 @@ async function handleCouncilTurn(req, res) {
   try {
     const user = await ensureUser(req.auth.userId, { cached: req.userRow });
     auditUserId = user.id;
-    const { message, history = [], chatId, image } = req.body;
+    const { message, history = [], chatId, image, images } = req.body;
     const pv = validatePrompt(message);
     if (!pv.valid) return res.status(400).json({ error: pv.error });
+    /* ONE ATTACHMENT OR SEVERAL, ONE SHAPE BELOW.
+     *
+     * `image` is the field the shipped frontend sends and it keeps working;
+     * `images` is the array. Everything downstream reads `attachedImages`, so
+     * no branch has to ask which field the client used — a question that would
+     * otherwise have to be asked correctly in all eight places that currently
+     * test for an attachment.
+     *
+     * Over the limit is a 400, not a silent slice. Dropping the fifth photo and
+     * answering about the first four looks like an answer about all five, and
+     * the user has no way to see the difference. */
+    const attachedImages = collectAttachedImages({ image, images });
+    if (attachedImages.length > MAX_IMAGES_PER_TURN) {
+      return res.status(400).json({ error: `Attach at most ${MAX_IMAGES_PER_TURN} images per message.` });
+    }
     // Trimmed rather than rejected. The old code returned 400 on a 21st message
     // while silently clipping a 100,000-character one, which is two different
     // answers to the same question; and the council slices to the last ten
@@ -3531,7 +3547,7 @@ async function handleCouncilTurn(req, res) {
      * declared until 120 lines below this one, so reading it here is a
      * temporal-dead-zone throw on every single turn — a 500 on the whole
      * product, shipped by a branch that only meant to skip itself. */
-    const sum = image ? null : tryArithmetic(pv.value);
+    const sum = attachedImages.length ? null : tryArithmetic(pv.value);
     if (sum) {
       console.log(`[COUNCIL] Arithmetic fast path: ${sum.answer}`);
       openStream(res);
@@ -3595,7 +3611,7 @@ async function handleCouncilTurn(req, res) {
      * NOT `rememberTurn`, for the third time in this file and the same reason:
      * a summary call plus a fact-extraction call is two model requests spent to
      * record that someone said hello. */
-    const greeting = image ? null : await greetingCache.get(pv.value);
+    const greeting = attachedImages.length ? null : await greetingCache.get(pv.value);
     if (greeting) {
       console.log('[COUNCIL] Greeting fast path. 0 model requests.');
       openStream(res);
@@ -3906,11 +3922,14 @@ async function handleCouncilTurn(req, res) {
     // the user cannot tell the difference between "didn't look" and "looked and
     // saw nothing".
     let imageContext = '';
-    let parsedImage = null;
+    let parsedImages = [];
     let visionP = Promise.resolve(null);
-    if (image) {
-      parsedImage = parseDataUrl(image);
-      if (!parsedImage) return res.status(400).json({ error: 'Attached image must be a base64-encoded PNG, JPEG, WebP or GIF under 8 MB.' });
+    if (attachedImages.length) {
+      for (const dataUrl of attachedImages) {
+        const parsed = parseDataUrl(dataUrl);
+        if (!parsed) return res.status(400).json({ error: 'Attached images must be base64-encoded PNG, JPEG, WebP or GIF under 8 MB each.' });
+        parsedImages.push(parsed);
+      }
       if (!GOOGLE_API_KEY) return res.status(503).json({ error: 'Image analysis is not configured on this server.' });
       /* START VISION BEFORE THE CONTEXT READS. Summary, feedback and facts do
        * not depend on the image, so waiting for all three Supabase queries
@@ -3918,8 +3937,25 @@ async function handleCouncilTurn(req, res) {
        * The result is still awaited before prompt assembly; only the idle time
        * is removed. */
       const visionModel = visionModels(userPlan);
-      visionP = telemetry.measureContext('vision', () => callGeminiVision(visionModel, 'Describe this image thoroughly. Include any text, code, UI elements, data and errors visible in it.', parsedImage.base64, parsedImage.mime, 1024, turnSignal))
-        .then((text) => ({ text }))
+      /* CONCURRENT, and ALL-OR-NOTHING. Four images cost one image's latency,
+       * not four. And if one of them fails the whole turn fails: answering
+       * about three of the four pictures, with no way for the user to see which
+       * one was dropped, is the same lie as answering about none of them while
+       * claiming to have looked. */
+      const describeOne = (parsed, index) => callGeminiVision(
+        visionModel,
+        attachedImages.length === 1
+          ? 'Describe this image thoroughly. Include any text, code, UI elements, data and errors visible in it.'
+          : `Describe image ${index + 1} of ${attachedImages.length} thoroughly. Include any text, code, UI elements, data and errors visible in it.`,
+        parsed.base64,
+        parsed.mime,
+        1024,
+        turnSignal,
+      );
+      visionP = telemetry.measureContext('vision', () => Promise.all(parsedImages.map(describeOne)))
+        /* One image keeps the exact text it had before, unlabelled, so the
+         * single-attachment prompt is byte-identical to the one that shipped. */
+        .then((texts) => ({ text: combineImageDescriptions(texts) }))
         .catch((error) => ({ error }));
     }
 
@@ -3949,7 +3985,7 @@ async function handleCouncilTurn(req, res) {
      * literally what is happening — and not a rotating spinner phrase. The rule
      * from `sendStage`: a progress indicator that invents its own progress is a
      * spinner that lies. */
-    if (!image) {
+    if (!attachedImages.length) {
       openStream(res);
       sendStage(res, 'context', 'Reading your conversation');
     }
@@ -3978,12 +4014,12 @@ async function handleCouncilTurn(req, res) {
      * arrives, and in that case the embedding is computed and unused — exactly
      * what happened on every turn before this, so no path is made worse. */
     const workPlan = planWork({
-      hasImage: Boolean(parsedImage),
+      hasImage: Boolean(parsedImages.length),
       /* Not yet known for certain — the summary read is still in flight. The
        * facts and feedback steps below re-decide it against the real answer,
        * which is why they are DAG nodes rather than entries in a Promise.all. */
       hasConversationHistory: true,
-      cacheEligible: !clientHistory.length && !parsedImage,
+      cacheEligible: !clientHistory.length && !parsedImages.length,
       semanticCacheEnabled: SEMANTIC_CACHE_ENABLED,
       userHasFacts: true,
       category: selection.category,
@@ -4101,14 +4137,14 @@ async function handleCouncilTurn(req, res) {
       console.log(`[ANSWERS] EMBEDDING ${questionEmbedding ? 'READY' : 'TIMEOUT'} deadlineMs=${SEMANTIC_EMBED_DEADLINE_MS}`);
     }
 
-    if (parsedImage) {
+    if (parsedImages.length) {
       if (visionResult?.error) {
         console.error('[COUNCIL] Vision failed:', visionResult.error.message);
         return res.status(502).json({ error: "Couldn't analyse the attached image. Try again, or send the message without it." });
       }
       imageContext = visionResult?.text || '';
       if (!imageContext.trim()) return res.status(502).json({ error: "Couldn't read anything from the attached image." });
-      console.log(`[COUNCIL] Vision: ${parsedImage.mime}, ${Math.round(parsedImage.bytes / 1024)}KB`);
+      console.log(`[COUNCIL] Vision: ${parsedImages.length} image(s), ${parsedImages.map((p) => `${p.mime} ${Math.round(p.bytes / 1024)}KB`).join(', ')}`);
     }
 
     // Injected into every prompt path below, so memory and learned preferences
@@ -4199,7 +4235,7 @@ async function handleCouncilTurn(req, res) {
      * same user on the same question would miss depending on whether the CDN
      * header or the timezone answered first. */
     const personalised = hasConversationHistory;
-    const hasUncacheableAttachment = Boolean(imageContext || parsedImage);
+    const hasUncacheableAttachment = Boolean(imageContext || parsedImages.length);
     /* Feature flags change how the SAME words are answered. Keep that
      * provenance in the durable key so enabling seeded tools cannot replay a
      * Wikipedia/plain-council answer written before the flag changed. */

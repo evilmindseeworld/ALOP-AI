@@ -42,8 +42,8 @@ test('the early open is gated on there being no image, so the vision 502s stay r
   // An image turn keeps two real HTTP refusals ("couldn't analyse the attached
   // image"). Opening the stream above them would make both unsendable and the
   // client would render a blank answer instead of the error.
-  const gate = SOURCE.indexOf("if (!image) {\n      openStream(res);");
-  assert.notEqual(gate, -1, 'the early openStream must stay gated on `!image`');
+  const gate = SOURCE.indexOf("if (!attachedImages.length) {\n      openStream(res);");
+  assert.notEqual(gate, -1, 'the early openStream must stay gated on there being no attachment');
   const vision502 = at("Couldn't analyse the attached image");
   assert.ok(gate < vision502, 'expected the gate above the vision failure branch');
 });
@@ -53,7 +53,7 @@ test('every refusal that answers with an HTTP status still sits ABOVE the early 
   // are out. If someone adds a new `res.status(...).json(...)` below the open
   // on the text path, it silently becomes a no-op — this is the check that
   // makes that a red test instead of a support ticket.
-  const open = at("if (!image) {\n      openStream(res);");
+  const open = at("if (!attachedImages.length) {\n      openStream(res);");
   const councilStart = at("app.post('/api/council'");
   const councilEnd = SOURCE.indexOf("app.post('/api/overlay'");
   const body = SOURCE.slice(open, councilEnd);

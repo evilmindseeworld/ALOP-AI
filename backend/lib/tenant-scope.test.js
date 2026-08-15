@@ -148,14 +148,28 @@ test("the turn-memory funnel is called with an owner at every call site", () => 
  * it; this asserts the call actually obeys it, since the argument is the whole
  * defence and it is one edit away from being the wrong one. */
 test("fact extraction is fed the user's message, not the assistant's", () => {
+  /* AN EXACT SIGNATURE, NOT A PARAMETER LIST, and the difference matters: a
+   * destructured options bag contains a comma, so splitting on commas reads
+   * `{ turnId = null } = {}` as two parameters and would accept anything
+   * inside those braces. Matching the whole signature keeps this as strict as
+   * it was — any new parameter, message-bearing or not, is a red test that a
+   * person has to look at. The one permitted extra carries an ID and has no
+   * way to carry text. */
   const decl = SRC.match(/const updateUserFacts = async \(([^)]*)\)/);
   assert.ok(decl, "updateUserFacts declaration not found — this contract has stopped reading the file");
-  const params = decl[1].split(",").map((s) => s.trim());
-  assert.deepEqual(params, ["userId", "userMsg"], "updateUserFacts takes the user's message and nothing else");
+  assert.equal(
+    decl[1].replace(/\s+/g, " ").trim(),
+    "userId, userMsg, { turnId = null } = {}",
+    "updateUserFacts takes the user's message and an id-only options bag, nothing else",
+  );
 
   const call = SRC.match(/updateUserFacts\(userId, ([^)]*)\)/);
   assert.ok(call, "updateUserFacts is not called with userId first");
-  assert.equal(call[1].trim(), "userMsg", "fact extraction must be fed userMsg");
+  assert.equal(
+    call[1].replace(/\s+/g, " ").trim(),
+    "userMsg, { turnId }",
+    "fact extraction must be fed userMsg, and the only other argument is the turn id",
+  );
 });
 
 /* Semantic recall reaches the table through an RPC, which the sweep above
@@ -181,4 +195,17 @@ test("every semantic-recall RPC names an owner the server resolved", () => {
 
   const injected = SRC.match(/readUserFacts\(user\.id, FACTS_INJECT_LIMIT, ([^)]*)\)/);
   assert.ok(injected, "the council's fact read no longer passes user.id and the turn text");
+});
+
+/* PROVENANCE IS ONLY WORTH THE COLUMN IF IT ARRIVES. `source_turn_id` answers
+ * "why does the assistant believe this about me" and is the only way to undo
+ * one bad turn's memories without clearing all of them — and a threading that
+ * is wired but never passed writes null forever while every test passes. */
+test('every rememberTurn call carries the canonical turn id', () => {
+  const calls = [...SRC.matchAll(/rememberTurn\(([^;]*?)\);/g)].map((m) => m[1]);
+  assert.ok(calls.length >= 5, `expected the terminal paths to call rememberTurn; found ${calls.length}`);
+  for (const args of calls) {
+    if (args.includes('=>')) continue; // the declaration itself
+    assert.match(args, /turnContext\.turnId\s*$/, `rememberTurn without a turn id: ${args.slice(0, 80)}`);
+  }
 });

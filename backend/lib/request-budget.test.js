@@ -263,7 +263,10 @@ test("every answering branch records its memory calls", () => {
   const calls = [...SERVER.matchAll(/rememberTurn\(.*?\);$/gm)].map((m) => m[0]);
   assert.ok(calls.length >= 5, `expected 5 rememberTurn call sites, found ${calls.length}`);
   for (const call of calls) {
-    assert.match(call, /,\s*telemetry\);$/, `${call} does not pass telemetry, so its two provider calls go uncounted`);
+    // `telemetry` is the fifth argument and the turn id follows it, so this
+    // checks the argument is PRESENT rather than last — anchoring on the end of
+    // the statement made adding a sixth argument look like dropping the fifth.
+    assert.match(call, /,\s*telemetry\s*[,)]/, `${call} does not pass telemetry, so its two provider calls go uncounted`);
   }
 });
 

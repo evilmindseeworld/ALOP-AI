@@ -32,6 +32,12 @@ const words = (text) => String(text || '')
   .toLowerCase()
   .replace(/[^\p{L}\p{N}\s.%-]/gu, ' ')
   .split(/\s+/)
+  /* TRAILING PUNCTUATION IS NOT PART OF A WORD, and leaving it attached made
+   * "answers." and "answers" two different tokens — so the same sentence with
+   * and without a full stop scored 0.58 against itself. `.` and `-` survive
+   * INSIDE a token because "3.5" and "load-bearing" need them; they are only
+   * stripped from the ends. */
+  .map((w) => w.replace(/^[.-]+/, '').replace(/[.-]+$/, ''))
   .filter((w) => w.length > 2 && !STOPWORDS.has(w));
 
 /** Numbers, kept with their unit-ish suffix so "8gb" and "8" are not the same. */

@@ -51,6 +51,8 @@ const { planRoute, applyPlan } = require('./lib/adaptive-routing');
 const { runProgressiveCouncil } = require('./lib/progressive-council');
 const { createEvidenceLedger } = require('./lib/evidence-ledger');
 const { resolveConflicts, verifyAnswer } = require('./lib/contradiction');
+const { classifyFact, ttlFor: memoryTtlFor, conflictsWith, recallPlan } = require('./lib/memory-kinds');
+const { fuse, lexicalQuery } = require('./lib/hybrid-retrieval');
 
 /* WHETHER THIS CONVERSATION HAS A PAST, from whichever source answered first.
  *
@@ -1390,6 +1392,13 @@ const ADAPTIVE_ROUTING = /^(1|true)$/i.test(process.env.COUNCIL_ADAPTIVE || '');
  * whose refusals have never been counted is a check nobody can decide to turn
  * on. See the ledger above cacheAnswer. */
 const ANSWER_VERIFICATION = /^(1|true)$/i.test(process.env.ANSWER_VERIFICATION || '');
+/* MEMORY TIERS. Requires migration 021, which is additive but NOT YET APPLIED:
+ * with the flag off every query and insert uses exactly the columns that exist
+ * today, so this can ship before the DDL runs. Turning it on against a database
+ * without 021 fails the insert on an unknown column, which is why it is a flag
+ * and not a version check — a version check would have to query the schema on
+ * the write path of every turn. */
+const MEMORY_TIERS = /^(1|true)$/i.test(process.env.MEMORY_TIERS || '');
 const PROGRESSIVE_COUNCIL = /^(1|true)$/i.test(process.env.COUNCIL_PROGRESSIVE || '');
 const SEMANTIC_CACHE_ENABLED = /^(1|true)$/i.test(process.env.COUNCIL_SEMANTIC_CACHE || '');
 const semanticThresholdRaw = process.env.COUNCIL_SEMANTIC_CACHE_THRESHOLD;
@@ -1996,10 +2005,65 @@ const readUserFactsByMeaning = async (userId, limit, queryText, parentSignal, su
  * first and the newest fill whatever slots are left, deduplicated on the same
  * key the write path dedupes on.
  */
+/**
+ * LEXICAL RECALL, which is the half a vector search structurally cannot do.
+ *
+ * "AC-4471" and "AC-4477" embed to nearly the same point and are different
+ * things, and an identifier is exactly the kind of fact a user expects to be
+ * remembered verbatim. Runs only when the question CONTAINS such a token —
+ * `lexicalQuery` returns '' otherwise, and an empty tsquery matches everything.
+ *
+ * Requires 021's generated `fact_tsv` column, so it is inside the flag.
+ */
+const readUserFactsByToken = async (userId, limit, queryText, parentSignal) => {
+  const tsquery = lexicalQuery(queryText);
+  if (!tsquery) return [];
+  try {
+    const query = supabase
+      .from('user_facts')
+      .select('fact')
+      .eq('user_id', userId)
+      .is('superseded_by', null)
+      .textSearch('fact_tsv', tsquery, { config: 'simple' })
+      .limit(limit);
+    const { data, error } = await withQuerySignal(query, parentSignal);
+    if (error) { console.error('[FACTS] Lexical recall unavailable:', error.message); return []; }
+    return (data || []).map((r) => r.fact).filter(Boolean);
+  } catch (e) { console.error('[FACTS] Lexical recall failed:', e.message); return []; }
+};
+
+/**
+ * PREFERENCES ARE NOT RETRIEVED BY SIMILARITY, and that is the whole reason
+ * this is a separate read.
+ *
+ * "Answer briefly" is an instruction. It is not semantically near "what is the
+ * capital of France", so a nearest-neighbour recall delivers it at random —
+ * which is indistinguishable, from the user's side, from the system ignoring
+ * what they asked for. Every turn gets all of them, capped.
+ */
+const readUserPreferences = async (userId, limit, parentSignal) => {
+  try {
+    const query = supabase
+      .from('user_facts')
+      .select('fact')
+      .eq('user_id', userId)
+      .eq('kind', 'preference')
+      .is('superseded_by', null)
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    const { data, error } = await withQuerySignal(query, parentSignal);
+    if (error) { console.error('[FACTS] Preference recall unavailable:', error.message); return []; }
+    return (data || []).map((r) => r.fact).filter(Boolean);
+  } catch (e) { console.error('[FACTS] Preference recall failed:', e.message); return []; }
+};
+
 const readUserFacts = async (userId, limit = FACTS_INJECT_LIMIT, queryText = null, parentSignal, queryEmbedding) => {
   if (!userId) return [];
 
-  const [semantic, recent] = await Promise.all([
+  const plan = MEMORY_TIERS ? recallPlan({ limit }) : null;
+  const preferenceCap = plan?.find((p) => p.kind === 'preference')?.limit ?? 0;
+
+  const [semantic, recent, lexical, preferences] = await Promise.all([
     queryText ? readUserFactsByMeaning(userId, limit, queryText, parentSignal, queryEmbedding) : Promise.resolve([]),
     (async () => {
       try {
@@ -2017,11 +2081,35 @@ const readUserFacts = async (userId, limit = FACTS_INJECT_LIMIT, queryText = nul
         return (data || []).map((r) => r.fact).filter(Boolean);
       } catch (e) { console.error('[FACTS] Read failed:', e.message); return []; }
     })(),
+    MEMORY_TIERS && queryText ? readUserFactsByToken(userId, limit, queryText, parentSignal) : Promise.resolve([]),
+    MEMORY_TIERS && preferenceCap ? readUserPreferences(userId, preferenceCap, parentSignal) : Promise.resolve([]),
   ]);
+
+  /* WITH THE TIERS ON, the two relevance retrievers are FUSED rather than
+   * concatenated, and preferences are prepended whatever the question was.
+   *
+   * Concatenation is what shipped, and its defect is that a barely-relevant
+   * nearest neighbour outranks an exact-token match the vector search could
+   * never have found. Reciprocal rank fusion uses only the ORDER each retriever
+   * produced — the part both are actually good at — and ranks a fact both found
+   * above one either found alone.
+   *
+   * `recent` stays in the fusion rather than being replaced by it: a row
+   * written while the embedding provider was refusing has a null vector and is
+   * invisible to the vector search forever. That hole is the reason the second
+   * read exists and it does not close just because a third one was added. */
+  const ranked = MEMORY_TIERS
+    ? fuse({
+      vector: semantic,
+      lexical: [...lexical, ...recent],
+      keyOf: (fact) => factKey(fact) || '',
+      limit,
+    }).map((r) => r.row)
+    : [...semantic, ...recent];
 
   const seen = new Set();
   const out = [];
-  for (const fact of [...semantic, ...recent]) {
+  for (const fact of [...preferences, ...ranked]) {
     const k = factKey(fact);
     if (!k || seen.has(k)) continue;
     seen.add(k);
@@ -2031,7 +2119,7 @@ const readUserFacts = async (userId, limit = FACTS_INJECT_LIMIT, queryText = nul
   return out;
 };
 
-const updateUserFacts = async (userId, userMsg) => {
+const updateUserFacts = async (userId, userMsg, { turnId = null } = {}) => {
   if (!userId || !userMsg) return;
   try {
     const raw = await callModel(
@@ -2051,6 +2139,36 @@ const updateUserFacts = async (userId, userMsg) => {
     // stored without semantic recall rather than a fact not stored.
     const vectors = await Promise.all(fresh.map((fact) => embedText(fact)));
 
+    /* WHAT KIND OF MEMORY EACH ONE IS, WHEN IT STOPS BEING TRUE, AND WHETHER IT
+     * CONTRADICTS SOMETHING ALREADY STORED.
+     *
+     * `newFacts` above answers only "is this NEW", by normalised text. The case
+     * it cannot see is the candidate that is neither a duplicate nor compatible
+     * — "works at Globex" against a stored "works at Acme". Both get written,
+     * both are injected at system position, and the model is handed a
+     * contradiction about the user with no way to know which is current.
+     *
+     * THE NEW ONE WINS, and that is a decision rather than an obvious truth.
+     * The user has just said it, in their own turn, which is the strongest
+     * evidence this system ever gets about them; the alternative — keeping both
+     * and marking them disputed — leaves the model to pick, which is what
+     * happens today. The old row is marked `superseded` rather than deleted, so
+     * a wrong supersession is recoverable and `source_turn_id` says which turn
+     * did it.
+     *
+     * Every column here except the first four arrives with migration 021, which
+     * is why the whole block is behind the flag. */
+    const tiered = MEMORY_TIERS ? fresh.map((fact) => {
+      const kind = classifyFact(fact);
+      const ttl = memoryTtlFor(kind, fact);
+      return {
+        fact,
+        kind,
+        expires_at: ttl ? new Date(Date.now() + ttl).toISOString() : null,
+        conflicts: conflictsWith(fact, existing),
+      };
+    }) : null;
+
     // user_id comes from the server's own resolved user, never from the body.
     const { error } = await supabase
       .from('user_facts')
@@ -2059,11 +2177,39 @@ const updateUserFacts = async (userId, userMsg) => {
         fact,
         category: 'profile',
         embedding: toVectorLiteral(vectors[i]),
+        ...(MEMORY_TIERS ? {
+          kind: tiered[i].kind,
+          expires_at: tiered[i].expires_at,
+          source_turn_id: turnId,
+          confidence: tiered[i].conflicts.length ? 0.6 : 0.8,
+          conflict_state: tiered[i].conflicts.length ? 'disputed' : 'none',
+          embedding_model: vectors[i] ? EMBED_MODEL : null,
+          embedding_dim: vectors[i] ? vectors[i].length : null,
+          embedding_status: vectors[i] ? 'ok' : 'pending',
+          embedded_at: vectors[i] ? new Date().toISOString() : null,
+          updated_at: new Date().toISOString(),
+        } : {}),
       })));
     // supabase-js resolves rather than throws, so an unchecked insert would log
     // a save that never happened — the same trap updateChatSummary documents.
     if (error) console.error('[FACTS] Save failed:', error.message);
-    else console.log(`[FACTS] Stored ${fresh.length}.`);
+    else {
+      console.log(`[FACTS] Stored ${fresh.length}.`);
+      if (MEMORY_TIERS) {
+        const disputed = tiered.filter((t) => t.conflicts.length);
+        for (const row of disputed) {
+          console.log(`[FACTS] "${row.fact.slice(0, 60)}" contradicts ${row.conflicts.length} stored fact(s) — superseding.`);
+          /* Mark the older rows rather than deleting them. A supersession is a
+           * judgement, and one made from a regex has to be reversible. */
+          const { error: supersedeError } = await supabase
+            .from('user_facts')
+            .update({ conflict_state: 'superseded', updated_at: new Date().toISOString() })
+            .eq('user_id', userId)
+            .in('fact', row.conflicts.map((c) => c.fact));
+          if (supersedeError) console.error('[FACTS] Supersede failed:', supersedeError.message);
+        }
+      }
+    }
   } catch (e) { console.error('[FACTS] Failed:', e.message); }
 };
 
@@ -2081,10 +2227,13 @@ const updateUserFacts = async (userId, userMsg) => {
  * no turn to attribute the work to. When it is absent the calls still happen —
  * they are simply not metered, which is the honest failure mode for a counter
  * and is preferable to making the memory write depend on the meter. */
-const rememberTurn = (chatId, userId, userMsg, assistantMsg, telemetry) => {
+const rememberTurn = (chatId, userId, userMsg, assistantMsg, telemetry, turnId = null) => {
   telemetry?.recordFastCalls(2);
   updateChatSummary(chatId, userId, userMsg, assistantMsg).catch(() => {});
-  updateUserFacts(userId, userMsg).catch(() => {});
+  /* THE TURN THAT TAUGHT US THIS. Without it there is no way to answer "why
+   * does it believe that about me", and no way to undo one bad turn's memories
+   * without clearing all of them. */
+  updateUserFacts(userId, userMsg, { turnId }).catch(() => {});
 };
 
 // ===== MIDDLEWARE =====
@@ -4119,7 +4268,7 @@ async function handleCouncilTurn(req, res) {
       openStream(res);
       await streamModel(res, PRIMARY_MODEL, memMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
       if (!res.writableEnded) res.end();
-      rememberTurn(chatId, user.id, pv.value, 'Answered memory question.', telemetry);
+      rememberTurn(chatId, user.id, pv.value, 'Answered memory question.', telemetry, turnContext.turnId);
       await auditBranch({ category: 'memory' });
       return;
     }
@@ -4365,7 +4514,7 @@ async function handleCouncilTurn(req, res) {
        * question that said the present matters. */
       cacheAnswer(searchAnswer, { searched: true, fresh });
       const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
-      rememberTurn(chatId, user.id, pv.value, lastA || 'Search response.', telemetry);
+      rememberTurn(chatId, user.id, pv.value, lastA || 'Search response.', telemetry, turnContext.turnId);
       await auditTelemetry('council.search', 'search', {
         ...(verification ? { verification } : {}),
         sources: sources.length, seats: selection.members.length, quorum: selection.quorum,
@@ -4414,7 +4563,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         /* An encyclopedia answer did not come from the live web, so it gets the
          * stable shelf life rather than a freshness window it does not need. */
         cacheAnswer(wikiAnswer, { searched: false });
-        rememberTurn(chatId, user.id, pv.value, 'Wikipedia response.', telemetry);
+        rememberTurn(chatId, user.id, pv.value, 'Wikipedia response.', telemetry, turnContext.turnId);
         await auditBranch({
           category: 'wiki',
           synthesisModel: wikiSynthesisModelUsed,
@@ -4817,7 +4966,7 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       if (turnSignal.aborted) return;
       if (!res.writableEnded) res.end();
       cacheAnswer(fallbackAnswer, { searched: usedLiveWeb });
-      rememberTurn(chatId, user.id, pv.value, 'Fallback response.', telemetry);
+      rememberTurn(chatId, user.id, pv.value, 'Fallback response.', telemetry, turnContext.turnId);
       await auditTelemetry(
         telemetryExtra.rounds !== undefined ? 'council.tools' : 'council',
         'fallback',
@@ -4887,7 +5036,7 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
       if (turnSignal.aborted) return;
       const lastSolo = histArr.filter((m) => m.role === 'assistant').slice(-1)[0]?.content || '';
-      rememberTurn(chatId, user.id, pv.value, lastSolo || soleDraft.slice(0, 800), telemetry);
+      rememberTurn(chatId, user.id, pv.value, lastSolo || soleDraft.slice(0, 800), telemetry, turnContext.turnId);
       cacheAnswer(soleDraft, { searched: usedLiveWeb });
       await auditTelemetry('council', 'council_solo', {
         ...telemetryExtra,
@@ -4983,7 +5132,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
      * written, and a shorter TTL would not have helped. */
     cacheAnswer(synthAnswer, { searched: usedLiveWeb });
     const lastA = histArr.filter(m => m.role === 'assistant').slice(-1)[0]?.content || '';
-    rememberTurn(chatId, user.id, pv.value, lastA || validResponses[0]?.content?.slice(0,800) || 'Council response.', telemetry);
+    rememberTurn(chatId, user.id, pv.value, lastA || validResponses[0]?.content?.slice(0,800) || 'Council response.', telemetry, turnContext.turnId);
     /* msToFirstByte on THIS path too, not only on the tools path.
      *
      * The number that says whether a latency change worked is the wait before

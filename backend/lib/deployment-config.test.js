@@ -255,3 +255,137 @@ test('Fly health check targets a route defined by server.js', () => {
     `backend/fly.toml health-check path ${JSON.stringify(healthPath)} is not defined by backend/server.js (routes found: ${routes.join(', ') || 'none'}). Edit backend/fly.toml or define the matching route in backend/server.js.`,
   );
 });
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * WHICH HOST IS LIVE, AND WHO STILL BELIEVES SOMETHING ELSE
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * Five artefacts described the deployment and they disagreed:
+ *
+ *   backend/fly.toml          an app in Mumbai that has never served a request
+ *   backend/Dockerfile        built for it
+ *   .github/workflows/keep-warm.yml   pings Render, with a comment recording
+ *                             the week it spent pinging a Fly host that does
+ *                             not resolve while reporting itself healthy
+ *   frontend/vercel.json      a CSP allowing BOTH origins
+ *   (nothing)                 the live host had no configuration in the repo
+ *
+ * The cost is measured and written up in that workflow: real arrivals paid a
+ * 22.5-second cold boot for as long as the warmer was pointed at nothing.
+ *
+ * deploy/targets.json is now the single declaration and these tests are what
+ * make disagreeing with it a red run rather than a silent outage.
+ */
+
+const TARGETS = JSON.parse(readRepoFile('deploy/targets.json'));
+
+const hostOf = (origin) => {
+  try { return new URL(origin).host; } catch { return null; }
+};
+
+test('the live target is fully declared and internally consistent', () => {
+  const live = TARGETS.live;
+  assert.ok(live && live.host && live.origin, 'deploy/targets.json must name a live host');
+  assert.equal(hostOf(live.origin), live.host, 'the live origin and host must agree');
+  assert.ok(live.healthPath.startsWith('/'), 'healthPath must be a path');
+  assert.ok(
+    fs.existsSync(path.join(REPO_ROOT, live.config)),
+    `deploy/targets.json names ${live.config} as the live host's configuration and it does not exist`,
+  );
+});
+
+test('the keep-warm job pings the host that is actually live', () => {
+  const workflow = readRepoFile('.github/workflows/keep-warm.yml');
+  const fallback = workflow.match(/URL="\$\{KEEP_WARM_URL:-([^"}]+)\}"/);
+  assert.ok(fallback, 'keep-warm.yml no longer has a parseable default URL');
+  const url = fallback[1];
+  assert.equal(
+    hostOf(url),
+    TARGETS.live.host,
+    `keep-warm.yml defaults to ${url}, which is not the live host in deploy/targets.json. `
+    + 'This exact mismatch went unnoticed for a week and cost every cold arrival 22.5 seconds.',
+  );
+  assert.ok(url.endsWith(TARGETS.live.healthPath), 'the warmer must hit the declared health path');
+});
+
+/* A CSP origin for a host that does not exist is not harmless: it is a claim
+ * that the frontend talks to that host, and the next person reading it will
+ * believe the claim. The Fly origin sat here for the whole time the Fly app did
+ * not resolve. */
+test('the frontend may only connect to hosts this repository declares', () => {
+  const vercel = JSON.parse(readRepoFile('frontend/vercel.json'));
+  const rule = vercel.headers.find((h) => h.source === '/(.*)');
+  const csp = rule.headers.find((h) => h.key === 'Content-Security-Policy').value;
+  const connect = csp.split(';').map((s) => s.trim()).find((s) => s.startsWith('connect-src'));
+  assert.ok(connect, 'no connect-src in the frontend CSP');
+
+  const backendOrigins = connect
+    .split(/\s+/)
+    .slice(1)
+    .filter((v) => /^https?:\/\//.test(v))
+    // Third parties are declared by the frontend's own source, and
+    // securityHeaders.test.js already checks those. This test is about OUR hosts.
+    .filter((v) => /alop-ai/.test(v) && !/clerk/.test(v));
+
+  assert.deepEqual(
+    backendOrigins,
+    [TARGETS.live.origin],
+    'the frontend CSP must allow exactly the live backend origin. A prepared-but-undeployed '
+    + 'host in here reads as "the app talks to this", and one of them did not resolve at all.',
+  );
+});
+
+test('the live host config, Fly and server.js agree on the health path', () => {
+  const live = TARGETS.live;
+  const render = readRepoFile('render.yaml');
+  const renderHealth = render.match(/^\s*healthCheckPath:\s*(\S+)\s*$/m);
+  assert.ok(renderHealth, 'render.yaml has no healthCheckPath');
+  assert.equal(renderHealth[1], live.healthPath);
+
+  const fly = readRepoFile('backend/fly.toml');
+  const flyHealth = fly.match(/^\s*path\s*=\s*"([^"]+)"\s*$/m);
+  assert.ok(flyHealth, 'fly.toml has no health check path');
+  assert.equal(
+    flyHealth[1], live.healthPath,
+    'the prepared host checks a different path from the live one, so a cutover would change '
+    + 'what "healthy" means at the moment nobody is watching',
+  );
+
+  const server = readRepoFile('backend/server.js');
+  assert.ok(
+    server.includes(`app.get('${live.healthPath}'`),
+    `${live.healthPath} is checked by two hosts and defined by neither`,
+  );
+});
+
+test('every declared Node major is the one deploy/targets.json names', () => {
+  const declared = TARGETS.runtime.nodeMajor;
+  const docker = parseDockerNodeBases(readRepoFile('backend/Dockerfile'));
+  for (const base of docker) assert.equal(base.major, declared, `backend/Dockerfile line ${base.line}`);
+  for (const v of parseCiNodeVersions(readRepoFile('.github/workflows/ci.yml'))) {
+    assert.equal(v.major, declared, `.github/workflows/ci.yml line ${v.line}`);
+  }
+  const render = readRepoFile('render.yaml').match(/^\s*nodeVersion:\s*"?v?(\d+)/m);
+  assert.ok(render, 'render.yaml does not pin a Node version, so the live host can upgrade under us');
+  assert.equal(Number(render[1]), declared);
+  const engines = JSON.parse(readRepoFile('backend/package.json')).engines.node;
+  assert.ok(engines.replace(/\s+/g, "").includes(`>=${declared}`), `package.json engines is ${engines}`);
+});
+
+/* THE REGION IS A LATENCY DECISION, not a preference, and fly.toml argues it at
+ * length from measurements taken in Dubai. What must not happen is the two
+ * configs quietly describing different geography while one comment explains a
+ * migration that has not occurred. */
+test('the prepared host is marked as not resolving until it does', () => {
+  const prepared = TARGETS.prepared.find((p) => p.platform === 'fly');
+  assert.ok(prepared, 'fly.toml exists in the repo and is not declared in deploy/targets.json');
+  const fly = readRepoFile('backend/fly.toml');
+  assert.ok(fly.includes(`primary_region = "${prepared.region}"`), `fly.toml region is not ${prepared.region}`);
+  if (prepared.resolves === false) {
+    const workflow = readRepoFile('.github/workflows/keep-warm.yml');
+    assert.ok(
+      !workflow.includes(`KEEP_WARM_URL:-https://${prepared.host}`),
+      'the warmer defaults to a host declared as not resolving',
+    );
+  }
+});

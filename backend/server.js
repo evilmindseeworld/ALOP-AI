@@ -44,6 +44,24 @@ const { createTurnTelemetry } = require('./lib/turn-telemetry');
 const { rescueReasoning } = require('./lib/reasoning-rescue');
 const { createTurnContext } = require('./lib/turn-context');
 const { createTurnLedger } = require('./lib/turn-ledger');
+const { fingerprint: cacheFingerprint, retrievalMode, sourceFreshness } = require('./lib/cache-identity');
+const { planWork } = require('./lib/work-plan');
+const { runDag } = require('./lib/execution-dag');
+const { planRoute, applyPlan } = require('./lib/adaptive-routing');
+const { runProgressiveCouncil } = require('./lib/progressive-council');
+
+/* WHETHER THIS CONVERSATION HAS A PAST, from whichever source answered first.
+ *
+ * The route has always used `histArr.length || convSummary` for this, and the
+ * DAG steps that gate on it run before `histArr` is assembled — so it is
+ * spelled out once, here, rather than three times inside step callbacks where
+ * the three could drift. The canonical transcript counts, the stored summary
+ * counts, and the client's copy counts as the fallback it is. */
+const hasHistory = (results, clientHistory) => Boolean(
+  results.summary
+  || (Array.isArray(results.canonicalHistory) && results.canonicalHistory.length)
+  || (Array.isArray(clientHistory) && clientHistory.length),
+);
 const { createReservationLedger } = require('./lib/reservation-ledger');
 const { priceTurn, reservationCents, LIMITS, countTurnRequests, reservationRequests, REQUEST_LIMITS } = require('./lib/spend');
 const { createRequestBudget } = require('./lib/request-budget');
@@ -746,6 +764,12 @@ const LENGTH_RULE = {
  */
 const SYNTH_MAX_TOKENS = { simple: 500, moderate: 1000, complex: 4000 };
 
+/* HOISTED OUT OF THE ROUTE so the cache fingerprint below can see it. It is a
+ * plain constant with no interpolation, so nothing about it was per-turn; it
+ * simply happened to be declared inside the handler. */
+const SOURCE_TRUTH_RULES = `\n\nSOURCE AND FACT DISCIPLINE:\n- For product specifications, compatibility, and warranty, rank evidence as: exact-model manufacturer page/manual/support page > official certification > reputable retailer > reputable review > forum or social post.\n- Match the exact model identifier before applying a specification. Never transfer a specification from a nearby model or a product family member.\n- When an exact-model first-party source resolves a disagreement, use the verified value instead of repeating the disagreement. Report an unresolved conflict only when first-party sources genuinely disagree or no authoritative source is available.\n- For price and availability, use a dated seller or manufacturer listing and never infer whether something is a deal without an actual price.\n- Never invent personal context or purchase facts. Use facts stated by the user or the evidence; label assumptions as conditional.\n- Research data supplied in this turn is evidence even when a draft omitted the fact; use it when relevant and supported by the hierarchy above.\n- Keep citations attached to sourced claims. If a claim is absent from the user message and the evidence, call it unverified instead of guessing.`;
+
+
 // ===== COUNCIL =====
 // The runner lives in lib/council-run.js so it can be tested: server.js calls
 // process.exit(1) at import time on a missing env var, so nothing defined here
@@ -1209,6 +1233,41 @@ const { todayLine, freshnessWindow, normalizeDate, dateLabel, BRAVE_FRESHNESS, G
 const { parseRoutePlan } = require('./lib/search-plan');
 const { readSonar } = require('./lib/perplexity');
 const { createSearchCache, comprehensiveSearchKey } = require('./lib/search-cache');
+const { createProviderHealth } = require('./lib/provider-health');
+const { createPacer, CircuitOpenError } = require('./lib/pacer');
+const { createSingleFlight } = require('./lib/single-flight');
+/* Search fan-outs in flight right now, so two turns asking the same question at
+ * the same moment run one. Nothing is retained after a fan-out settles — see
+ * lib/single-flight.js; this is a dedupe, not a second cache. */
+const searchFlight = createSingleFlight();
+
+/* WHAT EACH MODEL HAS ACTUALLY BEEN DOING, and the three controls that act on
+ * it. See lib/provider-health.js and lib/pacer.js for the full argument; the
+ * short version is that every routing constant in this file — the roster order,
+ * the whip, the fallback model — is a decision made in advance that cannot see
+ * a seat failing its last nine calls.
+ *
+ * THEY ARE SEPARATE ON PURPOSE. The health signal MEASURES and never refuses:
+ * a router that drops a model because it looks unhealthy is a router that
+ * empties the roster during a provider-wide incident. The pacer REFUSES, through
+ * a breaker that knows how to close again, and stores nothing about quality. */
+const providerHealth = createProviderHealth();
+const modelPacer = createPacer({
+  /* Both default to OFF, and that is deliberate rather than timid. The
+   * per-minute ceiling is a property of the OpenRouter account this deployment
+   * uses — a free-tier account and a credited one have different ones, and a
+   * number guessed here would either do nothing or throttle a paid account to a
+   * free account's rate. The concurrency limit is the same shape: the right
+   * number depends on the instance size. Set them once they are measured.
+   *
+   * The CIRCUIT BREAKER is on by default, because it needs no number that
+   * differs by deployment: five consecutive failures on one model means that
+   * model is not answering, wherever it is hosted and whoever is paying. */
+  perMinute: Number(process.env.OPENROUTER_PER_MINUTE) || 0,
+  concurrency: Number(process.env.MODEL_CONCURRENCY) || 0,
+  failureThreshold: 5,
+  cooldownMs: 30_000,
+});
 const { createAnswerCache, ttlFor, normalise: normaliseAnswerQuestion } = require('./lib/answer-cache');
 const { requestBody: answerEmbeddingRequest, parseEmbedding: parseAnswerEmbedding } = require('./lib/answer-embeddings');
 // How a background job gets a real council turn without a socket. See the brain
@@ -1307,6 +1366,25 @@ const ANSWER_EXECUTION_MODE = SEEDED_SEARCH
   ? 'tools-seeded-v5'
   : TOOLS_ENABLED ? 'tools-live' : TOOLS_SHADOW ? 'tools-shadow' : 'tools-off';
 const ANSWER_CACHE_BRANCH = `turn:${ANSWER_EXECUTION_MODE}`;
+/**
+ * ADAPTIVE ROUTING and the PROGRESSIVE COUNCIL, both off by default and both
+ * for the same reason the two flags above are.
+ *
+ * `classifyRequest` decides the roster from the question's text, in advance,
+ * with no idea what the models have been doing. `planRoute` takes that decision
+ * plus the health signal and produces an ORDER and a seat count; `applyPlan`
+ * may reorder and NARROW what the router selected, and may never widen it — the
+ * money was reserved against the router's roster at admission.
+ *
+ * The progressive council is the larger change: seats are asked in waves and
+ * the ladder stops as soon as the answers agree. It is off by default because
+ * the constant it turns on — the 0.75 agreement bar — is reasoned from fixtures
+ * rather than measured against real traffic, and the failure mode of setting it
+ * too high is a council that stops at one seat on a question that needed three.
+ * Turn it on, read the [PROGRESSIVE] lines, then decide.
+ */
+const ADAPTIVE_ROUTING = /^(1|true)$/i.test(process.env.COUNCIL_ADAPTIVE || '');
+const PROGRESSIVE_COUNCIL = /^(1|true)$/i.test(process.env.COUNCIL_PROGRESSIVE || '');
 const SEMANTIC_CACHE_ENABLED = /^(1|true)$/i.test(process.env.COUNCIL_SEMANTIC_CACHE || '');
 const semanticThresholdRaw = process.env.COUNCIL_SEMANTIC_CACHE_THRESHOLD;
 const parsedSemanticThreshold = semanticThresholdRaw ? Number(semanticThresholdRaw) : NaN;
@@ -1454,6 +1532,37 @@ const comprehensiveSearch = async (query, needsWiki, fresh = null, region = null
   const gl = region && region.country ? String(region.country).toLowerCase() : '';
   const cacheKey = `${comprehensiveSearchKey(query, needsWiki)}:${fresh ? fresh.label : 'any'}:${gl || 'nogeo'}`;
   const cached = await getCachedSearch(cacheKey, parentSignal); if (cached) return cached;
+
+  /* ONE FAN-OUT PER QUERY, HOWEVER MANY TURNS WANT IT.
+   *
+   * The cache above stops the SECOND ask only once the FIRST has finished
+   * writing, and a five-provider fan-out with page reads behind it takes
+   * seconds — so the whole window in which duplication is most likely is the
+   * window the cache cannot cover. Two users asking the same thing at the same
+   * moment, one user double-tapping send, and the brain pre-computing a
+   * question a live turn has just asked all ran the whole thing twice.
+   *
+   * Keyed on the cache key, which already carries the query, the wiki flag, the
+   * freshness window and the country — so no two searches that could return
+   * different results can share one execution.
+   *
+   * THE SIGNAL IS PER CALLER. A turn that is abandoned rejects for itself and
+   * leaves the fan-out running for whoever else is waiting on it; a fan-out
+   * started by a turn that then leaves still completes for the others. Nothing
+   * is retained afterwards, so this can never serve a stale result. */
+  return searchFlight.run(
+    cacheKey,
+    () => runComprehensiveSearch(query, needsWiki, fresh, region, parentSignal, { cacheKey, gl }),
+    {
+      signal: parentSignal,
+      onShare: ({ waitedMs }) => console.log(`[SEARCH] shared an in-flight fan-out for "${String(query).slice(0, 60)}" after ${waitedMs}ms`),
+    },
+  );
+};
+
+/* The fan-out itself. Split out only so `comprehensiveSearch` above can be the
+ * cache-and-dedupe front door; every line below is unchanged. */
+const runComprehensiveSearch = async (query, needsWiki, fresh, region, parentSignal, { cacheKey, gl }) => {
 
   /* THE SEARCH WHIP, and it is the same idea runCouncilWithWhip already uses
    * for models: take what has arrived, do not wait for stragglers.
@@ -2249,6 +2358,53 @@ const setCachedSearch = (q, d) => searchCache.set(q, d);
  * for a personalised turn. lib/answer-cache.js holds that contract and the
  * argument for it; the key is built in exactly one place below. */
 const answerCache = createAnswerCache({ supabase });
+
+/* THE ANSWER CACHE'S VIEW OF THIS BUILD.
+ *
+ * Computed once, at boot, from the artefacts themselves rather than from a
+ * version constant somebody has to remember to bump — see lib/cache-identity.js
+ * for why that distinction is the whole feature. Editing a policy string IS the
+ * invalidation; nothing else has to be done and nothing can be forgotten.
+ *
+ * ITS POSITION IN THIS FILE IS LOAD-BEARING. It reads `buildRegistry`,
+ * `toolSearch`, `readUrl` and `checkSearchLinks`, all of which are declared
+ * above this line and none of which are above the constants it also reads.
+ * Moving it earlier makes every one of those a temporal-dead-zone throw inside
+ * the try, which would silently fingerprint an empty tool set — a cache
+ * identity that cannot see the tools is a cache identity that will not notice
+ * one being added.
+ *
+ * WHAT IS DELIBERATELY NOT IN HERE: anything interpolated per turn.
+ * `todayLine()` would re-key the entire cache at midnight, and the language and
+ * detail flag are already separate key fields. The prompt SKELETONS are what
+ * change when somebody changes how this product answers; the fillings are
+ * already keyed. */
+const CACHE_IDENTITY = cacheFingerprint({
+  prompts: [ALOP_IDENTITY],
+  policies: [SOURCE_TRUTH_RULES, LENGTH_RULE.simple, LENGTH_RULE.moderate, LENGTH_RULE.complex],
+  models: [PRIMARY_MODEL, SYNTHESIS_MODEL, SMART_MODEL],
+  /* The registry is built per turn from whichever provider keys are present, so
+   * this is the WIDEST schema set this deployment can offer. A turn that ran
+   * with fewer tools than the build could offer is still a turn from this
+   * build; a turn from a build with a different tool SET is not. */
+  toolSchemas: (() => {
+    try {
+      /* `list()` is the registry's own public shape — name, description and
+       * schema per tool — and it is what gets handed to a model either as a
+       * native `tools` array or rendered into the prompt. `fingerprint` reads
+       * only the names and the parameter names out of it, so a description
+       * reworded for clarity does not drop the cache. */
+      return buildRegistry({ search: toolSearch, readUrl, assertSafeUrl, checkLinks: checkSearchLinks })
+        .list()
+        .map((t) => ({ function: { name: t.name, parameters: { properties: t.schema || {} } } }));
+    } catch (err) {
+      console.warn(`[ANSWERS] tool schemas unavailable for the cache identity: ${err.message}`);
+      return [];
+    }
+  })(),
+});
+console.log(`[ANSWERS] cache identity prompt=${CACHE_IDENTITY.promptVersion} policy=${CACHE_IDENTITY.policyVersion} models=${CACHE_IDENTITY.modelFamily} tools=${CACHE_IDENTITY.toolSchema}`);
+
 /* Greetings sit in their own layer because they are not generated answers —
  * the response is a product constant, so it can never be stale and can never
  * be personal. It still reads through the answer cache so a new process serves
@@ -3282,12 +3438,54 @@ async function handleCouncilTurn(req, res) {
      * `rememberTurn`'s summary and fact extraction — are fire-and-forget and are
      * counted at dispatch by `recordFastCalls` instead, because they settle
      * after this turn's row has been written. */
-    const meteredCallModel = (model, messages, temperature, timeoutMs, maxTokens, signal, options = {}) => {
+    const meteredCallModel = async (model, messages, temperature, timeoutMs, maxTokens, signal, options = {}) => {
       const { phase, ...rest } = options || {};
-      return callModel(model, messages, temperature, timeoutMs, maxTokens, signal, {
-        ...rest,
-        onAttempt: recordAttempt(phase || 'council'),
-      });
+      const startedAt = Date.now();
+      let offeredTools = Array.isArray(rest.tools) && rest.tools.length > 0;
+      try {
+        /* THE PACER IS THE OUTERMOST LAYER, so a model whose breaker is open
+         * costs nothing at all — no queue, no minute slot, and above all no
+         * whip waited out. A dead seat used to consume the turn's entire
+         * deadline before the council could conclude it had failed. */
+        const reply = await modelPacer.run(model, () => callModel(
+          model, messages, temperature, timeoutMs, maxTokens, signal,
+          { ...rest, onAttempt: recordAttempt(phase || 'council') },
+        ), {
+          signal,
+          /* OUR OWN QUOTA SAYS NOTHING ABOUT THE PROVIDER. Opening a breaker on
+           * the account's daily cap would disable a healthy model for thirty
+           * seconds and then do it again on the next turn. */
+          classify: (err) => (err?.code === 'OPENROUTER_DAILY_LIMIT' ? 'ignore' : 'failure'),
+        });
+        providerHealth.record({
+          model,
+          outcome: 'ok',
+          ms: Date.now() - startedAt,
+          offeredTools,
+          emittedTool: Array.isArray(reply?.toolCalls) && reply.toolCalls.length > 0,
+          costUsd: reply?.usage?.costUsd ?? null,
+          tokens: reply?.usage?.totalTokens ?? null,
+        });
+        return reply;
+      } catch (err) {
+        /* A breaker refusal is not evidence about the model — it IS the record
+         * of earlier evidence, and counting it again would keep a breaker open
+         * on its own echo. An abort is the user leaving. */
+        if (!(err instanceof CircuitOpenError)) {
+          providerHealth.record({
+            model,
+            outcome: signal?.aborted ? 'aborted'
+              : err?.code === 'OPENROUTER_RATE_LIMIT' || err?.status === 429 ? 'rate_limited'
+                : 'failed',
+            ms: Date.now() - startedAt,
+            offeredTools,
+          });
+        }
+        /* THE COUNCIL RUNNER TREATS A THROW AS A FAILED SEAT and carries on with
+         * the rest, which is exactly right for a refused one: the point of
+         * refusing is to stop waiting on it, not to fail the turn. */
+        throw err;
+      }
     };
 
     const truncatedPrompt = truncatePrompt(pv.value);
@@ -3387,24 +3585,108 @@ async function handleCouncilTurn(req, res) {
     /* This promise also enriches the cache after the response. Do not bind it
      * to turnSignal: normal response completion aborts that signal and used to
      * cancel every embedding that missed the 600ms foreground budget. */
-    const durableQuestionEmbeddingP = SEMANTIC_CACHE_ENABLED
+    /* WHAT THIS TURN ACTUALLY NEEDS, DECIDED BEFORE ANY OF IT STARTS.
+     *
+     * The fan-out below used to be unconditional: every non-greeting turn read
+     * the summary, the feedback guidance and the user's facts, and embedded the
+     * question twice. Then the prompt assembly two hundred lines down decided
+     * whether to USE any of it — `profileContextAllowed = hasConversationHistory`
+     * — so on the FIRST message of every conversation the turn paid for two
+     * Supabase round trips and an embedding call whose results it had already
+     * decided to throw away. The gate existed; it was applied after the work.
+     *
+     * `cacheEligible` is a PROXY here and is deliberately the pessimistic one:
+     * a turn carrying client history is certainly personalised and certainly
+     * uncacheable, so its semantic embedding is certainly waste. A turn with no
+     * client history MIGHT still turn out to be personalised once the summary
+     * arrives, and in that case the embedding is computed and unused — exactly
+     * what happened on every turn before this, so no path is made worse. */
+    const workPlan = planWork({
+      hasImage: Boolean(parsedImage),
+      /* Not yet known for certain — the summary read is still in flight. The
+       * facts and feedback steps below re-decide it against the real answer,
+       * which is why they are DAG nodes rather than entries in a Promise.all. */
+      hasConversationHistory: true,
+      cacheEligible: !clientHistory.length && !parsedImage,
+      semanticCacheEnabled: SEMANTIC_CACHE_ENABLED,
+      userHasFacts: true,
+      category: selection.category,
+      wikiCandidate: needsWikiCheck(pv.value),
+    });
+
+    const durableQuestionEmbeddingP = workPlan.semanticEmbedding
       ? embedAnswerText(normaliseAnswerQuestion(pv.value)) : Promise.resolve(null);
-    const factQuestionEmbeddingP = embedText(normaliseAnswerQuestion(pv.value), turnSignal);
-    const questionEmbeddingP = settleByDeadline(
-      [{ promise: durableQuestionEmbeddingP, fallback: null }],
-      { deadlineMs: SEMANTIC_EMBED_DEADLINE_MS, signal: turnSignal },
-    ).then((r) => r.results[0]).catch(() => null);
-    const contextReads = Promise.all([
-      telemetry.measureContext('summary', () => readChatSummary(chatId, user.id, turnSignal)),
-      telemetry.measureContext('canonicalHistory', () => turnLedger.canonicalHistory({ chatId, userId: user.id })),
-      telemetry.measureContext('feedback', () => getFeedbackGuidance(user.id, turnSignal)),
-      telemetry.measureContext('facts', async () => readUserFacts(user.id, FACTS_INJECT_LIMIT, pv.value, turnSignal,
-        await settleByDeadline([{ promise: factQuestionEmbeddingP, fallback: null }], { deadlineMs: EMBED_DEADLINE_MS, signal: turnSignal }).then((r) => r.results[0]).catch(() => null))),
-    ]);
-    const [contextResult, visionResult] = await Promise.all([
-      contextReads,
-      visionP,
-    ]);
+    const questionEmbeddingP = workPlan.semanticEmbedding
+      ? settleByDeadline(
+        [{ promise: durableQuestionEmbeddingP, fallback: null }],
+        { deadlineMs: SEMANTIC_EMBED_DEADLINE_MS, signal: turnSignal },
+      ).then((r) => r.results[0]).catch(() => null)
+      : Promise.resolve(null);
+
+    /* THE CONTEXT FAN-OUT AS A GRAPH, because the dependency it needs cannot be
+     * expressed as a `Promise.all`.
+     *
+     * `facts` and `feedback` are only ever INJECTED when the conversation has
+     * history, and whether it has history is what the `summary` read returns.
+     * Under Promise.all the three run together and two of them are speculative;
+     * expressed as a graph, the two that depend on the first are skipped
+     * outright when it comes back empty, while everything that does NOT depend
+     * on it — vision, the canonical transcript, the semantic embedding — still
+     * runs concurrently from the first tick. lib/execution-dag.js also carries
+     * the turn's remaining time down to each step, so a step cannot be handed a
+     * budget that was spent before it started. */
+    const dag = await runDag([
+      {
+        name: 'summary',
+        optional: true,
+        fallback: null,
+        run: () => telemetry.measureContext('summary', () => readChatSummary(chatId, user.id, turnSignal)),
+      },
+      {
+        name: 'canonicalHistory',
+        optional: true,
+        fallback: null,
+        run: () => telemetry.measureContext('canonicalHistory', () => turnLedger.canonicalHistory({ chatId, userId: user.id })),
+      },
+      {
+        name: 'vision',
+        optional: true,
+        fallback: null,
+        run: () => visionP,
+      },
+      {
+        name: 'feedback',
+        needs: ['summary', 'canonicalHistory'],
+        optional: true,
+        fallback: '',
+        when: ({ results }) => hasHistory(results, clientHistory),
+        run: () => telemetry.measureContext('feedback', () => getFeedbackGuidance(user.id, turnSignal)),
+      },
+      {
+        name: 'facts',
+        needs: ['summary', 'canonicalHistory'],
+        optional: true,
+        fallback: [],
+        when: ({ results }) => hasHistory(results, clientHistory),
+        run: () => telemetry.measureContext('facts', async () => {
+          const embedding = await settleByDeadline(
+            [{ promise: embedText(normaliseAnswerQuestion(pv.value), turnSignal), fallback: null }],
+            { deadlineMs: EMBED_DEADLINE_MS, signal: turnSignal },
+          ).then((r) => r.results[0]).catch(() => null);
+          return readUserFacts(user.id, FACTS_INJECT_LIMIT, pv.value, turnSignal, embedding);
+        }),
+      },
+    ], { signal: turnSignal, deadlineAt: turnDeadlineAt });
+
+    const contextResult = [
+      dag.results.summary,
+      dag.results.canonicalHistory,
+      dag.results.feedback || '',
+      dag.results.facts || [],
+    ];
+    const visionResult = dag.results.vision;
+    const skipped = dag.steps.filter((r) => r.outcome === 'skipped').map((r) => r.name);
+    if (skipped.length) console.log(`${turnContext.tag('COUNCIL')} skipped ${skipped.join(',')} — no conversation history`);
     if (turnSignal.aborted) return;
     const [convSummary, canonicalHistory, feedbackGuidance, userFacts] = contextResult;
     /* Sanitised either way. The canonical rows come from our own database, but
@@ -3541,6 +3823,22 @@ async function handleCouncilTurn(req, res) {
         plan: userPlan,
         detailed: isDetailed,
         branch: ANSWER_CACHE_BRANCH,
+        /* WHAT ANSWERED, not just what was asked. Without these an answer
+         * written by the old synthesis prompt kept being served for up to
+         * ninety days with nothing anywhere marking it stale — the prompt
+         * change looked like it had done nothing. */
+        ...CACHE_IDENTITY,
+        /* PREDICTED FROM THE QUESTION, never from what the turn went on to do.
+         * This key is built BEFORE the router runs — that is the whole point of
+         * it, since a hit skips the router — so a field that depended on the
+         * router's decision would differ between the lookup and the write and
+         * every entry would be a permanent miss. Both of these are pure
+         * functions of the question text, so the two agree by construction.
+         * Whether live web was ACTUALLY used is recorded in the row's
+         * provenance and in `used_live_web`, which is where a fact about the
+         * answer belongs. */
+        retrievalMode: retrievalMode({ wiki: needsWikiCheck(pv.value) }),
+        sourceFreshness: sourceFreshness(freshnessWindow(pv.value)),
       });
 
     if (cacheKey) {
@@ -3819,6 +4117,34 @@ async function handleCouncilTurn(req, res) {
         console.log(`[COUNCIL] Research escalation: ${before} -> ${selection.members.length} seats${selection.toolSeatModel ? ` (native tool seat: ${selection.toolSeatModel})` : ''}.`);
       }
     }
+    /* ADAPTIVE ROUTING, AND IT RUNS LAST ON PURPOSE.
+     *
+     * Every widening above it — the research escalation, the tool seat — has
+     * already happened, so the roster this sees is the one admission reserved
+     * for. `applyPlan` can reorder it and can narrow it; it cannot add a seat.
+     * Running it BEFORE the escalation would have let a narrow plan be widened
+     * straight back by a layer that could not see it, which is the shape rule 8
+     * records.
+     *
+     * The health signal is the input `classifyRequest` structurally cannot
+     * have: it runs on the text alone, before anything has called a provider. */
+    if (ADAPTIVE_ROUTING && selection.members.length > 0) {
+      const routePlan = planRoute({
+        question: pv.value,
+        complexity: selection.complexity,
+        category: selection.category,
+        personalised: Boolean(convSummary || userFacts?.length),
+        searchPlanned: Boolean(searchQueries?.length),
+        candidates: selection.members,
+        health: providerHealth,
+        maxSeats: selection.members.length,
+      });
+      const adapted = applyPlan(selection, routePlan, { toolSeatModel: selection.toolSeatModel || null });
+      if (adapted !== selection) {
+        console.log(`[ADAPTIVE] ${routePlan.taskType}/${routePlan.emphasis}: ${selection.members.length} -> ${adapted.members.length} seats, lead=${adapted.members[0]}`);
+        selection = adapted;
+      }
+    }
     console.log(`[COUNCIL] seats=${selection.members.length} tier=${userPlan}`);
     /* WHETHER THIS TURN'S FACTS CAME FROM THE LIVE WEB, which is what decides
      * the cached answer's shelf life.
@@ -3851,7 +4177,7 @@ async function handleCouncilTurn(req, res) {
      * than half-run: comprehensiveSearch fans out to five providers plus
      * Wikipedia, and paying for that AND a council is the cost mistake this
      * experiment exists to avoid. The loop runs ONE provider chain instead. */
-    const SOURCE_TRUTH_RULES = `\n\nSOURCE AND FACT DISCIPLINE:\n- For product specifications, compatibility, and warranty, rank evidence as: exact-model manufacturer page/manual/support page > official certification > reputable retailer > reputable review > forum or social post.\n- Match the exact model identifier before applying a specification. Never transfer a specification from a nearby model or a product family member.\n- When an exact-model first-party source resolves a disagreement, use the verified value instead of repeating the disagreement. Report an unresolved conflict only when first-party sources genuinely disagree or no authoritative source is available.\n- For price and availability, use a dated seller or manufacturer listing and never infer whether something is a deal without an actual price.\n- Never invent personal context or purchase facts. Use facts stated by the user or the evidence; label assumptions as conditional.\n- Research data supplied in this turn is evidence even when a draft omitted the fact; use it when relevant and supported by the hierarchy above.\n- Keep citations attached to sourced claims. If a claim is absent from the user message and the evidence, call it unverified instead of guessing.`;
+
     if (searchQueries && !SEEDED_SEARCH) {
       /* THE SCREEN STOPS BEING BLANK HERE, not when the answer starts.
        *
@@ -4077,6 +4403,11 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
     let validResponses, toolResearch = '', toolTruncated = null, toolSourceUrls = [];
     let telemetryExtra = {};
     let toolPlainFallback = { used: false, durationMs: null };
+    /* What the ladder actually did, folded into the one audit row written after
+     * synthesis. A second logger would split "why was this turn slow?" across
+     * two query paths — the same reason the tool loop reports through
+     * telemetryExtra rather than writing its own row. */
+    let progressiveOutcome = null;
     let councilRelease = null;
     const reportCouncilTiming = (phase) => (row) => telemetry.recordSeat({ ...row, phase });
     const reportCouncilFinish = (event) => {
@@ -4356,11 +4687,11 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
         tools: loop.toolResults.reduce((acc, { call }) => ({ ...acc, [call.name]: (acc[call.name] || 0) + 1 }), {}),
       };
     } else {
-      validResponses = await runCouncilWithWhip(
-        selection.members,
+      const plainCouncilSeats = (members, quorum) => runCouncilWithWhip(
+        members,
         councilMsgs,
         selection.whipMs,
-        selection.quorum,
+        quorum,
         selection.tokenLimit,
         sendSeatProgress,
         {
@@ -4371,6 +4702,40 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
             sanitizeAnswerText(await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, { phase: 'council' }), answerOptions).text,
         },
       );
+
+      if (PROGRESSIVE_COUNCIL) {
+        /* WAVES INSTEAD OF ONE FAN-OUT. Each wave is an ordinary whipped
+         * council over a SUBSET, so the whip, the quorum and the seat
+         * telemetry are the ones already in use — this changes who is asked
+         * and when, not how a seat is called.
+         *
+         * QUORUM IS PER WAVE, and it is the wave's own size rather than the
+         * turn's. A two-seat confirming wave carrying a quorum of two would
+         * wait out the full whip whenever one of the two was slow, which is
+         * the bug the tier narrowing already hit once one level up.
+         *
+         * No verifier is passed. Adjudication is item 24 and it does not exist
+         * yet; a `verify` that called another seat here would be a judge with
+         * no rubric, which is worse than none. */
+        const progressive = await runProgressiveCouncil({
+          question: pv.value,
+          roster: selection.members.map((model) => ({ model })),
+          ask: (models) => plainCouncilSeats(models, Math.min(selection.quorum, models.length)),
+          policy: { maxSeats: selection.members.length },
+        });
+        validResponses = progressive.drafts;
+        progressiveOutcome = {
+          waves: progressive.waves,
+          seatsUsed: progressive.seatsUsed,
+          consensus: progressive.consensus,
+          stopReason: progressive.stopReason,
+          risky: progressive.risky,
+          saved: selection.members.length - progressive.seatsUsed,
+        };
+        console.log(`[PROGRESSIVE] ${progressive.waves} wave(s), ${progressive.seatsUsed}/${selection.members.length} seat(s), consensus=${progressive.consensus === null ? 'n/a' : progressive.consensus.toFixed(2)}, stop=${progressive.stopReason}`);
+      } else {
+        validResponses = await plainCouncilSeats(selection.members, selection.quorum);
+      }
     }
 
     // 5. FALLBACK
@@ -4522,6 +4887,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
       ...telemetryExtra,
       synthesisModel: synthesisModelUsed,
       synthesisEffort: synthesis.highEffort ? 'high' : 'default',
+      ...(progressiveOutcome ? { progressive: progressiveOutcome } : {}),
     };
     const synthSysForAnswer = `${synthSys}${SOURCE_TRUTH_RULES}`;
     const synthMsgs = [{ role: 'system', content: identityPrompt(synthSysForAnswer, 'synthesis') }, { role: 'user', content: `Question: ${truncatedPrompt}\n\nResponses:\n${validResponses.map((r,i) => `[Expert ${i+1}]: ${r.content}`).join('\n\n')}${researchBlock}${truncationBlock}` }];
@@ -5438,6 +5804,11 @@ const server = app.listen(PORT, () => {
   // Same reasoning as the line above: a store that is silently per-process is
   // indistinguishable from a shared one until the limits are already wrong.
   console.log(`[BOOT] RATE_LIMIT_STORE=${process.env.RATE_LIMIT_STORE || '(unset)'} -> ${USE_PG_RATE_LIMIT ? 'postgres, shared across instances' : 'in-memory, PER PROCESS — set RATE_LIMIT_STORE=postgres before scaling past one instance'}`);
+  // Both default OFF. A flag whose state is not printed is a flag that is
+  // silently the other way round for a week — the half hour COUNCIL_TOOLS=shadow
+  // cost is the reason every one of these has a line.
+  console.log(`[BOOT] COUNCIL_ADAPTIVE=${process.env.COUNCIL_ADAPTIVE || '(unset)'} -> adaptive routing ${ADAPTIVE_ROUTING ? 'ON (health-ranked order, narrowing only)' : 'OFF'}`);
+  console.log(`[BOOT] COUNCIL_PROGRESSIVE=${process.env.COUNCIL_PROGRESSIVE || '(unset)'} -> progressive council ${PROGRESSIVE_COUNCIL ? 'ON (waves with early exit)' : 'OFF (one fan-out)'}`);
   console.log(`[BOOT] COUNCIL_SEMANTIC_CACHE=${process.env.COUNCIL_SEMANTIC_CACHE || '(unset)'} -> semantic cache ${SEMANTIC_CACHE_ENABLED ? `ENABLED threshold=${SEMANTIC_CACHE_THRESHOLD}` : 'OFF'}`);
   // Same rule again. Off means streamed answers have NO token accounting; the
   // non-streaming council seats are counted either way.

@@ -31,7 +31,7 @@ const at = (needle) => {
 
 test('the council stream opens BEFORE the Supabase context reads', () => {
   const open = at("sendStage(res, 'context', 'Reading your conversation')");
-  const contextReads = at('const contextReads = Promise.all([');
+  const contextReads = at('const dag = await runDag([');
   assert.ok(
     open < contextReads,
     'openStream must run before the summary/feedback/facts reads, or the user waits in silence for all three',

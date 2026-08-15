@@ -1,0 +1,58 @@
+{
+  "$comment": [
+    "THE ONE PLACE THAT SAYS WHICH BACKEND IS ACTUALLY SERVING TRAFFIC.",
+    "",
+    "This file exists because five files disagreed and nothing noticed. As of",
+    "2026-08-14 the repository contained: fly.toml declaring an app in Mumbai,",
+    "a Dockerfile built for it, keep-warm.yml pinging Render with a comment",
+    "explaining that it had spent a week pinging a Fly host that does not",
+    "resolve, a frontend CSP allowing BOTH origins, and no Render configuration",
+    "at all — the live host's settings lived only in a dashboard.",
+    "",
+    "The cost of that was measured, twice, and is written up in",
+    ".github/workflows/keep-warm.yml: the warmer reported itself healthy while",
+    "pinging nothing, and real arrivals paid a 22.5-second cold boot.",
+    "",
+    "backend/lib/deployment-config.test.js reads this file and fails when any",
+    "of those artefacts drifts from it. Editing this file is how a cutover",
+    "happens; editing one artefact alone is now a red test rather than a",
+    "week-long silent outage.",
+    "",
+    "NOTHING SECRET LIVES HERE. Hostnames and regions only — the repository is",
+    "public. Keys stay in the host's own environment."
+  ],
+
+  "live": {
+    "$comment": "The host that answers today. Change this LAST in a cutover, once the new host is already serving.",
+    "platform": "render",
+    "host": "alop-ai.onrender.com",
+    "origin": "https://alop-ai.onrender.com",
+    "region": "frankfurt",
+    "healthPath": "/health",
+    "config": "render.yaml"
+  },
+
+  "prepared": [
+    {
+      "$comment": "Built and committed, never deployed: Fly wants payment. docs/MUMBAI-MIGRATION.md has the plan and scripts/verify-migration.sh the check. `alop-ai-backend.fly.dev` does NOT resolve — do not point anything at it until it does.",
+      "platform": "fly",
+      "host": "alop-ai-backend.fly.dev",
+      "origin": "https://alop-ai-backend.fly.dev",
+      "region": "bom",
+      "healthPath": "/health",
+      "config": "backend/fly.toml",
+      "resolves": false
+    }
+  ],
+
+  "frontend": {
+    "platform": "vercel",
+    "origin": "https://alop-ai.com",
+    "config": "frontend/vercel.json"
+  },
+
+  "runtime": {
+    "$comment": "One Node major across the Dockerfile, CI, render.yaml and package.json engines. deployment-config.test.js already pinned the first three to each other; this is the number they are pinned TO.",
+    "nodeMajor": 26
+  }
+}

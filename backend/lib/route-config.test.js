@@ -77,11 +77,17 @@ test("council vision starts before its independent context reads", () => {
   // during import when deployment env is absent; it guards the critical-path
   // ordering without pretending to call Gemini or Supabase in a unit test.
   const vision = SRC.indexOf("visionP = telemetry.measureContext('vision'");
-  const context = SRC.indexOf("const contextReads = Promise.all([");
+  const context = SRC.indexOf("const dag = await runDag([");
   assert.ok(vision >= 0, "the vision request vanished");
   assert.ok(context >= 0, "the context reads vanished");
   assert.ok(vision < context, "vision is back behind the context round-trip");
-  assert.match(SRC.slice(vision, context + 140), /visionP[\s\S]*Promise\.all\(\[/);
+  /* And it is still CONCURRENT rather than merely earlier. Vision is a DAG node
+   * with no `needs`, which is what makes it start on the first tick alongside
+   * the summary and the canonical transcript instead of waiting for them. */
+  assert.match(SRC.slice(context, context + 1400), /name: 'vision',[\s\S]{0,200}?run: \(\) => visionP/);
+  const visionNode = SRC.indexOf("name: 'vision'", context);
+  const nodeBody = SRC.slice(visionNode, SRC.indexOf('},', visionNode));
+  assert.doesNotMatch(nodeBody, /needs:/, 'vision depends on nothing and must declare nothing');
 });
 
 test("the routes that accept an image are rate limited", () => {

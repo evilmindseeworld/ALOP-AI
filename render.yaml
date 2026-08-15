@@ -1,0 +1,132 @@
+# Render's blueprint for the backend that is ACTUALLY LIVE.
+#
+# WHY THIS DID NOT EXIST UNTIL NOW, AND WHY THAT MATTERED. The repository had a
+# Dockerfile and a fly.toml for a host that has never served a request, and
+# nothing at all for the host that serves every request. The live service's
+# region, health check, Node version and instance count lived only in a
+# dashboard, so "does the deployed configuration match the repository" was not a
+# question anyone could answer — and twice in this project an investigation
+# ended at "cannot tell from here".
+#
+# ADOPTING AN EXISTING SERVICE. Render matches a blueprint to a service by NAME.
+# `alop-ai` below must be the existing service's name or applying this creates a
+# second one. Check the dashboard before the first apply; after that this file
+# is the source and the dashboard is the mirror.
+#
+# NOTHING SECRET IS HERE. Every key is declared `sync: false`, which tells
+# Render the value is set in the dashboard and must not be read from or written
+# to this file. The repository is public.
+
+services:
+  - type: web
+    name: alop-ai
+    runtime: node
+    # Frankfurt, which is where the service already is. Mumbai is where the
+    # database is and where the Fly migration would move this — see
+    # backend/fly.toml for the latency measurements and docs/MUMBAI-MIGRATION.md
+    # for the plan. Render sells no Indian region, which is the entire reason
+    # that migration exists. Do not "fix" this to a region Render does not have.
+    region: frankfurt
+    plan: free
+    rootDir: backend
+    buildCommand: npm ci --omit=dev
+    startCommand: node server.js
+
+    # /health is a plain res.json — no database, no model call — so a failing
+    # check means the process is down rather than a dependency being slow. Same
+    # reasoning as the Fly check; the two are pinned equal by
+    # backend/lib/deployment-config.test.js.
+    healthCheckPath: /health
+
+    # Pinned, and pinned to the same major as the Dockerfile, CI and
+    # package.json engines. A host that silently upgrades Node is a host that
+    # can turn a green branch red on its own schedule.
+    nodeVersion: "26"
+
+    autoDeploy: true
+
+    envVars:
+      # Required. The server refuses to boot without these.
+      - key: NODE_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: OPENROUTER_HOST
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      # Optional; each feature disables itself when its key is absent. Listed so
+      # that "is this set in production" is answerable from the repository even
+      # though the value is not.
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: ALLOWED_ORIGIN_SUFFIXES
+        sync: false
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+      - key: STRIPE_PRICE_MONTHLY
+        sync: false
+      - key: STRIPE_PRICE_YEARLY
+        sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: BRAVE_API_KEY
+        sync: false
+      - key: TAVILY_API_KEY
+        sync: false
+      - key: JINA_API_KEY
+        sync: false
+      - key: GOOGLE_SEARCH_API_KEY
+        sync: false
+      - key: GOOGLE_CSE_ID
+        sync: false
+      - key: PERPLEXITY_API_KEY
+        sync: false
+      - key: SERPER_API_KEY
+        sync: false
+      - key: SERPAPI_API_KEY
+        sync: false
+      - key: FIRECRAWL_API_KEY
+        sync: false
+      - key: FISH_AUDIO_API_KEY
+        sync: false
+      - key: TERMINAL_ADMINS
+        sync: false
+      - key: TERMINAL_SECRET
+        sync: false
+      # Council behaviour flags. All default OFF; see backend/.env.example for
+      # what each one turns on and why none of them ships enabled.
+      - key: COUNCIL_TOOLS
+        sync: false
+      - key: COUNCIL_BRAIN
+        sync: false
+      - key: COUNCIL_SEMANTIC_CACHE
+        sync: false
+      - key: COUNCIL_ADAPTIVE
+        sync: false
+      - key: COUNCIL_PROGRESSIVE
+        sync: false
+      # Pacing, and both are properties of the OpenRouter ACCOUNT and the
+      # instance size rather than of the code, so neither has a default worth
+      # guessing. Unset means unpaced.
+      - key: OPENROUTER_PER_MINUTE
+        sync: false
+      - key: MODEL_CONCURRENCY
+        sync: false
+      # SET THIS BEFORE A SECOND INSTANCE EXISTS. Unset means the rate limiter
+      # is per process, so every limit multiplies by the instance count. See
+      # backend/.env.example and migrations/004_rate_limits.sql.
+      - key: RATE_LIMIT_STORE
+        sync: false

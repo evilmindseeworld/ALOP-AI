@@ -31,7 +31,7 @@ test('the greeting fast path runs BEFORE the router, the ceilings and the contex
   assert.ok(greeting < at('classifyRequest(pv.value'), 'greeting must short-circuit above the router');
   assert.ok(greeting < at('const budget = await reservationLedger.reserve('), 'a greeting must not reserve spend');
   assert.ok(greeting < at('const requestBudget = await reserveRequests('), 'a greeting must not reserve requests');
-  assert.ok(greeting < at('const contextReads = Promise.all(['), 'a greeting must not wait on summary/feedback/facts');
+  assert.ok(greeting < at('const dag = await runDag(['), 'a greeting must not wait on summary/feedback/facts');
 });
 
 test('an image turn skips the greeting path', () => {

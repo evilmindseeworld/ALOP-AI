@@ -148,6 +148,52 @@ const REPLAY_INPUTS = Object.freeze([
  *   router's own search decision, not a guess made at the write site.
  * @param {boolean} fresh  whether the question named a freshness window.
  */
+/**
+ * THE SHELF LIFE, ADJUSTED BY WHAT THE ANSWER TURNED OUT TO BE.
+ *
+ * `ttlFor` decides a shelf life from PROVENANCE — where the facts came from —
+ * and that is the right first cut. What it cannot see is how good the answer
+ * was or whether anybody wants it:
+ *
+ *   A LOW-CONSENSUS ANSWER IS NOT WORTH A WEEK. When the seats disagreed, the
+ *   synthesis is a reconciliation of a disagreement, and serving it to a
+ *   hundred more people for the full term multiplies whatever it got wrong.
+ *   Halved at 0.5 agreement, quartered at 0.25.
+ *
+ *   A POPULAR ANSWER IS WORTH LONGER. A row that has been read fifty times is
+ *   a row whose re-earning cost is paid over and over; extending it is the
+ *   single cheapest thing this cache can do. Capped at 2x, because "popular"
+ *   is not the same as "still true".
+ *
+ * BOUNDED BOTH WAYS. Never below a minute — an answer that expires before the
+ * next person can ask is a write that cost more than it saved — and never above
+ * the `stable` ceiling, which exists so no row outlives the system that wrote
+ * it.
+ */
+function adaptiveTtl(baseTtlMs, { quality = null, hitCount = 0 } = {}) {
+  let ttl = Number(baseTtlMs) > 0 ? Number(baseTtlMs) : TTL_MS.council;
+  /* `Number(null)` is 0, and 0 is a perfectly valid quality — the worst one.
+   * Testing the coerced value alone would read "nothing measured this" as
+   * "the seats agreed on nothing" and quarter the shelf life of every answer
+   * that carries no score. */
+  const q = quality == null ? NaN : Number(quality);
+  const hasQuality = Number.isFinite(q) && q >= 0 && q <= 1;
+  const hasHits = Number.isFinite(Number(hitCount)) && Number(hitCount) > 0;
+  /* NOTHING TO ADAPT FROM MEANS NO ADAPTATION, and in particular no floor. The
+   * caller's TTL is a decision it already made from provenance; second-guessing
+   * it on no evidence would silently override an explicit short shelf life —
+   * including the deliberately tiny ones a test uses to prove expiry works. */
+  if (!hasQuality && !hasHits) return ttl;
+  if (hasQuality) {
+    /* Linear from 0.25x at no agreement to 1x at 0.75, flat above. A cliff
+     * would make one point of agreement worth a factor of two. */
+    ttl *= q >= 0.75 ? 1 : Math.max(0.25, q / 0.75);
+  }
+  const hits = Number(hitCount);
+  if (Number.isFinite(hits) && hits > 0) ttl *= Math.min(2, 1 + Math.log10(1 + hits) / 2);
+  return Math.max(60_000, Math.min(TTL_MS.stable, Math.round(ttl)));
+}
+
 function ttlFor({ searched = false, fresh = false } = {}) {
   if (!searched) return TTL_MS.stable;
   return fresh ? TTL_MS.recent : TTL_MS.search;
@@ -175,13 +221,43 @@ const normalise = (q) =>
  *   the argument list IS the cacheability contract.
  * @returns {string|null} null when there is nothing worth keying on.
  */
-function keyFor({ question, lang = '', country = '', plan = '', detailed = false, branch = '' } = {}) {
+function keyFor({
+  question, lang = '', country = '', plan = '', detailed = false, branch = '',
+  /* ── THE MACHINE THAT ANSWERED, added because the key described only the ASK.
+   *
+   * Every field above says something about what the user wanted. None of them
+   * change when the synthesis prompt is rewritten, when the length rules move,
+   * when a different model starts writing the answer, or when a tool is added
+   * to the council — and each of those changes what the answer IS. A cached
+   * answer produced by the old prompt kept being served for up to a week, with
+   * no signal anywhere that it was stale, so the change looked like it had done
+   * nothing.
+   *
+   * lib/cache-identity.js computes these FROM THE ARTEFACTS — a hash of the
+   * prompt strings, the policy strings, the model ids, the tool schemas —
+   * rather than from a version constant somebody has to remember to bump. A
+   * constant that goes stale silently is the same failure with an extra step.
+   *
+   * All default to '' so a caller that has not been updated keys exactly as it
+   * did, minus a one-off invalidation the first time a caller starts passing
+   * them — which is the correct outcome, because every entry in the cache at
+   * that moment WAS written by an unrecorded prompt. */
+  promptVersion = '',
+  policyVersion = '',
+  modelFamily = '',
+  toolSchema = '',
+  retrievalMode = '',
+  sourceFreshness = '',
+} = {}) {
   const text = normalise(question);
   if (!text) return null;
   /* Joined with a character no field can contain, so ("ab", "c") and ("a",
    * "bc") cannot produce one key. A plain concatenation would make that
    * collision reachable from user-controlled text. */
-  const material = [text, lang, country, plan, detailed ? 'd' : '', branch].join('\u0000');
+  const material = [
+    text, lang, country, plan, detailed ? 'd' : '', branch,
+    promptVersion, policyVersion, modelFamily, toolSchema, retrievalMode, sourceFreshness,
+  ].join('\u0000');
   return crypto.createHash('sha256').update(material).digest('hex');
 }
 
@@ -220,7 +296,7 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
   const now = opts.now || (() => Date.now());
   const memory = new Map();
   let writesSinceSweep = 0;
-  const stats = { lookups: 0, hitsL1: 0, hitsL2: 0, semanticLookups: 0, semanticHits: 0, misses: 0, errors: 0, writes: 0 };
+  const stats = { lookups: 0, hitsL1: 0, hitsL2: 0, semanticLookups: 0, semanticHits: 0, misses: 0, errors: 0, writes: 0, invalidated: 0 };
 
   const report = () => {
     const every = Number(cfg.reportEvery);
@@ -307,7 +383,7 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
           promise: (async () => {
             const { data, error } = await supabase
               .from('answer_cache')
-              .select('answer, stored_at, expires_at')
+              .select('answer, stored_at, expires_at, invalidated_at, quality, provenance')
               .eq('key', key)
               .maybeSingle();
             if (error) { warnOnce('read failed', error.message); return null; }
@@ -320,6 +396,18 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
 
       if (!row) { if (!deferMiss) stats.misses++; return null; }
 
+      /* AN INVALIDATED ROW IS A MISS, and it is checked before the expiry.
+       * Invalidation is what a prompt change, a user's "this is wrong", or a
+       * source that turned out to be lying reach for; before it existed the
+       * only durable lever was waiting out the TTL, which for a `stable` answer
+       * is ninety days. Rows are MARKED rather than deleted so the evidence
+       * survives the one conversation where anybody wants it. */
+      if (row.invalidated_at) {
+        stats.invalidated++;
+        if (!deferMiss) stats.misses++;
+        return null;
+      }
+
       const expiresAt = new Date(row.expires_at).getTime();
       if (!Number.isFinite(expiresAt) || expiresAt <= now()) { if (!deferMiss) stats.misses++; return null; }
 
@@ -327,7 +415,17 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
       stats.hitsL2++;
       // Promote, so the next asker on this instance does not pay the round trip.
       writeMemory(key, { answer: row.answer, storedAt, expiresAt });
-      return { answer: row.answer, storedAt };
+      /* Counted, never awaited, and a failure here is invisible on purpose: a
+       * hit counter that can slow down or fail a cache hit has cost more than
+       * it can ever be worth. It is what lets an adaptive TTL tell a popular
+       * answer from one that has been re-earned weekly and served to nobody. */
+      noteHit(key);
+      return {
+        answer: row.answer,
+        storedAt,
+        quality: typeof row.quality === 'number' ? row.quality : null,
+        provenance: row.provenance || null,
+      };
     } finally {
       if (!deferMiss) report();
     }
@@ -397,7 +495,7 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
     }
     const text = answer.trim();
     if (!text || (!allowShort && text.length < cfg.minAnswerChars)) return;
-    const ttl = Number(options.ttlMs) > 0 ? Number(options.ttlMs) : TTL_MS.council;
+    const ttl = adaptiveTtl(Number(options.ttlMs) > 0 ? Number(options.ttlMs) : TTL_MS.council, options);
 
     const storedAt = now();
     const expiresAt = storedAt + ttl;
@@ -420,6 +518,9 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
             detailed: inputs.detailed,
             branch: inputs.branch,
             used_live_web: inputs.usedLiveWeb,
+            ...(options.provenance && typeof options.provenance === 'object'
+              ? { provenance: options.provenance } : {}),
+            ...(Number.isFinite(options.quality) ? { quality: Math.max(0, Math.min(1, options.quality)) } : {}),
             ...(vectorLiteral(options.embedding) ? { embedding: vectorLiteral(options.embedding) } : {}),
           },
           { onConflict: 'key' },
@@ -430,6 +531,47 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
       warnOnce('write threw', e.message);
     }
     sweep();
+  }
+
+  /** Fire and forget. See the call site in `get` for why it can never wait. */
+  function noteHit(key) {
+    if (!supabase || !key) return;
+    try {
+      Promise.resolve(supabase.rpc('note_answer_cache_hit', { p_key: key }))
+        .then((r) => { if (r?.error) warnOnce('hit counter failed', r.error.message); })
+        .catch((e) => warnOnce('hit counter threw', e.message));
+    } catch (e) { warnOnce('hit counter threw', e.message); }
+  }
+
+  /**
+   * Kill rows before their TTL.
+   *
+   * `branch: null` means EVERY branch, and it has to be passed explicitly
+   * rather than being what you get by forgetting an argument — the dangerous
+   * form should be the one you have to type.
+   *
+   * The memory tier is cleared unconditionally, because this process cannot
+   * know which of its cached rows the predicate matched and serving one it
+   * should have dropped is the whole failure being fixed. It is a Map of at
+   * most 300 entries; refilling it costs one Postgres read each.
+   *
+   * @returns {Promise<number>} rows marked, or -1 when the store is unreachable.
+   */
+  async function invalidate({ branch, reason = 'unspecified', before = null } = {}) {
+    memory.clear();
+    if (!supabase) return -1;
+    try {
+      const { data, error } = await supabase.rpc('invalidate_answer_cache', {
+        p_branch: branch === undefined ? null : branch,
+        p_reason: String(reason).slice(0, 200),
+        p_before: before ? new Date(before).toISOString() : null,
+      });
+      if (error) { warnOnce('invalidate failed', error.message); return -1; }
+      return Number(data) || 0;
+    } catch (e) {
+      warnOnce('invalidate threw', e.message);
+      return -1;
+    }
   }
 
   function set(key, answer, options) {
@@ -558,7 +700,8 @@ function createAnswerCache({ supabase, log = console, ...opts } = {}) {
     }
   }
 
-  return { get, getSemantic, getDue, dueForRefresh, set, setBrief, setConstant, enrichEmbedding, clear, keyFor, stats: () => ({ ...stats, size: memory.size }) };
+  return { get, getSemantic, getDue, dueForRefresh, set, setBrief, setConstant, enrichEmbedding, invalidate, clear, keyFor, stats: () => ({ ...stats, size: memory.size }) };
 }
 
-module.exports = { createAnswerCache, keyFor, normalise, replayInputs, ttlFor, TTL_MS, validEmbedding };
+module.exports = {
+  adaptiveTtl, createAnswerCache, keyFor, normalise, replayInputs, ttlFor, TTL_MS, validEmbedding };

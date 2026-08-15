@@ -34,13 +34,44 @@ class PostgresStore {
    * @param {object} deps
    * @param {(fn: string, args: object) => Promise<{data: any, error: any}>} deps.rpc
    *        Supabase's rpc(), or anything with that shape.
+   * @param {string} deps.prefix  this limiter's own key namespace, REQUIRED
    * @param {(msg: string) => void} [deps.onError]
+   *
+   * ONE TABLE, MANY LIMITERS, AND THE PREFIX IS WHAT KEEPS THEM APART.
+   *
+   * The in-memory store this replaces holds its counters in the limiter's own
+   * closure, so `/api/` (120/min) and `/api/council` (30/min) could both key on
+   * `u:<userId>` and never meet. Every PostgresStore writes to the same
+   * `rate_limits` table, so without a namespace those two limiters increment
+   * the SAME ROW: one council request counts twice, and the floor's budget and
+   * the council's budget eat each other. The distributed store would then be
+   * strictly less correct than the per-process one it was introduced to fix.
+   *
+   * express-rate-limit reaches the same conclusion from the other end. Its
+   * `singleCount` validation identifies a non-local store by constructor name
+   * plus `prefix`, so two unprefixed instances look to it like one store
+   * counting one key twice in a single request — ERR_ERL_DOUBLE_COUNT.
+   *
+   * Required rather than defaulted, because a default is a value someone can
+   * forget to override and the failure is silent.
    */
-  constructor({ rpc, onError = (m) => console.error(m) }) {
+  constructor({ rpc, prefix, onError = (m) => console.error(m) }) {
     if (typeof rpc !== "function") throw new TypeError("PostgresStore needs an rpc function");
+    if (typeof prefix !== "string" || !prefix) {
+      throw new TypeError("PostgresStore needs a non-empty prefix — limiters share one table");
+    }
     this.rpc = rpc;
+    this.prefix = prefix;
+    /* express-rate-limit reads this to decide whether the store is per-process.
+     * It is not: that is the entire point of it. */
+    this.localKeys = false;
     this.onError = onError;
     this.windowMs = 60_000;
+  }
+
+  /** The row this limiter owns for this caller. */
+  namespaced(key) {
+    return `${this.prefix}${key}`;
   }
 
   /** Called once by express-rate-limit with the limiter's own window. */
@@ -51,7 +82,7 @@ class PostgresStore {
   async increment(key) {
     try {
       const { data, error } = await this.rpc("increment_rate_limit", {
-        p_key: String(key),
+        p_key: this.namespaced(key),
         p_window_ms: this.windowMs,
       });
       if (error) throw new Error(error.message || String(error));
@@ -74,7 +105,7 @@ class PostgresStore {
 
   async decrement(key) {
     try {
-      const { error } = await this.rpc("decrement_rate_limit", { p_key: String(key) });
+      const { error } = await this.rpc("decrement_rate_limit", { p_key: this.namespaced(key) });
       if (error) throw new Error(error.message || String(error));
     } catch (err) {
       // Nothing to fall back to, and an un-decremented counter only ever makes
@@ -85,7 +116,7 @@ class PostgresStore {
 
   async resetKey(key) {
     try {
-      await this.rpc("decrement_rate_limit", { p_key: String(key) });
+      await this.rpc("decrement_rate_limit", { p_key: this.namespaced(key) });
     } catch {
       /* best effort */
     }

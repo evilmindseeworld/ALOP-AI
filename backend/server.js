@@ -2548,17 +2548,36 @@ const { rateLimitKey } = require('./lib/rate-limit-key');
 const USE_PG_RATE_LIMIT = process.env.RATE_LIMIT_STORE === 'postgres';
 const { PostgresStore } = require('./lib/pg-rate-limit-store');
 
-const createLimiter = (windowMs, max, msg) => rateLimit({
-  windowMs, max, message: { error: msg }, standardHeaders: true, legacyHeaders: false,
-  keyGenerator: (req, res) => rateLimitKey(req, res, rateLimit.ipKeyGenerator),
-  handler: (req, res) => { res.status(429).json({ error: msg }); },
-  // A store instance per limiter, because each carries its own window.
-  // The arrow defers dereferencing `supabase`, which is declared BELOW this
-  // point — the limiters are registered before the client exists. It is only
-  // called at request time, by which point the const is initialised. Passing
-  // `supabase.rpc` directly here would throw at boot.
-  ...(USE_PG_RATE_LIMIT ? { store: new PostgresStore({ rpc: (fn, args) => supabase.rpc(fn, args) }) } : {}),
-});
+/* `name` NAMES THE COUNTER, and under the Postgres store it is load-bearing.
+ *
+ * Every limiter used to be anonymous, which was harmless while each one kept
+ * its counters in its own process memory. They all share one `rate_limits`
+ * table, so an anonymous limiter shares its ROWS: `/api/` (120/min) and
+ * `/api/council` (30/min) would both increment `u:<userId>` and spend each
+ * other's budget. The name becomes the key prefix — see lib/pg-rate-limit-store.js.
+ *
+ * Distinctness is asserted in lib/route-config.test.js rather than trusted
+ * here: two limiters accidentally sharing a name is exactly the same bug with
+ * an extra step, and it is invisible until someone is wrongly 429'd. */
+const limiterNames = new Set();
+const createLimiter = (windowMs, max, msg, name) => {
+  if (!name) throw new Error('createLimiter needs a name — it is the shared counter key prefix');
+  if (limiterNames.has(name)) throw new Error(`two rate limiters are named ${name}; they would share one counter row`);
+  limiterNames.add(name);
+  return rateLimit({
+    windowMs, max, message: { error: msg }, standardHeaders: true, legacyHeaders: false,
+    keyGenerator: (req, res) => rateLimitKey(req, res, rateLimit.ipKeyGenerator),
+    handler: (req, res) => { res.status(429).json({ error: msg }); },
+    // A store instance per limiter, because each carries its own window.
+    // The arrow defers dereferencing `supabase`, which is declared BELOW this
+    // point — the limiters are registered before the client exists. It is only
+    // called at request time, by which point the const is initialised. Passing
+    // `supabase.rpc` directly here would throw at boot.
+    ...(USE_PG_RATE_LIMIT
+      ? { store: new PostgresStore({ prefix: `${name}|`, rpc: (fn, args) => supabase.rpc(fn, args) }) }
+      : {}),
+  });
+};
 
 /* CLERK IS MOUNTED HERE, ABOVE THE LIMITERS, AND THE ORDER IS THE POINT.
  *
@@ -2609,31 +2628,31 @@ console.log(
 // route with its own limiter is subject to BOTH — the narrower one binds first.
 // A route with no entry here is not unlimited, it inherits the floor; the
 // entries below exist where the floor is too generous for what the call costs.
-app.use('/api/', createLimiter(60000, 120, 'Too many requests.'));
-app.use('/api/council', createLimiter(60000, 30, 'Too many council requests.'));
-app.use('/api/overlay', createLimiter(60000, 30, 'Too many overlay requests.'));
-app.use('/api/feedback', createLimiter(60000, 30, 'Too many feedback requests.'));
+app.use('/api/', createLimiter(60000, 120, 'Too many requests.', '/api/'));
+app.use('/api/council', createLimiter(60000, 30, 'Too many council requests.', '/api/council'));
+app.use('/api/overlay', createLimiter(60000, 30, 'Too many overlay requests.', '/api/overlay'));
+app.use('/api/feedback', createLimiter(60000, 30, 'Too many feedback requests.', '/api/feedback'));
 // One model call each. Generous, because the client fires exactly one per new
 // conversation and a user who hits 30 in a minute is not typing them.
-app.use('/api/chat-title', createLimiter(60000, 30, 'Too many title requests.'));
+app.use('/api/chat-title', createLimiter(60000, 30, 'Too many title requests.', '/api/chat-title'));
 // Tighter than the rest, because this is the only route where a single request
 // bills a third party per character. Nobody listens to twenty answers a minute.
-app.use('/api/speech', createLimiter(60000, 20, 'Too many speech requests.'));
+app.use('/api/speech', createLimiter(60000, 20, 'Too many speech requests.', '/api/speech'));
 // Drawing is the most expensive thing a single request can ask for here, and
 // unlike a council turn it has no cheaper tier to fall back to.
-app.use('/api/image', createLimiter(60000, 10, 'Too many image requests.'));
-app.use('/api/create-checkout-session', createLimiter(300000, 5, 'Too many billing requests.'));
-app.use('/api/create-portal-session', createLimiter(300000, 5, 'Too many billing requests.'));
-app.use('/api/admin/', createLimiter(60000, 60, 'Too many admin requests.'));
+app.use('/api/image', createLimiter(60000, 10, 'Too many image requests.', '/api/image'));
+app.use('/api/create-checkout-session', createLimiter(300000, 5, 'Too many billing requests.', '/api/create-checkout-session'));
+app.use('/api/create-portal-session', createLimiter(300000, 5, 'Too many billing requests.', '/api/create-portal-session'));
+app.use('/api/admin/', createLimiter(60000, 60, 'Too many admin requests.', '/api/admin/'));
 // Previously covered only by the /api/ floor. Chat writes hit the database on
 // every call and the plan/price reads hit Clerk and Stripe, so 120/min each is
 // more headroom than any real client uses.
-app.use('/api/chats', createLimiter(60000, 60, 'Too many chat requests.'));
-app.use('/api/user/', createLimiter(60000, 60, 'Too many requests.'));
-app.use('/api/billing/', createLimiter(60000, 30, 'Too many billing requests.'));
+app.use('/api/chats', createLimiter(60000, 60, 'Too many chat requests.', '/api/chats'));
+app.use('/api/user/', createLimiter(60000, 60, 'Too many requests.', '/api/user/'));
+app.use('/api/billing/', createLimiter(60000, 30, 'Too many billing requests.', '/api/billing/'));
 // /health is outside /api/ and so had no limit at all. It is cheap, but an
 // unlimited endpoint is still an unlimited endpoint.
-app.use('/health', createLimiter(60000, 120, 'Too many requests.'));
+app.use('/health', createLimiter(60000, 120, 'Too many requests.', '/health'));
 
 // The 50 MB ceiling exists for image data URLs, and applied to EVERY route —
 // so any endpoint could be made to buffer 50 MB per request. It now applies
@@ -3235,7 +3254,7 @@ app.get('/health', (req, res) => res.json({
  * that route and must not be inside that slice. */
 const RESUME_POLL_MS = 400;
 const RESUME_MAX_WAIT_MS = 60_000;
-const resumeLimiter = createLimiter(60_000, 60, 'Too many resume requests.');
+const resumeLimiter = createLimiter(60_000, 60, 'Too many resume requests.', 'resume');
 
 const findResumableTurn = async (req, res) => {
   const operationId = req.params.operationId;
@@ -5741,7 +5760,7 @@ const adminConsole = buildCommands({ supabase });
 // Its own limiter, far tighter than the admin floor. The secret is the only
 // guessable credential in the chain, and 10 attempts a minute makes guessing
 // it arithmetically hopeless while leaving normal use unhindered.
-const terminalLimiter = createLimiter(60000, 10, 'Too many console requests.');
+const terminalLimiter = createLimiter(60000, 10, 'Too many console requests.', 'terminal');
 
 /**
  * Every attempt — allowed or refused — is audited BEFORE the reply.
@@ -6513,6 +6532,36 @@ const server = app.listen(PORT, () => {
   // says so plainly rather than staying quiet and looking like it works.
   const tc = terminalConfig();
   console.log(`[BOOT] admin console -> ${tc.enabled ? `ENABLED for ${tc.admins.length} allowlisted admin(s)` : `disabled (${tc.reason})`}\n`);
+
+  /* THE SHARED STORE FAILS OPEN, WHICH IS RIGHT AND ALSO MEANS IT CANNOT TELL
+   * YOU IT IS BROKEN. If migration 004 never ran against this database, every
+   * increment returns "not limited" and logs one line per request into a log
+   * nobody reads — the deploy looks healthy and the limits are simply gone.
+   * One probe at boot turns that into a single loud line at the moment the
+   * instance starts, which is when someone is watching. */
+  if (USE_PG_RATE_LIMIT) {
+    void (async () => {
+      const probe = new PostgresStore({ prefix: 'boot-probe|', rpc: (fn, args) => supabase.rpc(fn, args), onError: () => {} });
+      const { totalHits } = await probe.increment('startup');
+      await probe.resetKey('startup');
+      console.log(totalHits > 0
+        ? '[BOOT] rate limit store: postgres reachable, counters shared across instances'
+        : '[BOOT] RATE_LIMIT_STORE=postgres BUT THE STORE IS NOT ANSWERING — every limit is currently OPEN. Check that migrations/004_rate_limits.sql ran against this database.');
+    })();
+
+    /* Expired rows are ignored on read, so this is about the table's size and
+     * nothing else. Migration 004 left the sweep as a comment to run by hand,
+     * which is a job nobody has ever done; one delete an hour costs nothing and
+     * removes the reason to remember. `unref` so it never holds the process
+     * open, and every instance running it is fine — the delete is idempotent. */
+    const sweepRateLimits = async () => {
+      const cutoff = new Date(Date.now() - 3_600_000).toISOString();
+      const { error } = await supabase.from('rate_limits').delete().lt('expires_at', cutoff);
+      if (error) console.error(`[ratelimit] sweep failed: ${error.message}`);
+    };
+    void sweepRateLimits();
+    setInterval(sweepRateLimits, 3_600_000).unref();
+  }
 });
 
 const brain = createBrain({

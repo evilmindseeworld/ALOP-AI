@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { prepareUpload, sanitiseName, looksBinary, UploadRejected, MAX_BYTES, MAX_CHARS } = require("./file-intake");
+const { prepareUpload, prepareUploadAsync, sanitiseName, looksBinary, UploadRejected, ACCEPTED, MAX_BYTES, MAX_DOCUMENT_BYTES, MAX_CHARS } = require("./file-intake");
 
 const b64 = (s) => Buffer.from(s, "utf8").toString("base64");
 const upload = (over = {}) => prepareUpload({ name: "notes.txt", mime: "text/plain", base64: b64("hello"), ...over });
@@ -18,17 +18,136 @@ test("tolerates a charset parameter and odd casing", () => {
   assert.equal(upload({ mime: "TEXT/Plain; charset=utf-8" }).mime, "text/plain");
 });
 
-test("REFUSES pdf and docx, which are the ones people will ask for", () => {
-  // Not an oversight. Both need a third-party parser with a CVE history, fed
-  // attacker bytes inside a process holding live Stripe and Supabase creds.
-  rejects({ mime: "application/pdf" }, /not accepted/);
-  rejects({ mime: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" }, /not accepted/);
+test("the allowlist includes PDF, DOCX and XLSX without treating arbitrary ZIPs as documents", () => {
+  assert.equal(ACCEPTED.get("application/pdf"), "pdf");
+  assert.equal(ACCEPTED.get("application/vnd.openxmlformats-officedocument.wordprocessingml.document"), "docx");
+  assert.equal(ACCEPTED.get("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"), "xlsx");
+  rejects({ mime: "application/zip" }, /not accepted/);
+});
+
+test("the sync API remains the text path and points binary documents at its async sibling", () => {
+  rejects({ mime: "application/pdf", base64: Buffer.from("%PDF-1.7").toString("base64") }, /asynchronous|document extraction/i);
 });
 
 test("refuses executables and archives dressed as anything", () => {
   for (const mime of ["application/octet-stream", "application/zip", "text/html", "image/svg+xml", "", null, 42]) {
     rejects({ mime }, /not accepted/);
   }
+});
+
+// ===== document extraction =====
+
+test("prepareUploadAsync preserves the six-field storage contract for PDF", async () => {
+  const bytes = Buffer.from("%PDF-1.7\nscanned bytes\x00", "binary");
+  const result = await prepareUploadAsync({
+    name: "scan.pdf",
+    mime: "application/pdf",
+    base64: bytes.toString("base64"),
+  }, {
+    apiKey: "test-key",
+    models: ["gemini-test"],
+    describeImageImpl: async () => "Scanned page text",
+  });
+
+  assert.deepEqual(Object.keys(result), ["name", "mime", "kind", "bytes", "content", "truncated"]);
+  assert.deepEqual(result, {
+    name: "scan.pdf",
+    mime: "application/pdf",
+    kind: "pdf",
+    bytes: bytes.length,
+    content: "Scanned page text",
+    truncated: false,
+  });
+});
+
+test("prepareUploadAsync delegates text kinds to the unchanged sync path", async () => {
+  const input = { name: "notes.txt", mime: "text/plain", base64: b64("same text") };
+  assert.deepEqual(await prepareUploadAsync(input), prepareUpload(input));
+  await assert.rejects(
+    prepareUploadAsync({ ...input, base64: Buffer.from([0x41, 0, 0x42]).toString("base64") }),
+    (error) => error instanceof UploadRejected && /not text/i.test(error.message),
+  );
+});
+
+test("binary document bytes bypass looksBinary but still pass format validation", async () => {
+  const pdf = Buffer.from("%PDF-1.7\n\x00\x01\x02", "binary");
+  const result = await prepareUploadAsync({ name: "binary.pdf", mime: "application/pdf", base64: pdf.toString("base64") }, {
+    describeImageImpl: async () => "readable",
+  });
+  assert.equal(looksBinary(pdf), true);
+  assert.equal(result.content, "readable");
+
+  const optionsCannotReplaceValidatedInput = await prepareUploadAsync({
+    name: "real.pdf",
+    mime: "application/pdf",
+    base64: pdf.toString("base64"),
+  }, {
+    kind: "docx",
+    mime: "text/plain",
+    bytes: Buffer.from("attacker-selected replacement"),
+    describeImageImpl: async () => "still the PDF path",
+  });
+  assert.equal(optionsCannotReplaceValidatedInput.kind, "pdf");
+  assert.equal(optionsCannotReplaceValidatedInput.content, "still the PDF path");
+
+  await assert.rejects(
+    prepareUploadAsync({ name: "fake.pdf", mime: "application/pdf", base64: Buffer.from([0, 1, 2]).toString("base64") }, {
+      describeImageImpl: async () => "must not run",
+    }),
+    (error) => error instanceof UploadRejected && /valid PDF/i.test(error.message),
+  );
+});
+
+test("the async API applies its own allowlist and empty-file checks", async () => {
+  await assert.rejects(
+    prepareUploadAsync({ name: "archive.zip", mime: "application/zip", base64: b64("PK") }),
+    (error) => error instanceof UploadRejected && /not accepted/i.test(error.message),
+  );
+  await assert.rejects(
+    prepareUploadAsync({ name: "empty.pdf", mime: "application/pdf", base64: "" }),
+    (error) => error instanceof UploadRejected && /empty/i.test(error.message),
+  );
+});
+
+test("document output is normalised and truncated under the unchanged storage contract", async () => {
+  const content = `safe\u202eevil\u202c\r\n${"x".repeat(MAX_CHARS)}`;
+  const result = await prepareUploadAsync({ name: "long.pdf", mime: "application/pdf", base64: b64("%PDF-1.7") }, {
+    describeImageImpl: async () => content,
+  });
+  assert.equal(result.content.includes("\u202e"), false);
+  assert.equal(result.content.includes("\r"), false);
+  assert.equal(result.content.length, MAX_CHARS);
+  assert.equal(result.truncated, true);
+});
+
+test("document rejection becomes a caller-safe UploadRejected, provider failure does not", async () => {
+  await assert.rejects(
+    prepareUploadAsync({ name: "empty.pdf", mime: "application/pdf", base64: b64("%PDF-1.7") }, {
+      describeImageImpl: async () => "",
+    }),
+    (error) => error instanceof UploadRejected && /no readable text/i.test(error.message),
+  );
+
+  const providerError = new Error("provider unavailable");
+  await assert.rejects(
+    prepareUploadAsync({ name: "scan.pdf", mime: "application/pdf", base64: b64("%PDF-1.7") }, {
+      describeImageImpl: async () => { throw providerError; },
+    }),
+    (error) => error === providerError && !(error instanceof UploadRejected),
+  );
+});
+
+test("documents have an 8MB transport ceiling without widening the text ceiling", async () => {
+  assert.equal(MAX_DOCUMENT_BYTES, 8 * 1024 * 1024);
+  assert.equal(MAX_BYTES, 512 * 1024);
+  const tooLarge = Buffer.alloc(MAX_DOCUMENT_BYTES + 1, 0x20);
+  tooLarge.write("%PDF-1.7", 0, "ascii");
+  await assert.rejects(
+    prepareUploadAsync({ name: "large.pdf", mime: "application/pdf", base64: tooLarge.toString("base64") }, {
+      describeImageImpl: async () => "text",
+    }),
+    (error) => error instanceof UploadRejected && /limit/i.test(error.message),
+  );
 });
 
 // ===== the bytes, not the label =====

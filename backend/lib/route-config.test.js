@@ -96,3 +96,31 @@ test("the routes that accept an image are rate limited", () => {
     assert.ok(limited.includes(p), `${p} takes a 50 MB body with no limiter of its own`);
   }
 });
+
+/* ===== the shared counter's namespace =====
+ *
+ * Under RATE_LIMIT_STORE=postgres every limiter writes to one `rate_limits`
+ * table, so the name passed to createLimiter is the key prefix that keeps
+ * `/api/` and `/api/council` from spending each other's budget. server.js
+ * throws on a duplicate at boot; this catches it in CI, before a deploy that
+ * would refuse to start.
+ */
+const limiterNames = [...SRC.matchAll(/createLimiter\((?:[^()]|\([^()]*\))*?,\s*'([^']+)'\)/g)].map((m) => m[1]);
+
+test("every limiter is named, and no two share a name", () => {
+  // The definition is an arrow (`const createLimiter = (windowMs, ...`), so it
+  // is not counted here — every `createLimiter(` in the file is a call site.
+  const calls = [...SRC.matchAll(/createLimiter\(/g)].length;
+  assert.equal(limiterNames.length, calls, "a createLimiter call has no name — it would share a counter row");
+  assert.equal(new Set(limiterNames).size, limiterNames.length, `duplicate limiter names: ${limiterNames.join(", ")}`);
+});
+
+test("a mounted limiter is named after the path it guards", () => {
+  for (const [, path, name] of SRC.matchAll(/app\.use\('([^']+)',\s*createLimiter\((?:[^()]|\([^()]*\))*?,\s*'([^']+)'\)\)/g)) {
+    assert.equal(name, path, `the limiter on ${path} is named ${name}; the name is the counter's prefix and a wrong one is unreadable in the table`);
+  }
+});
+
+test("the Postgres store is given that name as its prefix", () => {
+  assert.match(SRC, /new PostgresStore\(\{ prefix: `\$\{name\}\|`/, 'the limiter name must reach the store, or every limiter shares one row');
+});

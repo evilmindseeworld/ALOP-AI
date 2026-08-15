@@ -40,6 +40,7 @@ const { createClient } = require('@supabase/supabase-js');
 const { clerkMiddleware, getAuth, clerkClient } = require('@clerk/express');
 const Stripe = require('stripe');
 const { timeoutSignal, childAbortController } = require('./lib/abort');
+const { describeImage, visionModels } = require('./lib/vision');
 const { createTurnTelemetry } = require('./lib/turn-telemetry');
 const { rescueReasoning } = require('./lib/reasoning-rescue');
 const { createTurnContext } = require('./lib/turn-context');
@@ -707,16 +708,20 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
   }
 };
 
-const callGeminiVision = async (modelName, prompt, base64Image, mimeType = 'image/png', maxTokens = 2048, parentSignal) => {
-  if (!GOOGLE_API_KEY) throw new Error('GOOGLE_API_KEY not configured');
-  if (Buffer.byteLength(base64Image, 'base64') / (1024*1024) > 8) throw new Error('Image too large');
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GOOGLE_API_KEY}`;
+/* `models` is a list, not a name — see lib/vision.js for why pinning one
+ * preview id broke every image turn the day Google retired it. */
+const callGeminiVision = async (models, prompt, base64Image, mimeType = 'image/png', maxTokens = 2048, parentSignal) => {
   const timed = timeoutSignal(parentSignal, 30000);
   try {
-    const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64Image } }] }], generationConfig: { temperature: 0.0, maxOutputTokens: maxTokens } }), signal: timed.signal });
-    if (!res.ok) { const t = await res.text(); throw new Error(`Gemini: ${res.status} ${t.slice(0,300)}`); }
-    const data = await res.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return await describeImage({
+      apiKey: GOOGLE_API_KEY,
+      models,
+      prompt,
+      base64: base64Image,
+      mime: mimeType,
+      maxTokens,
+      signal: timed.signal,
+    });
   } finally {
     timed.dispose();
   }
@@ -3912,7 +3917,7 @@ async function handleCouncilTurn(req, res) {
        * before calling Gemini added their full round-trip to every image turn.
        * The result is still awaited before prompt assembly; only the idle time
        * is removed. */
-      const visionModel = userPlan === 'pro' ? 'gemini-2.5-pro-preview-05-06' : 'gemini-2.5-flash-preview-05-06';
+      const visionModel = visionModels(userPlan);
       visionP = telemetry.measureContext('vision', () => callGeminiVision(visionModel, 'Describe this image thoroughly. Include any text, code, UI elements, data and errors visible in it.', parsedImage.base64, parsedImage.mime, 1024, turnSignal))
         .then((text) => ({ text }))
         .catch((error) => ({ error }));
@@ -5632,7 +5637,7 @@ app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
       try {
         const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
         if (Buffer.byteLength(base64Data, 'base64') / (1024*1024) < 8) {
-          const vm = user.plan === 'pro' ? 'gemini-2.5-pro-preview-05-06' : 'gemini-2.5-flash-preview-05-06';
+          const vm = visionModels(user.plan);
           ctx = await callGeminiVision(vm, 'Describe screen concisely. Include code, text, UI, errors.', base64Data, 'image/png', 1024);
         }
       } catch (e) { console.error('[OVERLAY] Vision skipped:', e.message); }

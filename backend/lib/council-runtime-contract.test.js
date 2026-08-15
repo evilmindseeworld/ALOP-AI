@@ -284,9 +284,12 @@ test("a one-seat roster inherits the synthesiser's rules", () => {
 test("the orchestrator falls back to its configured recovery model, and refuses three ways", () => {
   const wrapper = SOURCE.slice(SOURCE.indexOf("const streamModel = async"), SOURCE.indexOf("const callGeminiVision"));
   assert.ok(wrapper, "streamModel is gone; the orchestrator fallback has no home");
-  assert.match(wrapper, /streamOnce\(\s*res,\s*fallbackModel/, "an explicit fallback must be dispatched when the selected model fails before output");
-  assert.match(wrapper, /!fallbackModel|fallbackModel === modelName/,
-    "a caller that named a model must opt into a different fallback, and the fallback must not retry itself");
+  assert.match(wrapper, /for \(const entry of fallbackChain\)/, "a fallback must be dispatched when the selected model fails before output");
+  assert.match(wrapper, /streamOnce\(\s*res,\s*entry\.model/, "the fallback attempt must stream from the rung it selected");
+  assert.match(wrapper, /entry\.model !== modelName/,
+    "the ladder must not retry the model that just failed as its own fallback");
+  assert.match(wrapper, /!fallbackModel/,
+    "with no fallback named and none on the ladder, the failure must escape rather than be retried blindly");
   assert.match(wrapper, /signal\?\.aborted/, "a cancelled turn must not be re-dispatched");
   assert.match(wrapper, /wrote > 0/, "a partial answer must never be retried into a second, different one");
 

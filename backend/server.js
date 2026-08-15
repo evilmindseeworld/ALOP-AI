@@ -344,6 +344,42 @@ const SYNTHESIS_MODEL = configuredSynthesisModel(process.env.COUNCIL_SYNTHESIS_M
  */
 const SMART_MODEL = process.env.ORCHESTRATOR_FALLBACK_MODEL || 'nvidia/nemotron-3-super-120b-a12b:free';
 
+/**
+ * THE HEAD MODEL'S LADDER. One fallback was one outage from a lost turn, and
+ * the two were not independent — a provider rate limiting this account rate
+ * limits every model it hosts. The ordering rule, the prices and the provider
+ * diversity live in lib/model-ladder.js; this only resolves the deployment
+ * variable and asks the ladder what sits below the head model in use.
+ */
+const { parseLadder, fallbacksAfter, asStreamFallbacks } = require('./lib/model-ladder');
+const HEAD_LADDER = parseLadder(process.env.COUNCIL_HEAD_FALLBACKS);
+const HEAD_FALLBACKS = asStreamFallbacks(fallbacksAfter(SYNTHESIS_MODEL, HEAD_LADDER));
+
+/**
+ * THE SAME LADDER FOR THE NON-STREAMING CALL, which is what the native tool
+ * seat makes. `streamModel` recovers the answer the user is watching; this
+ * recovers the round of tool calling that produces it. Without it the tool
+ * seat is the one remaining place where a single provider's outage ends the
+ * turn — and it is the most expensive place to lose one, because a tool turn
+ * has already paid for its searches by then.
+ *
+ * Aborts are never retried: a cancelled turn is not a failed one.
+ */
+const callModelWithLadder = async (model, call, { label = 'model', signal = null } = {}) => {
+  const chain = [model, ...fallbacksAfter(model, HEAD_LADDER).map((rung) => rung.model)];
+  let lastError = null;
+  for (const candidate of chain) {
+    if (candidate !== model) console.warn(`[${label}] ${model} failed (${lastError?.message}). Retrying on ${candidate}.`);
+    try {
+      return await call(candidate);
+    } catch (err) {
+      lastError = err;
+      if (signal?.aborted) throw err;
+    }
+  }
+  throw lastError;
+};
+
 // ===== AI HELPERS =====
 /* The request shape, the retry policy and the reasoning-field fallback all live
  * in lib/openrouter.js so they can be unit tested — this file calls
@@ -666,7 +702,20 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
  */
 const streamModel = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, answerOptions = {}, turnDeadlineAt = null, modelOptions = {}) => {
   const meta = {};
-  const fallbackModel = modelOptions?.fallbackModel || (modelName === PRIMARY_MODEL ? SMART_MODEL : null);
+  /* A CHAIN, NOT A NAME. One fallback means one more single point of failure:
+   * if the head model and its single recovery are both unavailable, the turn
+   * is lost after the council has already deliberated and been paid for.
+   * Entries may be a bare model id or `{model, reasoning}` — the recovery
+   * attempt's reasoning effort is part of the recovery decision, not the
+   * caller's original one. */
+  const fallbackChain = (
+    modelOptions?.fallbackModels
+    || (modelOptions?.fallbackModel ? [modelOptions.fallbackModel] : null)
+    || (modelName === PRIMARY_MODEL ? [SMART_MODEL] : [])
+  )
+    .map((entry) => (typeof entry === 'string' ? { model: entry, reasoning: { exclude: true } } : entry))
+    .filter((entry) => entry?.model && entry.model !== modelName);
+  const fallbackModel = fallbackChain[0]?.model || null;
   try { modelOptions?.onModelUsed?.(modelName); } catch { /* diagnostics must never fail a turn */ }
   try {
     return await streamOnce(res, modelName, messages, temperature, signal, maxTokens, meta, answerOptions, turnDeadlineAt, modelOptions);
@@ -692,20 +741,33 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
      * callModel. Do not create a competing stream latch or spend a fallback
      * request that the same daily gate must reject. */
     if (err.status === 429 && err.limitSource === 'openrouter_free_tier_daily') throw err;
-    console.warn(`[STREAM] ${modelName} failed before writing anything (${err.message}). Falling back to ${fallbackModel}.`);
-    try { modelOptions?.onModelUsed?.(fallbackModel); } catch { /* diagnostics must never fail a turn */ }
-    return await streamOnce(
-      res,
-      fallbackModel,
-      messages,
-      temperature,
-      signal,
-      maxTokens,
-      {},
-      answerOptions,
-      turnDeadlineAt,
-      { ...modelOptions, reasoning: { exclude: true } },
-    );
+    let lastError = err;
+    for (const entry of fallbackChain) {
+      console.warn(`[STREAM] ${modelName} failed before writing anything (${lastError.message}). Falling back to ${entry.model}.`);
+      try { modelOptions?.onModelUsed?.(entry.model); } catch { /* diagnostics must never fail a turn */ }
+      const attemptMeta = {};
+      try {
+        return await streamOnce(
+          res,
+          entry.model,
+          messages,
+          temperature,
+          signal,
+          maxTokens,
+          attemptMeta,
+          answerOptions,
+          turnDeadlineAt,
+          { ...modelOptions, reasoning: entry.reasoning || { exclude: true } },
+        );
+      } catch (fallbackErr) {
+        lastError = fallbackErr;
+        /* The same two refusals as above, re-checked per attempt: a recovery
+         * that wrote half an answer cannot be followed by another one, and a
+         * cancelled turn is not a failed one. */
+        if (signal?.aborted || (attemptMeta.emitted || []).join('').length > 0) throw fallbackErr;
+      }
+    }
+    throw lastError;
   }
 };
 
@@ -4795,7 +4857,7 @@ async function handleCouncilTurn(req, res) {
       });
       const searchSynthesisOptions = {
         ...(searchSynthesis.highEffort ? { reasoning: { effort: 'high', exclude: true } } : {}),
-        ...(searchSynthesis.model !== PRIMARY_MODEL ? { fallbackModel: SMART_MODEL } : {}),
+        ...(searchSynthesis.model !== PRIMARY_MODEL ? { fallbackModels: HEAD_FALLBACKS } : {}),
       };
       let searchSynthesisModelUsed = searchSynthesis.model;
       searchSynthesisOptions.onModelUsed = (model) => { searchSynthesisModelUsed = model; };
@@ -4846,7 +4908,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         });
         const wikiSynthesisOptions = {
           ...(wikiSynthesis.highEffort ? { reasoning: { effort: 'high', exclude: true } } : {}),
-          ...(wikiSynthesis.model !== PRIMARY_MODEL ? { fallbackModel: SMART_MODEL } : {}),
+          ...(wikiSynthesis.model !== PRIMARY_MODEL ? { fallbackModels: HEAD_FALLBACKS } : {}),
         };
         let wikiSynthesisModelUsed = wikiSynthesis.model;
         wikiSynthesisOptions.onModelUsed = (model) => { wikiSynthesisModelUsed = model; };
@@ -5022,8 +5084,15 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       const nativeSeat = selection.toolSeatModel
         ? createNativeToolSeat({
             model: selection.toolSeatModel,
+            /* Laddered: the seat's own model first, then the rungs below it.
+             * A tool round that dies with its provider ends a turn that has
+             * already paid for its searches. */
             callModel: (m, msgs, temp, ms, tokens, sig, opts) =>
-              meteredCallModel(m, msgs, temp, ms, tokens, sig, { ...opts, phase: 'tool_seat' }),
+              callModelWithLadder(
+                m,
+                (model) => meteredCallModel(model, msgs, temp, ms, tokens, sig, { ...opts, phase: 'tool_seat' }),
+                { label: 'TOOLS', signal: sig },
+              ),
             registry,
             effort: TOOL_SEAT_EFFORT,
             onUsage: (usage) => telemetry.recordUsage(usage, { phase: 'tool_seat' }),
@@ -5392,7 +5461,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     });
     const synthesisOptions = {
       ...(synthesis.highEffort ? { reasoning: { effort: 'high', exclude: true } } : {}),
-      ...(synthesis.model !== PRIMARY_MODEL ? { fallbackModel: SMART_MODEL } : {}),
+      ...(synthesis.model !== PRIMARY_MODEL ? { fallbackModels: HEAD_FALLBACKS } : {}),
     };
     let synthesisModelUsed = synthesis.model;
     synthesisOptions.onModelUsed = (model) => { synthesisModelUsed = model; };

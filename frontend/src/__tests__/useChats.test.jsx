@@ -291,6 +291,157 @@ describe("useChats", () => {
     expect(shown).toBe(1);
   });
 
+  it("resumes the same turn after a transport drop without posting a second council turn", async () => {
+    let councilReads = 0;
+    const fetchImpl = vi.fn(async (url) => {
+      if (String(url).includes("/api/chat-title")) {
+        return { ok: true, json: async () => ({ title: null }) };
+      }
+      if (String(url).includes("/api/council")) {
+        return {
+          ok: true,
+          body: {
+            getReader: () => ({
+              read: async () => {
+                councilReads += 1;
+                if (councilReads === 1) {
+                  return {
+                    done: false,
+                    value: new TextEncoder().encode('data: {"type":"chunk","text":"Hello"}\n'),
+                  };
+                }
+                throw new TypeError("network connection lost");
+              },
+            }),
+          },
+        };
+      }
+      return {
+        ok: true,
+        body: sseStream([
+          'data: {"type":"chunk","text":" world"}\n',
+          "data: [DONE]\n",
+        ]),
+      };
+    });
+
+    const { result } = setup({ fetchImpl });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.send("continue");
+    });
+
+    expect(councilCalls(fetchImpl)).toHaveLength(1);
+    const resumes = fetchImpl.mock.calls.filter(([url]) => String(url).includes("/api/turns/"));
+    expect(resumes).toHaveLength(1);
+    expect(resumes[0][0]).toContain("chars=5");
+    expect(result.current.chats[0].messages.at(-1).content).toBe("Hello world");
+    expect(result.current.status).toBe("idle");
+  });
+
+  it("holds a reconnect while offline and resumes once the online event arrives", async () => {
+    const originalOnline = navigator.onLine;
+    Object.defineProperty(navigator, "onLine", { configurable: true, value: false });
+    let firstRead = true;
+    const fetchImpl = vi.fn(async (url) => {
+      if (String(url).includes("/api/council")) {
+        return {
+          ok: true,
+          body: {
+            getReader: () => ({
+              read: async () => {
+                if (firstRead) {
+                  firstRead = false;
+                  return {
+                    done: false,
+                    value: new TextEncoder().encode('data: {"type":"chunk","text":"Offline-safe"}\n'),
+                  };
+                }
+                throw new TypeError("network connection lost");
+              },
+            }),
+          },
+        };
+      }
+      return { ok: true, body: sseStream(["data: [DONE]\n"]) };
+    });
+
+    try {
+      const { result } = setup({ fetchImpl });
+      await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+
+      let sendPromise;
+      act(() => { sendPromise = result.current.send("wait for network"); });
+      await waitFor(() => expect(result.current.status).toBe("offline"));
+      expect(fetchImpl.mock.calls.filter(([url]) => String(url).includes("/api/turns/")).length).toBe(0);
+
+      Object.defineProperty(navigator, "onLine", { configurable: true, value: true });
+      await act(async () => {
+        window.dispatchEvent(new Event("online"));
+        await sendPromise;
+      });
+
+      expect(fetchImpl.mock.calls.filter(([url]) => String(url).includes("/api/turns/")).length).toBe(1);
+      expect(result.current.status).toBe("idle");
+    } finally {
+      Object.defineProperty(navigator, "onLine", { configurable: true, value: originalOnline });
+    }
+  });
+
+  it("exposes a failed reconnect through messageLoadError and retryMessages", async () => {
+    let councilReads = 0;
+    let resumeAttempts = 0;
+    const transportFailure = () => {
+      throw new TypeError("network connection lost");
+    };
+    const fetchImpl = vi.fn(async (url) => {
+      if (String(url).includes("/api/chat-title")) return { ok: true, json: async () => ({ title: null }) };
+      if (String(url).includes("/api/council")) {
+        return {
+          ok: true,
+          body: {
+            getReader: () => ({
+              read: async () => {
+                councilReads += 1;
+                if (councilReads === 1) {
+                  return {
+                    done: false,
+                    value: new TextEncoder().encode('data: {"type":"chunk","text":"Keep me"}\n'),
+                  };
+                }
+                return transportFailure();
+              },
+            }),
+          },
+        };
+      }
+      resumeAttempts += 1;
+      if (resumeAttempts <= 4) return { ok: true, body: { getReader: () => ({ read: async () => transportFailure() }) } };
+      return { ok: true, body: sseStream(["data: [DONE]\n"]) };
+    });
+
+    const { result } = setup({ fetchImpl });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+    await act(async () => {
+      await result.current.send("retry me");
+    });
+
+    await waitFor(() => expect(result.current.messageLoadError).toBe(true));
+    expect(result.current.status).toBe("error");
+    expect(result.current.streamDraft.content).toContain("Keep me");
+
+    await act(async () => {
+      await result.current.retryMessages();
+    });
+
+    expect(councilCalls(fetchImpl)).toHaveLength(1);
+    expect(resumeAttempts).toBe(5);
+    expect(result.current.chats[0].messages.at(-1).content).toBe("Keep me");
+    expect(result.current.messageLoadError).toBe(false);
+    expect(result.current.status).toBe("idle");
+  });
+
   /* NO TEST FOR THE STALE-DRAFT GUARD, and this is why.
    *
    * `useChats` will not hand back a persisted draft that is no longer the

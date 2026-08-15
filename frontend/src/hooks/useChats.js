@@ -10,6 +10,20 @@ const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "
 /** How much history the council is given. Older turns are summarised server-side. */
 const HISTORY_TURNS = 8;
 const HISTORY_CHARS = 4000;
+/* A reconnect is a read from the durable turn ledger, not a second POST.
+ * Four bounded reads cover a short flap without turning an outage into a
+ * polling loop. The delays apply only while the browser reports a network. */
+const RECONNECT_BACKOFF_MS = [250, 750, 1500];
+const MAX_RECONNECT_ATTEMPTS = RECONNECT_BACKOFF_MS.length + 1;
+
+const asTransportError = (error) => {
+  if (error?.name === "AbortError") return error;
+  const wrapped = new Error(error?.message || "Connection lost");
+  wrapped.transport = true;
+  return wrapped;
+};
+
+const browserIsOffline = () => typeof navigator !== "undefined" && navigator.onLine === false;
 
 /**
  * Chat state: CRUD, ordering, and the council streaming loop.
@@ -40,11 +54,26 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
   const [chatsError, setChatsError] = useState(null);
   const [messageLoadState, setMessageLoadState] = useState({});
   const abortRef = useRef(null);
+  const retryTurnRef = useRef(null);
   const sendInFlightRef = useRef(false);
   const regenerateInFlightRef = useRef(false);
   const chatsRef = useRef(chats);
   const chatVersionsRef = useRef(new Map());
   const loadingMessagesRef = useRef(new Map());
+
+  /* The reader is the source of truth for recovery, but the browser event is
+   * what lets the UI say offline during the gap before that reader rejects. */
+  useEffect(() => {
+    const onOffline = () => {
+      if (!sendInFlightRef.current) return;
+      setStatus("offline");
+      setStreamDraft((previous) => previous
+        ? { ...previous, message: { ...previous.message, turnState: "offline" } }
+        : previous);
+    };
+    window.addEventListener("offline", onOffline);
+    return () => window.removeEventListener("offline", onOffline);
+  }, []);
 
   // Event handlers can outlive the render that created them. Keeping the list
   // here lets a send that waited for a transcript use the response that is
@@ -97,7 +126,10 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
     Boolean(activeChat) &&
     activeChat.messages === undefined &&
     activeMessageLoadState !== "error";
-  const messageLoadError = Boolean(activeChat) && activeChat.messages === undefined && activeMessageLoadState === "error";
+  const messageLoadError = Boolean(activeChat) && (
+    (activeChat.messages === undefined && activeMessageLoadState === "error")
+    || activeMessageLoadState === "turn-error"
+  );
 
   const sortedChatsRef = useRef([]);
 
@@ -403,6 +435,8 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
   const retryMessages = useCallback(
     (chatId = activeChatId) => {
       if (!chatId) return Promise.resolve(null);
+      const turnRetry = retryTurnRef.current;
+      if (turnRetry?.chatId === chatId) return turnRetry.retry();
       return loadMessages(chatId, { force: true });
     },
     [activeChatId, loadMessages]
@@ -880,6 +914,170 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
       // event, and the transcript already re-renders per chunk.
       const activity = [];
 
+      /* One operation id covers the POST and every ledger read. A new POST
+       * would create a new server turn and reserve a second budget, so a
+       * reconnect is deliberately GET-only. */
+      const operationId = newOperationId();
+      let started = false;
+      let stage = null;
+      let turnOperationId = operationId;
+      let reconnectAttempts = 0;
+      let persistCompletedTurn;
+      let failTurn;
+
+      const setTurnState = (next) => {
+        setStatus(next);
+        setStreamDraft((previous) => ({
+          chatId,
+          message: { ...(previous?.message || assistantMsg), turnState: next },
+        }));
+      };
+
+      const waitForOnline = async () => {
+        if (!browserIsOffline()) return;
+        setTurnState("offline");
+        await new Promise((resolve, reject) => {
+          const onOnline = () => { cleanup(); resolve(); };
+          const onAbort = () => { cleanup(); reject(abortRef.current.signal.reason || new DOMException("Aborted", "AbortError")); };
+          const cleanup = () => {
+            window.removeEventListener("online", onOnline);
+            abortRef.current?.signal.removeEventListener("abort", onAbort);
+          };
+          window.addEventListener("online", onOnline, { once: true });
+          abortRef.current?.signal.addEventListener("abort", onAbort, { once: true });
+        });
+      };
+
+      const waitBeforeRetry = (ms) => new Promise((resolve, reject) => {
+        const timer = setTimeout(() => { cleanup(); resolve(); }, ms);
+        const onAbort = () => { clearTimeout(timer); cleanup(); reject(abortRef.current.signal.reason || new DOMException("Aborted", "AbortError")); };
+        const cleanup = () => abortRef.current?.signal.removeEventListener("abort", onAbort);
+        abortRef.current?.signal.addEventListener("abort", onAbort, { once: true });
+      });
+
+      const resumeResponse = async () => {
+        while (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+          await waitForOnline();
+          setTurnState("reconnecting");
+          reconnectAttempts += 1;
+          try {
+            const token = await Promise.race([getToken(), untilAborted(abortRef.current.signal)]);
+            const resumeUrl = `${API_BASE}/api/turns/${operationId}/stream?chars=${encodeURIComponent(acc.length)}`;
+            const response = await fetch(resumeUrl, {
+              headers: { Authorization: `Bearer ${token}` },
+              signal: abortRef.current.signal,
+            });
+            if (!response.ok) {
+              const body = await response.json().catch(() => ({}));
+              throw withOperationId(new Error(body.error || `Resume failed: ${response.status}`), body.operationId || operationId, body.code);
+            }
+            if (!response.body) throw asTransportError(new Error("Resume returned no stream"));
+            return response;
+          } catch (error) {
+            if (error.name === "AbortError") throw error;
+            if (!error.transport) throw error;
+            if (browserIsOffline()) continue;
+            if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) throw error;
+            await waitBeforeRetry(RECONNECT_BACKOFF_MS[reconnectAttempts - 1]);
+          }
+        }
+        throw asTransportError(new Error("Connection could not be restored"));
+      };
+
+      const consumeResume = async (response) => {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let complete = false;
+        while (!complete) {
+          let chunk;
+          try { chunk = await reader.read(); } catch (error) { throw asTransportError(error); }
+          if (chunk.done) throw asTransportError(new Error("Resume ended before completion"));
+          buffer += decoder.decode(chunk.value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+          for (const line of lines) {
+            const text = line.trim();
+            if (!text.startsWith("data: ")) continue;
+            const payload = text.slice(6).trim();
+            if (payload === "[DONE]") { complete = true; break; }
+            let frame;
+            try { frame = JSON.parse(payload); } catch { continue; }
+            if (frame.type === "chunk") {
+              started = true;
+              acc += frame.text;
+              setStatus("streaming");
+              setStreamDraft({ chatId, message: { ...assistantMsg, typing: false, content: acc, activity: activity.length ? [...activity] : undefined } });
+            } else if (frame.type === "meta" && frame.operationId) {
+              turnOperationId = frame.operationId;
+            } else if (frame.type === "stage" && !started) {
+              stage = frame.text;
+              setStreamDraft({ chatId, message: { ...assistantMsg, typing: true, content: "", stage } });
+            } else if (frame.type === "error") {
+              throw withOperationId(new Error(frame.text), frame.operationId || turnOperationId, frame.code);
+            }
+          }
+        }
+      };
+
+      const resumeTurn = async () => {
+        while (true) {
+          try {
+            await consumeResume(await resumeResponse());
+            return;
+          } catch (error) {
+            if (!error.transport || error.name === "AbortError") throw error;
+            if (reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) throw error;
+          }
+        }
+      };
+
+      const retryTurn = async () => {
+        reconnectAttempts = 0;
+        setMessageLoadState((previous) => ({ ...previous, [chatId]: "loading" }));
+        try {
+          await resumeTurn();
+          await persistCompletedTurn();
+        } catch (error) {
+          if (error.name === "AbortError") throw error;
+          failTurn(error);
+        }
+      };
+
+      const markFailedTurn = (error) => {
+        if (painterRef) { clearInterval(painterRef); painterRef = null; }
+        const failedMessage = {
+          ...assistantMsg,
+          typing: false,
+          content: acc || "The connection ended before an answer arrived.",
+          retryable: true,
+          turnState: "error",
+        };
+        retryTurnRef.current = { chatId, retry: retryTurn };
+        setStreamDraft({ chatId, message: failedMessage, persisted: false });
+        setMessageLoadState((previous) => ({ ...previous, [chatId]: "turn-error" }));
+        setStatus("error");
+        sendInFlightRef.current = false;
+        console.error(error?.message || "Connection lost");
+      };
+      failTurn = markFailedTurn;
+
+      persistCompletedTurn = async () => {
+        const finalMessage = { ...assistantMsg, typing: false, content: acc, activity: activity.length ? [...activity] : undefined };
+        setStreamDraft({ chatId, message: finalMessage, persisted: true });
+        const saved = await updateChatMessages(chatId, [...updated, finalMessage]);
+        if (!saved) {
+          setStreamDraft(null);
+          sendInFlightRef.current = false;
+          setStatus("idle");
+          return;
+        }
+        retryTurnRef.current = null;
+        setMessageLoadState((previous) => ({ ...previous, [chatId]: "loaded" }));
+        sendInFlightRef.current = false;
+        setStatus("idle");
+      };
+
       try {
         // Raced against the abort signal, NOT awaited bare. `getToken()` is
         // not a fetch, so `abortRef` cannot cancel it — and this happens
@@ -896,8 +1094,9 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
          * replaced — a server-minted id changes on every request, so the one
          * question worth asking of a failed turn ("what else did this user try
          * in the same breath?") cannot be answered from it. */
-        const operationId = newOperationId();
-        const res = await fetch(`${API_BASE}/api/council`, {
+        let res;
+        try {
+          res = await fetch(`${API_BASE}/api/council`, {
           method: "POST",
           headers: {
             Authorization: `Bearer ${token}`,
@@ -906,7 +1105,11 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
           },
           body: JSON.stringify({ message: cleanText, history, chatId, timezone: clientTimezone(), ...(image ? { image } : {}) }),
           signal: abortRef.current.signal,
-        });
+          });
+        } catch (error) {
+          if (error.name === "AbortError") throw error;
+          throw asTransportError(error);
+        }
 
         if (!res.ok) {
           const d = await res.json().catch(() => ({}));
@@ -922,7 +1125,7 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
             d.code,
           );
         }
-        if (!res.body) throw new Error("No stream");
+        if (!res.body) throw asTransportError(new Error("No stream"));
 
         /* NOT "streaming" yet, and this is the half of the progress feature
          * that has to move with the other half.
@@ -936,13 +1139,10 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
          *
          * The state changes on the first CHUNK now. Until then the placeholder
          * stays and carries whatever the server last said it was doing. */
-        let started = false;
-        let stage = null;
         /* The server echoes the id it settled on as the first SSE frame. It is
          * normally the one sent above; it differs if a proxy rewrote the header
          * or the value failed the server's UUID check and was replaced. Prefer
          * the server's — it is the one written into the logs. */
-        let turnOperationId = operationId;
         const paintPending = () =>
           setStreamDraft({
             chatId,
@@ -992,6 +1192,7 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
         const decoder = new TextDecoder();
         let buf = "";
         let done = false;
+        let sawDone = false;
 
         /** Put a given amount of the answer on screen. */
         let painted = null;
@@ -1030,8 +1231,12 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
         painterRef = setInterval(() => paint(reveal.tick()), 16);
 
         while (!done) {
-          const chunk = await reader.read();
-          if (chunk.done) break;
+          let chunk;
+          try { chunk = await reader.read(); } catch (error) { throw asTransportError(error); }
+          if (chunk.done) {
+            if (!sawDone) throw asTransportError(new Error("Stream ended before completion"));
+            break;
+          }
 
           buf += decoder.decode(chunk.value, { stream: true });
           const lines = buf.split("\n");
@@ -1042,6 +1247,7 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
             if (!t.startsWith("data: ")) continue;
             const payload = t.slice(6).trim();
             if (payload === "[DONE]") {
+              sawDone = true;
               done = true;
               break;
             }
@@ -1170,8 +1376,29 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
             await updateChatMessages(chatId, updated);
           }
           sendInFlightRef.current = false;
+          retryTurnRef.current = null;
           setStatus("idle");
           return;
+        }
+
+        if (err.transport) {
+          try {
+            reconnectAttempts = 0;
+            await resumeTurn();
+            await persistCompletedTurn();
+            return;
+          } catch (reconnectError) {
+            if (reconnectError.name === "AbortError") {
+              sendInFlightRef.current = false;
+              setStatus("idle");
+              return;
+            }
+            if (reconnectError.transport) {
+              failTurn(reconnectError);
+              return;
+            }
+            err = reconnectError;
+          }
         }
 
         sendInFlightRef.current = false;

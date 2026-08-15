@@ -529,7 +529,7 @@ export default function MessageList({
   // their history having been deleted. On a cold backend that lasts twenty
   // seconds.
   if (isLoadingMessages) return <MessageSkeleton />;
-  if (messageLoadError) {
+  if (messageLoadError && !streamDraft?.retryable) {
     return (
       <div className="empty-state message-load-error" role="alert">
         <p>Couldn&apos;t load this conversation.</p>
@@ -561,6 +561,25 @@ export default function MessageList({
           onFeedback={onFeedback}
           feedback={feedback[streamDraft.id]}
         />
+      )}
+
+      {status === "reconnecting" && (
+        <div className="empty-state message-load-error" aria-live="polite">
+          <p>Connection lost. Reconnecting...</p>
+        </div>
+      )}
+      {status === "offline" && (
+        <div className="empty-state message-load-error" aria-live="polite">
+          <p>You&apos;re offline. Waiting for the connection...</p>
+        </div>
+      )}
+      {messageLoadError && streamDraft?.retryable && (
+        <div className="empty-state message-load-error" role="alert">
+          <p>The answer paused before it finished.</p>
+          <button className="input-btn primary" onClick={onRetryMessages}>
+            Retry
+          </button>
+        </div>
       )}
 
       {/* THE WAIT BEFORE THE WAIT.

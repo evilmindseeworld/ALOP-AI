@@ -64,6 +64,34 @@ describe("MessageList", () => {
     expect(document.querySelector(".starter-grid")).not.toBeInTheDocument();
   });
 
+  it("keeps a partial answer visible and routes a failed turn through Retry", async () => {
+    const onRetryMessages = vi.fn();
+    renderList({
+      messages: [{ id: "u1", role: "user", content: "Continue", ts: "10:04" }],
+      streamDraft: { id: "a2", role: "assistant", content: "Partial answer", retryable: true },
+      messageLoadError: true,
+      status: "error",
+      onRetryMessages,
+    });
+
+    expect(screen.getByText("Partial answer")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("paused before it finished");
+    await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+    expect(onRetryMessages).toHaveBeenCalled();
+  });
+
+  it.each([
+    ["reconnecting", "Connection lost. Reconnecting..."],
+    ["offline", "You're offline. Waiting for the connection..."],
+  ])("shows the %s turn state", (status, text) => {
+    renderList({
+      messages: [{ id: "u1", role: "user", content: "Continue", ts: "10:04" }],
+      streamDraft: { id: "a2", role: "assistant", content: "Partial answer" },
+      status,
+    });
+    expect(screen.getByText(text)).toBeInTheDocument();
+  });
+
   it("gives only the assistant an avatar", () => {
     // A right-aligned filled pill is already unmistakably yours. An avatar, a
     // role label AND the alignment are three ways of saying the same thing.

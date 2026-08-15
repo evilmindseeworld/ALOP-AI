@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { resolveLanguage } from "../components/CodeBlock";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 /**
  * PrismLight registers a fixed set of grammars instead of shipping every
@@ -9,6 +11,12 @@ import { resolveLanguage } from "../components/CodeBlock";
  * silently render flat despite bash and yaml both being available.
  */
 describe("resolveLanguage", () => {
+  it("loads grammars dynamically instead of importing every grammar into the code chunk", () => {
+    const source = readFileSync(join(process.cwd(), "src/components/CodeBlock.jsx"), "utf8");
+    expect(source).not.toMatch(/^import .*languages\/prism\//m);
+    expect(source).toMatch(/import\([^)]*languages\/prism\//);
+  });
+
   it("passes through languages that are registered", () => {
     for (const lang of ["javascript", "python", "rust", "sql", "yaml", "bash"]) {
       expect(resolveLanguage(lang)).toBe(lang);

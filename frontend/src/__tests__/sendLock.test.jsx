@@ -47,15 +47,24 @@ const setup = () => {
 
   // A council response that completes immediately, so a successful send is
   // genuinely finished rather than left mid-stream.
-  global.fetch = vi.fn(async () => ({
-    ok: true,
-    body: {
-      getReader: () => ({
-        read: async () => ({ done: true, value: undefined }),
-      }),
-    },
-    json: async () => ({}),
-  }));
+  global.fetch = vi.fn(async () => {
+    let firstRead = true;
+    return {
+      ok: true,
+      body: {
+        getReader: () => ({
+          read: async () => {
+            if (firstRead) {
+              firstRead = false;
+              return { done: false, value: new TextEncoder().encode("data: [DONE]\n") };
+            }
+            return { done: true, value: undefined };
+          },
+        }),
+      },
+      json: async () => ({}),
+    };
+  });
 
   const hook = renderHook(() =>
     useChats({ apiCall, getToken: async () => "token", isReady: true, setToast })

@@ -1,56 +1,63 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
-// PrismLight, not Prism. The full Prism build bundles a grammar for every
-// language it knows — ~627kB minified. PrismLight ships the core and lets you
-// register only what you need.
-//
-// The list below is what a coding assistant actually emits. Anything not
-// registered still renders in the styled block, just without token colouring —
-// a graceful degradation, not an error. Add a language here if you find one
-// rendering flat.
-import bash from "react-syntax-highlighter/dist/esm/languages/prism/bash";
-import c from "react-syntax-highlighter/dist/esm/languages/prism/c";
-import cpp from "react-syntax-highlighter/dist/esm/languages/prism/cpp";
-import csharp from "react-syntax-highlighter/dist/esm/languages/prism/csharp";
-import css from "react-syntax-highlighter/dist/esm/languages/prism/css";
-import diff from "react-syntax-highlighter/dist/esm/languages/prism/diff";
-import docker from "react-syntax-highlighter/dist/esm/languages/prism/docker";
-import go from "react-syntax-highlighter/dist/esm/languages/prism/go";
-import graphql from "react-syntax-highlighter/dist/esm/languages/prism/graphql";
-import ini from "react-syntax-highlighter/dist/esm/languages/prism/ini";
-import java from "react-syntax-highlighter/dist/esm/languages/prism/java";
-import javascript from "react-syntax-highlighter/dist/esm/languages/prism/javascript";
-import json from "react-syntax-highlighter/dist/esm/languages/prism/json";
-import jsx from "react-syntax-highlighter/dist/esm/languages/prism/jsx";
-import kotlin from "react-syntax-highlighter/dist/esm/languages/prism/kotlin";
-import markdown from "react-syntax-highlighter/dist/esm/languages/prism/markdown";
-import markup from "react-syntax-highlighter/dist/esm/languages/prism/markup";
-import php from "react-syntax-highlighter/dist/esm/languages/prism/php";
-import powershell from "react-syntax-highlighter/dist/esm/languages/prism/powershell";
-import python from "react-syntax-highlighter/dist/esm/languages/prism/python";
-import ruby from "react-syntax-highlighter/dist/esm/languages/prism/ruby";
-import rust from "react-syntax-highlighter/dist/esm/languages/prism/rust";
-import sql from "react-syntax-highlighter/dist/esm/languages/prism/sql";
-import swift from "react-syntax-highlighter/dist/esm/languages/prism/swift";
-import toml from "react-syntax-highlighter/dist/esm/languages/prism/toml";
-import tsx from "react-syntax-highlighter/dist/esm/languages/prism/tsx";
-import typescript from "react-syntax-highlighter/dist/esm/languages/prism/typescript";
-import yaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
-
-const LANGUAGES = {
-  bash, c, cpp, csharp, css, diff, docker, go, graphql, ini, java, javascript,
-  json, jsx, kotlin, markdown, markup, php, powershell, python, ruby, rust,
-  sql, swift, toml, tsx, typescript, yaml,
+// The highlighter module is already behind MessageList's lazy boundary. Keep
+// its grammars behind a second boundary too: a Python answer should not fetch
+// 25 unrelated grammars just because it contains one fenced block.
+const LANGUAGE_LOADERS = {
+  bash: () => import("react-syntax-highlighter/dist/esm/languages/prism/bash").then((m) => m.default),
+  c: () => import("react-syntax-highlighter/dist/esm/languages/prism/c").then((m) => m.default),
+  cpp: () => import("react-syntax-highlighter/dist/esm/languages/prism/cpp").then((m) => m.default),
+  csharp: () => import("react-syntax-highlighter/dist/esm/languages/prism/csharp").then((m) => m.default),
+  css: () => import("react-syntax-highlighter/dist/esm/languages/prism/css").then((m) => m.default),
+  diff: () => import("react-syntax-highlighter/dist/esm/languages/prism/diff").then((m) => m.default),
+  docker: () => import("react-syntax-highlighter/dist/esm/languages/prism/docker").then((m) => m.default),
+  go: () => import("react-syntax-highlighter/dist/esm/languages/prism/go").then((m) => m.default),
+  graphql: () => import("react-syntax-highlighter/dist/esm/languages/prism/graphql").then((m) => m.default),
+  ini: () => import("react-syntax-highlighter/dist/esm/languages/prism/ini").then((m) => m.default),
+  java: () => import("react-syntax-highlighter/dist/esm/languages/prism/java").then((m) => m.default),
+  javascript: () => import("react-syntax-highlighter/dist/esm/languages/prism/javascript").then((m) => m.default),
+  json: () => import("react-syntax-highlighter/dist/esm/languages/prism/json").then((m) => m.default),
+  jsx: () => import("react-syntax-highlighter/dist/esm/languages/prism/jsx").then((m) => m.default),
+  kotlin: () => import("react-syntax-highlighter/dist/esm/languages/prism/kotlin").then((m) => m.default),
+  markdown: () => import("react-syntax-highlighter/dist/esm/languages/prism/markdown").then((m) => m.default),
+  markup: () => import("react-syntax-highlighter/dist/esm/languages/prism/markup").then((m) => m.default),
+  php: () => import("react-syntax-highlighter/dist/esm/languages/prism/php").then((m) => m.default),
+  powershell: () => import("react-syntax-highlighter/dist/esm/languages/prism/powershell").then((m) => m.default),
+  python: () => import("react-syntax-highlighter/dist/esm/languages/prism/python").then((m) => m.default),
+  ruby: () => import("react-syntax-highlighter/dist/esm/languages/prism/ruby").then((m) => m.default),
+  rust: () => import("react-syntax-highlighter/dist/esm/languages/prism/rust").then((m) => m.default),
+  sql: () => import("react-syntax-highlighter/dist/esm/languages/prism/sql").then((m) => m.default),
+  swift: () => import("react-syntax-highlighter/dist/esm/languages/prism/swift").then((m) => m.default),
+  toml: () => import("react-syntax-highlighter/dist/esm/languages/prism/toml").then((m) => m.default),
+  tsx: () => import("react-syntax-highlighter/dist/esm/languages/prism/tsx").then((m) => m.default),
+  typescript: () => import("react-syntax-highlighter/dist/esm/languages/prism/typescript").then((m) => m.default),
+  yaml: () => import("react-syntax-highlighter/dist/esm/languages/prism/yaml").then((m) => m.default),
 };
 
-for (const [name, definition] of Object.entries(LANGUAGES)) {
-  SyntaxHighlighter.registerLanguage(name, definition);
-}
+const loadedLanguages = new Set();
+const pendingLanguages = new Map();
 
-// Fences are written with whatever alias the model felt like. Mapping them
-// here means ```sh and ```yml highlight instead of silently rendering flat.
+const loadLanguage = (language) => {
+  if (loadedLanguages.has(language)) return Promise.resolve();
+  if (!LANGUAGE_LOADERS[language]) return Promise.resolve();
+  if (!pendingLanguages.has(language)) {
+    pendingLanguages.set(
+      language,
+      LANGUAGE_LOADERS[language]()
+        .then((definition) => {
+          SyntaxHighlighter.registerLanguage(language, definition);
+          loadedLanguages.add(language);
+        })
+        .catch(() => {})
+        .finally(() => pendingLanguages.delete(language)),
+    );
+  }
+  return pendingLanguages.get(language);
+};
+
+// Fences are written with whatever alias the model felt like.
 const ALIASES = {
   sh: "bash", shell: "bash", zsh: "bash", console: "bash",
   js: "javascript", mjs: "javascript", cjs: "javascript", node: "javascript",
@@ -64,28 +71,35 @@ export const resolveLanguage = (raw) => {
   const key = (raw || "").toLowerCase().trim();
   if (!key) return "text";
   const resolved = ALIASES[key] || key;
-  return resolved in LANGUAGES ? resolved : "text";
+  return resolved in LANGUAGE_LOADERS ? resolved : "text";
 };
 
-/**
- * Syntax-highlighted code block.
- *
- * Lives in its own module so it can be lazy-loaded — it is by far the largest
- * thing in the app, yet it is only needed once a reply actually contains a
- * fenced code block.
- */
+/** Syntax-highlighted code block. The plain fallback keeps its box stable. */
 export default function CodeBlock({ language, code, ...props }) {
   const [copied, setCopied] = useState(false);
+  const resolvedLanguage = resolveLanguage(language);
+  const [languageReady, setLanguageReady] = useState(() => loadedLanguages.has(resolvedLanguage));
 
-  // The old button gave no feedback at all, so on a slow clipboard write you
-  // could not tell whether the click had registered.
+  useEffect(() => {
+    let active = true;
+    if (resolvedLanguage === "text" || loadedLanguages.has(resolvedLanguage)) {
+      setLanguageReady(true);
+    } else {
+      setLanguageReady(false);
+      loadLanguage(resolvedLanguage).then(() => {
+        if (active) setLanguageReady(true);
+      });
+    }
+    return () => { active = false; };
+  }, [resolvedLanguage]);
+
   const copy = useCallback(() => {
     navigator.clipboard.writeText(code).then(
       () => {
         setCopied(true);
         setTimeout(() => setCopied(false), 1600);
       },
-      () => setCopied(false)
+      () => setCopied(false),
     );
   }, [code]);
 
@@ -94,7 +108,7 @@ export default function CodeBlock({ language, code, ...props }) {
       <button className={`code-copy-btn ${copied ? "is-copied" : ""}`} onClick={copy}>
         {copied ? "Copied" : "Copy"}
       </button>
-      <SyntaxHighlighter style={oneDark} language={resolveLanguage(language)} PreTag="div" {...props}>
+      <SyntaxHighlighter style={oneDark} language={languageReady ? resolvedLanguage : "text"} PreTag="div" {...props}>
         {code}
       </SyntaxHighlighter>
     </div>

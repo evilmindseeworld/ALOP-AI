@@ -137,7 +137,7 @@ const GOOGLE_SEARCH_API_KEY = process.env.GOOGLE_SEARCH_API_KEY || null;
 const GOOGLE_CSE_ID = process.env.GOOGLE_CSE_ID || null;
 
 const stripe = STRIPE_ENABLED ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2024-06-20' }) : null;
-const requireStripe = (req, res, next) => STRIPE_ENABLED ? next() : res.status(503).json({ error: 'Billing is not configured on this server.' });
+const requireStripe = (req, res, next) => STRIPE_ENABLED ? next() : fail(res, 503, 'Billing is not configured on this server.');
 /* OpenRouter, not the old Ollama-shaped gateway. The HOST is defaulted and is
  * NOT in requiredEnv, which is a deliberate difference from OLLAMA_HOST: that
  * was a private gateway whose address only the deploy knew, so booting without
@@ -1291,7 +1291,7 @@ const { createGreetingCache } = require('./lib/greeting-cache');
 const { createTtlCache } = require('./lib/ttl-cache');
 const { boundedPage, pageInfo } = require('./lib/pagination');
 const { noStoreApi } = require('./lib/http-cache');
-const { errorEnvelope, sendError } = require('./lib/error-envelope');
+const { errorEnvelope, sendError, fail } = require('./lib/error-envelope');
 const { resolveStripeTarget } = require('./lib/stripe-identity');
 const { detectRegion, regionHint } = require('./lib/region');
 const { firstWithResults, toolMessages, summariseProbe, searchResultUrls, requiredCitationSuffix, UNTRUSTED_PREAMBLE } = require('./lib/council-tools');
@@ -1314,7 +1314,7 @@ const { prepareUpload, UploadRejected, MAX_FILES_PER_CHAT } = require('./lib/fil
 // this for its own :id; these are the params it does not cover.
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const uuidParam = (name = 'id') => (req, res, next) =>
-  UUID_RE.test(req.params[name] || '') ? next() : res.status(400).json({ error: 'Invalid ID' });
+  UUID_RE.test(req.params[name] || '') ? next() : fail(res, 400, 'Invalid ID');
 
 const fileStoreFor = (userId, chatId) => ({
   list: async ({ signal } = {}) => {
@@ -2524,7 +2524,7 @@ app.post('/api/stripe/webhook', requireStripe, express.raw({ type: 'application/
 
 app.use(compression({ filter: sseAwareFilter }));
 app.use(timeout('300s'));
-app.use((req, res, next) => { if (req.timedout) return res.status(503).json({ error: 'Timeout' }); next(); });
+app.use((req, res, next) => { if (req.timedout) return fail(res, 503, 'Timeout'); next(); });
 
 // The key must not contain anything the caller chooses. It used to hash the
 // User-Agent in, which handed every caller unlimited buckets — see
@@ -2567,7 +2567,7 @@ const createLimiter = (windowMs, max, msg, name) => {
   return rateLimit({
     windowMs, max, message: { error: msg }, standardHeaders: true, legacyHeaders: false,
     keyGenerator: (req, res) => rateLimitKey(req, res, rateLimit.ipKeyGenerator),
-    handler: (req, res) => { res.status(429).json({ error: msg }); },
+    handler: (req, res) => { fail(res, 429, msg); },
     // A store instance per limiter, because each carries its own window.
     // The arrow defers dereferencing `supabase`, which is declared BELOW this
     // point — the limiters are registered before the client exists. It is only
@@ -3002,12 +3002,12 @@ const ensureUser = async (userId, { cached } = {}) => {
  * cannot be undone by this request caching the row it fetched a moment before.
  * Clearing an empty cache does nothing to a read that has not landed yet;
  * without this the clear would be silently reverted for a full TTL. */
-const checkSuspended = async (req, res, next) => { try { if (!req.auth || !req.auth.userId) return res.status(401).json({ error: 'Not authenticated' }); let user = userRowCache.get(req.auth.userId); if (user === undefined) { const generation = userRowCache.generation; const { data, error } = await supabase.from('users').select('*').eq('clerk_id', req.auth.userId).single(); if (error && error.code !== 'PGRST116') throw error; user = data || null; if (user) userRowCache.setIfCurrent(req.auth.userId, user, generation); } if (user && user.suspended) return res.status(403).json({ error: 'Account suspended' }); req.userRow = user || null; req.userPlan = user?.plan || 'free'; next(); } catch (err) { Sentry.captureException(err); return res.status(500).json({ error: 'Verify failed' }); } };
-const requireOwnership = (table, col = 'user_id') => async (req, res, next) => { try { if (!req.auth || !req.auth.userId) return res.status(401).json({ error: 'Not authenticated' }); const user = await ensureUser(req.auth.userId); const id = req.params.id; if (!id || typeof id !== 'string') return res.status(400).json({ error: 'ID required' }); if (!/^[0-9a-fA-F-]{36}$/.test(id)) return res.status(400).json({ error: 'Invalid ID' }); const { data: resource, error } = await supabase.from(table).select(col).eq('id', id).single(); if (error || !resource) return res.status(404).json({ error: 'Not found' }); if (resource[col] !== user.id) return res.status(403).json({ error: 'No permission' }); req.resource = resource; next(); } catch (err) { Sentry.captureException(err); return res.status(500).json({ error: 'Ownership check failed' }); } };
+const checkSuspended = async (req, res, next) => { try { if (!req.auth || !req.auth.userId) return fail(res, 401, 'Not authenticated'); let user = userRowCache.get(req.auth.userId); if (user === undefined) { const generation = userRowCache.generation; const { data, error } = await supabase.from('users').select('*').eq('clerk_id', req.auth.userId).single(); if (error && error.code !== 'PGRST116') throw error; user = data || null; if (user) userRowCache.setIfCurrent(req.auth.userId, user, generation); } if (user && user.suspended) return fail(res, 403, 'Account suspended'); req.userRow = user || null; req.userPlan = user?.plan || 'free'; next(); } catch (err) { Sentry.captureException(err); return fail(res, 500, 'Verify failed'); } };
+const requireOwnership = (table, col = 'user_id') => async (req, res, next) => { try { if (!req.auth || !req.auth.userId) return fail(res, 401, 'Not authenticated'); const user = await ensureUser(req.auth.userId); const id = req.params.id; if (!id || typeof id !== 'string') return fail(res, 400, 'ID required'); if (!/^[0-9a-fA-F-]{36}$/.test(id)) return fail(res, 400, 'Invalid ID'); const { data: resource, error } = await supabase.from(table).select(col).eq('id', id).single(); if (error || !resource) return fail(res, 404, 'Not found'); if (resource[col] !== user.id) return fail(res, 403, 'No permission'); req.resource = resource; next(); } catch (err) { Sentry.captureException(err); return fail(res, 500, 'Ownership check failed'); } };
 // Selects `id` as well as `is_admin` so downstream handlers can record WHICH
 // admin acted, and can compare against a :id param — both are Supabase user
 // ids. req.auth.userId is a Clerk id and is not comparable to either.
-const requireAdmin = async (req, res, next) => { try { if (!req.auth || !req.auth.userId) return res.status(401).json({ error: 'Not authenticated' }); const { data: user, error } = await supabase.from('users').select('id,is_admin,suspended').eq('clerk_id', req.auth.userId).single(); if (error) throw error; if (!user || !user.is_admin) return res.status(403).json({ error: 'Admin only' }); if (user.suspended) return res.status(403).json({ error: 'Account suspended' }); req.adminUserId = user.id; next(); } catch (err) { Sentry.captureException(err); res.status(500).json({ error: 'Admin check failed' }); } };
+const requireAdmin = async (req, res, next) => { try { if (!req.auth || !req.auth.userId) return fail(res, 401, 'Not authenticated'); const { data: user, error } = await supabase.from('users').select('id,is_admin,suspended').eq('clerk_id', req.auth.userId).single(); if (error) throw error; if (!user || !user.is_admin) return fail(res, 403, 'Admin only'); if (user.suspended) return fail(res, 403, 'Account suspended'); req.adminUserId = user.id; next(); } catch (err) { Sentry.captureException(err); fail(res, 500, 'Admin check failed'); } };
 // ip_address was hardcoded to null, so the audit trail could say what happened
 // and to whom but never from where — which is the column you want first when
 // you are reading it at all.
@@ -3157,8 +3157,7 @@ const withRequestBudget = async (res, worstCase, work) => {
      * already handles one handles all four, and `reason` is what tells a reader
      * which ceiling fired. */
     res.set('Retry-After', String(secondsUntilUtcMidnight()));
-    res.status(402).json({
-      error: "The council is out of model requests for today. It resets at midnight UTC.",
+    fail(res, 402, "The council is out of model requests for today. It resets at midnight UTC.", 'model_quota_exhausted', {
       reason: 'daily_request_limit',
       usedRequests: budget.used,
       dayRequests: REQUEST_LIMITS.dayRequests,
@@ -3259,13 +3258,13 @@ const resumeLimiter = createLimiter(60_000, 60, 'Too many resume requests.', 're
 const findResumableTurn = async (req, res) => {
   const operationId = req.params.operationId;
   if (!UUID_RE.test(String(operationId || ''))) {
-    res.status(400).json({ error: 'Invalid operation id', code: 'bad_request', operationId: req.operationId });
+    fail(res, 400, 'Invalid operation id');
     return null;
   }
   const user = await ensureUser(req.auth.userId, { cached: req.userRow });
   const row = await turnLedger.findForResume({ operationId, userId: user.id });
   if (!row) {
-    res.status(404).json({ error: 'No turn to resume', code: 'not_found', operationId: req.operationId });
+    fail(res, 404, 'No turn to resume');
     return null;
   }
   return { row, user, operationId };
@@ -3384,8 +3383,7 @@ async function handleCouncilTurn(req, res) {
    * against the validated text, which is the copy that reaches the user. */
   if (dailyLimitActive() && !tryArithmetic(req.body?.message)) {
     res.set('Retry-After', String(Math.max(1, Math.ceil((dailyLimitUntil - Date.now()) / 1000))));
-    return res.status(503).json({
-      error: "The council is out of model requests for today. It resets at midnight UTC.",
+    return fail(res, 503, "The council is out of model requests for today. It resets at midnight UTC.", 'model_quota_exhausted', {
       retryAt: new Date(dailyLimitUntil).toISOString(),
     });
   }
@@ -3527,7 +3525,7 @@ async function handleCouncilTurn(req, res) {
     auditUserId = user.id;
     const { message, history = [], chatId, image, images } = req.body;
     const pv = validatePrompt(message);
-    if (!pv.valid) return res.status(400).json({ error: pv.error });
+    if (!pv.valid) return fail(res, 400, pv.error);
     /* ONE ATTACHMENT OR SEVERAL, ONE SHAPE BELOW.
      *
      * `image` is the field the shipped frontend sends and it keeps working;
@@ -3541,7 +3539,7 @@ async function handleCouncilTurn(req, res) {
      * the user has no way to see the difference. */
     const attachedImages = collectAttachedImages({ image, images });
     if (attachedImages.length > MAX_IMAGES_PER_TURN) {
-      return res.status(400).json({ error: `Attach at most ${MAX_IMAGES_PER_TURN} images per message.` });
+      return fail(res, 400, `Attach at most ${MAX_IMAGES_PER_TURN} images per message.`);
     }
     // Trimmed rather than rejected. The old code returned 400 on a 21st message
     // while silently clipping a 100,000-character one, which is two different
@@ -3757,8 +3755,7 @@ async function handleCouncilTurn(req, res) {
     if (!budget.allowed) {
       telemetry.markCeiling('spend');
       await auditBranch({ category: 'spend_ceiling', dayCents: budget.dayCents, monthCents: budget.monthCents });
-      return res.status(402).json({
-        error: 'Daily or monthly usage limit reached. It resets at midnight UTC.',
+      return fail(res, 402, 'Daily or monthly usage limit reached. It resets at midnight UTC.', 'spend_ceiling_reached', {
         dayCents: budget.dayCents,
         monthCents: budget.monthCents,
       });
@@ -3807,15 +3804,11 @@ async function handleCouncilTurn(req, res) {
        * than hours. A 503 rather than a 402: nothing is wrong with the account. */
       if (requestBudget.degraded) {
         res.set('Retry-After', '60');
-        return res.status(503).json({
-          error: "The council cannot check its request budget right now. Try again in a minute.",
+        return fail(res, 503, "The council cannot check its request budget right now. Try again in a minute.", 'upstream_unavailable', {
           reason: 'request_ledger_degraded',
-          code: 'upstream_unavailable',
-          operationId: req.operationId,
         });
       }
-      return res.status(402).json({
-        error: "The council is out of model requests for today. It resets at midnight UTC.",
+      return fail(res, 402, "The council is out of model requests for today. It resets at midnight UTC.", 'model_quota_exhausted', {
         reason: 'daily_request_limit',
         usedRequests: requestBudget.used,
         dayRequests: REQUEST_LIMITS.dayRequests,
@@ -3950,10 +3943,10 @@ async function handleCouncilTurn(req, res) {
     if (attachedImages.length) {
       for (const dataUrl of attachedImages) {
         const parsed = parseDataUrl(dataUrl);
-        if (!parsed) return res.status(400).json({ error: 'Attached images must be base64-encoded PNG, JPEG, WebP or GIF under 8 MB each.' });
+        if (!parsed) return fail(res, 400, 'Attached images must be base64-encoded PNG, JPEG, WebP or GIF under 8 MB each.');
         parsedImages.push(parsed);
       }
-      if (!GOOGLE_API_KEY) return res.status(503).json({ error: 'Image analysis is not configured on this server.' });
+      if (!GOOGLE_API_KEY) return fail(res, 503, 'Image analysis is not configured on this server.');
       /* START VISION BEFORE THE CONTEXT READS. Summary, feedback and facts do
        * not depend on the image, so waiting for all three Supabase queries
        * before calling Gemini added their full round-trip to every image turn.
@@ -4163,10 +4156,10 @@ async function handleCouncilTurn(req, res) {
     if (parsedImages.length) {
       if (visionResult?.error) {
         console.error('[COUNCIL] Vision failed:', visionResult.error.message);
-        return res.status(502).json({ error: "Couldn't analyse the attached image. Try again, or send the message without it." });
+        return fail(res, 502, "Couldn't analyse the attached image. Try again, or send the message without it.");
       }
       imageContext = visionResult?.text || '';
-      if (!imageContext.trim()) return res.status(502).json({ error: "Couldn't read anything from the attached image." });
+      if (!imageContext.trim()) return fail(res, 502, "Couldn't read anything from the attached image.");
       console.log(`[COUNCIL] Vision: ${parsedImages.length} image(s), ${parsedImages.map((p) => `${p.mime} ${Math.round(p.bytes / 1024)}KB`).join(', ')}`);
     }
 
@@ -5688,7 +5681,7 @@ app.post('/api/overlay', requireAuth, checkSuspended, async (req, res) => {
     const user = await ensureUser(req.auth.userId, { cached: req.userRow });
     const { prompt, image, history = [] } = req.body;
     const pv = validatePrompt(prompt);
-    if (!pv.valid) return res.status(400).json({ error: pv.error });
+    if (!pv.valid) return fail(res, 400, pv.error);
 
     // Vision: only if API key set AND image provided AND not too large
     let ctx = '';
@@ -5788,7 +5781,7 @@ const requireTerminal = async (req, res, next) => {
     userAgent: sanitizeString(req.get('user-agent'), 120) || null,
   }, req.ip);
 
-  if (!verdict.allowed) return res.status(403).json({ error: 'Not available.' });
+  if (!verdict.allowed) return fail(res, 403, 'Not available.');
   req.terminalUserId = userRow ? userRow.id : null;
   next();
 };
@@ -5815,7 +5808,7 @@ app.post('/api/chats/:id/files', requireAuth, checkSuspended, requireOwnership('
     const user = await ensureUser(req.auth.userId);
     const { count } = await supabase.from('chat_files').select('id', { count: 'exact', head: true }).eq('chat_id', req.params.id).eq('user_id', user.id);
     if ((count || 0) >= MAX_FILES_PER_CHAT) {
-      return res.status(409).json({ error: `This conversation already has ${MAX_FILES_PER_CHAT} files.` });
+      return fail(res, 409, `This conversation already has ${MAX_FILES_PER_CHAT} files.`);
     }
 
     // Throws UploadRejected for anything not on the allowlist, anything that
@@ -5838,7 +5831,7 @@ app.post('/api/chats/:id/files', requireAuth, checkSuspended, requireOwnership('
   } catch (err) {
     // A rejected upload is the caller's input, not a server fault, and the
     // message is written to be shown to them verbatim.
-    if (err instanceof UploadRejected) return res.status(400).json({ error: err.message });
+    if (err instanceof UploadRejected) return fail(res, 400, err.message);
     Sentry.captureException(err);
     sendError(res, err);
   }
@@ -5938,20 +5931,20 @@ app.post('/api/image', requireAuth, checkSuspended, async (req, res) => {
   await withRequestBudget(res, 1, async (spend) => {
     try {
       const user = await ensureUser(req.auth.userId, { cached: req.userRow });
-      if (!GOOGLE_API_KEY) return res.status(503).json({ error: 'Image generation is not configured on this server.' });
+      if (!GOOGLE_API_KEY) return fail(res, 503, 'Image generation is not configured on this server.');
       const pv = validatePrompt(req.body?.prompt);
-      if (!pv.valid) return res.status(400).json({ error: pv.error });
+      if (!pv.valid) return fail(res, 400, pv.error);
 
       // Editing: the same attachment rules as a council turn, because it is the
       // same untrusted input arriving through the same door.
       const attached = collectAttachedImages(req.body || {});
       if (attached.length > MAX_IMAGES_PER_TURN) {
-        return res.status(400).json({ error: `Attach at most ${MAX_IMAGES_PER_TURN} images.` });
+        return fail(res, 400, `Attach at most ${MAX_IMAGES_PER_TURN} images.`);
       }
       const inputImages = [];
       for (const dataUrl of attached) {
         const parsed = parseDataUrl(dataUrl);
-        if (!parsed) return res.status(400).json({ error: 'Attached images must be base64-encoded PNG, JPEG, WebP or GIF under 8 MB each.' });
+        if (!parsed) return fail(res, 400, 'Attached images must be base64-encoded PNG, JPEG, WebP or GIF under 8 MB each.');
         inputImages.push({ base64: parsed.base64, mime: parsed.mime });
       }
 
@@ -5973,14 +5966,14 @@ app.post('/api/image', requireAuth, checkSuspended, async (req, res) => {
        * can be told. It is a Google-side string about the user's own prompt,
        * not internal state. */
       console.error('[IMAGE] Failed:', err.message);
-      return res.status(502).json({ error: `Couldn't make that image. ${err.message.replace(/^Gemini [\w.-]+[: ]*/, '')}`.trim() });
+      return fail(res, 502, `Couldn't make that image. ${err.message.replace(/^Gemini [\w.-]+[: ]*/, '')}`.trim());
     }
   });
 });
 
 app.post('/api/speech', requireAuth, checkSuspended, async (req, res) => {
   const text = boundText(req.body?.text);
-  if (!text) return res.status(400).json({ error: 'Nothing to speak.' });
+  if (!text) return fail(res, 400, 'Nothing to speak.');
   try {
     const out = await synthesize(text);
     if (!out.ok) return res.status(out.status).json({ error: out.error });
@@ -5991,7 +5984,7 @@ app.post('/api/speech', requireAuth, checkSuspended, async (req, res) => {
     // Not Sentry-worthy: the client has a working voice either way, and a
     // provider outage would otherwise page for something no user notices.
     console.error('[SPEECH] Failed:', err.message);
-    res.status(502).json({ error: 'Speech provider failed.' });
+    fail(res, 502, 'Speech provider failed.');
   }
 });
 
@@ -6012,7 +6005,7 @@ app.post('/api/feedback', requireAuth, checkSuspended, async (req, res) => {
   try {
     const user = await ensureUser(req.auth.userId);
     const { feedback, question, answer } = req.body;
-    if (!feedback || !['up','down'].includes(feedback)) return res.status(400).json({ error: 'Invalid feedback' });
+    if (!feedback || !['up','down'].includes(feedback)) return fail(res, 400, 'Invalid feedback');
     await auditLog(user.id, 'feedback', { feedback, question: question?.slice(0,500), answer: answer?.slice(0,500) }, req.ip);
     // One row per rating in its own table. These notes used to be appended onto
     // users.conversation_summary, so every thumbs-up ate into the same 2000
@@ -6161,13 +6154,13 @@ app.put('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, re
   try {
     const user = await ensureUser(req.auth.userId);
     const { payload, error: buildErr } = buildChatUpdate(req.body);
-    if (buildErr) return res.status(400).json({ error: buildErr });
-    if (Object.keys(payload).length === 0) return res.status(400).json({ error: 'No updatable fields' });
+    if (buildErr) return fail(res, 400, buildErr);
+    if (Object.keys(payload).length === 0) return fail(res, 400, 'No updatable fields');
 
     if (payload.messages !== undefined) {
       const result = await writeChatMessages(req.params.id, user.id, payload, req.body?.expectedUpdatedAt);
-      if (result.error) return res.status(400).json({ error: result.error });
-      if (result.conflict) return res.status(409).json({ error: 'Chat changed elsewhere. Reload before saving.' });
+      if (result.error) return fail(res, 400, result.error);
+      if (result.conflict) return fail(res, 409, 'Chat changed elsewhere. Reload before saving.');
       return res.json({ ok: true, updated_at: result.updated_at || payload.updated_at });
     }
 
@@ -6210,7 +6203,7 @@ app.get('/api/admin/users', requireAuth, requireAdmin, async (req, res) => { try
 // admin routes did not.
 // (uuidParam is defined above, next to the other route guards.)
 
-app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, uuidParam(), async (req, res) => { try { const { data: t } = await supabase.from('users').select('is_admin,email').eq('id', req.params.id).single(); if (!t) return res.status(404).json({ error: 'Not found' }); if (t.is_admin) return res.status(403).json({ error: 'Cannot suspend admin' }); const { error } = await supabase.from('users').update({ suspended: true }).eq('id', req.params.id); if (error) throw error; invalidateUserRows(); await auditLog(req.adminUserId, 'admin.suspend', { target: req.params.id, targetEmail: t.email }, req.ip); res.json({ suspended: true }); } catch (err) { Sentry.captureException(err); sendError(res, err); } });
+app.post('/api/admin/users/:id/suspend', requireAuth, requireAdmin, uuidParam(), async (req, res) => { try { const { data: t } = await supabase.from('users').select('is_admin,email').eq('id', req.params.id).single(); if (!t) return fail(res, 404, 'Not found'); if (t.is_admin) return fail(res, 403, 'Cannot suspend admin'); const { error } = await supabase.from('users').update({ suspended: true }).eq('id', req.params.id); if (error) throw error; invalidateUserRows(); await auditLog(req.adminUserId, 'admin.suspend', { target: req.params.id, targetEmail: t.email }, req.ip); res.json({ suspended: true }); } catch (err) { Sentry.captureException(err); sendError(res, err); } });
 
 app.post('/api/admin/users/:id/unsuspend', requireAuth, requireAdmin, uuidParam(), async (req, res) => { try { const { error } = await supabase.from('users').update({ suspended: false }).eq('id', req.params.id); if (error) throw error; invalidateUserRows(); await auditLog(req.adminUserId, 'admin.unsuspend', { target: req.params.id }, req.ip); res.json({ unsuspended: true }); } catch (err) { Sentry.captureException(err); sendError(res, err); } });
 
@@ -6221,10 +6214,10 @@ app.delete('/api/admin/users/:id', requireAuth, requireAdmin, uuidParam(), async
   // is_admin check below — an admin deleting themselves was refused as "an
   // admin", which is the right outcome reached by the wrong route. Compare the
   // ids that are actually comparable.
-  if (req.adminUserId === req.params.id) return res.status(400).json({ error: 'Cannot delete yourself' });
+  if (req.adminUserId === req.params.id) return fail(res, 400, 'Cannot delete yourself');
   const { data: t } = await supabase.from('users').select('is_admin,email').eq('id', req.params.id).single();
-  if (!t) return res.status(404).json({ error: 'Not found' });
-  if (t.is_admin) return res.status(403).json({ error: 'Cannot delete admin' });
+  if (!t) return fail(res, 404, 'Not found');
+  if (t.is_admin) return fail(res, 403, 'Cannot delete admin');
   const { error } = await supabase.from('users').delete().eq('id', req.params.id);
   if (error) throw error;
   // A cached row for a deleted user would let their next request through
@@ -6276,7 +6269,7 @@ app.get('/api/billing/prices', requireStripe, requireAuth, async (req, res) => {
     // 503 rather than 500: the server is healthy, this deployment simply cannot
     // sell anything. The client hides the upgrade path instead of rendering a
     // paywall that would fail at checkout.
-    if (missing.length) return res.status(503).json({ error: `Pricing is not configured (missing: ${missing.join(', ')}).` });
+    if (missing.length) return fail(res, 503, `Pricing is not configured (missing: ${missing.join(', ')}).`);
 
     const [monthly, yearly] = await Promise.all([
       stripe.prices.retrieve(ids.monthly),
@@ -6292,12 +6285,12 @@ app.get('/api/billing/prices', requireStripe, requireAuth, async (req, res) => {
     // gets the same 503 treatment and the same graceful hiding on the client.
     console.error('[BILLING] Price lookup failed:', err.message);
     Sentry.captureException(err);
-    res.status(503).json({ error: 'Pricing is temporarily unavailable.' });
+    fail(res, 503, 'Pricing is temporarily unavailable.');
   }
 });
 
 app.post('/api/create-checkout-session', requireStripe, requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); const cu = await clerkClient.users.getUser(req.auth.userId); const email = cu?.emailAddresses?.[0]?.emailAddress; const priceId = req.body.plan === 'yearly' ? process.env.STRIPE_PRICE_YEARLY : process.env.STRIPE_PRICE_MONTHLY; if (!priceId) throw new Error('Price ID not configured'); const session = await stripe.checkout.sessions.create({ customer_email: user.stripe_customer_id ? undefined : email, customer: user.stripe_customer_id || undefined, line_items: [{ price: priceId, quantity: 1 }], mode: 'subscription', success_url: `${process.env.FRONTEND_URL}/?payment=success`, cancel_url: `${process.env.FRONTEND_URL}/?payment=cancelled`, /* BOTH, and not by accident. `metadata.userId` is what the old webhook never read; `client_reference_id` is Stripe's own field for exactly this and is the one that survives into the Dashboard and the CSV export, where metadata does not. lib/stripe-identity.js prefers the reference and falls back to the metadata, so a session created by either version of this line is attributable. */ client_reference_id: req.auth.userId, metadata: { userId: req.auth.userId } }); res.json({ url: session.url }); } catch (err) { Sentry.captureException(err); sendError(res, err); } });
-app.post('/api/create-portal-session', requireStripe, requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); if (!user.stripe_customer_id) return res.status(400).json({ error: 'No subscription' }); const session = await stripe.billingPortal.sessions.create({ customer: user.stripe_customer_id, return_url: `${process.env.FRONTEND_URL}/` }); res.json({ url: session.url }); } catch (err) { Sentry.captureException(err); sendError(res, err); } });
+app.post('/api/create-portal-session', requireStripe, requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); if (!user.stripe_customer_id) return fail(res, 400, 'No subscription'); const session = await stripe.billingPortal.sessions.create({ customer: user.stripe_customer_id, return_url: `${process.env.FRONTEND_URL}/` }); res.json({ url: session.url }); } catch (err) { Sentry.captureException(err); sendError(res, err); } });
 app.get('/api/user/plan', requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); res.json({ plan: user.plan || 'free', subscription_id: user.stripe_subscription_id }); } catch (err) { Sentry.captureException(err); sendError(res, err); } });
 
 /* The user's own memory, readable and deletable by them.
@@ -6339,7 +6332,7 @@ app.delete('/api/user/facts/:id', requireAuth, checkSuspended, async (req, res) 
     if (error) throw error;
     // Nothing deleted means it was not theirs or never existed. Same answer for
     // both, so this cannot be used to ask whether an id exists.
-    if (!data || !data.length) return res.status(404).json({ error: 'Not found' });
+    if (!data || !data.length) return fail(res, 404, 'Not found');
     res.json({ deleted: data[0].id });
   } catch (err) { Sentry.captureException(err); sendError(res, err); }
 });
@@ -6354,7 +6347,7 @@ app.delete('/api/user/facts', requireAuth, checkSuspended, async (req, res) => {
 });
 
 // ===== ERRORS =====
-app.use((req, res) => res.status(404).json({ error: 'Not found' }));
+app.use((req, res) => fail(res, 404, 'Not found'));
 Sentry.setupExpressErrorHandler(app);
 app.use((err, req, res, next) => {
   const { status, body } = errorEnvelope(err, { operationId: req.operationId });

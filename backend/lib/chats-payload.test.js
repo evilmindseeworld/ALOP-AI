@@ -93,7 +93,7 @@ test("message PUTs use compare-and-set and reject conflicts", () => {
   const put = route("put", "/api/chats/:id");
   assert.match(put, /expectedUpdatedAt/);
   assert.match(put, /writeChatMessages/);
-  assert.match(put, /status\(409\)/);
+  assert.match(put, /fail\(res, 409,/);
   assert.match(SRC, /writeChatMessages[\s\S]*?\.eq\('user_id', user\.id\)/);
 });
 

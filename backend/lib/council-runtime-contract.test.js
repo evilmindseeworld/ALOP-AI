@@ -120,7 +120,7 @@ test("the account's daily model cap refuses the turn before anything is spent", 
     "the daily-cap guard must let a locally-answerable sum through",
   );
   assert.ok(guard < ROUTE.indexOf("createTurnTelemetry("), "the daily-cap guard must precede the telemetry row");
-  assert.match(ROUTE, /res\.status\(503\)/);
+  assert.match(ROUTE, /fail\(res, 503,/);
   assert.match(ROUTE, /Retry-After/);
 
   // And the latch has to be armed from the adapter's typed error, or the guard

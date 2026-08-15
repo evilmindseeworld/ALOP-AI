@@ -293,7 +293,7 @@ test("the refusal is a 402 carrying a reason that distinguishes it from the mone
   // working; the reason is what tells a reader which ceiling fired, and they
   // mean opposite things — one is about this user, the other about everyone.
   const refusal = ROUTE.slice(ROUTE.indexOf("if (!requestBudget.allowed)"));
-  assert.match(refusal, /res\.status\(402\)/);
+  assert.match(refusal, /fail\(res, 402,/);
   assert.match(refusal, /reason: 'daily_request_limit'/);
 });
 
@@ -425,7 +425,7 @@ test("the refusal is identical in shape across every route", () => {
   // A client that handles one 402 handles all of them. `reason` is the field
   // that says which ceiling fired, and it must not vary by route.
   const wrapper = SERVER.slice(SERVER.indexOf("const withRequestBudget"), SERVER.indexOf("// ===== HEALTH ====="));
-  assert.match(wrapper, /res\.status\(402\)/);
+  assert.match(wrapper, /fail\(res, 402,/);
   assert.match(wrapper, /reason: 'daily_request_limit'/);
   assert.match(wrapper, /Retry-After/);
 });

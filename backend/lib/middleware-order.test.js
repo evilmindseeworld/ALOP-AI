@@ -124,8 +124,8 @@ test('a refused turn is answered 402 and never reaches a model', () => {
   const refusal = route.slice(route.indexOf('if (!budget.allowed)'));
   // 402 rather than 429: the request is not too frequent, it is refused, and a
   // retry in a minute does not help.
-  assert.match(refusal.slice(0, 400), /res\.status\(402\)/);
-  assert.match(refusal.slice(0, 400), /return res\.status\(402\)/, 'must return, not fall through into the turn');
+  assert.match(refusal.slice(0, 400), /fail\(res, 402,/);
+  assert.match(refusal.slice(0, 400), /return fail\(res, 402,/, 'must return, not fall through into the turn');
 });
 
 test('the reservation is settled from a finally, so an abort cannot leave it charged', () => {

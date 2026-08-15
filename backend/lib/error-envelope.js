@@ -49,6 +49,8 @@ const CODES = Object.freeze({
   MODEL_RATE_LIMITED: 'model_rate_limited',
   UPSTREAM_TIMEOUT: 'upstream_timeout',
   UPSTREAM_UNAVAILABLE: 'upstream_unavailable',
+  SPEND_CEILING_REACHED: 'spend_ceiling_reached',
+  NOT_CONFIGURED: 'not_configured',
   INTERNAL: 'internal_error',
 });
 
@@ -67,6 +69,8 @@ const SAFE_TEXT = Object.freeze({
   [CODES.MODEL_RATE_LIMITED]: 'The council is briefly rate limited. Try again in a moment.',
   [CODES.UPSTREAM_TIMEOUT]: 'That took too long to answer. Try again.',
   [CODES.UPSTREAM_UNAVAILABLE]: 'A service this needs is temporarily unavailable.',
+  [CODES.SPEND_CEILING_REACHED]: 'Daily or monthly usage limit reached. It resets at midnight UTC.',
+  [CODES.NOT_CONFIGURED]: 'That feature is not configured on this server.',
   [CODES.INTERNAL]: 'Internal server error.',
 });
 
@@ -175,4 +179,34 @@ function sendError(res, err, opts = {}) {
   return status;
 }
 
-module.exports = { classifyError, errorEnvelope, sendError, CODES, SAFE_TEXT };
+/**
+ * A DELIBERATE REFUSAL, which is not the same thing as a thrown error.
+ *
+ * `sendError` starts from something that threw and decides what may be said
+ * about it. Most of this server's 4xx/5xx responses are the other case: the
+ * route already knows exactly what is wrong and has written the sentence for a
+ * human ("Attach at most 4 images"). Those were plain
+ * `res.status(n).json({ error })`, which is the shape this module exists to
+ * replace — no `code` for a client to branch on, and no `operationId` for a
+ * user to quote when they report it.
+ *
+ * The prose is kept verbatim, because it is better than any generic text this
+ * module could substitute. What is added is the type.
+ *
+ * @param {number} status
+ * @param {string} message  the sentence the route already wrote
+ * @param {string} [code]   defaults to the code for that status
+ * @param {object} [extra]  additional body fields (ceilings return their numbers)
+ */
+function fail(res, status, message, code = null, extra = null) {
+  const resolved = code || BY_STATUS[status] || (status < 500 ? CODES.BAD_REQUEST : CODES.INTERNAL);
+  const operationId = res?.req?.operationId || res?.req?.requestId || null;
+  if (res.headersSent || res.writableEnded) return status;
+  if (operationId) res.set('X-Operation-Id', operationId);
+  const body = { error: message, code: resolved, ...(extra || {}) };
+  if (operationId) body.operationId = operationId;
+  res.status(status).json(body);
+  return status;
+}
+
+module.exports = { classifyError, errorEnvelope, sendError, fail, CODES, SAFE_TEXT };

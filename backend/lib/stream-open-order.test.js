@@ -59,7 +59,7 @@ test('every refusal that answers with an HTTP status still sits ABOVE the early 
   const body = SOURCE.slice(open, councilEnd);
   assert.ok(councilStart < open && councilEnd > open, 'anchors must bracket the council route');
 
-  const offenders = [...body.matchAll(/res\.status\((\d{3})\)\.json/g)]
+  const offenders = [...body.matchAll(/fail\(res, (\d{3}),/g)]
     .map((m) => ({ code: m[1], context: body.slice(Math.max(0, m.index - 220), m.index + 60) }))
     // The image branch is the documented exception, and the 500 handler guards
     // itself with `!res.headersSent`.

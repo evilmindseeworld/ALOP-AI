@@ -177,11 +177,17 @@ means it was deliberately not started in this continuation.
     Evidence: usage-prefetch and answer-cache tests pass; the brain producer reads
     `or_request_budget` and queues `cache_warm`/`brain_refresh` jobs.
 
-## Phase 3 — deliberately not started
+## Phase 3 — started 2026-08-17
 
-The user explicitly instructed this continuation not to start Phase 3. The
-entries below are therefore **blocked by scope**, even where older code offers
-an adjacent foundation. No Phase 3 implementation work was added here.
+The scope instruction that blocked these was lifted on 2026-08-17. Items still
+marked **blocked** below are the ones not yet reached; 32, 36, 37, 39 and 42
+have moved, and the dated sections at the end of this file carry the evidence.
+
+Two of the three items marked complete here were ALREADY complete when the
+ledger called them blocked — 36's reconnect half and the whole of 37. The
+earlier entry recorded the scope instruction rather than the code, which is the
+same defect as a checker that reads the migration files instead of the database.
+**Read the code before writing an item's state, including to write "blocked".**
 
 32. **blocked** — Full PDF/DOCX/spreadsheet/code/workspace ingestion, object
     storage ACLs, chunking, indexing, embeddings, and citations. Adjacent files:
@@ -195,17 +201,42 @@ an adjacent foundation. No Phase 3 implementation work was added here.
 35. **blocked** — Release gates for latency, cost, factuality, citations,
     cache/memory precision, tools, and acceptance. No Phase 3 implementation was
     started.
-36. **blocked** — Frontend reconnect/offline retry/durable turn status and
-    expanded progress UI. Existing stream/client foundations were left intact;
-    no Phase 3 implementation was started.
-37. **blocked** — Frontend Markdown/syntax-highlight code splitting. No Phase 3
-    implementation was started.
+36. **complete** — Frontend reconnect/offline retry/durable turn status.
+    Files: `frontend/src/hooks/useChats.js`, `frontend/src/lib/pendingTurn.js`
+    (new), `frontend/src/App.jsx`, `frontend/src/__tests__/pendingTurn.test.jsx`
+    (new). Evidence: reconnect, offline detection, bounded backoff and the retry
+    affordance already existed and are rendered by `MessageList` (`status ===
+    "reconnecting"` / `"offline"`); the half that did not exist was surviving
+    the TAB — the operation id lived only in `send`'s closure, so a reload
+    orphaned a turn the server was still paying for. 705/705 frontend tests
+    pass; four of the eleven new ones were observed red with the pending record
+    forced to null. **Depends on an owner action**: `019_turn_ledger.sql` is not
+    applied in production, so the ledger this reads is empty there.
+37. **complete** — Frontend Markdown/syntax-highlight code splitting. Files:
+    `frontend/src/App.jsx`, `frontend/src/components/CodeBlock.jsx`. Evidence is
+    MEASURED from `npx vite build`, not read from the source: `markdown` is its
+    own 161.62 kB chunk (49.38 kB gzipped), `CodeBlock` another 39.43 kB, and
+    each Prism language is a chunk of its own (2–8 kB) — none of it inside
+    `index` (141.20 kB). It was already shipped when this item was written as
+    blocked.
 38. **blocked** — Full Phase 3 typed error/release treatment. Existing
     `backend/lib/error-envelope.js` is an earlier foundation; no new Phase 3
     scope was started.
-39. **blocked** — Required distributed rate-limiter rollout before multi-instance
-    deployment. Existing `backend/lib/pg-rate-limit-store.js` support remains
-    configuration-gated; no Phase 3 rollout was started.
+39. **complete (the enforcement half; the rollout is one owner variable)** —
+    Required distributed rate-limiter rollout before multi-instance deployment.
+    Files: `backend/lib/instance-census.js` (new),
+    `backend/lib/instance-census.test.js` (new),
+    `backend/lib/census-wiring.test.js` (new), `backend/server.js`,
+    `backend/.env.example`. Evidence: the instance count is now MEASURED — every
+    instance heartbeats one row a minute into the existing `rate_limits` table
+    and the live rows are counted, so "more than one instance while
+    `RATE_LIMIT_STORE` is unset" is a named log line carrying the multiplier and
+    two fields on `/health` (`instances`, `limitsMultiplied`) rather than a
+    sentence in a comment. It warns rather than refusing to boot, because a
+    rolling deploy runs two instances by design. 1779/1779 backend tests pass;
+    both wiring guards were observed red. **Owner action remains**: set
+    `RATE_LIMIT_STORE=postgres` in Render before scaling past one instance —
+    the census reports the mistake, it does not prevent it.
 40. **blocked** — Complete Stripe identity/billing release work. Existing
     `backend/lib/stripe-identity.js` foundation was not extended in this task.
 41. **blocked** — Stripe event state machine, durable retries, and billing read
@@ -425,3 +456,46 @@ production, where every object already existed, so each statement was a no-op �
 that proves the SQL parses and executes, not that an empty database ends up
 matching. Proving that needs a scratch Postgres with pgvector and a catalogue
 diff. Docker is installed here but its daemon was not running.
+
+## 2026-08-17 — Phase 3 resumed, and the peers were not available
+
+The scope block on Phase 3 was lifted. Work was partitioned across three tracks
+by file, as `~/CLAUDE.md` requires for separable pieces, and dispatched to both
+Codex peers — sol on items 34/35 (evaluation platform and release gates), luna
+on 38/39 (typed errors, rate-limiter rollout).
+
+**Both dispatches died on the same error and produced nothing:** `You've hit
+your usage limit ... try again at Aug 20th, 2026 4:56 PM.` The tree was
+untouched; no partial work landed. Codex is unavailable on this account until
+2026-08-20, so everything below was done solo and the remaining Phase 3 items
+are single-threaded until then.
+
+- **Item 36's missing half: a turn now survives the tab that asked for it.**
+  `lib/pendingTurn.js` leaves the operation id where a reload can find it,
+  under `chatCache.js`'s three rules (keyed by user id and read back only for
+  the same id, cleared on sign-out, expired by age — fifteen minutes). No
+  message text is stored; the answer comes back from
+  `GET /api/turns/:operationId`. Recovery runs once per mount, AFTER the chat
+  list because `ensureMessagesLoaded` answers null for a chat it cannot find,
+  and polls for up to 30s in case the turn is still being written. A transcript
+  already ending in an assistant message has nothing to recover, which is what
+  stops two reloading tabs appending the answer twice. Commit `151ffd1`.
+
+  One non-obvious defect fixed on the way: cancellation is tied to UNMOUNT via
+  a no-dependency effect, not to the recovery effect's own cleanup. The effect
+  depends on callbacks that are re-created when the chat list changes — which
+  the recovery itself causes — so a cleanup-based cancel abandoned the wait it
+  was in the middle of, and the once-per-mount guard meant nothing restarted it.
+
+  **Blocked on the owner to be worth anything in production.**
+  `019_turn_ledger.sql` has never been applied, so `findForResume` has no table
+  and every recovery will 404 there.
+
+- **Item 39: the instance count is measured rather than remembered.** See the
+  item above. The one design decision worth repeating: it warns and does not
+  refuse to boot, because refusing would fail every rolling deploy of a
+  correctly configured single-instance service, and too-generous limits are not
+  data at risk.
+
+- **Item 37 was already done, and item 36 was half done, while both were
+  recorded as blocked.** The Phase 3 header now says why that happened.

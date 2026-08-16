@@ -52,6 +52,7 @@ import { useCamera } from "./hooks/useCamera";
 import { useSpeechRecognition } from "./hooks/useSpeechRecognition";
 import { speak } from "./lib/speak";
 import { clearChats } from "./lib/chatCache";
+import { clearPendingTurn } from "./lib/pendingTurn";
 
 /** Follow the transcript only while the reader is already near the bottom. */
 const FOLLOW_THRESHOLD_PX = 150;
@@ -839,7 +840,10 @@ const AuthenticatedAppWrapper = () => {
    * inside instead.
    */
   useEffect(() => {
-    if (userLoaded && !hasUser) clearChats();
+    if (userLoaded && !hasUser) {
+      clearChats();
+      clearPendingTurn();
+    }
   }, [userLoaded, hasUser]);
 
   if (!userLoaded || !authLoaded) return <InitialLoader />;

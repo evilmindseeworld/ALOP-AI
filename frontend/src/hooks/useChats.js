@@ -3,6 +3,7 @@ import { API_BASE, clientTimezone, untilAborted } from "../lib/api";
 import { uid, generateChatTitle, parseImagePrompt, buildImageUrl } from "../lib/format";
 import { createReveal } from "../lib/streamReveal";
 import { readChats, writeChats } from "../lib/chatCache";
+import { rememberPendingTurn, readPendingTurn, clearPendingTurn } from "../lib/pendingTurn";
 import { newOperationId, withOperationId, shortOperationId } from "../lib/operationId";
 
 const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -10,6 +11,13 @@ const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "
 /** How much history the council is given. Older turns are summarised server-side. */
 const HISTORY_TURNS = 8;
 const HISTORY_CHARS = 4000;
+
+/** How long a reload waits for a turn that is still being written, and how
+ *  often it asks. The backend's resume route polls Postgres at 400ms; this is
+ *  a page that has just loaded asking across the network, so it is slower on
+ *  purpose. */
+const RECOVERY_WINDOW_MS = 30000;
+const RECOVERY_POLL_MS = 1500;
 /* A reconnect is a read from the durable turn ledger, not a second POST.
  * Four bounded reads cover a short flap without turning an outage into a
  * polling loop. The delays apply only while the browser reports a network. */
@@ -494,6 +502,90 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
   );
 
   /**
+   * THE TURN THAT OUTLIVED THE TAB.
+   *
+   * Every other recovery path in this hook lives inside `send`'s closure and
+   * dies with it. Reload mid-council — or let a phone discard a backgrounded
+   * tab, which it will — and the operation id is gone while the server carries
+   * on writing the answer to the turn ledger. The user message was persisted
+   * before the POST, so what comes back is a question with silence under it.
+   *
+   * `lib/pendingTurn.js` leaves the id where a reload can find it. This asks
+   * the ledger for the answer and appends it, once.
+   *
+   * IT POLLS, and only the once-per-mount kind: the turn may still be running,
+   * in which case the answer arrives seconds later and the reload should show
+   * it rather than a gap. Bounded at 30s because that is roughly a council's
+   * own ceiling, and giving up leaves the record in place — the next reload
+   * tries again until the fifteen-minute expiry.
+   * ponytail: the /stream endpoint would paint it as it arrives instead of in
+   * one block; that needs `send`'s SSE reader lifted out of its closure first.
+   *
+   * THE DUPLICATE GUARD IS THE PART THAT MATTERS. Two tabs both reload, or a
+   * turn is recovered that had in fact been saved: appending unconditionally
+   * would write the same answer twice into a transcript. A transcript whose
+   * last message is already an assistant one has nothing to recover.
+   */
+  const recoveredTurnRef = useRef(false);
+  /* UNMOUNT, not "this effect re-ran". The recovery below can be waiting on a
+   * turn that is still being written, and its effect depends on callbacks that
+   * are re-created when the chat list changes — which the recovery itself
+   * causes. A cleanup that cancelled the wait would therefore abandon it, and
+   * the `recoveredTurnRef` guard means nothing restarts it. This ref is set by
+   * an effect that has no dependencies, so it only ever fires on unmount. */
+  const mountedRef = useRef(true);
+  useEffect(() => () => { mountedRef.current = false; }, []);
+  useEffect(() => {
+    /* After the chat list, not before it. `ensureMessagesLoaded` answers null
+     * for a conversation it cannot find in the list, and this effect gets one
+     * attempt per mount — running it against an empty list would spend that
+     * attempt on a lookup that could not have succeeded. */
+    if (!isReady || !userId || isInitialLoading || recoveredTurnRef.current) return;
+    const pending = readPendingTurn(userId);
+    if (!pending) return;
+    recoveredTurnRef.current = true;
+
+    (async () => {
+      const deadline = Date.now() + RECOVERY_WINDOW_MS;
+      try {
+        while (mountedRef.current) {
+          const res = await apiCall(`/api/turns/${pending.operationId}`);
+          /* 404 is the ledger saying there is nothing to resume — the turn was
+           * never written, or it has aged out. Anything else (401 mid-refresh,
+           * 429 from the resume limiter, a 500) is this attempt failing rather
+           * than an answer not existing, so the record stays for next time. */
+          if (res.status === 404) { clearPendingTurn(userId); return; }
+          if (!res.ok) return;
+          const turn = await res.json().catch(() => null);
+          if (!turn) return;
+          if (turn.complete && turn.answer) {
+            if (!mountedRef.current) return;
+            const messages = await ensureMessagesLoaded(pending.chatId);
+            // A failed transcript read is not an empty transcript. Leaving the
+            // record is what lets the next reload try again.
+            if (!messages || !mountedRef.current) return;
+            if (messages[messages.length - 1]?.role === "assistant") {
+              clearPendingTurn(userId);
+              return;
+            }
+            await updateChatMessages(pending.chatId, [
+              ...messages,
+              { role: "assistant", content: turn.answer, ts: now(), id: uid(), recovered: true },
+            ]);
+            clearPendingTurn(userId);
+            return;
+          }
+          if (Date.now() >= deadline) return;
+          await new Promise((resolve) => setTimeout(resolve, RECOVERY_POLL_MS));
+        }
+      } catch {
+        /* Offline, or the backend is cold. The record survives; so does the
+         * answer, in the ledger. */
+      }
+    })();
+  }, [isReady, userId, isInitialLoading, apiCall, ensureMessagesLoaded, updateChatMessages]);
+
+  /**
    * Optimistic, like rename and pin above it, and for a stronger reason than
    * either: deleting was the one destructive action in the sidebar that made
    * the user watch a round trip to find out whether it had worked. The row sat
@@ -918,6 +1010,10 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
        * would create a new server turn and reserve a second budget, so a
        * reconnect is deliberately GET-only. */
       const operationId = newOperationId();
+      /* Written BEFORE the POST, not after it opens. The window this exists to
+       * cover starts at the request, and a tab discarded in it would otherwise
+       * leave a turn the server is paying for and no client will ever claim. */
+      rememberPendingTurn(userId, { chatId, operationId });
       let started = false;
       let stage = null;
       let turnOperationId = operationId;
@@ -1063,6 +1159,12 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
       failTurn = markFailedTurn;
 
       persistCompletedTurn = async () => {
+        /* Cleared even when the PUT below fails. The answer is in hand and on
+         * screen at this point; recovery exists to find an answer nobody has,
+         * and running it against one already painted would append a second
+         * copy of it. A failed save is the transcript's problem, not the
+         * ledger's. */
+        clearPendingTurn(userId);
         const finalMessage = { ...assistantMsg, typing: false, content: acc, activity: activity.length ? [...activity] : undefined };
         setStreamDraft({ chatId, message: finalMessage, persisted: true });
         const saved = await updateChatMessages(chatId, [...updated, finalMessage]);
@@ -1359,6 +1461,9 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
          * the only path that runs on every ending. */
         if (painterRef) { clearInterval(painterRef); painterRef = null; }
         if (err.name === "AbortError") {
+          /* Stop is a decision, not a failure. Recovering the turn on the next
+           * reload would hand back the answer the user just refused. */
+          clearPendingTurn(userId);
           // Two things this used to get wrong. It returned without resetting
           // status, which left the composer disabled forever once a user-facing
           // Stop existed; and it dropped `acc`, discarding text already on

@@ -282,3 +282,33 @@ left undone.
   all five rungs are reached through it. A direct Google GenAI call using the
   `GOOGLE_API_KEY` the vision path already holds would be the first genuinely
   independent rung. Not built.
+
+## 2026-08-16 — item 32, in part: a document is retrieved from, not cut
+
+Chunking and citations, the halves of item 32 that do not need object storage.
+Embeddings, ACLs and workspace ingestion remain unbuilt.
+
+- **The rest of the document is now kept.** `prepareUpload` sliced to 20,000
+  characters BEFORE storing, so page 90 of a two-hundred-page PDF had never
+  existed in the row. `MAX_CHARS` is now a bound on a database row (1,000,000)
+  rather than a model's context budget; for text `MAX_BYTES` (512KB) bites
+  first, so an accepted text file is stored whole.
+
+- **`read_file` retrieves.** `lib/doc-passages.js` (new, with tests) splits on
+  paragraph boundaries into overlapping ~1,800-character passages, ranks them
+  by rarity-weighted term overlap against a new optional `query` argument, and
+  returns the best two in document order with character offsets and the nearest
+  heading. Short files return whole exactly as before; no query returns the
+  beginning, exactly as before. Gaps between passages are marked, so a model
+  cannot read three excerpts as one continuous text.
+
+- **Lexical, not vector.** There is no embedding call on this path and adding
+  one would put a network round trip inside a tool call made while the user
+  waits. `scorePassages` returns scored passages, so a vector re-rank fits over
+  it later without changing a caller — `lib/hybrid-retrieval.js` is the model.
+
+  **Reasoned, not measured.** The ranker was verified against fixtures, not
+  against real user documents; no corpus of those exists to measure on.
+
+- Verification: backend suite 1757/1757, `node --check server.js`. The
+  retrieval test was observed red with the passage branch disabled.

@@ -26,6 +26,7 @@ const { isCitable } = require("./link-check");
 const { childAbortController } = require("./abort");
 const { UrlBlocked } = require("./url-guard");
 const { randomUUID } = require("node:crypto");
+const { findPassages, renderPassages } = require("./doc-passages");
 const Sentry = require("@sentry/node");
 
 /** Result shapes are uniform so the loop never has to know which tool ran. */
@@ -53,6 +54,10 @@ const defaultReportError = (toolName, err) => {
 
 /** A tool result is fed back into a prompt, so it has a hard size. */
 const MAX_RESULT_CHARS = 4000;
+
+/** Text budget for retrieved passages. Under the clamp, so the header and the
+ * gap markers survive rather than being cut off the end of the last passage. */
+const PASSAGE_BUDGET = 3200;
 const MAX_TOOL_TIMEOUT_MS = 8000;
 const MAX_REDIRECTS = 5;
 
@@ -255,9 +260,13 @@ function buildRegistry(deps = {}) {
     tools.push({
       name: "read_file",
       description:
-        "Read a file the user attached to this conversation, by its id. Ids come from the ATTACHED FILES list in your prompt. Takes an id, never a filename and never a path.",
-      schema: { id: { type: "string", required: true, maxLength: 64 } },
-      run: async ({ id }, { signal } = {}) => {
+        "Read a file the user attached to this conversation, by its id. Ids come from the ATTACHED FILES list in your prompt. Takes an id, never a filename and never a path. " +
+        'For a long document, pass "query" — what you are looking for, in the user\'s own words — and the passages that match come back with their character offsets instead of the first page.',
+      schema: {
+        id: { type: "string", required: true, maxLength: 64 },
+        query: { type: "string", required: false, maxLength: 300, default: "" },
+      },
+      run: async ({ id, query }, { signal } = {}) => {
         // Shape-checked before it reaches the store, so a malformed id is a
         // clear message rather than a database error.
         if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
@@ -270,8 +279,21 @@ function buildRegistry(deps = {}) {
         // either it does not exist or it is not theirs — and saying which
         // would confirm the existence of another user's file.
         if (!file) return fail(`No file with id ${id} in this conversation.`);
-        const note = file.truncated ? `\n\n[truncated — this is the first part of ${file.name}]` : "";
-        return ok(`Read ${file.name} (${file.kind}, ${file.bytes} bytes)`, clamp(file.content + note));
+        const note = file.truncated ? `\n\n[truncated at upload — this is the first part of ${file.name}]` : "";
+        const text = String(file.content || "");
+        /* A file that fits in one result is returned whole, exactly as before.
+         * A longer one is RETRIEVED FROM rather than cut at the front: the
+         * clamp above would otherwise answer a question about page 90 with
+         * page 1 and say nothing about it. */
+        if (text.length <= PASSAGE_BUDGET) {
+          return ok(`Read ${file.name} (${file.kind}, ${file.bytes} bytes)`, clamp(text + note));
+        }
+        const found = findPassages(text, query, { limit: 2, budget: PASSAGE_BUDGET });
+        const where = found.matched ? `matching "${query}"` : "from the beginning";
+        return ok(
+          `Read ${found.passages.length} passage(s) of ${file.name} ${where} (${file.kind}, ${file.bytes} bytes)`,
+          clamp(renderPassages({ ...found, name: file.name }) + note),
+        );
       },
     });
   }

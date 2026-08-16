@@ -200,10 +200,15 @@ test("accepts a file exactly at the ceiling", () => {
   assert.equal(upload({ base64: Buffer.alloc(MAX_BYTES, 0x61).toString("base64") }).bytes, MAX_BYTES);
 });
 
-test("truncates what a model is shown, and admits it", () => {
-  const r = upload({ base64: b64("x".repeat(MAX_CHARS + 500)) });
-  assert.equal(r.content.length, MAX_CHARS);
-  assert.equal(r.truncated, true);
+test("A TEXT FILE IS STORED WHOLE — retrieval cannot reach what was never kept", () => {
+  // The storage ceiling used to be 20,000 characters, so page 90 of a long
+  // document was not merely unread but absent. MAX_BYTES now bites first for
+  // text: the largest accepted file is stored entire.
+  const size = MAX_BYTES - 100;
+  const r = upload({ base64: Buffer.alloc(size, 0x61).toString("base64") });
+  assert.ok(size > 20_000, "fixture is smaller than the ceiling it is testing");
+  assert.equal(r.content.length, size);
+  assert.equal(r.truncated, false);
   assert.equal(upload().truncated, false);
 });
 

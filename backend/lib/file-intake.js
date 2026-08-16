@@ -54,8 +54,18 @@ const MAX_BYTES = 512 * 1024;
 /** PDFs and Office containers need room for compression and scanned pages. */
 const MAX_DOCUMENT_BYTES = 8 * 1024 * 1024;
 
-/** What a model is given. The rest is stored but not spent on context. */
-const MAX_CHARS = 20000;
+/**
+ * What is STORED. Not what a model is given — `read_file` retrieves passages
+ * out of this (see `lib/doc-passages.js`) and spends a few thousand characters
+ * of context on the part that answers the question.
+ *
+ * It used to be 20,000, which was the model's context budget doubling as the
+ * storage limit. That made page 90 of a two-hundred-page PDF unreachable
+ * FOREVER: it was never kept, so no retrieval over it was possible. The
+ * ceiling is now the one thing it should be — a bound on a database row. A
+ * 512KB text file cannot exceed it; an 8MB scanned PDF is the case it catches.
+ */
+const MAX_CHARS = 1_000_000;
 
 /** Per chat. A model can only read what it can name, and 20 is generous. */
 const MAX_FILES_PER_CHAT = 20;

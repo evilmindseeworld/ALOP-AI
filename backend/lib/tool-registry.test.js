@@ -105,6 +105,42 @@ test("a truncated file says so inside the content the model reads", async () => 
   assert.ok(r.content.includes("truncated"));
 });
 
+/** A long document whose answer is far past the first result-sized slice. */
+const LONG_FILE = {
+  ...FILE,
+  name: "handbook.pdf",
+  kind: "pdf",
+  bytes: 900_000,
+  content: [
+    Array.from({ length: 400 }, (_, i) => `Paragraph ${i} about invoices, shipping and general administration.`).join("\n\n"),
+    "## Refund policy",
+    "The restocking fee is 12 percent for opened electronics.",
+    Array.from({ length: 100 }, (_, i) => `Closing paragraph ${i}.`).join("\n\n"),
+  ].join("\n\n"),
+};
+
+test("a long file is RETRIEVED FROM, not cut at the front", async () => {
+  // Without this the clamp answers a question about the refund clause with the
+  // first 4,000 characters of the document and says nothing about it.
+  const cut = LONG_FILE.content.indexOf("restocking fee");
+  assert.ok(cut > 20_000, `fixture proves nothing (clause at ${cut})`);
+
+  const r = await withFiles([LONG_FILE]).execute({
+    name: "read_file",
+    args: { id: FILE.id, query: "what is the restocking fee on a refund?" },
+  });
+  assert.equal(r.ok, true);
+  assert.match(r.content, /restocking fee is 12 percent/);
+  assert.match(r.content, /characters \d+–\d+ of \d+/, "no offsets means no checkable citation");
+  assert.ok(r.content.length <= 4200, `a tool result of ${r.content.length} chars blows the prompt budget`);
+});
+
+test("a long file with no query still returns the beginning", async () => {
+  const r = await withFiles([LONG_FILE]).execute({ name: "read_file", args: { id: FILE.id } });
+  assert.equal(r.ok, true);
+  assert.match(r.content, /Paragraph 0 about invoices/);
+});
+
 test("A PATH IS NOT AN ID, and the refusal lists what is", async () => {
   // The whole design rests on this: a model-issued path is attacker-controlled
   // the moment anyone can get text into a prompt.

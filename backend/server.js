@@ -49,7 +49,8 @@ const { createTurnLedger } = require('./lib/turn-ledger');
 const { fingerprint: cacheFingerprint, retrievalMode, sourceFreshness } = require('./lib/cache-identity');
 const { planWork } = require('./lib/work-plan');
 const { runDag } = require('./lib/execution-dag');
-const { planRoute, applyPlan } = require('./lib/adaptive-routing');
+const { planRoute, applyPlan, chooseEmphasis } = require('./lib/adaptive-routing');
+const { chooseHead } = require('./lib/head-selection');
 const { runProgressiveCouncil } = require('./lib/progressive-council');
 const { createEvidenceLedger } = require('./lib/evidence-ledger');
 const { resolveConflicts, verifyAnswer } = require('./lib/contradiction');
@@ -377,13 +378,27 @@ const HEAD_LADDER = parseLadder(process.env.COUNCIL_HEAD_FALLBACKS);
  *
  * Null means send no `reasoning` block at all; `streamOnce` still defaults to
  * `{ exclude: true }`, so a model's chain of thought never reaches the socket.
- * `HEAD_EFFORT_LABEL` is what the logs and the audit row call it, so a row can
- * never claim an effort the request did not carry.
+ * `planSynthesis` carries the resolved effort as `effortLabel` into the logs and
+ * the audit row, so a row can never claim an effort the request did not carry.
  */
 const HEAD_EFFORT = effortFor(SYNTHESIS_MODEL, HEAD_LADDER);
-const HEAD_EFFORT_LABEL = HEAD_EFFORT || 'default';
-const headReasoning = (useHead) =>
-  (useHead && HEAD_EFFORT ? { reasoning: { effort: HEAD_EFFORT, exclude: true } } : {});
+
+/**
+ * EVERY MODEL THE HEAD MAY RUN ON, in ladder order: the configured head first,
+ * then the rungs below it. One list, used for three things that must agree —
+ * the spend reservation's worst case, the ranking's candidate set, and the
+ * fallback chain handed to `streamModel`.
+ */
+const HEAD_CANDIDATES = [SYNTHESIS_MODEL, ...HEAD_FALLBACKS.map((rung) => rung.model)];
+
+/**
+ * ADAPTIVE HEAD SELECTION. On by default, and it is safe to be:
+ * `lib/head-selection.js` cannot act without MIN_CONFIDENT_SAMPLES of evidence,
+ * so an unmeasured process produces byte-identical behaviour to the constant it
+ * replaces. Set COUNCIL_ADAPTIVE_HEAD=0 to pin the configured head regardless
+ * of what it has been doing.
+ */
+const ADAPTIVE_HEAD = !/^(0|false|off)$/i.test(process.env.COUNCIL_ADAPTIVE_HEAD || '');
 const HEAD_FALLBACKS = asStreamFallbacks(fallbacksAfter(SYNTHESIS_MODEL, HEAD_LADDER));
 
 /**
@@ -764,9 +779,36 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
     .filter((entry) => entry?.model && entry.model !== modelName);
   const fallbackModel = fallbackChain[0]?.model || null;
   try { modelOptions?.onModelUsed?.(modelName); } catch { /* diagnostics must never fail a turn */ }
+  /* THE HEAD'S OWN CALLS, INTO THE HEALTH SIGNAL.
+   *
+   * `meteredCallModel` has recorded every council SEAT since provider health
+   * existed. The streamed answer — the longest single step of a turn and the
+   * one the user is watching — recorded nothing, so the signal that ranks
+   * models had no samples for the one model whose latency the product is
+   * judged on. lib/head-selection.js ranks the head from these samples; without
+   * them it is a hand-ordered list with extra steps.
+   *
+   * The duration is the WHOLE generation: streamOnce returns once the stream is
+   * consumed, which is what a head's latency actually means to a reader. */
+  const recordStream = (model, startedAt, err) => {
+    if (signal?.aborted || err?.name === 'AbortError') return; // a user leaving is not a failure
+    try {
+      providerHealth.record({
+        model,
+        outcome: !err ? 'ok'
+          : (err.status === 429 || err.code === 'OPENROUTER_RATE_LIMIT') ? 'rate_limited'
+            : 'failed',
+        ms: Date.now() - startedAt,
+      });
+    } catch { /* a recorder must never break the call it is recording */ }
+  };
+  const headStartedAt = Date.now();
   try {
-    return await streamOnce(res, modelName, messages, temperature, signal, maxTokens, meta, answerOptions, turnDeadlineAt, modelOptions);
+    const answer = await streamOnce(res, modelName, messages, temperature, signal, maxTokens, meta, answerOptions, turnDeadlineAt, modelOptions);
+    recordStream(modelName, headStartedAt, null);
+    return answer;
   } catch (err) {
+    recordStream(modelName, headStartedAt, err);
     const wrote = (meta.emitted || []).join('').length;
     if (!fallbackModel || fallbackModel === modelName || signal?.aborted || wrote > 0) throw err;
     if (err.status === 429 && err.limitSource === 'openrouter_free_tier_per_minute') {
@@ -793,8 +835,9 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
       console.warn(`[STREAM] ${modelName} failed before writing anything (${lastError.message}). Falling back to ${entry.model}.`);
       try { modelOptions?.onModelUsed?.(entry.model); } catch { /* diagnostics must never fail a turn */ }
       const attemptMeta = {};
+      const rungStartedAt = Date.now();
       try {
-        return await streamOnce(
+        const recovered = await streamOnce(
           res,
           entry.model,
           messages,
@@ -806,7 +849,10 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
           turnDeadlineAt,
           { ...modelOptions, reasoning: entry.reasoning || { exclude: true } },
         );
+        recordStream(entry.model, rungStartedAt, null);
+        return recovered;
       } catch (fallbackErr) {
+        recordStream(entry.model, rungStartedAt, fallbackErr);
         lastError = fallbackErr;
         /* The same two refusals as above, re-checked per attempt: a recovery
          * that wrote half an answer cannot be followed by another one, and a
@@ -1505,6 +1551,78 @@ const ANSWER_CACHE_BRANCH = `turn:${ANSWER_EXECUTION_MODE}`;
  * Turn it on, read the [PROGRESSIVE] lines, then decide.
  */
 const ADAPTIVE_ROUTING = /^(1|true)$/i.test(process.env.COUNCIL_ADAPTIVE || '');
+
+/**
+ * WHO WRITES THIS ANSWER, AND WHAT IT FALLS TO — one decision, in one place.
+ *
+ * The three synthesis branches (search, Wikipedia, council) each built this by
+ * hand: `chooseSynthesis` for the model, a literal reasoning block, and the
+ * static HEAD_FALLBACKS ladder. Three copies of one decision is how two of them
+ * end up different, which is the shape of bug CLAUDE.md rule 8 describes — so
+ * they now call this instead.
+ *
+ * Two things it adds over the constant it replaces:
+ *
+ *   THE EMPHASIS is `chooseEmphasis`, the same function the roster planner
+ *   uses. A lookup wants the answer fast, a generation wants it good, a risky
+ *   or fresh question always wants it good. One definition, so the seats and
+ *   the writer cannot optimise for opposite things on the same turn.
+ *
+ *   THE ORDER is `chooseHead`, which ranks the candidates on what they have
+ *   measurably been doing — p95, success rate — and falls back to the
+ *   configured order when there is not enough evidence to say otherwise.
+ *
+ * WHAT IT CANNOT DO: introduce a model that is not already on the ladder. The
+ * candidate list is HEAD_CANDIDATES, the reservation was taken against
+ * SYNTHESIS_MODEL_CANDIDATES, and a ranking that could promote a metered model
+ * on a latency score would be an unadmitted bill.
+ */
+function planSynthesis({ complexity, toolQuestion = false, question = '', searchPlanned = false }) {
+  const base = chooseSynthesis({
+    complexity,
+    toolQuestion,
+    primaryModel: PRIMARY_MODEL,
+    configuredModel: SYNTHESIS_MODEL,
+  });
+
+  /* The fast model's turn. No ladder and no ranking: this branch exists because
+   * the question was simple enough not to need the head at all. */
+  if (!base.highEffort || base.model === PRIMARY_MODEL) {
+    return { ...base, effort: null, effortLabel: 'default', emphasis: null, headReason: 'primary', options: {} };
+  }
+
+  const { emphasis } = chooseEmphasis({ question, complexity, searchPlanned });
+  const head = ADAPTIVE_HEAD
+    ? chooseHead({
+      configured: SYNTHESIS_MODEL,
+      candidates: HEAD_CANDIDATES,
+      health: providerHealth,
+      emphasis,
+      ladder: HEAD_LADDER,
+    })
+    : {
+      model: SYNTHESIS_MODEL,
+      effort: HEAD_EFFORT,
+      chain: HEAD_FALLBACKS.map((rung) => ({ model: rung.model, effort: effortFor(rung.model, HEAD_LADDER) })),
+      reason: 'pinned',
+    };
+
+  return {
+    ...base,
+    model: head.model,
+    effort: head.effort,
+    effortLabel: head.effort || 'default',
+    emphasis,
+    headReason: head.reason,
+    options: {
+      /* No `reasoning` block at all when the model has no established effort —
+       * see the note on effortFor. streamOnce still defaults to
+       * `{exclude: true}`, so no chain of thought ever reaches the socket. */
+      ...(head.effort ? { reasoning: { effort: head.effort, exclude: true } } : {}),
+      ...(head.chain.length ? { fallbackModels: asStreamFallbacks(head.chain) } : {}),
+    },
+  };
+}
 /* ENFORCEMENT of the answer verifier. The MEASUREMENT runs either way: a check
  * whose refusals have never been counted is a check nobody can decide to turn
  * on. See the ledger above cacheAnswer. */
@@ -4896,23 +5014,20 @@ async function handleCouncilTurn(req, res) {
         role: 'user',
         content: `Question: ${truncatedPrompt}\n\nResponses:\n${usableSearchDrafts.map((r, i) => `[Expert ${i + 1}]: ${r.content}`).join('\n\n')}`,
       }];
-      const searchSynthesis = chooseSynthesis({
+      const searchSynthesis = planSynthesis({
         complexity: selection.complexity,
         toolQuestion: true,
-        primaryModel: PRIMARY_MODEL,
-        configuredModel: SYNTHESIS_MODEL,
+        question: pv.value,
+        searchPlanned: true,
       });
-      const searchSynthesisOptions = {
-        ...headReasoning(searchSynthesis.highEffort),
-        ...(searchSynthesis.model !== PRIMARY_MODEL ? { fallbackModels: HEAD_FALLBACKS } : {}),
-      };
+      const searchSynthesisOptions = { ...searchSynthesis.options };
       let searchSynthesisModelUsed = searchSynthesis.model;
       searchSynthesisOptions.onModelUsed = (model) => { searchSynthesisModelUsed = model; };
-      console.log(`[SYNTHESIS] requested=${searchSynthesis.model} effort=${searchSynthesis.highEffort ? HEAD_EFFORT_LABEL : 'default'} complexity=${selection.complexity} tools=true`);
+      console.log(`[SYNTHESIS] requested=${searchSynthesis.model} effort=${searchSynthesis.effortLabel} complexity=${selection.complexity} tools=true`);
       const searchSynthesisStartedAt = Date.now();
       const searchAnswer = await streamModel(res, searchSynthesis.model, searchSynthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, answerOptions, turnDeadlineAt, searchSynthesisOptions);
       telemetry.recordSynthesis(Date.now() - searchSynthesisStartedAt, searchSynthesisModelUsed);
-      const searchSynthesisEffort = searchSynthesisModelUsed === searchSynthesis.model && searchSynthesis.highEffort ? HEAD_EFFORT_LABEL : 'default';
+      const searchSynthesisEffort = searchSynthesisModelUsed === searchSynthesis.model ? searchSynthesis.effortLabel : 'default';
       console.log(`[SYNTHESIS] model=${searchSynthesisModelUsed} effort=${searchSynthesisEffort} complexity=${selection.complexity} tools=true`);
       if (!res.writableEnded) res.end();
       /* A SHORTER SHELF LIFE WHEN THE QUESTION ASKED FOR NOW. `fresh` is the
@@ -4947,24 +5062,21 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         // world-editable: this is the one source where an attacker does not even
         // need a site of their own.
         const wikiMsgs = [{ role: 'system', content: identityPrompt(wikiSys, 'wikipedia') }, ...contextMsgs, ...promptHistory, { role: 'user', content: `${truncatedPrompt}\n=== WIKIPEDIA ===\n${UNTRUSTED_PREAMBLE}\n\n${envelope('Wikipedia extract', wiki)}` }];
-        const wikiSynthesis = chooseSynthesis({
+        const wikiSynthesis = planSynthesis({
           complexity: selection.complexity,
           toolQuestion: true,
-          primaryModel: PRIMARY_MODEL,
-          configuredModel: SYNTHESIS_MODEL,
+          question: pv.value,
+          searchPlanned: Boolean(searchQueries?.length),
         });
-        const wikiSynthesisOptions = {
-          ...headReasoning(wikiSynthesis.highEffort),
-          ...(wikiSynthesis.model !== PRIMARY_MODEL ? { fallbackModels: HEAD_FALLBACKS } : {}),
-        };
+        const wikiSynthesisOptions = { ...wikiSynthesis.options };
         let wikiSynthesisModelUsed = wikiSynthesis.model;
         wikiSynthesisOptions.onModelUsed = (model) => { wikiSynthesisModelUsed = model; };
-        console.log(`[SYNTHESIS] requested=${wikiSynthesis.model} effort=${wikiSynthesis.highEffort ? HEAD_EFFORT_LABEL : 'default'} complexity=${selection.complexity} tools=true`);
+        console.log(`[SYNTHESIS] requested=${wikiSynthesis.model} effort=${wikiSynthesis.effortLabel} complexity=${selection.complexity} tools=true`);
         openStream(res);
         const wikiSynthesisStartedAt = Date.now();
         const wikiAnswer = await streamModel(res, wikiSynthesis.model, wikiMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt, wikiSynthesisOptions);
         telemetry.recordSynthesis(Date.now() - wikiSynthesisStartedAt, wikiSynthesisModelUsed);
-        const wikiSynthesisEffort = wikiSynthesisModelUsed === wikiSynthesis.model && wikiSynthesis.highEffort ? HEAD_EFFORT_LABEL : 'default';
+        const wikiSynthesisEffort = wikiSynthesisModelUsed === wikiSynthesis.model ? wikiSynthesis.effortLabel : 'default';
         console.log(`[SYNTHESIS] model=${wikiSynthesisModelUsed} effort=${wikiSynthesisEffort} complexity=${selection.complexity} tools=true`);
         if (!res.writableEnded) res.end();
         // An encyclopedia answer is still good next week.
@@ -5500,23 +5612,20 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
       || toolSourceUrls.length
       || usedLiveWeb,
     );
-    const synthesis = chooseSynthesis({
+    const synthesis = planSynthesis({
       complexity: selection.complexity,
       toolQuestion,
-      primaryModel: PRIMARY_MODEL,
-      configuredModel: SYNTHESIS_MODEL,
+      question: pv.value,
+      searchPlanned: Boolean(searchQueries?.length),
     });
-    const synthesisOptions = {
-      ...headReasoning(synthesis.highEffort),
-      ...(synthesis.model !== PRIMARY_MODEL ? { fallbackModels: HEAD_FALLBACKS } : {}),
-    };
+    const synthesisOptions = { ...synthesis.options };
     let synthesisModelUsed = synthesis.model;
     synthesisOptions.onModelUsed = (model) => { synthesisModelUsed = model; };
-    console.log(`[SYNTHESIS] requested=${synthesis.model} effort=${synthesis.highEffort ? HEAD_EFFORT_LABEL : 'default'} complexity=${selection.complexity} tools=${toolQuestion}`);
+    console.log(`[SYNTHESIS] requested=${synthesis.model} effort=${synthesis.effortLabel} complexity=${selection.complexity} tools=${toolQuestion}`);
     telemetryExtra = {
       ...telemetryExtra,
       synthesisModel: synthesisModelUsed,
-      synthesisEffort: synthesis.highEffort ? HEAD_EFFORT_LABEL : 'default',
+      synthesisEffort: synthesis.effortLabel,
       ...(progressiveOutcome ? { progressive: progressiveOutcome } : {}),
     };
     const synthSysForAnswer = `${synthSys}${SOURCE_TRUTH_RULES}`;
@@ -5528,7 +5637,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     const synthesisStartedAt = Date.now();
     const synthAnswer = await streamModel(res, synthesis.model, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, requiredSourceUrls: toolSourceUrls }, turnDeadlineAt, synthesisOptions);
     telemetry.recordSynthesis(Date.now() - synthesisStartedAt, synthesisModelUsed);
-    const synthesisEffort = synthesisModelUsed === synthesis.model && synthesis.highEffort ? HEAD_EFFORT_LABEL : 'default';
+    const synthesisEffort = synthesisModelUsed === synthesis.model ? synthesis.effortLabel : 'default';
     console.log(`[SYNTHESIS] model=${synthesisModelUsed} effort=${synthesisEffort} complexity=${selection.complexity} tools=${toolQuestion}`);
     telemetryExtra.synthesisModel = synthesisModelUsed;
     telemetryExtra.synthesisEffort = synthesisEffort;

@@ -87,15 +87,23 @@ test("the council request aborts every long-running layer on disconnect", () => 
 test('the head model owns complex/tool synthesis and its production identity is logged', () => {
   assert.match(SOURCE, /COUNCIL_SYNTHESIS_MODEL/);
   assert.match(SOURCE, /DEFAULT_SYNTHESIS_MODEL/);
-  assert.match(ROUTE, /chooseSynthesis\(/);
+  /* The route calls `planSynthesis`, which is the ONE place the head decision
+   * is made: `chooseSynthesis` for head-vs-fast, `chooseEmphasis` for what the
+   * turn is judged on, `chooseHead` for the order. Three branches used to build
+   * this by hand, which is three chances for two of them to differ. */
+  assert.match(SOURCE, /function planSynthesis\(/);
+  assert.match(SOURCE, /chooseSynthesis\(/);
+  assert.doesNotMatch(ROUTE, /chooseSynthesis\(/, 'a branch is building the head decision by hand again');
+  for (const branch of ['searchSynthesis', 'wikiSynthesis', 'synthesis']) {
+    assert.ok(ROUTE.includes(`const ${branch} = planSynthesis({`), `${branch} bypasses planSynthesis`);
+  }
   assert.match(ROUTE, /toolQuestion/);
   assert.match(ROUTE, /\[SYNTHESIS\].*model=\$\{/);
   assert.match(ROUTE, /synthesisModel: synthesisModelUsed/);
   /* The effort is read from the model now, not written here as a literal:
    * `high` was established for Luna and the default head is free. `exclude` is
    * still absolute — a chain of thought must never reach the socket. */
-  assert.match(ROUTE, /headReasoning\(/);
-  assert.match(SOURCE, /reasoning: \{ effort: HEAD_EFFORT, exclude: true \}/);
+  assert.match(SOURCE, /reasoning: \{ effort: head\.effort, exclude: true \}/);
 });
 
 test("the account's daily model cap refuses the turn before anything is spent", () => {

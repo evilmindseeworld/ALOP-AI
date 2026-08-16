@@ -55,6 +55,36 @@ const LOOKUP_RE = /^(who|what|when|where|which|how (much|many|old|far|tall|long)
  * @param {{rank: Function}} [input.health]
  * @param {number} [input.maxSeats]
  */
+/**
+ * WHAT THIS TURN IS BEING JUDGED ON — one of four, and the ONLY definition of
+ * it. Extracted from `planRoute` so the head-model selector can ask the same
+ * question and cannot drift into a second answer: two layers disagreeing about
+ * whether a turn wants speed or quality is how the roster optimises for one
+ * while the model writing the answer optimises for the other.
+ *
+ * Risk beats everything: a dangerous question is not the place to save four
+ * hundred milliseconds or a tenth of a cent. Then freshness, because a stale
+ * answer to a "what is it today" question is wrong rather than slow. Then the
+ * task: a lookup is judged on how fast it arrives, a generation on what it
+ * says.
+ *
+ * @returns {{emphasis: 'latency'|'quality'|'balanced', taskType: string,
+ *            risky: boolean, fresh: boolean}}
+ */
+function chooseEmphasis({ question = '', complexity = 'moderate', searchPlanned = false } = {}) {
+  const risky = isRisky(question);
+  const fresh = Boolean(searchPlanned) || FRESH_RE.test(question);
+  const taskType = GENERATE_RE.test(question) ? 'generation'
+    : LOOKUP_RE.test(question) ? 'lookup'
+      : 'reasoning';
+  const emphasis = risky ? 'quality'
+    : fresh ? 'quality'
+      : taskType === 'lookup' ? 'latency'
+        : taskType === 'generation' ? 'quality'
+          : complexity === 'simple' ? 'latency' : 'balanced';
+  return { emphasis, taskType, risky, fresh };
+}
+
 function planRoute({
   question = '',
   complexity = 'moderate',
@@ -65,25 +95,9 @@ function planRoute({
   health = null,
   maxSeats = candidates.length,
 } = {}) {
-  const risky = isRisky(question);
-  const fresh = searchPlanned || FRESH_RE.test(question);
-  const taskType = GENERATE_RE.test(question) ? 'generation'
-    : LOOKUP_RE.test(question) ? 'lookup'
-      : 'reasoning';
-
-  /* EMPHASIS. One of four, because a weight vector with eight knobs is a knob
-   * nobody will ever turn correctly.
-   *
-   * Risk beats everything: a dangerous question is not the place to save four
-   * hundred milliseconds or a tenth of a cent. Then freshness, because a stale
-   * answer to a "what is it today" question is wrong rather than slow. Then the
-   * task: a lookup is judged on how fast it arrives, a generation on what it
-   * says. */
-  const emphasis = risky ? 'quality'
-    : fresh ? 'quality'
-      : taskType === 'lookup' ? 'latency'
-        : taskType === 'generation' ? 'quality'
-          : complexity === 'simple' ? 'latency' : 'balanced';
+  /* EMPHASIS, from the one definition above. A weight vector with eight knobs
+   * is a knob nobody will ever turn correctly, so it is one of four. */
+  const { emphasis, taskType, risky, fresh } = chooseEmphasis({ question, complexity, searchPlanned });
 
   /* SEAT BUDGET. The router's tier is the baseline; risk raises the floor and
    * nothing lowers it below one. Live research widens, for the reason
@@ -170,4 +184,4 @@ function applyPlan(selection, plan, { toolSeatModel = null } = {}) {
   };
 }
 
-module.exports = { planRoute, applyPlan, FRESH_RE, GENERATE_RE, LOOKUP_RE };
+module.exports = { planRoute, applyPlan, chooseEmphasis, FRESH_RE, GENERATE_RE, LOOKUP_RE };

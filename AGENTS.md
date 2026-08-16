@@ -987,3 +987,19 @@ of retiring them. `lib/image-gen.js` has no alias available and holds dated ids
 that need re-probing whenever generation starts failing. **A 429 is not a
 retirement**: it means the id is alive and the quota is spent, and falling
 through on it would quietly downgrade the model.
+
+## Two live functions exist in no migration
+
+`reserve_or_requests(p_requests integer, p_day_limit integer)` and
+`settle_or_requests(p_reserved integer, p_actual integer)` are in production,
+are called on every turn by `lib/request-budget.js`, and are created by no file
+in `migrations/`. They were applied by hand. **A database rebuilt from
+`migrations/` alone has no request budget and fails at its first RPC.**
+Found 2026-08-16 by listing `pg_proc`, after `023` — whose checker reads the
+migration files — could not see them. `024` pins their `search_path`; nothing
+yet creates them.
+
+The general rule: **a checker over the migration files verifies what the files
+say, not what the database is.** `lib/migration-lineage.js` already carries the
+`pg_proc … where proconfig is null` query for this; nothing runs it on a
+schedule.

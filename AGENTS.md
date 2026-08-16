@@ -988,18 +988,27 @@ that need re-probing whenever generation starts failing. **A 429 is not a
 retirement**: it means the id is alive and the quota is spent, and falling
 through on it would quietly downgrade the model.
 
-## Two live functions exist in no migration
+## The migrations and the database disagreed in both directions
 
-`reserve_or_requests(p_requests integer, p_day_limit integer)` and
-`settle_or_requests(p_reserved integer, p_actual integer)` are in production,
-are called on every turn by `lib/request-budget.js`, and are created by no file
-in `migrations/`. They were applied by hand. **A database rebuilt from
-`migrations/` alone has no request budget and fails at its first RPC.**
-Found 2026-08-16 by listing `pg_proc`, after `023` — whose checker reads the
-migration files — could not see them. `024` pins their `search_path`; nothing
-yet creates them.
+Found 2026-08-16 by listing `pg_proc` and `information_schema`, after `023` —
+whose checker reads the migration FILES — could not see any of it. **A checker
+over the files verifies what the files say, not what the database is.**
 
-The general rule: **a checker over the migration files verifies what the files
-say, not what the database is.** `lib/migration-lineage.js` already carries the
-`pg_proc … where proconfig is null` query for this; nothing runs it on a
-schedule.
+- **`019_turn_ledger.sql` HAS NEVER BEEN APPLIED.** `turns`,
+  `turn_reservations`, `claim_turn_reservation`, `settle_turn_reservation` and
+  `checkpoint_turn` are absent from production while `lib/turn-ledger.js` and
+  `lib/reservation-ledger.js` call them on every turn. Both fail open, so
+  resume-after-drop and idempotent admission are OFF in production and the
+  suite is green anyway. Apply it before trusting anything about turn resume.
+- **The original tables were created by hand.** `users`, `chats`, `usage`,
+  `audit_logs`, `user_facts` and `or_request_budget` predate `migrations/`.
+  `000_base_schema_lineage.sql` and `025` now transcribe them, so a rebuild has
+  a `users` table for 019's foreign keys to point at. Both are transcripts of
+  production, not redesigns, and **neither has been proven by an actual
+  rebuild** — applying them where everything exists is a no-op.
+
+Two checks exist now and both were watched failing. `scripts/check-drift.mjs`
+asks production (needs `SUPABASE_ACCESS_TOKEN`) and reports MISSING and
+UNTRACKED separately. `lib/rpc-lineage.test.js` runs in the suite with no
+token: every `rpc('…')` and `.from('…')` in the code must be created by some
+migration file.

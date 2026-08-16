@@ -261,7 +261,7 @@ const InputBar = memo(
                 <label className="input-btn">
                   <input
                     type="file"
-                    accept=".txt,.md,.markdown,.csv,.tsv,.json,text/plain,text/markdown,text/csv,application/json"
+                    accept=".txt,.md,.markdown,.csv,.tsv,.json,.pdf,.docx,.xlsx,text/plain,text/markdown,text/csv,text/tab-separated-values,application/json,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                     onChange={onDocSelect}
                     disabled={disabled}
                     aria-label="Attach a document"
@@ -269,7 +269,7 @@ const InputBar = memo(
                   <Icon name="code" size={17} />
                 </label>
               </TooltipTrigger>
-              <TooltipContent>Attach a document: text, Markdown, CSV or JSON</TooltipContent>
+              <TooltipContent>Attach a document: PDF, Word, Excel, text, Markdown, CSV or JSON</TooltipContent>
             </Tooltip>
 
             <Tooltip>

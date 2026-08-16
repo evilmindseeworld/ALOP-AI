@@ -312,3 +312,28 @@ Embeddings, ACLs and workspace ingestion remain unbuilt.
 
 - Verification: backend suite 1757/1757, `node --check server.js`. The
   retrieval test was observed red with the passage branch disabled.
+
+## 2026-08-16 — item 32 continued: the extractor gets a caller
+
+`lib/doc-extract.js` reads PDF, DOCX and XLSX, hardens the ZIP path, and had
+been fully tested since it was written. Nothing called it. The upload route
+called `prepareUpload` — the synchronous text-only sibling — which refuses
+every binary kind, so a PDF upload was rejected at the door while every test in
+`doc-extract.test.js` passed.
+
+- **The route awaits `prepareUploadAsync`**, with `GOOGLE_API_KEY`, the plan's
+  vision model list, and a 120s deadline of its own. Text still takes the
+  identical synchronous path inside it.
+- **A body limit that clears the file.** Express parses before the handler
+  runs, and this path took the 1mb default against ~10.7mb of base64 for an 8MB
+  document, so it would have 413'd every PDF with the right function wired.
+  `docJson` is 16mb and is selected only for `POST /api/chats/:id/files`; the
+  50mb image ceiling is deliberately not reused.
+- **The picker offers them.** `InputBar.jsx` `accept` and its tooltip listed
+  text kinds only.
+- `lib/upload-wiring.test.js` (new) holds all three against `server.js`'s
+  source; observed red with the route reverted.
+
+**Not verified against production.** There is no `GOOGLE_API_KEY` on this
+machine, so no PDF has been through the live extractor from this route. DOCX
+and XLSX are pure local parsing and are covered by their own tests.

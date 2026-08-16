@@ -1452,7 +1452,7 @@ const { detectRegion, regionHint } = require('./lib/region');
 const { firstWithResults, toolMessages, summariseProbe, searchResultUrls, requiredCitationSuffix, UNTRUSTED_PREAMBLE } = require('./lib/council-tools');
 const { createNativeToolSeat } = require('./lib/native-tool-seat');
 const { parseToolRequests, sanitizeAnswerText, userRequestedProtocolJson, looksLikeProtocolOpening } = require('./lib/tool-protocol');
-const { prepareUpload, UploadRejected, MAX_FILES_PER_CHAT } = require('./lib/file-intake');
+const { prepareUploadAsync, UploadRejected, MAX_FILES_PER_CHAT } = require('./lib/file-intake');
 
 /**
  * A file store bound to ONE (user, chat).
@@ -2894,7 +2894,18 @@ app.use('/health', createLimiter(60000, 120, 'Too many requests.', '/health'));
 const IMAGE_ROUTES = ['/api/council', '/api/overlay', '/api/image'];
 const bigJson = express.json({ limit: '50mb' });
 const smallJson = express.json({ limit: '1mb' });
-app.use((req, res, next) => (IMAGE_ROUTES.some((p) => req.path.startsWith(p)) ? bigJson : smallJson)(req, res, next));
+/* File upload carries base64, which is a third larger than the bytes it
+ * encodes: an 8MB PDF at MAX_DOCUMENT_BYTES is ~10.7MB of body. It does NOT
+ * get the 50mb image ceiling — the intake limits are what reject an oversized
+ * file with a message, and a body ceiling far above them only buys an attacker
+ * a bigger buffer to fill before that message is reached. */
+const UPLOAD_ROUTE = /^\/api\/chats\/[^/]+\/files\/?$/;
+const docJson = express.json({ limit: '16mb' });
+app.use((req, res, next) => {
+  if (IMAGE_ROUTES.some((p) => req.path.startsWith(p))) return bigJson(req, res, next);
+  if (req.method === 'POST' && UPLOAD_ROUTE.test(req.path)) return docJson(req, res, next);
+  return smallJson(req, res, next);
+});
 app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // ===== SANITIZATION =====
@@ -6038,7 +6049,26 @@ app.post('/api/chats/:id/files', requireAuth, checkSuspended, requireOwnership('
 
     // Throws UploadRejected for anything not on the allowlist, anything that
     // is not actually text whatever it claims, and anything oversized.
-    const prepared = prepareUpload({ name: req.body.name, mime: req.body.mime, base64: req.body.base64 });
+    //
+    // ASYNC, because PDF extraction is a Gemini call. Text takes the same
+    // synchronous path it always did inside prepareUploadAsync; only documents
+    // cross the network. Before this the route called prepareUpload directly,
+    // which refuses every binary kind — so the extractor, its ZIP hardening and
+    // its tests had no caller and a PDF upload was rejected at the door.
+    //
+    // The deadline is the upload's own, not a turn's: nothing is waiting on
+    // this but the fetch that posted the file, and a two-hundred-page scan is
+    // slower than any council seat.
+    const extraction = timeoutSignal(null, 120_000);
+    let prepared;
+    try {
+      prepared = await prepareUploadAsync(
+        { name: req.body.name, mime: req.body.mime, base64: req.body.base64 },
+        { apiKey: GOOGLE_API_KEY, models: visionModels(user.plan), signal: extraction.signal },
+      );
+    } finally {
+      extraction.dispose();
+    }
 
     // The owner columns are written AFTER the spread, not before it. Today
     // prepareUpload returns a fixed six-key literal and the order makes no

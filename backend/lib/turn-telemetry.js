@@ -38,6 +38,7 @@ function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null
   const seats = [];
   const toolRounds = [];
   let synthesisMs = null;
+  let synthesisModel = null;
   let fallbackCouncil = { used: false, durationMs: null, kind: null };
   let ceiling = { hit: false, reason: null };
   /* Provider calls that are NOT seats, NOT synthesis and NOT router reads —
@@ -236,8 +237,22 @@ function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null
         aborted: Boolean(row.aborted),
       });
     },
-    recordSynthesis(durationMs) {
+    /**
+     * @param {number} durationMs
+     * @param {string} [model] the rung that ACTUALLY wrote the answer, from
+     *        `onModelUsed`, not the one the turn asked for. lib/spend.js prices
+     *        synthesis per model since the head gained a fallback ladder, and a
+     *        turn that fell to Sonnet costs an order of magnitude more than the
+     *        Luna the flat rate was calibrated for.
+     *
+     *        It goes in the snapshot rather than in the audit row's `extra`
+     *        because the SETTLEMENT reads `telemetry.snapshot({category})` with
+     *        no extra — the audit row is written elsewhere and the ceiling would
+     *        have gone on paying the flat rate.
+     */
+    recordSynthesis(durationMs, model = null) {
       synthesisMs = Math.max(0, Number(durationMs) || 0);
+      if (typeof model === 'string' && model) synthesisModel = model;
     },
     recordFallback(durationMs, kind = "post_council") {
       fallbackCouncil = {
@@ -325,6 +340,7 @@ function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null
         fastCalls,
         seats: [...seats],
         synthesisMs,
+        synthesisModel,
         toolRounds: [...toolRounds],
         toolMs,
         ceiling,

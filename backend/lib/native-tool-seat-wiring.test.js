@@ -55,7 +55,7 @@ test('the tool seat is reserved before use and added only after research escalat
 
 test('the reservation covers the metered seat before anything is spent', () => {
   assert.match(ROUTE, /const mayAddToolSeat = Boolean\(toolSeat\) && mayEscalate/);
-  assert.match(ROUTE, /reservationCents\(maxSeats, 12, 4, toolSeatCount\)/);
+  assert.match(ROUTE, /reservationCents\(maxSeats, 12, 4, toolSeatCount, SYNTHESIS_MODEL_CANDIDATES\)/);
   assert.ok(
     ROUTE.indexOf('const toolSeatCount') < ROUTE.indexOf('reservationCents('),
     'the count has to exist before the reservation reads it',

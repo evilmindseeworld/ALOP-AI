@@ -469,8 +469,24 @@ test("the reservation and the price are computed from the same turn shape", () =
   // and the asymmetry is correct rather than drift: a metered tool seat costs
   // three times a free seat in cents and exactly the same in OpenRouter
   // requests, because the request quota does not care what a request cost.
-  assert.match(ROUTE, /reservationCents\(maxSeats, 12, 4, toolSeatCount\)/);
+  //
+  // The money reservation takes a SECOND argument the request one does not, for
+  // the same reason: the head ladder means synthesis can run on any of several
+  // models at wildly different prices and at exactly one request each.
+  assert.match(ROUTE, /reservationCents\(maxSeats, 12, 4, toolSeatCount, SYNTHESIS_MODEL_CANDIDATES\)/);
   assert.match(ROUTE, /reservationRequests\(maxSeats, 12, 4\)/);
+});
+
+test("the synthesis reservation prices every rung the stream can reach", () => {
+  // `priceTurn` charges the rung that actually answered. If the candidate list
+  // misses a rung the stream can fall to, the settlement can exceed the
+  // reservation — which is the one direction that lets concurrent turns walk
+  // past the ceiling.
+  const list = SERVER.match(/const SYNTHESIS_MODEL_CANDIDATES = \[[^\]]*\]/s);
+  assert.ok(list, "SYNTHESIS_MODEL_CANDIDATES is gone; the reservation is back to a flat synthesis rate");
+  for (const name of ['SYNTHESIS_MODEL', 'PRIMARY_MODEL', 'SMART_MODEL', 'HEAD_FALLBACKS']) {
+    assert.match(list[0], new RegExp(name), `${name} is a model a synthesis can run on and is not reserved for`);
+  }
 });
 
 test("THE METERED SEAT IS PRICED AS ONE, at reservation and at settlement", () => {

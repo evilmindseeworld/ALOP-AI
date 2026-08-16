@@ -356,6 +356,22 @@ const HEAD_LADDER = parseLadder(process.env.COUNCIL_HEAD_FALLBACKS);
 const HEAD_FALLBACKS = asStreamFallbacks(fallbacksAfter(SYNTHESIS_MODEL, HEAD_LADDER));
 
 /**
+ * EVERY MODEL A SYNTHESIS CAN END UP ON, for the spend reservation.
+ *
+ * The reservation is taken before the router has chosen anything, and
+ * `reservationCents` must bound what `priceTurn` will later charge — which is
+ * now the rate of the rung that really answered. So the reservation prices the
+ * dearest model in this list, and the list has to contain every one the stream
+ * can reach: the configured head, its ladder, and the two `streamModel` picks
+ * for a synthesis that runs on PRIMARY_MODEL (which gets SMART_MODEL rather
+ * than the ladder). Unknown ids price at the flat default, so an over-broad
+ * list costs nothing and a short one under-reserves.
+ */
+const SYNTHESIS_MODEL_CANDIDATES = [
+  ...new Set([SYNTHESIS_MODEL, PRIMARY_MODEL, SMART_MODEL, ...HEAD_FALLBACKS.map((rung) => rung.model)]),
+];
+
+/**
  * THE SAME LADDER FOR THE NON-STREAMING CALL, which is what the native tool
  * seat makes. `streamModel` recovers the answer the user is watching; this
  * recovers the round of tool calling that produces it. Without it the tool
@@ -3806,7 +3822,7 @@ async function handleCouncilTurn(req, res) {
     const maxSeats = mayEscalate
       ? Math.max(selection.members.length, planRoster.length + toolSeatCount)
       : selection.members.length;
-    const reserved = reservationCents(maxSeats, 12, 4, toolSeatCount);
+    const reserved = reservationCents(maxSeats, 12, 4, toolSeatCount, SYNTHESIS_MODEL_CANDIDATES);
     const budget = await reservationLedger.reserve({
       turnId: turnContext.turnId,
       operationId: turnContext.operationId,
@@ -4864,7 +4880,7 @@ async function handleCouncilTurn(req, res) {
       console.log(`[SYNTHESIS] requested=${searchSynthesis.model} effort=${searchSynthesis.highEffort ? 'high' : 'default'} complexity=${selection.complexity} tools=true`);
       const searchSynthesisStartedAt = Date.now();
       const searchAnswer = await streamModel(res, searchSynthesis.model, searchSynthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, answerOptions, turnDeadlineAt, searchSynthesisOptions);
-      telemetry.recordSynthesis(Date.now() - searchSynthesisStartedAt);
+      telemetry.recordSynthesis(Date.now() - searchSynthesisStartedAt, searchSynthesisModelUsed);
       const searchSynthesisEffort = searchSynthesisModelUsed === searchSynthesis.model && searchSynthesis.highEffort ? 'high' : 'default';
       console.log(`[SYNTHESIS] model=${searchSynthesisModelUsed} effort=${searchSynthesisEffort} complexity=${selection.complexity} tools=true`);
       if (!res.writableEnded) res.end();
@@ -4916,7 +4932,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         openStream(res);
         const wikiSynthesisStartedAt = Date.now();
         const wikiAnswer = await streamModel(res, wikiSynthesis.model, wikiMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt, wikiSynthesisOptions);
-        telemetry.recordSynthesis(Date.now() - wikiSynthesisStartedAt);
+        telemetry.recordSynthesis(Date.now() - wikiSynthesisStartedAt, wikiSynthesisModelUsed);
         const wikiSynthesisEffort = wikiSynthesisModelUsed === wikiSynthesis.model && wikiSynthesis.highEffort ? 'high' : 'default';
         console.log(`[SYNTHESIS] model=${wikiSynthesisModelUsed} effort=${wikiSynthesisEffort} complexity=${selection.complexity} tools=true`);
         if (!res.writableEnded) res.end();
@@ -5480,7 +5496,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     openStream(res);
     const synthesisStartedAt = Date.now();
     const synthAnswer = await streamModel(res, synthesis.model, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, requiredSourceUrls: toolSourceUrls }, turnDeadlineAt, synthesisOptions);
-    telemetry.recordSynthesis(Date.now() - synthesisStartedAt);
+    telemetry.recordSynthesis(Date.now() - synthesisStartedAt, synthesisModelUsed);
     const synthesisEffort = synthesisModelUsed === synthesis.model && synthesis.highEffort ? 'high' : 'default';
     console.log(`[SYNTHESIS] model=${synthesisModelUsed} effort=${synthesisEffort} complexity=${selection.complexity} tools=${toolQuestion}`);
     telemetryExtra.synthesisModel = synthesisModelUsed;

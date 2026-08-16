@@ -443,7 +443,7 @@ test("the direct search path asks the full selected council before synthesis", (
   assert.match(branch, /runCouncilWithWhip\([\s\S]*selection\.members/);
   assert.match(branch, /searchSynthMsgs/);
   assert.match(branch, /streamModel\(res, searchSynthesis\.model, searchSynthMsgs/);
-  assert.match(branch, /telemetry\.recordSynthesis\(Date\.now\(\) - searchSynthesisStartedAt\)/);
+  assert.match(branch, /telemetry\.recordSynthesis\(Date\.now\(\) - searchSynthesisStartedAt, searchSynthesisModelUsed\)/);
   assert.match(branch, /auditTelemetry\('council\.search', 'search'/);
 });
 
@@ -454,7 +454,7 @@ test("the Wikipedia tool path also uses the configurable head synthesizer", () =
   const branch = SOURCE.slice(wiki, end);
   assert.match(branch, /toolQuestion: true/);
   assert.match(branch, /streamModel\(res, wikiSynthesis\.model, wikiMsgs/);
-  assert.match(branch, /telemetry\.recordSynthesis\(Date\.now\(\) - wikiSynthesisStartedAt\)/);
+  assert.match(branch, /telemetry\.recordSynthesis\(Date\.now\(\) - wikiSynthesisStartedAt, wikiSynthesisModelUsed\)/);
   assert.match(branch, /synthesisModel: wikiSynthesisModelUsed/);
 });
 

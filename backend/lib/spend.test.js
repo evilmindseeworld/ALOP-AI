@@ -7,6 +7,7 @@ const SPEND_ENV_KEYS = [
   'SPEND_SEAT_TENTHS',
   'SPEND_TOOL_SEAT_TENTHS',
   'SPEND_SYNTHESIS_TENTHS',
+  'SPEND_SYNTHESIS_MODEL_TENTHS',
   'SPEND_FAST_TENTHS',
   'SPEND_SEARCH_TENTHS',
   'SPEND_FETCH_TENTHS',
@@ -183,6 +184,78 @@ test('the reservation also covers an ordinary single-round turn', () => {
     toolRounds: [{ round: 1, calls: 12, durationMs: 1, aborted: false }],
   };
   assert.ok(defaultSpend.reservationCents(7, 12, 4) >= defaultSpend.priceTurn(single));
+});
+
+/* ==========================================================================
+ * THE HEAD LADDER'S PRICE, which is the hole model-ladder.js wrote down and
+ * did not fill: synthesis was one flat rate calibrated for Luna, and rung 2 is
+ * an order of magnitude dearer.
+ * ========================================================================== */
+
+const LUNA = 'openai/gpt-5.6-luna';
+const SONNET = 'anthropic/claude-sonnet-5';
+
+test('a synthesis that fell to a dearer rung costs more than one that did not', () => {
+  const onLuna = { ...sevenSeatSnapshot(), synthesisModel: LUNA };
+  const onSonnet = { ...sevenSeatSnapshot(), synthesisModel: SONNET };
+  assert.ok(
+    defaultSpend.priceTurn(onSonnet) > defaultSpend.priceTurn(onLuna),
+    'a fallback to Sonnet must not be charged at the Luna rate',
+  );
+});
+
+test('an unknown or missing synthesis model is charged the default rate, never nothing', () => {
+  const base = sevenSeatSnapshot();
+  const flat = defaultSpend.priceTurn(base);
+  assert.equal(defaultSpend.priceTurn({ ...base, synthesisModel: 'someone/retired-id' }), flat);
+  assert.equal(defaultSpend.priceTurn({ ...base, synthesisModel: null }), flat);
+  assert.equal(defaultSpend.synthesisTenthsFor(undefined), defaultSpend.PRICES.synthesisTenths);
+});
+
+/* The load-bearing property, re-checked on the path the ladder opened: the
+ * reservation is taken before anyone knows which rung will answer, so it has to
+ * bound the DEAREST one. Without the candidate list it prices Luna and the
+ * settlement charges Sonnet — an under-reservation, which is how several
+ * concurrent turns walk past the ceiling. */
+test('the reservation covers a turn whose synthesis fell to the dearest rung', () => {
+  const candidates = [LUNA, SONNET, 'google/gemini-2.5-flash', 'nvidia/x:free'];
+  const fellToSonnet = {
+    ...sevenSeatSnapshot(),
+    synthesisModel: SONNET,
+    fallbackCouncil: { used: true, durationMs: 1, kind: 'post_council' },
+    toolRounds: [{ round: 1, calls: 12, durationMs: 1, aborted: false }],
+  };
+
+  const reserved = defaultSpend.reservationCents(7, 12, 4, 0, candidates);
+  assert.ok(
+    reserved >= defaultSpend.priceTurn(fellToSonnet),
+    `reservation ${reserved} < turn price ${defaultSpend.priceTurn(fellToSonnet)}`,
+  );
+  /* And the flat reservation does NOT cover it — the assertion above would pass
+   * for free if the ladder's rungs happened to be cheap, so pin that this test
+   * is testing something. */
+  assert.ok(defaultSpend.reservationCents(7, 12, 4) < defaultSpend.priceTurn(fellToSonnet));
+});
+
+test('a reservation without a candidate list prices at the flat default', () => {
+  assert.equal(defaultSpend.reservationCents(7, 12, 4), defaultSpend.reservationCents(7, 12, 4, 0, [LUNA]));
+  assert.equal(defaultSpend.reservationCents(7, 12, 4), defaultSpend.reservationCents(7, 12, 4, 0, []));
+  assert.equal(defaultSpend.reservationCents(7, 12, 4), defaultSpend.reservationCents(7, 12, 4, 0, 'not-an-array'));
+});
+
+test('SPEND_SYNTHESIS_MODEL_TENTHS overrides a rate without a deploy', () => {
+  const configured = loadSpendWithEnv({
+    SPEND_SYNTHESIS_MODEL_TENTHS: `${SONNET}=250,some/new-model=30,malformed,=5,x=-2`,
+  });
+  assert.equal(configured.synthesisTenthsFor(SONNET), 250);
+  assert.equal(configured.synthesisTenthsFor('some/new-model'), 30);
+  /* Malformed entries are skipped rather than poisoning the table: a garbage
+   * rate that parsed as NaN would price a synthesis at NaN cents, and every
+   * comparison against a ceiling is false for NaN. */
+  assert.equal(configured.synthesisTenthsFor('x'), configured.PRICES.synthesisTenths);
+  for (const tenths of Object.values(configured.SYNTHESIS_MODEL_TENTHS)) {
+    assert.equal(Number.isInteger(tenths) && tenths >= 0, true);
+  }
 });
 
 test('degenerate snapshots do not throw and still return safe cents', () => {

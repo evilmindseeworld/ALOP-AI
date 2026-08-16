@@ -93,6 +93,63 @@ const PRICES = {
 };
 
 /**
+ * SYNTHESIS IS NO LONGER ONE PRICE, BECAUSE THE HEAD IS NO LONGER ONE MODEL.
+ *
+ * `lib/model-ladder.js` gave the head a five-rung fallback chain so one
+ * provider outage cannot lose a turn. It also wrote down the hole it left:
+ * `synthesisTenths` is calibrated for Luna, and rung 2 is Sonnet 5 at roughly
+ * 20x Luna's prompt rate and 17x its completion rate. A turn that falls that
+ * far was charged 8 tenths for something that can cost 100 — an UNDER-charge,
+ * which is the one direction a ceiling must never err in.
+ *
+ * REASONED, NOT MEASURED, and the distinction is the same one the tool-seat
+ * comment makes above. There is no OpenRouter key on this machine, so these are
+ * the catalogue rates (2026-08-16, $/M prompt / completion) applied to the same
+ * worst case the tool seat uses — 30k prompt, 4k completion at high effort:
+ *
+ *   openai/gpt-5.6-luna        0.10 / 0.60  →  3 + 2.4  =  5.4 tenths  → 8 (the default)
+ *   anthropic/claude-sonnet-5  2.00 / 10.00 → 60 + 40   = 100 tenths
+ *   google/gemini-2.5-flash    0.30 / 2.50  →  9 + 10   =  19 tenths   → 20
+ *
+ * The `:free` rungs cost $0 and are deliberately NOT listed: an unlisted model
+ * falls back to `synthesisTenths`, which over-charges them slightly, and that
+ * is the safe direction. Listing them at 0 would mean a typo'd or retired id
+ * priced at nothing.
+ *
+ * Overridable without a deploy, same as every rate here:
+ * `SPEND_SYNTHESIS_MODEL_TENTHS="anthropic/claude-sonnet-5=100,x/y=30"`.
+ */
+const parseModelTenths = (raw, base) => {
+  const table = { ...base };
+  for (const entry of String(raw || '').split(',')) {
+    const at = entry.lastIndexOf('=');
+    if (at <= 0) continue;
+    const model = entry.slice(0, at).trim();
+    const tenths = Number(entry.slice(at + 1));
+    if (model && Number.isFinite(tenths) && tenths >= 0) table[model] = Math.round(tenths);
+  }
+  return table;
+};
+
+const SYNTHESIS_MODEL_TENTHS = parseModelTenths(process.env.SPEND_SYNTHESIS_MODEL_TENTHS, {
+  'openai/gpt-5.6-luna': PRICES.synthesisTenths,
+  'anthropic/claude-sonnet-5': 100,
+  'google/gemini-2.5-flash': 20,
+});
+
+/**
+ * What one synthesis pass costs on a given model.
+ *
+ * An unknown or absent model is the DEFAULT rate, never zero: `priceTurn` is
+ * handed whatever the turn recorded, and a turn that recorded nothing must be
+ * charged as though it ran on the model the default was calibrated for.
+ */
+const synthesisTenthsFor = (model) => {
+  const rate = model ? SYNTHESIS_MODEL_TENTHS[model] : undefined;
+  return Number.isFinite(rate) ? rate : PRICES.synthesisTenths;
+};
+
+/**
  * The ceilings. $5/day and $20/month, in cents.
  *
  * NOTE THAT THE MONTH IS NOT 30 DAYS' WORTH. 30 × $5 is $150, and the monthly
@@ -152,7 +209,12 @@ function priceTurn(snapshot, { toolSeatModel = null } = {}) {
     0,
   );
 
-  if (snap.synthesisMs) tenths += PRICES.synthesisTenths;
+  /* PRICED ON THE MODEL THAT ACTUALLY WROTE IT, which is what the head ladder
+   * made necessary: `synthesisModel` is recorded at `recordSynthesis` from the
+   * rung `streamModel` really used, not from the rung the turn asked for. A
+   * turn that fell to Sonnet is charged as Sonnet. */
+  const synthTenths = synthesisTenthsFor(snap.synthesisModel);
+  if (snap.synthesisMs) tenths += synthTenths;
 
   /* The post-truncation fallback council: a whole extra council run, which the
    * owner deliberately keeps. It is the single most expensive thing a turn can
@@ -178,9 +240,12 @@ function priceTurn(snapshot, { toolSeatModel = null } = {}) {
      * instead of the roster size); getting the RATE wrong is the same class of
      * mistake one column over. */
     const meteredSeats = toolSeatModel && models.has(toolSeatModel) ? 1 : 0;
+    /* The fallback's synthesis runs the same head chain as the turn's own, so
+     * it is priced at the same rate rather than at the flat default — the same
+     * reasoning that made the seat rate non-uniform one block up. */
     tenths += (roster - meteredSeats) * PRICES.seatTenths
       + meteredSeats * PRICES.toolSeatTenths
-      + PRICES.synthesisTenths;
+      + synthTenths;
   }
 
   for (const round of toolRounds) {
@@ -244,7 +309,17 @@ function priceTurn(snapshot, { toolSeatModel = null } = {}) {
  *        money — which is the failure mode this whole function exists to
  *        prevent, arriving through the door that was just opened for it.
  */
-function reservationCents(seatCount, maxToolCalls, maxRounds, toolSeatCount = 0) {
+/**
+ * @param {string[]} [synthesisModels] every model the synthesis MAY run on —
+ *        the configured head plus its ladder. Priced at the most expensive of
+ *        them, because the reservation is taken before anyone knows which rung
+ *        will answer and the upper-bound property does not survive an average.
+ *
+ *        Omitting it prices at the flat default, which is what it meant before
+ *        the ladder existed and is still correct for a deployment with the
+ *        fallbacks switched off.
+ */
+function reservationCents(seatCount, maxToolCalls, maxRounds, toolSeatCount = 0, synthesisModels = null) {
   /* COERCED, BECAUSE NaN CENTS WOULD SILENTLY DISABLE THE CEILING. Luna's test
    * passed 'not-a-number' and got NaN back, which is the worst possible return
    * value here: it travels into `reserve_user_spend` as the amount to charge,
@@ -283,10 +358,18 @@ function reservationCents(seatCount, maxToolCalls, maxRounds, toolSeatCount = 0)
   const metered = Math.min(int(toolSeatCount, 0), seats);
   const free = Math.max(0, seats - metered);
 
+  /* The dearest rung, not the requested one. A turn whose head is Luna can end
+   * up written by Sonnet, and `priceTurn` will charge Sonnet for it; reserving
+   * Luna's rate would put the settlement above the reservation, which is the
+   * one property this function exists to keep. */
+  const synthTenths = Array.isArray(synthesisModels) && synthesisModels.length
+    ? Math.max(...synthesisModels.map(synthesisTenthsFor))
+    : PRICES.synthesisTenths;
+
   const tenths =
     rosters * (free * PRICES.seatTenths + metered * PRICES.toolSeatTenths) +
     /* Two synthesis passes: the turn's own, and the post-council fallback's. */
-    2 * PRICES.synthesisTenths +
+    2 * synthTenths +
     /* maxUniqueCalls is per TURN across all rounds, so it is not multiplied. */
     calls * PRICES.searchTenths;
   return Math.max(0, Math.ceil(tenths / 10));
@@ -519,6 +602,8 @@ function reservationRequests(seatCount, maxToolCalls, maxRounds) {
 module.exports = {
   priceTurn,
   reservationCents,
+  synthesisTenthsFor,
+  SYNTHESIS_MODEL_TENTHS,
   PRICES,
   LIMITS,
   countTurnRequests,

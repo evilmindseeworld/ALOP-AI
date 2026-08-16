@@ -128,6 +128,30 @@ const rlsForced = (table) => ({
  * verifying nothing is the exact behaviour being removed.
  */
 const MIGRATION_CHECKS = {
+  "000_base_schema_lineage.sql": [
+    tableExists("users"),
+    tableExists("chats"),
+    tableExists("usage"),
+    tableExists("audit_logs"),
+    tableExists("user_facts"),
+    indexExists("users_clerk_id_key"),
+    indexExists("chats_user_recent"),
+    indexExists("user_facts_fact_tsv"),
+    rlsForced("users"),
+    rlsForced("chats"),
+    functionExists("increment_usage"),
+    searchPathPinned("increment_usage"),
+    {
+      // The dimension is load-bearing — one column, one embedding model.
+      label: "user_facts.embedding is vector(768)",
+      sql: `select 1 from pg_attribute a
+            join pg_class c on c.oid = a.attrelid
+            join pg_namespace n on n.oid = c.relnamespace
+            where n.nspname='public' and c.relname='user_facts'
+              and a.attname='embedding'
+              and format_type(a.atttypid, a.atttypmod) = 'vector(768)'`,
+    },
+  ],
   "001_per_chat_memory.sql": [
     columnExists("chats", "conversation_summary"),
     tableExists("feedback_notes"),
@@ -159,10 +183,29 @@ const MIGRATION_CHECKS = {
       expectEmpty: true,
     },
   ],
+  "019_turn_ledger.sql": [
+    tableExists("turns"),
+    tableExists("turn_reservations"),
+    indexExists("turns_operation_idx"),
+    indexExists("turns_chat_idx"),
+    rlsForced("turns"),
+    rlsForced("turn_reservations"),
+    functionExists("claim_turn_reservation"),
+    functionExists("settle_turn_reservation"),
+    functionExists("checkpoint_turn"),
+  ],
   "023_function_search_path.sql": [
     searchPathPinned("reserve_user_spend"),
     searchPathPinned("settle_user_spend"),
     searchPathPinned("sweep_answer_cache"),
+  ],
+  "025_or_request_budget_lineage.sql": [
+    tableExists("or_request_budget"),
+    indexExists("or_request_budget_pkey"),
+    functionExists("reserve_or_requests"),
+    functionExists("settle_or_requests"),
+    searchPathPinned("reserve_or_requests"),
+    searchPathPinned("settle_or_requests"),
   ],
   "024_or_requests_search_path.sql": [
     searchPathPinned("reserve_or_requests"),

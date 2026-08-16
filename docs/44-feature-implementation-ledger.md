@@ -390,3 +390,38 @@ sentence and its character offsets in 3.3s.
 
 - Neither migration is an escalation: none of the five functions is SECURITY
   DEFINER. Both are catalogue-only, idempotent, no rewrite, no lock.
+
+## 2026-08-16 — item 42 closed on the file side: the lineage now describes the database
+
+Asking `pg_proc` and `information_schema` instead of reading the migration
+files turned up drift in **both** directions.
+
+- **`019_turn_ledger.sql` was never applied.** `turns`, `turn_reservations`,
+  `claim_turn_reservation`, `settle_turn_reservation` and `checkpoint_turn` do
+  not exist in production, while `lib/turn-ledger.js` and
+  `lib/reservation-ledger.js` call them on every turn. Both fail open by
+  design, so resume-after-drop and idempotent admission have simply been OFF —
+  silently, with a green suite. **Still unapplied:** the sandbox refused the
+  apply twice; it needs an owner run.
+- **`000_base_schema_lineage.sql` (new, applied).** `users`, `chats`, `usage`,
+  `audit_logs` and `user_facts` were created by hand before `migrations/`
+  existed, so every migration since 001 has been ALTERing tables no file
+  creates and 019's foreign keys pointed at nothing on a rebuild. Numbered 000
+  because it has to run before them. Transcribed from the catalogues, with two
+  divergences reproduced rather than fixed and named in the header:
+  `user_facts` is ENABLE-not-FORCE where its siblings are forced, and
+  `audit_logs` keeps its duplicate index.
+- **`025_or_request_budget_lineage.sql` (new, applied)** does the same for
+  `or_request_budget`, `reserve_or_requests` and `settle_or_requests`.
+- **`scripts/check-drift.mjs` (new)** compares migrations to production in both
+  directions and exits 1 on anything missing. It now reports zero untracked
+  objects; the only MISSING entries are 019's.
+- **`lib/rpc-lineage.test.js` (new)** is the half that runs without a token:
+  every `rpc('…')` and `.from('…')` in the code must be created by a migration
+  file. Observed red with 025 removed.
+
+**Applied but not proven by a rebuild.** 000 and 025 were applied to
+production, where every object already existed, so each statement was a no-op —
+that proves the SQL parses and executes, not that an empty database ends up
+matching. Proving that needs a scratch Postgres with pgvector and a catalogue
+diff. Docker is installed here but its daemon was not running.

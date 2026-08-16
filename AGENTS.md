@@ -970,3 +970,20 @@ small for it to choose an index on its own.
 `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING)` in libuv and return
 127 from a run that succeeded. Use `process.exitCode` and `readFileSync(0)`.
 `tools/glm.mjs` has both, commented.
+
+## Google model ids expire, per account
+
+**Never pin a dated Gemini id, and never trust ListModels.** Measured
+2026-08-16 with the owner's key: `gemini-2.5-pro`, `gemini-2.5-flash` and
+`gemini-2.0-flash` all answered `generateContent` with 404, two of them "no
+longer available to NEW USERS" — the retirement is account-relative, so the
+same list can work on an older key and refuse every image on a newer one.
+ListModels still advertises `gemini-2.5-flash` while `generateContent` refuses
+it, so only a real call to the endpoint you will use proves an id.
+
+`lib/vision.js` therefore leads both ladders with an alias
+(`gemini-pro-latest`, `gemini-flash-latest`) — Google repoints aliases instead
+of retiring them. `lib/image-gen.js` has no alias available and holds dated ids
+that need re-probing whenever generation starts failing. **A 429 is not a
+retirement**: it means the id is alive and the quota is spent, and falling
+through on it would quietly downgrade the model.

@@ -264,10 +264,33 @@ same defect as a checker that reads the migration files instead of the database.
 42. **blocked** — Full migration lineage/schema snapshots/RLS policy tests,
     function `search_path` hardening, and production drift detection. The live
     schema was inspected only for the authorized 020–022 migrations.
-43. **blocked** — Capability-based plugin/OAuth isolation, least privilege,
-    outbound allowlists, confirmations, and per-turn plugin limits. Existing
-    native tool calling is not this plugin platform; no Phase 3 implementation
-    was started.
+43. **not applicable as written; its applicable half is already built** —
+    Capability-based plugin/OAuth isolation, least privilege, outbound
+    allowlists, confirmations, and per-turn plugin limits. There is no plugin
+    platform and no third-party OAuth surface in this product: the whole tool
+    inventory is four read-only tools in `lib/tool-registry.js` — `web_search`,
+    `read_url`, `read_file`, `search_specialized`. Building a capability system
+    for plugins that do not exist would be the largest speculative subsystem in
+    the repo. Taken clause by clause against what IS here:
+    - **Outbound allowlist** — built. `lib/url-guard.js` resolves the hostname,
+      refuses if ANY resulting address is private, and RETURNS the vetted
+      address so `lib/pinned-fetch.js` connects to that rather than
+      re-resolving; without the second half the check proves nothing against
+      DNS rebinding. Fails closed on any address shape it cannot classify.
+      28 tests across the two modules pass.
+    - **Least privilege** — built. `read_url` cannot be handed a URL by a model
+      at all; it takes an opaque per-turn id minted by the registry from a
+      search result, and `read_file` takes a per-turn file id rather than a
+      name.
+    - **Per-turn limits** — built. `lib/agent-loop.js` bounds both the rounds
+      and `maxUniqueCalls`, and a cached repeat is not counted as a unique
+      billed call.
+    - **Confirmations** — moot. Every tool is read-only; there is no tool call
+      whose effect could need confirming.
+    - **OAuth isolation** — moot for the same reason.
+    Revisit this item as written the day a tool takes an action rather than
+    reading something. That is the trigger, and it should be the first thing
+    anyone adding one reads.
 44. **blocked** — Authenticated browser release matrix for SSE, reconnects,
     speech, camera, screen sharing, mobile/touch, attachments, themes, billing,
     and tools. No Phase 3 browser release run was started.

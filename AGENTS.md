@@ -1012,3 +1012,56 @@ asks production (needs `SUPABASE_ACCESS_TOKEN`) and reports MISSING and
 UNTRACKED separately. `lib/rpc-lineage.test.js` runs in the suite with no
 token: every `rpc('…')` and `.from('…')` in the code must be created by some
 migration file.
+
+## A claim you never release is not idempotency
+
+`stripe_events` was claimed before the work and never touched again, and the
+webhook read "a row exists" as "it was applied". The sequence costs a customer
+their subscription: the `users` update throws, the route answers 500 so Stripe
+will retry, the retry hits the primary key, and the handler reports a duplicate
+and answers 200. Paid, still on `free`, and every line the retry logs reads
+healthy.
+
+`lib/stripe-event-ledger.js` gives the row a state and only `done` skips.
+**The `failed` check must stay ABOVE the in-flight window check** — Stripe's
+first retry can arrive inside that window, so testing the clock first reads a
+known failure as a live attempt and skips it, which is the original bug wearing
+a new status.
+
+The general shape, and it is not only Stripe's: **any at-least-once delivery
+whose dedupe key is claimed before the work must settle that claim on BOTH
+paths.** Existence is not completion.
+
+`026_stripe_event_state.sql` is written and **NOT APPLIED**. Until it is, the
+ledger reads the missing column as "no state" and falls back to exactly the old
+behaviour, which is deliberate and tested — see the 019 entry above for why
+that fallback is written explicitly rather than assumed.
+
+## The instance count is measured now, not remembered
+
+`RATE_LIMIT_STORE=postgres` shares the rate-limit counters; unset, every limit
+is per-process and multiplies by the instance count. The whole design rested on
+a comment saying "set it before scaling", and scaling on Render is a dropdown.
+
+`lib/instance-census.js` heartbeats one row a minute into `rate_limits` (no
+migration — 004's shape already fits) and counts the live ones. More than one
+instance while the shared store is off is a named log line carrying the
+multiplier, plus `instances` and `limitsMultiplied` on `/health`.
+
+**It warns rather than refusing to boot**, and that is not timidity: a rolling
+deploy runs two instances by design, so exiting on a second one would fail every
+deploy of a correctly configured service. Do not "harden" this into a fatal.
+
+## A wired module and a tested module are different claims
+
+Three guards now read `server.js` as text because their subject is a call site,
+not a function: `lib/upload-wiring.test.js` (an extractor with no caller),
+`lib/census-wiring.test.js` (a census started inside the branch it exists to
+watch), `lib/error-envelope-wiring.test.js` (the ~30 leaking `res.status(500)
+.json({ error: err.message })` sites the envelope replaced, and nothing stopping
+the thirty-first).
+
+When you add one, mutate the source and watch it fail. The census guard passed
+against a one-line `if (USE_PG_RATE_LIMIT) startInstanceCensus(...)` on its
+first version, because it only scanned braced blocks — a guard that misses the
+shortest form of the bug is decoration.

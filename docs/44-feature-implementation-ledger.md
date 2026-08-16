@@ -337,3 +337,31 @@ every binary kind, so a PDF upload was rejected at the door while every test in
 **Not verified against production.** There is no `GOOGLE_API_KEY` on this
 machine, so no PDF has been through the live extractor from this route. DOCX
 and XLSX are pure local parsing and are covered by their own tests.
+
+## 2026-08-16 — the model ids were measured, and most of them were dead
+
+The owner supplied a Google API key, so the vision, embedding and image ids
+could be called for the first time from this machine rather than reasoned about.
+
+- **Every vision id was 404.** `gemini-2.5-pro`, `gemini-2.5-flash` and
+  `gemini-2.0-flash` all refused, the first two with "no longer available to
+  NEW USERS" — so the identical list can work on an older key and refuse every
+  image on this one. The list written to survive a retirement had expired.
+  Both ladders now lead with an ALIAS (`gemini-pro-latest`,
+  `gemini-flash-latest`), the only id Google repoints instead of retiring.
+- **ListModels is not evidence.** It still advertises `gemini-2.5-flash`, which
+  `generateContent` then refuses. Only a call to the endpoint you will use
+  proves an id, and that is what was done: one PDF per candidate.
+  Measured 200s: `gemini-flash-latest`, `gemini-flash-lite-latest` (861ms),
+  `gemini-3.1-flash-lite` (3.9s). `gemini-pro-latest` answered 429 — alive and
+  out of quota, which is why it is kept and why a 429 must not fall through.
+- **Two image-generation fallbacks were dead weight.**
+  `gemini-2.5-flash-image-preview` and `gemini-2.0-flash-preview-image-generation`
+  are 404; `gemini-2.5-flash-image` and `gemini-3.1-flash-image` answer 429, so
+  the ids live and only the quota is spent. Image generation itself remains
+  unverified end to end for that reason.
+- **`gemini-embedding-001` answers 200** at 768 dimensions. No change needed.
+
+**MEASURED, not reasoned: the document path works end to end.** A real PDF
+through `prepareUploadAsync` → Gemini extraction → `findPassages` returned its
+sentence and its character offsets in 3.3s.

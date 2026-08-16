@@ -14,9 +14,25 @@
  * those say nothing about the model and retrying them on a different one would
  * quietly downgrade the answer.
  */
+/* MEASURED 2026-08-16 against the account's own key, one PDF per id.
+ *
+ * Every id this list held was 404 — `gemini-2.5-flash`, `gemini-2.5-pro` and
+ * `gemini-2.0-flash` alike, the first two with "no longer available to NEW
+ * USERS". So the same list can work for an older key and refuse every image on
+ * this one, and the list written to survive a retirement had itself expired.
+ *
+ * Two things follow. The head of each list is an ALIAS (`-latest`), which is
+ * the only kind of id Google repoints instead of retiring. And ListModels is
+ * not evidence: it still advertises `gemini-2.5-flash`, which generateContent
+ * then refuses. Only a real call to the endpoint you will use proves an id.
+ *
+ * Measured: gemini-flash-latest 200; gemini-flash-lite-latest 200 (861ms);
+ * gemini-3.1-flash-lite 200 (3.9s); gemini-pro-latest 429 — a live id out of
+ * quota, which is why it is kept and why a 429 must not fall through.
+ */
 const VISION_MODELS = {
-  pro: ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash'],
-  free: ['gemini-2.5-flash', 'gemini-2.0-flash'],
+  pro: ['gemini-pro-latest', 'gemini-flash-latest', 'gemini-flash-lite-latest'],
+  free: ['gemini-flash-latest', 'gemini-flash-lite-latest', 'gemini-3.1-flash-lite'],
 };
 
 const visionModels = (plan) => (plan === 'pro' ? VISION_MODELS.pro : VISION_MODELS.free);

@@ -59,12 +59,22 @@ test('every candidate refusing surfaces the last error', async () => {
 });
 
 test('pro gets a stronger first candidate than free, and neither pins a preview id', () => {
-  assert.equal(visionModels('pro')[0], 'gemini-2.5-pro');
-  assert.equal(visionModels('free')[0], 'gemini-2.5-flash');
+  assert.equal(visionModels('pro')[0], 'gemini-pro-latest');
+  assert.equal(visionModels('free')[0], 'gemini-flash-latest');
   for (const plan of ['pro', 'free']) {
     for (const model of visionModels(plan)) {
       assert.doesNotMatch(model, /preview/, `${model} is a preview id and will be retired`);
     }
+  }
+});
+
+test('THE FIRST CANDIDATE IS AN ALIAS, because a dated id expires under you', () => {
+  // Measured 2026-08-16: every dated id this list previously held answered 404,
+  // two of them "no longer available to new users" — a list that works on one
+  // account and refuses every image on another. An alias is the only id Google
+  // repoints rather than retires, so it belongs at the head of both ladders.
+  for (const plan of ['pro', 'free']) {
+    assert.match(visionModels(plan)[0], /-latest$/, `${plan} leads with a dated id`);
   }
 });
 

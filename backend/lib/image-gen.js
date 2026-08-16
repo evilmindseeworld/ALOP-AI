@@ -12,10 +12,18 @@
 
 /* Image editing and text-to-image are the same call: an input image just adds
  * a part. So one model list serves both. */
+/* MEASURED 2026-08-16 against the account's own key. `gemini-2.5-flash-image`
+ * and `gemini-3.1-flash-image` answer 429 — quota, so the ids are alive. Both
+ * ids behind them answered 404: `gemini-2.5-flash-image-preview` and
+ * `gemini-2.0-flash-preview-image-generation` were dead weight, a fallback
+ * ladder whose lower rungs could not catch anything.
+ *
+ * The image endpoint has no `-latest` alias to lead with, as `lib/vision.js`
+ * now does, so this list is dated ids and needs re-probing when generation
+ * starts failing. A 429 is NOT a retirement and must not fall through. */
 const IMAGE_MODELS = [
   'gemini-2.5-flash-image',
-  'gemini-2.5-flash-image-preview',
-  'gemini-2.0-flash-preview-image-generation',
+  'gemini-3.1-flash-image',
 ];
 
 const MODEL_GONE = /not found|is not supported|not supported for|unsupported|call ListModels/i;

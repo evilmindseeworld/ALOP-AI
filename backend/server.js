@@ -389,7 +389,14 @@ const HEAD_EFFORT = effortFor(SYNTHESIS_MODEL, HEAD_LADDER);
  * the spend reservation's worst case, the ranking's candidate set, and the
  * fallback chain handed to `streamModel`.
  */
-const HEAD_CANDIDATES = [SYNTHESIS_MODEL, ...HEAD_FALLBACKS.map((rung) => rung.model)];
+const HEAD_FALLBACKS = asStreamFallbacks(
+  fallbacksAfter(SYNTHESIS_MODEL, HEAD_LADDER)
+);
+
+const HEAD_CANDIDATES = [
+  SYNTHESIS_MODEL,
+  ...HEAD_FALLBACKS.map((rung) => rung.model),
+];
 
 /**
  * ADAPTIVE HEAD SELECTION. On by default, and it is safe to be:
@@ -398,8 +405,9 @@ const HEAD_CANDIDATES = [SYNTHESIS_MODEL, ...HEAD_FALLBACKS.map((rung) => rung.m
  * replaces. Set COUNCIL_ADAPTIVE_HEAD=0 to pin the configured head regardless
  * of what it has been doing.
  */
-const ADAPTIVE_HEAD = !/^(0|false|off)$/i.test(process.env.COUNCIL_ADAPTIVE_HEAD || '');
-const HEAD_FALLBACKS = asStreamFallbacks(fallbacksAfter(SYNTHESIS_MODEL, HEAD_LADDER));
+const ADAPTIVE_HEAD = !/^(0|false|off)$/i.test(
+  process.env.COUNCIL_ADAPTIVE_HEAD || ''
+);
 
 /**
  * EVERY MODEL A SYNTHESIS CAN END UP ON, for the spend reservation.

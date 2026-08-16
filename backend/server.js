@@ -2774,6 +2774,14 @@ const { rateLimitKey } = require('./lib/rate-limit-key');
  */
 const USE_PG_RATE_LIMIT = process.env.RATE_LIMIT_STORE === 'postgres';
 const { PostgresStore } = require('./lib/pg-rate-limit-store');
+const { startInstanceCensus } = require('./lib/instance-census');
+
+/* WHAT ACTUALLY ENFORCES THE LINE ABOVE. "Set it before scaling past one
+ * instance" is a note in a comment, and scaling is a dropdown that reads no
+ * comments. The census counts the running instances in the database and says so
+ * when the count and this flag disagree — see lib/instance-census.js for why it
+ * warns rather than refusing to boot. */
+let instanceCensus = { instances: null, unsafe: false };
 
 /* `name` NAMES THE COUNTER, and under the Postgres store it is load-bearing.
  *
@@ -3447,6 +3455,13 @@ app.get('/health', (req, res) => res.json({
   status: 'ok',
   time: new Date().toISOString(),
   commit: process.env.RENDER_GIT_COMMIT || process.env.GIT_COMMIT || 'unknown',
+  /* Measured, not configured. `instances` is null when the census could not be
+   * taken, which is deliberately not the same as 1. `limitsMultiplied` is the
+   * one worth alerting on: it means every rate limit in this service is
+   * currently that many times its configured value. */
+  instances: instanceCensus.instances,
+  limitsMultiplied: instanceCensus.unsafe,
+  rateLimitStore: USE_PG_RATE_LIMIT ? 'postgres' : 'memory',
 }));
 
 // ===== COUNCIL =====
@@ -6796,20 +6811,35 @@ const server = app.listen(PORT, () => {
         ? '[BOOT] rate limit store: postgres reachable, counters shared across instances'
         : '[BOOT] RATE_LIMIT_STORE=postgres BUT THE STORE IS NOT ANSWERING — every limit is currently OPEN. Check that migrations/004_rate_limits.sql ran against this database.');
     })();
-
-    /* Expired rows are ignored on read, so this is about the table's size and
-     * nothing else. Migration 004 left the sweep as a comment to run by hand,
-     * which is a job nobody has ever done; one delete an hour costs nothing and
-     * removes the reason to remember. `unref` so it never holds the process
-     * open, and every instance running it is fine — the delete is idempotent. */
-    const sweepRateLimits = async () => {
-      const cutoff = new Date(Date.now() - 3_600_000).toISOString();
-      const { error } = await supabase.from('rate_limits').delete().lt('expires_at', cutoff);
-      if (error) console.error(`[ratelimit] sweep failed: ${error.message}`);
-    };
-    void sweepRateLimits();
-    setInterval(sweepRateLimits, 3_600_000).unref();
   }
+
+  /* Expired rows are ignored on read, so this is about the table's size and
+   * nothing else. Migration 004 left the sweep as a comment to run by hand,
+   * which is a job nobody has ever done; one delete an hour costs nothing and
+   * removes the reason to remember. `unref` so it never holds the process
+   * open, and every instance running it is fine — the delete is idempotent.
+   *
+   * OUTSIDE the RATE_LIMIT_STORE branch, because the census below writes to
+   * this table in BOTH modes and its keys carry a new instance id after every
+   * deploy — left inside, a service that never turns the shared store on would
+   * accumulate one dead census row per deploy for ever. */
+  const sweepRateLimits = async () => {
+    const cutoff = new Date(Date.now() - 3_600_000).toISOString();
+    const { error } = await supabase.from('rate_limits').delete().lt('expires_at', cutoff);
+    if (error) console.error(`[ratelimit] sweep failed: ${error.message}`);
+  };
+  void sweepRateLimits();
+  setInterval(sweepRateLimits, 3_600_000).unref();
+
+  /* Also outside it, because the state this exists to catch is exactly the one
+   * where that branch does not run: the shared store off and more than one
+   * instance up. One row a minute, keyed per instance and self-expiring. */
+  const census = startInstanceCensus({
+    db: supabase,
+    sharedStore: USE_PG_RATE_LIMIT,
+    onCensus: (state) => { instanceCensus = state; },
+  });
+  void census.tick();
 });
 
 const brain = createBrain({

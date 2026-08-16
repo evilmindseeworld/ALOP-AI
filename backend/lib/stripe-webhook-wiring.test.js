@@ -82,8 +82,29 @@ test('checkout sends both identity fields, so either version of the webhook can 
 test('the event ledger still claims the event id before any of this runs', () => {
   // Stripe is at-least-once. The dedupe must stay ABOVE the handler, or a
   // retried event re-applies the patch.
-  const ledger = WEBHOOK.indexOf("from('stripe_events')");
+  const ledger = WEBHOOK.indexOf('claimStripeEvent(');
   const resolve = WEBHOOK.indexOf('resolveStripeTarget(event)');
   assert.ok(ledger > 0 && resolve > 0);
   assert.ok(ledger < resolve, 'the idempotency claim must precede the handler');
+});
+
+test('and the claim is SETTLED, which is what makes a retry able to finish the job', () => {
+  /* The expensive bug this replaced: the row was claimed before the work and
+   * never touched again, so a handler that threw answered 500, Stripe retried,
+   * and the retry was dropped as a duplicate. Paid, and still on the free plan.
+   *
+   * Both halves have to stay: `done` only on the success path, `failed` in the
+   * catch. Marking done before the work — or in a `finally` — reinstates the
+   * original defect exactly. */
+  assert.match(CODE, /markStripeEventDone\(/, 'nothing marks a Stripe event applied; every retry now re-applies it');
+  assert.match(CODE, /markStripeEventFailed\(/, 'a failed webhook leaves no record and its retry is dropped as a duplicate');
+
+  const done = CODE.indexOf('markStripeEventDone(');
+  const update = CODE.indexOf(".from('users').update(decision.patch)");
+  assert.ok(update > 0 && done > update, 'the event is marked done before the work it claims to have done');
+
+  const catchAt = CODE.indexOf('} catch (err) {', update);
+  assert.ok(catchAt > 0 && done < catchAt, 'marked done outside the success path — a throw would still count as applied');
+  assert.ok(CODE.indexOf('markStripeEventFailed(') > catchAt, 'the failure is recorded outside the catch');
+  assert.doesNotMatch(CODE, /finally\s*\{[^}]*markStripeEventDone/, 'done in a finally block means a throw is recorded as success');
 });

@@ -1448,6 +1448,7 @@ const { boundedPage, pageInfo } = require('./lib/pagination');
 const { noStoreApi } = require('./lib/http-cache');
 const { errorEnvelope, sendError, fail } = require('./lib/error-envelope');
 const { resolveStripeTarget } = require('./lib/stripe-identity');
+const { claimStripeEvent, markStripeEventDone, markStripeEventFailed } = require('./lib/stripe-event-ledger');
 const { detectRegion, regionHint } = require('./lib/region');
 const { firstWithResults, toolMessages, summariseProbe, searchResultUrls, requiredCitationSuffix, UNTRUSTED_PREAMBLE } = require('./lib/council-tools');
 const { createNativeToolSeat } = require('./lib/native-tool-seat');
@@ -2703,11 +2704,19 @@ app.post('/api/stripe/webhook', requireStripe, express.raw({ type: 'application/
   // Failing OPEN on an insert error is deliberate: if the ledger is unreachable
   // the worse outcome is re-applying a plan change, not silently dropping a
   // paid subscription.
-  try {
-    const { error: dupe } = await supabase.from('stripe_events').insert({ id: event.id, type: event.type });
-    if (dupe && dupe.code === '23505') return res.json({ received: true, duplicate: true });
-    if (dupe) console.error('[stripe] event ledger unavailable, processing anyway:', dupe.message);
-  } catch (e) { console.error('[stripe] event ledger threw, processing anyway:', e.message); }
+  //
+  // AND THE CLAIM IS RELEASED WHEN THE WORK FAILS, which it was not. The row
+  // was inserted before the users update and never touched again, so a handler
+  // that threw answered 500 — correctly, so Stripe would retry — and the retry
+  // hit the primary key and was dropped as a duplicate. The customer paid,
+  // `plan` stayed `free`, and the retry logged the healthy line. See
+  // lib/stripe-event-ledger.js and migrations/026_stripe_event_state.sql.
+  const claim = await claimStripeEvent({ db: supabase, id: event.id, type: event.type });
+  if (!claim.proceed) {
+    console.log(`[stripe] ${event.type} skipped: ${claim.reason}`);
+    return res.json({ received: true, duplicate: true });
+  }
+  if (claim.reason !== 'claimed') console.warn(`[stripe] ${event.type} ${claim.reason}`);
 
   /* IDENTITY IS NO LONGER INFERRED FROM AN EMAIL STRING.
    *
@@ -2745,8 +2754,18 @@ app.post('/api/stripe/webhook', requireStripe, express.raw({ type: 'application/
     } else if (decision.handled) {
       console.log(`[stripe] ${event.type} handled with no change (${decision.reason})`);
     }
+    /* Only here. Everything above either applied the patch or decided there
+     * was nothing to apply, and both are a finished event; a throw skips this
+     * line and leaves the row claimable. */
+    await markStripeEventDone({ db: supabase, id: event.id });
     res.json({ received: true });
-  } catch (err) { Sentry.captureException(err); res.status(500).send('Webhook failed'); }
+  } catch (err) {
+    Sentry.captureException(err);
+    // Recorded, not released-and-forgotten: the next delivery must do the work,
+    // and a permanently failing event has to be visible as one.
+    await markStripeEventFailed({ db: supabase, id: event.id, error: err });
+    res.status(500).send('Webhook failed');
+  }
 });
 
 app.use(compression({ filter: sseAwareFilter }));

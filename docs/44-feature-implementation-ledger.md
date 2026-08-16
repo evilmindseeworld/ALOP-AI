@@ -365,3 +365,28 @@ could be called for the first time from this machine rather than reasoned about.
 **MEASURED, not reasoned: the document path works end to end.** A real PDF
 through `prepareUploadAsync` → Gemini extraction → `findPassages` returned its
 sentence and its character offsets in 3.3s.
+
+## 2026-08-16 — item 42: 023 applied, and the two functions it could not see
+
+- **`023_function_search_path.sql` is applied to production**, and
+  `run-migration.mjs` now has the verification it was missing: `searchPathPinned`
+  reads `pg_proc.proconfig` rather than asking whether the function exists —
+  the three functions existed before 023 and would have passed `functionExists`
+  with a mutable search_path intact. All three verified green.
+
+- **`024_or_requests_search_path.sql` (new, applied and verified).** Listing
+  `pg_proc` directly turned up two more unpinned project functions,
+  `reserve_or_requests` and `settle_or_requests`, the OpenRouter request
+  budget called from `lib/request-budget.js`. They were observed red before the
+  migration and green after.
+
+- **The reason 023 missed them is the finding.** `lib/migration-lineage.js`
+  reads the migration FILES, and neither function is created by any file in
+  `migrations/` — they were applied by hand, like the duplicate `audit_logs`
+  index AGENTS.md records. A checker over the files can only verify what the
+  files say. **Known drift, not yet closed:** no migration creates those two
+  functions, so a rebuild from `migrations/` produces a database where
+  `lib/request-budget.js` fails at its first RPC.
+
+- Neither migration is an escalation: none of the five functions is SECURITY
+  DEFINER. Both are catalogue-only, idempotent, no rewrite, no lock.

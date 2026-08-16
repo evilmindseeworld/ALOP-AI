@@ -90,6 +90,23 @@ const functionExists = (name) => ({
   sql: `select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
         where n.nspname='public' and p.proname='${name}'`,
 });
+/**
+ * A function's search_path is PINNED, not merely present.
+ *
+ * `functionExists` is not the claim 023 makes — the three functions all
+ * existed before it ran and would pass that check with a mutable search_path
+ * intact. The claim is about `proconfig`, so assert that, and assert the two
+ * schemas by name: a pin to something else is not the pin that was reviewed.
+ */
+const searchPathPinned = (name) => ({
+  label: `${name}() has search_path pinned to pg_catalog, public`,
+  sql: `select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname='public' and p.proname='${name}'
+          and exists (
+            select 1 from unnest(coalesce(p.proconfig, '{}')) c
+            where c like 'search_path=%' and c like '%pg_catalog%' and c like '%public%'
+          )`,
+});
 const rlsForced = (table) => ({
   label: `${table} has RLS forced`,
   sql: `select 1 from pg_class c join pg_namespace n on n.oid = c.relnamespace
@@ -141,6 +158,15 @@ const MIGRATION_CHECKS = {
       sql: `select 1 from audit_logs where created_at < now() - interval '90 days' limit 1`,
       expectEmpty: true,
     },
+  ],
+  "023_function_search_path.sql": [
+    searchPathPinned("reserve_user_spend"),
+    searchPathPinned("settle_user_spend"),
+    searchPathPinned("sweep_answer_cache"),
+  ],
+  "024_or_requests_search_path.sql": [
+    searchPathPinned("reserve_or_requests"),
+    searchPathPinned("settle_or_requests"),
   ],
   "015_answer_cache.sql": [
     tableExists("answer_cache"),

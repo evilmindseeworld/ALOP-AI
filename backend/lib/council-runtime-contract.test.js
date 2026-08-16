@@ -91,7 +91,11 @@ test('the head model owns complex/tool synthesis and its production identity is 
   assert.match(ROUTE, /toolQuestion/);
   assert.match(ROUTE, /\[SYNTHESIS\].*model=\$\{/);
   assert.match(ROUTE, /synthesisModel: synthesisModelUsed/);
-  assert.match(ROUTE, /reasoning: \{ effort: 'high', exclude: true \}/);
+  /* The effort is read from the model now, not written here as a literal:
+   * `high` was established for Luna and the default head is free. `exclude` is
+   * still absolute — a chain of thought must never reach the socket. */
+  assert.match(ROUTE, /headReasoning\(/);
+  assert.match(SOURCE, /reasoning: \{ effort: HEAD_EFFORT, exclude: true \}/);
 });
 
 test("the account's daily model cap refuses the turn before anything is spent", () => {

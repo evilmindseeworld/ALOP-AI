@@ -1,6 +1,16 @@
 'use strict';
 
-const DEFAULT_SYNTHESIS_MODEL = 'openai/gpt-5.6-luna';
+/**
+ * THE HEAD IS FREE BY DEFAULT. It was `openai/gpt-5.6-luna`, which is metered
+ * on the OpenRouter account this server holds — a Codex/ChatGPT subscription
+ * covers that model on a DIFFERENT account and does not transfer to an API key.
+ * The owner's instruction, 2026-08-16: this product runs on free models.
+ *
+ * The strongest free rung that the catalogue says can call tools, which the head
+ * must be able to do — it holds the native tool loop. Paying for a better head
+ * is a deliberate opt-in through COUNCIL_SYNTHESIS_MODEL.
+ */
+const DEFAULT_SYNTHESIS_MODEL = 'nvidia/nemotron-3-ultra-550b-a55b:free';
 const DISABLED_MODEL = /^(off|none|0|false)$/i;
 
 /**

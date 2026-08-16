@@ -80,6 +80,9 @@ const {
   configuredSynthesisModel,
   chooseSynthesis,
 } = require('./lib/synthesis-policy');
+/* Required here rather than beside the ladder constants below, because the tool
+ * seat resolves its effort from `effortFor` and is declared first. */
+const { parseLadder, fallbacksAfter, asStreamFallbacks, effortFor } = require('./lib/model-ladder');
 
 /* One diagnostic per process proves that the shared identity section reached
  * a real model request without logging user text or the rest of the private
@@ -274,16 +277,26 @@ const COUNCIL = [
  * with `finish_reason: "stop"` when sent `tool_choice: "none"`.
  *
  * COST, STATED PLAINLY BECAUSE IT IS THE THING MOST LIKELY TO BE ASSUMED AWAY:
- * through OpenRouter this model is $0.10/M prompt and $0.60/M completion. A
- * ChatGPT/Codex subscription covers `gpt-5.6-luna` when it is called through
- * THAT account — this is a different account and a different bill. Reasoning
- * tokens are billed as completion, and this seat runs at high effort, so the
- * completion side is the expensive half. lib/spend.js prices it separately for
- * exactly this reason; the request ceiling counts it like any other seat,
- * because OpenRouter's request quota does not care what a request cost.
+ * through OpenRouter `gpt-5.6-luna` is $0.10/M prompt and $0.60/M completion. A
+ * ChatGPT/Codex subscription covers that model when it is called through THAT
+ * account — this is a different account and a different bill.
+ *
+ * THAT PARAGRAPH WAS ALREADY HERE AND THE DEFAULT UNDERNEATH IT WAS METERED
+ * ANYWAY, which is the whole failure: the reasoning was written down and then
+ * not applied. The owner's instruction, 2026-08-16, is that this product runs
+ * on OpenRouter's free models and that the subscriptions belong to the people
+ * building it. So the default is the strongest free rung the catalogue says can
+ * call tools, and paying is an explicit COUNCIL_TOOL_SEAT_MODEL.
+ *
+ * The effort follows the MODEL rather than being pinned high: `high` was
+ * written for Luna, and sending an unestablished reasoning parameter to a free
+ * model is an unverified field on a paid-for turn. `effortFor` reads it from
+ * the ladder, which is where the per-model answer already lives.
  */
-const TOOL_SEAT_MODEL = (process.env.COUNCIL_TOOL_SEAT_MODEL || 'openai/gpt-5.6-luna').trim();
-const TOOL_SEAT_EFFORT = (process.env.COUNCIL_TOOL_SEAT_EFFORT || 'high').trim();
+const TOOL_SEAT_MODEL = (process.env.COUNCIL_TOOL_SEAT_MODEL || 'nvidia/nemotron-3-ultra-550b-a55b:free').trim();
+const TOOL_SEAT_EFFORT = (process.env.COUNCIL_TOOL_SEAT_EFFORT || '').trim()
+  || effortFor(TOOL_SEAT_MODEL)
+  || '';
 /* PRO ONLY BY DEFAULT, and this is a spend boundary rather than a product one.
  * Every other seat costs $0, so `rosterForPlan` has never had money riding on
  * it. Handing a metered model to an unbounded free tier is how a $20/month
@@ -351,8 +364,26 @@ const SMART_MODEL = process.env.ORCHESTRATOR_FALLBACK_MODEL || 'nvidia/nemotron-
  * diversity live in lib/model-ladder.js; this only resolves the deployment
  * variable and asks the ladder what sits below the head model in use.
  */
-const { parseLadder, fallbacksAfter, asStreamFallbacks } = require('./lib/model-ladder');
 const HEAD_LADDER = parseLadder(process.env.COUNCIL_HEAD_FALLBACKS);
+
+/**
+ * THE HEAD'S REASONING EFFORT COMES FROM THE MODEL, NOT FROM A CONSTANT.
+ *
+ * `{ effort: 'high' }` was written when the head was Luna and was sent on every
+ * head synthesis regardless of which model was configured. With a free default
+ * head that is an unestablished parameter on the request that writes every
+ * complex answer — and there is no OpenRouter key here to probe it with, which
+ * is the same reason `usage: {include}` in lib/openrouter.js is behind a flag.
+ *
+ * Null means send no `reasoning` block at all; `streamOnce` still defaults to
+ * `{ exclude: true }`, so a model's chain of thought never reaches the socket.
+ * `HEAD_EFFORT_LABEL` is what the logs and the audit row call it, so a row can
+ * never claim an effort the request did not carry.
+ */
+const HEAD_EFFORT = effortFor(SYNTHESIS_MODEL, HEAD_LADDER);
+const HEAD_EFFORT_LABEL = HEAD_EFFORT || 'default';
+const headReasoning = (useHead) =>
+  (useHead && HEAD_EFFORT ? { reasoning: { effort: HEAD_EFFORT, exclude: true } } : {});
 const HEAD_FALLBACKS = asStreamFallbacks(fallbacksAfter(SYNTHESIS_MODEL, HEAD_LADDER));
 
 /**
@@ -4872,16 +4903,16 @@ async function handleCouncilTurn(req, res) {
         configuredModel: SYNTHESIS_MODEL,
       });
       const searchSynthesisOptions = {
-        ...(searchSynthesis.highEffort ? { reasoning: { effort: 'high', exclude: true } } : {}),
+        ...headReasoning(searchSynthesis.highEffort),
         ...(searchSynthesis.model !== PRIMARY_MODEL ? { fallbackModels: HEAD_FALLBACKS } : {}),
       };
       let searchSynthesisModelUsed = searchSynthesis.model;
       searchSynthesisOptions.onModelUsed = (model) => { searchSynthesisModelUsed = model; };
-      console.log(`[SYNTHESIS] requested=${searchSynthesis.model} effort=${searchSynthesis.highEffort ? 'high' : 'default'} complexity=${selection.complexity} tools=true`);
+      console.log(`[SYNTHESIS] requested=${searchSynthesis.model} effort=${searchSynthesis.highEffort ? HEAD_EFFORT_LABEL : 'default'} complexity=${selection.complexity} tools=true`);
       const searchSynthesisStartedAt = Date.now();
       const searchAnswer = await streamModel(res, searchSynthesis.model, searchSynthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, answerOptions, turnDeadlineAt, searchSynthesisOptions);
       telemetry.recordSynthesis(Date.now() - searchSynthesisStartedAt, searchSynthesisModelUsed);
-      const searchSynthesisEffort = searchSynthesisModelUsed === searchSynthesis.model && searchSynthesis.highEffort ? 'high' : 'default';
+      const searchSynthesisEffort = searchSynthesisModelUsed === searchSynthesis.model && searchSynthesis.highEffort ? HEAD_EFFORT_LABEL : 'default';
       console.log(`[SYNTHESIS] model=${searchSynthesisModelUsed} effort=${searchSynthesisEffort} complexity=${selection.complexity} tools=true`);
       if (!res.writableEnded) res.end();
       /* A SHORTER SHELF LIFE WHEN THE QUESTION ASKED FOR NOW. `fresh` is the
@@ -4923,17 +4954,17 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
           configuredModel: SYNTHESIS_MODEL,
         });
         const wikiSynthesisOptions = {
-          ...(wikiSynthesis.highEffort ? { reasoning: { effort: 'high', exclude: true } } : {}),
+          ...headReasoning(wikiSynthesis.highEffort),
           ...(wikiSynthesis.model !== PRIMARY_MODEL ? { fallbackModels: HEAD_FALLBACKS } : {}),
         };
         let wikiSynthesisModelUsed = wikiSynthesis.model;
         wikiSynthesisOptions.onModelUsed = (model) => { wikiSynthesisModelUsed = model; };
-        console.log(`[SYNTHESIS] requested=${wikiSynthesis.model} effort=${wikiSynthesis.highEffort ? 'high' : 'default'} complexity=${selection.complexity} tools=true`);
+        console.log(`[SYNTHESIS] requested=${wikiSynthesis.model} effort=${wikiSynthesis.highEffort ? HEAD_EFFORT_LABEL : 'default'} complexity=${selection.complexity} tools=true`);
         openStream(res);
         const wikiSynthesisStartedAt = Date.now();
         const wikiAnswer = await streamModel(res, wikiSynthesis.model, wikiMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt, wikiSynthesisOptions);
         telemetry.recordSynthesis(Date.now() - wikiSynthesisStartedAt, wikiSynthesisModelUsed);
-        const wikiSynthesisEffort = wikiSynthesisModelUsed === wikiSynthesis.model && wikiSynthesis.highEffort ? 'high' : 'default';
+        const wikiSynthesisEffort = wikiSynthesisModelUsed === wikiSynthesis.model && wikiSynthesis.highEffort ? HEAD_EFFORT_LABEL : 'default';
         console.log(`[SYNTHESIS] model=${wikiSynthesisModelUsed} effort=${wikiSynthesisEffort} complexity=${selection.complexity} tools=true`);
         if (!res.writableEnded) res.end();
         // An encyclopedia answer is still good next week.
@@ -5476,16 +5507,16 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
       configuredModel: SYNTHESIS_MODEL,
     });
     const synthesisOptions = {
-      ...(synthesis.highEffort ? { reasoning: { effort: 'high', exclude: true } } : {}),
+      ...headReasoning(synthesis.highEffort),
       ...(synthesis.model !== PRIMARY_MODEL ? { fallbackModels: HEAD_FALLBACKS } : {}),
     };
     let synthesisModelUsed = synthesis.model;
     synthesisOptions.onModelUsed = (model) => { synthesisModelUsed = model; };
-    console.log(`[SYNTHESIS] requested=${synthesis.model} effort=${synthesis.highEffort ? 'high' : 'default'} complexity=${selection.complexity} tools=${toolQuestion}`);
+    console.log(`[SYNTHESIS] requested=${synthesis.model} effort=${synthesis.highEffort ? HEAD_EFFORT_LABEL : 'default'} complexity=${selection.complexity} tools=${toolQuestion}`);
     telemetryExtra = {
       ...telemetryExtra,
       synthesisModel: synthesisModelUsed,
-      synthesisEffort: synthesis.highEffort ? 'high' : 'default',
+      synthesisEffort: synthesis.highEffort ? HEAD_EFFORT_LABEL : 'default',
       ...(progressiveOutcome ? { progressive: progressiveOutcome } : {}),
     };
     const synthSysForAnswer = `${synthSys}${SOURCE_TRUTH_RULES}`;
@@ -5497,7 +5528,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     const synthesisStartedAt = Date.now();
     const synthAnswer = await streamModel(res, synthesis.model, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, requiredSourceUrls: toolSourceUrls }, turnDeadlineAt, synthesisOptions);
     telemetry.recordSynthesis(Date.now() - synthesisStartedAt, synthesisModelUsed);
-    const synthesisEffort = synthesisModelUsed === synthesis.model && synthesis.highEffort ? 'high' : 'default';
+    const synthesisEffort = synthesisModelUsed === synthesis.model && synthesis.highEffort ? HEAD_EFFORT_LABEL : 'default';
     console.log(`[SYNTHESIS] model=${synthesisModelUsed} effort=${synthesisEffort} complexity=${selection.complexity} tools=${toolQuestion}`);
     telemetryExtra.synthesisModel = synthesisModelUsed;
     telemetryExtra.synthesisEffort = synthesisEffort;

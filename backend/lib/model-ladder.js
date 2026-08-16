@@ -19,44 +19,87 @@
  *      OpenRouter's catalogue on 2026-08-16: every id below reports `tools`
  *      among its supported parameters.
  *
- *   2. PROVIDER DIVERSITY IS THE POINT. OpenAI, then Google, then Anthropic,
- *      then two NVIDIA free models. Two rungs from one provider are one rung
- *      wearing two names on the day that provider is down — which is the exact
- *      failure this ladder exists for.
+ *   2. EVERY DEFAULT RUNG IS `:free`. THIS IS A STANDING RULE, NOT A SETTING.
  *
- *      THE ORDER OF RUNGS 2 AND 3 IS THE OWNER'S, given 2026-08-16: Luna, then
- *      Gemini, then Sonnet. Price agrees with it — Gemini is about a sixth of
- *      Sonnet per synthesis on the estimates in lib/spend.js — so the cheap
- *      recovery is tried before the dear one, and Sonnet remains the rung that
- *      catches a Google outage on top of an OpenAI one. Do not reorder these
- *      two back on a capability argument without asking.
+ *      The owner's instruction, 2026-08-16: this product runs on OpenRouter's
+ *      free models. Subscriptions — Codex/ChatGPT, Gemini — are for the people
+ *      building it, and they do not transfer: a subscription authenticates a
+ *      human in a CLI, while this server holds an API key on a different
+ *      account with a different bill. The comment on TOOL_SEAT_MODEL in
+ *      server.js already said exactly that, and the default underneath it was a
+ *      metered model anyway.
  *
- *   3. The last rung costs nothing. A ladder whose every rung is metered runs
- *      out with the money, and an account at its spend ceiling is precisely
- *      when the turn still needs an answer.
+ *      So Luna, Gemini 2.5 Flash and Sonnet 5 are in METERED_RUNGS below and on
+ *      no default path. A deployment that has decided to pay opts in through
+ *      COUNCIL_HEAD_FALLBACKS / COUNCIL_SYNTHESIS_MODEL / COUNCIL_TOOL_SEAT_MODEL.
+ *      Do not promote one back to a default because the free rung is slower.
+ *
+ *      WHAT THIS COSTS, stated rather than buried: the free rungs are the
+ *      slowest models on the roster — 120B measured at 23.9s median against
+ *      Gemma's 2.4s — so a complex or tool-backed answer is now written by a
+ *      slow model. That is the trade the instruction makes, and the fix for it
+ *      is a genuinely free head (Google AI Studio's free tier), not a metered
+ *      one.
+ *
+ *      PROVIDER DIVERSITY IS WEAKER NOW, and it has to be said: both default
+ *      rungs are NVIDIA models on one gateway, so they are two rungs wearing
+ *      one provider's name on the day that provider is down. Free tool-capable
+ *      models from a second provider would be the fix; there was not one in the
+ *      verified set on 2026-08-16.
+ *
+ *   3. Free does not mean unlimited. The `:free` rungs cost $0 and still spend
+ *      OpenRouter's account-wide daily REQUEST quota, which is the ceiling that
+ *      actually binds here — see the second half of lib/spend.js.
  *
  * PRICES (OpenRouter catalogue, 2026-08-16, $/M prompt / $/M completion):
+ *   nvidia/nemotron-3-ultra-550b-a55b:free 0 / 0   (1M context)
+ *   nvidia/nemotron-3-super-120b-a12b:free 0 / 0   (the previous sole fallback)
+ *   -- opt-in only, METERED_RUNGS below --
  *   openai/gpt-5.6-luna                    0.10 / 0.60
  *   google/gemini-2.5-flash                0.30 / 2.50
  *   anthropic/claude-sonnet-5              2.00 / 10.00
- *   nvidia/nemotron-3-ultra-550b-a55b:free 0 / 0   (1M context)
- *   nvidia/nemotron-3-super-120b-a12b:free 0 / 0   (the previous sole fallback)
  *
- * COST IS NO LONGER ASSUMED AWAY. This file used to record that lib/spend.js
- * charged a flat Luna-shaped rate for every rung, so a fallen turn was
- * under-priced against the daily ceiling. `SYNTHESIS_MODEL_TENTHS` prices the
- * rungs individually now and the reservation holds the dearest one, so adding
- * a metered rung here changes what a turn reserves — check that table when you
- * change this list.
+ * IF YOU OPT IN, THE PRICING FOLLOWS. `SYNTHESIS_MODEL_TENTHS` in lib/spend.js
+ * prices the metered rungs individually and the reservation holds the dearest
+ * one, so putting a metered model on this path changes what every turn
+ * reserves. Check that table when you change this list.
  */
 
 const DEFAULT_HEAD_LADDER = Object.freeze([
-  Object.freeze({ model: 'openai/gpt-5.6-luna', effort: 'high' }),
-  Object.freeze({ model: 'google/gemini-2.5-flash', effort: 'high' }),
-  Object.freeze({ model: 'anthropic/claude-sonnet-5', effort: 'high' }),
   Object.freeze({ model: 'nvidia/nemotron-3-ultra-550b-a55b:free', effort: null }),
   Object.freeze({ model: 'nvidia/nemotron-3-super-120b-a12b:free', effort: null }),
 ]);
+
+/**
+ * The metered rungs, kept as data rather than as prose so an opt-in deployment
+ * has an ordered list to paste, and so the tool-capability test still covers
+ * them. NOT on the default ladder: see the paragraph above.
+ *
+ * `COUNCIL_HEAD_FALLBACKS="openai/gpt-5.6-luna:high,google/gemini-2.5-flash:high"`
+ * is how a deployment that has decided to pay opts in.
+ */
+const METERED_RUNGS = Object.freeze([
+  Object.freeze({ model: 'openai/gpt-5.6-luna', effort: 'high' }),
+  Object.freeze({ model: 'google/gemini-2.5-flash', effort: 'high' }),
+  Object.freeze({ model: 'anthropic/claude-sonnet-5', effort: 'high' }),
+]);
+
+/**
+ * The reasoning effort a model is configured to run at, or null.
+ *
+ * Read from the ladder rather than assumed, because `high` is not a universal
+ * parameter: it was written for the metered rungs, and sending it to a free
+ * model that does not take it is an unverified field on the request that writes
+ * every answer this product produces — the same risk the `usage: {include}`
+ * comment in lib/openrouter.js refuses to take without a live probe. There is
+ * no OpenRouter key on this machine, so the safe default for a rung whose
+ * effort was never established is to send none.
+ */
+function effortFor(model, ladder = DEFAULT_HEAD_LADDER) {
+  const rung = (ladder || []).find((entry) => entry.model === model)
+    || METERED_RUNGS.find((entry) => entry.model === model);
+  return rung?.effort || null;
+}
 
 const DISABLED = /^(off|none|0|false)$/i;
 
@@ -111,4 +154,11 @@ function asStreamFallbacks(rungs) {
   }));
 }
 
-module.exports = { DEFAULT_HEAD_LADDER, parseLadder, fallbacksAfter, asStreamFallbacks };
+module.exports = {
+  DEFAULT_HEAD_LADDER,
+  METERED_RUNGS,
+  parseLadder,
+  fallbacksAfter,
+  asStreamFallbacks,
+  effortFor,
+};

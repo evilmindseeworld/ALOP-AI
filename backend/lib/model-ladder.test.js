@@ -2,38 +2,80 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
-const { DEFAULT_HEAD_LADDER, parseLadder, fallbacksAfter, asStreamFallbacks } = require('./model-ladder');
+const {
+  DEFAULT_HEAD_LADDER, METERED_RUNGS, parseLadder, fallbacksAfter, asStreamFallbacks, effortFor,
+} = require('./model-ladder');
 
-test('the ladder does not stack two rungs from one provider in a row', () => {
-  // Two rungs from one provider are one rung on the day that provider is down,
-  // which is the failure the ladder exists for.
+/* THIS TEST USED TO PASS BY NOT LOOKING. It ran `i < length - 1`, so on the
+ * two-rung free ladder the loop body never executed and a green result meant
+ * "nothing was checked" — the exact shape of a search that returns four when
+ * nine exist. It now checks every adjacent pair and states the real position:
+ * the two free rungs ARE both NVIDIA, so provider diversity is a property of
+ * the opt-in list today and a KNOWN GAP on the default one. */
+test('provider diversity is checked on every adjacent pair, and the gap is named', () => {
   const provider = (m) => m.split('/')[0];
-  for (let i = 1; i < DEFAULT_HEAD_LADDER.length - 1; i++) {
-    assert.notEqual(
-      provider(DEFAULT_HEAD_LADDER[i].model),
-      provider(DEFAULT_HEAD_LADDER[i - 1].model),
-      `rungs ${i - 1} and ${i} share a provider`,
-    );
+  const adjacentShares = [];
+  for (let i = 1; i < DEFAULT_HEAD_LADDER.length; i++) {
+    if (provider(DEFAULT_HEAD_LADDER[i].model) === provider(DEFAULT_HEAD_LADDER[i - 1].model)) {
+      adjacentShares.push(`${i - 1}/${i}`);
+    }
   }
+  /* The free tool-capable set had exactly one provider in it on 2026-08-16. If a
+   * free rung from a second provider becomes available, this expectation is
+   * what should be tightened to zero. */
+  assert.ok(
+    adjacentShares.length <= DEFAULT_HEAD_LADDER.length - 1,
+    'sanity: more shared pairs than pairs',
+  );
+  const providers = new Set(DEFAULT_HEAD_LADDER.map((r) => provider(r.model)));
+  assert.equal(
+    providers.size,
+    1,
+    'a second free provider is now on the ladder — tighten this test to require no adjacent pair share one',
+  );
 });
 
 test('the last rung costs nothing, so the ladder outlives the spend ceiling', () => {
   assert.match(DEFAULT_HEAD_LADDER.at(-1).model, /:free$/);
 });
 
-test('there is more than one paid rung and more than one provider overall', () => {
-  const providers = new Set(DEFAULT_HEAD_LADDER.map((r) => r.model.split('/')[0]));
-  assert.ok(providers.size >= 3, `only ${providers.size} providers on the ladder`);
-  assert.ok(DEFAULT_HEAD_LADDER.length >= 4, 'a two-rung ladder is the single point of failure with an extra step');
+/* THE RULE THIS FILE EXISTS TO KEEP, owner's instruction 2026-08-16: nothing on
+ * a default path is billed by usage. A metered model reaching a default is not a
+ * configuration drift, it is a bill, and it is invisible until the invoice. */
+test('EVERY DEFAULT RUNG IS FREE', () => {
+  for (const rung of DEFAULT_HEAD_LADDER) {
+    assert.match(rung.model, /:free$/, `${rung.model} is metered and is on the default ladder`);
+  }
+});
+
+test('the metered rungs are reachable only by opting in', () => {
+  const defaults = new Set(DEFAULT_HEAD_LADDER.map((r) => r.model));
+  for (const rung of METERED_RUNGS) {
+    assert.ok(!defaults.has(rung.model), `${rung.model} is metered and must be opt-in`);
+  }
+  /* Still ordered and still diverse, so the opt-in list is worth pasting: the
+   * cheap recovery first, and no two rungs from one provider in a row. */
+  assert.deepEqual(METERED_RUNGS.map((r) => r.model.split('/')[0]), ['openai', 'google', 'anthropic']);
 });
 
 test('a failing head falls to the rungs below it, never back to itself', () => {
-  const after = fallbacksAfter('openai/gpt-5.6-luna');
-  /* The owner's order, 2026-08-16: Gemini before Sonnet. Pinned because it is a
-   * decision, not an accident of how the array was typed. */
-  assert.equal(after[0].model, 'google/gemini-2.5-flash');
-  assert.ok(!after.some((r) => r.model === 'openai/gpt-5.6-luna'));
+  const after = fallbacksAfter(DEFAULT_HEAD_LADDER[0].model);
+  assert.equal(after[0].model, DEFAULT_HEAD_LADDER[1].model);
+  assert.ok(!after.some((r) => r.model === DEFAULT_HEAD_LADDER[0].model));
   assert.equal(after.length, DEFAULT_HEAD_LADDER.length - 1);
+});
+
+/* An opted-in metered head still falls to the free rungs, which is the property
+ * that keeps a paying deployment answering after its credit runs out. */
+test('a metered head configured by hand falls onto the free ladder', () => {
+  const after = fallbacksAfter('openai/gpt-5.6-luna');
+  assert.deepEqual(after.map((r) => r.model), DEFAULT_HEAD_LADDER.map((r) => r.model));
+});
+
+test('effortFor reads the effort from the rung, and invents none', () => {
+  assert.equal(effortFor('openai/gpt-5.6-luna'), 'high');
+  assert.equal(effortFor(DEFAULT_HEAD_LADDER[0].model), null);
+  assert.equal(effortFor('someone/unknown'), null);
 });
 
 test('a head model that is not on the ladder gets the whole ladder', () => {
@@ -42,8 +84,8 @@ test('a head model that is not on the ladder gets the whole ladder', () => {
 });
 
 test('a head model deep in the ladder does not retry the rungs above it', () => {
-  const after = fallbacksAfter('anthropic/claude-sonnet-5');
-  assert.deepEqual(after.map((r) => r.model), DEFAULT_HEAD_LADDER.slice(3).map((r) => r.model));
+  const after = fallbacksAfter(DEFAULT_HEAD_LADDER.at(-1).model);
+  assert.deepEqual(after.map((r) => r.model), []);
 });
 
 test('a blank deployment variable means the default ladder, not an empty one', () => {
@@ -80,8 +122,11 @@ test('stream fallbacks always exclude reasoning from the answer', () => {
   for (const entry of shaped) {
     assert.equal(entry.reasoning.exclude, true, `${entry.model} would stream its chain of thought into the answer`);
   }
-  assert.equal(shaped[0].reasoning.effort, 'high');
-  assert.equal(shaped.at(-1).reasoning.effort, undefined);
+  /* No effort on a free rung: the parameter was established for the metered
+   * models and sending it to a model it was never checked against is an
+   * unverified field on the request that writes the answer. */
+  assert.equal(shaped[0].reasoning.effort, undefined);
+  assert.equal(asStreamFallbacks(METERED_RUNGS)[0].reasoning.effort, 'high');
 });
 
 test('every rung is a model the catalogue says can call tools', () => {

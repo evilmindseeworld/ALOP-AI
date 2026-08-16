@@ -18,9 +18,16 @@ const { join } = require('node:path');
 const SERVER = readFileSync(join(__dirname, '..', 'server.js'), 'utf8');
 const ROUTE = SERVER.slice(SERVER.indexOf("app.post('/api/council'"));
 
-test('the seat is configurable and defaults to the model that was measured', () => {
-  assert.match(SERVER, /COUNCIL_TOOL_SEAT_MODEL \|\| 'openai\/gpt-5\.6-luna'/);
-  assert.match(SERVER, /COUNCIL_TOOL_SEAT_EFFORT \|\| 'high'/);
+test('the seat is configurable and defaults to a FREE model', () => {
+  /* It defaulted to `openai/gpt-5.6-luna`, which is metered on this server's
+   * OpenRouter account — a Codex subscription covers that model on a different
+   * account and does not transfer. Owner's instruction, 2026-08-16: no default
+   * path is billed by usage. The effort follows the model rather than being
+   * pinned high, which was Luna's parameter. */
+  const seatDefault = /COUNCIL_TOOL_SEAT_MODEL \|\| '([^']+)'/.exec(SERVER);
+  assert.ok(seatDefault, 'the tool seat default is gone');
+  assert.match(seatDefault[1], /:free$/, `${seatDefault[1]} is metered and is the default tool seat`);
+  assert.match(SERVER, /effortFor\(TOOL_SEAT_MODEL\)/);
   assert.match(SERVER, /COUNCIL_SYNTHESIS_MODEL/);
   assert.match(SERVER, /const TOOL_SEAT_ENABLED = /, 'it must be possible to turn the seat off entirely');
 });
@@ -32,6 +39,7 @@ test('THE SEAT IS NOT IN THE COUNCIL ROSTER, and must not be', () => {
   // for it — a metered request on a lookup.
   const roster = SERVER.slice(SERVER.indexOf('const COUNCIL = ['), SERVER.indexOf('const FREE_COUNCIL'));
   const arrayLiteral = roster.slice(0, roster.indexOf('];'));
+  assert.equal(/TOOL_SEAT_MODEL/.test(arrayLiteral), false);
   assert.equal(/gpt-5\.6-luna/.test(arrayLiteral), false);
 });
 

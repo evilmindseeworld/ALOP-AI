@@ -219,9 +219,18 @@ same defect as a checker that reads the migration files instead of the database.
     each Prism language is a chunk of its own (2–8 kB) — none of it inside
     `index` (141.20 kB). It was already shipped when this item was written as
     blocked.
-38. **blocked** — Full Phase 3 typed error/release treatment. Existing
-    `backend/lib/error-envelope.js` is an earlier foundation; no new Phase 3
-    scope was started.
+38. **complete** — Typed errors, carried through the whole request path and
+    held there. Files: `backend/lib/error-envelope-wiring.test.js` (new).
+    Evidence: reading every producer found no live leak — the HTTP routes all
+    answer through `sendError`/`fail`, and the SSE path builds its frame from
+    `errorEnvelope(...).body.error` — so what was missing was the guard, not a
+    fix. The new test reads `server.js` and refuses `res.status(NNN).json(`,
+    a raw `res.status().send()` outside the Stripe webhook (pinned by the
+    route's brace span, not a lookback window), a thrown message interpolated
+    into a response body, and an SSE error frame without a code or an operation
+    id. One 5xx exception is pinned by name: `POST /api/image` returns the
+    model's own refusal. All four guards were observed red against the precise
+    regression each claims to catch.
 39. **complete (the enforcement half; the rollout is one owner variable)** —
     Required distributed rate-limiter rollout before multi-instance deployment.
     Files: `backend/lib/instance-census.js` (new),
@@ -239,8 +248,19 @@ same defect as a checker that reads the migration files instead of the database.
     the census reports the mistake, it does not prevent it.
 40. **blocked** — Complete Stripe identity/billing release work. Existing
     `backend/lib/stripe-identity.js` foundation was not extended in this task.
-41. **blocked** — Stripe event state machine, durable retries, and billing read
-    model. No Phase 3 implementation was started.
+41. **partial** — Stripe event state machine and durable retries. Files:
+    `backend/lib/stripe-event-ledger.js` (new),
+    `backend/lib/stripe-event-ledger.test.js` (new),
+    `backend/lib/stripe-webhook-wiring.test.js`, `backend/server.js`,
+    `backend/migrations/026_stripe_event_state.sql` (new, NOT APPLIED).
+    Evidence: the ledger row was claimed before the work and never released, so
+    a handler that threw answered 500, Stripe retried, and the retry was dropped
+    as a duplicate — paid, and permanently on the free plan. The row now carries
+    a state and only `done` skips; `failed` retries at once, an unfinished claim
+    is taken over after the in-flight window with the attempt counted. Both
+    wiring guards observed red. **The billing READ MODEL is not built**, which
+    is why this is partial. **Owner action**: apply 026; until then the ledger
+    falls back to the old behaviour, which has its own test.
 42. **blocked** — Full migration lineage/schema snapshots/RLS policy tests,
     function `search_path` hardening, and production drift detection. The live
     schema was inspected only for the authorized 020–022 migrations.
@@ -499,3 +519,36 @@ are single-threaded until then.
 
 - **Item 37 was already done, and item 36 was half done, while both were
   recorded as blocked.** The Phase 3 header now says why that happened.
+
+## 2026-08-17 (continued) — items 38 and 41
+
+- **Item 38 needed a guard, not a fix.** Every producer in the request path
+  already answered through the envelope; nothing stopped the next route from
+  going back to `res.status(500).json({ error: err.message })`, which is the
+  shape anybody writes by hand and the one the sweep removed thirty times. The
+  envelope's own unit tests stay green while that line ships, so the guard reads
+  `server.js` instead. Commit `fecf925`.
+
+- **Item 41 found a live defect worth the whole item.** The Stripe webhook
+  claimed the event id before the work and never released the claim, so the
+  retry Stripe sends after a 500 was dropped as a duplicate: the customer pays,
+  `plan` stays `free`, and every line the retry logs reads healthy. Only `done`
+  now skips. Commit `3e5872b`.
+
+  The design point worth keeping: the `failed` check sits ABOVE the in-flight
+  window check. Stripe's first retry can arrive inside the window, so testing
+  the clock first would read a KNOWN failure as a live attempt and skip it —
+  the original bug wearing a new status.
+
+## Owner actions this Phase 3 has accumulated
+
+Three, in the order they cost the most:
+
+1. **Apply `019_turn_ledger.sql`.** Resume-after-drop and idempotent admission
+   are OFF in production, and item 36's reload recovery reads the table it
+   creates. The sandbox refused the apply twice; it needs a hand.
+2. **Apply `026_stripe_event_state.sql`.** Until it runs, a webhook that fails
+   still loses its retry.
+3. **Set `RATE_LIMIT_STORE=postgres` in Render before scaling past one
+   instance.** The census added in item 39 reports the mistake; it does not
+   prevent it.

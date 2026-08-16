@@ -19,10 +19,17 @@
  *      OpenRouter's catalogue on 2026-08-16: every id below reports `tools`
  *      among its supported parameters.
  *
- *   2. PROVIDER DIVERSITY IS THE POINT. OpenAI, then Anthropic, then Google,
+ *   2. PROVIDER DIVERSITY IS THE POINT. OpenAI, then Google, then Anthropic,
  *      then two NVIDIA free models. Two rungs from one provider are one rung
  *      wearing two names on the day that provider is down — which is the exact
  *      failure this ladder exists for.
+ *
+ *      THE ORDER OF RUNGS 2 AND 3 IS THE OWNER'S, given 2026-08-16: Luna, then
+ *      Gemini, then Sonnet. Price agrees with it — Gemini is about a sixth of
+ *      Sonnet per synthesis on the estimates in lib/spend.js — so the cheap
+ *      recovery is tried before the dear one, and Sonnet remains the rung that
+ *      catches a Google outage on top of an OpenAI one. Do not reorder these
+ *      two back on a capability argument without asking.
  *
  *   3. The last rung costs nothing. A ladder whose every rung is metered runs
  *      out with the money, and an account at its spend ceiling is precisely
@@ -30,22 +37,23 @@
  *
  * PRICES (OpenRouter catalogue, 2026-08-16, $/M prompt / $/M completion):
  *   openai/gpt-5.6-luna                    0.10 / 0.60
- *   anthropic/claude-sonnet-5              2.00 / 10.00
  *   google/gemini-2.5-flash                0.30 / 2.50
+ *   anthropic/claude-sonnet-5              2.00 / 10.00
  *   nvidia/nemotron-3-ultra-550b-a55b:free 0 / 0   (1M context)
  *   nvidia/nemotron-3-super-120b-a12b:free 0 / 0   (the previous sole fallback)
  *
- * COST, NOT ASSUMED AWAY: lib/spend.js prices synthesis at a FLAT
- * `synthesisTenths` calibrated for Luna. Rung 2 is ~17x Luna on completion, so
- * a turn that falls that far is UNDER-PRICED against the daily ceiling. It is
- * bounded by how rarely the head fails, and it is written down here rather than
- * hidden. Model-aware synthesis pricing is the fix and is not in this file.
+ * COST IS NO LONGER ASSUMED AWAY. This file used to record that lib/spend.js
+ * charged a flat Luna-shaped rate for every rung, so a fallen turn was
+ * under-priced against the daily ceiling. `SYNTHESIS_MODEL_TENTHS` prices the
+ * rungs individually now and the reservation holds the dearest one, so adding
+ * a metered rung here changes what a turn reserves — check that table when you
+ * change this list.
  */
 
 const DEFAULT_HEAD_LADDER = Object.freeze([
   Object.freeze({ model: 'openai/gpt-5.6-luna', effort: 'high' }),
-  Object.freeze({ model: 'anthropic/claude-sonnet-5', effort: 'high' }),
   Object.freeze({ model: 'google/gemini-2.5-flash', effort: 'high' }),
+  Object.freeze({ model: 'anthropic/claude-sonnet-5', effort: 'high' }),
   Object.freeze({ model: 'nvidia/nemotron-3-ultra-550b-a55b:free', effort: null }),
   Object.freeze({ model: 'nvidia/nemotron-3-super-120b-a12b:free', effort: null }),
 ]);

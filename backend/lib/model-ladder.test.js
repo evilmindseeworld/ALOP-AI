@@ -29,7 +29,9 @@ test('there is more than one paid rung and more than one provider overall', () =
 
 test('a failing head falls to the rungs below it, never back to itself', () => {
   const after = fallbacksAfter('openai/gpt-5.6-luna');
-  assert.equal(after[0].model, 'anthropic/claude-sonnet-5');
+  /* The owner's order, 2026-08-16: Gemini before Sonnet. Pinned because it is a
+   * decision, not an accident of how the array was typed. */
+  assert.equal(after[0].model, 'google/gemini-2.5-flash');
   assert.ok(!after.some((r) => r.model === 'openai/gpt-5.6-luna'));
   assert.equal(after.length, DEFAULT_HEAD_LADDER.length - 1);
 });
@@ -40,7 +42,7 @@ test('a head model that is not on the ladder gets the whole ladder', () => {
 });
 
 test('a head model deep in the ladder does not retry the rungs above it', () => {
-  const after = fallbacksAfter('google/gemini-2.5-flash');
+  const after = fallbacksAfter('anthropic/claude-sonnet-5');
   assert.deepEqual(after.map((r) => r.model), DEFAULT_HEAD_LADDER.slice(3).map((r) => r.model));
 });
 

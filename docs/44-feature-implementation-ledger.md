@@ -254,3 +254,31 @@ tracked separately below.
 
 - Frontend surfaces for all three (multi-attach UI, generated-image rendering)
   are **not built**. The backend accepts them; nothing sends them yet.
+
+## 2026-08-16 — the head ladder's price, and its order
+
+Follow-ups to commit `2e89f7e`, which added the ladder and wrote down what it
+left undone.
+
+- **Synthesis is priced per model.** `lib/spend.js` charged a flat
+  `synthesisTenths` calibrated for Luna while the head could fall to Sonnet 5 at
+  roughly 17x Luna's completion rate — an under-charge, and a ceiling may only
+  err the other way. `SYNTHESIS_MODEL_TENTHS` prices the metered rungs,
+  `recordSynthesis` now carries the rung that really answered into the SNAPSHOT
+  (the settlement reads the snapshot, not the audit row's extra), and
+  `reservationCents` takes `SYNTHESIS_MODEL_CANDIDATES` so the reservation still
+  bounds the settlement. Commit `caa2b7d`.
+
+  **Reasoned, not measured.** The rates are OpenRouter's catalogue figures
+  applied to the tool seat's 30k-prompt/4k-completion worst case; there is no
+  OpenRouter key on this machine. Calibrate against the provider dashboard.
+
+- **Gemini before Sonnet.** The owner's ordering, given 2026-08-16. Commit
+  `9de296a`.
+
+- **Still open: every rung is an OpenRouter rung.** The ladder survives one
+  model or one upstream provider failing. It does not survive the OpenRouter
+  ACCOUNT — a daily free-tier cap, a billing stop, a gateway outage — because
+  all five rungs are reached through it. A direct Google GenAI call using the
+  `GOOGLE_API_KEY` the vision path already holds would be the first genuinely
+  independent rung. Not built.

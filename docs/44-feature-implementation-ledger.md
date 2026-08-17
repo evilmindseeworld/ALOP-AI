@@ -650,19 +650,61 @@ are single-threaded until then.
   owner actions and the two paths that remain are the dashboard SQL editor and
   `supabase login` from a terminal the owner drives.
 
+## 2026-08-17 (continued) — the migrations were already applied, and a wrong answer with no search
+
+**019 and 026 ARE in production, and the entry above saying otherwise was
+wrong.** Verified through the Supabase MCP connector against `pg_catalog`, not
+against the migration files: `turns` and `turn_reservations` exist with
+`turns_operation_idx` and `turns_chat_idx`; all three functions
+(`claim_turn_reservation`, `settle_turn_reservation`, `checkpoint_turn`) exist
+with `proconfig = search_path=""`; `stripe_events` carries `status`, `attempts`
+and `last_error` plus the partial `stripe_events_unfinished` index; RLS is
+ENABLE + FORCE with zero policies on all three, which is the service-role-only
+specification. The ledger is being written and read: 8 `turns` rows, 8
+`turn_reservations`, newest turn `2026-08-17 03:00Z`. Both `stripe_events` rows
+are `done`, so 026's backfill ran rather than marking history reprocessable.
+Item 36's reload recovery and item 41's retry path are therefore live, not
+waiting.
+
+**A named product model no longer lets a model decide whether to search.**
+Reported with the transcript: "i just bought the xg27aqwmg what are some things
+i should do and watch out for" was answered, with no search, as a 27" 1440p
+180 Hz IPS monitor. It is a 280 Hz WOLED. Panel type, refresh rate, HDMI limits,
+OSD settings — the whole answer was invented, formatted confidently, and logged
+as a success.
+
+The prompt was not the lever, and that is the part worth keeping. `planTurn`'s
+system prompt already says to search "specs, reviews and comparisons of real
+products", already says "if in doubt, search", and already carries
+`Q: XG27AQWMG` with the correct answer as a worked example. It is FAST_MODEL at
+a 120-token ceiling, and it still answered NO once the same SKU sat inside a
+chatty sentence. A small model's classification is the wrong mechanism for a
+decision whose failure mode is silent fabrication.
+
+`namesSpecificModel` in `lib/router.js` now settles it in the rule router, which
+runs ABOVE the planner: a token mixing letters and digits (`xg27aqwmg`,
+`15ixr10`, `a7iv`) or a real word followed by a number (`rtx 5060`, `iphone 15`)
+forces two queries — the designation alone, which finds the spec sheet, and the
+user's own sentence, which finds the rest. Units (`1440p`, `280hz`, `240fps`),
+formats (`mp4`, `sha256`, `utf8`), version numbers (`3.12`) and code shapes are
+excluded, so arithmetic and "should I cap my fps" turns are untouched.
+
+This is the FIRST rule here that overrides the planner rather than only saving
+it a call, and the comment in `server.js` claiming that could never happen was
+corrected in the same commit. Ceiling, stated: a bare two-character SKU (`s9`,
+`s7`) is not caught — four characters is the floor that keeps `x8` in "3 x 8"
+out — so "is the s7 or the s9 better" still goes to the planner. 1832/1832
+backend tests pass; three were observed red with the rule disabled.
+
 ## Owner actions this Phase 3 has accumulated
 
-Four, in the order they cost the most:
+Two remain. The two migrations that led this list are DONE — see the dated
+section above, verified in `pg_catalog`.
 
-1. **Apply `019_turn_ledger.sql`.** Resume-after-drop and idempotent admission
-   are OFF in production, and item 36's reload recovery reads the table it
-   creates. The sandbox refused the apply twice; it needs a hand.
-2. **Apply `026_stripe_event_state.sql`.** Until it runs, a webhook that fails
-   still loses its retry.
-3. **Set `RATE_LIMIT_STORE=postgres` in Render before scaling past one
+1. **Set `RATE_LIMIT_STORE=postgres` in Render before scaling past one
    instance.** The census added in item 39 reports the mistake; it does not
    prevent it.
-4. **Run the evaluation dataset once against a real session.**
+2. **Run the evaluation dataset once against a real session.**
    `EVAL_TOKEN=<clerk jwt> BASE=https://alop-ai.onrender.com npm run evals`
    from `backend/`. Until that happens items 34 and 35 are a platform with no
    measurement in it, and the gates have never judged a real answer. It costs up

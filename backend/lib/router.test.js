@@ -6,6 +6,8 @@ const {
   needsWikiCheck,
   classifyRequest,
   routeByRule,
+  modelDesignations,
+  namesSpecificModel,
   DETAIL_PHRASES,
   escalateForResearch,
   narrowRoster,
@@ -439,8 +441,24 @@ test("the zero-model rule does not swallow questions whose answer can move", () 
     "what is qzxwvb?",
   ];
 
-  const decided = needsPlanner.filter((text) => routeByRule(text, { hasConversationContext: false }));
-  assert.deepEqual(decided, [], "a volatile or named-entity case bypassed the search planner");
+  /* The property is "never answered WITHOUT live information", which is not the
+   * same as "always handed to the planner" — and that difference is the whole
+   * point of the product-model rule below. Three of these name a specific model,
+   * and the rule now routes them straight to search instead of asking a small
+   * model whether they need one. What must never appear is a no-search
+   * decision. */
+  const swallowed = needsPlanner.filter((text) => {
+    const route = routeByRule(text, { hasConversationContext: false });
+    return route && !route.memory && !route.queries?.length;
+  });
+  assert.deepEqual(swallowed, [], "a volatile or named-entity case was answered with no search");
+
+  const forcedToSearch = needsPlanner.filter((text) => routeByRule(text, {})?.queries?.length);
+  assert.deepEqual(
+    forcedToSearch,
+    ["iPhone 17 price in UAE", "is Framework 16 still available?", "what is XG27AQWMG?"],
+    "only the named-model cases may bypass the planner, and only towards search",
+  );
 });
 
 test("an explicit web-search instruction deterministically produces a bounded query", () => {
@@ -665,4 +683,79 @@ test('a detailed turn keeps its larger ceiling', () => {
   const out = withToolSeat(baseSelection({ complexity: 'complex', tokenLimit: 2000, whipMs: 60000 }), TOOL_SEAT, { needsTools: true });
   assert.equal(out.tokenLimit, 2000, 'never DOWN');
   assert.equal(out.whipMs, 60000);
+});
+
+/* ---------------------------------------------------------------------------
+ * A NAMED PRODUCT MODEL FORCES A SEARCH.
+ *
+ * From the transcript of 2026-08-17: "i just bought the xg27aqwmg what are some
+ * things i should do and watch out for" was answered with no search as a 27"
+ * 1440p 180 Hz IPS monitor. It is a 280 Hz WOLED. Every fact was invented and
+ * the turn logged as a success. The planner's prompt already says to search
+ * product specs, already says "if in doubt, search", and already carries this
+ * exact SKU as a worked example — the small model answered NO anyway once the
+ * SKU sat inside a chatty sentence. So the rule decides it and no model gets a
+ * vote.
+ * ------------------------------------------------------------------------ */
+
+test("the reported turn now searches, and the SKU is its own first query", () => {
+  const route = routeByRule("i just bought the xg27aqwmg what are some things i should do and watch out for", {});
+  assert.equal(route?.memory, false);
+  assert.equal(route.queries[0], "xg27aqwmg specs review", "a spec sheet is found by the designation alone");
+  assert.match(route.queries[1], /watch out for$/, "the second query keeps the question the user actually asked");
+});
+
+test("a mixed letters-and-digits designation is caught wherever it sits", () => {
+  for (const text of [
+    "xg27aqwmg",
+    "i use 15ixr10 legion 5 rtx 5060",
+    "how good is the a7iv for video",
+    "does the wh1000xm5 support ldac",
+  ]) {
+    assert.equal(namesSpecificModel(text), true, text);
+    assert.ok(routeByRule(text, {})?.queries?.length, `${text} produced no queries`);
+  }
+});
+
+test("a brand followed by a number counts, and a function word followed by one does not", () => {
+  assert.equal(namesSpecificModel("is the iphone 15 waterproof"), true);
+  assert.equal(namesSpecificModel("pixel 9 vs galaxy 24"), true);
+  // The regex this replaced read "is 1440p" as a product and searched for it.
+  assert.equal(namesSpecificModel("my monitor is 1440p should i cap at 240fps"), false);
+  assert.equal(namesSpecificModel("i bought 27 inch panels"), false, "'bought 27' is not a product line");
+});
+
+test("units, formats and version numbers are a spec the user quoted, not a product", () => {
+  for (const text of [
+    "my monitor is 1440p 280hz should i cap fps at 240fps",
+    "convert this to mp4 and keep h265",
+    "why does my sha256 hash differ in python 3.12",
+    "is utf8 enough for emoji",
+    "3 x 8",
+    "9 x 10",
+  ]) {
+    assert.equal(namesSpecificModel(text), false, text);
+  }
+});
+
+test("modelDesignations reports what it found, in order and without repeats", () => {
+  assert.deepEqual(modelDesignations("xg27aqwmg vs xg27aqwmg and 15ixr10"), ["xg27aqwmg", "15ixr10"]);
+  assert.deepEqual(modelDesignations("nothing here but words"), []);
+});
+
+test("code, transformations and creative work keep their no-search answer", () => {
+  // `sha256` and `x86_64` are not products, which is why the model rule is
+  // checked below the stable-shape test rather than above it.
+  assert.deepEqual(routeByRule("function hash(x) { return sha256(x) } why is this slow?", {}), { memory: false, queries: null });
+  assert.deepEqual(routeByRule("define 4k", {}), { memory: false, queries: null });
+  assert.deepEqual(routeByRule("write a haiku about mp4 files", {}), { memory: false, queries: null });
+});
+
+test("a pasted URL still defers, because it already means read this page", () => {
+  assert.equal(routeByRule("what does https://example.com/xg27aqwmg say", {}), null);
+});
+
+test("the arithmetic and greeting turns are untouched by this rule", () => {
+  assert.equal(namesSpecificModel("3 multiplied by 6"), false);
+  assert.equal(routeByRule("hi", {}), null, "a greeting is settled by classifyRequest, not here");
 });

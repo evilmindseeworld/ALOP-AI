@@ -371,6 +371,120 @@ const hasNamedEntity = (text) => {
   return /\b(?:[A-Z][A-Za-z0-9]*|[a-z]+[A-Z][A-Za-z0-9]*)\b/.test(afterFirstWord);
 };
 
+/* ---------------------------------------------------------------------------
+ * A MODEL DESIGNATION IS A LOOKUP, AND NO MODEL GETS A VOTE ON THAT.
+ *
+ * Reported 2026-08-17 with the transcript. "i just bought the xg27aqwmg what
+ * are some things i should do and watch out for" was answered, with no search
+ * and total confidence, as a 27" 1440p 180 Hz IPS monitor. It is a 280 Hz
+ * WOLED. Every fact in a long, well-formatted answer was invented, and nothing
+ * in any log says so — the turn succeeded.
+ *
+ * The planner's prompt was not the problem, and this is the part worth
+ * remembering: it already says to search "specs, reviews and comparisons of
+ * real products", already says "if in doubt, search", and already carries
+ * `Q: XG27AQWMG` with the right answer as a worked example. The planner is
+ * FAST_MODEL at a 120-token ceiling, and it still answered NO once the same SKU
+ * was buried in a chatty sentence. A small model's classification is the wrong
+ * mechanism for a decision whose failure mode is silent fabrication, so the
+ * rule router — which runs ABOVE it — now settles this shape itself.
+ *
+ * WHAT COUNTS. Either a single token mixing letters and digits (`xg27aqwmg`,
+ * `15ixr10`, `a7iv`), or a word followed by a number (`rtx 5060`, `iphone 15`,
+ * `pixel 9`). Units and formats are excluded by list, because `1440p`, `280hz`
+ * and `mp4` are the user describing a spec, not naming a thing to look up, and
+ * a version number is excluded because `3.12` is usually the subject of a
+ * stable question about a language, not a product to price.
+ *
+ * CEILING, stated rather than papered over: a two-character SKU on its own
+ * (`s9`, `m4`) is NOT caught — the pattern needs four characters to keep `x8`
+ * in "3 x 8" out, and "which is better, the s7 or the s9" therefore still goes
+ * to the planner. The fix for that is brand-plus-SKU knowledge this file has no
+ * business holding.
+ * ------------------------------------------------------------------------ */
+
+/** `1440p`, `280hz`, `144fps`, `32gb` — the user stating a spec. */
+const UNIT_TOKEN_RE =
+  /^\d+(?:\.\d+)?(?:p|k|hz|khz|mhz|ghz|fps|nit|nits|bit|bits|gb|tb|mb|kb|kib|mib|gib|ms|sec|s|w|kw|v|mah|nm|mm|cm|m|km|kg|g|lb|oz|in|ft|px|dpi|ppi|th|st|nd|rd)$/i;
+
+/** Formats, codecs and acronyms that merely LOOK like model numbers. */
+const FORMAT_TOKEN_RE =
+  /^(?:mp3|mp4|m4a|h264|h265|x264|x265|av1|vp9|aac|flac|webp|webm|avif|jpeg2000|2d|3d|4k|8k|2fa|mfa|utf8|utf16|latin1|sha1|sha256|sha512|md5|base64|crc32|ipv4|ipv6|http2|http3|tls12|tls13|es6|es2015|es2020|css3|html5|oauth2|o365|b2b|b2c|s3|ec2|p50|p95|p99|co2|no2|h2o|k8s|i18n|l10n|a11y)$/i;
+
+/** `v1.2.3`, `3.12`, `2.0` — a version, not a product line. */
+const VERSION_TOKEN_RE = /^v?\d+(?:\.\d+)+$/i;
+
+/* A word followed by a standalone number — `rtx 5060`, `iphone 15`, `xps 13`.
+ *
+ * Written as a scan over token PAIRS rather than one regex, because the regex
+ * version (`\b[a-z]{2,}[\s-]\d{2,5}[a-z]{0,3}\b`) read "my monitor is 1440p" as
+ * the product "is 1440p" and then searched for it. Two things have to be
+ * excluded and neither is expressible as a word boundary: the leading word must
+ * not be a function word, and the number must not be a unit the user is
+ * quoting. */
+const STOPWORD_BEFORE_NUMBER = new Set([
+  "is", "are", "was", "were", "be", "at", "on", "in", "to", "of", "the", "a", "an", "and", "or",
+  "for", "with", "my", "your", "it", "its", "do", "does", "did", "if", "so", "up", "down", "vs",
+  "per", "than", "then", "about", "around", "under", "over", "from", "into", "like", "have", "has",
+  "had", "should", "would", "could", "can", "will", "just", "only", "about", "buy", "bought", "got",
+  "get", "use", "using", "run", "runs", "cap", "set", "want", "need", "i", "you", "we", "they",
+  "this", "that", "these", "those", "there", "here", "now", "not", "no", "yes", "me", "him", "her",
+]);
+
+/** The first `word number` pair that looks like a product line, or null. */
+function brandNumber(text) {
+  const tokens = String(text || "").split(/[^A-Za-z0-9.]+/).filter(Boolean);
+  for (let i = 0; i < tokens.length - 1; i += 1) {
+    const word = tokens[i];
+    const number = tokens[i + 1].replace(/\.+$/, "");
+    if (!/^[A-Za-z]{2,}$/.test(word) || STOPWORD_BEFORE_NUMBER.has(word.toLowerCase())) continue;
+    if (!/^\d{2,5}[A-Za-z]{0,3}$/.test(number)) continue;
+    if (UNIT_TOKEN_RE.test(number) || FORMAT_TOKEN_RE.test(number) || VERSION_TOKEN_RE.test(number)) continue;
+    return `${word} ${number}`;
+  }
+  return null;
+}
+
+/**
+ * Every model-designation-shaped token in the text, in order, deduplicated.
+ * Exported for the tests and for the query the rule builds.
+ * @param {string} text
+ * @returns {string[]}
+ */
+function modelDesignations(text) {
+  const found = [];
+  for (const raw of String(text || "").split(/[^A-Za-z0-9.]+/)) {
+    const token = raw.replace(/\.+$/, "");
+    if (token.length < 4 || token.length > 16) continue;
+    if (!/[A-Za-z]/.test(token) || !/\d/.test(token)) continue;
+    if (UNIT_TOKEN_RE.test(token) || FORMAT_TOKEN_RE.test(token) || VERSION_TOKEN_RE.test(token)) continue;
+    if (!found.includes(token)) found.push(token);
+  }
+  return found;
+}
+
+/** True when the text names a specific product model the answer depends on. */
+const namesSpecificModel = (text) =>
+  modelDesignations(text).length > 0 || brandNumber(text) !== null;
+
+/**
+ * Two queries: the designation on its own, which is what actually finds a spec
+ * sheet, and the user's own sentence, which is what finds the "things to watch
+ * out for" half. The precise one is FIRST because the providers are asked in
+ * order and the first result set is the one that survives a truncated context.
+ * The sentence is clamped like every other query built here.
+ */
+function modelSearchQueries(text) {
+  const t = String(text || "").replace(/\s+/g, " ").trim();
+  const ids = modelDesignations(t);
+  const subject = (ids.length ? ids.join(" ") : (brandNumber(t) || "")).trim();
+  const queries = [];
+  if (subject) queries.push(`${subject} specs review`);
+  const context = t.slice(0, 200);
+  if (context && context.toLowerCase() !== subject.toLowerCase()) queries.push(context);
+  return queries.slice(0, 2);
+}
+
 function routeByRule(text, { hasConversationContext = false } = {}) {
   const t = typeof text === "string" ? text.trim() : "";
   if (!t) return null;
@@ -397,9 +511,22 @@ function routeByRule(text, { hasConversationContext = false } = {}) {
     return { memory: false, queries: query ? [query] : null };
   }
   if (ALOP_IDENTITY_QUESTION_RE.test(t)) return { memory: false, queries: null };
+
+  /* A named product model forces the search, and it is checked ABOVE the
+   * volatility deferral on purpose: deferring hands the decision back to the
+   * planner, which is the component that got this wrong. Code, transformations
+   * and creative work are excluded first — `sha256` and `x86_64` are not
+   * products — and so is a pasted URL, which already means "read this page".
+   * This is the one rule here that OVERRIDES rather than pre-empts the planner;
+   * everything else in this function only saves it a call. */
+  const stableShape = CODE_RE.test(t) || DIRECT_TRANSFORM_RE.test(t) || CREATIVE_RE.test(t);
+  if (!stableShape && !URL_RE.test(t) && namesSpecificModel(t)) {
+    return { memory: false, queries: modelSearchQueries(t) };
+  }
+
   if (VOLATILE_RE.test(t) || URL_RE.test(t)) return null;
 
-  if (CODE_RE.test(t) || DIRECT_TRANSFORM_RE.test(t) || CREATIVE_RE.test(t)) {
+  if (stableShape) {
     return { memory: false, queries: null };
   }
   if (t.length <= 200 && STABLE_QUESTION_RE.test(t) && !hasNamedEntity(t)) {
@@ -655,6 +782,9 @@ function withToolSeat(selection, seat, { needsTools = false } = {}) {
 
 module.exports = {
   withToolSeat,
+  modelDesignations,
+  namesSpecificModel,
+  modelSearchQueries,
   detectLanguage,
   wantsDetailedAnswer,
   needsWikiCheck,

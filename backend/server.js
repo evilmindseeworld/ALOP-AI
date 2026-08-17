@@ -4817,9 +4817,18 @@ async function handleCouncilTurn(req, res) {
      * stable questions with no named entity in them. It returns null the moment
      * anything is uncertain — a URL, a volatile "latest/today" phrasing, a named
      * entity, anything over 200 characters — and null means the model router
-     * runs exactly as before. The rule can therefore only remove a call, never
-     * change a decision the model would have made differently on the turns it
-     * declines to answer.
+     * runs exactly as before.
+     *
+     * ONE RULE NOW OVERRIDES THE PLANNER RATHER THAN PRE-EMPTING IT, and the
+     * sentence that used to sit here ("the rule can therefore only remove a
+     * call, never change a decision") is no longer true. A message naming a
+     * specific product model goes straight to search. Reported 2026-08-17: the
+     * planner answered NO for a monitor SKU buried in a chatty sentence and the
+     * council then invented the entire spec sheet — panel type, refresh rate,
+     * port limits — in a confident, well-formatted answer, with nothing in any
+     * log to say it had done so. The planner's prompt already told it to search
+     * product specs and already carried that SKU as a worked example, so the
+     * prompt was not the lever. `namesSpecificModel` in lib/router.js is.
      *
      * It sits below `skipRouter` on purpose: an image turn and a greeting skip
      * routing altogether, and asking a rule about them would be work to decide

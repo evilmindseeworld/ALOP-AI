@@ -37,6 +37,13 @@
  * matches every customer who has ever cancelled. The check would run green
  * against a broken system and red against a healthy one.
  *
+ * TWO BUCKETS THAT ARE NOT FAILURES, and keeping them out of the failure count
+ * is the point of having them. `superseded` is the ordering guard in
+ * `lib/stripe-apply.js` rejecting a stale event — indistinguishable from
+ * failure 2 by row count, since both changed nothing — and `unguarded` is
+ * every event that ran while migration 027 was unapplied, which dates the
+ * exposure rather than reporting a fault.
+ *
  * PURE ON PURPOSE. Rows in, findings out, no database and no clock of its own —
  * the same split as `lib/evaluation.js`, and for the same reason: the part
  * worth testing exhaustively is the judgement, not the query.
@@ -97,17 +104,27 @@ function summariseEvents(events, { now = Date.now(), stuckMs = STUCK_MS } = {}) 
  * said the healthy thing.
  */
 function unapplied(audits) {
-  const out = { unattributed: [], matchedNothing: [], weak: [] };
+  const out = { unattributed: [], matchedNothing: [], superseded: [], weak: [], unguarded: [] };
   for (const row of asArray(audits)) {
     const m = meta(row);
     if (!m.eventId) continue;
     const entry = { eventId: m.eventId, type: m.type || null, reason: m.reason || null, at: row.created_at || null, userId: row.user_id || null };
     if (m.attributed === false) out.unattributed.push(entry);
+    /* `stale` FIRST, because a superseded event and an event that matched no
+     * user row are indistinguishable by row count — both changed zero rows —
+     * and one of them is the ordering guard in `lib/stripe-apply.js` doing
+     * exactly its job. Counting it as a failure would make the fix for item 40
+     * look like a fleet of item 41 defects. */
+    else if (m.stale === true) out.superseded.push(entry);
     else if (m.applied === 0) out.matchedNothing.push(entry);
     /* Not a failure — a checkout that predates `client_reference_id` is
      * matched by email and says so. Worth counting, because a rising number
      * means the fallback is carrying traffic it was meant to retire. */
     if (m.confidence === 'weak') out.weak.push(entry);
+    /* Not a failure either, and the one worth acting on: every event applied
+     * while `ordered` was false ran with the ordering guard off because 027
+     * was not applied. A non-empty list here dates the exposure. */
+    if (m.ordered === false) out.unguarded.push(entry);
   }
   return out;
 }

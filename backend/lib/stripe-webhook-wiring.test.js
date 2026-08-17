@@ -43,7 +43,15 @@ test('THE REGRESSION: no Stripe event addresses a user by email again', () => {
 });
 
 test('the update is addressed by the column the decision chose', () => {
-  assert.match(WEBHOOK, /\.update\(decision\.patch\)\.eq\(decision\.match\.column, decision\.match\.value\)/);
+  /* The write moved inside `lib/stripe-apply.js` so the ordering predicate and
+   * the write are one statement. The invariant did not move: the row is
+   * addressed by the column the DECISION picked, never by a column this route
+   * chose for itself, because that choice is what stripe-identity.js exists to
+   * make and what its confidence rating describes. */
+  assert.match(CODE, /match:\s*decision\.match/, 'the webhook must pass the decision own match, not build one');
+  assert.match(CODE, /patch:\s*decision\.patch/);
+  const apply = readFileSync(join(__dirname, 'stripe-apply.js'), 'utf8');
+  assert.match(apply, /\.eq\(match\.column, match\.value\)/, 'stripe-apply must address the row by the matched column');
 });
 
 test('an empty patch performs no write', () => {
@@ -100,7 +108,7 @@ test('and the claim is SETTLED, which is what makes a retry able to finish the j
   assert.match(CODE, /markStripeEventFailed\(/, 'a failed webhook leaves no record and its retry is dropped as a duplicate');
 
   const done = CODE.indexOf('markStripeEventDone(');
-  const update = CODE.indexOf(".from('users').update(decision.patch)");
+  const update = CODE.indexOf('applyBillingPatch(');
   assert.ok(update > 0 && done > update, 'the event is marked done before the work it claims to have done');
 
   const catchAt = CODE.indexOf('} catch (err) {', update);
@@ -123,9 +131,10 @@ test('and the claim is SETTLED, which is what makes a retry able to finish the j
  * be able to satisfy a guard about the call.
  */
 test('the users update asks which rows it changed', () => {
+  const apply = readFileSync(join(__dirname, 'stripe-apply.js'), 'utf8');
   assert.match(
-    CODE,
-    /\.from\('users'\)\.update\(decision\.patch\)\.eq\([^)]*\)\.select\(/,
+    apply,
+    /\.eq\(match\.column, match\.value\)[\s\S]{0,200}?\.select\(/,
     'the users update must .select() — without it, zero rows matched is indistinguishable from success',
   );
   assert.match(CODE, /recordBillingEvent\(/, 'the webhook must record an audit row, or the read model has no event-to-user link');
@@ -139,4 +148,32 @@ test('nothing that could identify a customer is written to the audit metadata', 
   // user-visible. decision.match.value can be an email address.
   assert.doesNotMatch(body, /match\.value/, 'decision.match.value can be an email; it must not reach a user-readable row');
   assert.doesNotMatch(body, /customer_email|receipt_email/, 'no address may be written to audit metadata');
+});
+
+/**
+ * THE ORDERING GUARD HAS TO BE ON THE PATH, not merely in a module.
+ *
+ * `lib/stripe-apply.js` is fully unit-tested against a fake database and every
+ * one of those tests passes while the webhook keeps writing the plan itself —
+ * which is exactly how `doc-extract.js` spent its life fully tested and never
+ * called. The guard is the call site.
+ */
+test('the webhook applies billing through the ordering guard', () => {
+  assert.match(CODE, /applyBillingPatch\(/, 'the webhook must not write users.plan directly; a reordered event would win');
+  assert.match(CODE, /eventTimestamp\(event\)/, 'the guard needs the event CREATED time, not its arrival time');
+  assert.doesNotMatch(
+    CODE,
+    /\.from\('users'\)\.update\(decision\.patch\)/,
+    'a direct update bypasses the ordering guard entirely',
+  );
+});
+
+test('a superseded event is not reported as the failure it is shaped like', () => {
+  // stale and missing both change zero rows. Reporting the first as the second
+  // turns the ordering guard into a permanent error stream.
+  assert.match(CODE, /outcome\.stale/, 'nothing distinguishes a stale event from a missing user row');
+  assert.ok(
+    CODE.indexOf('outcome.stale') < CODE.indexOf('MATCHED NO USER ROW'),
+    'the stale branch must be tested BEFORE the missing-row error, or every superseded event logs as a failure',
+  );
 });

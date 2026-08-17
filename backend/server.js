@@ -1459,6 +1459,7 @@ const { errorEnvelope, sendError, fail } = require('./lib/error-envelope');
 const { resolveStripeTarget } = require('./lib/stripe-identity');
 const { claimStripeEvent, markStripeEventDone, markStripeEventFailed } = require('./lib/stripe-event-ledger');
 const { summariseBilling, BILLING_ACTION } = require('./lib/billing-read-model');
+const { applyBillingPatch, eventTimestamp } = require('./lib/stripe-apply');
 const { detectRegion, regionHint } = require('./lib/region');
 const { firstWithResults, toolMessages, summariseProbe, searchResultUrls, requiredCitationSuffix, UNTRUSTED_PREAMBLE } = require('./lib/council-tools');
 const { createNativeToolSeat } = require('./lib/native-tool-seat');
@@ -2763,23 +2764,34 @@ app.post('/api/stripe/webhook', requireStripe, express.raw({ type: 'application/
   const decision = resolveStripeTarget(event);
   try {
     if (decision.handled && decision.match && Object.keys(decision.patch).length > 0) {
-      /* `.select('id')` IS THE FIX, not decoration. A bare
-       * `.update(...).eq(...)` that matches ZERO rows reports no error, so an
-       * event addressed to a user row that is not there logged the healthy
-       * line, marked the event done, and left the customer paid and on free —
-       * the exact bug 026 closed, reached by a different road. Asking for the
-       * updated ids is what turns "no error" into "no rows", and it is also
-       * where the read model gets the user it can attribute the event to. */
-      const { data: touched, error } = await supabase.from('users').update(decision.patch).eq(decision.match.column, decision.match.value).select('id');
-      if (error) throw error;
-      const applied = (touched || []).length;
+      /* TWO THINGS THE BARE `.update(...).eq(...)` COULD NOT DO.
+       *
+       * It reported no error when it matched ZERO rows, so an event addressed
+       * to a user row that is not there logged the healthy line, marked the
+       * event done, and left the customer paid and on free — the exact bug 026
+       * closed, reached by a different road.
+       *
+       * And it had no idea when the event was CREATED, only when it arrived.
+       * Stripe does not promise order, so a reordered pair left a cancelled
+       * customer on pro permanently. See lib/stripe-apply.js. */
+      const outcome = await applyBillingPatch({
+        db: supabase,
+        match: decision.match,
+        patch: decision.patch,
+        at: eventTimestamp(event),
+      });
+      const applied = outcome.applied;
       /* The value is NOT logged. `reason` is written to be safe to print and
        * carries no address; the column name is what a reader needs. */
       const line = `[stripe] ${event.type} -> ${Object.keys(decision.patch).join(',')} by ${decision.match.column} (${decision.confidence}: ${decision.reason})`;
-      if (!applied) console.error(`${line} — MATCHED NO USER ROW. op=${req.operationId}`);
+      /* A stale event changing nothing is the GUARD WORKING and must never be
+       * reported as the failure that looks identical from the row count. */
+      if (outcome.stale) console.log(`${line} — superseded by a newer event; not applied`);
+      else if (outcome.missing) console.error(`${line} — MATCHED NO USER ROW. op=${req.operationId}`);
       else if (decision.confidence === 'weak') console.warn(`${line} — WEAK match; this checkout predates client_reference_id`);
       else console.log(line);
-      await recordBillingEvent(event, decision, { applied, userId: (touched || [])[0]?.id || null, ip: req.ip });
+      if (!outcome.ordered) console.warn('[stripe] ordering guard INACTIVE — migrations/027_users_stripe_event_at.sql is not applied; last delivery wins');
+      await recordBillingEvent(event, decision, { applied, userId: outcome.userId, ip: req.ip, stale: outcome.stale, ordered: outcome.ordered });
       invalidateUserRows();
     } else if (decision.handled && !decision.match) {
       /* Loud, because it is the failure the old code had and could not report:
@@ -3362,12 +3374,19 @@ const auditLog = async (userId, action, metadata = {}, ip = null) => {
  * and a lost audit row is a gap in a report, while a thrown one would answer
  * Stripe 500 and replay a payment.
  */
-const recordBillingEvent = (event, decision, { applied, userId, ip } = {}) =>
+const recordBillingEvent = (event, decision, { applied, userId, ip, stale = false, ordered = null } = {}) =>
   auditLog(userId || null, `billing.${event.type}`, {
     eventId: event.id,
     type: event.type,
     confidence: decision.confidence,
     reason: decision.reason,
+    /* `stale` is what stops the read model reading the ordering guard as the
+     * failure it is shaped exactly like: a superseded event and an event that
+     * matched no user row BOTH change zero rows. `ordered: false` records that
+     * 027 was not applied when this event ran, so a divergence found later can
+     * be dated against it. */
+    ...(stale ? { stale: true } : {}),
+    ...(ordered === null ? {} : { ordered }),
     /* `attributed` and `applied` are separate questions and the second is the
      * one nothing could answer: matching a column and updating a row are not
      * the same event. `applied: null` means the handler decided there was

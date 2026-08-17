@@ -119,3 +119,21 @@ test('degenerate input does not throw', () => {
     assert.equal(out.ledger.total, 0);
   }
 });
+
+test('a superseded event is the guard working, not a failure', () => {
+  /* An event rejected by the ordering guard and an event that matched no user
+   * row BOTH changed zero rows. Reading the first as the second would report
+   * item 40's fix as a fleet of item 41 defects. */
+  const out = unapplied([audit({ metadata: { ...audit().metadata, eventId: 'evt_old', applied: 0, stale: true } })]);
+  assert.deepEqual(out.superseded.map((e) => e.eventId), ['evt_old']);
+  assert.deepEqual(out.matchedNothing, []);
+  const summary = summariseBilling({ audits: [audit({ metadata: { ...audit().metadata, applied: 0, stale: true } })], now: NOW });
+  assert.equal(summary.healthy, true, 'the ordering guard rejecting a stale event is not ill health');
+});
+
+test('events applied while 027 was unapplied are dated, not counted as faults', () => {
+  const out = unapplied([audit({ metadata: { ...audit().metadata, eventId: 'evt_raw', ordered: false } })]);
+  assert.deepEqual(out.unguarded.map((e) => e.eventId), ['evt_raw']);
+  assert.deepEqual(out.matchedNothing, []);
+  assert.equal(summariseBilling({ audits: [audit({ metadata: { ...audit().metadata, ordered: false } })], users: [{ id: 'u1', plan: 'pro' }], now: NOW }).healthy, true);
+});

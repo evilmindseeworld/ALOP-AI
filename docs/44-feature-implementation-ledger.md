@@ -270,8 +270,19 @@ same defect as a checker that reads the migration files instead of the database.
     both wiring guards were observed red. **Owner action remains**: set
     `RATE_LIMIT_STORE=postgres` in Render before scaling past one instance —
     the census reports the mistake, it does not prevent it.
-40. **blocked** — Complete Stripe identity/billing release work. Existing
-    `backend/lib/stripe-identity.js` foundation was not extended in this task.
+40. **complete (enforcement; the migration is one owner action)** — Stripe
+    identity/billing release work. Files: `backend/lib/stripe-apply.js` (new),
+    `backend/lib/stripe-apply.test.js` (new),
+    `backend/migrations/027_users_stripe_event_at.sql` (new, NOT APPLIED),
+    `backend/lib/stripe-webhook-wiring.test.js`,
+    `backend/lib/billing-read-model.js`, `backend/server.js`. Evidence: the
+    release blocker was found by reading, not guessed — NOTHING in the request
+    path compared event timestamps, so a reordered `customer.subscription.*`
+    pair left a cancelled customer on `pro` permanently. The high-water mark is
+    now compared and advanced in ONE statement. 1880/1880 tests; five guards
+    observed red. **Owner action**: apply 027; until then the code falls back
+    to the unguarded write and says so on every event, in the log and in the
+    read model's `unguarded` list.
 41. **complete** — Stripe event state machine, durable retries, and the billing
     read model. Files:
     `backend/lib/stripe-event-ledger.js` (new),
@@ -855,15 +866,87 @@ them.
   bag, reconciling from events that changed nothing, and taking the newest
   event rather than the newest PLAN-BEARING one.
 
+## 2026-08-18 (continued) — item 40: Stripe does not promise order, and the webhook assumed it did
+
+Found by tracing the entitlement invariant through every producer rather than
+by looking for a bug: `resolveStripeTarget` decides a plan from an event, and
+nothing between it and the `users` row ever asked WHEN the event was created.
+`grep -n "created|timestamp|order" lib/stripe-identity.js` returns one line,
+and it is the string `customer.subscription.created`.
+
+So, with two events five seconds apart and delivered in the other order — which
+a redelivery after a 500 produces on its own, minutes apart:
+
+    customer.subscription.updated (active)   created 12:00:00
+    customer.subscription.deleted            created 12:00:05
+
+the cancelled customer keeps `pro` permanently. Every log line reads healthy,
+and unlike the paid-and-free bugs this one is invisible from the customer's
+side too, because the customer is happy. It is found by reconciling the ledger
+against Stripe by hand, which is to say it is not found.
+
+- **The guard is in the PREDICATE.** `users.stripe_event_at` is compared and
+  advanced in one statement (`stripe_event_at IS NULL OR stripe_event_at <= $1`),
+  because reading the row, comparing in JavaScript and then writing has a race
+  exactly the width of the round trip — and two concurrent deliveries of two
+  events is the case the whole thing exists for. `IS NULL` is not redundant: a
+  NULL comparison is NULL, so without that clause the FIRST event for every
+  user is rejected as stale, and the guard eats the thing it protects.
+
+- **`lte`, not `lt`.** A redelivery of the same event carries the same
+  timestamp and must still be able to finish work its first delivery failed at.
+  Two DIFFERENT events inside one second remain order-dependent, and that is
+  the one case this does not cover.
+
+- **Zero rows now means two things, and only one is a fault.** A stale event
+  and an event that matched no user row both change nothing. The zero-row path
+  costs one extra select to tell them apart, because reporting the guard
+  working as the paid-and-free failure would turn this fix into a permanent
+  error stream — and the read model's new `superseded` bucket is the same
+  distinction on the reporting side.
+
+- **A bogus `created` makes no ordering claim.** Zero, missing or unparseable
+  becomes `null` rather than 1970 — an event stamped at the epoch is older than
+  everything and would be permanently unappliable — and a far-future stamp is
+  refused because it would pin the row and reject every later event.
+
+- **It works before 027 is applied**, falling back to the unguarded write and
+  reporting `ordered: false`, which the read model collects into `unguarded` so
+  the exposure window is dated rather than inferred. That fallback exists
+  because this repo has shipped a migration that sat unapplied for weeks while
+  the code needing it failed in silence.
+
+- Verification: 1880/1880 backend tests, `node --check server.js`,
+  `git diff --check`. Five guards observed red: the dropped predicate, the
+  dropped `IS NULL`, a webhook writing `users` directly, a stale event reported
+  as a missing row, and the read model counting a superseded event as a
+  failure. **One of the five was reported red before it had run** — the perl
+  substitution failed with `bad substitution` and the suite it printed was the
+  UNMODIFIED one; caught by reading the command's own output rather than the
+  test count under it, and redone.
+
+- **Three existing wiring guards failed and were RETARGETED, not deleted.** The
+  users write moved into `lib/stripe-apply.js`, so guards pinning
+  `.update(decision.patch).eq(...)` against `server.js` no longer matched. The
+  invariants they hold — addressed by the column the decision chose, `.select()`
+  so zero rows is visible, `done` marked only after the work — are unchanged and
+  now assert at the new call site.
+
 ## Owner actions this Phase 3 has accumulated
 
-Two remain. The two migrations that led this list are DONE — see the dated
+Three remain. The two migrations that led this list are DONE — see the dated
 section above, verified in `pg_catalog`.
 
 1. **Set `RATE_LIMIT_STORE=postgres` in Render before scaling past one
    instance.** The census added in item 39 reports the mistake; it does not
    prevent it.
-2. **Run the evaluation dataset once against a real session.**
+2. **Apply `027_users_stripe_event_at.sql`.**
+   `node scripts/run-migration.mjs 027_users_stripe_event_at.sql`, or the
+   dashboard SQL editor. Until it runs, the Stripe ordering guard is inactive
+   and a reordered event pair can leave a cancelled customer on `pro`. The
+   webhook warns on every event and `GET /api/admin/billing` lists the exposed
+   events under `unguarded`.
+3. **Run the evaluation dataset once against a real session.**
    `EVAL_TOKEN=<clerk jwt> BASE=https://alop-ai.onrender.com npm run evals`
    from `backend/`. Until that happens items 34 and 35 are a platform with no
    measurement in it, and the gates have never judged a real answer. It costs up

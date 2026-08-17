@@ -34,6 +34,21 @@ test("a sample smaller than minSample is inconclusive, so four cases cannot bles
   assert.ok(verdict.results.find((r) => r.name === "acceptance").detail.includes("sample 4 < 10"));
 });
 
+test("a measured breach fails at ANY sample size, and --allow-inconclusive cannot rescue it", () => {
+  // Found by running three cases against a live local server with a bad token:
+  // every case failed, the sample was under ten, and the acceptance gate said
+  // `inconclusive` — so --allow-inconclusive printed GATES PASSED over a run
+  // that answered nothing.
+  const metrics = { ...GOOD, cases: 3, acceptanceRate: 0, factualityPassRate: 0 };
+  const strict = evaluateGates(metrics);
+  assert.ok(strict.failed.includes("acceptance"), strict.failed.join(","));
+
+  const lenient = evaluateGates(metrics, { allowInconclusive: true });
+  assert.equal(lenient.passed, false);
+  assert.ok(lenient.failed.includes("acceptance"));
+  assert.match(strict.results.find((r) => r.name === "acceptance").detail, /a breach still fails/);
+});
+
 test("--allow-inconclusive passes what is measured and still refuses a real failure", () => {
   const unmeasured = evaluateGates({ ...GOOD, cachePrecision: null }, { allowInconclusive: true });
   assert.equal(unmeasured.passed, true);

@@ -199,7 +199,7 @@ same defect as a checker that reads the migration files instead of the database.
 34. **complete (the platform and the first dataset; one live run is owed)** —
     Evaluation platform and datasets. Files: `backend/lib/evaluation.js` (new),
     `backend/lib/evaluation.test.js` (new), `backend/evals/core-v1.json` (new),
-    `backend/scripts/run-evals.mjs` (new), `backend/package.json`. Evidence: 14
+    `backend/scripts/run-evals.mjs` (new), `backend/package.json`. Evidence: 17
     grader/metric tests pass and the shipped dataset is validated BY a test, so
     a typo'd expectation key is a red suite rather than a case that silently
     grades nothing. `npm run evals:validate` reports 22 cases and spends
@@ -210,10 +210,13 @@ same defect as a checker that reads the migration files instead of the database.
 35. **complete (enforcement; two of seven gates are inconclusive by design)** —
     Release gates for latency, cost, factuality, citations, cache/memory
     precision, tools, and acceptance. Files: `backend/lib/release-gates.js`
-    (new), `backend/lib/release-gates.test.js` (new). Evidence: 11 tests pass,
+    (new), `backend/lib/release-gates.test.js` (new). Evidence: 9 tests pass,
     and the one that matters was observed red with the "unmeasured means fine"
     shortcut in place — a missing number is `inconclusive` and fails the run,
     never a pass, because zero clears every max-threshold gate in the list.
+    A MEASURED breach fails at any sample size; `minSample` only withholds a
+    PASS. That distinction was wrong when first written and was caught by
+    running the thing (see the dated section below).
     `cost-per-turn` and `cache-precision` are inconclusive TODAY because the
     HTTP surface exposes neither the settled price nor `textSource`; the two
     additive fixes are named in `lib/evaluation.js`.
@@ -599,6 +602,37 @@ are single-threaded until then.
 - **Cache PRECISION, not hit rate.** Of the turns served from cache, how many
   still answered the question. A stale or mis-keyed row is a hit and a wrong
   answer simultaneously, and hit rate scores that as a success.
+
+- **RUNNING IT FOUND TWO DEFECTS THE 25 TESTS COULD NOT.** The backend was
+  launched locally on 3001 and the runner pointed at it with a deliberately bad
+  token, which exercises every part of the path except the model call.
+
+  1. **`process.exit()` aborts on Windows.** With undici still holding the
+     keep-alive sockets from the last turn, exiting there trips
+     `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), src\\win\\async.c`
+     and the shell reads **127**. A refusal still looked like a refusal, so this
+     hid; a PASSING run aborting the same way would have read as a failed
+     release. Now `process.exitCode`, and both paths were checked: 1 on refusal,
+     0 on pass.
+  2. **`--allow-inconclusive` blessed a run in which every case failed.** Three
+     cases, all answering 401, acceptance rate 0 — and because three is below
+     the ten-case minimum the gate said `inconclusive`, which the flag forgives.
+     The sample floor now sits BELOW the threshold comparison: it withholds a
+     PASS on thin evidence and has no business forgiving a breach you can
+     already see. Observed red against the old order.
+
+  Neither is a mistake the unit tests were pointed at, and both are the kind
+  only launching the thing produces.
+
+- **Two things were confirmed live rather than reasoned about.** The instance
+  census (item 39) immediately reported `instances: 2` and
+  `limitsMultiplied: true` on `/health`, because production's own heartbeat row
+  was in the table next to the local one — the census works against the real
+  database. And the typed-error envelope (item 38) answered the unauthenticated
+  POST with `{error, code: 'unauthenticated', operationId}` and answered a
+  misconfigured Clerk with a safe `internal_error` carrying the cause in
+  `detail`, which is the shape item 38 claims and had only ever been read from
+  source text.
 
 - **Two pre-existing source-text guards were failing before any of this**, from
   `a921020` reflowing `HEAD_CANDIDATES` and `ADAPTIVE_HEAD` across lines without

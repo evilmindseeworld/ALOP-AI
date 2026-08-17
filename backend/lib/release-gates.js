@@ -126,11 +126,23 @@ function evaluateGates(metrics = {}, { gates = DEFAULT_GATES, allowInconclusive 
 
     if (gate.disabled) return { ...base, status: 'disabled', detail: 'disabled by override' };
     if (!Number.isFinite(value)) return { ...base, status: 'inconclusive', detail: `${gate.metric} was not measured` };
+
+    const ok = gate.direction === 'min' ? value >= gate.threshold : value <= gate.threshold;
+
+    /* A MEASURED BREACH IS A FAILURE AT ANY SAMPLE SIZE, and the sample check
+     * sits BELOW this line for that reason. minSample protects against
+     * declaring a PASS on thin evidence; it says nothing about a violation you
+     * can already see. Observed on 2026-08-17: three cases run against a local
+     * server with a bad token failed every one of them, and because the sample
+     * was under ten the acceptance gate read `inconclusive` and
+     * `--allow-inconclusive` printed GATES PASSED. Two cases passing 0% is not
+     * "not enough data to say" — it is the answer. */
+    if (!ok) return { ...base, status: 'fail', detail: `${value} ${gate.direction === 'min' ? '>=' : '<='} ${gate.threshold} is false${gate.minSample && !(sample >= gate.minSample) ? ` (sample ${sample ?? 0}, below the ${gate.minSample} needed to PASS — a breach still fails)` : ''}` };
+
     if (gate.minSample && !(Number.isFinite(sample) && sample >= gate.minSample)) {
       return { ...base, status: 'inconclusive', detail: `sample ${sample ?? 0} < ${gate.minSample}` };
     }
-    const ok = gate.direction === 'min' ? value >= gate.threshold : value <= gate.threshold;
-    return { ...base, status: ok ? 'pass' : 'fail', detail: `${value} ${gate.direction === 'min' ? '>=' : '<='} ${gate.threshold} is ${ok}` };
+    return { ...base, status: 'pass', detail: `${value} ${gate.direction === 'min' ? '>=' : '<='} ${gate.threshold} is true` };
   });
 
   const failed = results.filter((r) => r.status === 'fail');

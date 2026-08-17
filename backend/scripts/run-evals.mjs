@@ -213,4 +213,12 @@ if (reportPath) {
 }
 
 console.log(verdict.passed ? "\nGATES PASSED" : `\nGATES REFUSED: ${[...verdict.failed, ...verdict.inconclusive].join(", ")}`);
-process.exit(verdict.passed ? 0 : 1);
+
+/* `process.exitCode`, NOT `process.exit()`. Measured on Windows: exiting here
+ * while undici still holds the keep-alive sockets from the last turn aborts the
+ * process — `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), src\win\async.c`
+ * — and the shell then reads 127. Nonzero, so a refusal still looked like a
+ * refusal; a PASSING run aborting the same way would have read as a failed
+ * release for no reason. Setting the code lets the loop drain and exit on its
+ * own, which is also what makes the report's last line trustworthy. */
+process.exitCode = verdict.passed ? 0 : 1;

@@ -214,3 +214,126 @@ test('passages come back in attachment order even when the later file ranks high
   assert.ok(found.hits[1].score > found.hits[0].score, 'fixture is wrong: the second file must rank higher');
   assert.deepEqual(found.hits.map((h) => h.passage.file.name), ['first.txt', 'second.txt']);
 });
+
+
+/* ---------------------------------------------------------------------------
+ * THE VECTOR SIDE. Lexical scoring drops a passage that answers the question
+ * in different words to a score of zero, and `scorePassages` keeps nothing at
+ * zero — so the failure being fixed is not a worse ranking, it is an empty
+ * result about a document that answers the question.
+ * ------------------------------------------------------------------------ */
+
+const { cosine, fuseDocumentHits, documentCandidates } = require('./doc-passages');
+
+const UNIT = (x, y) => [x, y, 0];
+const passageAt = (index, text) => ({ index, text, start: index * 100, end: index * 100 + text.length, total: 1000, heading: '', file: { id: 'f1', name: 'handbook.md' } });
+
+test('cosine is null, never zero, when a vector is missing or mismatched', () => {
+  // Zero is a measurement (orthogonal). An unembedded passage reporting zero
+  // would outrank every passage the query actively disagrees with.
+  assert.equal(cosine([1, 0], null), null);
+  assert.equal(cosine([1, 0], [1, 0, 0]), null);
+  assert.equal(cosine([0, 0], [1, 0]), null);
+  assert.equal(cosine([1, 0], [Number.NaN, 0]), null);
+  assert.equal(Math.round(cosine([1, 0], [1, 0]) * 100), 100);
+});
+
+test('with no vectors the fused result IS the lexical result', () => {
+  const lexical = [
+    { passage: passageAt(0, 'refunds are issued within 30 days'), score: 5 },
+    { passage: passageAt(1, 'refunds require a receipt'), score: 2 },
+  ];
+  const out = fuseDocumentHits({ lexical, limit: 2, budget: 5000 });
+  assert.deepEqual(out.hits.map((h) => h.passage.index), [0, 1]);
+  assert.equal(out.matched, true);
+  assert.deepEqual(out.via, ['lexical']);
+});
+
+test('a passage the lexical side scored at all is still found when embedding fails', () => {
+  const lexical = [{ passage: passageAt(3, 'the deposit is refundable'), score: 4 }];
+  const out = fuseDocumentHits({
+    lexical,
+    embedded: [{ passage: passageAt(3, 'the deposit is refundable'), vector: null }],
+    queryVector: null,
+    limit: 3,
+    budget: 5000,
+  });
+  assert.deepEqual(out.hits.map((h) => h.passage.index), [3]);
+});
+
+test('THE HOLE THIS CLOSES: a paraphrase with no lexical hit at all is returned', () => {
+  const paraphrase = passageAt(7, 'money paid up front comes back to you in full');
+  const out = fuseDocumentHits({
+    lexical: [],
+    embedded: [
+      { passage: paraphrase, vector: UNIT(1, 0) },
+      { passage: passageAt(2, 'office opening hours'), vector: UNIT(0, 1) },
+    ],
+    queryVector: UNIT(1, 0),
+    limit: 3,
+    budget: 5000,
+  });
+  assert.equal(out.matched, true);
+  assert.deepEqual(out.hits.map((h) => h.passage.index), [7]);
+  assert.ok(out.via.includes('vector'));
+});
+
+test('the floor keeps an unrelated passage out, so empty stays possible', () => {
+  // Every vector has a nearest neighbour. Without a floor, a question these
+  // documents do not answer comes back with the least-unrelated paragraph and
+  // reads as a hit.
+  const out = fuseDocumentHits({
+    lexical: [],
+    embedded: [{ passage: passageAt(1, 'office opening hours'), vector: UNIT(0, 1) }],
+    queryVector: UNIT(1, 0),
+    limit: 3,
+    budget: 5000,
+  });
+  assert.deepEqual(out.hits, []);
+  assert.equal(out.matched, false);
+});
+
+test('both sides finding the SAME passage fuse into one hit, not two', () => {
+  // The two rankings hold different objects for one passage; they collide on
+  // `index` or they do not fuse at all.
+  const shared = passageAt(4, 'refunds are issued within 30 days');
+  const out = fuseDocumentHits({
+    lexical: [{ passage: { ...shared }, score: 3 }],
+    embedded: [{ passage: { ...shared }, vector: UNIT(1, 0) }],
+    queryVector: UNIT(1, 0),
+    limit: 3,
+    budget: 5000,
+  });
+  assert.equal(out.hits.length, 1);
+  assert.deepEqual(out.via.sort(), ['lexical', 'vector']);
+});
+
+test('hits come back in reading order however they were ranked', () => {
+  const out = fuseDocumentHits({
+    lexical: [
+      { passage: passageAt(9, 'later passage about refunds'), score: 9 },
+      { passage: passageAt(1, 'earlier passage about refunds'), score: 1 },
+    ],
+    limit: 2,
+    budget: 5000,
+  });
+  assert.deepEqual(out.hits.map((h) => h.passage.index), [1, 9]);
+});
+
+test('candidates are indexed across the corpus, which is what lets the two sides collide', () => {
+  const { passages } = documentCandidates([
+    { id: 'a', name: 'a.md', content: 'alpha paragraph one.' },
+    { id: 'b', name: 'b.md', content: 'beta paragraph two.' },
+  ]);
+  assert.deepEqual(passages.map((p) => p.index), [0, 1]);
+  assert.deepEqual(passages.map((p) => p.file.name), ['a.md', 'b.md']);
+});
+
+test('a lexical-only search says so in what the model reads', () => {
+  const hits = [{ passage: passageAt(0, 'refunds are issued within 30 days'), score: 3 }];
+  const plain = renderDocuments({ hits, query: 'refunds' });
+  const degraded = renderDocuments({ hits, query: 'refunds', lexicalOnly: '80 passages, past the 50 this can embed in one request' });
+  assert.ok(!plain.includes('words only'));
+  assert.ok(degraded.includes('words only'));
+  assert.ok(degraded.includes('80 passages'));
+});

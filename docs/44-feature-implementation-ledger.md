@@ -189,15 +189,24 @@ earlier entry recorded the scope instruction rather than the code, which is the
 same defect as a checker that reads the migration files instead of the database.
 **Read the code before writing an item's state, including to write "blocked".**
 
-32. **partial** — Extraction, chunking, citations and cross-file retrieval are
-    built; object storage ACLs, embeddings and workspace ingestion are not.
+32. **partial** — Extraction, chunking, citations, cross-file retrieval and
+    semantic retrieval are built; object storage ACLs and workspace ingestion
+    are not.
     Files: `backend/lib/doc-extract.js`, `backend/lib/doc-passages.js`,
     `backend/lib/file-intake.js`, `backend/lib/tool-registry.js`,
-    `backend/lib/council-tools.js`, `backend/server.js`. Evidence: see the two
-    2026-08-16 sections and the 2026-08-17 cross-file section below.
-    **What is NOT claimed**: retrieval is lexical, so a question that
-    paraphrases rather than quotes its document still ranks by term overlap;
-    files live in a `chat_files` row rather than object storage.
+    `backend/lib/council-tools.js`, `backend/lib/embeddings.js`,
+    `backend/server.js`. Evidence: see the two 2026-08-16 sections, the
+    2026-08-17 cross-file section and the 2026-08-18 semantic section below.
+    **What is NOT claimed, and it is the part to read first**: the vector side
+    embeds passages AT QUERY TIME, so it is bounded by `MAX_EMBED_PASSAGES`
+    (50 passages, about 90,000 characters). A larger attached corpus is
+    searched lexically and the result says so in words the model reads — it is
+    a stated ceiling, not a silent one. Raising it means passage vectors stored
+    at upload time: a migration, a backfill and a job-queue write. Files still
+    live in a `chat_files` row rather than object storage, so there are no
+    per-file ACLs. **Nothing here has been run against the live provider** —
+    `GOOGLE_API_KEY` is set in Render only, so every test on this path exercises
+    the fake embedder or the failure branch.
 33. **not applicable as written; the trigger that revives it is named below** -
     Sandboxed computation/data/file-analysis tool with restricted credentials,
     network and resources. Taken against what is actually here, the same way
@@ -1024,6 +1033,64 @@ of the two reasons it is there for.
   from nothing, NOT that the result is byte-identical to production. That is a
   catalogue diff against the live database and needs credentials this machine
   does not have; `check-drift.mjs` is the tool for it and remains owner-run.
+
+## 2026-08-18 (continued) - item 32: the lexical ranker could not fail quietly, so it failed loudly instead
+
+**The defect, stated exactly.** `scorePassages` keeps only passages scoring
+above zero. A question that paraphrases its document rather than quoting it
+scores zero on every passage, so `search_files` did not return a worse ranking
+- it returned NOTHING, and the tool then reported "The documents were searched;
+the terms do not appear in them" about a document that answers the question.
+That sentence was written to be trustworthy, and on this path it was false.
+
+**What was built.**
+
+- `lib/embeddings.js` gains `batchEmbedRequestBody` and `parseBatchEmbeddings`.
+  One `:batchEmbedContents` round trip instead of N. The parser's rule is
+  stricter than the single one and the reason is worth reading: a malformed
+  single embedding costs one fact its vector, but a batch of the WRONG LENGTH
+  slides every later vector onto the wrong passage, and nothing in the response
+  would let a caller notice. A length mismatch discards the whole batch.
+- `lib/doc-passages.js` gains `documentCandidates`, `takeWithinBudget`, `cosine`
+  and `fuseDocumentHits`, all pure. The fusion is `hybrid-retrieval.fuse`, the
+  same reciprocal-rank fusion memory uses, keyed on the corpus-wide passage
+  `index` - which is the only reason two rankings holding different objects for
+  one passage collide instead of double-counting it.
+- `cosine` returns **null, never zero**, for a missing or mismatched vector.
+  Zero is a measurement: it means orthogonal. An unembedded passage entering the
+  ranking as zero would outrank every passage the query actively disagrees with.
+- A **floor** (0.5) on the vector side, because every vector has a nearest
+  neighbour. Without it, a question these documents do not answer comes back
+  with the least-unrelated paragraph, and "not in your documents" stops being a
+  possible answer at all.
+- `lib/tool-registry.js` gains `searchAttachedFiles`, which is where every
+  degradation lives: no embedder, an oversized corpus, a throwing provider, a
+  null result - each returns exactly what `searchDocuments` returned before.
+- `server.js` gains `embedBatch` and `embedPassages` (the only impure part),
+  with a 4s deadline of its own because this runs inside a tool call the user is
+  waiting on. Query and passages go in ONE batch: two would let the query vector
+  land after the passage vectors had already timed out.
+
+**The ceiling, stated rather than hidden.** `MAX_EMBED_PASSAGES` is 50 - about
+90,000 characters - against a `SCAN_CHARS` that admits 2 MB, roughly 1,100
+passages. Past the ceiling the search is lexical and `renderDocuments` says so
+in the text the model reads, because a silently lexical answer to a paraphrased
+question is indistinguishable from an honest "not in your documents". The
+upgrade is passage vectors stored at upload time.
+
+**Evidence.** Backend 1900/1900, up from 1880. Seven guards were mutated and
+watched fail before being kept: the batch length check, `cosine`'s null,
+the vector floor, the fusion key, the reading-order sort, the lexical-only
+notice, and the corpus ceiling. The ceiling test failed first for the wrong
+reason - a 120-paragraph fixture is only about seven passages, not fifty - which
+is the test catching the author rather than the code.
+
+**What is NOT verified.** No live provider call. `GOOGLE_API_KEY` lives in
+Render only, so `embedBatch` and `embedPassages` have never run against Gemini
+from this machine. The request shape was checked against Google's REST
+documentation (`embedContentConfig.outputDimensionality`, and each batch entry
+carrying its own model and config), not against a response. The first live run
+is the thing that would confirm this works at all.
 
 ## Owner actions this Phase 3 has accumulated
 

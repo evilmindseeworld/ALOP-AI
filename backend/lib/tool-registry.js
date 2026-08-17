@@ -26,7 +26,7 @@ const { isCitable } = require("./link-check");
 const { childAbortController } = require("./abort");
 const { UrlBlocked } = require("./url-guard");
 const { randomUUID } = require("node:crypto");
-const { findPassages, renderPassages, searchDocuments, renderDocuments } = require("./doc-passages");
+const { findPassages, renderPassages, renderDocuments, documentCandidates, scorePassages, fuseDocumentHits } = require("./doc-passages");
 const Sentry = require("@sentry/node");
 
 /** Result shapes are uniform so the loop never has to know which tool ran. */
@@ -58,6 +58,68 @@ const MAX_RESULT_CHARS = 4000;
 /** Text budget for retrieved passages. Under the clamp, so the header and the
  * gap markers survive rather than being cut off the end of the last passage. */
 const PASSAGE_BUDGET = 3200;
+
+/**
+ * HOW MANY PASSAGES ARE WORTH ONE EMBEDDING REQUEST.
+ *
+ * The vector side of `search_files` embeds the candidates at query time, so its
+ * cost is the size of the ATTACHED CORPUS, not of the answer. `SCAN_CHARS` lets
+ * 2 MB of text through, which is roughly 1,100 passages - a batch nobody should
+ * pay for, per search call, while the user waits.
+ *
+ * Fifty passages is about 90,000 characters, which covers the attachments a
+ * chat actually carries, in one `:batchEmbedContents` round trip. Past it the
+ * search is lexical only AND SAYS SO in its result: a silently lexical answer
+ * to a paraphrased question is indistinguishable from an absent one.
+ *
+ * ponytail: query-time embedding with a corpus ceiling. The upgrade, when a
+ * real corpus exceeds this, is passage vectors stored at upload time - a
+ * migration, a backfill and a job-queue write - after which the query side
+ * embeds one string and reads the rest.
+ */
+const MAX_EMBED_PASSAGES = 50;
+
+/**
+ * Lexical always; vector as well when there is an embedder and the corpus fits.
+ *
+ * The degraded path is not a branch the caller sees: with no embedder, an
+ * oversized corpus, a refused key or a timeout, this returns exactly what
+ * `searchDocuments` returns, and `renderDocuments` renders it unchanged.
+ */
+async function searchAttachedFiles(files, query, embedPassages, signal) {
+  const { passages, scanned, skipped } = documentCandidates(files);
+  if (!passages.length) return { hits: [], matched: false, scanned, skipped };
+
+  const lexical = scorePassages(passages, query);
+  const base = { scanned, skipped };
+  const lexicalOnly = () => ({ ...base, ...fuseDocumentHits({ lexical, limit: 3, budget: PASSAGE_BUDGET }) });
+
+  if (typeof embedPassages !== "function") return lexicalOnly();
+  if (passages.length > MAX_EMBED_PASSAGES) {
+    /* Named so `renderDocuments` can tell the model that a paraphrase would
+     * have been missed here, which is the one thing it cannot infer. */
+    return { ...lexicalOnly(), lexicalOnly: `${passages.length} passages, past the ${MAX_EMBED_PASSAGES} this can embed in one request` };
+  }
+
+  /* Never throws: this side is an improvement on an answer that already works,
+   * and losing the answer to lose the improvement is the wrong trade. */
+  let embedding = null;
+  try {
+    embedding = await embedPassages({ query, texts: passages.map((p) => p.text), signal });
+  } catch { embedding = null; }
+
+  const vectors = Array.isArray(embedding && embedding.vectors) ? embedding.vectors : [];
+  return {
+    ...base,
+    ...fuseDocumentHits({
+      lexical,
+      embedded: passages.map((passage, i) => ({ passage, vector: vectors[i] || null })),
+      queryVector: (embedding && embedding.queryVector) || null,
+      limit: 3,
+      budget: PASSAGE_BUDGET,
+    }),
+  };
+}
 const MAX_TOOL_TIMEOUT_MS = 8000;
 const MAX_REDIRECTS = 5;
 
@@ -325,7 +387,7 @@ function buildRegistry(deps = {}) {
       run: async ({ query }, { signal } = {}) => {
         const files = await deps.files.all({ signal });
         if (!files || !files.length) return fail("No files are attached to this conversation.");
-        const found = searchDocuments(files, query, { limit: 3, budget: PASSAGE_BUDGET });
+        const found = await searchAttachedFiles(files, query, deps.embedPassages, signal);
         if (!found.hits.length) {
           // Naming the files searched is the point of this branch: "not in
           // these documents" is a usable answer and "no results" is not.

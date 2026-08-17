@@ -602,3 +602,79 @@ test("search_files reports an empty conversation rather than searching nothing",
   const out = await reg.execute({ name: "search_files", args: { query: "anything" } });
   assert.equal(out.ok, false);
 });
+
+/* ---- search_files: the vector side, and every way it declines ---- */
+
+/* A stand-in embedder with no network in it. Two orthogonal directions is
+ * enough: the point under test is the wiring and the degradations, not the
+ * quality of a real embedding space (that is `doc-passages.test.js`). */
+const BLANK_LINE = String.fromCharCode(10, 10);
+const DIRECTION = { refund: [1, 0, 0], schedule: [0, 1, 0] };
+const fakeEmbedder = (topicOf) => async ({ query, texts }) => ({
+  queryVector: DIRECTION[topicOf(query)] || null,
+  vectors: texts.map((t) => DIRECTION[topicOf(t)] || null),
+});
+const topicByWord = (text) => (/refund|money back|reimburs/i.test(text) ? "refund" : "schedule");
+
+const PARAPHRASE_FILES = [
+  { id: "33333333-3333-4333-8333-333333333333", name: "policy.md", kind: "text", content: "Money paid up front is reimbursed in full when a booking is cancelled early." },
+];
+
+test("search_files without an embedder is the lexical search it always was", async () => {
+  const reg = buildRegistry({ files: searchStore() });
+  const out = await reg.execute({ name: "search_files", args: { query: "restocking fee" } });
+  assert.equal(out.ok, true);
+  assert.match(out.content, /restocking fee is 12 percent/);
+  // No degradation notice, because nothing was degraded.
+  assert.ok(!/words only/.test(out.content));
+});
+
+test("THE HOLE: a paraphrased question finds nothing lexically and is found with an embedder", async () => {
+  const store = searchStore(PARAPHRASE_FILES);
+  const query = "refund policy";
+
+  const without = await buildRegistry({ files: store }).execute({ name: "search_files", args: { query } });
+  assert.match(without.content, /The documents were searched/);
+
+  const withVectors = await buildRegistry({ files: store, embedPassages: fakeEmbedder(topicByWord) })
+    .execute({ name: "search_files", args: { query } });
+  assert.match(withVectors.content, /reimbursed in full/);
+});
+
+test("an embedder that fails leaves the lexical answer standing", async () => {
+  const reg = buildRegistry({
+    files: searchStore(),
+    embedPassages: async () => { throw new Error("provider refused"); },
+  });
+  const out = await reg.execute({ name: "search_files", args: { query: "restocking fee" } });
+  assert.equal(out.ok, true);
+  assert.match(out.content, /restocking fee is 12 percent/);
+});
+
+test("an embedder returning nothing usable leaves the lexical answer standing", async () => {
+  for (const embedPassages of [async () => null, async () => ({ queryVector: null, vectors: [] })]) {
+    const out = await buildRegistry({ files: searchStore(), embedPassages })
+      .execute({ name: "search_files", args: { query: "restocking fee" } });
+    assert.equal(out.ok, true);
+    assert.match(out.content, /restocking fee is 12 percent/);
+  }
+});
+
+test("a corpus too large to embed is searched lexically AND SAYS SO", async () => {
+  // Silence here is the defect: a lexical-only answer to a paraphrased question
+  // is indistinguishable from "your documents do not discuss this".
+  const big = [{
+    id: "44444444-4444-4444-8444-444444444444",
+    name: "huge.md",
+    kind: "text",
+    content: Array.from({ length: 1500 }, (_, i) => `Paragraph ${i} discussing the restocking fee and other administrative matters.`).join(BLANK_LINE),
+  }];
+  let called = false;
+  const reg = buildRegistry({
+    files: searchStore(big),
+    embedPassages: async () => { called = true; return null; },
+  });
+  const out = await reg.execute({ name: "search_files", args: { query: "restocking fee" } });
+  assert.equal(called, false, "an oversized corpus must not reach the embedding provider at all");
+  assert.match(out.content, /words only/);
+});

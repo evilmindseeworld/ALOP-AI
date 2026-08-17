@@ -5,7 +5,9 @@ const {
   EMBED_DIMS,
   MAX_EMBED_CHARS,
   embedRequestBody,
+  batchEmbedRequestBody,
   parseEmbedding,
+  parseBatchEmbeddings,
   toVectorLiteral,
 } = require("./embeddings");
 
@@ -61,4 +63,54 @@ test("nothing to send reads as null rather than an empty vector", () => {
   for (const empty of [[], null, undefined, "nope"]) {
     assert.equal(toVectorLiteral(empty), null);
   }
+});
+
+/* THE BATCH PATH. Its failure mode is not a bad vector, it is a vector
+ * attributed to the wrong passage, which no caller can detect. */
+
+test("a batch request carries the model and the width on EVERY entry", () => {
+  const body = batchEmbedRequestBody(["one", "two"]);
+  assert.equal(body.requests.length, 2);
+  for (const request of body.requests) {
+    // The batch endpoint does not inherit these from the envelope; an entry
+    // missing outputDimensionality comes back at the model's default width and
+    // parseEmbedding then discards it as malformed.
+    assert.equal(request.model, `models/${EMBED_MODEL}`);
+    assert.equal(request.embedContentConfig.outputDimensionality, EMBED_DIMS);
+  }
+  assert.equal(body.requests[1].content.parts[0].text, "two");
+});
+
+test("a full batch parses positionally", () => {
+  const json = { embeddings: [{ values: vec(EMBED_DIMS, 0.1) }, { values: vec(EMBED_DIMS, 0.2) }] };
+  const out = parseBatchEmbeddings(json, 2);
+  assert.equal(out.length, 2);
+  assert.equal(out[0][0], 0.1);
+  assert.equal(out[1][0], 0.2);
+});
+
+test("a SHORT batch is discarded whole, not shifted", () => {
+  // The defect being prevented: one dropped embedding would slide every later
+  // vector one passage to the left, and the ranking would look fine.
+  const json = { embeddings: [{ values: vec(EMBED_DIMS, 0.1) }] };
+  assert.deepEqual(parseBatchEmbeddings(json, 3), [null, null, null]);
+});
+
+test("a LONG batch is discarded whole too", () => {
+  const json = { embeddings: [{ values: vec() }, { values: vec() }, { values: vec() }] };
+  assert.deepEqual(parseBatchEmbeddings(json, 2), [null, null]);
+});
+
+test("one malformed entry costs only its own position", () => {
+  const json = { embeddings: [{ values: vec() }, { values: vec(10) }, { values: vec() }] };
+  const out = parseBatchEmbeddings(json, 3);
+  assert.ok(Array.isArray(out[0]));
+  assert.equal(out[1], null);
+  assert.ok(Array.isArray(out[2]));
+});
+
+test("a response that is not a batch at all reads as no embeddings", () => {
+  assert.deepEqual(parseBatchEmbeddings({}, 2), [null, null]);
+  assert.deepEqual(parseBatchEmbeddings({ embeddings: "no" }, 2), [null, null]);
+  assert.deepEqual(parseBatchEmbeddings(null, 1), [null]);
 });

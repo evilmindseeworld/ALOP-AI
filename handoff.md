@@ -1,3 +1,48 @@
+# Handoff - 2026-08-18 (twelfth pass): the search that answered "not in your documents" about a document that answered
+
+Item 32's semantic half is built. Backend is 1900/1900. Nothing is deployed by
+this pass, no migration is involved, and no owner action is added.
+
+- **The bug was not ranking, it was silence.** `scorePassages` keeps nothing
+  scoring zero, so a question that paraphrased its document scored zero on every
+  passage and `search_files` reported "The documents were searched; the terms do
+  not appear in them" - about a document that answers the question.
+
+- **The vector side.** `batchEmbedRequestBody`/`parseBatchEmbeddings` in
+  `lib/embeddings.js` (one round trip, not N); `cosine` and `fuseDocumentHits`
+  in `lib/doc-passages.js`, fused by `hybrid-retrieval.fuse` on the corpus-wide
+  passage `index`; `searchAttachedFiles` in `lib/tool-registry.js` holding every
+  degradation; `embedBatch`/`embedPassages` in `server.js` with a 4s deadline,
+  the only impure part.
+
+- **A batch of the wrong length is discarded whole.** One missing embedding
+  would slide every later vector onto the wrong passage, and the ranking would
+  look healthy. This is the same shape as the `.update().eq()` bug last pass:
+  the failure reports success.
+
+- **`cosine` returns null, not zero**, for a missing vector - zero means
+  orthogonal, which is a measurement, and it would outrank everything the query
+  disagrees with. A 0.5 floor on the vector side keeps "not in your documents"
+  a reachable answer, since every vector has a nearest neighbour.
+
+- **The ceiling is stated, not silent.** 50 passages (~90,000 chars) per search
+  call against a 2 MB scan limit. Past it the search is lexical AND says so in
+  the text the model reads. Raising it means passage vectors stored at upload
+  time: migration, backfill, job-queue write.
+
+- **Seven guards observed red.** The ceiling test failed first for the wrong
+  reason - a 120-paragraph fixture is ~7 passages, not 50.
+
+- **Never run against the live provider.** `GOOGLE_API_KEY` is Render-only. The
+  request shape was checked against Google's REST docs, not a response. Item 32
+  stays `partial`: object storage ACLs and workspace ingestion are untouched.
+
+- **Owner actions, still three** - `RATE_LIMIT_STORE=postgres` in Render before
+  scaling past one instance; apply `027_users_stripe_event_at.sql`; run the
+  evaluation dataset once against a real session.
+
+---
+
 # Handoff - 2026-08-18 (eleventh pass): the money, the order, and a rebuild that did not work
 
 Items 40, 41 and 42 are complete; 32 moved from blocked to partial. Backend is
@@ -61,7 +106,8 @@ by this pass; no migration is involved and no owner action is added.
   per-file-index revert left the suite green, and the ordering test was written
   to make the claim true.
 - **Item 32 is now `partial`, not blocked.** Still unbuilt: embeddings (the
-  ranker is lexical), object storage ACLs, workspace ingestion.
+  ranker was lexical; the vector side landed 2026-08-18), object storage ACLs,
+  workspace ingestion.
 - **The two owner actions are unchanged** — `RATE_LIMIT_STORE=postgres` in
   Render, and one live `npm run evals` run with a Clerk session JWT.
 

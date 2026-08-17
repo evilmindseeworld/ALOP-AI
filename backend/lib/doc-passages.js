@@ -1,5 +1,7 @@
 'use strict';
 
+const { fuse } = require('./hybrid-retrieval');
+
 /**
  * FINDING THE PART OF A DOCUMENT THAT ANSWERS THE QUESTION.
  *
@@ -20,15 +22,20 @@
  * the character offsets and the nearest heading, so the model can quote a
  * location rather than "the document".
  *
- * WHY LEXICAL AND NOT EMBEDDINGS. There is no embedding call on this path
- * today and adding one would put a network round trip inside a tool call the
- * council makes while the user waits, on a turn that has already spent its
- * budget. Lexical scoring with IDF-style rarity weighting is a worse ranker in
- * general and a perfectly good one for the case that matters here — a question
- * naming terms that appear literally in the document. The interface returns
- * scored passages, so a vector re-rank can be added over it later without
- * changing a caller; `lib/hybrid-retrieval.js` already does exactly that for
- * memory and is the model to follow.
+ * LEXICAL IS THE FLOOR, NOT THE CEILING. Lexical scoring with IDF-style rarity
+ * weighting is a perfectly good ranker for the case that matters most here — a
+ * question naming terms that appear literally in the document — and it needs no
+ * network at all. Its failure is not bad ranking, it is TOTAL: `scorePassages`
+ * keeps only passages scoring above zero, so a question that paraphrases its
+ * document rather than quoting it returns nothing, and `search_files` reports
+ * "the terms do not appear" about a document that answers the question.
+ *
+ * `fuseDocumentHits` closes that hole with an optional vector side, fused by
+ * reciprocal rank through `lib/hybrid-retrieval.js` — the same fusion memory
+ * uses, for the same reason. Everything in THIS file stays pure: the caller
+ * supplies the vectors, because the embedding call is a network round trip and
+ * `server.js` owns those. When no vectors arrive — no key, a timeout, a
+ * malformed batch — the fused result is the lexical result, unchanged.
  *
  * ponytail: rarity-weighted term overlap with a proximity bonus. Not BM25 —
  * the tuning constants of BM25 want a corpus to tune against, and this ranks a
@@ -262,7 +269,7 @@ const SCAN_CHARS = 2_000_000;
  * @param {string} query
  * @returns {{hits: Array, matched: boolean, scanned: number, skipped: string[]}}
  */
-function searchDocuments(files, query, { limit = 3, budget = 3000, scanChars = SCAN_CHARS } = {}) {
+function documentCandidates(files, { scanChars = SCAN_CHARS } = {}) {
   const skipped = [];
   const passages = [];
   let spent = 0;
@@ -286,6 +293,12 @@ function searchDocuments(files, query, { limit = 3, budget = 3000, scanChars = S
     }
   }
 
+  return { passages, scanned, skipped };
+}
+
+function searchDocuments(files, query, { limit = 3, budget = 3000, scanChars = SCAN_CHARS } = {}) {
+  const { passages, scanned, skipped } = documentCandidates(files, { scanChars });
+
   if (!passages.length) return { hits: [], matched: false, scanned, skipped };
 
   const ranked = scorePassages(passages, query);
@@ -295,6 +308,19 @@ function searchDocuments(files, query, { limit = 3, budget = 3000, scanChars = S
    * returning it would read as a hit. Empty is the true answer. */
   if (!ranked.length) return { hits: [], matched: false, scanned, skipped };
 
+  return { hits: takeWithinBudget(ranked, { limit, budget }), matched: true, scanned, skipped };
+}
+
+/**
+ * The prefix of `ranked` that fits, put back into reading order.
+ *
+ * ALWAYS AT LEAST ONE. `hits.length` guards the budget test so a single passage
+ * larger than the whole budget is still returned; the alternative is answering
+ * "nothing matches" about the passage that does.
+ *
+ * @param {Array<{passage: object, score: number}>} ranked best first
+ */
+function takeWithinBudget(ranked, { limit = 3, budget = 3000 } = {}) {
   const hits = [];
   let used = 0;
   for (const { passage, score } of ranked) {
@@ -303,12 +329,14 @@ function searchDocuments(files, query, { limit = 3, budget = 3000, scanChars = S
     hits.push({ passage, score });
     used += passage.text.length;
   }
+  /* Reading order, not score order: two passages of one document read as the
+   * document, and the model quotes offsets that go forwards. */
   hits.sort((a, b) => a.passage.index - b.passage.index);
-  return { hits, matched: true, scanned, skipped };
+  return hits;
 }
 
 /** Render cross-document hits, each labelled with the file it came from. */
-function renderDocuments({ hits, skipped = [], query }) {
+function renderDocuments({ hits, skipped = [], query, lexicalOnly = '' }) {
   if (!hits.length) return '';
   const parts = hits.map(({ passage }) => {
     const where = passage.heading ? `${passage.heading} — ` : '';
@@ -316,13 +344,129 @@ function renderDocuments({ hits, skipped = [], query }) {
   });
   const names = [...new Set(hits.map((h) => h.passage.file.name))];
   const missed = skipped.length ? ` Not searched (too large to open together): ${skipped.join(', ')}.` : '';
-  const head = `Showing the ${hits.length} passage${hits.length === 1 ? '' : 's'} matching "${query}" across ${names.length} document${names.length === 1 ? '' : 's'} (${names.join(', ')}). Other parts of these documents, and any other attached file, were not shown.${missed}`;
+  /* A LEXICAL-ONLY SEARCH HAS A FAILURE THE MODEL CANNOT SEE. With the vector
+   * side off, a passage that answers the question in different words scored
+   * zero and was never a candidate, so "these are the matches" means "these
+   * are the WORD matches". Said plainly, because the alternative is the model
+   * concluding the documents are silent on something they discuss. */
+  const partial = lexicalOnly ? ` Matched on words only (${lexicalOnly}), so a passage answering this in different words would not appear; try the document's own wording.` : '';
+  const head = `Showing the ${hits.length} passage${hits.length === 1 ? '' : 's'} matching "${query}" across ${names.length} document${names.length === 1 ? '' : 's'} (${names.join(', ')}). Other parts of these documents, and any other attached file, were not shown.${missed}${partial}`;
   return `${head}\n\n${parts.join('\n\n[…]\n\n')}`;
+}
+
+/**
+ * Cosine similarity, or null when the pair cannot be compared.
+ *
+ * NULL, NOT ZERO, for a missing or mismatched vector. Zero is a real
+ * similarity — it means orthogonal, which is a measurement — and letting an
+ * absent vector enter the ranking as one puts an unembedded passage ahead of
+ * every passage the query actively disagrees with. The vector side must be
+ * silent about what it does not know.
+ *
+ * pgvector does this in SQL for `user_facts`; these passages are in memory and
+ * were never written to a table, so it is done here.
+ */
+function cosine(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b) || !a.length || a.length !== b.length) return null;
+  let dot = 0;
+  let na = 0;
+  let nb = 0;
+  for (let i = 0; i < a.length; i += 1) {
+    const x = a[i];
+    const y = b[i];
+    if (typeof x !== 'number' || typeof y !== 'number' || !Number.isFinite(x) || !Number.isFinite(y)) return null;
+    dot += x * y;
+    na += x * x;
+    nb += y * y;
+  }
+  if (!na || !nb) return null;
+  return dot / (Math.sqrt(na) * Math.sqrt(nb));
+}
+
+/**
+ * The lexical ranking and an optional vector ranking, fused.
+ *
+ * WHY BOTH, IN THIS FILE'S TERMS. `scorePassages` cannot see a paraphrase and
+ * returns nothing for one. A vector ranking cannot see a rare literal token —
+ * `AC-4471` and `AC-4477` embed to nearly the same point — and it always
+ * returns something, including for a question the corpus does not answer at
+ * all, because every vector has a nearest neighbour. Run alone, each one's
+ * failure is the other one's job.
+ *
+ * FUSED BY RECIPROCAL RANK through `hybrid-retrieval.fuse`, not by score: an
+ * IDF-ish sum and a cosine are not on one scale and no weight between them is
+ * calibratable here. Only the ORDER each side produced is used.
+ *
+ * THE VECTOR SIDE IS CUT, NOT JUST RANKED. Because it ranks everything, the
+ * whole corpus arrives fused and a passage about nothing relevant reaches the
+ * output whenever the lexical side is short. `vectorFloor` and `vectorTop`
+ * bound it: below the floor a passage is not offered at all, and past the top
+ * the tail is dropped. A question with no answer in these documents must still
+ * be able to come back empty — that is what makes a hit mean something.
+ *
+ * @param {object} params
+ * @param {Array<{passage: object, score: number}>} params.lexical best first, from scorePassages
+ * @param {Array<{passage: object, vector: number[]|null}>} [params.embedded] candidates with their vectors
+ * @param {number[]|null} [params.queryVector] the question's vector, or null
+ * @returns {{hits: Array, matched: boolean, via: string[]}}
+ */
+function fuseDocumentHits({
+  lexical = [],
+  embedded = [],
+  queryVector = null,
+  limit = 3,
+  budget = 3000,
+  /* A cosine this low is not a weak match, it is an unrelated passage. Chosen
+   * as a floor rather than tuned: this is the value that keeps a question the
+   * documents do not answer returning empty, which is the property being
+   * protected. ponytail: one constant, no per-corpus calibration; revisit only
+   * with a labelled set to calibrate against. */
+  vectorFloor = 0.5,
+  /* The vector side ranks the ENTIRE corpus, so it needs a length. Four is the
+   * shortlist a limit of three can actually use. */
+  vectorTop = 4,
+} = {}) {
+  const scored = Array.isArray(queryVector) && queryVector.length
+    ? embedded
+      .map((row) => ({ passage: row && row.passage, score: cosine(queryVector, row && row.vector) }))
+      .filter((row) => row.passage && row.score !== null && row.score >= vectorFloor)
+      .sort((a, b) => b.score - a.score || a.passage.index - b.passage.index)
+      .slice(0, vectorTop)
+    : [];
+
+  /* NOTHING TO FUSE IS NOT A FAILURE. With no vectors this is the lexical
+   * result byte for byte, which is what every degraded path here falls back
+   * to and why the caller needs no branch of its own. */
+  if (!scored.length) {
+    return { hits: takeWithinBudget(lexical, { limit, budget }), matched: lexical.length > 0, via: lexical.length ? ['lexical'] : [] };
+  }
+
+  const fused = fuse({
+    vector: scored,
+    lexical,
+    /* Two rankings of the SAME passage object must collide on one key, and
+     * `index` is the only identifier a passage has — it is assigned once, per
+     * corpus, in `documentCandidates`. Scoring on the object itself would make
+     * every passage look unique to both sides and fuse nothing. */
+    keyOf: (row) => (row && row.passage ? `p${row.passage.index}` : ''),
+    limit: Math.max(limit, vectorTop),
+  });
+
+  const ranked = fused.map(({ row, score }) => ({ passage: row.passage, score }));
+  return {
+    hits: takeWithinBudget(ranked, { limit, budget }),
+    matched: ranked.length > 0,
+    via: [...new Set(fused.flatMap((r) => r.via))],
+  };
 }
 
 module.exports = {
   splitPassages,
   scorePassages,
+  documentCandidates,
+  takeWithinBudget,
+  cosine,
+  fuseDocumentHits,
   findPassages,
   renderPassages,
   searchDocuments,

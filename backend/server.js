@@ -2308,7 +2308,7 @@ const getFeedbackGuidance = async (userId, signal) => {
  * is never on the path the user waits on.
  */
 const { FACTS_PROMPT, parseFacts, newFacts, factsBlock, factKey } = require('./lib/user-facts');
-const { EMBED_MODEL, embedRequestBody, parseEmbedding, toVectorLiteral } = require('./lib/embeddings');
+const { EMBED_MODEL, embedRequestBody, batchEmbedRequestBody, parseEmbedding, parseBatchEmbeddings, toVectorLiteral } = require('./lib/embeddings');
 /* Enough to condition an answer, small enough that it cannot crowd out the
  * conversation itself. See docs/MEMORY-AND-CACHE-PLAN.md Phase 2 — this is no
  * longer "newest first"; it is what this turn is ABOUT first, then newest. */
@@ -2346,6 +2346,61 @@ const embedText = async (text, parentSignal) => {
     return parseEmbedding(await res.json());
   } catch (e) { if (!timed.signal.aborted) console.error('[EMBED] Failed:', e.message); return null; }
   finally { timed.dispose(); }
+};
+
+/**
+ * MANY STRINGS, ONE ROUND TRIP, ALL-OR-NOTHING.
+ *
+ * `:batchEmbedContents` so that re-ranking N document passages costs one HTTPS
+ * call rather than N. Returns an array of exactly `texts.length` entries; see
+ * `parseBatchEmbeddings` for why a short response has to read as no response.
+ *
+ * @returns {Promise<Array<number[]|null>>}
+ */
+const embedBatch = async (texts, parentSignal, deadlineMs = 30000) => {
+  const list = Array.isArray(texts) ? texts : [];
+  const empty = new Array(list.length).fill(null);
+  if (!GOOGLE_API_KEY || !list.length) return empty;
+  const timed = timeoutSignal(parentSignal, deadlineMs);
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${EMBED_MODEL}:batchEmbedContents?key=${GOOGLE_API_KEY}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(batchEmbedRequestBody(list)),
+      signal: timed.signal,
+    });
+    if (!res.ok) { console.error(`[EMBED] batch ${res.status} ${(await res.text()).slice(0, 200)}`); return empty; }
+    return parseBatchEmbeddings(await res.json(), list.length);
+  } catch (e) { if (!timed.signal.aborted) console.error('[EMBED] Batch failed:', e.message); return empty; }
+  finally { timed.dispose(); }
+};
+
+/**
+ * THE VECTOR SIDE OF `search_files`, AND ITS DEADLINE.
+ *
+ * This runs inside a tool call the council makes while the user waits, so it
+ * gets a budget of its own rather than the 30s an offline embed may take. Past
+ * it the search is the lexical one it always was — `searchAttachedFiles` needs
+ * no branch for that, because a null vector and an absent one are the same
+ * thing to `fuseDocumentHits`.
+ *
+ * The query and the passages go in ONE batch. Two calls would be two round
+ * trips inside the deadline, and the query embedded by a second request could
+ * land after the first has already timed out, leaving vectors with nothing to
+ * rank against.
+ */
+const DOC_EMBED_DEADLINE_MS = 4000;
+
+const embedPassages = async ({ query, texts, signal }) => {
+  const list = Array.isArray(texts) ? texts : [];
+  if (!GOOGLE_API_KEY || !query || !list.length) return null;
+  const all = await embedBatch([String(query), ...list], signal, DOC_EMBED_DEADLINE_MS);
+  const [queryVector, ...vectors] = all;
+  /* No query vector is nothing to rank against, so the passage vectors are of
+   * no use either. Reported as null rather than as a half-filled result. */
+  if (!queryVector) return null;
+  return { queryVector, vectors };
 };
 
 /** Answer-cache embeddings use the already-configured OpenRouter account. */
@@ -5381,7 +5436,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
               },
             }
           : {}),
-        ...(attached.length ? { files } : {}),
+        ...(attached.length ? { files, embedPassages } : {}),
       });
       // Opened BEFORE the loop so tool progress can be reported as it happens.
       // The loop can run for the best part of a minute — 25s of tool work plus

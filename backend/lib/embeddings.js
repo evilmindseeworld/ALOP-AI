@@ -73,11 +73,55 @@ function parseEmbedding(json) {
  */
 const toVectorLiteral = (vec) => (Array.isArray(vec) && vec.length ? `[${vec.join(",")}]` : null);
 
+/**
+ * MANY STRINGS, ONE ROUND TRIP.
+ *
+ * `embedRequestBody` is one text per request, which is right for a fact written
+ * after the user has been answered and wrong for anything on a path the user is
+ * waiting on. Re-ranking N document passages with it is N sequential HTTPS
+ * round trips inside a single tool call; `:batchEmbedContents` is one.
+ *
+ * Each element of `requests` is a whole EmbedContentRequest, model and config
+ * included — the batch endpoint does not inherit them from the envelope.
+ */
+const batchEmbedRequestBody = (texts) => ({
+  requests: (Array.isArray(texts) ? texts : []).map((text) => embedRequestBody(text)),
+});
+
+/**
+ * POSITION IS PART OF THE PAYLOAD HERE, AND THAT IS THE WHOLE DANGER.
+ *
+ * A single embedding that comes back malformed costs one fact its vector.
+ * A batch that comes back the WRONG LENGTH costs every passage after the gap
+ * its identity: vector i is silently attributed to passage i, so a short array
+ * does not degrade the ranking, it ranks passages against other passages'
+ * meanings and reports the result as a match. There is nothing in the response
+ * that would let a caller notice.
+ *
+ * So a length mismatch is not repaired and not partially used. The whole batch
+ * reads as no embeddings, and every caller's fallback for that is the lexical
+ * ranking it already had.
+ *
+ * @param {unknown} json whatever the endpoint returned.
+ * @param {number} expected how many texts were sent.
+ * @returns {Array<number[]|null>} exactly `expected` entries, aligned by index.
+ */
+function parseBatchEmbeddings(json, expected) {
+  const count = Number.isInteger(expected) && expected > 0 ? expected : 0;
+  const empty = new Array(count).fill(null);
+  const list = json?.embeddings;
+  if (!Array.isArray(list) || list.length !== count) return empty;
+  // Reuses the single parser so there is one definition of a usable vector.
+  return list.map((embedding) => parseEmbedding({ embedding }));
+}
+
 module.exports = {
   EMBED_MODEL,
   EMBED_DIMS,
   MAX_EMBED_CHARS,
   embedRequestBody,
+  batchEmbedRequestBody,
   parseEmbedding,
+  parseBatchEmbeddings,
   toVectorLiteral,
 };

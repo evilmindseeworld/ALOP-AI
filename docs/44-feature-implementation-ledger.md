@@ -696,6 +696,60 @@ corrected in the same commit. Ceiling, stated: a bare two-character SKU (`s9`,
 out — so "is the s7 or the s9 better" still goes to the planner. 1832/1832
 backend tests pass; three were observed red with the rule disabled.
 
+## 2026-08-17 (continued) — the deterministic layer was more literal than a person
+
+Four reports from one transcript. All four are the same shape: a regex read
+words, a person typed words, and the two disagreed.
+
+- **Typos, for every word the router reads.** `lib/spelling.js` corrects a
+  message towards the router's OWN closed vocabulary before any decision reads
+  it. It is not a spell checker and must not become one — no dictionary, no
+  prose correction — because a general one could "correct" a product name into an
+  English word, which is the single thing this area cannot afford. Nothing under
+  five characters is corrected: `and` is one edit from `add`, and that alone
+  would let the arithmetic parser answer 14 to "average of 4 and 10". A tie
+  refuses.
+
+  **The corrected text is a DECISION copy and never reaches a model.** Every
+  prompt still carries `pv.value`. A guard test enforces it, because answering a
+  rewritten question is answering a question the user did not ask and the answer
+  would look perfectly healthy.
+
+- **Spoken maths.** "6 multipled by 8" bought a full council while "6 x 8" was
+  free. Operator words now match through a bounded Damerau-Levenshtein where a
+  transposition costs ONE edit, which is what `mutliplied` is. Added with it:
+  ordinal powers ("2 to the 4th power", "3 to the fourth power") and multiplier
+  words ("half of 60", "double 21"). sin/cos/tan, cubed, roots, mod and factorial
+  already worked — verified by running them, not assumed.
+
+- **Short SKUs.** The ceiling written down in the previous commit was the next
+  bug report: "is tienco s7 stretch ... or the s9 ... better" answered from
+  memory with a spec table and prices. A two-character token cannot force a
+  search alone (`x8` in "3 x 8" is the same shape), so the SENTENCE has to prove
+  it: two or more of them, or a real word in front of one. The brand travels into
+  the query — "s9 specs review" finds a phone, a headphone and a vacuum. The
+  brand in the report is misspelled, which is precisely why the fix is a search
+  and not a brand list.
+
+- **Three seats instead of seven, and this reverses an instruction.**
+  `escalateForResearch` widened EVERY search turn to the full roster, so a
+  two-product comparison bought seven models. Seven readings of the same two
+  pages is one answer seven times, at seven times the request cost, and slower —
+  a seven-seat burst against an account-wide 20/minute ceiling collects 429s and
+  their retries. Simple and moderate research turns now take three; complex
+  research still takes everything. Three rather than one because a lone seat
+  reading a lone page with nothing to disagree with it is the failure that
+  function was written to fix.
+
+  The owner's earlier instruction was "full council on search" and this replaces
+  it, on the owner's own evidence. Sol proposed exactly this split on 2026-08-14
+  and was overruled; the reversal is recorded in the code so the next reader does
+  not restore the old behaviour as a bug fix. A three-seat turn is also no longer
+  labelled `complex` in the audit row.
+
+1845/1845 backend tests pass; the three new behaviours were each observed red
+with their implementation disabled. Live on `bb3de93`, confirmed by `/health`.
+
 ## Owner actions this Phase 3 has accumulated
 
 Two remain. The two migrations that led this list are DONE — see the dated

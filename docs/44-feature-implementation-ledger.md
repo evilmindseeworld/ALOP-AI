@@ -272,19 +272,23 @@ same defect as a checker that reads the migration files instead of the database.
     the census reports the mistake, it does not prevent it.
 40. **blocked** — Complete Stripe identity/billing release work. Existing
     `backend/lib/stripe-identity.js` foundation was not extended in this task.
-41. **partial** — Stripe event state machine and durable retries. Files:
+41. **complete** — Stripe event state machine, durable retries, and the billing
+    read model. Files:
     `backend/lib/stripe-event-ledger.js` (new),
     `backend/lib/stripe-event-ledger.test.js` (new),
     `backend/lib/stripe-webhook-wiring.test.js`, `backend/server.js`,
     `backend/migrations/026_stripe_event_state.sql` (new, NOT APPLIED).
+    `backend/lib/billing-read-model.js` (new),
+    `backend/lib/billing-read-model.test.js` (new).
     Evidence: the ledger row was claimed before the work and never released, so
     a handler that threw answered 500, Stripe retried, and the retry was dropped
     as a duplicate — paid, and permanently on the free plan. The row now carries
     a state and only `done` skips; `failed` retries at once, an unfinished claim
-    is taken over after the in-flight window with the attempt counted. Both
-    wiring guards observed red. **The billing READ MODEL is not built**, which
-    is why this is partial. **Owner action**: apply 026; until then the ledger
-    falls back to the old behaviour, which has its own test.
+    is taken over after the in-flight window with the attempt counted. The read
+    model is now built on `audit_logs` and needs no migration; see the
+    2026-08-18 section below, including the SECOND road to the same
+    paid-and-free bug that building it exposed. Four wiring guards observed
+    red.
 42. **blocked** — Full migration lineage/schema snapshots/RLS policy tests,
     function `search_path` hardening, and production drift detection. The live
     schema was inspected only for the authorized 020–022 migrations.
@@ -801,6 +805,55 @@ is not its contents.
   no test when it was first claimed** — the ordering assertion was written only
   after reverting the reindex left the suite green, which is rule 4's "a test
   you have not watched fail is not a test" catching a claim in this same pass.
+
+## 2026-08-18 — item 41's read model, and the same bug by a different road
+
+Item 41 built the state machine and said so; what it could not answer was "why
+is this customer on free when they paid", because the ledger records that an
+event ARRIVED and the `users` row records the CURRENT plan and nothing joins
+them.
+
+- **The second road to paid-and-free.** `.update(patch).eq(column, value)`
+  reports NO ERROR when it matches zero rows. So an event attributed to a user
+  row that is not there logged the healthy line, marked the event `done`, and
+  left the customer paid and on free — 026's bug exactly, reached without
+  going anywhere near the retry path. `.select('id')` is the fix: it turns "no
+  error" into "no rows", and it is also where the read model gets the user id.
+  Found while building the projection, not by looking for it.
+
+- **The obvious reconciliation is wrong, and quietly.** "A row with a
+  `stripe_subscription_id` and `plan = 'free'` is someone who paid and did not
+  get it" matches every customer who has ever cancelled, because
+  `customer.subscription.deleted` sets the plan to `free` and leaves the
+  subscription id in place. That check runs green against a broken system and
+  red against a healthy one. It was designed, then discarded before it was
+  written, by asking what would let it pass while the thing it checks is
+  broken.
+
+- **No new table and no migration, therefore no owner action.**
+  `audit_logs` already exists, is already swept on the retention schedule, and
+  is already indexed on `(action, created_at DESC)` — which is this query.
+  `recordBillingEvent` writes one row per event carrying `eventId`, type,
+  confidence, reason, the patched field names, and the two questions that are
+  not the same one: `attributed` (a column matched) and `applied` (a row
+  changed).
+
+- **`audit_owner_read` lets a user read their own audit rows**, so that bag is
+  user-visible by design and `decision.match.value` — which can be an email —
+  is deliberately absent from it. A guard asserts that, because the natural
+  thing for the next person to add is exactly the identity that must not be
+  there.
+
+- **`GET /api/admin/billing`** is three bounded selects and one pure function:
+  failing and stuck events, unattributed and unapplied events, plans that
+  diverge from the last event that claimed one, and `healthy` as a single
+  boolean. Only the users an event actually touched are read.
+
+- Verification: 1869/1869 backend tests, `node --check server.js`,
+  `git diff --check`. Four guards observed red against the precise regression
+  each claims: the reverted `.select('id')`, an identity written into the audit
+  bag, reconciling from events that changed nothing, and taking the newest
+  event rather than the newest PLAN-BEARING one.
 
 ## Owner actions this Phase 3 has accumulated
 

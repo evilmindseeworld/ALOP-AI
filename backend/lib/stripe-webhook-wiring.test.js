@@ -108,3 +108,35 @@ test('and the claim is SETTLED, which is what makes a retry able to finish the j
   assert.ok(CODE.indexOf('markStripeEventFailed(') > catchAt, 'the failure is recorded outside the catch');
   assert.doesNotMatch(CODE, /finally\s*\{[^}]*markStripeEventDone/, 'done in a finally block means a throw is recorded as success');
 });
+
+/**
+ * A BARE .update().eq() THAT MATCHES NOTHING REPORTS NO ERROR.
+ *
+ * That is the whole reason `.select('id')` is on the users update: without it,
+ * a paid event addressed to a user row that is not there logged the healthy
+ * line, marked the event `done`, and left the customer paid and on free — the
+ * bug 026 closed, reached by a different road. Every test in
+ * billing-read-model.test.js passes with that call reverted, because they are
+ * handed rows rather than a database.
+ *
+ * Asserted against CODE, not WEBHOOK: a comment describing the call must not
+ * be able to satisfy a guard about the call.
+ */
+test('the users update asks which rows it changed', () => {
+  assert.match(
+    CODE,
+    /\.from\('users'\)\.update\(decision\.patch\)\.eq\([^)]*\)\.select\(/,
+    'the users update must .select() — without it, zero rows matched is indistinguishable from success',
+  );
+  assert.match(CODE, /recordBillingEvent\(/, 'the webhook must record an audit row, or the read model has no event-to-user link');
+  assert.match(CODE, /applied[,:} ]/, 'the audit row must carry how many rows the update actually changed');
+});
+
+test('nothing that could identify a customer is written to the audit metadata', () => {
+  const record = SERVER.slice(SERVER.indexOf('const recordBillingEvent'));
+  const body = record.slice(0, record.indexOf('}, ip || null);') + 15);
+  // audit_owner_read lets a user SELECT their own audit rows, so this bag is
+  // user-visible. decision.match.value can be an email address.
+  assert.doesNotMatch(body, /match\.value/, 'decision.match.value can be an email; it must not reach a user-readable row');
+  assert.doesNotMatch(body, /customer_email|receipt_email/, 'no address may be written to audit metadata');
+});

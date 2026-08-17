@@ -1458,6 +1458,7 @@ const { noStoreApi } = require('./lib/http-cache');
 const { errorEnvelope, sendError, fail } = require('./lib/error-envelope');
 const { resolveStripeTarget } = require('./lib/stripe-identity');
 const { claimStripeEvent, markStripeEventDone, markStripeEventFailed } = require('./lib/stripe-event-ledger');
+const { summariseBilling, BILLING_ACTION } = require('./lib/billing-read-model');
 const { detectRegion, regionHint } = require('./lib/region');
 const { firstWithResults, toolMessages, summariseProbe, searchResultUrls, requiredCitationSuffix, UNTRUSTED_PREAMBLE } = require('./lib/council-tools');
 const { createNativeToolSeat } = require('./lib/native-tool-seat');
@@ -2762,20 +2763,32 @@ app.post('/api/stripe/webhook', requireStripe, express.raw({ type: 'application/
   const decision = resolveStripeTarget(event);
   try {
     if (decision.handled && decision.match && Object.keys(decision.patch).length > 0) {
-      const { error } = await supabase.from('users').update(decision.patch).eq(decision.match.column, decision.match.value);
+      /* `.select('id')` IS THE FIX, not decoration. A bare
+       * `.update(...).eq(...)` that matches ZERO rows reports no error, so an
+       * event addressed to a user row that is not there logged the healthy
+       * line, marked the event done, and left the customer paid and on free —
+       * the exact bug 026 closed, reached by a different road. Asking for the
+       * updated ids is what turns "no error" into "no rows", and it is also
+       * where the read model gets the user it can attribute the event to. */
+      const { data: touched, error } = await supabase.from('users').update(decision.patch).eq(decision.match.column, decision.match.value).select('id');
       if (error) throw error;
+      const applied = (touched || []).length;
       /* The value is NOT logged. `reason` is written to be safe to print and
        * carries no address; the column name is what a reader needs. */
       const line = `[stripe] ${event.type} -> ${Object.keys(decision.patch).join(',')} by ${decision.match.column} (${decision.confidence}: ${decision.reason})`;
-      if (decision.confidence === 'weak') console.warn(`${line} — WEAK match; this checkout predates client_reference_id`);
+      if (!applied) console.error(`${line} — MATCHED NO USER ROW. op=${req.operationId}`);
+      else if (decision.confidence === 'weak') console.warn(`${line} — WEAK match; this checkout predates client_reference_id`);
       else console.log(line);
+      await recordBillingEvent(event, decision, { applied, userId: (touched || [])[0]?.id || null, ip: req.ip });
       invalidateUserRows();
     } else if (decision.handled && !decision.match) {
       /* Loud, because it is the failure the old code had and could not report:
        * a paid event that matched nobody. */
       console.error(`[stripe] ${event.type} could not be attributed to a user (${decision.reason}). op=${req.operationId}`);
+      await recordBillingEvent(event, decision, { applied: 0, userId: null, ip: req.ip });
     } else if (decision.handled) {
       console.log(`[stripe] ${event.type} handled with no change (${decision.reason})`);
+      await recordBillingEvent(event, decision, { applied: null, userId: null, ip: req.ip });
     }
     /* Only here. Everything above either applied the patch or decided there
      * was nothing to apply, and both are a finished event; a throw skips this
@@ -3328,6 +3341,42 @@ const auditLog = async (userId, action, metadata = {}, ip = null) => {
       .catch(() => {});
   }
 };
+
+/**
+ * One audit row per billing event, so the read model has an event→user link.
+ *
+ * `audit_logs` rather than a column on `stripe_events`: the table exists, is
+ * already swept on the retention schedule, is already indexed on
+ * `(action, created_at DESC)` — which is the query — and a new column would be
+ * a migration and therefore an owner action for a link that can be written
+ * today. See `lib/billing-read-model.js` for what is read back out.
+ *
+ * NOTHING SENSITIVE GOES IN `metadata`. `audit_owner_read` lets a user SELECT
+ * their own audit rows, so this bag is user-visible by design. `decision.match.value`
+ * is deliberately absent — it can be an email address — and `reason` is
+ * documented in `lib/stripe-identity.js` as safe to print. The Stripe event id
+ * is the customer's own and is the one thing that makes a support ticket
+ * answerable.
+ *
+ * Failure here must never fail the webhook: `auditLog` swallows its own errors,
+ * and a lost audit row is a gap in a report, while a thrown one would answer
+ * Stripe 500 and replay a payment.
+ */
+const recordBillingEvent = (event, decision, { applied, userId, ip } = {}) =>
+  auditLog(userId || null, `billing.${event.type}`, {
+    eventId: event.id,
+    type: event.type,
+    confidence: decision.confidence,
+    reason: decision.reason,
+    /* `attributed` and `applied` are separate questions and the second is the
+     * one nothing could answer: matching a column and updating a row are not
+     * the same event. `applied: null` means the handler decided there was
+     * nothing to write, which is not a failure. */
+    attributed: Boolean(decision.match),
+    applied,
+    fields: Object.keys(decision.patch || {}),
+    ...(decision.patch && decision.patch.plan ? { plan: decision.patch.plan } : {}),
+  }, ip || null);
 
 /* THE TWO CALLS INTO THE SPEND LEDGER, kept here rather than in lib/spend.js
  * so that file stays a pure cost model with no database in it — it is the part
@@ -6587,6 +6636,42 @@ app.get('/api/admin/chats/:userId', requireAuth, requireAdmin, uuidParam('userId
   const chats = data || [];
   res.json({ chats, ...pageInfo(chats, page, MAX_ADMIN_PAGE_OFFSET) });
 } catch (err) { Sentry.captureException(err); sendError(res, err); } });
+/**
+ * What happened to the money — the read model half of item 41.
+ *
+ * Three bounded selects and one pure function. The webhook records an audit row
+ * per event (`recordBillingEvent`) and the ledger records the delivery state;
+ * this is the only place they are joined, and the join is what answers "why is
+ * this customer on free when they paid" without opening two dashboards.
+ *
+ * Bounded on purpose: an unbounded scan of `audit_logs` behind an admin route
+ * is a way to take the database down from the browser. `window` is capped, and
+ * the projection is over a window rather than over all history — a divergence
+ * older than the audit retention is not recoverable from this table anyway.
+ */
+app.get('/api/admin/billing', requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const days = Math.min(Math.max(Number(req.query.days) || 7, 1), 90);
+    const since = new Date(Date.now() - days * 86400_000).toISOString();
+    const [events, audits] = await Promise.all([
+      supabase.from('stripe_events').select('id,type,status,attempts,last_error,processed_at').gte('processed_at', since).order('processed_at', { ascending: false }).limit(1000),
+      supabase.from('audit_logs').select('user_id,action,metadata,created_at').like('action', `${BILLING_ACTION}%`).gte('created_at', since).order('created_at', { ascending: false }).limit(1000),
+    ]);
+    if (events.error) throw events.error;
+    if (audits.error) throw audits.error;
+    /* Only the users an event actually touched. Selecting every user to
+     * reconcile a handful of billing events would grow with the product. */
+    const ids = [...new Set((audits.data || []).map((r) => r.user_id).filter(Boolean))];
+    let users = [];
+    if (ids.length) {
+      const { data, error } = await supabase.from('users').select('id,plan').in('id', ids);
+      if (error) throw error;
+      users = data || [];
+    }
+    res.json({ days, ...summariseBilling({ events: events.data || [], audits: audits.data || [], users }) });
+  } catch (err) { Sentry.captureException(err); sendError(res, err); }
+});
+
 app.get('/api/admin/usage/:userId', requireAuth, requireAdmin, async (req, res) => { try { const { data, error } = await supabase.from('usage').select('*').eq('user_id', req.params.userId).order('date', { ascending: false }).limit(30); if (error) throw error; res.json(data || []); } catch (err) { Sentry.captureException(err); sendError(res, err); } });
 
 // ===== STRIPE =====

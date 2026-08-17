@@ -61,7 +61,10 @@ test('the ranking is offered only models the reservation already covers', () => 
   // chooseHead never widens its candidate list, but the list handed to it has
   // to be the same one the money was reserved against, or a promoted rung is an
   // unadmitted bill. Both are built from SYNTHESIS_MODEL plus HEAD_FALLBACKS.
-  assert.match(SERVER, /const HEAD_CANDIDATES = \[SYNTHESIS_MODEL, \.\.\.HEAD_FALLBACKS\.map/);
+  // Whitespace-tolerant on purpose: `a921020` reflowed this declaration across
+  // four lines without changing what it builds, and a source-text guard that
+  // fails on a line break is a guard that gets deleted rather than read.
+  assert.match(SERVER, /const HEAD_CANDIDATES = \[\s*SYNTHESIS_MODEL,\s*\.\.\.HEAD_FALLBACKS\.map/);
   assert.match(SERVER, /const SYNTHESIS_MODEL_CANDIDATES = \[/);
   assert.match(SERVER, /\.\.\.HEAD_FALLBACKS\.map\(\(rung\) => rung\.model\)/);
 });
@@ -70,6 +73,6 @@ test('adaptive head selection has a kill switch and defaults to on', () => {
   // Safe to default on only because the selector is the identity function until
   // it has MIN_CONFIDENT_SAMPLES; the switch exists for the case where that
   // reasoning turns out to be wrong in production.
-  assert.match(SERVER, /const ADAPTIVE_HEAD = !\/\^\(0\|false\|off\)\$\/i\.test\(process\.env\.COUNCIL_ADAPTIVE_HEAD \|\| ''\)/);
+  assert.match(SERVER, /const ADAPTIVE_HEAD = !\/\^\(0\|false\|off\)\$\/i\.test\(\s*process\.env\.COUNCIL_ADAPTIVE_HEAD \|\| ''\s*\)/);
   assert.match(SERVER, /ADAPTIVE_HEAD\s*\?\s*chooseHead\(/);
 });

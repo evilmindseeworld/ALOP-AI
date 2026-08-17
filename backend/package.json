@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node --test \"lib/**/*.test.js\""
+    "test": "node --test \"lib/**/*.test.js\"",
+    "evals": "node scripts/run-evals.mjs",
+    "evals:validate": "node scripts/run-evals.mjs --validate-only"
   },
   "dependencies": {
     "@clerk/express": "^2.1.52",

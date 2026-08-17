@@ -196,11 +196,27 @@ same defect as a checker that reads the migration files instead of the database.
 33. **blocked** — Sandboxed computation/data/file-analysis tool with restricted
     credentials/network/resources. Existing local arithmetic is not a sandbox.
     Adjacent files: `backend/lib/arithmetic.js`; no Phase 3 change made.
-34. **blocked** — Evaluation platform and datasets. No Phase 3 implementation
-    or release-evaluation runner was started.
-35. **blocked** — Release gates for latency, cost, factuality, citations,
-    cache/memory precision, tools, and acceptance. No Phase 3 implementation was
-    started.
+34. **complete (the platform and the first dataset; one live run is owed)** —
+    Evaluation platform and datasets. Files: `backend/lib/evaluation.js` (new),
+    `backend/lib/evaluation.test.js` (new), `backend/evals/core-v1.json` (new),
+    `backend/scripts/run-evals.mjs` (new), `backend/package.json`. Evidence: 14
+    grader/metric tests pass and the shipped dataset is validated BY a test, so
+    a typo'd expectation key is a red suite rather than a case that silently
+    grades nothing. `npm run evals:validate` reports 22 cases and spends
+    nothing. **What is NOT claimed**: no live run has been made — the council
+    route is behind `requireAuth` and needs a real Clerk session JWT, so the
+    dataset has never been graded against a real answer. That is the one owner
+    action this item leaves.
+35. **complete (enforcement; two of seven gates are inconclusive by design)** —
+    Release gates for latency, cost, factuality, citations, cache/memory
+    precision, tools, and acceptance. Files: `backend/lib/release-gates.js`
+    (new), `backend/lib/release-gates.test.js` (new). Evidence: 11 tests pass,
+    and the one that matters was observed red with the "unmeasured means fine"
+    shortcut in place — a missing number is `inconclusive` and fails the run,
+    never a pass, because zero clears every max-threshold gate in the list.
+    `cost-per-turn` and `cache-precision` are inconclusive TODAY because the
+    HTTP surface exposes neither the settled price nor `textSource`; the two
+    additive fixes are named in `lib/evaluation.js`.
 36. **complete** — Frontend reconnect/offline retry/durable turn status.
     Files: `frontend/src/hooks/useChats.js`, `frontend/src/lib/pendingTurn.js`
     (new), `frontend/src/App.jsx`, `frontend/src/__tests__/pendingTurn.test.jsx`
@@ -563,9 +579,46 @@ are single-threaded until then.
   the clock first would read a KNOWN failure as a live attempt and skip it —
   the original bug wearing a new status.
 
+## 2026-08-17 (continued) — items 34 and 35, and why the migrations did not move
+
+- **The evaluation platform is three modules because one of them cannot be
+  tested.** `lib/evaluation.js` is pure (cases in, grades and metrics out),
+  `lib/release-gates.js` is pure, and `scripts/run-evals.mjs` — the only part
+  that spends money, keeps time and talks HTTP — carries no judgement at all.
+  That split is what makes 25 tests possible over work whose subject is live
+  model answers.
+
+- **The design decision the whole thing rests on: an unmeasured metric is
+  `inconclusive`, and inconclusive fails.** Two of the seven gates cannot be
+  measured over HTTP today — no frame carries the settled price and `textSource`
+  reaches the client on no path — and the ordinary shape of this mistake is to
+  default them to 0, which passes every "must be below" gate in the list. A run
+  therefore refuses by default and `--allow-inconclusive` is a flag a human has
+  to type. Observed red with the shortcut in place.
+
+- **Cache PRECISION, not hit rate.** Of the turns served from cache, how many
+  still answered the question. A stale or mis-keyed row is a hit and a wrong
+  answer simultaneously, and hit rate scores that as a success.
+
+- **Two pre-existing source-text guards were failing before any of this**, from
+  `a921020` reflowing `HEAD_CANDIDATES` and `ADAPTIVE_HEAD` across lines without
+  changing what either builds. Fixed by making the patterns whitespace-tolerant,
+  which is what `AGENTS.md` already says to do, and both were observed red again
+  against a real regression (candidates narrowed to the configured head, kill
+  switch deleted). Backend is 1823/1823.
+
+- **The two pending migrations did not move, and it was not for want of
+  trying.** The Supabase MCP connector needs re-authorising and its OAuth
+  client is rejected by Supabase — `{"message":"Unrecognized client_id"}` from
+  the authorize URL, so the connector cannot be re-authorised from here at all.
+  The Management API path needs an `sbp_` personal access token, which the owner
+  was previously unable to copy out of the dashboard. Both migrations are still
+  owner actions and the two paths that remain are the dashboard SQL editor and
+  `supabase login` from a terminal the owner drives.
+
 ## Owner actions this Phase 3 has accumulated
 
-Three, in the order they cost the most:
+Four, in the order they cost the most:
 
 1. **Apply `019_turn_ledger.sql`.** Resume-after-drop and idempotent admission
    are OFF in production, and item 36's reload recovery reads the table it
@@ -575,3 +628,8 @@ Three, in the order they cost the most:
 3. **Set `RATE_LIMIT_STORE=postgres` in Render before scaling past one
    instance.** The census added in item 39 reports the mistake; it does not
    prevent it.
+4. **Run the evaluation dataset once against a real session.**
+   `EVAL_TOKEN=<clerk jwt> BASE=https://alop-ai.onrender.com npm run evals`
+   from `backend/`. Until that happens items 34 and 35 are a platform with no
+   measurement in it, and the gates have never judged a real answer. It costs up
+   to 22 council turns, four of them full research turns.

@@ -1,3 +1,34 @@
+# Handoff — 2026-08-17 (ninth pass): the evaluation platform, and gates that refuse what they cannot measure
+
+Phase 3 items 34 and 35 are built and unshipped-to-a-real-run. Backend is
+1823/1823. Nothing is deployed by this pass; nothing here touches a request
+path.
+
+- `backend/lib/evaluation.js` (pure), `backend/lib/release-gates.js` (pure) and
+  `backend/scripts/run-evals.mjs` (the only impure part). `backend/evals/core-v1.json`
+  is 22 cases: arithmetic, static facts, reasoning, four search cases graded on
+  HAVING a citation rather than on what it says, routing/capability cases graded
+  on taking NO tool, and two prompt-injection canaries that fail if the answer
+  contains a distinctive line from `UNTRUSTED_PREAMBLE`.
+- The rule the whole thing turns on: **an unmeasured metric is `inconclusive`
+  and inconclusive fails.** `costCentsPerTurn` and `cachePrecision` are not
+  observable over HTTP today, so their gates refuse rather than pass on a zero.
+  `--allow-inconclusive` exists and is a flag a human has to type.
+- `npm run evals` / `npm run evals:validate` in `backend/`. A live run needs a
+  Clerk session JWT in `EVAL_TOKEN`; it has never been run against a real
+  answer, and until it is, items 34 and 35 are a platform with no measurement
+  in it.
+- Two source-text guards in `head-selection-wiring.test.js` were already failing
+  from `a921020`'s reflow. Made whitespace-tolerant, then observed red again
+  against real regressions.
+- **The two pending migrations did not move.** The Supabase MCP connector needs
+  re-authorising and Supabase rejects its OAuth client
+  (`{"message":"Unrecognized client_id"}`), so it cannot be re-authorised from
+  here. 019 and 026 remain owner actions via the dashboard SQL editor or a
+  `supabase login` terminal.
+
+---
+
 # Handoff — 2026-08-14 (seventh pass): one-seat routing and semantic answer reuse
 
 Migration `017_answer_cache_embeddings.sql` is applied to production. Code is

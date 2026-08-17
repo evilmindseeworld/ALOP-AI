@@ -80,9 +80,76 @@ if (bool("validate-only")) {
   console.log("Dataset is valid. Nothing was spent.");
   process.exit(0);
 }
-if (!token) {
-  console.error("EVAL_TOKEN is unset. It must be a Clerk session JWT for a real account — the council route is behind requireAuth, and there is no bypass to add.");
+/* ---- authentication -------------------------------------------------- */
+
+/**
+ * A STATIC `EVAL_TOKEN` CANNOT SURVIVE THIS RUN, and the failure is silent.
+ *
+ * Clerk session JWTs expire in about sixty seconds. This run is 22 cases, one
+ * at a time, with a pause between them and four full research turns among
+ * them — minutes, not seconds. So a pasted token is valid for the first case
+ * or two and expired for the rest.
+ *
+ * What that looked like before this existed: every later case came back
+ * `http_401`, `gradeCase` recorded `noError: false` because an error frame
+ * fails a case that did not ask for one, and the report said the council got
+ * eighteen of twenty-two answers WRONG. The release gates would then read a
+ * factuality catastrophe off an expired token. An auth failure is not a wrong
+ * answer, and grading it as one is worse than crashing.
+ *
+ * TWO CHANGES, and the second is the one that makes the run possible at all:
+ *   1. A 401/403 aborts the run (see `runCase`). It is never graded.
+ *   2. `EVAL_CLERK_SECRET_KEY` mints a FRESH token before every case, so the
+ *      length of the run stops mattering. The static token is kept as the
+ *      fallback for a short `--limit 1` smoke run.
+ *
+ * The secret key must belong to the same Clerk instance as the server under
+ * test: a token minted on the development instance is signed by a different
+ * key than production verifies with, and produces exactly the 401 this
+ * function exists to prevent.
+ */
+let tokenFor = async () => token;
+let releaseSession = async () => {};
+
+if (process.env.EVAL_CLERK_SECRET_KEY) {
+  const { createClerkClient } = await import('@clerk/express');
+  const clerk = createClerkClient({ secretKey: process.env.EVAL_CLERK_SECRET_KEY });
+
+  let userId = process.env.EVAL_USER_ID || '';
+  if (!userId) {
+    const users = await clerk.users.getUserList({ limit: 1 });
+    if (!users.data.length) {
+      console.error('EVAL_CLERK_SECRET_KEY is set but the instance has no users. Set EVAL_USER_ID.');
+      process.exit(1);
+    }
+    userId = users.data[0].id;
+    console.log(`No EVAL_USER_ID given; using the first user on the instance (${userId}).`);
+  }
+
+  const session = await clerk.sessions.createSession({ userId });
+  /* Minted per case rather than once: that is the whole point. `getToken`
+   * returns a new JWT from the live session every time it is called. */
+  tokenFor = async () => (await clerk.sessions.getToken(session.id)).jwt;
+  /* Revoked on the way out, including on a crash — a run that dies must not
+   * leave a usable production session behind it. */
+  releaseSession = async () => {
+    try { await clerk.sessions.revokeSession(session.id); } catch { /* best effort */ }
+  };
+  process.on('exit', () => { releaseSession(); });
+  console.log(`Minting a fresh session token per case (session ${session.id.slice(0, 12)}…).`);
+} else if (!token) {
+  console.error(
+    'No credential. Either:\n' +
+    '  EVAL_CLERK_SECRET_KEY=sk_… [EVAL_USER_ID=user_…]   mints a fresh token per case (use this for a full run)\n' +
+    '  EVAL_TOKEN=<clerk session jwt>                      one pasted token, expires in ~60s (only for --limit 1)\n' +
+    'The council route is behind requireAuth and there is no bypass to add.',
+  );
   process.exit(1);
+} else {
+  console.warn(
+    'WARNING: EVAL_TOKEN is a static token and Clerk session JWTs expire in ~60s.\n' +
+    '         A full run will abort on expiry. Use EVAL_CLERK_SECRET_KEY for a full run.',
+  );
 }
 
 /* ---- one turn -------------------------------------------------------- */
@@ -109,12 +176,30 @@ async function runCase(testCase) {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${await tokenFor()}`,
         "X-Operation-Id": operationId,
         Accept: "text/event-stream",
       },
       body: JSON.stringify({ message: testCase.question, history: [] }),
     });
+
+    /* AN AUTH FAILURE IS NOT A WRONG ANSWER, and grading it as one is the
+     * worst outcome available: `gradeCase` fails any case that produced an
+     * error frame it did not ask for, so an expired token turns into a report
+     * saying the council answered everything incorrectly, and the release
+     * gates read a factuality catastrophe off a credential problem. Abort
+     * instead — a crash is a diagnosis and a graded 401 is a lie. */
+    if (res.status === 401 || res.status === 403) {
+      await releaseSession();
+      console.error(
+        `\n✗ ${res.status} on case ${testCase.id}. The credential is not accepted by ${base}.\n` +
+        '  A static EVAL_TOKEN expires in about 60s — use EVAL_CLERK_SECRET_KEY to mint one per case.\n' +
+        '  If you ARE minting: the secret key belongs to a different Clerk instance than the server\n' +
+        '  under test, so its tokens are signed by a key that server does not verify with.\n' +
+        '  Nothing is graded from this run; the report would have called an auth failure a wrong answer.',
+      );
+      process.exit(1);
+    }
 
     if (!res.ok || !res.body) {
       const body = await res.text().catch(() => "");

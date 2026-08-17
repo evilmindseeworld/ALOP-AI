@@ -1,3 +1,46 @@
+# Handoff - 2026-08-18 (eleventh pass): the money, the order, and a rebuild that did not work
+
+Items 40, 41 and 42 are complete; 32 moved from blocked to partial. Backend is
+1880/1880. Nothing is deployed by this pass. ONE new owner action: apply
+migration 027.
+
+- **Item 32, cross-file retrieval.** `search_files` searches every file
+  attached to the conversation in one call. `read_file` took one id, so five
+  documents meant one bounded agent-loop round per guess, guessing from the
+  filename. Commit `91ce23c`.
+
+- **Item 41, the billing read model** - and the SECOND road to the paid-and-free
+  bug, found while building it. `.update(...).eq(...)` reports no error when it
+  matches ZERO rows, so an event addressed to a user row that is not there
+  logged the healthy line and marked itself done. `.select('id')` is the fix.
+  The read model is built on `audit_logs`, so it needed no migration. Commit
+  `1fa6aec`.
+
+- **Item 40, Stripe does not promise order.** Nothing in the request path
+  compared event timestamps, so a reordered `subscription.updated` /
+  `.deleted` pair left a cancelled customer on `pro` permanently, invisibly,
+  with the customer happy. `users.stripe_event_at` is now compared and advanced
+  in one statement. Commit `b9a3b03`.
+
+- **Item 42, the rebuild was assumed and it did not work.** 12 of 28 migrations
+  failed the first time they met an empty database, all cascading from 000
+  creating RLS policies that call functions 002 and 012 create. Docker's daemon
+  was the blocker named last pass; it is running now.
+  `scripts/rebuild-proof.sh` makes the check one command. Commit `e2cf150`.
+
+- **What is left in Phase 3.** Item 33 (sandboxed compute) is unstarted and
+  needs an architecture decision - Render cannot run Docker-in-Docker, so the
+  sandbox has to be an isolate, a WASM runtime, or an external service. Item 44
+  (authenticated browser release matrix) needs a real session on real devices
+  and is an owner action. Item 32's remainder is embeddings, object storage
+  ACLs and workspace ingestion.
+
+- **Owner actions, now three**: `RATE_LIMIT_STORE=postgres` in Render before
+  scaling past one instance; apply `027_users_stripe_event_at.sql`; run the
+  evaluation dataset once against a real session.
+
+---
+
 # Handoff — 2026-08-17 (tenth pass): five documents, one call
 
 Item 32's cross-file half is built. Backend is 1857/1857. Nothing is deployed

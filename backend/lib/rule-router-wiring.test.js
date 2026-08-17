@@ -25,7 +25,7 @@ const at = (needle) => {
 
 test('the rule router decides before planTurn can be called', () => {
   const rule = at('const ruleRoute = skipRouter');
-  const model = at('planTurn(pv.value, convSummary, region, turnSignal,');
+  const model = at('planTurn(routingText, convSummary, region, turnSignal,');
   assert.ok(rule < model, 'routeByRule must be consulted above the model router');
 });
 
@@ -51,7 +51,7 @@ test('the rule is told whether a conversation exists', () => {
   // first messages, which have no history to answer from.
   assert.match(
     SOURCE,
-    /routeByRule\(pv\.value, \{ hasConversationContext: Boolean\(convSummary \|\| histArr\.length\) \}\)/,
+    /routeByRule\(routingText, \{ hasConversationContext: Boolean\(convSummary \|\| histArr\.length\) \}\)/,
   );
 });
 

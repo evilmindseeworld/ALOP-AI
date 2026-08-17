@@ -331,7 +331,7 @@ test('the fast path performs no network I/O whatsoever', () => {
 test('server.js calls the fast path before the router and before any model', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
   const fast = src.indexOf('tryArithmetic(');
-  const router = src.indexOf('classifyRequest(pv.value');
+  const router = src.indexOf('classifyRequest(routingText');
   assert.ok(fast > 0, 'server.js never calls tryArithmetic');
   assert.ok(router > 0, 'the router call moved; this test needs updating');
   assert.ok(fast < router, 'the arithmetic fast path must run BEFORE classifyRequest');

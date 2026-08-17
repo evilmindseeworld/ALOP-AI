@@ -28,7 +28,7 @@ const at = (needle) => {
 
 test('the greeting fast path runs BEFORE the router, the ceilings and the context reads', () => {
   const greeting = at('const greeting = attachedImages.length ? null : await greetingCache.get(pv.value);');
-  assert.ok(greeting < at('classifyRequest(pv.value'), 'greeting must short-circuit above the router');
+  assert.ok(greeting < at('classifyRequest(routingText'), 'greeting must short-circuit above the router');
   assert.ok(greeting < at('const budget = await reservationLedger.reserve('), 'a greeting must not reserve spend');
   assert.ok(greeting < at('const requestBudget = await reserveRequests('), 'a greeting must not reserve requests');
   assert.ok(greeting < at('const dag = await runDag(['), 'a greeting must not wait on summary/feedback/facts');

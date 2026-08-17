@@ -463,9 +463,63 @@ function modelDesignations(text) {
   return found;
 }
 
+/**
+ * SHORT SKUs — `s7`, `s9`, `m4`, `a16` — which the four-character floor above
+ * cannot see and which are how half of consumer electronics is named.
+ *
+ * Reported 2026-08-17, with the ceiling from the previous commit quoted back:
+ * "is tienco s7 stretch wet and dry or the s9 wet and dry better for vacuuming
+ * and mopping" answered from memory, with a spec table and prices, for two
+ * products it had not looked up. Note the brand is also misspelled, which is
+ * exactly why the SEARCH is the fix and a brand dictionary is not: a search
+ * engine corrects "tienco" to "Tineco" for free, and no list maintained here
+ * ever would.
+ *
+ * A bare two-character token cannot force a search on its own — `x8` in "3 x 8"
+ * is the same shape — so ONE of two things must also be true:
+ *
+ *   1. There are at least TWO of them ("s7 or s9"), which is a comparison, or
+ *   2. A real word of three or more letters sits immediately before it
+ *      ("tineco s7"), which is a brand and a model.
+ *
+ * Both conditions are about the SHAPE OF THE SENTENCE rather than about knowing
+ * any product, which is what keeps this from becoming a catalogue.
+ */
+const SHORT_SKU_RE = /^[a-z]{1,2}\d{1,2}$/i;
+
+/* Words that make the thing after them a LABEL rather than a product: "grade
+ * a1", "size m4", "class b2", "question 3a". They read exactly like a brand to
+ * the rule above — a real word of three or more letters — and "grade a1 work"
+ * does not need the web. Found by running the negative cases. */
+const SIZE_LABEL_WORDS = new Set([
+  "grade", "size", "sizes", "class", "type", "level", "room", "gate", "seat",
+  "page", "step", "part", "number", "chapter", "table", "figure", "question",
+  "section", "clause", "row", "column", "slot", "port", "pin", "bay", "form",
+  "group", "team", "unit", "block", "floor", "flat", "apt", "suite", "grid",
+]);
+
+function shortSkus(text) {
+  const tokens = String(text || "").split(/[^A-Za-z0-9.]+/).filter(Boolean);
+  const found = [];
+  tokens.forEach((raw, i) => {
+    const token = raw.replace(/\.+$/, "");
+    if (!SHORT_SKU_RE.test(token)) return;
+    if (UNIT_TOKEN_RE.test(token) || FORMAT_TOKEN_RE.test(token)) return;
+    const before = tokens[i - 1] || "";
+    const priorWord = before.toLowerCase();
+    const branded = /^[A-Za-z]{3,}$/.test(before)
+      && !STOPWORD_BEFORE_NUMBER.has(priorWord)
+      && !SIZE_LABEL_WORDS.has(priorWord);
+    found.push({ token, branded, before: branded ? before : null });
+  });
+  // Rule 1 or rule 2. A single unbranded `x8` satisfies neither.
+  const qualifies = found.length >= 2 || found.some((f) => f.branded);
+  return qualifies ? found : [];
+}
+
 /** True when the text names a specific product model the answer depends on. */
 const namesSpecificModel = (text) =>
-  modelDesignations(text).length > 0 || brandNumber(text) !== null;
+  modelDesignations(text).length > 0 || brandNumber(text) !== null || shortSkus(text).length > 0;
 
 /**
  * Two queries: the designation on its own, which is what actually finds a spec
@@ -477,7 +531,19 @@ const namesSpecificModel = (text) =>
 function modelSearchQueries(text) {
   const t = String(text || "").replace(/\s+/g, " ").trim();
   const ids = modelDesignations(t);
-  const subject = (ids.length ? ids.join(" ") : (brandNumber(t) || "")).trim();
+  const skus = shortSkus(t);
+  /* A short SKU is only a search term WITH its brand — "s9 specs review" finds
+   * a Samsung phone, a Sony headphone and a vacuum. The brand comes from the
+   * word before whichever SKU had one, and is applied to all of them, because
+   * "tineco s7 or the s9" names two products of one brand. */
+  const skuSubject = () => {
+    const brand = skus.find((s) => s.branded)?.before || "";
+    const names = skus.map((s) => s.token).join(" ");
+    return `${brand} ${names}`.trim();
+  };
+  const subject = (ids.length
+    ? ids.join(" ")
+    : (brandNumber(t) || (skus.length ? skuSubject() : ""))).trim();
   const queries = [];
   if (subject) queries.push(`${subject} specs review`);
   const context = t.slice(0, 200);
@@ -703,14 +769,44 @@ function classifyRequest(text, members, detailed = false) {
  * @param {object} selection  a classifyRequest result.
  * @param {Array} roster  the full set of seats this user is entitled to.
  */
+/**
+ * HOW WIDE A RESEARCH TURN GETS, BY WHAT THE QUESTION ACTUALLY WAS.
+ *
+ * It used to be "the full roster, always", which is how "is the tineco s7 or
+ * the s9 better for mopping" bought seven models. Reported 2026-08-17: "it
+ * shouldn't take 7 models to answer something very simple". Seven independent
+ * readings of the same two product pages do not produce seven opinions worth
+ * reconciling — they produce one answer, seven times, at seven times the
+ * request cost, and slower, because a seven-seat burst against an account-wide
+ * 20-requests-per-minute ceiling starts collecting 429s and their retries.
+ *
+ * THREE, not one, for the simple and moderate tiers. One seat reading one page
+ * with nothing to disagree with it is the failure this function was written to
+ * fix in the first place, and that reasoning has not changed. Three is enough
+ * for the quorum of two to mean something.
+ *
+ * The full roster is kept for genuinely complex research, where the seats are
+ * reading DIFFERENT things and the synthesis has real conflicts to resolve.
+ *
+ * This is a reversal of an earlier explicit instruction ("full council on
+ * search"), made by the owner on the evidence of a seven-seat answer to a
+ * two-product comparison. Sol argued for exactly this split on 2026-08-14 and
+ * was overruled at the time; it is recorded here so the next person does not
+ * "restore" the old behaviour as a bug fix.
+ */
+const RESEARCH_SEATS = { simple: 3, moderate: 3 };
+
 function escalateForResearch(selection, roster) {
   const full = Array.isArray(roster) ? roster : [];
   const current = Array.isArray(selection?.members) ? selection.members : [];
-  if (full.length <= current.length) return selection;
+  const cap = RESEARCH_SEATS[selection?.complexity] || full.length;
+  const target = Math.min(full.length, Math.max(cap, current.length));
+  if (target <= current.length) return selection;
+  const members = narrowRoster(full, target);
   return {
     ...selection,
-    members: full,
-    quorum: Math.min(QUORUM, full.length),
+    members,
+    quorum: Math.min(QUORUM, members.length),
     /* The token ceiling comes back up with the roster. A 400-token draft is the
      * simple tier's bargain — one seat, one sentence — and a seat that has just
      * read three pages has more to report than that. Never DOWN: a turn the user
@@ -718,8 +814,13 @@ function escalateForResearch(selection, roster) {
     tokenLimit: Math.max(Number(selection?.tokenLimit) || 0, 1000),
     /* Reported, because the tier is what the logs and the audit row explain a
      * turn by, and "simple" beside a seven-seat tool loop is a lie in the one
-     * place someone would go to find out what happened. */
-    complexity: "complex",
+     * place someone would go to find out what happened.
+     *
+     * "complex" ONLY when the turn really did take the whole roster. A three-seat
+     * research turn labelled complex is the same lie in the other direction, and
+     * the label is read back by the admin console when someone asks where the
+     * requests went. */
+    complexity: members.length >= full.length ? "complex" : "moderate",
   };
 }
 

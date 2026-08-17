@@ -353,6 +353,112 @@ const WORD_OPS = [
 ];
 
 /**
+ * ORDINAL POWERS, which are how people say an exponent out loud.
+ *
+ * "2 to the 4th power" and "3 to the fourth power" both refused before this and
+ * went to the council to compute 16. The pattern consumes the phrase AND the
+ * exponent, because "to the" on its own leaves "4th power" behind and `th` is
+ * not a token — the whole message would then refuse for a reason that has
+ * nothing to do with what the user asked.
+ */
+const WORD_ORDINALS = {
+  first: '1', second: '2', third: '3', fourth: '4', fifth: '5',
+  sixth: '6', seventh: '7', eighth: '8', ninth: '9', tenth: '10',
+  eleventh: '11', twelfth: '12', hundredth: '100',
+};
+const ORDINAL_POWER_RE =
+  /^(?:raised\s+)?to\s+the\s+(\d{1,4})(?:st|nd|rd|th)?\s+power\b/i;
+const WORD_ORDINAL_POWER_RE =
+  new RegExp(`^(?:raised\\s+)?to\\s+the\\s+(${Object.keys(WORD_ORDINALS).join('|')})\\s+power\\b`, 'i');
+
+/**
+ * MULTIPLIER WORDS. "half of 60" is a multiplication by an exact rational, so
+ * it stays in the exact lane and answers 30 rather than ≈30. `of` is consumed
+ * here rather than left to the percent rule, which is the only other reader of
+ * that word.
+ */
+const MULTIPLIER_WORDS = [
+  [/^(?:a\s+)?half\s+of\b/i, '0.5'],
+  [/^(?:a\s+)?quarter\s+of\b/i, '0.25'],
+  [/^double\b/i, '2'],
+  [/^twice\b/i, '2'],
+  [/^triple\b/i, '3'],
+  [/^quadruple\b/i, '4'],
+];
+
+/**
+ * TYPO TOLERANCE FOR OPERATOR WORDS, and the length floor is the safety.
+ *
+ * Asked for on 2026-08-17 with the case that prompted it: "6 multipled by 8"
+ * took a full council while "6 x 8" was answered locally in microseconds. The
+ * words people mistype here are long ones — multiplied, divided, subtracted —
+ * and a long word has room for an edit distance that no other word in the
+ * vocabulary is within.
+ *
+ * NOTHING SHORTER THAN FIVE CHARACTERS IS FUZZY-MATCHED, and that rule is doing
+ * real work: `and` is one edit from `add`, so "average of 4 and 10" would
+ * otherwise tokenise as 4 + 10 and this module would confidently answer 14 to a
+ * question it should have refused. Two- and three-letter operator words must be
+ * spelled correctly or the message goes to the council, which is the safe
+ * direction.
+ *
+ * A tie between two operators refuses. If a mistyped word is equally close to
+ * `divided` and `dividend`, nobody knows which was meant, and guessing is the
+ * one thing this module never does.
+ */
+const FUZZY_OPS = [
+  ['multiplied', '*'], ['multiply', '*'], ['times', '*'], ['product', '*'],
+  ['divided', '/'], ['divide', '/'], ['over', null],
+  ['plus', null], ['minus', '-'], ['subtract', '-'], ['subtracted', '-'],
+  ['modulo', 'mod'], ['squared', null], ['cubed', null],
+].filter(([, op]) => op !== null);
+
+/** Damerau-Levenshtein, bounded: it stops as soon as the distance exceeds the
+ *  budget, because the only question ever asked here is "within k?". */
+function editDistance(a, b, max) {
+  if (Math.abs(a.length - b.length) > max) return max + 1;
+  let twoBack = null;
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i += 1) {
+    const row = [i];
+    let best = i;
+    for (let j = 1; j <= b.length; j += 1) {
+      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+      let v = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + cost);
+      // One transposition is ONE edit: "mutliplied" is a swap, and a swap is the
+      // most common typo shape there is. Plain Levenshtein charges two for it,
+      // which puts it outside the budget for every word shorter than seven.
+      if (i > 1 && j > 1 && twoBack && a[i - 1] === b[j - 2] && a[i - 2] === b[j - 1]) {
+        v = Math.min(v, twoBack[j - 2] + 1);
+      }
+      row.push(v);
+      best = Math.min(best, v);
+    }
+    if (best > max) return max + 1;
+    twoBack = prev;
+    prev = row;
+  }
+  return prev[b.length];
+}
+
+/** The operator a mistyped word unambiguously meant, or null. */
+function fuzzyOperator(word) {
+  const w = word.toLowerCase();
+  if (w.length < 5) return null;
+  const budget = w.length >= 7 ? 2 : 1;
+  let best = null;
+  let bestDistance = budget + 1;
+  let tied = false;
+  for (const [canonical, op] of FUZZY_OPS) {
+    const d = editDistance(w, canonical, budget);
+    if (d > budget) continue;
+    if (d < bestDistance) { best = op; bestDistance = d; tied = false; }
+    else if (d === bestDistance && op !== best) tied = true;
+  }
+  return tied ? null : best;
+}
+
+/**
  * FUNCTION NAMES, longest first, mapping every spelling a person uses onto one
  * key in `FN`. Longest-first is load bearing three times over: `cosh` before
  * `cos`, `log10` before `log`, and `square root of` before anything starting
@@ -518,11 +624,55 @@ function tokenize(input) {
     }
     if (matched) continue;
 
+    /* Ordinal powers, before WORD_OPS, because "to the 4th power" starts with
+     * the same three words as "to the power of" and the shorter rule would
+     * consume "to the" and leave "4th" behind. */
+    const ordinalPower = ORDINAL_POWER_RE.exec(s) || WORD_ORDINAL_POWER_RE.exec(s);
+    if (ordinalPower) {
+      const exponent = WORD_ORDINALS[ordinalPower[1].toLowerCase()] || ordinalPower[1];
+      // `raw` is the NUMERAL, not the word: it is what gets echoed back in the
+      // rendered expression, and "3^fourth = 81" is not an expression.
+      tokens.push({ t: 'op', v: '^' }, { t: 'num', v: exponent, raw: exponent });
+      s = s.slice(ordinalPower[0].length);
+      continue;
+    }
+
+    /* "half of 60", "double 21". A multiplier word is a number and a product,
+     * and it only ever appears where a number could — juxtaposing it after a
+     * value ("60 double") is not English and is not accepted. */
+    for (const [re, factor] of MULTIPLIER_WORDS) {
+      const m = re.exec(s);
+      if (!m) continue;
+      if (tokens.length) { matched = null; break; }  // not an opener: refuse the whole message
+      // Rendered as the factor it is — "0.5 × 60 = 30" — because echoing the
+      // phrase produces "half of × 60", which reads as a parse error.
+      tokens.push({ t: 'num', v: factor, raw: factor }, { t: 'op', v: '*' });
+      s = s.slice(m[0].length);
+      matched = true;
+      break;
+    }
+    if (matched === null) return null;
+    if (matched) continue;
+
     for (const [re, op] of WORD_OPS) {
       const m = re.exec(s);
       if (m) { tokens.push({ t: 'op', v: op }); s = s.slice(m[0].length); matched = true; break; }
     }
     if (matched) continue;
+
+    /* THE MISSPELLED OPERATOR, resolved only when it is unambiguous. A trailing
+     * "by" is consumed with it so "6 multipled by 8" and the imperative "6
+     * divide by 3" both work — every canonical two-word form above already
+     * carries its own "by". */
+    const maybeMisspelled = /^[a-z]+/i.exec(s);
+    if (maybeMisspelled) {
+      const op = fuzzyOperator(maybeMisspelled[0]);
+      if (op) {
+        tokens.push({ t: 'op', v: op });
+        s = s.slice(maybeMisspelled[0].length).replace(/^\s+by\b/i, '');
+        continue;
+      }
+    }
 
     /* `x` AS MULTIPLICATION, and only where it cannot be anything else.
      *

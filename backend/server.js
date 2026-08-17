@@ -989,6 +989,7 @@ const { envelope } = require('./lib/untrusted-content');
  * OpenRouter requests, and requests — not dollars — are what this account runs
  * out of. See lib/arithmetic.js for why it refuses far more than it answers. */
 const { tryArithmetic } = require('./lib/arithmetic');
+const { normaliseForRouting } = require('./lib/spelling');
 
 // ===== THE ROUTER: ONE CALL, TWO DECISIONS =====
 /* IT USED TO BE TWO CALLS, and the second one was asking the same model to
@@ -3806,6 +3807,23 @@ async function handleCouncilTurn(req, res) {
     const { message, history = [], chatId, image, images } = req.body;
     const pv = validatePrompt(message);
     if (!pv.valid) return fail(res, 400, pv.error);
+    /* THE DECISION COPY. Every routing regex in this product reads words, and a
+     * regex reads `latst` as prose — so "whats the latst version of node" was
+     * not a volatile question, did not search, and was answered from memory.
+     * `normaliseForRouting` corrects towards the router's own closed vocabulary
+     * and nothing else, so a product name is never "fixed" into an English word.
+     *
+     * IT IS NEVER SENT TO A MODEL. Every prompt below still carries `pv.value`,
+     * the user's own words, because rewriting someone's question before
+     * answering it means answering a question they did not ask — and that
+     * failure is invisible, since the answer looks fine and is about something
+     * else. The models handle typos without help; the regexes are what needed
+     * it. */
+    const routing = normaliseForRouting(pv.value);
+    const routingText = routing.text;
+    if (routing.corrections.length) {
+      console.log(`[COUNCIL] Routing spelling: ${routing.corrections.map((c) => `${c.from}->${c.to}`).join(', ')}`);
+    }
     /* ONE ATTACHMENT OR SEVERAL, ONE SHAPE BELOW.
      *
      * `image` is the field the shipped frontend sends and it keeps working;
@@ -3848,7 +3866,7 @@ async function handleCouncilTurn(req, res) {
      * declared until 120 lines below this one, so reading it here is a
      * temporal-dead-zone throw on every single turn — a 500 on the whole
      * product, shipped by a branch that only meant to skip itself. */
-    const sum = attachedImages.length ? null : tryArithmetic(pv.value);
+    const sum = attachedImages.length ? null : tryArithmetic(routingText);
     if (sum) {
       console.log(`[COUNCIL] Arithmetic fast path: ${sum.answer}`);
       openStream(res);
@@ -3930,7 +3948,7 @@ async function handleCouncilTurn(req, res) {
     }
 
     const userPlan = user.plan || 'free';
-    const isDetailed = wantsDetailedAnswer(pv.value);
+    const isDetailed = wantsDetailedAnswer(routingText);
     const lang = detectLanguage(pv.value);
     // The plan decides the roster HERE, once, rather than inside the router —
     // which is what lets the router be called with a sentence and checked.
@@ -3941,7 +3959,7 @@ async function handleCouncilTurn(req, res) {
      * this user does not get the seat, and every function downstream treats
      * null as "no seat" rather than as "use the default". */
     const toolSeat = TOOL_SEAT && (userPlan === 'pro' || TOOL_SEAT_FREE_PLAN) ? TOOL_SEAT : null;
-    let selection = classifyRequest(pv.value, planRoster, isDetailed);
+    let selection = classifyRequest(routingText, planRoster, isDetailed);
     /* COMPLEXITY DOES NOT ARM THE METERED TOOL SEAT. Complex turns use the free
      * council for parallel drafts, then the configured head model synthesises
      * them. The router's later search decision is the only thing that adds Luna
@@ -4319,7 +4337,7 @@ async function handleCouncilTurn(req, res) {
       semanticCacheEnabled: SEMANTIC_CACHE_ENABLED,
       userHasFacts: true,
       category: selection.category,
-      wikiCandidate: needsWikiCheck(pv.value),
+      wikiCandidate: needsWikiCheck(routingText),
     });
 
     const durableQuestionEmbeddingP = workPlan.semanticEmbedding
@@ -4558,7 +4576,7 @@ async function handleCouncilTurn(req, res) {
          * Whether live web was ACTUALLY used is recorded in the row's
          * provenance and in `used_live_web`, which is where a fact about the
          * answer belongs. */
-        retrievalMode: retrievalMode({ wiki: needsWikiCheck(pv.value) }),
+        retrievalMode: retrievalMode({ wiki: needsWikiCheck(routingText) }),
         sourceFreshness: sourceFreshness(freshnessWindow(pv.value)),
       });
 
@@ -4660,7 +4678,7 @@ async function handleCouncilTurn(req, res) {
      * `.ms` — which that object does not have — would have been silently
      * undefined and every source would have been judged against the 30-day
      * default, on exactly the questions that asked for today. */
-    const turnFreshness = freshnessWindow(pv.value);
+    const turnFreshness = freshnessWindow(routingText);
     const evidence = createEvidenceLedger({
       freshnessWindowMs: turnFreshness ? turnFreshness.days * 24 * 3600 * 1000 : null,
     });
@@ -4840,14 +4858,14 @@ async function handleCouncilTurn(req, res) {
      * told which it is looking at rather than guessing from the words. */
     const ruleRoute = skipRouter
       ? null
-      : routeByRule(pv.value, { hasConversationContext: Boolean(convSummary || histArr.length) });
+      : routeByRule(routingText, { hasConversationContext: Boolean(convSummary || histArr.length) });
     if (ruleRoute) {
       const ruleDecision = ruleRoute.memory ? 'memory' : ruleRoute.queries?.length ? 'web search' : 'no search';
       console.log(`[COUNCIL] Rule router: ${ruleDecision}. 0 model requests for routing.`);
     }
     const routeP = skipRouter || ruleRoute
       ? Promise.resolve(ruleRoute || NO_ROUTE)
-      : telemetry.measureRouter('route', () => planTurn(pv.value, convSummary, region, turnSignal, recordAttempt('router'))).catch(() => NO_ROUTE);
+      : telemetry.measureRouter('route', () => planTurn(routingText, convSummary, region, turnSignal, recordAttempt('router'))).catch(() => NO_ROUTE);
 
     if ((await routeP).memory) {
       console.log('[COUNCIL] Memory question.');

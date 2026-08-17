@@ -584,17 +584,30 @@ test("a modal opening does not by itself make a request simple", () => {
 // hundreds of lines later — cannot be an input to it. This is where that fact
 // gets applied.
 
-test("a turn the router sends to live research gets the whole roster", () => {
+test("a simple research turn gets three seats, not the whole roster", () => {
+  /* Reported 2026-08-17: "is the tineco s7 or the s9 better for mopping" bought
+   * seven models. Seven readings of the same two product pages is one answer
+   * seven times, at seven times the request cost, and slower — a seven-seat
+   * burst against an account-wide 20/minute ceiling starts collecting 429s.
+   * THREE and not one, because one seat reading one page with nothing to
+   * disagree with it is the failure escalateForResearch exists to fix. */
   const simple = classifyRequest("What is the price of a Canva Pro seat?", ROSTER);
   assert.equal(simple.members.length, 1);
 
   const widened = escalateForResearch(simple, ROSTER);
-  assert.equal(widened.members.length, ROSTER.length);
+  assert.equal(widened.members.length, 3, "a two-product lookup does not need the whole council");
   assert.equal(widened.quorum, 2);
-  assert.equal(widened.complexity, "complex");
+  assert.equal(widened.complexity, "moderate", "a three-seat turn labelled complex is a lie in the audit row");
   // A 400-token draft is the one-seat bargain. A seat that has just read three
   // pages has more to report than that.
   assert.ok(widened.tokenLimit >= 1000, `tokenLimit ${widened.tokenLimit}`);
+});
+
+test("a complex research turn still gets everything", () => {
+  const complex = { members: [ROSTER[0]], quorum: 1, whipMs: 30000, tokenLimit: 2000, complexity: "complex" };
+  const widened = escalateForResearch(complex, ROSTER);
+  assert.equal(widened.members.length, ROSTER.length, "real research is where independent readings pay");
+  assert.equal(widened.complexity, "complex");
 });
 
 test("the research escalation only ever widens", () => {
@@ -758,4 +771,25 @@ test("a pasted URL still defers, because it already means read this page", () =>
 test("the arithmetic and greeting turns are untouched by this rule", () => {
   assert.equal(namesSpecificModel("3 multiplied by 6"), false);
   assert.equal(routeByRule("hi", {}), null, "a greeting is settled by classifyRequest, not here");
+});
+
+test("a short SKU forces the search when the sentence proves it is a product", () => {
+  /* The exact reported turn, misspelled brand included: "is tienco s7 stretch
+   * wet and dry or the s9 ... better" was answered from memory with a spec table
+   * and prices. The brand typo is why SEARCH is the fix and a brand dictionary
+   * is not — a search engine corrects "tienco" for free. */
+  const route = routeByRule("is tienco s7 stretch wet and dry or the s9 wet and dry better for vacuuming and mopping", {});
+  assert.ok(route?.queries?.length, "the two-SKU comparison still did not search");
+  assert.equal(route.queries[0], "tienco s7 s9 specs review", "a bare s9 finds a phone, a headphone and a vacuum — the brand has to travel with it");
+
+  assert.equal(namesSpecificModel("tineco s9 review"), true, "brand plus SKU");
+  assert.equal(namesSpecificModel("s7 or s9"), true, "two SKUs is a comparison");
+});
+
+test("a lone short token that is not a product does not trigger anything", () => {
+  // `x8` in "3 x 8" is the same shape as a SKU, which is why one unbranded
+  // occurrence is never enough on its own.
+  for (const text of ["3 x 8", "9 x 10", "convert to mp3 or mp4", "is h2o or co2 heavier", "grade a1 work"]) {
+    assert.equal(namesSpecificModel(text), false, text);
+  }
 });

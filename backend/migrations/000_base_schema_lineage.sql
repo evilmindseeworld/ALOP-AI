@@ -74,6 +74,51 @@ CREATE INDEX IF NOT EXISTS users_stripe_subscription ON users USING btree (strip
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE users FORCE ROW LEVEL SECURITY;
 
+/* ---------------------------------------------------------------------------
+ * THE TWO IDENTITY HELPERS, HERE BECAUSE THE POLICIES BELOW CALL THEM.
+ *
+ * This is the bug a rebuild found and production could not: the policies below
+ * were transcribed from a database where `current_app_user_id()` (created in
+ * 002) and `current_app_is_admin()` (created in 012) already existed. Applied
+ * to production every statement was a no-op, so 000 looked correct. Applied to
+ * an EMPTY database it died here, at the first policy — and because `chats`,
+ * `audit_logs` and `user_facts` are created further down this same file, that
+ * one error cascaded into eleven later migrations failing on missing tables.
+ *
+ * Measured 2026-08-18 against `pgvector/pgvector:pg16` in Docker: 12 of 28
+ * migrations failed before this, 0 after.
+ *
+ * These are 012's definitions verbatim — the final ones. 002 and 012 both
+ * `CREATE OR REPLACE` them again later, so the last writer still wins and this
+ * copy cannot drift into being the authority; it exists so that the file which
+ * creates the base tables also creates what their policies depend on.
+ * ------------------------------------------------------------------------ */
+CREATE OR REPLACE FUNCTION public.current_app_user_id()
+RETURNS uuid
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $$
+  SELECT id FROM public.users
+  WHERE clerk_id = nullif(current_setting('request.jwt.claims', true)::jsonb ->> 'sub', '')
+  LIMIT 1
+$$;
+
+CREATE OR REPLACE FUNCTION public.current_app_is_admin()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = pg_catalog, public
+AS $$
+  SELECT coalesce(
+    (SELECT u.is_admin FROM public.users u
+     WHERE u.clerk_id = nullif(current_setting('request.jwt.claims', true)::jsonb ->> 'sub', '')
+     LIMIT 1),
+    false)
+$$;
+
 DO $$ BEGIN
   CREATE POLICY users_self_read ON users FOR SELECT
     USING ((id = (SELECT current_app_user_id())) OR (SELECT current_app_is_admin()));

@@ -26,8 +26,26 @@
 --
 -- Idempotent, catalogue-only, no rewrite and no lock beyond the statement.
 
-alter function public.reserve_or_requests(p_requests integer, p_day_limit integer)
-  set search_path = pg_catalog, public;
-
-alter function public.settle_or_requests(p_reserved integer, p_actual integer)
-  set search_path = pg_catalog, public;
+-- GUARDED, BECAUSE ON A REBUILD THESE FUNCTIONS DO NOT EXIST YET.
+--
+-- Both were created by hand in production long before `migrations/` did, which
+-- is why this file could ALTER them: 025 is the migration written afterwards to
+-- put their definitions under lineage, and it comes AFTER this one. Against
+-- production every statement here worked; against an empty database this file
+-- was one of the two remaining rebuild failures on 2026-08-18.
+--
+-- Nothing is lost by skipping: 025 creates both functions with
+-- `SET search_path = pg_catalog, public` already on them, so a rebuilt
+-- database reaches the same catalogue state this file exists to produce. The
+-- ALTER matters only for the pre-existing production copies, which is exactly
+-- where the guard passes.
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+             WHERE n.nspname = 'public' AND p.proname = 'reserve_or_requests') THEN
+    EXECUTE 'alter function public.reserve_or_requests(p_requests integer, p_day_limit integer) set search_path = pg_catalog, public';
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+             WHERE n.nspname = 'public' AND p.proname = 'settle_or_requests') THEN
+    EXECUTE 'alter function public.settle_or_requests(p_reserved integer, p_actual integer) set search_path = pg_catalog, public';
+  END IF;
+END $$;

@@ -300,9 +300,18 @@ same defect as a checker that reads the migration files instead of the database.
     2026-08-18 section below, including the SECOND road to the same
     paid-and-free bug that building it exposed. Four wiring guards observed
     red.
-42. **blocked** — Full migration lineage/schema snapshots/RLS policy tests,
-    function `search_path` hardening, and production drift detection. The live
-    schema was inspected only for the authorized 020–022 migrations.
+42. **complete** - Migration lineage, drift detection in both directions, and
+    a rebuild that is PROVEN rather than assumed. Files:
+    `backend/migrations/000_base_schema_lineage.sql`,
+    `backend/migrations/011_advisor_findings.sql`,
+    `backend/migrations/024_or_requests_search_path.sql`,
+    `backend/scripts/rebuild-proof.sh` (new),
+    `backend/scripts/rebuild-expects.mjs` (new),
+    `backend/scripts/check-drift.mjs`, `backend/lib/rpc-lineage.test.js`.
+    Evidence: MEASURED against `pgvector/pgvector:pg16` in Docker on
+    2026-08-18 - 12 of 28 migrations failed on the first run against an empty
+    database, 0 after the fix, and every table and RPC the code calls exists in
+    the rebuilt catalogue. See the dated section below.
 43. **not applicable as written; its applicable half is already built** —
     Capability-based plugin/OAuth isolation, least privilege, outbound
     allowlists, confirmations, and per-turn plugin limits. There is no plugin
@@ -931,6 +940,63 @@ against Stripe by hand, which is to say it is not found.
   invariants they hold — addressed by the column the decision chose, `.select()`
   so zero rows is visible, `done` marked only after the work — are unchanged and
   now assert at the new call site.
+
+## 2026-08-18 (continued) - item 42: the rebuild was assumed, and it did not work
+
+The previous pass said this exactly: 000 and 025 were applied to production
+where every object already existed, so each statement was a no-op - which
+proves the SQL parses, not that an empty database ends up matching - and that
+proving it needed a scratch Postgres with pgvector, whose daemon was not
+running. The daemon is running now, and the answer was NO.
+
+**12 of 28 migrations failed on the first run, all cascading from one root
+cause.** `000_base_schema_lineage.sql` creates RLS policies calling
+`current_app_user_id()` and `current_app_is_admin()`. The first is created in
+002 and the second in 012 - two files and twelve files later. Against
+production both already existed, so 000 was a clean no-op and looked correct.
+Against an empty database it died at its first policy, and since `chats`,
+`audit_logs` and `user_facts` are created further down that same file, eleven
+later migrations then failed on missing tables. The fix puts both function
+definitions - 012's, verbatim - above the policies that call them; 002 and 012
+still `CREATE OR REPLACE` them afterwards, so the last writer is unchanged and
+this copy cannot become the authority.
+
+Two failures survived that fix and were a different thing entirely - objects
+this schema does not own:
+
+- **`rls_auto_enable` is Supabase's**, an event-trigger function no migration
+  here creates; `check-drift.mjs` already lists it under `AD_HOC` for that
+  reason. 011's unguarded `REVOKE` ended the file on any database that is not
+  Supabase.
+- **024 hardens `reserve_or_requests`/`settle_or_requests`, which 025
+  creates** - the migration written afterwards to put hand-made production
+  functions under lineage. On a rebuild, 024 runs before its objects exist, and
+  025 creates them with `SET search_path` already applied, so skipping reaches
+  the same catalogue state.
+
+Both are now guarded by an `IF EXISTS` on `pg_proc`, and each guard says which
+of the two reasons it is there for.
+
+- **`scripts/rebuild-proof.sh` (new)** is the whole thing as one command:
+  scratch container, the platform baseline Supabase provides and plain Postgres
+  does not (the `anon`/`authenticated`/`service_role` roles, `vector`,
+  `pgcrypto`), every migration in order, exit 1 on the first failure.
+
+- **`scripts/rebuild-expects.mjs` (new)** is the half that stops the first half
+  from lying. A file of guarded `DO $$ ... IF EXISTS ...` blocks applies
+  perfectly and creates nothing, and this repo now contains two such guards on
+  purpose - so "0 failures" alone would stay green while the schema emptied
+  out. It reads every `.from()` and `.rpc()` in the source and requires each
+  name in the catalogue the rebuild actually produced: 15 tables and 10 RPCs,
+  all present. It is `lib/rpc-lineage.test.js`'s question asked of a database
+  rather than of the files.
+
+- Verification: the proof was observed red - reverting only the 000 fix puts
+  the rebuild back to 14 failing files and exit 1. Backend 1880/1880.
+  **What is NOT claimed**: this proves `migrations/` builds a working database
+  from nothing, NOT that the result is byte-identical to production. That is a
+  catalogue diff against the live database and needs credentials this machine
+  does not have; `check-drift.mjs` is the tool for it and remains owner-run.
 
 ## Owner actions this Phase 3 has accumulated
 

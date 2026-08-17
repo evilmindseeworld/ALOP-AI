@@ -26,7 +26,19 @@
 -- Revoking EXECUTE does NOT stop the event trigger firing. Event triggers are
 -- invoked by the trigger manager as the function's owner and never consult
 -- EXECUTE grants, so RLS still gets enabled on new tables exactly as before.
-revoke execute on function public.rls_auto_enable() from anon, authenticated, public;
+-- GUARDED BECAUSE THIS FUNCTION IS THE PLATFORM'S, NOT OURS. `rls_auto_enable`
+-- is created by Supabase, not by any migration here — `scripts/check-drift.mjs`
+-- lists it in AD_HOC for exactly that reason. On a rebuild into a plain
+-- Postgres it does not exist, and an unguarded REVOKE ends the file, which on
+-- 2026-08-18 was one of the two remaining rebuild failures. Revoking a
+-- privilege on something that is not there is a no-op, not a problem, so the
+-- guard skips rather than fails.
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+             WHERE n.nspname = 'public' AND p.proname = 'rls_auto_enable') THEN
+    EXECUTE 'revoke execute on function public.rls_auto_enable() from anon, authenticated, public';
+  END IF;
+END $$;
 
 -- ===========================================================================
 -- 2. SECURITY: pin search_path on the six functions that had none.

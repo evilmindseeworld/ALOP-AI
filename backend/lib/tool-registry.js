@@ -26,7 +26,7 @@ const { isCitable } = require("./link-check");
 const { childAbortController } = require("./abort");
 const { UrlBlocked } = require("./url-guard");
 const { randomUUID } = require("node:crypto");
-const { findPassages, renderPassages } = require("./doc-passages");
+const { findPassages, renderPassages, searchDocuments, renderDocuments } = require("./doc-passages");
 const Sentry = require("@sentry/node");
 
 /** Result shapes are uniform so the loop never has to know which tool ran. */
@@ -293,6 +293,49 @@ function buildRegistry(deps = {}) {
         return ok(
           `Read ${found.passages.length} passage(s) of ${file.name} ${where} (${file.kind}, ${file.bytes} bytes)`,
           clamp(renderPassages({ ...found, name: file.name }) + note),
+        );
+      },
+    });
+  }
+
+  /**
+   * search_files reads across EVERY attached document at once.
+   *
+   * read_file takes one id, so a question whose answer sits in one of five
+   * attached files cost one round per guess — and `agent-loop` bounds the
+   * rounds, so past a few documents the model is out of turns before it is out
+   * of files. The guess was made from the filename, the one part of a document
+   * that is not its contents.
+   *
+   * Same (user, chat) binding as read_file and for the same reason: `all()` is
+   * the store's, so there is no parameter here that could name another user's
+   * documents. Registered only when the store offers `all` — an older store
+   * simply does not get the tool rather than getting a broken one.
+   */
+  if (deps.files && typeof deps.files.all === "function") {
+    tools.push({
+      name: "search_files",
+      description:
+        "Search ALL the files the user attached to this conversation at once and get back the passages that match, each labelled with its file and character offsets. " +
+        "Use this FIRST when there is more than one attached file, or when you do not know which file holds the answer — it costs one call instead of one per file. " +
+        "Use read_file after it, when you know which document you want more of.",
+      schema: {
+        query: { type: "string", required: true, maxLength: 300 },
+      },
+      run: async ({ query }, { signal } = {}) => {
+        const files = await deps.files.all({ signal });
+        if (!files || !files.length) return fail("No files are attached to this conversation.");
+        const found = searchDocuments(files, query, { limit: 3, budget: PASSAGE_BUDGET });
+        if (!found.hits.length) {
+          // Naming the files searched is the point of this branch: "not in
+          // these documents" is a usable answer and "no results" is not.
+          const names = files.map((f) => f.name).join(", ");
+          return ok(`Nothing matching "${query}" in ${files.length} file(s)`, `No passage of ${names} matches "${query}". The documents were searched; the terms do not appear in them.`);
+        }
+        const where = [...new Set(found.hits.map((h) => h.passage.file.name))];
+        return ok(
+          `Found ${found.hits.length} passage(s) matching "${query}" in ${where.join(", ")}`,
+          clamp(renderDocuments({ ...found, query })),
         );
       },
     });

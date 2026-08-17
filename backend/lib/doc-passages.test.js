@@ -141,3 +141,76 @@ test('degenerate input does not throw', () => {
   assert.deepEqual(scorePassages([], 'q'), []);
   assert.deepEqual(scorePassages(splitPassages('hello world'), null), []);
 });
+
+/* ---- searchDocuments: one query across every attached file ---- */
+
+const { searchDocuments, renderDocuments } = require('./doc-passages');
+
+/** Three documents where only the third answers, and its NAME does not say so. */
+const CORPUS = () => {
+  const filler = (n, word) => Array.from({ length: n }, (_, i) => `Paragraph ${i} about ${word} and general administration.`).join('\n\n');
+  return [
+    { id: 'a', name: 'notes.txt', content: `# Notes\n\n${filler(60, 'meetings')}` },
+    { id: 'b', name: 'invoices.csv', content: `# Invoices\n\n${filler(60, 'invoices')}` },
+    { id: 'c', name: 'misc-2019.pdf', content: `# Misc\n\n${filler(30, 'shipping')}\n\n## Refund policy\n\nThe restocking fee is 12 percent for opened electronics.\n\n${filler(30, 'shipping')}` },
+  ];
+};
+
+test('the answer is found in the file whose name does not mention it', () => {
+  const found = searchDocuments(CORPUS(), 'restocking fee for opened electronics');
+  assert.equal(found.matched, true);
+  assert.equal(found.scanned, 3);
+  assert.match(found.hits[0].passage.text, /restocking fee is 12 percent/);
+  assert.equal(found.hits[0].passage.file.name, 'misc-2019.pdf');
+});
+
+test('offsets stay relative to their OWN file, not the concatenation', () => {
+  const found = searchDocuments(CORPUS(), 'restocking fee for opened electronics');
+  const hit = found.hits[0].passage;
+  const source = CORPUS().find((f) => f.id === hit.file.id).content;
+  assert.equal(hit.total, source.length);
+  assert.equal(source.slice(hit.start, hit.end), hit.text, 'the cited offsets do not quote the cited text');
+});
+
+test('nothing matching is empty, never the beginning of an arbitrary document', () => {
+  const found = searchDocuments(CORPUS(), 'photosynthesis chlorophyll');
+  assert.equal(found.matched, false);
+  assert.deepEqual(found.hits, []);
+  assert.equal(renderDocuments({ ...found, query: 'photosynthesis chlorophyll' }), '');
+});
+
+test('files past the scan cap are named rather than silently dropped', () => {
+  const found = searchDocuments(CORPUS(), 'restocking fee', { scanChars: 500 });
+  assert.ok(found.skipped.length, 'a file that was never opened must be reported');
+  const out = renderDocuments({ hits: [{ passage: { file: { name: 'x' }, start: 0, end: 1, total: 2, text: 't', heading: null }, score: 1 }], skipped: found.skipped, query: 'q' });
+  assert.match(out, /Not searched \(too large to open together\)/);
+});
+
+test('the rendering labels every passage with its file', () => {
+  const found = searchDocuments(CORPUS(), 'restocking fee for opened electronics');
+  const out = renderDocuments({ ...found, query: 'restocking fee' });
+  assert.match(out, /\[misc-2019\.pdf — .*characters \d+–\d+ of \d+\]/);
+});
+
+test('degenerate corpora do not throw', () => {
+  for (const bad of [null, undefined, [], [{}], [{ id: 'a', name: 'a', content: '' }]]) {
+    const found = searchDocuments(bad, 'anything');
+    assert.deepEqual(found.hits, []);
+    assert.equal(found.matched, false);
+  }
+});
+
+test('passages come back in attachment order even when the later file ranks higher', () => {
+  /* Both files are one passage long, so a per-file index makes them both
+   * index 0 and the output keeps RANK order instead of reading order — a
+   * model handed the second document first is reading a different corpus.
+   * The corpus-wide reindex is what stops that. */
+  const files = [
+    { id: 'a', name: 'first.txt', content: 'The quarterly restocking policy is reviewed by the committee.' },
+    { id: 'b', name: 'second.txt', content: 'The quarterly restocking fee for opened electronics is 12 percent, reviewed by the committee.' },
+  ];
+  const found = searchDocuments(files, 'restocking fee for opened electronics quarterly committee');
+  assert.equal(found.hits.length, 2);
+  assert.ok(found.hits[1].score > found.hits[0].score, 'fixture is wrong: the second file must rank higher');
+  assert.deepEqual(found.hits.map((h) => h.passage.file.name), ['first.txt', 'second.txt']);
+});

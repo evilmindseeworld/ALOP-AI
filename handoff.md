@@ -1,3 +1,29 @@
+# Handoff — 2026-08-17 (tenth pass): five documents, one call
+
+Item 32's cross-file half is built. Backend is 1857/1857. Nothing is deployed
+by this pass; no migration is involved and no owner action is added.
+
+- **`search_files`** searches every file attached to the conversation in one
+  call and returns the best passages labelled with file, heading and character
+  offsets. `read_file` took one id, so with five documents the model spent one
+  bounded round per guess, guessing from the filename. Files:
+  `backend/lib/doc-passages.js` (`searchDocuments`/`renderDocuments`),
+  `backend/lib/tool-registry.js`, `backend/lib/council-tools.js`,
+  `backend/server.js` (`fileStoreFor.all`).
+- One scoring pass over the MERGED corpus — rarity only means something across
+  the corpus being searched. Nothing matching returns nothing rather than the
+  beginning of an arbitrary document. The scan is capped and any file it could
+  not open is named in the result.
+- Three guards observed red. One of them did not exist when first claimed: the
+  per-file-index revert left the suite green, and the ordering test was written
+  to make the claim true.
+- **Item 32 is now `partial`, not blocked.** Still unbuilt: embeddings (the
+  ranker is lexical), object storage ACLs, workspace ingestion.
+- **The two owner actions are unchanged** — `RATE_LIMIT_STORE=postgres` in
+  Render, and one live `npm run evals` run with a Clerk session JWT.
+
+---
+
 # Handoff — 2026-08-17 (ninth pass): the evaluation platform, and gates that refuse what they cannot measure
 
 Phase 3 items 34 and 35 are built and unshipped-to-a-real-run. Backend is

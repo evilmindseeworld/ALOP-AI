@@ -189,10 +189,15 @@ earlier entry recorded the scope instruction rather than the code, which is the
 same defect as a checker that reads the migration files instead of the database.
 **Read the code before writing an item's state, including to write "blocked".**
 
-32. **blocked** — Full PDF/DOCX/spreadsheet/code/workspace ingestion, object
-    storage ACLs, chunking, indexing, embeddings, and citations. Adjacent files:
-    `backend/lib/file-intake.js`, `backend/server.js`; full ingestion was not
-    started and no new Phase 3 tests were added.
+32. **partial** — Extraction, chunking, citations and cross-file retrieval are
+    built; object storage ACLs, embeddings and workspace ingestion are not.
+    Files: `backend/lib/doc-extract.js`, `backend/lib/doc-passages.js`,
+    `backend/lib/file-intake.js`, `backend/lib/tool-registry.js`,
+    `backend/lib/council-tools.js`, `backend/server.js`. Evidence: see the two
+    2026-08-16 sections and the 2026-08-17 cross-file section below.
+    **What is NOT claimed**: retrieval is lexical, so a question that
+    paraphrases rather than quotes its document still ranks by term overlap;
+    files live in a `chat_files` row rather than object storage.
 33. **blocked** — Sandboxed computation/data/file-analysis tool with restricted
     credentials/network/resources. Existing local arithmetic is not a sandbox.
     Adjacent files: `backend/lib/arithmetic.js`; no Phase 3 change made.
@@ -749,6 +754,53 @@ words, a person typed words, and the two disagreed.
 
 1845/1845 backend tests pass; the three new behaviours were each observed red
 with their implementation disabled. Live on `bb3de93`, confirmed by `/health`.
+
+## 2026-08-17 (continued) — item 32: five documents, one call
+
+`read_file` takes one id, so a question whose answer sits in one of five
+attached files cost one round per guess — and `agent-loop` bounds the rounds,
+so past a few documents the model was out of turns before it was out of files.
+The guess was made from the FILENAME, which is the one part of a document that
+is not its contents.
+
+- **`search_files` (new tool)** ranks passages across every file attached to
+  the conversation and returns the best few, each labelled with its file, its
+  nearest heading and its character offsets. `lib/doc-passages.js` gains
+  `searchDocuments`/`renderDocuments`; `fileStoreFor` gains `all()`, one query
+  rather than a `get()` per id, because twenty round trips inside a tool call
+  the user is waiting on would cost more than the guessing it replaces.
+
+- **One scoring pass over the merged corpus, not a ranking per file.** Rarity
+  is the whole point of the ranker and it only means anything across the corpus
+  being searched. Ranking each file alone and taking each winner hands back the
+  least-bad passage of four irrelevant documents.
+
+- **Nothing matching returns nothing.** `findPassages` opens one NAMED file at
+  page one when nothing matches, which is what a reader would do; across five
+  documents the beginning of an arbitrary one answers nothing and would read as
+  a hit. The tool answers `ok` with the file names and "the terms do not appear
+  in them", because "it is not in your documents" is an answer and "no results"
+  is not.
+
+- **The scan is capped and the files it drops are named.** Twenty files at
+  `MAX_CHARS` is twenty megabytes. `SCAN_CHARS` bounds it, and a file that was
+  never opened is listed in the result — "the answer is not in your documents"
+  and "I did not open three of them" are different answers.
+
+- **The same (user, chat) binding, and the same reason.** `all()` is the
+  store's, so there is no parameter in `search_files`' signature that could
+  name another user's documents. `upload-wiring.test.js` pins both predicates
+  and the `content` column against `server.js`'s source, because every unit
+  test builds its own fake store and none of them would notice the tool
+  quietly ceasing to register.
+
+- Verification: 1857/1857 backend tests, `node --check server.js`,
+  `git diff --check`. Three guards were observed red against the precise
+  regression each claims to catch: the store's missing `all()`, the
+  fall-back-to-the-beginning shortcut, and the per-file index. **The third had
+  no test when it was first claimed** — the ordering assertion was written only
+  after reverting the reindex left the suite green, which is rule 4's "a test
+  you have not watched fail is not a test" catching a claim in this same pass.
 
 ## Owner actions this Phase 3 has accumulated
 

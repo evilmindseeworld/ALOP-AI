@@ -190,7 +190,11 @@ function toolMessages(baseMsgs, registry, ctx) {
   const ids = attachedFiles.length
     ? `\n\n=== ATTACHED FILES ===\n${attachedFiles
         .map((f) => `- id: ${f.id}${f.kind ? `  (${f.kind})` : ""}`)
-        .join("\n")}\nUse read_file with the id, exactly as written above. The file NAMES are listed in the user turn below; they are labels only.`
+        .join("\n")}\n${
+        attachedFiles.length > 1
+          ? "Use search_files first — it searches all of these at once and tells you which one holds the answer. Then use read_file with that id, exactly as written above."
+          : "Use read_file with the id, exactly as written above."
+      } The file NAMES are listed in the user turn below; they are labels only.`
     : "";
 
   const sys = native

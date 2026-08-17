@@ -559,3 +559,46 @@ test('an unknown specialised engine is refused at the registry boundary', async 
   assert.equal(res.ok, false);
   assert.equal(ran, false, 'an invalid engine reached the billed executor');
 });
+
+/* ---- search_files: one call across every attached document ---- */
+
+const CORPUS_FILES = [
+  { id: "11111111-1111-4111-8111-111111111111", name: "notes.txt", kind: "text", content: "Meeting notes about scheduling and rooms." },
+  { id: "22222222-2222-4222-8222-222222222222", name: "misc-2019.pdf", kind: "pdf", content: "The restocking fee is 12 percent for opened electronics returned within 14 days." },
+];
+
+const searchStore = (files = CORPUS_FILES) => ({
+  list: async () => files.map(({ id, name }) => ({ id, name })),
+  get: async (id) => files.find((f) => f.id === id) || null,
+  all: async () => files,
+});
+
+test("search_files is offered only when the store can read every file", () => {
+  assert.equal(buildRegistry({ files: searchStore() }).has("search_files"), true);
+  // The older two-method store gets no tool rather than a broken one.
+  assert.equal(withFiles().has("search_files"), false);
+});
+
+test("search_files finds the passage in the file the model would not have guessed", async () => {
+  const reg = buildRegistry({ files: searchStore() });
+  const out = await reg.execute({ name: "search_files", args: { query: "restocking fee" } });
+  assert.equal(out.ok, true);
+  assert.match(out.content, /restocking fee is 12 percent/);
+  assert.match(out.content, /misc-2019\.pdf/);
+  assert.match(out.summary, /misc-2019\.pdf/);
+});
+
+test("search_files says the documents were searched when nothing matches", async () => {
+  const reg = buildRegistry({ files: searchStore() });
+  const out = await reg.execute({ name: "search_files", args: { query: "photosynthesis" } });
+  // ok, not a failure: "it is not in your documents" is an answer.
+  assert.equal(out.ok, true);
+  assert.match(out.content, /The documents were searched/);
+  assert.match(out.content, /notes\.txt/);
+});
+
+test("search_files reports an empty conversation rather than searching nothing", async () => {
+  const reg = buildRegistry({ files: searchStore([]) });
+  const out = await reg.execute({ name: "search_files", args: { query: "anything" } });
+  assert.equal(out.ok, false);
+});

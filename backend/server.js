@@ -1492,6 +1492,20 @@ const fileStoreFor = (userId, chatId) => ({
     const { data } = await withQuerySignal(query, signal);
     return data || null;
   },
+  /**
+   * Every file's CONTENT, for search_files.
+   *
+   * One query rather than list() plus a get() per id: twenty round trips
+   * inside a tool call the user is waiting on is the cost that would make
+   * cross-file search worse than the guessing it replaces. The volume is
+   * bounded above by the same MAX_FILES_PER_CHAT the uploader enforces, and
+   * `searchDocuments` caps the characters it will actually read.
+   */
+  all: async ({ signal } = {}) => {
+    const query = supabase.from('chat_files').select('id,name,kind,content').eq('user_id', userId).eq('chat_id', chatId).order('created_at', { ascending: true }).limit(MAX_FILES_PER_CHAT);
+    const { data } = await withQuerySignal(query, signal);
+    return data || [];
+  },
 });
 
 // Off unless explicitly enabled. The router path is untouched, so a bad turn is

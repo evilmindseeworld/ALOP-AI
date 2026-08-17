@@ -74,3 +74,24 @@ test('the upload path pattern matches the route it is meant to match', () => {
   assert.equal(re.test('/api/chats/abc/messages'), false);
   assert.equal(re.test('/api/chats/abc/files/extra'), false);
 });
+
+/**
+ * A CROSS-FILE SEARCH THAT CANNOT READ THE FILES IS A TOOL THAT ALWAYS SAYS NO.
+ *
+ * `search_files` is registered only when the bound store offers `all()`, so a
+ * store missing it does not break — the tool silently stops existing, and the
+ * council goes back to guessing which document to open one round at a time.
+ * That is exactly the failure the tool was built to end, and nothing else in
+ * the suite would notice it: every unit test builds its own fake store.
+ */
+test('the bound file store can read every file, or search_files is never offered', () => {
+  const store = SOURCE.slice(SOURCE.indexOf('const fileStoreFor'));
+  const body = store.slice(0, store.indexOf('\n});'));
+  assert.match(body, /\ball:\s*async/, 'fileStoreFor has no all() — search_files will not register');
+  assert.match(body, /all:[\s\S]*?\.select\([^)]*content/, 'all() must select content; ids and names cannot be searched');
+  // The same (user, chat) binding as list/get. Without both predicates the
+  // service-role key would happily return another user's documents.
+  const all = body.slice(body.indexOf('all:'));
+  assert.match(all, /\.eq\('user_id', userId\)/, "all() must filter on user_id");
+  assert.match(all, /\.eq\('chat_id', chatId\)/, "all() must filter on chat_id");
+});

@@ -228,12 +228,107 @@ function renderPassages({ passages, total, matched, name }) {
   return `${head}\n\n${parts.join('\n\n[…]\n\n')}`;
 }
 
+/**
+ * How much attached text one search may read into memory.
+ *
+ * Twenty files at MAX_CHARS each is twenty megabytes, and this runs inside a
+ * tool call the user is waiting on. The cap is a bound on that, not a quality
+ * decision: the files that do not fit are NAMED in the result rather than
+ * silently absent, because "the answer is not in your documents" and "I did not
+ * open three of them" are different answers and only one of them is honest.
+ *
+ * ponytail: first-N-characters, in the order the files were attached. A
+ * per-file share would be fairer and needs a reason to exist first.
+ */
+const SCAN_CHARS = 2_000_000;
+
+/**
+ * The passages of MANY documents that best answer one query.
+ *
+ * WHAT WAS WRONG. `read_file` takes one id, so a question whose answer is in
+ * one of five attached documents cost one round per guess — and `agent-loop`
+ * bounds the rounds, so past a few files the model runs out of turns before it
+ * runs out of documents. The guess is made from the FILENAME, which is the one
+ * part of a document that is not its contents.
+ *
+ * ONE SCORING PASS OVER THE MERGED CORPUS, not a ranking per file merged
+ * afterwards. Rarity is the whole point of the ranker (see `scorePassages`) and
+ * it only means anything across the corpus being searched: a term in every
+ * passage of every document separates nothing, while a term in one passage of
+ * one document is the hit. Ranking each file alone and taking the best of each
+ * would hand back the least-bad passage of four irrelevant documents.
+ *
+ * @param {Array<{id: string, name: string, content: string}>} files
+ * @param {string} query
+ * @returns {{hits: Array, matched: boolean, scanned: number, skipped: string[]}}
+ */
+function searchDocuments(files, query, { limit = 3, budget = 3000, scanChars = SCAN_CHARS } = {}) {
+  const skipped = [];
+  const passages = [];
+  let spent = 0;
+  let scanned = 0;
+
+  for (const file of Array.isArray(files) ? files : []) {
+    const text = String((file && file.content) || '');
+    if (!text) continue;
+    if (spent + text.length > scanChars) {
+      skipped.push(String((file && file.name) || 'a file'));
+      continue;
+    }
+    spent += text.length;
+    scanned += 1;
+    for (const passage of splitPassages(text)) {
+      /* Re-indexed across the corpus: `index` is what breaks a score tie and
+       * what puts the output in reading order, and a per-file index collides
+       * on both. `total` is carried per passage because a citation's offsets
+       * are into ITS file, not into the concatenation. */
+      passages.push({ ...passage, index: passages.length, total: text.length, file: { id: file.id, name: file.name } });
+    }
+  }
+
+  if (!passages.length) return { hits: [], matched: false, scanned, skipped };
+
+  const ranked = scorePassages(passages, query);
+  /* NO FALLBACK TO THE BEGINNING. `findPassages` opens one named file at page
+   * one when nothing matches, which is what a reader would do. Here the
+   * beginning of an arbitrary one of five documents answers nothing, and
+   * returning it would read as a hit. Empty is the true answer. */
+  if (!ranked.length) return { hits: [], matched: false, scanned, skipped };
+
+  const hits = [];
+  let used = 0;
+  for (const { passage, score } of ranked) {
+    if (hits.length >= limit) break;
+    if (used + passage.text.length > budget && hits.length) break;
+    hits.push({ passage, score });
+    used += passage.text.length;
+  }
+  hits.sort((a, b) => a.passage.index - b.passage.index);
+  return { hits, matched: true, scanned, skipped };
+}
+
+/** Render cross-document hits, each labelled with the file it came from. */
+function renderDocuments({ hits, skipped = [], query }) {
+  if (!hits.length) return '';
+  const parts = hits.map(({ passage }) => {
+    const where = passage.heading ? `${passage.heading} — ` : '';
+    return `[${passage.file.name} — ${where}characters ${passage.start}–${passage.end} of ${passage.total}]\n${passage.text}`;
+  });
+  const names = [...new Set(hits.map((h) => h.passage.file.name))];
+  const missed = skipped.length ? ` Not searched (too large to open together): ${skipped.join(', ')}.` : '';
+  const head = `Showing the ${hits.length} passage${hits.length === 1 ? '' : 's'} matching "${query}" across ${names.length} document${names.length === 1 ? '' : 's'} (${names.join(', ')}). Other parts of these documents, and any other attached file, were not shown.${missed}`;
+  return `${head}\n\n${parts.join('\n\n[…]\n\n')}`;
+}
+
 module.exports = {
   splitPassages,
   scorePassages,
   findPassages,
   renderPassages,
+  searchDocuments,
+  renderDocuments,
   nearestHeading,
   PASSAGE_CHARS,
   OVERLAP_CHARS,
+  SCAN_CHARS,
 };

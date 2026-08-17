@@ -198,9 +198,36 @@ same defect as a checker that reads the migration files instead of the database.
     **What is NOT claimed**: retrieval is lexical, so a question that
     paraphrases rather than quotes its document still ranks by term overlap;
     files live in a `chat_files` row rather than object storage.
-33. **blocked** — Sandboxed computation/data/file-analysis tool with restricted
-    credentials/network/resources. Existing local arithmetic is not a sandbox.
-    Adjacent files: `backend/lib/arithmetic.js`; no Phase 3 change made.
+33. **not applicable as written; the trigger that revives it is named below** -
+    Sandboxed computation/data/file-analysis tool with restricted credentials,
+    network and resources. Taken against what is actually here, the same way
+    item 43 was:
+    - **There is no user code to run.** The whole tool inventory is four
+      read-only tools in `lib/tool-registry.js` - `web_search`, `read_url`,
+      `read_file`, `search_specialized` - plus `search_files` added on
+      2026-08-17. Not one of them executes anything a model or a user wrote.
+    - **`lib/arithmetic.js` is not a sandbox and does not pretend to be.** It
+      is a parser and a BigInt evaluator over numbers the parser itself built;
+      there is no `eval`, no `Function`, and no path from model text to
+      execution. Calling it "the existing sandbox" would be the claim this
+      ledger exists to prevent. It needs no isolation because it runs no code.
+    - **The obvious implementation does not deploy.** Render does not run
+      Docker-in-Docker, so a container sandbox is not available on the
+      production target at all. The real options are a V8 isolate
+      (`isolated-vm`, a native module, and an escape is a full process
+      compromise), a WASM interpreter such as QuickJS (deploys anywhere, but
+      no Python and therefore no pandas, which is most of why anyone wants
+      this), or an external microVM service (Vercel Sandbox, E2B - strongest
+      isolation, a new vendor, a per-run cost, and a network round trip inside
+      a tool call the user is waiting on). Choosing between those is a product
+      decision about what "analyse my spreadsheet" should mean, not an
+      implementation detail, and building any of them now would be the largest
+      speculative subsystem in the repo.
+    - **The trigger.** Revive this item the day a tool executes code that a
+      model or a user supplied - a `run_code` tool, a formula evaluator over an
+      uploaded sheet, a plugin that runs anything. That is the first thing
+      whoever adds one should read, and the decision above is the one they will
+      have to make first.
 34. **complete (the platform and the first dataset; one live run is owed)** —
     Evaluation platform and datasets. Files: `backend/lib/evaluation.js` (new),
     `backend/lib/evaluation.test.js` (new), `backend/evals/core-v1.json` (new),

@@ -452,7 +452,11 @@ test('normalise is exported and does only what it says', () => {
 test('server.js separates durable answers produced by different tool modes', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
   const mode = src.indexOf('const ANSWER_EXECUTION_MODE =');
-  const branch = src.indexOf('const ANSWER_CACHE_BRANCH = `turn:${ANSWER_EXECUTION_MODE}`');
+  /* Matched on the mode being INTERPOLATED into the branch rather than on the
+   * whole literal: the branch now carries the build fingerprint after it (see
+   * the semantic-tier tests below), and pinning the exact string made this fail
+   * for a reason that had nothing to do with what it guards. */
+  const branch = src.indexOf('const ANSWER_CACHE_BRANCH = `turn:${ANSWER_EXECUTION_MODE}');
   const key = src.indexOf('branch: ANSWER_CACHE_BRANCH');
   assert.ok(mode > 0, 'tool execution mode is absent from answer-cache identity');
   assert.ok(branch > mode, 'the tool mode does not produce one shared cache branch');
@@ -716,4 +720,50 @@ test('016 documents the user-derived question-text and search-expiry index bound
   assert.match(sql, /user-derived QUESTION TEXT/i);
   assert.match(sql, /non-personalised|non-personalized/i);
   assert.match(sql, /FORCE ROW LEVEL SECURITY/);
+});
+
+/**
+ * THE SEMANTIC TIER DOES NOT SEE THE KEY, so it does not see the identity.
+ *
+ * MEASURED 2026-08-18 on the third evaluation run. `ROUTING_POLICY` had been
+ * added to the cache identity and deployed, so every literal key changed and
+ * every literal lookup missed — and twenty of twenty-two answers came back
+ * byte-identical to the previous run anyway. `getSemantic` matches by embedding
+ * and filters on the row's COLUMNS (lang, country, plan, detailed, branch); the
+ * identity is hashed into the key and is not one of them, so the literal miss
+ * fell through to a semantic hit on the exact row the invalidation was meant to
+ * retire.
+ *
+ * The fix is that `branch` carries the fingerprint, because `branch` is the one
+ * identity-ish field BOTH tiers match on. These two tests are what fail if
+ * someone reverts that to a bare mode string, or teaches the semantic path to
+ * take a branch that is not the identity-bearing one.
+ */
+test('the answer cache branch carries the build fingerprint, so the semantic tier honours it', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+
+  const at = src.indexOf('const ANSWER_CACHE_BRANCH =');
+  assert.ok(at > 0, 'ANSWER_CACHE_BRANCH is gone');
+  const decl = src.slice(at, at + 400);
+
+  /* Not just "a hash is nearby": every one of the four identity fields has to
+   * be in the branch, because each names a different way an answer can change
+   * without the question changing. */
+  for (const field of ['promptVersion', 'policyVersion', 'modelFamily', 'toolSchema']) {
+    assert.match(decl, new RegExp(`CACHE_IDENTITY\\.${field}`),
+      `${field} is missing from the cache branch, so changing it will not invalidate a semantic hit`);
+  }
+
+  /* And it must be defined AFTER the identity it reads — the declaration was
+   * moved down the file for exactly this reason, and moving it back is a
+   * temporal-dead-zone throw at boot rather than a quiet wrong value. */
+  assert.ok(at > src.indexOf('const CACHE_IDENTITY ='), 'the branch is declared above the identity it reads');
+});
+
+test('the semantic lookup is given the identity-bearing branch, not a bare mode', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
+  const call = src.indexOf('answerCache.getSemantic({');
+  assert.ok(call > 0, 'the semantic lookup is gone');
+  assert.match(src.slice(call, call + 400), /branch:\s*ANSWER_CACHE_BRANCH/,
+    'the semantic tier must be scoped by the same branch the literal tier writes');
 });

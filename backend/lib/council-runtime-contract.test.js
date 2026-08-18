@@ -471,7 +471,11 @@ test("the Wikipedia tool path also uses the configurable head synthesizer", () =
 });
 
 test("the background brain is wired to the same cache identity and stopped on shutdown", () => {
-  assert.match(SOURCE, /const ANSWER_CACHE_BRANCH = `turn:\$\{ANSWER_EXECUTION_MODE\}`/,
+  /* The branch carries the build fingerprint after the execution mode now (see
+   * the semantic-tier tests in answer-cache.test.js), so this matches the mode
+   * being interpolated rather than the whole literal. The property under test
+   * is unchanged: ONE branch constant, shared by request turns and the brain. */
+  assert.match(SOURCE, /const ANSWER_CACHE_BRANCH = `turn:\$\{ANSWER_EXECUTION_MODE\}/,
     "request turns and background turns need one shared execution-mode identity");
   assert.match(SOURCE, /createBrainQuestions\(\{ branch: ANSWER_CACHE_BRANCH \}\)/,
     "curated questions must use the exact branch used by foreground cache keys");

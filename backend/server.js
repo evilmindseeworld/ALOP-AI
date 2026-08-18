@@ -46,7 +46,9 @@ const { createTurnTelemetry } = require('./lib/turn-telemetry');
 const { rescueReasoning } = require('./lib/reasoning-rescue');
 const { createTurnContext } = require('./lib/turn-context');
 const { createTurnLedger } = require('./lib/turn-ledger');
-const { fingerprint: cacheFingerprint, retrievalMode, sourceFreshness } = require('./lib/cache-identity');
+const {
+  fingerprint: cacheFingerprint, retrievalMode, sourceFreshness, short: cacheIdentityShort,
+} = require('./lib/cache-identity');
 const { planWork } = require('./lib/work-plan');
 const { runDag } = require('./lib/execution-dag');
 const { planRoute, applyPlan, chooseEmphasis } = require('./lib/adaptive-routing');
@@ -1594,7 +1596,9 @@ const SEEDED_SEARCH = TOOLS_ENABLED && /^(1|true)$/i.test(process.env.COUNCIL_SE
 const ANSWER_EXECUTION_MODE = SEEDED_SEARCH
   ? 'tools-seeded-v5'
   : TOOLS_ENABLED ? 'tools-live' : TOOLS_SHADOW ? 'tools-shadow' : 'tools-off';
-const ANSWER_CACHE_BRANCH = `turn:${ANSWER_EXECUTION_MODE}`;
+/* `ANSWER_CACHE_BRANCH` is DEFINED FURTHER DOWN, immediately after
+ * CACHE_IDENTITY, because it now carries that fingerprint. See the note there
+ * for why the semantic tier forced the move. */
 /**
  * ADAPTIVE ROUTING and the PROGRESSIVE COUNCIL, both off by default and both
  * for the same reason the two flags above are.
@@ -3211,6 +3215,45 @@ const CACHE_IDENTITY = cacheFingerprint({
   })(),
 });
 console.log(`[ANSWERS] cache identity prompt=${CACHE_IDENTITY.promptVersion} policy=${CACHE_IDENTITY.policyVersion} models=${CACHE_IDENTITY.modelFamily} tools=${CACHE_IDENTITY.toolSchema}`);
+
+/**
+ * THE FINGERPRINT IS IN THE BRANCH BECAUSE THE SEMANTIC TIER CANNOT SEE THE KEY.
+ *
+ * MEASURED 2026-08-18, on the third evaluation run. `ROUTING_POLICY` had just
+ * been added to CACHE_IDENTITY and deployed, so every literal key changed and
+ * every literal lookup missed — correctly. Twenty of twenty-two answers came
+ * back byte-identical to the previous run anyway.
+ *
+ * `keyFor` hashes the identity into the key, and `get(key)` therefore honours
+ * it. `getSemantic` does not use the key at all: it matches by embedding
+ * distance and filters on the COLUMNS the row carries — lang, country, plan,
+ * detailed, branch (`match_answer_cache`, migration 017). The identity is not
+ * among them. So the literal miss fell straight through to a semantic hit on
+ * the very row the identity change was meant to retire, and the invalidation
+ * was a no-op with a passing test suite behind it.
+ *
+ * Folding the fingerprint into `branch` fixes both tiers at once, and that is
+ * the point of doing it here rather than adding four parameters to the RPC:
+ * `branch` is already a stored column, already matched by both `get` and
+ * `getSemantic`, and already means "which machine produced this answer". Four
+ * new columns would be a second list of identity fields to keep in step with
+ * the first, which is the drift this whole mechanism exists to prevent. No
+ * migration: the column is TEXT and is compared with IS NOT DISTINCT FROM.
+ *
+ * CONSEQUENCE, stated rather than discovered later: `invalidate({branch})`,
+ * `dueForRefresh({branch})` and `usageCandidates({branch})` are all scoped to
+ * ONE build now. A refresh sweep will not see rows written by the previous
+ * deployment; they age out on their own TTL instead of being refreshed. That is
+ * the correct behaviour for a row a new build would answer differently, and it
+ * is the reason this is a fingerprint rather than a version number.
+ */
+const ANSWER_CACHE_BRANCH = `turn:${ANSWER_EXECUTION_MODE}:${cacheIdentityShort([
+  CACHE_IDENTITY.promptVersion,
+  CACHE_IDENTITY.policyVersion,
+  CACHE_IDENTITY.modelFamily,
+  CACHE_IDENTITY.toolSchema,
+].join('|'))}`;
+console.log(`[ANSWERS] cache branch ${ANSWER_CACHE_BRANCH}`);
 
 /* Greetings sit in their own layer because they are not generated answers —
  * the response is a product constant, so it can never be stale and can never

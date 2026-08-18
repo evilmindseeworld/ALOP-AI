@@ -1,3 +1,33 @@
+# Handoff - 2026-08-18 (sixteenth pass): the eval runner could not start on production
+
+Commit `318bdc3`. Backend 1924/1924. No migration, no deploy, no new owner
+action. The working tree had been left mid-edit by the previous pass and the
+runner was not startable.
+
+- **The auth block referenced an `active` binding that did not exist** and an
+  undeclared `sessionId`, so any run with `EVAL_CLERK_SECRET_KEY` died on a
+  ReferenceError before case one. `node --check` passed it; the bug is a
+  runtime reference, which is why the file looked fine.
+
+- **Clerk will not create a session on a production instance** - 400
+  `request_invalid_for_environment`. The run now lists the user's ACTIVE
+  sessions and borrows one, and creates a session only when there is none to
+  borrow (the development case).
+
+- **A borrowed session is never revoked.** It is the user's own and revoking
+  it signs them out of their browser. A session the run created still is
+  revoked on exit, including on a crash.
+
+- **A wrong-instance secret key was a stack trace.** It is one line now:
+  `FAILED: Clerk refused the user list (HTTP 401)...`. Observed against a
+  bogus `sk_test_` key, not reasoned.
+
+- **Still never run against a real session.** Everything here was verified
+  through failure branches and the dataset validator; the live run remains
+  the one open owner action.
+
+---
+
 # Handoff - 2026-08-18 (fifteenth pass): item 32 closed, and emoji out of error messages
 
 Workspace files are built and applied (029). **Item 32 is complete.** Backend

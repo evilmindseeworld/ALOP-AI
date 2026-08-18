@@ -499,6 +499,15 @@ pro (delayed payment methods are a real Stripe state), and
 `invoice.payment_failed` patches NOTHING — Stripe retries, and downgrading on a
 first decline cancels a paying customer over a temporarily declined card.
 
+**Do not set `OPENROUTER_PER_MINUTE` without reading `lib/pacer.js` first.**
+The half-open breaker admits exactly ONE probe, and `run()` claims that probe
+slot BEFORE `paceMinute()`. At the default `perMinute: 0` pacing returns
+immediately and the two never interact. Turn the flag on and a probe that has
+to wait for the minute window holds the only recovery slot while it sleeps —
+every other caller is refused for the length of that wait, on a model that may
+already be healthy. Before enabling it, do one of: claim the probe slot after
+pacing, or let the single probe bypass the minute window as one request.
+
 ## Handoff — 2026-08-07 (second pass)
 
 Read this first; it is the state of play, not history. Delete a line once it

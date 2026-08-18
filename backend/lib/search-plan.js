@@ -188,4 +188,38 @@ function parseRoutePlan(raw) {
   return validate(ROUTE_PLAN, plan).ok ? plan : { memory: false, queries: null };
 }
 
-module.exports = { parseSearchPlan, parseRoutePlan, MAX_QUERIES, MAX_QUERY_LEN };
+/**
+ * The router's reply, when there is one — the gate `parseRoutePlan` cannot be.
+ *
+ * `callModel` answers the bare string '' for a deadline, for an abort and for a
+ * model that replied with nothing, and `parseRoutePlan('')` turns all three into
+ * `{memory:false, queries:null}` — the exact object a deliberate `NO` produces,
+ * and the exact object the caller's `.catch(() => NO_ROUTE)` produces. A router
+ * that never answered was therefore indistinguishable from one that decided no
+ * search was needed, in the behaviour AND in the audit row: nothing threw, so
+ * `measureRouter` recorded `ok: true`.
+ *
+ * Measured on 64e9970 over 30 days: the router runs at p50 3,169ms against a
+ * 4,000ms ceiling and 33.8% of routed turns finished within 100ms of it. Those
+ * turns routed on nothing and reported success.
+ *
+ * THROWING IS THE WHOLE FIX, and it changes no behaviour. The one caller already
+ * wraps this in `telemetry.measureRouter(...).catch(() => NO_ROUTE)`: the catch
+ * still routes the turn plainly, exactly as before, and the measure wrapper now
+ * files the read as `ok: false` instead of claiming a decision was made. No new
+ * fallback is introduced here — the existing one is left to do its job, and this
+ * deliberately does NOT swallow anything else the router can fail with.
+ *
+ * `parseRoutePlan` keeps its own contract: it is pure, it cannot know WHY a
+ * string is empty, and other callers rely on it answering rather than throwing.
+ */
+function routeFromReply(raw) {
+  if (typeof raw !== 'string' || !raw.trim()) {
+    const error = new Error('router returned no plan');
+    error.code = 'ROUTER_NO_PLAN';
+    throw error;
+  }
+  return parseRoutePlan(raw);
+}
+
+module.exports = { parseSearchPlan, parseRoutePlan, routeFromReply, MAX_QUERIES, MAX_QUERY_LEN };

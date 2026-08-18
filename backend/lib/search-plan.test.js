@@ -1,6 +1,6 @@
 const test = require("node:test");
 const assert = require("node:assert");
-const { parseSearchPlan, parseRoutePlan } = require("./search-plan");
+const { parseSearchPlan, parseRoutePlan, routeFromReply } = require("./search-plan");
 
 test("a single query comes back as a single query", () => {
   assert.deepEqual(parseSearchPlan("iphone 17 pro price uae"), ["iphone 17 pro price uae"]);
@@ -244,4 +244,57 @@ test("parseRoutePlan — a non-string reply is not a crash", () => {
   for (const bad of [null, undefined, 42, {}]) {
     assert.deepEqual(parseRoutePlan(bad), { memory: false, queries: null });
   }
+});
+
+/* A ROUTER THAT NEVER ANSWERED LOOKED EXACTLY LIKE ONE THAT SAID "NO SEARCH".
+ *
+ * `callModel` returns the bare string '' for three different situations —
+ * deadline expired, aborted, and a model that genuinely replied with nothing —
+ * and `parseRoutePlan('')` yields `{memory:false, queries:null}`, which is the
+ * same object a deliberate `NO` produces and the same object the caller's
+ * `.catch(() => NO_ROUTE)` produces. Nothing threw, so `measureRouter` recorded
+ * `ok: true` and the audit row said the router had decided.
+ *
+ * MEASURED IN PRODUCTION, 30-day window on 64e9970: router p50 3,169ms against
+ * a 4,000ms ceiling, and 33.8% of routed turns landed within 100ms of that
+ * ceiling. Those turns routed on nothing while reporting success. It is the
+ * same shape as the incident in AGENTS.md where the planner "answered NO" for a
+ * monitor SKU and the council then invented the spec sheet.
+ *
+ * `parseRoutePlan` cannot fix this: it is a pure parser and cannot know WHY a
+ * string is empty. The distinction belongs one layer up, between "the model
+ * answered" and "parse what it said".
+ *
+ * Watched fail before the fix: `routeFromReply is not a function`. */
+test('routeFromReply — a reply that never arrived is not a routing decision', () => {
+  for (const missing of ['', '   ', '\n\n', null, undefined, 0, {}]) {
+    assert.throws(
+      () => routeFromReply(missing),
+      /no plan/i,
+      `an empty reply must not read as a decision: ${JSON.stringify(missing)}`,
+    );
+  }
+});
+
+/* THE CASE THAT MAKES THE FIX WORTH ANYTHING. `NO` is the model's real answer
+ * for "this question needs no search" and parses to the identical object a
+ * blank reply used to produce. It must keep routing exactly as before. */
+test('routeFromReply — a decided NO still routes, and does not throw', () => {
+  assert.deepEqual(routeFromReply('NO'), { memory: false, queries: null });
+  assert.deepEqual(routeFromReply('  no.  '), { memory: false, queries: null });
+});
+
+/* Every other reply routes exactly as parseRoutePlan already decided; this is a
+ * gate in front of the parser, not a second parser. */
+test('routeFromReply — every real reply routes as parseRoutePlan does', () => {
+  for (const raw of ['MEMORY', 'iphone 17 price', '1. "framework 16 price"\n2. framework 16 discontinued', 'NO']) {
+    assert.deepEqual(routeFromReply(raw), parseRoutePlan(raw), raw);
+  }
+});
+
+/* The parser's own contract is unchanged — it still answers for junk rather
+ * than throwing, because callers other than the router rely on that. */
+test('parseRoutePlan still tolerates a blank reply on its own terms', () => {
+  assert.deepEqual(parseRoutePlan(''), { memory: false, queries: null });
+  assert.deepEqual(parseRoutePlan(null), { memory: false, queries: null });
 });

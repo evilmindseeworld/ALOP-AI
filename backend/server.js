@@ -1116,7 +1116,14 @@ openai ceo ${new Date().getUTCFullYear()}${locale}`;
   // not fit in 50, and the ceiling truncated the SECOND query mid-word, which
   // parses as a valid short query and searches for half a phrase.
   const response = await callModel(FAST_MODEL, [{ role: 'system', content: sys }, { role: 'user', content: userContent }], 0.0, 4000, 120, signal, onAttempt ? { onAttempt } : undefined);
-  return parseRoutePlan(response);
+  /* A ROUTER THAT NEVER ANSWERED IS NOT A ROUTER THAT SAID NO. `callModel`
+   * returns '' for a deadline, an abort and an empty reply alike, and that
+   * parsed to the same object a deliberate NO produces — so a third of routed
+   * turns (measured, 30 days on 64e9970) routed on nothing while the audit row
+   * recorded `ok: true`. `routeFromReply` throws instead; the caller's existing
+   * `.catch(() => NO_ROUTE)` routes the turn plainly exactly as before, and
+   * `measureRouter` now files the read as failed. See lib/search-plan.js. */
+  return routeFromReply(response);
 };
 
 // ===== SEARCH FUNCTIONS =====
@@ -1410,7 +1417,7 @@ const FIRECRAWL_API_KEY = process.env.FIRECRAWL_API_KEY || '';
 const PAGE_READ_LIMIT = Number(process.env.PAGE_READ_LIMIT) || 3;
 const { settleByDeadline } = require('./lib/deadline');
 const { todayLine, freshnessWindow, normalizeDate, dateLabel, BRAVE_FRESHNESS, GOOGLE_DATE_RESTRICT } = require('./lib/recency');
-const { parseRoutePlan } = require('./lib/search-plan');
+const { routeFromReply } = require('./lib/search-plan');
 const { readSonar } = require('./lib/perplexity');
 const { createSearchCache, comprehensiveSearchKey } = require('./lib/search-cache');
 const { createProviderHealth } = require('./lib/provider-health');

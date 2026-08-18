@@ -879,6 +879,37 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
   );
 
   /**
+   * Keep a file across every conversation, or put it back in this one.
+   *
+   * OPTIMISTIC, AND REVERTED ON FAILURE, like removeFile above: the button is
+   * a toggle, and a toggle that waits for a round trip before moving reads as
+   * broken. The server's own message is shown on failure because the one that
+   * matters — the workspace is full — names a number the client does not know.
+   */
+  const setFileWorkspace = useCallback(
+    async (fileId, workspace) => {
+      if (!activeChatId) return;
+      const before = chatFiles;
+      setChatFiles((p) => p.map((f) => (f.id === fileId ? { ...f, workspace } : f)));
+      try {
+        const res = await apiCall(`/api/chats/${activeChatId}/files/${fileId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ workspace }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error || `HTTP ${res.status}`);
+        }
+      } catch (err) {
+        setChatFiles(before);
+        setToast(err?.message || "Couldn't change where that file is kept.");
+      }
+    },
+    [activeChatId, chatFiles, apiCall, setToast]
+  );
+
+  /**
    * Hand the user back the file they uploaded.
    *
    * TWO STEPS, AND THE SECOND ONE IS THE BROWSER'S. The server answers with a
@@ -1554,7 +1585,7 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
         const errorMessage = {
           ...assistantMsg,
           typing: false,
-          content: `⚠️ ${err.message || "Connection failed"}${ref ? `\n\n\`ref ${ref}\`` : ""}`,
+          content: `${err.message || "Connection failed"}${ref ? `\n\n\`ref ${ref}\`` : ""}`,
         };
         setStreamDraft({ chatId, message: errorMessage, persisted: true });
         const saved = await updateChatMessages(chatId, [
@@ -1649,6 +1680,7 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
     uploadFile,
     removeFile,
     downloadFile,
+    setFileWorkspace,
   };
 }
 

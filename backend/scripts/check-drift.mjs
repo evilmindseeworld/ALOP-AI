@@ -45,7 +45,7 @@ const projectRef =
   (process.env.SUPABASE_URL || "").match(/https:\/\/([a-z0-9]+)\.supabase\.co/i)?.[1] ||
   null;
 
-const die = (msg) => { console.error(`\n✗ ${msg}\n`); process.exit(1); };
+const die = (msg) => { console.error(`\nFAILED: ${msg}\n`); process.exit(1); };
 if (!TOKEN) die("SUPABASE_ACCESS_TOKEN is not set. https://supabase.com/dashboard/account/tokens");
 if (!projectRef) die("Could not determine the project ref. Set SUPABASE_PROJECT_REF or SUPABASE_URL.");
 
@@ -122,10 +122,10 @@ const main = async () => {
   ]);
 
   if (missed) {
-    console.log("\n✗ Production is behind the migrations. Apply them before trusting the code that calls them.\n");
+    console.log("\nFAILED: production is behind the migrations. Apply them before trusting the code that calls them.\n");
     process.exit(1);
   }
-  console.log("\n✓ Every migrated object exists in production.\n");
+  console.log("\nOK: every migrated object exists in production.\n");
 };
 
 main().catch((err) => die(err.message));

@@ -1,3 +1,61 @@
+# Handoff - 2026-08-18 (fifteenth pass): item 32 closed, and emoji out of error messages
+
+Workspace files are built and applied (029). **Item 32 is complete.** Backend
+1924/1924. Migrations 028 and 029 are BOTH APPLIED - no owner action added; one
+still remains.
+
+- **"Workspace ingestion" had no specification anywhere**, so it was defined
+  against what the app lacks: every file was bound to one chat, so the same
+  syllabus had to be re-uploaded and re-extracted in every conversation.
+
+- **A workspace file is a `chat_files` row with `chat_id IS NULL`.** No second
+  table, no second store, no second retrieval path - the same row read by the
+  same `read_file` and `search_files`.
+
+- **NULL rather than a `scope` column IS the design.** A foreign key does not
+  constrain a NULL, so the row leaves 003's `ON DELETE CASCADE` by
+  construction. A flag beside a populated `chat_id` would not: deleting the
+  chat a document was uploaded into would delete the workspace document too.
+  Measured with a live probe, not argued.
+
+- **The probe also measured something 028 had only asserted**: the delete
+  trigger DOES fire on a cascade delete, so a cascaded object is queued for
+  sweeping.
+
+- **The object never moves.** Its key is fixed at upload; rewriting it on
+  promotion would mean a copy, a delete, and a window where a download 404s for
+  a file that exists.
+
+- **The widening is one line and the wrong one leaks every chat.**
+  `chat_id.eq.<this chat>` OR `chat_id.is.null` - DROPPING the chat clause
+  would pull the user's other conversations into this one. A test now counts
+  the clauses.
+
+- **Two pre-existing guards failed when the store was widened** and were
+  updated rather than deleted: `query-bounds` (still bounded, now at both
+  ceilings) and `upload-wiring` (the user predicate is untouched).
+
+- **Emoji are out of error messages.** The user-facing error bubble dropped its
+  warning sign; the CLI scripts now print `FAILED:`/`OK:` instead of dingbats,
+  which also survives a terminal that cannot render them and a log that is
+  grepped. Four emoji remain and are deliberate: two test fixtures that exist to
+  prove multi-byte handling, and the command palette's chat icon.
+
+- **The frontend suite is flaky under load ON THIS MACHINE, and it is not this
+  change.** 5 failures with these changes, 7 on unmodified HEAD in the same
+  conditions; every affected file passes in isolation and the suite passed
+  705/705 twice earlier today. Do not chase it as a regression.
+
+- **NOT VERIFIED end to end.** `chat_files` has zero rows in production. Nothing
+  has been uploaded, promoted, searched from a second chat, or downloaded by a
+  real person.
+
+- **Owner action, still ONE**: the evaluation run, with
+  `EVAL_CLERK_SECRET_KEY` (a pasted session JWT lives ~60s and cannot survive
+  a 22-case run).
+
+---
+
 # Handoff - 2026-08-18 (fourteenth pass): the file its own owner could not download
 
 Item 32's object-storage half is built and applied. Backend 1915/1915, frontend

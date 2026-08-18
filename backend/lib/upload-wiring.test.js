@@ -93,5 +93,31 @@ test('the bound file store can read every file, or search_files is never offered
   // service-role key would happily return another user's documents.
   const all = body.slice(body.indexOf('all:'));
   assert.match(all, /\.eq\('user_id', userId\)/, "all() must filter on user_id");
-  assert.match(all, /\.eq\('chat_id', chatId\)/, "all() must filter on chat_id");
+  /* 029 widened the chat half from `= this chat` to `= this chat OR IS NULL`,
+   * because a workspace file belongs to the user rather than to a
+   * conversation. The USER half is untouched and must stay that way: it is the
+   * predicate that stops a service-role read returning another account's
+   * documents. */
+  assert.match(all, /inThisChatOrWorkspace\(/, 'all() no longer scopes by chat at all');
+});
+
+/**
+ * THE WIDENING IN 029 IS ONE LINE, AND THE WRONG ONE LINE LEAKS EVERY CHAT.
+ *
+ * "Visible from every conversation" is one edit away from "every conversation's
+ * files are visible", and the difference is entirely in this predicate. Dropping
+ * the chat clause instead of OR-ing a null check would return the user's OTHER
+ * conversations' attachments into this one — still their own data, still a
+ * privacy failure, and completely invisible to a test that only checks
+ * user_id.
+ */
+test('the workspace widening admits NULL, not everything', () => {
+  const start = SOURCE.indexOf('const inThisChatOrWorkspace');
+  assert.notEqual(start, -1, 'the workspace scoping helper is gone; this test needs rewriting');
+  const NEWLINE = String.fromCharCode(10);
+  const helper = SOURCE.slice(start, SOURCE.indexOf(NEWLINE, SOURCE.indexOf('=>', start)));
+  assert.match(helper, /chat_id\.eq\.\$\{chatId\}/, 'the helper no longer restricts to this chat');
+  assert.match(helper, /chat_id\.is\.null/, 'the helper does not admit workspace files');
+  // Exactly two clauses. A third is a scope nobody has argued for.
+  assert.equal((helper.match(/chat_id\./g) || []).length, 2, 'the helper has grown a clause beyond "this chat" and "no chat"');
 });

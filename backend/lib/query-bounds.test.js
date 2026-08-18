@@ -28,11 +28,18 @@ test("admin chat list is paginated and metadata-only", () => {
   assert.doesNotMatch(source, /^\s*\.select\('\*'\)/m);
 });
 
-test("file list remains bounded at the per-chat ceiling", () => {
+test("file list remains bounded, now at the per-chat ceiling PLUS the workspace one", () => {
   const start = SOURCE.indexOf("list: async ({ signal } = {}) => {");
   assert.ok(start >= 0);
-  const source = SOURCE.slice(start, start + 500);
-  assert.match(source, /\.limit\(MAX_FILES_PER_CHAT\)/);
+  const source = SOURCE.slice(start, start + 700);
+  /* 029 widened this read to `chat_id = this chat OR chat_id IS NULL`, so the
+   * bound has to cover both scopes or a user with a full workspace stops
+   * seeing the files actually attached to the conversation they are in. The
+   * point of this test is unchanged: the read is BOUNDED. Two named ceilings
+   * added together is still a constant; `.limit()` disappearing is the
+   * regression it exists to catch. */
+  assert.match(source, /\.limit\(MAX_FILES_PER_CHAT \+ MAX_WORKSPACE_FILES\)/);
+  assert.match(SOURCE, /const MAX_WORKSPACE_FILES = \d+;/, 'the workspace ceiling is not a named constant');
 });
 
 test("the new migration covers the only unindexed list shape this audit can prove", () => {

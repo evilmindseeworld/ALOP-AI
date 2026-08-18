@@ -210,7 +210,10 @@ same defect as a checker that reads the migration files instead of the database.
     extracted text stays in `chat_files` and every path a model touches is
     unchanged; the bucket exists so the PERSON who uploaded a file can get it
     back, which was impossible while the original bytes were discarded after
-    extraction. Workspace ingestion is untouched. **Nothing here has been run against the live provider** —
+    extraction. **2026-08-18: workspace ingestion is built** (029) — a file can
+    be kept across every conversation instead of re-uploaded into each one.
+    Item 32 is now **complete**; see the two sections below for what is and is
+    not claimed. **Nothing here has been run against the live provider** —
     `GOOGLE_API_KEY` is set in Render only, so every test on this path exercises
     the fake embedder or the failure branch.
 33. **not applicable as written; the trigger that revives it is named below** -
@@ -1159,6 +1162,71 @@ changed.
 production - `chat_files` has zero rows and always has. The bucket, the trigger
 and the sweeper are verified against the catalog and against tests; the
 end-to-end upload-then-download has never been exercised by a real file.
+
+## 2026-08-18 (continued) - item 32: a document attached once, searchable everywhere
+
+**The item said "workspace ingestion" and nothing else.** No specification
+existed anywhere in the repo, so it was defined against what the app actually
+lacks: every file is bound to one chat, so the same syllabus or handbook had to
+be uploaded again in every conversation that needed it - re-extracted, re-stored
+and counted against that chat's ceiling each time. A person doing that is not
+attaching a file to a conversation; they are telling the app what their material
+IS.
+
+**A workspace file is a `chat_files` row with `chat_id IS NULL`.** Not a second
+table, not a second store, not a second retrieval path. The same row, read by
+the same `read_file` and `search_files`, ranked by the same lexical and vector
+sides built earlier today. Everything already written keeps working because
+there is nothing new for it to know about.
+
+**Why NULL and not a `scope` column, which is the whole design.** A foreign key
+does not constrain a NULL, so `chat_id IS NULL` removes the row from the
+`ON DELETE CASCADE` in 003 BY CONSTRUCTION. A `scope = 'workspace'` flag sitting
+beside a still-populated `chat_id` would not have that property: deleting the
+conversation a document happened to be uploaded into would delete the workspace
+document too, and the flag would be a comment rather than a mechanism.
+**Measured, not argued** - the live probe promoted one file, left another
+attached, deleted the chat, and asserted that the first survived and the second
+did not.
+
+**The object does not move.** Its key is `{user_id}/{chat_id}/{file_id}` from
+the moment of upload (028) and `storage_path` is the only thing that addresses
+it. Rewriting the key on promotion would mean a copy, a delete, and a window
+where a download 404s for a file that exists. A key is an address, not a
+description.
+
+**The widening is one line, and the wrong one line leaks every chat.**
+`inThisChatOrWorkspace` is `chat_id.eq.<this chat>` OR `chat_id.is.null`.
+DROPPING the chat clause instead of OR-ing the null check would return the
+user's OTHER conversations' attachments into this one - still their own data,
+still a privacy failure, and invisible to any test that only checks `user_id`.
+There is now a test that counts the clauses.
+
+**A separate ceiling.** `MAX_WORKSPACE_FILES` is 10 against
+`MAX_FILES_PER_CHAT`'s 20, because these files are searched on EVERY turn of
+EVERY conversation - they are the ones whose size shows up in latency. Checked
+before the write and only on promotion; blocking a demotion would strand a user
+at the ceiling with no way down.
+
+**Evidence.** Backend 1924/1924 (from 1915). Four new guards mutated and watched
+fail, plus two pre-existing guards that FAILED when the store was widened and
+were updated rather than deleted - `query-bounds` (the read must stay bounded,
+now at both ceilings added together) and `upload-wiring` (the user predicate is
+untouched). Schema verified in the live catalog. The 029 probe also measured
+something 028 had only asserted: the delete trigger DOES fire on a cascade
+delete, so an object whose chat is deleted is queued for sweeping.
+
+**The frontend suite is flaky under load on this machine, and that is not this
+change.** Running it while the machine was saturated produced 5 failures; the
+SAME run against unmodified `HEAD` produced 7. Every affected file passes in
+isolation (`AppRenders` 4/4, `MessageList` 31/31, `InputBar` 27/27,
+`cssSnapshot` 1/1), and the same suite passed 705/705 twice earlier in the
+session. Recorded rather than reported as green.
+
+**What is NOT claimed.** `chat_files` still has zero rows in production. Nothing
+has been uploaded, promoted, searched from a second chat, or downloaded by a
+real user. Every property above is verified against the catalog, against a live
+SQL probe, or against tests - not against a person using the feature.
 
 ## Owner actions this Phase 3 has accumulated
 

@@ -35,6 +35,7 @@ const InputBar = memo(
     attachedFiles = [],
     attachedFilesError = null,
     onDownloadFile,
+    onSetFileWorkspace,
     onRetryFiles,
     onDocSelect = () => {},
     onRemoveFile = () => {},
@@ -200,8 +201,8 @@ const InputBar = memo(
           {attachedFiles.length > 0 && (
             <ul className="file-chips">
               {attachedFiles.map((f) => (
-                <li key={f.id} className="file-chip">
-                  <Icon name="code" size={12} />
+                <li key={f.id} className={`file-chip${f.workspace ? " file-chip-kept" : ""}`}>
+                  <Icon name={f.workspace ? "pin" : "code"} size={12} />
                   {/* The name truncates with an ellipsis and the extension is
                       the first thing lost, so the full name has to be
                       recoverable without opening anything. */}
@@ -210,6 +211,23 @@ const InputBar = memo(
                       before that was retained has its text and nothing to give
                       back, and offering a button that can only apologise is
                       worse than not offering one. */}
+                  {/* KEPT ACROSS CHATS, or attached to this one. The label says
+                      which state the file is IN, and the action moves it to the
+                      other — a toggle whose label describes the destination is
+                      the classic way a user turns something off believing they
+                      turned it on. */}
+                  {onSetFileWorkspace && (
+                    <button
+                      type="button"
+                      className="file-chip-keep"
+                      onClick={() => onSetFileWorkspace(f.id, !f.workspace)}
+                      aria-pressed={Boolean(f.workspace)}
+                      aria-label={f.workspace ? `${f.name} is kept in every chat. Attach to this chat only` : `Keep ${f.name} in every chat`}
+                      title={f.workspace ? "Kept in every chat" : "Keep in every chat"}
+                    >
+                      <Icon name="pin" size={12} />
+                    </button>
+                  )}
                   {f.downloadable && onDownloadFile && (
                     <button
                       type="button"

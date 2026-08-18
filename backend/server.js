@@ -1484,19 +1484,48 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const uuidParam = (name = 'id') => (req, res, next) =>
   UUID_RE.test(req.params[name] || '') ? next() : fail(res, 400, 'Invalid ID');
 
+/**
+ * HOW MANY DOCUMENTS A USER MAY KEEP ACROSS ALL THEIR CHATS.
+ *
+ * A SEPARATE CEILING FROM `MAX_FILES_PER_CHAT`, not a share of it. The
+ * per-chat limit exists because a model can only read what it can name and
+ * twenty names is already generous; the workspace limit exists because these
+ * documents are searched on EVERY turn of EVERY conversation, so they are the
+ * ones whose size shows up in latency. Ten is deliberately smaller than twenty.
+ */
+const MAX_WORKSPACE_FILES = 10;
+
+/**
+ * A WORKSPACE FILE IS A `chat_files` ROW WITH `chat_id IS NULL` (029).
+ *
+ * It belongs to the user rather than to a conversation, so it is visible from
+ * every one of their chats — the syllabus, the price list, the handbook that
+ * was being re-uploaded into each new chat and re-extracted every time.
+ *
+ * `or(...)` rather than dropping the chat filter: dropping it would return
+ * files from the user's OTHER conversations, which is the opposite of what a
+ * workspace is. The predicate is still `user_id = this user`, and then "this
+ * chat, or no chat at all".
+ */
+const inThisChatOrWorkspace = (query, chatId) => query.or(`chat_id.eq.${chatId},chat_id.is.null`);
+
 const fileStoreFor = (userId, chatId) => ({
   list: async ({ signal } = {}) => {
-    const query = supabase.from('chat_files').select('id,name,kind,bytes,storage_path').eq('user_id', userId).eq('chat_id', chatId).order('created_at', { ascending: true }).limit(MAX_FILES_PER_CHAT);
+    const query = inThisChatOrWorkspace(supabase.from('chat_files').select('id,name,kind,bytes,storage_path,chat_id').eq('user_id', userId), chatId).order('created_at', { ascending: true }).limit(MAX_FILES_PER_CHAT + MAX_WORKSPACE_FILES);
     const { data } = await withQuerySignal(query, signal);
     /* `storage_path` is READ and DROPPED. The client needs to know whether a
      * download exists, which is a boolean; the key itself is an address inside
      * a private bucket and there is no reason for a browser to hold one. This
      * store is also what `read_file` and `search_files` see, so the key would
      * otherwise be one field away from a model's context. */
-    return (data || []).map(({ storage_path, ...file }) => ({ ...file, downloadable: Boolean(storage_path) }));
+    /* `chat_id` is mapped to a BOOLEAN and dropped, for the same reason
+     * `storage_path` is: the client needs to know a file is workspace-wide so
+     * it can label and unpin it, and has no use for the id of a conversation
+     * that may not even be this one. */
+    return (data || []).map(({ storage_path, chat_id, ...file }) => ({ ...file, downloadable: Boolean(storage_path), workspace: chat_id === null }));
   },
   get: async (id, { signal } = {}) => {
-    const query = supabase.from('chat_files').select('id,name,kind,bytes,content,truncated').eq('id', id).eq('user_id', userId).eq('chat_id', chatId).maybeSingle();
+    const query = inThisChatOrWorkspace(supabase.from('chat_files').select('id,name,kind,bytes,content,truncated').eq('id', id).eq('user_id', userId), chatId).maybeSingle();
     const { data } = await withQuerySignal(query, signal);
     return data || null;
   },
@@ -1510,7 +1539,7 @@ const fileStoreFor = (userId, chatId) => ({
    * `searchDocuments` caps the characters it will actually read.
    */
   all: async ({ signal } = {}) => {
-    const query = supabase.from('chat_files').select('id,name,kind,content').eq('user_id', userId).eq('chat_id', chatId).order('created_at', { ascending: true }).limit(MAX_FILES_PER_CHAT);
+    const query = inThisChatOrWorkspace(supabase.from('chat_files').select('id,name,kind,content').eq('user_id', userId), chatId).order('created_at', { ascending: true }).limit(MAX_FILES_PER_CHAT + MAX_WORKSPACE_FILES);
     const { data } = await withQuerySignal(query, signal);
     return data || [];
   },
@@ -6337,6 +6366,56 @@ app.delete('/api/chats/:id/files/:fileId', requireAuth, requireOwnership('chats'
      * other way, which is the majority. One path, one mechanism. */
     void enqueueStorageSweep();
     res.json({ deleted: true });
+  } catch (err) { Sentry.captureException(err); sendError(res, err); }
+});
+
+/**
+ * MOVE A FILE BETWEEN THIS CONVERSATION AND THE WORKSPACE.
+ *
+ * PROMOTION IS `chat_id = NULL` AND NOTHING ELSE (029). Not a copy, not a new
+ * row, not a move in the bucket. The same row is read by the same `read_file`
+ * and `search_files`; only the scope it answers in changes. The object keeps
+ * the key it was written under at upload time, because a key is an address and
+ * rewriting it would mean a copy, a delete, and a window where a download 404s
+ * for a file that exists.
+ *
+ * DEMOTION NEEDS A CHAT TO RETURN TO, and the one in the URL is the only one
+ * this request has proved the caller owns — `requireOwnership('chats')` ran on
+ * it. Letting the body name a chat would be a way to file a document into a
+ * conversation the caller may not own.
+ *
+ * THE CEILING IS CHECKED ON THE WAY IN, NOT THE WAY OUT. Workspace files are
+ * searched on every turn of every conversation, so the tenth one costs
+ * something the twentieth chat attachment does not.
+ */
+app.patch('/api/chats/:id/files/:fileId', requireAuth, checkSuspended, requireOwnership('chats'), uuidParam('fileId'), async (req, res) => {
+  try {
+    const user = await ensureUser(req.auth.userId);
+    const wanted = req.body?.workspace;
+    if (typeof wanted !== 'boolean') return fail(res, 400, 'Send { workspace: true } to keep this file across all chats, or { workspace: false } to attach it to this chat only.');
+
+    if (wanted) {
+      const { count } = await supabase.from('chat_files').select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('chat_id', null);
+      if ((count || 0) >= MAX_WORKSPACE_FILES) {
+        return fail(res, 409, `You can keep ${MAX_WORKSPACE_FILES} files across all chats. Remove one first.`);
+      }
+    }
+
+    /* The same three-part predicate every other file route uses, with the
+     * workspace half included so an already-promoted file can be demoted:
+     * once `chat_id IS NULL`, `.eq('chat_id', …)` would never find it again. */
+    const { data, error } = await inThisChatOrWorkspace(
+      supabase.from('chat_files').update({ chat_id: wanted ? null : req.params.id }).eq('id', req.params.fileId).eq('user_id', user.id),
+      req.params.id,
+    ).select('id,name');
+    if (error) throw error;
+    /* `.update().eq()` reports no error when it matches ZERO rows — the same
+     * defect that produced the billing bug in `1fa6aec`. `.select()` is what
+     * makes "no such file" distinguishable from "done". */
+    if (!data || !data.length) return fail(res, 404, 'No such file in this conversation.');
+
+    await auditLog(user.id, wanted ? 'file.workspace.add' : 'file.workspace.remove', { chatId: req.params.id, fileId: req.params.fileId }, req.ip);
+    res.json({ id: data[0].id, name: data[0].name, workspace: wanted });
   } catch (err) { Sentry.captureException(err); sendError(res, err); }
 });
 

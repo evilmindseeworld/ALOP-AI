@@ -192,7 +192,7 @@ async function runCase(testCase) {
     if (res.status === 401 || res.status === 403) {
       await releaseSession();
       console.error(
-        `\n✗ ${res.status} on case ${testCase.id}. The credential is not accepted by ${base}.\n` +
+        `\nFAILED: ${res.status} on case ${testCase.id}. The credential is not accepted by ${base}.\n` +
         '  A static EVAL_TOKEN expires in about 60s — use EVAL_CLERK_SECRET_KEY to mint one per case.\n' +
         '  If you ARE minting: the secret key belongs to a different Clerk instance than the server\n' +
         '  under test, so its tokens are signed by a key that server does not verify with.\n' +

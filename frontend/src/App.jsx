@@ -793,6 +793,7 @@ const AuthenticatedApp = () => {
                 onDocSelect={handleDocSelect}
                 onRemoveFile={chat.removeFile}
                 onDownloadFile={chat.downloadFile}
+                onSetFileWorkspace={chat.setFileWorkspace}
               />
             </div>
           </main>

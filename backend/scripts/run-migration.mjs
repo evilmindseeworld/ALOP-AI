@@ -39,7 +39,7 @@ const args = process.argv.slice(2);
 const verifyOnly = args.includes("--verify-only");
 const file = args.find((a) => !a.startsWith("--")) || "001_per_chat_memory.sql";
 
-const fail = (msg) => { console.error(`\n✗ ${msg}\n`); process.exit(1); };
+const fail = (msg) => { console.error(`\nFAILED: ${msg}\n`); process.exit(1); };
 
 if (!TOKEN) {
   fail(
@@ -119,7 +119,7 @@ const rlsForced = (table) => ({
  *
  * THIS USED TO BE ONE HARDCODED LIST — 001's three artifacts, run no matter
  * which file was applied. So `run-migration.mjs 006_audit_retention.sql` would
- * apply 006 and then print "✓ Migration verified" on the strength of a column
+ * apply 006 and then print "Migration verified" on the strength of a column
  * 001 had added months earlier, without ever looking at `sweep_audit_logs`. A
  * verification that cannot fail for the thing you just ran is worse than none,
  * because it is the reason nobody looks again.
@@ -225,7 +225,7 @@ const MIGRATION_CHECKS = {
 async function verify(forFile) {
   const checks = MIGRATION_CHECKS[forFile];
   if (!checks) {
-    console.log(`  ✗ no verification defined for ${forFile} — add one to MIGRATION_CHECKS`);
+    console.log(`  SKIP no verification defined for ${forFile} — add one to MIGRATION_CHECKS`);
     return false;
   }
 
@@ -237,10 +237,10 @@ async function verify(forFile) {
       // Most checks assert a thing exists; a few assert a query returns
       // nothing, which is the only way to state "and the old rows are gone".
       const ok = check.expectEmpty ? !found : found;
-      console.log(`  ${ok ? "✓" : "✗"} ${check.label}`);
+      console.log(`  ${ok ? "OK  " : "FAIL"} ${check.label}`);
       if (!ok) allPassed = false;
     } catch (err) {
-      console.log(`  ✗ ${check.label} — ${err.message}`);
+      console.log(`  FAIL ${check.label} — ${err.message}`);
       allPassed = false;
     }
   }
@@ -275,7 +275,7 @@ const main = async () => {
 
   // Applying without error is not the same as the schema being correct, so the
   // exit code follows verification, not the write.
-  console.log(ok ? "\n✓ Migration verified.\n" : "\n✗ Applied but verification failed.\n");
+  console.log(ok ? "\nOK: migration verified.\n" : "\nFAILED: applied but verification failed.\n");
   process.exit(ok ? 0 : 1);
 };
 

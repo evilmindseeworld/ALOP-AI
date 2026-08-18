@@ -480,6 +480,16 @@
 .file-chip-download:hover,
 .file-chip-download:focus-visible { color: var(--accent); }
 
+/* Same reasoning as the download button: neither of these destroys anything,
+ * so neither may borrow the remove button's --danger. */
+.file-chip-keep:hover,
+.file-chip-keep:focus-visible { color: var(--accent); }
+
+/* A file kept across every chat is in a different STATE, not merely hovered,
+ * so it reads as one without needing the tooltip. Colour is not carrying this
+ * alone — the leading icon changes to a pin and the button is aria-pressed. */
+.file-chip-keep[aria-pressed="true"] { color: var(--accent); }
+
 
 .input-text {
   background: transparent;

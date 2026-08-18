@@ -103,86 +103,152 @@ if (bool("validate-only")) {
  *      length of the run stops mattering. The static token is kept as the
  *      fallback for a short `--limit 1` smoke run.
  *
+ * AND THE RUN SIGNS IN THE WAY A BROWSER DOES, WHICH IS NOT AN AESTHETIC
+ * CHOICE. Two earlier attempts are wrong for reasons the server states out
+ * loud, and both were tried against production before this shape was found:
+ *
+ *   - `sessions.createSession` (Backend API) is refused on a production
+ *     instance: 400 `request_invalid_for_environment`. Development only.
+ *   - `sessions.getToken` on a BORROWED session mints a token with NO `azp`
+ *     claim, and `server.js` mounts `clerkMiddleware` with `authorizedParties`
+ *     set from the CORS origin list. Clerk then answers, in the
+ *     `x-clerk-auth-message` header of the 401: `Invalid JWT Authorized party
+ *     claim (azp) undefined. Expected "https://alop-ai.com,…"`. Every
+ *     Backend-API-minted token fails that check, on every case, forever. The
+ *     `azp` is written by the FRONTEND API from the `Origin` of the request
+ *     that asks for the token, so it cannot be added from the back.
+ *
+ * So: create a sign-in token for the user (Backend API), redeem it at the
+ * Frontend API with `Origin` set to a real front-end origin — which is what
+ * puts `azp` in every token minted from the session afterwards — and mint per
+ * case from there. The session is OURS, not the user's browser session, so it
+ * is revoked on the way out.
+ *
+ * `EVAL_ORIGIN` overrides the origin, `EVAL_CLERK_FAPI` the Frontend API host;
+ * both are read from the instance's primary domain by default and neither is
+ * normally needed. The origin has to be one the server names in
+ * `ALLOWED_ORIGINS`/`FRONTEND_URL`, or the 401 above comes back with the
+ * expected list in it.
+ *
  * The secret key must belong to the same Clerk instance as the server under
  * test: a token minted on the development instance is signed by a different
- * key than production verifies with, and produces exactly the 401 this
- * function exists to prevent.
- *
- * AND THE INSTANCE'S ENVIRONMENT DECIDES HOW A SESSION IS OBTAINED. Clerk only
- * allows `sessions.createSession` on a development instance; on production it
- * answers 400 `request_invalid_for_environment`. So the run BORROWS an active
- * session first and only creates one when there is none to borrow, which is
- * the development case. A borrowed session is never revoked: it is the user's.
+ * key than production verifies with, and produces the same 401 with
+ * `reason=token-invalid-signature` instead.
  */
 let tokenFor = async () => token;
 let releaseSession = async () => {};
 
 if (process.env.EVAL_CLERK_SECRET_KEY) {
-  const { createClerkClient } = await import('@clerk/express');
-  const clerk = createClerkClient({ secretKey: process.env.EVAL_CLERK_SECRET_KEY });
+  const SECRET = process.env.EVAL_CLERK_SECRET_KEY;
+  const CLERK_JS = "_clerk_js_version=5.0.0";
 
-  /* A wrong or dev-vs-production secret key answers 401 here, and an unhandled
-   * ClerkAPIResponseError is a stack trace over a one-line configuration fact. */
-  const ask = async (what, fn) => {
-    try { return await fn(); } catch (err) {
-      console.error(`FAILED: Clerk refused ${what} (HTTP ${err?.status ?? '?'}). Check that EVAL_CLERK_SECRET_KEY belongs to the same instance as BASE.`);
+  /* Every Clerk call routed through one reporter. A wrong or wrong-instance
+   * secret key answers 401 here, and the useful form of that is one line
+   * naming the status, not a stack trace over a configuration fact. */
+  const bapi = async (what, path, init = {}) => {
+    const res = await fetch(`https://api.clerk.com/v1${path}`, {
+      ...init,
+      headers: { Authorization: `Bearer ${SECRET}`, "Content-Type": "application/json", ...(init.headers || {}) },
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.error(
+        `FAILED: Clerk refused ${what} (HTTP ${res.status}). Check that EVAL_CLERK_SECRET_KEY belongs to the same instance as BASE.`,
+      );
+      if (body) console.error(`  Clerk said: ${body.slice(0, 300)}`);
       process.exit(1);
     }
+    return res.json();
   };
 
-  let userId = process.env.EVAL_USER_ID || '';
+  /* The instance names its own Frontend API and its own primary domain, so
+   * neither has to be configured or guessed from the secret key. */
+  const domains = await bapi("the domain list", "/domains");
+  const primary = domains.data.find((d) => !d.is_satellite) || domains.data[0];
+  if (!primary) {
+    console.error("FAILED: the Clerk instance has no domain, so there is no Frontend API to sign in against.");
+    process.exit(1);
+  }
+  const fapi = (process.env.EVAL_CLERK_FAPI || primary.frontend_api_url).replace(/\/$/, "");
+  const origin = (process.env.EVAL_ORIGIN || `https://${primary.name}`).replace(/\/$/, "");
+
+  let userId = process.env.EVAL_USER_ID || "";
   if (!userId) {
-    const users = await ask('the user list', () => clerk.users.getUserList({ limit: 1 }));
-    if (!users.data.length) {
-      console.error('EVAL_CLERK_SECRET_KEY is set but the instance has no users. Set EVAL_USER_ID.');
+    const users = await bapi("the user list", "/users?limit=1");
+    if (!users.length) {
+      console.error("EVAL_CLERK_SECRET_KEY is set but the instance has no users. Set EVAL_USER_ID.");
       process.exit(1);
     }
-    userId = users.data[0].id;
+    userId = users[0].id;
     console.log(`No EVAL_USER_ID given; using the first user on the instance (${userId}).`);
   }
 
-  /* Borrow before creating. A borrowed session is NOT revoked on the way out —
-   * it is the user's own and revoking it signs them out of their browser. */
-  const active = (await ask('the session list', () => clerk.sessions.getSessionList({ userId, status: 'active' }))).data;
-  let sessionId = active.length ? active[0].id : '';
+  const ticket = await bapi("a sign-in token", "/sign_in_tokens", {
+    method: "POST",
+    body: JSON.stringify({ user_id: userId, expires_in_seconds: 600 }),
+  });
 
-  if (sessionId) {
-    console.log(`Borrowing an existing session (${sessionId.slice(0, 12)}…). Not revoked on exit: it is the user's own.`);
-  } else {
-    let created;
-    try {
-      created = await clerk.sessions.createSession({ userId });
-    } catch (err) {
-      console.error([
-        ``,
-        `FAILED: no active session for ${userId}, and one could not be created.`,
-        `  ${err?.message || err}`,
-        ``,
-        `Clerk refuses sessions.createSession outside development ("Request only valid for`,
-        `development instances"), so a PRODUCTION run needs a session that already exists.`,
-        ``,
-        `Either:`,
-        `  - sign in to the app as ${userId} in a browser, then re-run this; or`,
-        `  - set EVAL_USER_ID to a user who is signed in; or`,
-        `  - point BASE at a server on a DEVELOPMENT Clerk instance and use that`,
-        `    instance's sk_test_ key, where a session can be created outright.`,
-        ``,
-      ].join(String.fromCharCode(10)));
-      process.exit(1);
-    }
-    sessionId = created.id;
-    /* Ours, so revoked on the way out, including on a crash — a run that dies
-     * must not leave a usable session behind it. */
-    releaseSession = async () => {
-      try { await clerk.sessions.revokeSession(sessionId); } catch { /* best effort */ }
-    };
-    process.on('exit', () => { releaseSession(); });
-    console.log(`Created a session (${sessionId.slice(0, 12)}…); it is revoked on exit.`);
+  /* Redeeming the ticket at the Frontend API is what makes this a real client
+   * session. `Origin` is the load-bearing header: it becomes `azp`. */
+  const signIn = await fetch(`${fapi}/v1/client/sign_ins?${CLERK_JS}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded", Origin: origin },
+    body: new URLSearchParams({ strategy: "ticket", ticket: ticket.token }),
+  });
+  const signInBody = await signIn.json().catch(() => ({}));
+  if (!signIn.ok || signInBody?.response?.status !== "complete") {
+    console.error(`FAILED: the Frontend API at ${fapi} would not complete the sign-in (HTTP ${signIn.status}).`);
+    console.error(`  It answered: ${JSON.stringify(signInBody).slice(0, 300)}`);
+    process.exit(1);
   }
 
-  /* Minted per case rather than once: that is the whole point. `getToken`
-   * returns a new JWT from the live session every time it is called. */
-  tokenFor = async () => (await clerk.sessions.getToken(sessionId)).jwt;
+  /* The `__client` cookie IS the client credential; without it the token
+   * endpoint below does not know which client is asking. */
+  const setCookie = signIn.headers.getSetCookie?.() || [signIn.headers.get("set-cookie")].filter(Boolean);
+  const cookie = setCookie.map((c) => String(c).split(";")[0]).join("; ");
+  const sessionId = signInBody?.client?.sessions?.[0]?.id || signInBody?.response?.created_session_id || "";
+  if (!sessionId || !cookie) {
+    console.error("FAILED: the sign-in completed without returning a session id and a client cookie.");
+    process.exit(1);
+  }
+
+  /* Ours, so revoked on the way out, including on a crash — a run that dies
+   * must not leave a usable session behind it. The user's own browser session
+   * is never touched: this one was created for the run. */
+  releaseSession = async () => {
+    try {
+      await fetch(`https://api.clerk.com/v1/sessions/${sessionId}/revoke`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${SECRET}` },
+      });
+    } catch { /* best effort */ }
+  };
+  process.on("exit", () => { releaseSession(); });
+  console.log(`Signed in as ${userId} from ${origin} (${sessionId.slice(0, 12)}…); the session is revoked on exit.`);
+
+  /* Minted per case rather than once: that is the whole point. The Frontend
+   * API returns a new JWT from the live session every time it is asked. */
+  tokenFor = async () => {
+    const res = await fetch(`${fapi}/v1/client/sessions/${sessionId}/tokens?${CLERK_JS}`, {
+      method: "POST",
+      headers: { Origin: origin, Cookie: cookie },
+    });
+    if (!res.ok) throw new Error(`Clerk would not mint a token for the run (HTTP ${res.status}).`);
+    const { jwt } = await res.json();
+    if (!jwt) throw new Error("Clerk returned no JWT for the run session.");
+    return jwt;
+  };
+
+  /* A 401 from the server under test has causes a status code cannot separate:
+   * a token this server cannot verify, one minted for another origin, an
+   * account it has suspended. `iss` and `azp` are the two facts that split the
+   * first two, and reading them costs one mint. Claims only — the JWT itself
+   * is never printed. */
+  if (process.env.EVAL_DEBUG) {
+    const [, payload = ""] = (await tokenFor()).split(".");
+    const claims = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    console.log(`Token issuer: ${claims.iss} (azp: ${claims.azp || "none"}, sub: ${claims.sub}).`);
+  }
 } else if (!token) {
   console.error(
     'No credential. Either:\n' +
@@ -237,8 +303,13 @@ async function runCase(testCase) {
      * instead — a crash is a diagnosis and a graded 401 is a lie. */
     if (res.status === 401 || res.status === 403) {
       await releaseSession();
+      /* The server says WHICH refusal this is — an unverifiable token and a
+       * suspended account are both 401 and have different fixes. Printing the
+       * body is the difference between a diagnosis and a guess. */
+      const why = await res.text().catch(() => '');
       console.error(
         `\nFAILED: ${res.status} on case ${testCase.id}. The credential is not accepted by ${base}.\n` +
+        (why ? `  Server said: ${why.slice(0, 300)}\n` : '') +
         '  A static EVAL_TOKEN expires in about 60s — use EVAL_CLERK_SECRET_KEY to mint one per case.\n' +
         '  If you ARE minting: the secret key belongs to a different Clerk instance than the server\n' +
         '  under test, so its tokens are signed by a key that server does not verify with.\n' +

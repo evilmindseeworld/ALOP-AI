@@ -267,9 +267,14 @@ same defect as a checker that reads the migration files instead of the database.
     below carries what it found. The platform's own value is settled by that
     run — it found a real product defect (three search questions answered with
     no search) that 1,924 passing unit tests did not, and three graders of its
-    own that were marking correct answers wrong. **What is NOT claimed**: the
-    run measured a build 15 commits and 22 hours behind `main`, because Render
-    is not auto-deploying. The number is real and it is not a number for HEAD.
+    own that were marking correct answers wrong. **A second run, 17/22 after
+    the fix deployed, found a THIRD defect and is itself not a measurement** —
+    every case came back from the answer cache, which sits above the router, so
+    the run graded stored answers instead of the build. The dated section for
+    it explains how the latencies gave that away when the verdicts did not.
+    **What is NOT claimed**: run one measured a build 15 commits behind `main`,
+    run two measured the cache, and the citation fix has therefore never been
+    observed working against production. Neither number is a number for HEAD.
 35. **complete (enforcement; two of seven gates are inconclusive by design)** —
     Release gates for latency, cost, factuality, citations, cache/memory
     precision, tools, and acceptance. Files: `backend/lib/release-gates.js`
@@ -1334,10 +1339,74 @@ cannot be verified against production until someone deploys. The `render` CLI
 is installed at `~/.local/bin/render.exe` and is NOT authenticated — `render
 login` is a browser flow and therefore an owner action.
 
-The report is committed as `eval-runs/2026-08-18-core-v1.json` — every answer,
+The report is committed as `eval-runs/2026-08-18-core-v1-run1.json` — every answer,
 latency and per-check verdict from this run. It is checked in on purpose: the
 next run's value is the comparison, and a number with nothing to compare it to
 is a number nobody acts on.
+
+## 2026-08-18 (continued) - the second evaluation run scored better and measured nothing
+
+The router fix from the run above was deployed and the dataset re-run. **17/22,
+and it is not a number.** Every case came back from the answer cache.
+
+**HOW A 17/22 IS WORSE THAN A 15/22.** The evidence is in the latencies, not in
+the verdicts. `arith-order` went from 31,753ms to 3,414ms; `reason-bayes` from
+43,510ms to 2,966ms; the whole run's p50 fell from 11,182ms to 3,586ms. Nothing
+was optimised between the two runs. Those are cache hits replaying run one's
+answers, and the answers confirm it — `search-latest-release` returned the same
+"As of my current knowledge… v22 (codenamed Jod)" text, word for word.
+
+And the tell that makes it unambiguous: **`search-weather` FAILED the second
+time.** It was the one search case that passed on run one, having called
+`web_search` and `read_url` and cited the BBC. On run two it returned the same
+cited BBC answer and reported no tool at all, because a cache hit emits no
+`tool_start` frame. An answer that arrives without doing the work fails
+`expectTools` correctly. `toolSuccessRate` went from 1.0 to `null` for the same
+reason: nothing called a tool, so there was nothing to measure.
+
+The three fixed graders show as passes and those ARE real — the grader change
+was local, and the recorded answers they now accept are the same recorded
+answers. `factuality` reads 1.0. Everything else in the run is the cache
+describing itself.
+
+**THE DEFECT: the cache lookup sits ABOVE the router.** That is deliberate and
+correct — a hit costs zero OpenRouter requests out of the fifty this account
+gets in a day, and the gate is a security property, not an optimisation. The
+consequence nobody had drawn: a question already in the cache never reaches the
+routing decision, so a routing change is invisible to it. The citation rule
+would have gone on serving the un-searched answers for each row's ninety-day
+life with nothing anywhere marking them stale.
+
+`lib/cache-identity.js` exists for exactly this failure and its own header says
+so — "editing a prompt IS the invalidation", written after cached answers
+outlived a synthesis-prompt change. Routing was simply not in the material.
+`ROUTING_POLICY` (`ac651ce`) adds it: `routeByRule`'s own source, the
+product-model predicate, and the source of every regex the router branches on.
+Language detection and the roster helpers are deliberately excluded — dropping
+the whole cache because a seat-latency helper was edited is the
+over-invalidation that file's "family, not exact id" note is careful to avoid.
+
+**This drops the answer cache on the next deploy, and that is the intended
+effect.** Every row in it was written by a router that refused to search when
+it was asked for a citation.
+
+The guard test asserts that every `*_RE` appearing inside `routeByRule`'s source
+is present in `ROUTING_RULES`, so adding a gating rule without adding it to the
+policy is a red suite rather than a silent stale cache. Observed red by removing
+`VOLATILE_RE`.
+
+**WHAT IS STILL UNMEASURED, and this is the honest state of items 34/35**: the
+citation router fix has never been observed working against production. Run one
+measured a build without it; run two measured the cache. The third run, against
+a deployment carrying `ac651ce`, is the first that can say anything about it.
+
+**A METHOD NOTE WORTH MORE THAN THE FIX.** Both runs' headline numbers were
+plausible and both were wrong in different directions, and the thing that caught
+each was a latency, not a verdict. A 22-case pass/fail summary is not evidence
+on its own; the observations underneath it are. When an eval improves after a
+change, check that the run did the work before believing the number.
+
+Reports: `eval-runs/2026-08-18-core-v1-run1.json` and `-run2.json`.
 
 ## Owner actions this Phase 3 has accumulated
 
@@ -1375,12 +1444,14 @@ established, because it is the difference between reported and measured.
    the run creates its own session and revokes it on the way out. `EVAL_TOKEN`
    remains valid only for `--limit 1`. It costs up to 22 council turns, four of
    them full research turns.
-4. **Deploy. Render is not auto-deploying, and nothing in this repo can do it.**
-   `GET /health` reports the running commit. On 2026-08-18 it was `74d01c6`:
-   15 commits and 22 hours behind `main`, which means the whole file-attachment
-   and semantic-retrieval half of item 32, and the router fix the evaluation
-   run itself produced, are not in production. The evaluation numbers above are
-   a true measurement of that old build and are not numbers for `HEAD`. The
+4. **Deploy — STILL OPEN, for `ac651ce`. Render is not auto-deploying, and
+   nothing in this repo can do it.** `GET /health` reports the running commit.
+   It was `74d01c6` when the first evaluation ran — 15 commits and 22 hours
+   behind `main` — so that run measured a build predating the whole
+   file-attachment half of item 32. The owner deployed on request and the
+   second run reached `c9c52a8`, which is how the cache defect was found; the
+   cache-identity fix `ac651ce` that came out of it is now itself undeployed,
+   and **the third run cannot say anything until it ships.** The
    `render` CLI is installed at `~/.local/bin/render.exe` and is NOT
    authenticated; `render login` is a browser flow, which is what makes this an
    owner action rather than a task. The dashboard's **Manual Deploy → "Deploy

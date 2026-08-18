@@ -1,3 +1,59 @@
+# Handoff - 2026-08-18 (eighteenth pass): the eval scored better and measured nothing
+
+Commit `ac651ce`. Backend 1927/1927. **17/22 on the second run, and it is not a
+number.** ONE new owner action, which is the same one: deploy.
+
+- **THE SECOND RUN GRADED THE CACHE, NOT THE BUILD.** The router fix deployed,
+  the dataset re-ran, the score went up, and every case came back from the
+  answer cache. `arith-order` 31,753ms to 3,414ms; `reason-bayes` 43,510ms to
+  2,966ms; p50 11,182ms to 3,586ms. Nothing was optimised between the runs.
+  `search-latest-release` returned run one's answer word for word.
+
+- **THE TELL WAS A CASE THAT GOT WORSE.** `search-weather` was the one search
+  case that PASSED on run one — it called `web_search` and `read_url` and cited
+  the BBC. On run two it returned the same cited answer and reported no tool,
+  because a cache hit emits no `tool_start` frame. `toolSuccessRate` went 1.0 to
+  `null` for the same reason. **A verdict that improves is not evidence; the
+  latency underneath it is.**
+
+- **THE DEFECT: the answer cache sits ABOVE the router**, deliberately — a hit
+  costs zero OpenRouter requests out of fifty a day. The consequence nobody had
+  drawn is that a cached question never reaches the routing decision, so a
+  routing change is invisible to every question already stored. The citation
+  fix would have gone on serving un-searched answers for each row's ninety-day
+  life with nothing marking them stale.
+
+- **`lib/cache-identity.js` existed for exactly this and did not cover routing.**
+  Its own header says "editing a prompt IS the invalidation", written after
+  cached answers outlived a synthesis-prompt change. `ROUTING_POLICY` in
+  `lib/router.js` adds the routing decision to the material: `routeByRule`'s
+  source, the product-model predicate, and every regex the router branches on.
+  Language detection and roster helpers deliberately excluded — dropping the
+  cache over a latency helper is over-invalidation.
+
+- **This drops the answer cache on the next deploy, on purpose.** Every row in
+  it was written by a router that refused to search when asked for a citation.
+
+- **The guard test** asserts every `*_RE` inside `routeByRule`'s source appears
+  in `ROUTING_RULES`, so adding a gating rule without adding it to the policy is
+  a red suite. Observed red by removing `VOLATILE_RE`.
+
+- **WHAT IS STILL UNMEASURED.** The citation fix has never been observed working
+  against production: run one predated it, run two graded the cache. **The third
+  run, against a deployment carrying `ac651ce`, is the first that can say
+  anything about it.** Do not record a citation-rate improvement before then.
+
+- **Owner action: deploy `ac651ce`, then say so and the third run goes.** Prod
+  was on `c9c52a8` at 13:46Z. `/health` names the running commit; check it
+  against `git log` before believing any production measurement.
+
+- **METHOD, and it is the durable part.** Two runs, two plausible headline
+  numbers, both wrong in different directions, and each was caught by an
+  observation rather than a verdict. When an eval improves after a change,
+  check that the run did the work before believing the number.
+
+---
+
 # Handoff - 2026-08-18 (seventeenth pass): the evaluation ran, and it found the thing the suite could not
 
 Commits `8e21264`, `ef0c02d`. Backend 1926/1926. **15/22** on the first live
@@ -64,7 +120,7 @@ of them is that production is 15 commits behind.
   implementer does not get to make, and each firing spends 22 council turns
   against production.
 
-- **The report is committed**, at `eval-runs/2026-08-18-core-v1.json`. The next
+- **The report is committed**, at `eval-runs/2026-08-18-core-v1-run1.json`. The next
   run's value is the comparison.
 
 ---

@@ -1105,3 +1105,40 @@ numbers are real; they are just not numbers for `HEAD`.
 
 The same endpoint settles two things that were previously recorded as
 unverifiable from here: `rateLimitStore` and `instances`.
+
+## The answer cache sits above the router, so a routing change is invisible to it
+
+Measured 2026-08-18 by running the evaluation dataset twice.
+
+The cache lookup in `server.js` happens BEFORE `routeByRule` and before the
+model router — deliberately, because a hit costs zero OpenRouter requests out of
+the fifty this account gets in a day. The consequence: **a question already in
+the answer cache never reaches the routing decision.** Ship a change to which
+questions get a web search and every cached question keeps the answer it already
+had, for the row's whole ninety-day life, with nothing marking it stale.
+
+`lib/cache-identity.js` is the mechanism that prevents this and its header
+already says "editing a prompt IS the invalidation". Anything that decides HOW
+an answer is produced belongs in `cacheFingerprint`'s material. Routing did not,
+until `ROUTING_POLICY` in `lib/router.js`. `lib/router.test.js` fails if a regex
+`routeByRule` branches on is missing from `ROUTING_RULES`.
+
+**Before claiming a behaviour change works in production, ask whether the path
+you changed is below a cache.**
+
+## An eval score that improves is not evidence — read the latencies
+
+Same two runs. The first scored 15/22, the second 17/22 after a fix, and the
+second measured nothing at all: every case was a cache hit replaying the first
+run's answers. What gave it away was not a verdict but a set of numbers that
+should not have moved — `arith-order` 31,753ms to 3,414ms, `reason-bayes`
+43,510ms to 2,966ms, p50 11,182ms to 3,586ms, with no optimisation between them.
+
+The sharpest signal was a case that got WORSE: `search-weather` passed on run
+one having genuinely called `web_search`, and failed on run two returning the
+same cited text with no tool call, because a cache hit emits no `tool_start`
+frame. `toolSuccessRate` went 1.0 to `null` for the same reason.
+
+**When a run gets faster and better at once, check that it did the work.** The
+per-case observations in `eval-runs/*.json` carry latency, frame count and the
+answer text; the pass/fail summary does not.

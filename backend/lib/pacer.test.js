@@ -237,3 +237,63 @@ test('a nonsense attempt count is treated as one request', async () => {
   await assert.rejects(pacer.run('m', weird));
   assert.equal(pacer.breakerState('m'), 'open');
 });
+
+/* HALF-OPEN ADMITTED EVERY CALLER, NOT ONE PROBE.
+ *
+ * `breakerState` derives half-open from the clock alone, and nothing recorded
+ * that a probe was already in flight. The probe's own latency is the whole
+ * window: from the moment the cool-off elapses until the first call comes back
+ * — seconds against a dead model, since the failure mode being probed for is a
+ * whip waited out — every concurrent caller read 'half-open' and went through.
+ * On a multi-user process a council fan-out and every turn beside it all probed
+ * the same dead model at once, each paying the full timeout. That is an open
+ * breaker behaving exactly like a closed one, which is the failure the
+ * cool-off restart above already guards against in the sequential case.
+ *
+ * ONE probe, and the rest refused until it settles. */
+test('only one call probes a half-open breaker; the rest are refused', async () => {
+  const time = fakeTime();
+  const pacer = createPacer({ failureThreshold: 1, cooldownMs: 10_000, now: time.now, sleep: time.sleep });
+  await assert.rejects(pacer.run('m', boom));
+  assert.equal(pacer.breakerState('m'), 'open');
+
+  time.advance(10_001);
+  assert.equal(pacer.breakerState('m'), 'half-open');
+
+  /* The probe is in flight and has not answered yet — exactly the window a
+   * dead model holds open for the length of the whip. */
+  let releaseProbe;
+  const probe = pacer.run('m', () => new Promise((r) => { releaseProbe = r; }));
+  await tick();
+
+  let secondCalled = false;
+  await assert.rejects(
+    pacer.run('m', async () => { secondCalled = true; }),
+    (err) => err instanceof CircuitOpenError,
+    'a second caller must not get its own probe',
+  );
+  assert.equal(secondCalled, false, 'and must not reach the provider');
+
+  releaseProbe('ok');
+  assert.equal(await probe, 'ok');
+  assert.equal(pacer.breakerState('m'), 'closed', 'the probe still closes it');
+});
+
+/* A probe that is ABORTED must hand the slot back. The abort is not a failure —
+ * it neither closes the breaker nor restarts the cool-off — so if it also left
+ * the probe marked in flight, the breaker would refuse every caller forever
+ * with no probe running and nothing to clear it. Refusing forever is the
+ * failure this whole mechanism exists to avoid. */
+test('an aborted probe releases the probe slot', async () => {
+  const time = fakeTime();
+  const pacer = createPacer({ failureThreshold: 1, cooldownMs: 10_000, now: time.now, sleep: time.sleep });
+  await assert.rejects(pacer.run('m', boom));
+  time.advance(10_001);
+
+  const controller = new AbortController();
+  controller.abort(new Error('client left'));
+  await assert.rejects(pacer.run('m', boom, { signal: controller.signal }), /client left|provider down/);
+
+  assert.equal(pacer.breakerState('m'), 'half-open', 'an abort is not a probe result');
+  assert.equal(await pacer.run('m', ok), 'ok', 'and the next real caller can still probe');
+});

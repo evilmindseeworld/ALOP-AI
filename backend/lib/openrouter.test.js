@@ -407,3 +407,35 @@ test('a non-retryable error reports the single POST it cost', async () => {
   );
   assert.equal(calls, 1);
 });
+
+/* A 200 WHOSE BODY WILL NOT PARSE IS NOT A NETWORK ERROR.
+ *
+ * The gateway answered, the status was 200, and only the payload was garbage —
+ * but the parse threw from inside the `response.ok` branch, landed in the outer
+ * catch and was reported as `network_error` with `status: null`. The attempt
+ * then counted under `byStatus.none`, the bucket whose whole purpose is
+ * "the request produced no reply at all". A window of these would read as
+ * connectivity trouble and send someone looking at the wrong layer.
+ *
+ * Watched fail before the fix: outcome `network_error`, status `null`. */
+test('a 200 with an unparseable body keeps its status and is not called a network error', async () => {
+  global.fetch = async () => ({
+    ok: true,
+    status: 200,
+    headers: { get: () => null },
+    text: async () => 'not json',
+    json: async () => { throw new SyntaxError('Unexpected token o in JSON at position 1'); },
+  });
+
+  const attempts = [];
+  await assert.rejects(
+    callModel('https://openrouter.ai/api/v1', 'key', 'm', [], 0, 1000, 20, null, {
+      onAttempt: (row) => attempts.push(row),
+    }),
+  );
+
+  assert.equal(attempts.length, 1, 'one physical request, reported once');
+  assert.equal(attempts[0].status, 200, 'the status the gateway actually returned');
+  assert.notEqual(attempts[0].outcome, 'network_error', 'the network delivered a reply');
+  assert.notEqual(attempts[0].outcome, 'ok', 'and the reply was unusable');
+});

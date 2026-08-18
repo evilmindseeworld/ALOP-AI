@@ -186,7 +186,19 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
         signal: controller.signal,
       });
       if (response.ok) {
-        const payload = await response.json();
+        let payload;
+        try {
+          payload = await response.json();
+        } catch (parseError) {
+          /* THE GATEWAY ANSWERED; ONLY THE BODY WAS GARBAGE. Letting this throw
+           * to the outer catch reported it as `network_error` with a null
+           * status, which counted the attempt under `byStatus.none` — the
+           * bucket that means "no reply at all". Same control flow as before
+           * (the parse error still propagates and is still not retried); only
+           * the label and the status it is filed under change. */
+          reportAttempt('bad_body', response.status);
+          throw parseError;
+        }
         reportAttempt('ok', response.status);
         return structured ? normaliseCompletion(payload) : completionText(payload);
       }

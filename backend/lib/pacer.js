@@ -148,13 +148,38 @@ function createPacer(options = {}) {
    */
   const run = async (model, work, { signal, classify } = {}) => {
     const b = breakerFor(model);
+    let probing = false;
     const state = breakerState(model);
     if (state === 'open') {
       stats.refused += 1;
       throw new CircuitOpenError(model, b.openedAt + config.cooldownMs);
     }
-    if (state === 'half-open') b.halfOpen = true;
+    /* ONE PROBE, NOT EVERY CALLER. `breakerState` derives half-open from the
+     * clock alone, so between the cool-off elapsing and the probe answering —
+     * the whole length of the whip, which is precisely what a dead model makes
+     * you wait — every concurrent call read 'half-open' and went out. That is an
+     * open breaker behaving exactly like a closed one, the same failure the
+     * cool-off restart below guards against in the sequential case. `halfOpen`
+     * doubles as the in-flight mark and is cleared in `finally`, so an ABORTED
+     * probe hands the slot back: a probe slot that leaked would refuse everyone
+     * forever with nothing running to clear it. */
+    if (state === 'half-open') {
+      if (b.halfOpen) {
+        stats.refused += 1;
+        throw new CircuitOpenError(model, b.openedAt + config.cooldownMs);
+      }
+      b.halfOpen = true;
+      probing = true;
+    }
 
+    /* CONDITIONAL RISK, LIVE ONLY IF `perMinute` IS EVER SET. The probe slot is
+     * claimed above, before this line, so a probe that has to WAIT for the
+     * minute window holds the breaker shut against every other caller for the
+     * length of that sleep. Inert at the default `perMinute: 0`, where
+     * `paceMinute` returns immediately and no probe ever sleeps here — which is
+     * why it is documented rather than fixed. BEFORE SETTING
+     * `OPENROUTER_PER_MINUTE`, decide this: either claim the probe slot after
+     * pacing, or let the probe skip the minute window as one request. */
     await paceMinute(signal);
     const release = await takeSlot(signal);
     stats.admitted += 1;
@@ -192,6 +217,7 @@ function createPacer(options = {}) {
       }
       throw error;
     } finally {
+      if (probing) b.halfOpen = false;
       release();
     }
   };

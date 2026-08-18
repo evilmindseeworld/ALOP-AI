@@ -369,3 +369,41 @@ test('the streaming path reports its own POSTs, including the pre-body 429 retry
   assert.deepEqual(attempts.map((a) => [a.attempt, a.outcome]), [[1, 'http_error'], [2, 'ok']]);
   assert.equal(attempts.every((a) => a.streamed === true), true);
 });
+
+/* THE ERROR CARRIES WHAT IT SPENT.
+ *
+ * The retries in this loop are real POSTs against an account-wide daily cap,
+ * and lib/pacer.js's breaker counts one failure per CALL. Without the count on
+ * the error, a model failing on its third attempt is indistinguishable from one
+ * failing on its first, and the breaker needs five calls — fifteen requests —
+ * to open on a model that is plainly dead.
+ *
+ * Watched fail before the fix: `providerAttempts` was undefined. */
+test('an error thrown after retries reports how many POSTs it cost', async () => {
+  let calls = 0;
+  global.fetch = async () => {
+    calls += 1;
+    return response(500, { error: 'upstream' });
+  };
+
+  await assert.rejects(
+    callModel('https://openrouter.ai/api/v1', 'key', 'model:free', [], 0, 5000, 20),
+    (error) => error.providerAttempts === 3,
+  );
+  assert.equal(calls, 3, 'initial request plus the two retries');
+});
+
+/* A failure that never retried spent exactly one. */
+test('a non-retryable error reports the single POST it cost', async () => {
+  let calls = 0;
+  global.fetch = async () => {
+    calls += 1;
+    return response(400, { error: 'bad request' });
+  };
+
+  await assert.rejects(
+    callModel('https://openrouter.ai/api/v1', 'key', 'model:free', [], 0, 5000, 20),
+    (error) => error.providerAttempts === 1,
+  );
+  assert.equal(calls, 1);
+});

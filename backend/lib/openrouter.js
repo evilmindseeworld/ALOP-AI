@@ -225,6 +225,17 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
         return blank(parentSignal?.aborted ? 'aborted' : 'timeout');
       }
       reportAttempt('network_error', null);
+      /* HOW MANY PHYSICAL REQUESTS THIS FAILURE COST, carried on the error.
+       *
+       * Every throw in the block above lands here, so this is the one place
+       * that knows the attempt count at the moment the call gives up. The
+       * pacer's breaker counts one failure per `run()`, which is one CALL and
+       * not one request — so a model failing on its third attempt looked
+       * exactly like a model failing on its first, and the breaker needed
+       * `failureThreshold` calls (five) to open. At three POSTs each that is
+       * fifteen requests against the account's daily cap before a dead model
+       * is refused. The count is what makes the two agree. */
+      if (error && typeof error === 'object') error.providerAttempts = attempt + 1;
       if (!retryable) throw error;
       if (attempt >= RETRY_DELAYS_MS.length) throw error;
     } finally {

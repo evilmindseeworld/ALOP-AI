@@ -171,7 +171,14 @@ function createPacer(options = {}) {
        * for everybody. The caller may classify anything else the same way. */
       const kind = signal?.aborted ? 'ignore' : (classify ? classify(error) : 'failure');
       if (kind === 'failure') {
-        b.failures += 1;
+        /* REQUESTS, NOT CALLS. `work()` may have retried inside itself —
+         * lib/openrouter.js makes up to three POSTs per call and stamps the
+         * count on the error it finally throws. Counting one failure per call
+         * meant a chronically dead model burned `failureThreshold` × 3 real
+         * requests against the account's daily cap before this breaker opened.
+         * A failure with no count is one request, which is what every other
+         * caller's errors are. */
+        b.failures += Math.max(1, Math.floor(Number(error?.providerAttempts)) || 1);
         if (b.failures >= config.failureThreshold && b.openedAt == null) {
           b.openedAt = now();
           stats.opened += 1;

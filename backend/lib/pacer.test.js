@@ -186,3 +186,54 @@ test('a refused call consumes no minute slot and no concurrency slot', async () 
   assert.equal(after.admitted, before.admitted);
   assert.equal(after.inFlight, 0);
 });
+
+/* THE BREAKER COUNTS REQUESTS, NOT CALLS.
+ *
+ * `callModel` retries inside one `run()`, so a model failing on its third
+ * attempt cost three POSTs against the account's daily request cap while
+ * registering a single failure here. At the default threshold of five that is
+ * fifteen real requests before a dead model is refused. The error carries the
+ * count it actually spent (lib/openrouter.js stamps `providerAttempts`) and the
+ * breaker charges it.
+ *
+ * Watched fail before the fix: with `b.failures += 1` both assertions below
+ * report 'closed'. */
+test('a failure that cost three requests counts three toward the breaker', async () => {
+  const pacer = createPacer({ failureThreshold: 5 });
+  const retried = async () => {
+    const err = new Error('OpenRouter 503');
+    err.providerAttempts = 3;
+    throw err;
+  };
+  await assert.rejects(pacer.run('m', retried));
+  assert.equal(pacer.breakerState('m'), 'closed', 'three of five is not yet open');
+  await assert.rejects(pacer.run('m', retried));
+  assert.equal(pacer.breakerState('m'), 'open', 'six requests spent: the breaker opens on the second call, not the fifth');
+});
+
+/* A single-request failure is unchanged — every other caller's errors carry no
+ * count and must keep costing exactly one. */
+test('a failure with no attempt count still counts one', async () => {
+  const pacer = createPacer({ failureThreshold: 3 });
+  await assert.rejects(pacer.run('m', boom));
+  await assert.rejects(pacer.run('m', boom));
+  assert.equal(pacer.breakerState('m'), 'closed');
+  await assert.rejects(pacer.run('m', boom));
+  assert.equal(pacer.breakerState('m'), 'open');
+});
+
+/* A garbage count must not disable the breaker by making the increment NaN —
+ * every comparison against a threshold is false for NaN, so the breaker would
+ * appear to work and never open. */
+test('a nonsense attempt count is treated as one request', async () => {
+  const pacer = createPacer({ failureThreshold: 2 });
+  const weird = async () => {
+    const err = new Error('boom');
+    err.providerAttempts = 'three';
+    throw err;
+  };
+  await assert.rejects(pacer.run('m', weird));
+  assert.equal(pacer.breakerState('m'), 'closed');
+  await assert.rejects(pacer.run('m', weird));
+  assert.equal(pacer.breakerState('m'), 'open');
+});

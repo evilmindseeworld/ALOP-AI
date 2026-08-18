@@ -107,6 +107,12 @@ if (bool("validate-only")) {
  * test: a token minted on the development instance is signed by a different
  * key than production verifies with, and produces exactly the 401 this
  * function exists to prevent.
+ *
+ * AND THE INSTANCE'S ENVIRONMENT DECIDES HOW A SESSION IS OBTAINED. Clerk only
+ * allows `sessions.createSession` on a development instance; on production it
+ * answers 400 `request_invalid_for_environment`. So the run BORROWS an active
+ * session first and only creates one when there is none to borrow, which is
+ * the development case. A borrowed session is never revoked: it is the user's.
  */
 let tokenFor = async () => token;
 let releaseSession = async () => {};
@@ -115,9 +121,18 @@ if (process.env.EVAL_CLERK_SECRET_KEY) {
   const { createClerkClient } = await import('@clerk/express');
   const clerk = createClerkClient({ secretKey: process.env.EVAL_CLERK_SECRET_KEY });
 
+  /* A wrong or dev-vs-production secret key answers 401 here, and an unhandled
+   * ClerkAPIResponseError is a stack trace over a one-line configuration fact. */
+  const ask = async (what, fn) => {
+    try { return await fn(); } catch (err) {
+      console.error(`FAILED: Clerk refused ${what} (HTTP ${err?.status ?? '?'}). Check that EVAL_CLERK_SECRET_KEY belongs to the same instance as BASE.`);
+      process.exit(1);
+    }
+  };
+
   let userId = process.env.EVAL_USER_ID || '';
   if (!userId) {
-    const users = await clerk.users.getUserList({ limit: 1 });
+    const users = await ask('the user list', () => clerk.users.getUserList({ limit: 1 }));
     if (!users.data.length) {
       console.error('EVAL_CLERK_SECRET_KEY is set but the instance has no users. Set EVAL_USER_ID.');
       process.exit(1);
@@ -126,17 +141,48 @@ if (process.env.EVAL_CLERK_SECRET_KEY) {
     console.log(`No EVAL_USER_ID given; using the first user on the instance (${userId}).`);
   }
 
-  const session = await clerk.sessions.createSession({ userId });
+  /* Borrow before creating. A borrowed session is NOT revoked on the way out —
+   * it is the user's own and revoking it signs them out of their browser. */
+  const active = (await ask('the session list', () => clerk.sessions.getSessionList({ userId, status: 'active' }))).data;
+  let sessionId = active.length ? active[0].id : '';
+
+  if (sessionId) {
+    console.log(`Borrowing an existing session (${sessionId.slice(0, 12)}…). Not revoked on exit: it is the user's own.`);
+  } else {
+    let created;
+    try {
+      created = await clerk.sessions.createSession({ userId });
+    } catch (err) {
+      console.error([
+        ``,
+        `FAILED: no active session for ${userId}, and one could not be created.`,
+        `  ${err?.message || err}`,
+        ``,
+        `Clerk refuses sessions.createSession outside development ("Request only valid for`,
+        `development instances"), so a PRODUCTION run needs a session that already exists.`,
+        ``,
+        `Either:`,
+        `  - sign in to the app as ${userId} in a browser, then re-run this; or`,
+        `  - set EVAL_USER_ID to a user who is signed in; or`,
+        `  - point BASE at a server on a DEVELOPMENT Clerk instance and use that`,
+        `    instance's sk_test_ key, where a session can be created outright.`,
+        ``,
+      ].join(String.fromCharCode(10)));
+      process.exit(1);
+    }
+    sessionId = created.id;
+    /* Ours, so revoked on the way out, including on a crash — a run that dies
+     * must not leave a usable session behind it. */
+    releaseSession = async () => {
+      try { await clerk.sessions.revokeSession(sessionId); } catch { /* best effort */ }
+    };
+    process.on('exit', () => { releaseSession(); });
+    console.log(`Created a session (${sessionId.slice(0, 12)}…); it is revoked on exit.`);
+  }
+
   /* Minted per case rather than once: that is the whole point. `getToken`
    * returns a new JWT from the live session every time it is called. */
-  tokenFor = async () => (await clerk.sessions.getToken(session.id)).jwt;
-  /* Revoked on the way out, including on a crash — a run that dies must not
-   * leave a usable production session behind it. */
-  releaseSession = async () => {
-    try { await clerk.sessions.revokeSession(session.id); } catch { /* best effort */ }
-  };
-  process.on('exit', () => { releaseSession(); });
-  console.log(`Minting a fresh session token per case (session ${session.id.slice(0, 12)}…).`);
+  tokenFor = async () => (await clerk.sessions.getToken(sessionId)).jwt;
 } else if (!token) {
   console.error(
     'No credential. Either:\n' +

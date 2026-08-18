@@ -1065,3 +1065,43 @@ When you add one, mutate the source and watch it fail. The census guard passed
 against a one-line `if (USE_PG_RATE_LIMIT) startInstanceCensus(...)` on its
 first version, because it only scanned braced blocks — a guard that misses the
 shortest form of the bug is decoration.
+
+## A Clerk 401 explains itself in a header, not in the body
+
+Measured 2026-08-18, two passes into an evaluation run that could not start.
+
+The server's 401 body is `{"error":"Authentication required","code":
+"unauthenticated"}` and that is all it will ever say. Clerk writes the actual
+reason onto the response:
+
+    x-clerk-auth-status:  signed-out
+    x-clerk-auth-reason:  token-invalid-authorized-parties
+    x-clerk-auth-message: Invalid JWT Authorized party claim (azp) undefined.
+                          Expected "https://alop-ai.com,…"
+
+Read those three before theorising. The fact they carried here: **a token minted
+through the Clerk BACKEND API has no `azp` claim**, and `server.js` mounts
+`clerkMiddleware` with `authorizedParties` from the CORS origin list, so no
+back-minted token can ever authenticate against this server. `azp` is written by
+the FRONTEND API from the `Origin` of the request that asks for the token. A
+script that needs a real session therefore has to sign in the way a browser
+does — sign-in token from the Backend API, redeemed at the Frontend API with an
+`Origin` header — which is what `backend/scripts/run-evals.mjs` now does and is
+the working example to copy.
+
+Related: `sessions.createSession` is refused on a PRODUCTION instance (400
+`request_invalid_for_environment`). It is a development-only call.
+
+## `/health` says which commit is running, and it has been a day behind
+
+`GET https://alop-ai.onrender.com/health` needs no authentication and answers
+`{"status","time","commit","instances","limitsMultiplied","rateLimitStore"}`.
+
+**Check `commit` against `git log` before trusting any measurement taken against
+production.** On 2026-08-18 it was 15 commits and 22 hours behind `main` —
+Render was not auto-deploying — and the first live evaluation run therefore
+graded a build that predated half the features the ledger describes. The run's
+numbers are real; they are just not numbers for `HEAD`.
+
+The same endpoint settles two things that were previously recorded as
+unverifiable from here: `rateLimitStore` and `instances`.

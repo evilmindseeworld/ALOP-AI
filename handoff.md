@@ -1,3 +1,74 @@
+# Handoff - 2026-08-18 (seventeenth pass): the evaluation ran, and it found the thing the suite could not
+
+Commits `8e21264`, `ef0c02d`. Backend 1926/1926. **15/22** on the first live
+evaluation run against production. No migration. TWO new owner actions, and one
+of them is that production is 15 commits behind.
+
+- **THE RUNNER COULD NOT AUTHENTICATE, AND NO KEY WOULD HAVE FIXED IT.** Every
+  token the Clerk BACKEND API mints has no `azp` claim, and `server.js` mounts
+  `clerkMiddleware` with `authorizedParties`. Clerk says so in a header, not in
+  the body: `x-clerk-auth-message: Invalid JWT Authorized party claim (azp)
+  undefined. Expected "https://alop-ai.com,…"`. `azp` is written by the
+  FRONTEND API from the `Origin` of the request asking for the token, so it
+  cannot be added from the back. **When a Clerk 401 makes no sense, read
+  `x-clerk-auth-reason` and `x-clerk-auth-message`** — two passes were spent on
+  the body, which says only "Authentication required".
+
+- **The run signs in the way a browser does now.** Sign-in token from the
+  Backend API, redeemed at the Frontend API with `Origin` set to the instance's
+  primary domain, one token minted per case from that session. Session created
+  for the run and revoked on exit; the user's browser session is never touched,
+  and nobody has to be signed in first. Frontend API host and origin come from
+  `GET /v1/domains`. `@clerk/express` is gone from the script: four `fetch`
+  calls.
+
+- **THE PRODUCT DEFECT: three of four search cases were answered with no
+  search.** "What happened in the news today? Cite your sources." came back as
+  "I do not have access to live news feeds", zero citations. The weather case
+  searched and cited, so the tool is wired and working and what failed was the
+  DECISION. The planner's prompt is not the lever — it already names news,
+  versions and prices and already carries "latest react version" as an example.
+  `CITATION_DEMAND_RE` in `lib/router.js` answers instead: a citation cannot
+  come from memory, so asking for one is an explicit request for the web. Same
+  move `namesSpecificModel` made for SKUs, except from a measurement.
+
+- **Three of the dataset's own graders were marking correct answers wrong.**
+  `mustMatch` is AND, and `fact-speed-of-light` listed two alternatives as two
+  patterns; `fact-water-formula` could not match the `₂` in `H₂O`;
+  `reason-bayes` demanded the literal phrase "base rate" from a correct
+  base-rate answer. Every fixed pattern was checked against the recorded answer
+  AND against a wrong answer it must still refuse. **A dataset is a program.**
+
+- **`arith-order` took 31.7s for `8 + 6*3 - 4`** against a 30s cap, in a run
+  where the other two arithmetic cases took 8.6s and 1.2s. One sample, no
+  diagnosis. Recorded, not fixed.
+
+- **PRODUCTION IS 15 COMMITS AND 22 HOURS BEHIND `main`.** `GET /health` reports
+  the running commit; it was `74d01c6`. Render is not auto-deploying — the note
+  calling it "on but slow" is wrong. So the 15/22 is a true measurement of a
+  build that predates the whole file-attachment half of item 32, and the router
+  fix above cannot be checked against production until someone deploys. The
+  `render` CLI at `~/.local/bin/render.exe` is not authenticated and `render
+  login` is a browser flow. **Check `/health`'s commit against `git log` before
+  believing anything measured against production.**
+
+- **`RATE_LIMIT_STORE=postgres` is now MEASURED, not reported.** `/health`
+  answers `"rateLimitStore":"postgres"` with no authentication. The ledger had
+  recorded it as unverifiable from here on the belief that only the admin
+  terminal could read it; that was wrong.
+
+- **Owner actions: deploy, and decide item 30's cadence.** The three original
+  ones are closed. Item 30's remainder — a queued evaluation producer — is now
+  decision-gated rather than sequenced: how often it fires, which service user
+  it signs in as, and what a failing report does are three decisions an
+  implementer does not get to make, and each firing spends 22 council turns
+  against production.
+
+- **The report is committed**, at `eval-runs/2026-08-18-core-v1.json`. The next
+  run's value is the comparison.
+
+---
+
 # Handoff - 2026-08-18 (sixteenth pass): the eval runner could not start on production
 
 Commit `318bdc3`. Backend 1924/1924. No migration, no deploy, no new owner

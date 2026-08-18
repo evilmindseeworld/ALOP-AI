@@ -173,7 +173,16 @@ means it was deliberately not started in this continuation.
     platform exists now (items 34/35) but has never been run once against a
     real answer, and queueing a producer for something that has not run once is
     building the second thing before the first works. This item closes when
-    owner action 3 does.
+    owner action 3 does. **2026-08-18, second entry: the run happened, and this
+    item is now DECISION-GATED rather than sequenced.** A queued evaluation
+    producer is a scheduled spend against production — 22 council turns, four
+    of them full research turns, per firing — and it needs a session, which
+    means a dedicated service user on the Clerk instance for the worker to sign
+    in as. Neither the cadence nor the service user is a thing an implementer
+    gets to pick. What the run itself proved is that the answer is worth
+    having: it found a routing defect the whole unit suite could not see. The
+    question to answer before this is built is "how often, as whom, and what
+    happens to the report".
 31. **complete** — Curated brain questions are replaced by ranked durable cache
     candidates using demand, miss cost, freshness, quality, quota pressure, and
     live account quota. Files: `backend/lib/usage-prefetch.js`,
@@ -246,17 +255,21 @@ same defect as a checker that reads the migration files instead of the database.
       uploaded sheet, a plugin that runs anything. That is the first thing
       whoever adds one should read, and the decision above is the one they will
       have to make first.
-34. **complete (the platform and the first dataset; one live run is owed)** —
+34. **complete, and RUN** —
     Evaluation platform and datasets. Files: `backend/lib/evaluation.js` (new),
     `backend/lib/evaluation.test.js` (new), `backend/evals/core-v1.json` (new),
     `backend/scripts/run-evals.mjs` (new), `backend/package.json`. Evidence: 17
     grader/metric tests pass and the shipped dataset is validated BY a test, so
     a typo'd expectation key is a red suite rather than a case that silently
     grades nothing. `npm run evals:validate` reports 22 cases and spends
-    nothing. **What is NOT claimed**: no live run has been made — the council
-    route is behind `requireAuth` and needs a real Clerk session JWT, so the
-    dataset has never been graded against a real answer. That is the one owner
-    action this item leaves.
+    nothing. **The live run happened on 2026-08-18** against
+    `https://alop-ai.onrender.com`: 15/22 cases passed, and the dated section
+    below carries what it found. The platform's own value is settled by that
+    run — it found a real product defect (three search questions answered with
+    no search) that 1,924 passing unit tests did not, and three graders of its
+    own that were marking correct answers wrong. **What is NOT claimed**: the
+    run measured a build 15 commits and 22 hours behind `main`, because Render
+    is not auto-deploying. The number is real and it is not a number for HEAD.
 35. **complete (enforcement; two of seven gates are inconclusive by design)** —
     Release gates for latency, cost, factuality, citations, cache/memory
     precision, tools, and acceptance. Files: `backend/lib/release-gates.js`
@@ -1228,16 +1241,116 @@ has been uploaded, promoted, searched from a second chat, or downloaded by a
 real user. Every property above is verified against the catalog, against a live
 SQL probe, or against tests - not against a person using the feature.
 
+## 2026-08-18 (continued) - items 34/35: the first live evaluation run, and the two things it found that the suite could not
+
+The dataset ran against production. **15/22.** The run is the evidence for
+items 34 and 35 and the reason item 30 changed shape; it is also the first
+number in this repo that came from a real answer rather than from a test.
+
+**IT COULD NOT AUTHENTICATE AT ALL, AND THE REASON WAS IN A HEADER.** Two
+shapes of credential were tried against production before one worked, and both
+failures are properties of the platform rather than mistakes to be avoided next
+time:
+
+- `sessions.createSession` is refused on a production Clerk instance: 400
+  `request_invalid_for_environment`. Development only. (Fixed in `318bdc3` by
+  borrowing an existing session instead.)
+- Every token the Clerk **Backend** API mints carries no `azp` claim, and
+  `server.js` mounts `clerkMiddleware` with `authorizedParties` set from the
+  CORS origin list. So the borrow worked and every case still came back 401.
+  The 401 body says only "Authentication required"; the reason is in a header
+  the runner was not reading:
+
+      x-clerk-auth-message: Invalid JWT Authorized party claim (azp) undefined.
+        Expected "https://alop-ai.com,https://www.alop-ai.com,…"
+      x-clerk-auth-reason: token-invalid-authorized-parties
+
+  `azp` is written by the **Frontend** API from the `Origin` of the request
+  that asks for the token, so it cannot be added from the back. No
+  Backend-API-minted token can ever pass this server, and no key would have
+  fixed it. `8e21264` makes the runner sign in the way a browser does: a
+  sign-in token from the Backend API, redeemed at the Frontend API with
+  `Origin` set to the instance's primary domain, then one token minted per case
+  from that session. The session is created for the run and revoked on exit, so
+  the user's own browser session is never touched. The Frontend API host and
+  the origin come from `GET /v1/domains`.
+
+**THE PRODUCT DEFECT: three of four search cases were answered with no search.**
+`search-current-event`, `search-latest-release` and `search-price` produced no
+`web_search` call at all. The news question came back as *"I do not have access
+to live news feeds or real-time internet browsing"*, with zero citations, to a
+question that ended "Cite your sources." The fourth search case, the weather
+one, called `web_search` and `read_url` and cited — so the tool is wired,
+reachable and working, and what failed was the decision to use it.
+
+The planner's prompt was not the lever, and this is the second time that
+conclusion has been reached here. It already names news, versions and prices,
+already says "if in doubt, search", and already carries "latest react version"
+as a worked example — and the Node LTS question still came back NO. So the rule
+router answers instead: `CITATION_DEMAND_RE` in `lib/router.js` (`ef0c02d`).
+A citation cannot be produced from memory, so a request for one is an explicit
+request for the web, handled by the same branch as "search the web" and sitting
+below the identity rule and the product-SKU rule. Refused for code, creative
+work and pasted URLs. Both new tests were observed red — the positive one with
+the branch disabled, the guard one with its exclusions removed.
+
+**AND THREE OF ITS OWN GRADERS WERE MARKING CORRECT ANSWERS WRONG.** A dataset
+is a program and it had bugs:
+
+- `mustMatch` is AND, and `fact-speed-of-light` listed two patterns that were
+  meant as alternatives — `299[,.\s]?792` **and** `3\s*[x×]\s*10`. "exactly
+  299,792,458 metres per second" is a correct answer that could not pass.
+  (`reason-bayes` in the same file already used one alternated pattern, so the
+  author knew; this was a slip, not a misunderstanding.)
+- `fact-water-formula` wanted `h…2…o`. The answer was `H₂O` — a unicode
+  subscript, which never matches `2`.
+- `reason-bayes` required the literal phrase "base rate" from an answer that
+  worked the whole calculation through prevalence and false positives and
+  landed on 0.98%. A `mustInclude` on jargon grades vocabulary, not reasoning.
+
+Every fixed pattern was checked against the recorded answer AND against a wrong
+answer it must still refuse, because a grader loosened until it passes is worse
+than no grader.
+
+**The fourth non-product failure is real and unexplained**: `arith-order` took
+31,753ms for `8 + 6*3 - 4` against a 30s cap, while `arith-percent` took 8.6s
+and `arith-power` 1.2s in the same run. One sample, no diagnosis, recorded
+rather than fixed.
+
+**Gates, on the real numbers**: acceptance 0.682 against 0.9 FAIL, factuality
+0.636 against 0.95 FAIL, citations 0.75 against 1.0 FAIL, latency-p95 35,249ms
+against 75,000 PASS, tools 1.0 PASS, cost-per-turn and cache-precision
+`inconclusive` exactly as designed. Latency p50 was 11,182ms. The three grader
+bugs account for most of the factuality number and the search defect for the
+citations one; **nothing in this pass re-ran the dataset to produce a corrected
+figure, because the fixes are not deployed** (see below).
+
+**THE RUN MEASURED A 22-HOUR-OLD BUILD.** `/health` reports the running commit:
+`74d01c6`, which is 15 commits behind `main` and dated 2026-08-17 15:16 +0400.
+Render is not auto-deploying, and the note in the memory file calling it "on but
+slow" is wrong. Everything above is a true measurement of what production was
+serving; it is not a measurement of `HEAD`, and the router fix in `ef0c02d`
+cannot be verified against production until someone deploys. The `render` CLI
+is installed at `~/.local/bin/render.exe` and is NOT authenticated — `render
+login` is a browser flow and therefore an owner action.
+
+The report is committed as `eval-runs/2026-08-18-core-v1.json` — every answer,
+latency and per-check verdict from this run. It is checked in on purpose: the
+next run's value is the comparison, and a number with nothing to compare it to
+is a number nobody acts on.
+
 ## Owner actions this Phase 3 has accumulated
 
-ONE remains. Two closed on 2026-08-18; note the difference in how each was
+All three of the original three are closed. TWO NEW ONES arrived with the
+evaluation run and are numbered 4 and 5. Note the difference in how each was
 established, because it is the difference between reported and measured.
 
-1. ~~**Set `RATE_LIMIT_STORE=postgres` in Render.**~~ **REPORTED SET by the
-   owner, 2026-08-18. NOT MEASURED from here** — the value is readable only
-   through the admin terminal against a live session, so nothing in this repo
-   has confirmed it. `/admin env` shows `rateLimitStore` if a check is wanted.
-   The census warns if it is ever wrong, which is what it is for.
+1. ~~**Set `RATE_LIMIT_STORE=postgres` in Render.**~~ **MEASURED, 2026-08-18.**
+   It was recorded here as reported-not-measured, on the belief that the value
+   was readable only through the admin terminal. It is not: `GET /health`
+   answers `"rateLimitStore":"postgres"` unauthenticated, from production, and
+   that is the whole check. The census warns if it is ever wrong, which is what
+   it is for.
 2. ~~**Apply `027_users_stripe_event_at.sql`.**~~ **APPLIED AND VERIFIED,
    2026-08-18**, through the Supabase MCP `apply_migration`. Confirmed in the
    live catalog: `users.stripe_event_at`, `timestamp with time zone`, nullable,
@@ -1252,14 +1365,35 @@ established, because it is the difference between reported and measured.
    the reordering bug never had one to strand. The guard is prophylactic, and
    saying so is the point — "we fixed it" would imply a repair that did not
    happen.
-3. **Run the evaluation dataset once against a real session.**
-   **Use `EVAL_CLERK_SECRET_KEY`, NOT `EVAL_TOKEN`** — a pasted session JWT
-   lives ~60s and cannot survive a 22-case run; `1e01966` made that abort
-   rather than grade, and added per-case minting. The command is
+3. ~~**Run the evaluation dataset once against a real session.**~~ **DONE AND
+   MEASURED, 2026-08-18**: 15/22 against `https://alop-ai.onrender.com`. The
+   dated section above carries what it found and what it cost. The command, now
+   that the runner signs in for itself, is
    `EVAL_CLERK_SECRET_KEY=sk_… BASE=https://alop-ai.onrender.com npm run evals`
    from `backend/`, with the secret key from the Clerk dashboard of the SAME
-   instance the server runs on (a development key against production produces
-   exactly the 401 this aborts on). `EVAL_TOKEN` remains valid only for
-   `--limit 1`. Until that happens items 34 and 35 are a platform with no
-   measurement in it, and the gates have never judged a real answer. It costs up
-   to 22 council turns, four of them full research turns.
+   instance the server runs on. Nobody needs to be signed in anywhere first:
+   the run creates its own session and revokes it on the way out. `EVAL_TOKEN`
+   remains valid only for `--limit 1`. It costs up to 22 council turns, four of
+   them full research turns.
+4. **Deploy. Render is not auto-deploying, and nothing in this repo can do it.**
+   `GET /health` reports the running commit. On 2026-08-18 it was `74d01c6`:
+   15 commits and 22 hours behind `main`, which means the whole file-attachment
+   and semantic-retrieval half of item 32, and the router fix the evaluation
+   run itself produced, are not in production. The evaluation numbers above are
+   a true measurement of that old build and are not numbers for `HEAD`. The
+   `render` CLI is installed at `~/.local/bin/render.exe` and is NOT
+   authenticated; `render login` is a browser flow, which is what makes this an
+   owner action rather than a task. The dashboard's **Manual Deploy → "Deploy
+   latest commit"** needs no key and is what has been used before; the deploy
+   hook is faster and its key is deliberately written down nowhere. **Check
+   `/health`'s commit against `git log` before trusting any measurement taken
+   against production.**
+5. **Decide item 30's remainder: a scheduled evaluation run.** The platform has
+   now proved its worth — one run found a routing defect that 1,926 passing
+   unit tests could not. Queueing it is three decisions nobody but the owner
+   can make: how often it fires (each firing is up to 22 council turns, four of
+   them research turns, spent against production), which user it signs in as (a
+   dedicated service user on the Clerk instance, since the runner needs a real
+   session), and what happens to a report that fails a gate. Until those are
+   answered, building the producer is building a spend schedule nobody agreed
+   to.

@@ -21,7 +21,15 @@ function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null
    * see the difference. */
   const providerAttempts = [];
   const MAX_ATTEMPT_RECORDS = 200;
-  const attemptTotals = { total: 0, ok: 0, failed: 0, retries: 0, byOutcome: {}, byProvider: {} };
+  /* `byStatus` EXISTS BECAUSE `byOutcome` COULD NOT ANSWER THE ONLY QUESTION
+   * ANYONE ASKED OF IT. Every non-200 collapsed to the single string
+   * `http_error`, so a production window showing 61-72% of provider requests
+   * failing said nothing about WHY — and the two live candidates want opposite
+   * fixes. A 429 is a rate limit and the cure is pacing (lib/pacer.js, whose
+   * `perMinute` is off by default); a 5xx is the provider being down and pacing
+   * does nothing for it. The status was already captured per attempt and thrown
+   * away at the snapshot boundary, one field short of a diagnosis. */
+  const attemptTotals = { total: 0, ok: 0, failed: 0, retries: 0, byOutcome: {}, byStatus: {}, byProvider: {} };
   /* Tool executions, by name and outcome. The agent loop already reports rounds
    * and call counts; what nothing recorded is whether the calls WORKED, which
    * is the number that decides whether a tool is worth its tokens. */
@@ -171,6 +179,16 @@ function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null
       const provider = String(row.provider || 'openrouter');
       attemptTotals.byOutcome[outcome] = (attemptTotals.byOutcome[outcome] || 0) + 1;
       attemptTotals.byProvider[provider] = (attemptTotals.byProvider[provider] || 0) + 1;
+      /* Counted with the other EXACT totals rather than with the capped detail
+       * below: a retry storm is exactly the case whose statuses matter most, and
+       * it is the case the cap truncates. The key space is bounded by the set of
+       * HTTP statuses a gateway returns, so this cannot grow like the detail
+       * array can. Attempts that never got a response — a timeout, a socket
+       * error — carry no status and are counted under 'none' rather than being
+       * dropped, because "the request produced no reply at all" is itself one of
+       * the answers this is here to distinguish. */
+      const statusKey = Number.isFinite(row.status) ? String(row.status) : 'none';
+      attemptTotals.byStatus[statusKey] = (attemptTotals.byStatus[statusKey] || 0) + 1;
       /* The COUNTS above are exact; the per-attempt DETAIL below is capped. A
        * retry storm must not grow this object without limit, and the counts are
        * what the spend ceiling settles against — losing detail costs a
@@ -319,6 +337,7 @@ function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null
         providerAttempts: {
           ...attemptTotals,
           byOutcome: { ...attemptTotals.byOutcome },
+          byStatus: { ...attemptTotals.byStatus },
           byProvider: { ...attemptTotals.byProvider },
           truncatedDetail: providerAttempts.length >= MAX_ATTEMPT_RECORDS,
         },

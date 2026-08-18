@@ -188,3 +188,53 @@ test("the answer's provenance is recorded so a rescued answer is not silently ca
   t.recordTextSource("reasoning");
   assert.equal(t.snapshot({}).textSource, "reasoning");
 });
+
+/* THE STATUS HAD TO REACH THE STORED ROW.
+ *
+ * `byOutcome` collapsed every non-200 into `http_error`, so a production window
+ * where 61-72% of provider requests failed could not say whether they were 429s
+ * or 5xx — and those want opposite fixes (pace vs. change the roster). The
+ * status was captured per attempt and dropped at the snapshot boundary.
+ *
+ * Watched fail before the fix: `byStatus` was undefined. */
+test('the snapshot reports provider failures by HTTP status', () => {
+  const t = createTurnTelemetry();
+  t.recordProviderAttempt({ provider: 'openrouter', outcome: 'http_error', status: 429, attempt: 1 });
+  t.recordProviderAttempt({ provider: 'openrouter', outcome: 'http_error', status: 429, attempt: 2 });
+  t.recordProviderAttempt({ provider: 'openrouter', outcome: 'http_error', status: 503, attempt: 3 });
+  t.recordProviderAttempt({ provider: 'openrouter', outcome: 'ok', status: 200, attempt: 1 });
+
+  const snap = t.snapshot();
+  assert.deepEqual(snap.providerAttempts.byStatus, { 429: 2, 503: 1, 200: 1 });
+  assert.equal(snap.providerAttempts.failed, 3);
+});
+
+/* An attempt that never got a reply carries no status. Counting it under 'none'
+ * rather than dropping it matters: "no reply at all" is one of the answers this
+ * field exists to distinguish from a rate limit. */
+test('attempts with no HTTP status are counted, not dropped', () => {
+  const t = createTurnTelemetry();
+  t.recordProviderAttempt({ provider: 'openrouter', outcome: 'network_error', status: null, attempt: 1 });
+  t.recordProviderAttempt({ provider: 'openrouter', outcome: 'timeout', attempt: 1 });
+
+  const snap = t.snapshot();
+  assert.deepEqual(snap.providerAttempts.byStatus, { none: 2 });
+  assert.equal(
+    Object.values(snap.providerAttempts.byStatus).reduce((a, b) => a + b, 0),
+    snap.providerAttempts.total,
+    'every attempt appears exactly once under some status key',
+  );
+});
+
+/* The per-attempt DETAIL is capped at 200 records; these counts are not. A retry
+ * storm is precisely the case whose statuses matter most and precisely the case
+ * the cap truncates, so the two must not share a limit. */
+test('statuses stay exact past the detail cap', () => {
+  const t = createTurnTelemetry();
+  for (let i = 0; i < 250; i += 1) {
+    t.recordProviderAttempt({ provider: 'openrouter', outcome: 'http_error', status: 429, attempt: 1 });
+  }
+  const snap = t.snapshot();
+  assert.equal(snap.providerAttempts.byStatus['429'], 250, 'counts are exact');
+  assert.equal(snap.providerAttempts.truncatedDetail, true, 'while the detail array was capped');
+});

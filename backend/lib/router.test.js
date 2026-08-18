@@ -478,6 +478,51 @@ test("an explicit web-search instruction deterministically produces a bounded qu
   assert.equal(long.queries[0].length, 200);
 });
 
+/* THE FOUR QUESTIONS ARE THE EVALUATION DATASET'S OWN, VERBATIM, and three of
+ * them were answered with no search at all by production on 2026-08-18 — the
+ * first live eval run. Keeping the exact wording is the point: a paraphrase
+ * would test the rule against a sentence that never failed. */
+test("asking for a citation is asking for the web, and the planner was measured missing it", () => {
+  const asked = [
+    ["What happened in the news today? Cite your sources.", "What happened in the news today?"],
+    [
+      "What is the latest stable Node.js LTS version right now? Link where you read it.",
+      "What is the latest stable Node.js LTS version right now?",
+    ],
+    [
+      "What does OpenRouter currently charge for Claude Sonnet input tokens? Cite the page.",
+      "What does OpenRouter currently charge for Claude Sonnet input tokens?",
+    ],
+    ["What is the weather in London today? Include a source link.", "What is the weather in London today?"],
+  ];
+  for (const [question, query] of asked) {
+    assert.deepEqual(
+      routeByRule(question, { hasConversationContext: false }),
+      { memory: false, queries: [query] },
+      question,
+    );
+  }
+});
+
+test("a citation demand does not drag code, creative work or the identity question to the web", () => {
+  const refused = [
+    "add a link to the source file in this snippet: const a = 1;",
+    "Write a haiku about rain with a link to nowhere",
+    'translate "cite" into French',
+    "What is ALOP-AI? Cite sources.",
+  ];
+  for (const text of refused) {
+    const route = routeByRule(text, { hasConversationContext: false });
+    assert.equal(route?.queries ?? null, null, text);
+  }
+  /* Memory is decided above every web rule, so "cite it" about this
+   * conversation is still a memory question and not a search. */
+  assert.deepEqual(
+    routeByRule("What did I ask you earlier? Cite it.", { hasConversationContext: true }),
+    { memory: true, queries: null },
+  );
+});
+
 test("first-party ALOP-AI identity questions never go to web search", () => {
   for (const text of [
     "What is ALOP-AI?",

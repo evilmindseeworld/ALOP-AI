@@ -357,6 +357,31 @@ const VOLATILE_RE =
   /\b(?:latest|current(?:ly)?|today|tonight|right now|this (?:week|month|year)|still|newest|recent|upcoming|price|cost|stock|available|availability|version|release|maintained|ceo|president|prime minister|law|regulation|policy|news|weather|score|schedule|market|funding|ownership|best|recommend|under\s+(?:\$|\d)|(?:19|20)\d{2})\b/i;
 const URL_RE = /\b(?:https?:\/\/|www\.)/i;
 const EXPLICIT_WEB_SEARCH_RE = /\b(?:search|browse)\s+(?:the\s+)?(?:live\s+)?web\b|\blook\s+(?:it|this|that)\s+up\s+online\b/i;
+/* ASKING FOR A CITATION IS ASKING FOR THE WEB, and the planner does not hear it.
+ *
+ * MEASURED by the first live evaluation run, 2026-08-18, against production:
+ * three of the four search cases were answered with NO `web_search` at all.
+ * "What happened in the news today? Cite your sources." came back as "I do not
+ * have access to live news feeds", with zero citations. "What is the latest
+ * stable Node.js LTS version right now? Link where you read it." was answered
+ * from memory, with a link to the download page as decoration. The fourth case,
+ * the weather one, did search — so the tool is wired and reachable, and what
+ * failed was the decision.
+ *
+ * The planner's prompt is not the lever. It already names news, versions and
+ * prices, already says "if in doubt, search", and already carries "latest react
+ * version" as a worked example — and the Node LTS question still came back NO.
+ * That is the same conclusion `namesSpecificModel` reached on 2026-08-17 about
+ * product SKUs, arrived at from a measurement rather than a report.
+ *
+ * A citation cannot be produced from memory. A request for one is therefore an
+ * explicit request for the web, handled by the same branch as "search the web".
+ * It sits BELOW the identity question — "what is ALOP-AI, with sources" is
+ * still answered from the identity prompt — and it is refused for code,
+ * transformations and creative work, where "add a link to the source file" is
+ * not a research request. */
+const CITATION_DEMAND_RE =
+  /\bcit(?:e|es|ed|ing|ation|ations)\b|\b(?:include|provide|give|add|show|post|with|link)\s+(?:me\s+)?(?:a\s+|the\s+|your\s+)?(?:source|sources|link|links|url|urls)\b|\blink\s+(?:to\s+)?where\b|\bwhere\s+did\s+you\s+(?:read|find|get)\b/i;
 /* First-party product questions are answered from the platform identity prompt,
  * not from web snippets about unrelated companies with similar names. Keep an
  * explicit request to search authoritative: that branch runs before this one. */
@@ -563,10 +588,13 @@ function routeByRule(text, { hasConversationContext = false } = {}) {
    * for a request that literally said "Search the web". Remove a separate
    * command sentence when possible; otherwise keep the bounded user text as
    * the query. Provider adapters serialize it safely and clamp again. */
-  if (EXPLICIT_WEB_SEARCH_RE.test(t)) {
+  /* Shared by the two branches below: drop the sentence that carries the
+   * instruction, keep the question. "What happened in the news today? Cite your
+   * sources." searches for the news, not for the word "cite". */
+  const askedForTheWeb = (matcher) => {
     const withoutCommand = t
       .split(/(?<=[.!?])\s+/)
-      .filter((sentence) => !EXPLICIT_WEB_SEARCH_RE.test(sentence))
+      .filter((sentence) => !matcher.test(sentence))
       .join(" ")
       .trim();
     const query = (withoutCommand || t)
@@ -575,7 +603,9 @@ function routeByRule(text, { hasConversationContext = false } = {}) {
       .trim()
       .slice(0, 200);
     return { memory: false, queries: query ? [query] : null };
-  }
+  };
+
+  if (EXPLICIT_WEB_SEARCH_RE.test(t)) return askedForTheWeb(EXPLICIT_WEB_SEARCH_RE);
   if (ALOP_IDENTITY_QUESTION_RE.test(t)) return { memory: false, queries: null };
 
   /* A named product model forces the search, and it is checked ABOVE the
@@ -586,8 +616,18 @@ function routeByRule(text, { hasConversationContext = false } = {}) {
    * This is the one rule here that OVERRIDES rather than pre-empts the planner;
    * everything else in this function only saves it a call. */
   const stableShape = CODE_RE.test(t) || DIRECT_TRANSFORM_RE.test(t) || CREATIVE_RE.test(t);
+
   if (!stableShape && !URL_RE.test(t) && namesSpecificModel(t)) {
     return { memory: false, queries: modelSearchQueries(t) };
+  }
+
+  /* See CITATION_DEMAND_RE. Above the volatility deferral for the same reason
+   * the product-model rule is: deferring hands the decision back to the
+   * component the eval run measured getting it wrong. BELOW that rule, because
+   * a named SKU gets a better query than the sentence does. A pasted URL is
+   * excluded — it already means "read this page", which is a different path. */
+  if (!stableShape && !URL_RE.test(t) && CITATION_DEMAND_RE.test(t)) {
+    return askedForTheWeb(CITATION_DEMAND_RE);
   }
 
   if (VOLATILE_RE.test(t) || URL_RE.test(t)) return null;

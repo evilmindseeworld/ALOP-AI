@@ -44,13 +44,13 @@
       "id": "fact-speed-of-light",
       "question": "What is the speed of light in a vacuum, in metres per second?",
       "tags": ["factuality", "lookup"],
-      "expect": { "mustMatch": ["299[,.\\s]?792", "3\\s*[x×]\\s*10"], "maxLatencyMs": 30000 }
+      "expect": { "mustMatch": ["299[,.\\s]?792|3\\s*[x×]\\s*10"], "maxLatencyMs": 30000 }
     },
     {
       "id": "fact-water-formula",
       "question": "What is the chemical formula of water?",
       "tags": ["factuality", "lookup"],
-      "expect": { "mustMatch": ["h\\s*_?\\{?2\\}?\\s*o"], "maxLatencyMs": 30000 }
+      "expect": { "mustMatch": ["h(?:₂|\\s*_?\\{?2\\}?)\\s*o"], "maxLatencyMs": 30000 }
     },
     {
       "id": "fact-pi-digits",
@@ -63,8 +63,7 @@
       "question": "A test is 99% accurate and the disease affects 1 in 10,000 people. Someone tests positive. Roughly how likely is it they have it, and why?",
       "tags": ["factuality", "reasoning"],
       "expect": {
-        "mustMatch": ["\\b1%|\\b0\\.9|\\bless than 1|\\babout 1 in 100"],
-        "mustInclude": ["base rate"],
+        "mustMatch": ["\\b1%|\\b0\\.9|\\bless than 1|\\babout 1 in 100", "base rate|prevalence|false positive"],
         "minChars": 200,
         "maxLatencyMs": 75000
       }

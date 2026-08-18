@@ -976,6 +976,7 @@ const {
   routeByRule,
   escalateForResearch,
   withToolSeat,
+  ROUTING_POLICY,
 } = require('./lib/router');
 // What makes a Wikipedia lookup answerable rather than merely non-empty.
 const { wikiSubject, isRelevantTitle } = require('./lib/wiki-relevance');
@@ -3184,7 +3185,10 @@ const readBackgroundQuota = async () => {
  * already keyed. */
 const CACHE_IDENTITY = cacheFingerprint({
   prompts: [ALOP_IDENTITY],
-  policies: [SOURCE_TRUTH_RULES, LENGTH_RULE.simple, LENGTH_RULE.moderate, LENGTH_RULE.complex],
+  /* ROUTING_POLICY is here because the cache lookup sits ABOVE the router, so
+   * a routing change is invisible to every question already in the cache — see
+   * its header in lib/router.js, and the evaluation re-run that measured it. */
+  policies: [SOURCE_TRUTH_RULES, LENGTH_RULE.simple, LENGTH_RULE.moderate, LENGTH_RULE.complex, ...ROUTING_POLICY],
   models: [PRIMARY_MODEL, SYNTHESIS_MODEL, SMART_MODEL],
   /* The registry is built per turn from whichever provider keys are present, so
    * this is the WIDEST schema set this deployment can offer. A turn that ran

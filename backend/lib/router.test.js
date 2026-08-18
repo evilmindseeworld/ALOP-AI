@@ -6,6 +6,8 @@ const {
   needsWikiCheck,
   classifyRequest,
   routeByRule,
+  ROUTING_RULES,
+  ROUTING_POLICY,
   modelDesignations,
   namesSpecificModel,
   DETAIL_PHRASES,
@@ -837,4 +839,36 @@ test("a lone short token that is not a product does not trigger anything", () =>
   for (const text of ["3 x 8", "9 x 10", "convert to mp3 or mp4", "is h2o or co2 heavier", "grade a1 work"]) {
     assert.equal(namesSpecificModel(text), false, text);
   }
+});
+
+/* THE CACHE LOOKUP SITS ABOVE THE ROUTER, so a routing change that is not in
+ * ROUTING_POLICY changes nothing for any question already in the answer cache.
+ * MEASURED 2026-08-18: the evaluation dataset was re-run against a build
+ * carrying a router fix, and every case came back from the cache in two to
+ * three seconds having never reached the router — a 17/22 that measured the
+ * cache. This test is what fails when a new gating rule is added and the policy
+ * list is not updated with it. */
+test("every regex the rule router branches on is carried into the cache identity", () => {
+  const branchedOn = [
+    ...new Set([...routeByRule.toString().matchAll(/\b([A-Z][A-Z0-9_]*_RE)\b/g)].map((m) => m[1])),
+  ].sort();
+  assert.ok(branchedOn.length >= 8, `the rule router should branch on several regexes; found ${branchedOn.length}`);
+
+  const carried = Object.keys(ROUTING_RULES);
+  assert.deepEqual(
+    branchedOn.filter((name) => !carried.includes(name)),
+    [],
+    "a regex decides routing but is missing from ROUTING_RULES, so editing it will not drop the answer cache",
+  );
+
+  /* The decision itself, not only its constants: reordering the branches
+   * changes which rule wins and must re-key the cache too. */
+  assert.ok(
+    ROUTING_POLICY.some((entry) => entry.includes("CITATION_DEMAND_RE.test(t)")),
+    "routeByRule's own source is part of the material",
+  );
+  assert.ok(
+    ROUTING_POLICY.every((entry) => typeof entry === "string" && entry.length > 0),
+    "every entry has to be fingerprintable text",
+  );
 });

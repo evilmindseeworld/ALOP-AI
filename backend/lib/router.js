@@ -921,7 +921,60 @@ function withToolSeat(selection, seat, { needsTools = false } = {}) {
   };
 }
 
+/**
+ * WHAT THE ANSWER CACHE HAS TO SEE, and did not.
+ *
+ * MEASURED 2026-08-18, by running the evaluation dataset twice. The second run
+ * scored 17/22 and measured NOTHING: every answer came back from the answer
+ * cache in two to three seconds, including the three that the router fix in the
+ * same commit was written to change. The cache lookup happens ABOVE the router
+ * — that is the point of it, a hit costs zero model requests — so a cached
+ * question never reaches the routing decision at all, and the fixed router
+ * would have gone on serving the un-searched answers for the row's whole
+ * ninety-day life with nothing anywhere marking them stale.
+ *
+ * `cacheFingerprint` already exists for exactly this failure and its own header
+ * says so: "editing a prompt IS the invalidation". Routing was simply not in
+ * it, and routing decides whether an answer was written with the web or from
+ * memory — the largest difference there is between two answers to the same
+ * words.
+ *
+ * The material is the DECISION, not the file: `routeByRule`'s own source, the
+ * source of every regex it branches on, and the product-model predicate it
+ * delegates to. Language detection and the roster helpers live in this file too
+ * and are deliberately absent — dropping the whole cache because a seat's
+ * latency helper was edited is the over-invalidation the fingerprint's "family,
+ * not exact id" note is careful to avoid.
+ *
+ * CEILING: a regex reached only through a helper of `namesSpecificModel`
+ * (`SHORT_SKU_RE` and friends) is covered by that function's source only where
+ * the helper is named in it. The test beside this asserts the branch-level set,
+ * which is the one that decides search-or-not.
+ */
+const ROUTING_RULES = {
+  MEMORY_REFERENCE_RE,
+  EXPLICIT_WEB_SEARCH_RE,
+  CITATION_DEMAND_RE,
+  ALOP_IDENTITY_QUESTION_RE,
+  CODE_RE,
+  DIRECT_TRANSFORM_RE,
+  CREATIVE_RE,
+  STABLE_QUESTION_RE,
+  VOLATILE_RE,
+  URL_RE,
+};
+
+const ROUTING_POLICY = [
+  routeByRule.toString(),
+  namesSpecificModel.toString(),
+  modelDesignations.toString(),
+  modelSearchQueries.toString(),
+  ...Object.entries(ROUTING_RULES).map(([name, re]) => `${name}=${re.source}`),
+];
+
 module.exports = {
+  ROUTING_RULES,
+  ROUTING_POLICY,
   withToolSeat,
   modelDesignations,
   namesSpecificModel,

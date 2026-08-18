@@ -169,7 +169,11 @@ means it was deliberately not started in this continuation.
     Evidence: 37 queue/worker tests pass, full suite passes, and the live jobs
     table/indexes exist. Evaluation producers/handlers remain part of the
     intentionally deferred evaluation platform, so this item is not claimed
-    fully complete.
+    fully complete. **2026-08-18: still deferred, and deliberately.** The
+    platform exists now (items 34/35) but has never been run once against a
+    real answer, and queueing a producer for something that has not run once is
+    building the second thing before the first works. This item closes when
+    owner action 3 does.
 31. **complete** — Curated brain questions are replaced by ranked durable cache
     candidates using demand, miss cost, freshness, quality, quota pressure, and
     live account quota. Files: `backend/lib/usage-prefetch.js`,
@@ -1094,18 +1098,28 @@ is the thing that would confirm this works at all.
 
 ## Owner actions this Phase 3 has accumulated
 
-Three remain. The two migrations that led this list are DONE — see the dated
-section above, verified in `pg_catalog`.
+ONE remains. Two closed on 2026-08-18; note the difference in how each was
+established, because it is the difference between reported and measured.
 
-1. **Set `RATE_LIMIT_STORE=postgres` in Render before scaling past one
-   instance.** The census added in item 39 reports the mistake; it does not
-   prevent it.
-2. **Apply `027_users_stripe_event_at.sql`.**
-   `node scripts/run-migration.mjs 027_users_stripe_event_at.sql`, or the
-   dashboard SQL editor. Until it runs, the Stripe ordering guard is inactive
-   and a reordered event pair can leave a cancelled customer on `pro`. The
-   webhook warns on every event and `GET /api/admin/billing` lists the exposed
-   events under `unguarded`.
+1. ~~**Set `RATE_LIMIT_STORE=postgres` in Render.**~~ **REPORTED SET by the
+   owner, 2026-08-18. NOT MEASURED from here** — the value is readable only
+   through the admin terminal against a live session, so nothing in this repo
+   has confirmed it. `/admin env` shows `rateLimitStore` if a check is wanted.
+   The census warns if it is ever wrong, which is what it is for.
+2. ~~**Apply `027_users_stripe_event_at.sql`.**~~ **APPLIED AND VERIFIED,
+   2026-08-18**, through the Supabase MCP `apply_migration`. Confirmed in the
+   live catalog: `users.stripe_event_at`, `timestamp with time zone`, nullable,
+   comment attached, 10 rows, 0 non-null — which is the correct state, since
+   the migration deliberately does not backfill. `notify pgrst, 'reload schema'`
+   was issued after it so PostgREST would not answer `PGRST204` from a stale
+   cache; the code's fallback covers that case anyway.
+
+   **NO DAMAGE TO REPAIR.** Checked rather than assumed: both `plan = 'pro'`
+   rows are `is_admin = true`, and the one with no `stripe_customer_id` is a
+   direct grant, not a customer. There are no paying non-admin customers, so
+   the reordering bug never had one to strand. The guard is prophylactic, and
+   saying so is the point — "we fixed it" would imply a repair that did not
+   happen.
 3. **Run the evaluation dataset once against a real session.**
    `EVAL_TOKEN=<clerk jwt> BASE=https://alop-ai.onrender.com npm run evals`
    from `backend/`. Until that happens items 34 and 35 are a platform with no

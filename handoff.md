@@ -1,3 +1,50 @@
+# Handoff - 2026-08-18 (thirteenth pass): 027 applied, and two of the three owner actions closed
+
+Migration 027 is applied and verified in the live catalog. Backend is
+1900/1900, unchanged - nothing in this pass touches code. ONE owner action
+remains.
+
+- **027 applied through the Supabase MCP**, not by hand. Verified after:
+  `users.stripe_event_at`, `timestamp with time zone`, nullable, comment
+  attached, 10 rows, 0 non-null. Zero non-null is the CORRECT state - the
+  migration deliberately does not backfill, because backfilling to `now()`
+  would reject the next real event for every existing user as stale.
+  `notify pgrst, 'reload schema'` was issued after, so PostgREST would not keep
+  answering `PGRST204` from a stale cache; `stripe-apply.js` already treats that
+  code as "column missing" and falls back, so the failure mode was safe either
+  way.
+
+- **The Stripe ordering guard is now live**, and it repaired nothing, because
+  there was nothing to repair. Checked rather than assumed: both `plan = 'pro'`
+  rows are `is_admin = true`, and the one with no `stripe_customer_id` is a
+  direct grant. There are no paying non-admin customers, so the reordering bug
+  has never had a real one to strand. Prophylactic, and worth saying in those
+  words - "fixed" would imply a repair that did not happen.
+
+- **`RATE_LIMIT_STORE=postgres` is REPORTED SET by the owner and NOT MEASURED
+  from here.** The value is only readable through the admin terminal against a
+  live session. The census warns if it is ever wrong, which is what it is for.
+
+- **Item 30 stays partial on purpose.** Its remainder is evaluation
+  producers/handlers, and the platform they would queue has never been run once
+  against a real answer. Queueing a producer for something that has not run once
+  is building the second thing before the first works. It closes when the eval
+  run does.
+
+- **Owner actions, now ONE**: run the evaluation dataset once against a real
+  session. `EVAL_TOKEN=<clerk jwt> BASE=https://alop-ai.onrender.com npm run
+  evals` from `backend/`. Costs up to 22 council turns, four of them full
+  research turns. Until it happens, items 34, 35 and 30 are a platform with no
+  measurement in it.
+
+- **Everything else left in Phase 3 is decision-gated, not work-gated.** Item
+  32's remainders are object storage ACLs (means moving files out of
+  `chat_files` into Supabase Storage - a vendor and migration decision) and
+  workspace ingestion (a new feature needing a scope). Item 44 needs real
+  devices. Item 33 is closed with its revival trigger recorded.
+
+---
+
 # Handoff - 2026-08-18 (twelfth pass): the search that answered "not in your documents" about a document that answered
 
 Item 32's semantic half is built. Backend is 1900/1900. Nothing is deployed by

@@ -4817,7 +4817,9 @@ async function handleCouncilTurn(req, res) {
 
     if (cacheKey) {
       const canTrySemantic = SEMANTIC_CACHE_ENABLED && Boolean(questionEmbedding);
-      const hit = await answerCache.get(cacheKey, { deferMiss: canTrySemantic });
+      /* TIMED, NOT CHANGED. These two probes run in series ahead of the router
+       * on every miss and were the only unmeasured stage before first byte. */
+      const hit = await telemetry.measureCache('answerExact', () => answerCache.get(cacheKey, { deferMiss: canTrySemantic }));
       if (hit && !turnSignal.aborted) {
         console.log(`[ANSWERS] HIT ageMin=${Math.round((Date.now() - hit.storedAt) / 60000)} models=0`);
         if (SEMANTIC_CACHE_ENABLED) {
@@ -4846,11 +4848,14 @@ async function handleCouncilTurn(req, res) {
           seats: 0,
           ageMs: Date.now() - hit.storedAt,
           msToFirstByte: Date.now() - t0,
+          /* By hand, for the same reason `msToFirstByte` is: `auditBranch`
+           * writes bare metadata, so a hit row carries only what is passed. */
+          cacheReads: telemetry.cacheReads(),
         });
         return;
       }
       if (canTrySemantic && !turnSignal.aborted) {
-        const semanticHit = await answerCache.getSemantic({
+        const semanticHit = await telemetry.measureCache('answerSemantic', () => answerCache.getSemantic({
           embedding: questionEmbedding,
           lang,
           country: region?.country || '',
@@ -4858,7 +4863,7 @@ async function handleCouncilTurn(req, res) {
           detailed: isDetailed,
           branch: ANSWER_CACHE_BRANCH,
           threshold: SEMANTIC_CACHE_THRESHOLD,
-        });
+        }));
         if (semanticHit?.answer && !turnSignal.aborted) {
           console.log(`[ANSWERS] SEMANTIC HIT similarity=${semanticHit.similarity.toFixed(2)} models=0`);
           openStream(res);
@@ -4868,6 +4873,7 @@ async function handleCouncilTurn(req, res) {
           await auditBranch({
             category: 'answer_cache_semantic', models: 0, seats: 0,
             similarity: semanticHit.similarity, msToFirstByte: Date.now() - t0,
+            cacheReads: telemetry.cacheReads(),
           });
           return;
         }

@@ -43,6 +43,12 @@ function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null
   const contextReads = {};
   let contextCompression = null;
   const routerReads = {};
+  /* SEPARATE FROM `contextReads` ON PURPOSE. `contextMs` is a published sum over
+   * that bucket and is already read; filing the cache probes there would inflate
+   * an existing measurement instead of adding a new one. The two answer-cache
+   * lookups run in series before the router on every miss — which is most turns
+   * — and were the only untimed stage on the path to first byte. */
+  const cacheReads = {};
   const seats = [];
   const toolRounds = [];
   let synthesisMs = null;
@@ -122,6 +128,15 @@ function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null
     measureRouter(name, work) {
       return measure(routerReads, name, work);
     },
+    /** Time one answer-cache probe. Same contract as the two above. */
+    measureCache(name, work) {
+      return measure(cacheReads, name, work);
+    },
+    /* The cache-HIT branches write bare metadata by hand through `auditBranch`
+     * and never call `snapshot()`, so without this reader the turns whose
+     * latency the measurement exists to explain are the turns with no
+     * measurement in the row. A copy, so a caller cannot edit the live bucket. */
+    cacheReads: () => ({ ...cacheReads }),
     /**
      * Record N provider calls that no other recorder here can see.
      *
@@ -356,6 +371,7 @@ function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null
         contextMs,
         contextCompression,
         routerReads,
+        cacheReads,
         fastCalls,
         seats: [...seats],
         synthesisMs,

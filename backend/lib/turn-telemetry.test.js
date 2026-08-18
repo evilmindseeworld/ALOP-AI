@@ -238,3 +238,58 @@ test('statuses stay exact past the detail cap', () => {
   assert.equal(snap.providerAttempts.byStatus['429'], 250, 'counts are exact');
   assert.equal(snap.providerAttempts.truncatedDetail, true, 'while the detail array was capped');
 });
+
+/* THE TWO CACHE PROBES WERE THE ONLY UNTIMED STAGE ON THE TURN PATH.
+ *
+ * `measureContext` and `measureRouter` already time every other read, so a p95
+ * first-byte breakdown could account for history, episodes, facts and routing
+ * — and then attributed the exact and semantic cache lookups to nothing at all.
+ * They run in series before the router on every miss, which is most turns.
+ *
+ * Watched fail before the fix: `telemetry.measureCache is not a function`. */
+test('cache probes are timed under their own name', async () => {
+  let clock = 0;
+  const t = createTurnTelemetry({ now: () => clock });
+  const value = await t.measureCache('answerExact', async () => { clock += 40; return 'hit'; });
+  assert.equal(value, 'hit', 'the measured value passes through untouched');
+
+  const snap = t.snapshot({});
+  assert.deepEqual(snap.cacheReads.answerExact, { ms: 40, ok: true });
+});
+
+/* A LOOKUP THAT THREW STILL COST ITS TIME. Recording only successes would make
+ * the slow case — the one worth finding — the invisible one. */
+test('a failing cache probe is timed and still rejects', async () => {
+  let clock = 0;
+  const t = createTurnTelemetry({ now: () => clock });
+  await assert.rejects(t.measureCache('answerSemantic', async () => { clock += 90; throw new Error('pgvector timeout'); }));
+  assert.deepEqual(t.snapshot({}).cacheReads.answerSemantic, { ms: 90, ok: false });
+});
+
+/* CACHE TIME IS NOT CONTEXT TIME. `contextMs` is a published sum over
+ * `contextReads` and is already being read; filing the cache probes there would
+ * have silently inflated an existing measurement rather than adding a new one.
+ * The buckets stay separate for the same reason `routerReads` is separate. */
+test('cache timings do not inflate contextMs', async () => {
+  let clock = 0;
+  const t = createTurnTelemetry({ now: () => clock });
+  await t.measureContext('summary', async () => { clock += 10; });
+  await t.measureCache('answerExact', async () => { clock += 500; });
+
+  const snap = t.snapshot({});
+  assert.equal(snap.contextMs, 10, 'context time counts context reads only');
+  assert.equal(snap.cacheReads.answerExact.ms, 500);
+  assert.equal(snap.contextReads.answerExact, undefined);
+});
+
+/* The hit branches write bare metadata by hand (`auditBranch`), never
+ * `snapshot()`, so they need a reader of their own — otherwise the turns whose
+ * latency this measurement exists to explain are the turns with no measurement. */
+test('cache timings are readable without taking a whole snapshot', async () => {
+  const t = createTurnTelemetry({ now: () => 0 });
+  await t.measureCache('answerExact', async () => 'x');
+  const reads = t.cacheReads();
+  assert.deepEqual(Object.keys(reads), ['answerExact']);
+  reads.answerExact = 'tampered';
+  assert.notEqual(t.cacheReads().answerExact, 'tampered', 'the caller gets a copy, not the live bucket');
+});

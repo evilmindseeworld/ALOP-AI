@@ -25,6 +25,24 @@ tests read `server.js` as *text* and assert on its source. If you add one of
 those, assert on proximity rather than exact escaped strings — otherwise it
 fails the next time someone reflows the line.
 
+**`ensureUser` can return a cached row, and that is now true for every caller.**
+It reads `userRowCache` before selecting, and populates it (generation-guarded)
+when it does select. Before, only the seven callers that passed `{ cached }`
+avoided the round trip; the other fifteen — `requireOwnership` among them, so
+every `:id` route — paid a second select for the row `checkSuspended` had
+fetched microseconds earlier. The fix is one guard in the shared function
+rather than a `cached` argument threaded through fifteen call sites that would
+drift apart.
+
+The consequence to hold in mind: a users row read through `ensureUser` may be
+up to `USER_ROW_TTL_MS` (15s) old. That is the same window the suspension check
+already accepted, and the same invalidations clear it (`invalidateUserRows` on
+admin and billing writes, `userRowCache.delete` on profile refresh). If you add
+a field to `users` that must be read strictly fresh, invalidate on its write —
+do not reach around the cache, or the round trip comes back for everyone.
+`lib/ensure-user-cache.test.js` asserts the cache read precedes the select and
+that the generation is read before it.
+
 **RLS is on, and it does nothing for your queries.** Policies are enabled on all
 9 tables, but the server connects with `SUPABASE_SERVICE_ROLE_KEY`, which
 bypasses RLS by design. RLS protects you from *other* clients hitting Supabase

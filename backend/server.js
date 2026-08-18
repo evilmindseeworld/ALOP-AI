@@ -3419,9 +3419,25 @@ const ensureUser = async (userId, { cached } = {}) => {
 
   if (cached && cached.id) { refreshProfile(userId); return cached; }
 
+  /* The same row checkSuspended already fetched and cached, fetched again.
+   *
+   * Callers that HAVE the row pass it as `cached`, and seven do. Fifteen others
+   * call `ensureUser(req.auth.userId)` bare, and requireOwnership — mounted on
+   * every :id route — is one of them, so an authenticated request routinely
+   * paid two selects for one users row: one in the middleware, one here,
+   * microseconds apart. Reading the cache HERE fixes all of them at once
+   * instead of threading `cached` through fifteen call sites that will drift.
+   *
+   * Staleness is bounded by the same USER_ROW_TTL_MS the middleware already
+   * accepts for suspension, and the same invalidations already clear it —
+   * this widens who reads that cache, not how long it is trusted. */
+  const fromCache = userRowCache.get(userId);
+  if (fromCache && fromCache.id) { refreshProfile(userId); return fromCache; }
+
+  const generation = userRowCache.generation;
   const { data: existing, error: selErr } = await supabase.from('users').select('*').eq('clerk_id', userId).single();
   if (selErr && selErr.code !== 'PGRST116') throw selErr;
-  if (existing) { refreshProfile(userId); return existing; }
+  if (existing) { userRowCache.setIfCurrent(userId, existing, generation); refreshProfile(userId); return existing; }
 
   // First sight of this user. Clerk has to be awaited here — the insert needs
   // an email, and there is no row to fall back on.

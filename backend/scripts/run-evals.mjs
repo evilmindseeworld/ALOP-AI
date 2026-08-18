@@ -28,6 +28,12 @@
  * bouncing off 429s, which also destroys the latency numbers it is trying to
  * measure.
  *
+ * AND SEQUENTIAL IS NOT ENOUGH ON ITS OWN — the paragraph above was right about
+ * the mechanism and wrong to pin it on parallelism. One case is ~10 requests,
+ * so a 4s pause asked for ~60 a minute and the run throttled itself just as
+ * thoroughly, then reported the queueing as the product's latency. Measured and
+ * corrected 2026-08-18; see the note on `pauseMs`.
+ *
  * WHAT IT CANNOT SEE, said out loud rather than defaulted to zero: the HTTP
  * surface exposes no price and no `textSource`, so `costCentsPerTurn` and
  * `cachePrecision` come back null and their gates read `inconclusive`. That is
@@ -62,7 +68,35 @@ const base = (flag("base", process.env.BASE || "http://localhost:3001") || "").r
 const token = process.env.EVAL_TOKEN || "";
 const tags = many("tag");
 const limit = Number(flag("limit", "0")) || 0;
-const pauseMs = Number(flag("pause", "4000"));
+/**
+ * 30 SECONDS, AND THE OLD 4 WAS MEASURING THIS SCRIPT RATHER THAN THE PRODUCT.
+ *
+ * MEASURED 2026-08-18, fourth evaluation run against production: seven cases
+ * failed on latency alone and nothing else. "What is the capital of Australia?"
+ * took 56,048ms; "how many km in a mile" 48,059ms; pi to five places 37,153ms.
+ * Then the same class of question was sent to the same build ONE AT A TIME with
+ * nothing else in flight — "What is the capital city of Portugal?" answered in
+ * 8,393ms, and three such probes averaged 9.7s with first byte at ~1.8s.
+ *
+ * A trivial question is not six times slower inside a run than outside one. The
+ * run was queueing behind itself: ONE CASE IS ABOUT TEN OPENROUTER REQUESTS —
+ * two for the router, seven council seats, one synthesis — against an
+ * account-wide limit the handoff measured at 20 requests a minute. At a 4s
+ * pause the run asks for roughly 60 a minute, so from the third case onward
+ * every turn is waiting on a bucket the previous turns emptied, and the report
+ * writes that wait down as product latency.
+ *
+ * Ten requests a case against twenty a minute is one case per thirty seconds.
+ * That makes a 22-case run about eleven minutes instead of ninety seconds, and
+ * the eleven minutes are the honest ones.
+ *
+ * IF THE ROSTER OR THE ROUTER CHANGES ITS REQUEST COUNT, THIS NUMBER IS WRONG.
+ * It is a pace derived from a request budget, not a constant — recompute it as
+ * (requests per case ÷ requests per minute) rather than nudging it.
+ *
+ * `--pause 0` is still honoured for a local server that talks to nothing.
+ */
+const pauseMs = Number(flag("pause", "30000"));
 
 /* ---- dataset --------------------------------------------------------- */
 

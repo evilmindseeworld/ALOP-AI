@@ -303,6 +303,35 @@ const ARITHMETIC_RE = /^[\s\d+\-*/^%().,=x×÷]+\??$/;
 const CODE_RE = /```|\bfunction\b|\bclass\b|=>|;\s*$|\{\s*$/m;
 
 /**
+ * THE SAME REGEX ANSWERS TWO DIFFERENT QUESTIONS, and it is only right for one.
+ *
+ * `CODE_RE` is used for "is this about code" — which is what `routeByRule` needs
+ * when it decides not to search, and the prose word `function` is fine evidence
+ * for that. `assessComplexity` asks something else: "is there CODE HERE that has
+ * to be reconciled". For that question the word is not evidence at all, and the
+ * regex's own comment says so — "a fenced block or an obvious snippet".
+ *
+ * MEASURED 2026-08-18, third evaluation run. "Write a JavaScript function that
+ * reverses a string. Code only." was graded `complex` — the whole seven-seat
+ * roster, no narrowing — because the sentence contains the word "function".
+ * Every request to WRITE a function says the word "function"; that is how
+ * English works, so every such request was complex regardless of its size.
+ *
+ * These are the artefacts only. A fence, an arrow, a statement ending in a
+ * semicolon, an open brace at end of line: each is text nobody types by
+ * accident in a sentence.
+ *
+ * WHAT THIS DOES NOT DO, said out loud because the number did not move: the
+ * example above becomes `moderate`, and moderate keeps the full roster exactly
+ * like complex (see TIER_SEATS). This is a correctness fix to a decision that
+ * was wrong, not a latency fix. The three observed latencies for that case —
+ * 8.5s, 21s and 50s — were all produced under the SAME complex classification,
+ * so seat count is not the variable that moved and narrowing the roster here
+ * would be a guess dressed as a diagnosis.
+ */
+const CODE_ARTIFACT_RE = /```|=>|;\s*$|\{\s*$/m;
+
+/**
  * @param {string} text
  * @param {boolean} [detailed] the caller's existing wantsDetailedAnswer result,
  *   passed in rather than recomputed so the two cannot disagree — the same
@@ -317,7 +346,9 @@ function assessComplexity(text, detailed = false) {
    * at. It already buys a doubled token ceiling; it should buy the council too,
    * or "explain in detail" gets a longer answer from fewer minds. */
   if (detailed) return "complex";
-  if (COMPLEX_RE.test(t) || CODE_RE.test(t) || isGenerationRequest(t)) return "complex";
+  /* CODE_ARTIFACT_RE, not CODE_RE: pasted code is complex, the WORD "function"
+   * in a sentence is not. See the note on the two regexes. */
+  if (COMPLEX_RE.test(t) || CODE_ARTIFACT_RE.test(t) || isGenerationRequest(t)) return "complex";
 
   /* Two or more questions in one message is a conversation, not a lookup, even
    * when each half is short. Counted rather than pattern-matched because the

@@ -6,6 +6,7 @@ const {
   needsWikiCheck,
   classifyRequest,
   routeByRule,
+  assessComplexity,
   ROUTING_RULES,
   ROUTING_POLICY,
   modelDesignations,
@@ -871,4 +872,56 @@ test("every regex the rule router branches on is carried into the cache identity
     ROUTING_POLICY.every((entry) => typeof entry === "string" && entry.length > 0),
     "every entry has to be fingerprintable text",
   );
+});
+
+/* MEASURED 2026-08-18, third evaluation run: "Write a JavaScript function that
+ * reverses a string. Code only." was graded `complex` — the full seven-seat
+ * roster — because the sentence contains the word "function". Every request to
+ * write a function contains that word.
+ *
+ * The property is a SPLIT, so both halves are asserted: pasted code stays
+ * complex, and prose about code stops being. Asserting only the first half
+ * would pass with the bug still in place. */
+test("pasted code is complex; the word 'function' in a sentence is not", () => {
+  const pasted = [
+    "function add(a, b) {\n  return a + b;\n}\nwhy is this slow?",
+    "```js\nconst x = 1\n``` explain this",
+    "const f = (x) => x * 2",
+    "const total = items.reduce(sum, 0);",
+  ];
+  for (const text of pasted) {
+    assert.equal(assessComplexity(text), "complex", text.slice(0, 40));
+  }
+
+  /* Prose. None of these carries a snippet, and each says a code word the old
+   * regex treated as one. Moderate, not simple — the roster is unchanged, and
+   * claiming simple here would be a quality decision this fix is not making. */
+  for (const text of [
+    "Write a JavaScript function that reverses a string. Code only.",
+    "Write a Python function to check whether a number is prime",
+  ]) {
+    assert.equal(assessComplexity(text), "moderate", text.slice(0, 40));
+  }
+
+  /* And a code word inside an anchored lookup reaches the simple tier it always
+   * should have: "What class should I use for a fixed-size buffer?" is a
+   * question, not a snippet. It was complex before this change. */
+  assert.equal(assessComplexity("What class should I use for a fixed-size buffer?"), "simple");
+});
+
+test("the complexity split does not change whether code questions search", () => {
+  /* routeByRule still uses the WIDE CODE_RE, deliberately: for "should this
+   * search", the word `function` is fine evidence that the answer is stable.
+   * Narrowing that too would send every code question to the search planner. */
+  for (const text of [
+    "Write a JavaScript function that reverses a string. Code only.",
+    "function add(a, b) { return a + b; }",
+    "what does this class do",
+  ]) {
+    assert.deepEqual(
+      routeByRule(text, { hasConversationContext: false }),
+      { memory: false, queries: null },
+      text.slice(0, 40),
+    );
+  }
 });

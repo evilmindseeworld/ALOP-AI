@@ -140,7 +140,7 @@
       "id": "format-code-block",
       "question": "Write a JavaScript function that reverses a string. Code only.",
       "tags": ["acceptance", "format"],
-      "expect": { "mustInclude": ["function", "reverse"], "mustMatch": ["```"], "maxLatencyMs": 40000 }
+      "expect": { "mustInclude": ["reverse"], "mustMatch": ["```", "function|=>"], "maxLatencyMs": 40000 }
     },
     {
       "id": "format-refuse-invention",

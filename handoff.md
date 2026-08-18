@@ -1,3 +1,55 @@
+# Handoff - 2026-08-18 (fourteenth pass): the file its own owner could not download
+
+Item 32's object-storage half is built and applied. Backend 1915/1915, frontend
+705/705. Migration 028 is APPLIED - no owner action is added; one still remains.
+
+- **The gap was not ACLs.** `file-intake.js` extracts a PDF's text, stores it,
+  and discards the original bytes. The council could answer questions about a
+  document its own owner could never get back.
+
+- **A bucket, without reopening what 003 closed.** 003 refused a bucket because
+  "a bucket would reintroduce a key namespace to get wrong". So the key is
+  DERIVED and never supplied - `{user_id}/{chat_id}/{file_id}`, three UUIDs the
+  server already resolved - and `lib/storage-keys.js` refuses anything that is
+  not hex-and-hyphens. `..`, `/`, `%2f`, a backslash and a null byte are
+  rejected by the SHAPE of a UUID, not by a blocklist. The filename never
+  enters the key; it is the one part a user fully controls.
+
+- **The row authorises, the key does not.** The download resolves
+  `id + user_id + chat_id` first - `read_file`'s own predicate - then derives
+  the key, then signs a 60-second URL for one object. No model path changed:
+  `read_file` and `search_files` still read text out of Postgres.
+
+- **Orphans.** `chat_files` cascades from `users` and `chats`, and a cascade
+  runs inside Postgres with no application code in the path, so deleting a chat
+  would leak every attached document. A trigger records what outlived its row;
+  `storage_sweep` drains it. Deleting in the route would have covered the
+  minority path.
+
+- **Retention cannot fail an upload.** The file is already accepted and its text
+  already stored by then. A bucket that is down leaves `storage_path` NULL and
+  the endpoint says the original was not kept.
+
+- **Verified against the database, not against a success return.** Column,
+  private bucket, storage policy, sweep table, trigger, forced RLS and the
+  pinned `search_path` all read back out of the live catalog. The trigger was
+  probed live, then a deliberately-false control was run to prove the probe
+  could fail at all.
+
+- **Rendering changed on purpose** (download button on the file chip). The
+  2856-line cascade-baseline diff is index renumbering: regenerating from the
+  PRE-change markup reproduces the committed baseline except for two lines
+  naming the new selectors, which proves nothing existing re-rendered.
+
+- **NOT VERIFIED end to end.** `chat_files` has zero rows and always has, so no
+  real file has been uploaded and downloaded through this.
+
+- **Owner action, still ONE**: the evaluation run. Use
+  `EVAL_CLERK_SECRET_KEY`, not `EVAL_TOKEN` - a pasted session JWT lives ~60s
+  and cannot survive a 22-case run.
+
+---
+
 # Handoff - 2026-08-18 (thirteenth pass): 027 applied, and two of the three owner actions closed
 
 Migration 027 is applied and verified in the live catalog. Backend is
@@ -32,8 +84,11 @@ remains.
   run does.
 
 - **Owner actions, now ONE**: run the evaluation dataset once against a real
-  session. `EVAL_TOKEN=<clerk jwt> BASE=https://alop-ai.onrender.com npm run
-  evals` from `backend/`. Costs up to 22 council turns, four of them full
+  session. **Use `EVAL_CLERK_SECRET_KEY`, not `EVAL_TOKEN`** — a pasted session
+  JWT lives ~60s and cannot survive the run.
+  `EVAL_CLERK_SECRET_KEY=sk_… BASE=https://alop-ai.onrender.com npm run evals`
+  from `backend/`, secret key from the Clerk dashboard of the same instance the
+  server runs on. Costs up to 22 council turns, four of them full
   research turns. Until it happens, items 34, 35 and 30 are a platform with no
   measurement in it.
 

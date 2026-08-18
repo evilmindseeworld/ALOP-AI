@@ -206,9 +206,11 @@ same defect as a checker that reads the migration files instead of the database.
     (50 passages, about 90,000 characters). A larger attached corpus is
     searched lexically and the result says so in words the model reads — it is
     a stated ceiling, not a silent one. Raising it means passage vectors stored
-    at upload time: a migration, a backfill and a job-queue write. Files still
-    live in a `chat_files` row rather than object storage, so there are no
-    per-file ACLs. **Nothing here has been run against the live provider** —
+    at upload time: a migration, a backfill and a job-queue write. **2026-08-18: originals now live in a private bucket** (028) — the
+    extracted text stays in `chat_files` and every path a model touches is
+    unchanged; the bucket exists so the PERSON who uploaded a file can get it
+    back, which was impossible while the original bytes were discarded after
+    extraction. Workspace ingestion is untouched. **Nothing here has been run against the live provider** —
     `GOOGLE_API_KEY` is set in Render only, so every test on this path exercises
     the fake embedder or the failure branch.
 33. **not applicable as written; the trigger that revives it is named below** -
@@ -1096,6 +1098,68 @@ documentation (`embedContentConfig.outputDimensionality`, and each batch entry
 carrying its own model and config), not against a response. The first live run
 is the thing that would confirm this works at all.
 
+## 2026-08-18 (continued) - item 32: a bucket, without reopening what 003 closed
+
+**What was actually missing was not ACLs.** `file-intake.js` extracts a PDF's
+text, stores that, and DISCARDS the original bytes. The council could answer
+questions about a document that its own owner could never download.
+
+**Why this is not a reversal of 003.** 003 refused a bucket on a security
+argument: "a bucket would reintroduce a key namespace to get wrong ... there is
+no path to traverse because there is no path, and ownership is a predicate
+rather than a convention." That is still correct, so the namespace was removed
+as something anyone can influence:
+
+- **The key is derived, never supplied** - `{user_id}/{chat_id}/{file_id}`,
+  three UUIDs the server already resolved. `lib/storage-keys.js` refuses to
+  build a key from anything that is not hex-and-hyphens, so `..`, `/`, `%2f`, a
+  backslash and a null byte are rejected by the SHAPE of a UUID rather than by
+  a blocklist. A blocklist is a list of the traversals someone thought of.
+- **The filename is not in the key.** It is the one part of an upload the user
+  fully controls. It stays in `chat_files.name`, as data.
+- **The row authorises, the key does not.** The download resolves
+  `WHERE id = $1 AND user_id = $2 AND chat_id = $3` FIRST - the same predicate
+  `read_file` has always used - and only then derives the key.
+- **A signed URL: 60 seconds, one object.** The bucket is private. Streaming
+  the bytes through this process would put an 8MB body on a request path that
+  holds live Stripe and Supabase credentials, for nothing.
+- **No model path changed.** `read_file` and `search_files` still take the
+  opaque id and still read text out of Postgres.
+
+**Orphans are the part a bucket gets wrong.** `chat_files` cascades from `users`
+and `chats`, and a cascade runs INSIDE Postgres with no application code in the
+path - so deleting a conversation, the common case, would leave its documents in
+the bucket forever. That is 003's own data-retention argument reappearing one
+layer down. A trigger records what outlived its row into `deleted_file_objects`
+and the `storage_sweep` job drains it. Deleting in the route would have covered
+the minority path and leaked the majority.
+
+**Retention never fails an upload.** By the time it runs the file is accepted,
+the text extracted and the row written. A bucket that is down costs the download
+and nothing else: `storage_path` stays NULL and the endpoint says "the original
+of this file was not kept" rather than 500ing. Object first, pointer second -
+and a failed pointer write removes the object again, because an unreferenced
+object is one the sweeper, which only ever sees rows, could never find.
+
+**Evidence.** Backend 1915/1915 (from 1900), frontend 705/705. Seven guards
+mutated and watched fail. Every schema object verified in the live catalog
+rather than trusted from a success return. The trigger was probed live - a row
+WITH an object records exactly one key when deleted, a row WITHOUT one records
+nothing - and a deliberately-false control was then run to prove the probe's
+assertions could fail at all, because a probe that cannot fail proves nothing.
+
+**Rendering changed on purpose.** The chip gained a download button, so
+`appMarkup.js` and the cascade baseline both moved. The 2856-line baseline diff
+is index renumbering: regenerating it from the PRE-change markup reproduces the
+committed baseline exactly except for two lines naming the new selectors as
+matching nothing, which is the proof that no existing element's resolved style
+changed.
+
+**What is NOT claimed.** Nothing has ever been uploaded through this path in
+production - `chat_files` has zero rows and always has. The bucket, the trigger
+and the sweeper are verified against the catalog and against tests; the
+end-to-end upload-then-download has never been exercised by a real file.
+
 ## Owner actions this Phase 3 has accumulated
 
 ONE remains. Two closed on 2026-08-18; note the difference in how each was
@@ -1121,7 +1185,13 @@ established, because it is the difference between reported and measured.
    saying so is the point — "we fixed it" would imply a repair that did not
    happen.
 3. **Run the evaluation dataset once against a real session.**
-   `EVAL_TOKEN=<clerk jwt> BASE=https://alop-ai.onrender.com npm run evals`
-   from `backend/`. Until that happens items 34 and 35 are a platform with no
+   **Use `EVAL_CLERK_SECRET_KEY`, NOT `EVAL_TOKEN`** — a pasted session JWT
+   lives ~60s and cannot survive a 22-case run; `1e01966` made that abort
+   rather than grade, and added per-case minting. The command is
+   `EVAL_CLERK_SECRET_KEY=sk_… BASE=https://alop-ai.onrender.com npm run evals`
+   from `backend/`, with the secret key from the Clerk dashboard of the SAME
+   instance the server runs on (a development key against production produces
+   exactly the 401 this aborts on). `EVAL_TOKEN` remains valid only for
+   `--limit 1`. Until that happens items 34 and 35 are a platform with no
    measurement in it, and the gates have never judged a real answer. It costs up
    to 22 council turns, four of them full research turns.

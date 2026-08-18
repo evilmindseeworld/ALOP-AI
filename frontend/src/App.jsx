@@ -792,6 +792,7 @@ const AuthenticatedApp = () => {
                 onRetryFiles={chat.retryChatFiles}
                 onDocSelect={handleDocSelect}
                 onRemoveFile={chat.removeFile}
+                onDownloadFile={chat.downloadFile}
               />
             </div>
           </main>

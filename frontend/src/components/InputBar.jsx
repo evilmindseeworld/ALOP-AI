@@ -34,6 +34,7 @@ const InputBar = memo(
     onImageFile,
     attachedFiles = [],
     attachedFilesError = null,
+    onDownloadFile,
     onRetryFiles,
     onDocSelect = () => {},
     onRemoveFile = () => {},
@@ -205,6 +206,21 @@ const InputBar = memo(
                       the first thing lost, so the full name has to be
                       recoverable without opening anything. */}
                   <span className="file-chip-name" title={f.name}>{f.name}</span>
+                  {/* Only for files whose ORIGINAL was kept. Anything uploaded
+                      before that was retained has its text and nothing to give
+                      back, and offering a button that can only apologise is
+                      worse than not offering one. */}
+                  {f.downloadable && onDownloadFile && (
+                    <button
+                      type="button"
+                      className="file-chip-download"
+                      onClick={() => onDownloadFile(f.id)}
+                      aria-label={`Download ${f.name}`}
+                      title={`Download ${f.name}`}
+                    >
+                      <Icon name="download" size={12} />
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => onRemoveFile(f.id)}

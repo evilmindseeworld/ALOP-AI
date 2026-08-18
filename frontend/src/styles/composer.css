@@ -471,6 +471,15 @@
  * shade, which is worse than either alone. */
 .file-chip button:focus-visible { color: var(--danger); }
 
+/* THE DOWNLOAD BUTTON IS NOT THE REMOVE BUTTON. `.file-chip button` turns
+ * --danger on hover, which is correct for the one control that destroys
+ * something and actively misleading on the one that hands the file back. Only
+ * the colour is overridden; everything else about the two is deliberately
+ * identical, and the focus ring still comes from the single global
+ * :focus-visible in base.css. */
+.file-chip-download:hover,
+.file-chip-download:focus-visible { color: var(--accent); }
+
 
 .input-text {
   background: transparent;

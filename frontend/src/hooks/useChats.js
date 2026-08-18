@@ -879,6 +879,41 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
   );
 
   /**
+   * Hand the user back the file they uploaded.
+   *
+   * TWO STEPS, AND THE SECOND ONE IS THE BROWSER'S. The server answers with a
+   * signed URL that is valid for sixty seconds and for one object, rather than
+   * streaming the bytes back through the API — so this opens that URL and does
+   * not hold the file in memory at any point.
+   *
+   * `window.open` rather than a hidden anchor click: the URL carries
+   * `?download=<name>`, so the response arrives with a Content-Disposition and
+   * the browser saves it under the original filename instead of a signature.
+   */
+  const downloadFile = useCallback(
+    async (fileId) => {
+      if (!activeChatId) return;
+      try {
+        const res = await apiCall(`/api/chats/${activeChatId}/files/${fileId}/download`);
+        if (!res.ok) {
+          /* 404 here is a real answer, not a fault: the original of a file
+             uploaded before originals were kept was never stored. The server
+             writes that sentence for the user; show it rather than a generic
+             failure they would retry forever. */
+          const body = await res.json().catch(() => null);
+          throw new Error(body?.error || `HTTP ${res.status}`);
+        }
+        const { url } = await res.json();
+        if (!url) throw new Error("no download url");
+        window.open(url, "_blank", "noopener,noreferrer");
+      } catch (err) {
+        setToast(err?.message || "Couldn't download that file.");
+      }
+    },
+    [activeChatId, apiCall, setToast]
+  );
+
+  /**
    * `baseMessages` is what the new exchange is appended to. It defaults to the
    * live transcript, and only regenerate passes anything else: it has just
    * truncated the transcript, and this closure still holds the pre-truncation
@@ -1613,6 +1648,7 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
     retryChatFiles,
     uploadFile,
     removeFile,
+    downloadFile,
   };
 }
 

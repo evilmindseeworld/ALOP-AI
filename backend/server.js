@@ -1465,6 +1465,7 @@ const { firstWithResults, toolMessages, summariseProbe, searchResultUrls, requir
 const { createNativeToolSeat } = require('./lib/native-tool-seat');
 const { parseToolRequests, sanitizeAnswerText, userRequestedProtocolJson, looksLikeProtocolOpening } = require('./lib/tool-protocol');
 const { prepareUploadAsync, UploadRejected, MAX_FILES_PER_CHAT } = require('./lib/file-intake');
+const { BUCKET: FILE_BUCKET, keyFor: fileObjectKey, ownerOf: fileObjectOwner, UnsafeKey } = require('./lib/storage-keys');
 
 /**
  * A file store bound to ONE (user, chat).
@@ -1485,9 +1486,14 @@ const uuidParam = (name = 'id') => (req, res, next) =>
 
 const fileStoreFor = (userId, chatId) => ({
   list: async ({ signal } = {}) => {
-    const query = supabase.from('chat_files').select('id,name,kind,bytes').eq('user_id', userId).eq('chat_id', chatId).order('created_at', { ascending: true }).limit(MAX_FILES_PER_CHAT);
+    const query = supabase.from('chat_files').select('id,name,kind,bytes,storage_path').eq('user_id', userId).eq('chat_id', chatId).order('created_at', { ascending: true }).limit(MAX_FILES_PER_CHAT);
     const { data } = await withQuerySignal(query, signal);
-    return data || [];
+    /* `storage_path` is READ and DROPPED. The client needs to know whether a
+     * download exists, which is a boolean; the key itself is an address inside
+     * a private bucket and there is no reason for a browser to hold one. This
+     * store is also what `read_file` and `search_files` see, so the key would
+     * otherwise be one field away from a model's context. */
+    return (data || []).map(({ storage_path, ...file }) => ({ ...file, downloadable: Boolean(storage_path) }));
   },
   get: async (id, { signal } = {}) => {
     const query = supabase.from('chat_files').select('id,name,kind,bytes,content,truncated').eq('id', id).eq('user_id', userId).eq('chat_id', chatId).maybeSingle();
@@ -6287,8 +6293,22 @@ app.post('/api/chats/:id/files', requireAuth, checkSuspended, requireOwnership('
       .single();
     if (error) throw error;
 
-    await auditLog(user.id, 'file.upload', { chatId: req.params.id, name: prepared.name, kind: prepared.kind, bytes: prepared.bytes }, req.ip);
-    res.json(data);
+    /* THE ORIGINAL BYTES, AND WHY THIS CANNOT FAIL THE UPLOAD.
+     *
+     * Everything above already succeeded: the file is accepted, its text is
+     * extracted, the row exists, and the council can read it. Retaining the
+     * original is what lets the PERSON who uploaded it get their file back —
+     * an enhancement to a working upload, not part of it. So a bucket that is
+     * down, misconfigured or full costs the download and nothing else, and
+     * `storage_path` stays NULL to say exactly that.
+     *
+     * The key is derived from three UUIDs this server just resolved. The
+     * filename never enters it; see lib/storage-keys.js for why that is the
+     * whole defence rather than a stylistic choice. */
+    const retained = await retainOriginal({ userId: user.id, chatId: req.params.id, fileId: data.id, mime: prepared.mime, base64: req.body.base64 });
+
+    await auditLog(user.id, 'file.upload', { chatId: req.params.id, name: prepared.name, kind: prepared.kind, bytes: prepared.bytes, retained }, req.ip);
+    res.json({ ...data, downloadable: retained });
   } catch (err) {
     // A rejected upload is the caller's input, not a server fault, and the
     // message is written to be shown to them verbatim.
@@ -6310,7 +6330,57 @@ app.delete('/api/chats/:id/files/:fileId', requireAuth, requireOwnership('chats'
     const user = await ensureUser(req.auth.userId);
     const { error } = await supabase.from('chat_files').delete().eq('id', req.params.fileId).eq('user_id', user.id).eq('chat_id', req.params.id);
     if (error) throw error;
+    /* The object is NOT deleted here. The `chat_files_record_deleted_object`
+     * trigger (028) records it and `storage_sweep` removes it, because a chat
+     * or user cascade deletes the same row with no application code in the
+     * path — handling only this route would leak every object deleted the
+     * other way, which is the majority. One path, one mechanism. */
+    void enqueueStorageSweep();
     res.json({ deleted: true });
+  } catch (err) { Sentry.captureException(err); sendError(res, err); }
+});
+
+/**
+ * GIVE THE USER BACK THE FILE THEY UPLOADED.
+ *
+ * THE ROW AUTHORISES, THE KEY DOES NOT. This resolves
+ * `WHERE id = $1 AND user_id = $2 AND chat_id = $3` first — the identical
+ * predicate `read_file` has always used — and only then derives the object key
+ * from the row it just proved the caller owns. Nothing is ever served because
+ * its key was named.
+ *
+ * A SIGNED URL, NOT A PROXY. The bucket is private, so the response is a URL
+ * that is valid for sixty seconds and for one object. Streaming the bytes
+ * through this process instead would put an 8MB body on a request path that
+ * holds live Stripe and Supabase credentials, for no gain.
+ */
+app.get('/api/chats/:id/files/:fileId/download', requireAuth, requireOwnership('chats'), uuidParam('fileId'), async (req, res) => {
+  try {
+    const user = await ensureUser(req.auth.userId);
+    const { data: file, error } = await supabase
+      .from('chat_files')
+      .select('id,name,storage_path')
+      .eq('id', req.params.fileId).eq('user_id', user.id).eq('chat_id', req.params.id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!file) return fail(res, 404, 'No such file in this conversation.');
+    /* A row with no object is a NORMAL state, not an error: it predates 028, or
+     * its object write failed while its text extracted fine. Saying which is
+     * the difference between a user retrying and a user filing a bug. */
+    if (!file.storage_path) {
+      return fail(res, 404, 'The original of this file was not kept, so it cannot be downloaded. Its text is still searchable.');
+    }
+    /* Belt and braces: the stored key must still be one this server could have
+     * derived for THIS user. A column is a value, and a value can be wrong. */
+    if (fileObjectOwner(file.storage_path) !== user.id) {
+      Sentry.captureMessage(`storage_path does not belong to its owner: file ${file.id}`);
+      return fail(res, 404, 'The original of this file is unavailable.');
+    }
+    const { data: signed, error: signError } = await supabase.storage
+      .from(FILE_BUCKET)
+      .createSignedUrl(file.storage_path, FILE_URL_TTL_SECONDS, { download: file.name });
+    if (signError || !signed?.signedUrl) throw signError || new Error('no signed url returned');
+    res.json({ url: signed.signedUrl, name: file.name, expiresIn: FILE_URL_TTL_SECONDS });
   } catch (err) { Sentry.captureException(err); sendError(res, err); }
 });
 
@@ -6939,6 +7009,108 @@ const runEmbeddingBackfillJob = async (job) => {
 };
 
 const BACKGROUND_JOBS_ENABLED = !/^(0|false|off)$/i.test(process.env.BACKGROUND_JOBS || '1');
+/**
+ * HOW LONG A DOWNLOAD URL LIVES.
+ *
+ * Long enough for a browser to follow a redirect it was just handed, short
+ * enough that the URL is worthless if it is ever logged, shoulder-surfed or
+ * pasted. A signed URL is a bearer credential for exactly one object, and the
+ * only thing keeping it from being a permanent one is this number.
+ */
+const FILE_URL_TTL_SECONDS = 60;
+
+/**
+ * Put the original upload in the bucket and point the row at it.
+ *
+ * NEVER THROWS. Every failure here is reported as `false` and logged, because
+ * the upload it belongs to has already succeeded — see the call site. The row
+ * keeps `storage_path IS NULL`, which the download route reads as "the original
+ * was not kept" and says so in words.
+ *
+ * @returns {Promise<boolean>} whether the original is now downloadable
+ */
+const retainOriginal = async ({ userId, chatId, fileId, mime, base64 }) => {
+  if (typeof base64 !== 'string' || !base64) return false;
+  let key;
+  try {
+    key = fileObjectKey({ userId, chatId, fileId });
+  } catch (err) {
+    /* Unreachable by design — all three are UUIDs this process just read from
+     * its own database — so if it ever happens, something upstream is handing
+     * out ids it did not get from Postgres and that is worth an alert. */
+    if (err instanceof UnsafeKey) Sentry.captureException(err);
+    return false;
+  }
+  try {
+    const { error } = await supabase.storage.from(FILE_BUCKET).upload(key, Buffer.from(base64, 'base64'), {
+      contentType: mime || 'application/octet-stream',
+      /* The key is the row's own id, so a collision means a retry of the same
+       * upload, not a different file. Overwriting is the correct resolution. */
+      upsert: true,
+    });
+    if (error) throw error;
+    const { error: linkError } = await supabase.from('chat_files').update({ storage_path: key }).eq('id', fileId).eq('user_id', userId).select('id');
+    /* THE ORDER MATTERS AND SO DOES THIS BRANCH. Object first, pointer second:
+     * a pointer with no object is a download that 500s, while an object with no
+     * pointer is an orphan the sweeper cannot see. So if the pointer fails, the
+     * object is removed again rather than left unreferenced. */
+    if (linkError) {
+      await supabase.storage.from(FILE_BUCKET).remove([key]).catch(() => {});
+      throw linkError;
+    }
+    return true;
+  } catch (err) {
+    console.error('[FILES] original not retained:', err.message);
+    return false;
+  }
+};
+
+/**
+ * Delete the objects whose rows are gone.
+ *
+ * WHY A SWEEPER AND NOT A DELETE IN THE ROUTE. `chat_files` cascades from both
+ * `users` and `chats`, and a cascade runs inside Postgres with no application
+ * code in the path. Deleting a conversation — the common case — would leave
+ * every attached document in the bucket forever. The trigger added in 028
+ * records what outlived its row; this drains that list.
+ *
+ * `swept_at` is set only after the object is gone, and `attempts`/`last_error`
+ * keep a row that cannot be deleted visible instead of silently retried until
+ * the end of time.
+ */
+const runStorageSweepJob = async (job) => {
+  const limit = Math.max(1, Math.min(100, Number(job?.payload?.limit) || 50));
+  const { data, error } = await supabase
+    .from('deleted_file_objects')
+    .select('id,storage_path,attempts')
+    .is('swept_at', null)
+    .order('deleted_at', { ascending: true })
+    .limit(limit);
+  if (error) throw error;
+  for (const row of data || []) {
+    const attempts = (Number(row.attempts) || 0) + 1;
+    /* A key that is not one this server could have produced is not deleted and
+     * not retried. `remove` takes a path, and a malformed value in this column
+     * is the one way a path could re-enter the system. */
+    if (!fileObjectOwner(row.storage_path)) {
+      await supabase.from('deleted_file_objects')
+        .update({ attempts, last_error: 'not a key this server derives; refusing to delete by it', swept_at: new Date().toISOString() })
+        .eq('id', row.id);
+      continue;
+    }
+    const { error: removeError } = await supabase.storage.from(FILE_BUCKET).remove([row.storage_path]);
+    await supabase.from('deleted_file_objects').update(
+      removeError
+        ? { attempts, last_error: String(removeError.message || removeError).slice(0, 500) }
+        : { attempts, last_error: null, swept_at: new Date().toISOString() },
+    ).eq('id', row.id);
+  }
+};
+
+/** Best-effort nudge after a delete. The sweep is idempotent, so a lost enqueue
+ * costs a delay, never an orphan — the row stays pending for the next sweep. */
+const enqueueStorageSweep = () => enqueueDurableJob({ kind: 'storage_sweep', payload: { limit: 50 } });
+
 const backgroundJobHandlers = {
   chat_summary: async (job) => {
     const payload = job.payload || {};
@@ -6959,6 +7131,7 @@ const backgroundJobHandlers = {
     await runFactExtractionJob(job.user_id, payload.userMsg, payload.turnId || null);
   },
   embedding_backfill: runEmbeddingBackfillJob,
+  storage_sweep: runStorageSweepJob,
   cache_warm: async (job) => {
     const input = job.payload || {};
     if (!input.question || !input.branch) {

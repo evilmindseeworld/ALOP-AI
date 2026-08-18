@@ -374,7 +374,7 @@ export const appTree = (theme) => `
       <button type="button" class="file-chips-retry">Try again</button>
     </div>
     <ul class="file-chips">
-                <li class="file-chip"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M0 0"/></svg><span class="file-chip-name">budget.csv</span><button aria-label="Remove budget.csv">×</button></li>
+                <li class="file-chip"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M0 0"/></svg><span class="file-chip-name">budget.csv</span><button class="file-chip-download" aria-label="Download budget.csv"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M0 0"/></svg></button><button aria-label="Remove budget.csv">×</button></li>
                 <li class="file-chip"><svg width="12" height="12" viewBox="0 0 24 24"><path d="M0 0"/></svg><span class="file-chip-name">a-very-long-attachment-filename-that-must-truncate.md</span><button aria-label="Remove it">×</button></li>
               </ul>
               <textarea class="input-text" rows="1" placeholder="Ask the AI Council anything..."></textarea>

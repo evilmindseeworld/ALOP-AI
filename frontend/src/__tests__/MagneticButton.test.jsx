@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import MagneticButton from "../components/ui/MagneticButton";
 
@@ -13,9 +13,8 @@ import MagneticButton from "../components/ui/MagneticButton";
 // hundred milliseconds, on the slow connections where the split matters most
 // and where nobody testing on localhost would ever see it.
 describe("MagneticButton", () => {
-  it("RENDERS A WORKING BUTTON BEFORE THE MOTION CHUNK ARRIVES", async () => {
+  it("RENDERS A WORKING BUTTON BEFORE THE MOTION CHUNK ARRIVES", () => {
     const onClick = vi.fn();
-    const user = userEvent.setup();
 
     render(
       <MagneticButton className="icon-btn" ariaLabel="Theme" onClick={onClick}>
@@ -27,8 +26,24 @@ describe("MagneticButton", () => {
     const fallback = screen.getByRole("button", { name: "Theme" });
     expect(fallback).toHaveClass("icon-btn");
 
-    await user.click(fallback);
+    /* SYNCHRONOUS ON PURPOSE, and this is the whole point of the test.
+     *
+     * `fallback` is the node Suspense rendered while the chunk was still in
+     * flight. The moment this test awaits anything, the lazy import is free to
+     * resolve, React commits the real component, and that node is REPLACED --
+     * `fallback.isConnected` goes false. A click on a detached node reaches no
+     * React handler, so the assertion below failed with "expected 1, got 0"
+     * roughly 1 run in 30, and once in CI on PR #4. The component was never
+     * wrong; the test was holding a stale reference across an await.
+     *
+     * `fireEvent.click` runs start to finish without yielding, so the chunk
+     * provably cannot land between the query above and the assertion below --
+     * which is the only way to assert something about the pre-chunk state. Do
+     * not "modernise" this to `await user.click(fallback)`; that is the bug.
+     * The loaded state is covered by the next test, which re-queries. */
+    fireEvent.click(fallback);
     expect(onClick).toHaveBeenCalledTimes(1);
+    expect(fallback.isConnected).toBe(true);
   });
 
   it("still works once the real one has loaded", async () => {
@@ -41,10 +56,25 @@ describe("MagneticButton", () => {
       </MagneticButton>,
     );
 
+    /* WAIT FOR THE SWAP, NOT FOR A CLASS BOTH STATES RENDER.
+     *
+     * The fallback and the motion version are deliberately identical in tag,
+     * class and layout -- that is the point of the fallback -- so a `waitFor`
+     * on `.upgrade-btn` matched the FALLBACK on the first tick and waited for
+     * nothing. The click that followed could then land mid-swap on a node
+     * React had already detached, and the handler never fired.
+     *
+     * Node identity is the one thing that does change, so it is what "the real
+     * one has loaded" actually means here. Once it has, no further swap is
+     * pending and awaiting a real user click is safe. */
+    const fallback = screen.getByRole("button", { name: "Upgrade to Pro" });
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: "Upgrade to Pro" })).toHaveClass("upgrade-btn");
+      expect(screen.getByRole("button", { name: "Upgrade to Pro" })).not.toBe(fallback);
     });
-    await user.click(screen.getByRole("button", { name: "Upgrade to Pro" }));
+
+    const loaded = screen.getByRole("button", { name: "Upgrade to Pro" });
+    expect(loaded).toHaveClass("upgrade-btn");
+    await user.click(loaded);
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 

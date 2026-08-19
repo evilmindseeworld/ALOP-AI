@@ -22,7 +22,14 @@
     "",
     "The four reels below are ALREADY OWNED BY METRICOOL and are here so the",
     "dry-run has something to be refused on. Future reels are added here and are",
-    "the ones Buffer will actually take."
+    "the ones Buffer will actually take.",
+    "",
+    "ARRAY ORDER IS POSTING ORDER. plan() gives reel N the Nth day after the",
+    "start date, so reordering this list reschedules the batch. The last ten",
+    "entries are tutorial batch 01 from the alop-reel repo, in the order",
+    "reel-notes/TUTORIAL-BATCH-01.md argues for. They are STAGED, NOT SCHEDULED:",
+    "their media is in the bucket and their captions are here, and nothing has",
+    "been sent to Buffer or Metricool. Only `queue.mjs --commit` can change that."
   ],
   "bucket": "reels",
   "reels": [
@@ -273,6 +280,186 @@
       },
       "youtube": {
         "title": "offset pagination shows the same row twice #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "mcpconnect",
+      "media": "mcpconnect.mp4",
+      "durationMs": 11700,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "One command adds an MCP server. Not a config file you hand-edit.\n\nclaude mcp add --transport http sentry https://mcp.sentry.dev/mcp\n\nThen prove it landed: claude mcp list. Added and connected are two different states, and only one of them means the server answered.\n\nThe part people get wrong is scope. It defaults to local — this repo only. Want the server in every project you open, add -s user.\n\nAnd for stdio servers, everything after the -- is the subprocess, not arguments to Claude.\n\nComment MCP and I'll send both commands.\n\n#claudecode #aiagents #codingagents #aitools #devtools #programming #softwareengineering #coding #codingtips #ai #developertools #learntocode",
+        "tiktok": "One command adds an MCP server.\n\nclaude mcp add --transport http sentry <url>\n\nThen claude mcp list — added and connected are two different states. Scope defaults to local, this repo only. -s user follows you everywhere. Stdio servers: everything after -- is the subprocess.\n\nComment MCP for both commands.\n\n#claudecode #aiagents #aitools #devtools #coding #programming #codingtips #ai",
+        "youtube": "claude mcp add --transport http <name> <url> for HTTP servers, then claude mcp list to prove it connected. Scope defaults to local — use -s user to get the server in every project. For stdio servers, everything after -- is the subprocess.\n\nVerified on Claude Code 2.1.235.\n\n#Shorts #claudecode #mcp #aiagents #devtools"
+      },
+      "youtube": {
+        "title": "Add an MCP server to Claude Code in one command #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "schemafirst",
+      "media": "schemafirst.mp4",
+      "durationMs": 10300,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "30 create calls. 0 posts.\n\nThe integration guide named one GraphQL input type. The schema had a different one. PostInput! was never the type — it's CreatePostInput!.\n\nThirty creates went out on the wrong name and all thirty came back rejected. The loop discovered the type error once per item instead of once, total.\n\nOne introspection query answers this before the loop ever runs: query { __type(name: \"Mutation\") { fields { name } } }\n\nRead the schema, not the docs about the schema.\n\nComment SCHEMA for the introspection query I use.\n\n#graphql #api #backend #coding #programming #devtools #codingtips #softwareengineering #webdev #apidesign #debugging #learntocode",
+        "tiktok": "30 create calls. 0 posts.\n\nThe guide said PostInput!. The schema said CreatePostInput!. Thirty mutations, thirty rejections, one wrong name.\n\nIntrospect first — one query tells you the real type before you loop.\n\nComment SCHEMA for the query.\n\n#graphql #api #backend #coding #programming #devtools #codingtips #debugging",
+        "youtube": "A real incident: createPost declares $input: CreatePostInput!, not PostInput!. The integration guide disagreed with the schema, so thirty creates went out on the wrong input type and all thirty were rejected.\n\nOne introspection query would have caught it before the loop started.\n\n#Shorts #graphql #api #backend #debugging"
+      },
+      "youtube": {
+        "title": "The GraphQL guide was wrong. 30 rejected mutations. #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "denyenv",
+      "media": "denyenv.mp4",
+      "durationMs": 10300,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "Your allow list is not a boundary.\n\nClaude Code evaluates permission rules in one order: deny, then ask, then allow. First match wins, and specificity does not change that order — so a deny rule cannot carry allowlist exceptions, and a broad allow cannot punch through a deny.\n\nTwo things people miss:\n\nA Read deny also covers the file commands Claude runs in Bash — cat, head, tail, sed. And it blocks Edit and Write on the same path, so denying the read denies the rewrite.\n\nRead(.env) and Read(**/.env) are the same rule. Bare filenames follow gitignore semantics and match at any depth.\n\nComment DENY for the block I paste into settings.json.\n\n#claudecode #aiagents #codingagents #aitools #devtools #programming #softwareengineering #coding #codingtips #ai #developertools #learntocode",
+        "tiktok": "Deny beats allow. Always.\n\nRules run deny → ask → allow. First match wins. A broad allow can't punch through a deny, and a deny can't carry exceptions.\n\nA Read deny also covers cat/head/tail/sed in Bash — and blocks Edit and Write on that path too.\n\nComment DENY for the settings.json block.\n\n#claudecode #aiagents #aitools #devtools #coding #programming #codingtips #ai",
+        "youtube": "Claude Code evaluates permission rules deny → ask → allow, first match wins. Add Read(./.env) and Read(./secrets/**) to the deny array. The rule also covers cat/head/tail/sed in Bash, and blocks Edit and Write on the same path.\n\n#Shorts #claudecode #aiagents #devtools #security"
+      },
+      "youtube": {
+        "title": "Stop your coding agent reading .env — deny beats allow #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "doublepost",
+      "media": "doublepost.mp4",
+      "durationMs": 11700,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "Two schedulers. One slot. The database decides who owns it.\n\nMetricool holds the batch already in its planner. Buffer got added for capacity. Neither knows about the other, and both publishing the same reel to the same account is not a bug an audience forgives.\n\nSo ownership is a row, and the guard is an index:\n\nCREATE UNIQUE INDEX publishing_ledger_active_owner ON publishing_ledger (reel_id, platform) WHERE status IN ('claimed', 'scheduled', 'published');\n\nMetricool claims (reel_id, platform). Buffer's run reaches the same pair and just INSERTs — no check first, on purpose. Postgres answers 23505 and the claim is refused.\n\nIt has to be the index, not a check-then-insert in application code. Two separate processes on separate schedules will lose that race, and a constraint is a refusal the caller cannot forget to handle.\n\nIt's partial so failed and cancelled release the pair for a retry, while published stays active — a published reel is still owned, or the other scheduler posts it again tomorrow.\n\nMeasured on the run: 12 owned pairs, 12 refused, 0 created. The duplicate never reached createPost.\n\nComment LEDGER for migration 030.\n\n#claudecode #aiagents #codingagents #aitools #devtools #programming #softwareengineering #coding #codingtips #ai #developertools #learntocode",
+        "tiktok": "Two schedulers, one slot. The database decides who owns it.\n\nMetricool claims (reel_id, platform). Buffer INSERTs the same pair — no check first. Postgres answers 23505 and refuses it.\n\nA partial unique index, not a check-then-insert: two processes on separate schedules lose that race every time.\n\n12 pairs, 12 refused, 0 duplicate creates.\n\nComment LEDGER for the constraint.\n\n#postgres #sql #database #devtools #coding #programming #codingtips #automation",
+        "youtube": "When two schedulers can publish the same reel to the same platform, the guard belongs in the database, not the application: a check-then-insert in JS loses the race between two processes on separate schedules.\n\nCREATE UNIQUE INDEX publishing_ledger_active_owner ON publishing_ledger (reel_id, platform) WHERE status IN ('claimed', 'scheduled', 'published');\n\nThe second writer's INSERT fails with 23505. Partial so failed and cancelled free the pair for a retry, while published stays owned.\n\nMeasured: 12 owned pairs, 12 refused, 0 created.\n\n#Shorts #postgres #sql #database #devtools"
+      },
+      "youtube": {
+        "title": "Two schedulers, one slot — let Postgres refuse the duplicate #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "redfirst",
+      "media": "redfirst.mp4",
+      "durationMs": 11700,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "A green test proves nothing.\n\nYou wrote the regression test. It passes. So does a test that asserts nothing at all — you can't tell those two apart from a green run.\n\nThe only proof is red. Revert the fix on purpose, run the same command, and watch it fail. Then put the fix back.\n\nReal example: the regression test for a GraphQL input type only counts because reverting CreatePostInput! back to PostInput! turns it red. If it had stayed green with the fix removed, it was testing nothing and should be deleted, not kept for comfort.\n\nA test you have not watched fail is not a test.\n\nComment REDFIRST for the checklist.\n\n#claudecode #aiagents #codingagents #aitools #devtools #programming #softwareengineering #coding #codingtips #ai #developertools #learntocode",
+        "tiktok": "A green test proves nothing.\n\nIt also passes if it asserts nothing. You can't tell the difference from a green run.\n\nRevert the fix. Run it again. Require red. Then restore. If it stays green with the fix removed — delete the test, it's decoration.\n\nA test you have not watched fail is not a test.\n\nComment REDFIRST for the checklist.\n\n#coding #programming #testing #devtools #codingtips #softwareengineering #ai",
+        "youtube": "A regression test that has only ever been green is indistinguishable from one that asserts nothing. Revert the fix deliberately, run the same command, require red, then restore the fix. If it stays green without the fix, delete it.\n\n#Shorts #testing #coding #softwareengineering #devtools"
+      },
+      "youtube": {
+        "title": "A test you have not watched fail is not a test #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "twojudges",
+      "media": "twojudges.mp4",
+      "durationMs": 10300,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "Never let the author be the only reviewer.\n\nAsk the agent that wrote the code to review the code and it will mostly agree with itself. It finds real bugs — and it also shares every assumption that produced the bug in the first place.\n\nSo run a second model on the same diff, cold. Different training, different blind spots, different findings.\n\ncodex review is its own subcommand, so there's no prompt to get wrong. If you need a specific model, codex exec -m <model> takes one.\n\nGive the second reviewer the diff and the intent — never a summary. A summary is the author's account of the code, which is the thing under review.\n\nComment JUDGES for the two-reviewer loop.\n\n#claudecode #aiagents #codingagents #aitools #devtools #programming #softwareengineering #coding #codingtips #ai #developertools #learntocode",
+        "tiktok": "One reviewer is the author. It will agree with itself.\n\nRun a second model on the same diff, cold. codex review — own subcommand, no prompt to get wrong. codex exec -m <model> if you need a specific one.\n\nGive it the diff and the intent. Never a summary — a summary is the author's account of the thing under review.\n\nComment JUDGES for the loop.\n\n#claudecode #aiagents #aitools #devtools #coding #programming #codingtips #ai",
+        "youtube": "The model that wrote the code shares the assumptions that produced the bug. Run a second one on the same diff, cold: codex review, or codex exec -m <model> for a specific model. Hand it the diff and the intent, never a summary.\n\nVerified on codex-cli 0.146.1.\n\n#Shorts #aiagents #codereview #devtools #coding"
+      },
+      "youtube": {
+        "title": "Two AI judges, one diff — never let the author review alone #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "agentsmd",
+      "media": "agentsmd.mp4",
+      "durationMs": 11700,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "Claude Code does not read AGENTS.md. Not on its own, not ever.\n\nIt reads CLAUDE.md. That's the entry point, and that's the whole confusion.\n\nThe fix is one line. Put @AGENTS.md inside CLAUDE.md — that line imports the shared file, so Claude reaches it indirectly. AGENTS.md itself sits beside CLAUDE.md in the repo, not inside it.\n\nCodex reads AGENTS.md directly, nothing to configure.\n\nNow the durable traps — the ones your agents keep relearning — live in one file that two different agents both reach. Written once, read twice.\n\nAnd they go in the file, not in chat. Chat doesn't survive the session.\n\nComment AGENTS for the CLAUDE.md stub I use.\n\n#claudecode #aiagents #codingagents #aitools #devtools #programming #softwareengineering #coding #codingtips #ai #developertools #learntocode",
+        "tiktok": "Claude does NOT read AGENTS.md.\n\nIt reads CLAUDE.md. Put @AGENTS.md inside CLAUDE.md and that line imports the shared file. Codex reads AGENTS.md directly.\n\nOne traps file, two agents. Written once, read twice — and in the file, not in chat.\n\nComment AGENTS for the stub.\n\n#claudecode #aiagents #aitools #devtools #coding #programming #codingtips #ai",
+        "youtube": "Claude Code reads CLAUDE.md, not AGENTS.md. Add an @AGENTS.md import line inside CLAUDE.md and it reaches the shared file indirectly, while Codex reads AGENTS.md directly. One set of project traps, two agents.\n\n#Shorts #claudecode #aiagents #devtools #coding"
+      },
+      "youtube": {
+        "title": "Claude does not read AGENTS.md — do this instead #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "quotaburn",
+      "media": "quotaburn.mp4",
+      "durationMs": 10300,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "111 requests. About 60 of them produced nothing.\n\nThirty create mutations went out on a wrong input type — all thirty rejected. Thirty edits went out in the wrong shape — thirty more. Sixty requests spent and nothing scheduled.\n\nThe ceiling was 100 requests per 24 hours. Not per hour, not per 15 minutes — per day. At around 111 the key started answering RATE_LIMIT_EXCEEDED, and waiting out the short window restored nothing, because the daily ceiling was the binding one.\n\nCreating things is cheap. Being wrong thirty times at once is what costs.\n\nProve the mutation against ONE call — a stub, a single real item, or schema introspection — before the loop. And budget the request count before you run it.\n\nComment QUOTA for the pre-flight I run now.\n\n#graphql #api #backend #coding #programming #devtools #codingtips #softwareengineering #webdev #apidesign #debugging #learntocode",
+        "tiktok": "111 requests. 60 did nothing.\n\n30 creates on a wrong type → all rejected. 30 edits in a wrong shape → all rejected. Ceiling was 100 per 24 HOURS, not per hour.\n\nBeing wrong thirty times at once is what burns a quota. Prove one call first, then loop.\n\nComment QUOTA for the pre-flight.\n\n#api #backend #coding #programming #devtools #codingtips #debugging #ai",
+        "youtube": "A 30-item batch spent ~111 requests against a 100-per-24-hours ceiling. About 60 of those were rejected mutations — a wrong GraphQL input type and a wrong edit shape, each discovered once per item instead of once total.\n\nProve the mutation against one call before looping, and budget the request count first.\n\n#Shorts #api #backend #graphql #debugging"
+      },
+      "youtube": {
+        "title": "I burned a daily API quota in one batch. 60 requests did nothing. #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "subagent",
+      "media": "subagent.mp4",
+      "durationMs": 10300,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "A reviewer that can edit is not a reviewer.\n\nOmit the tools field on a subagent and it inherits every tool available. Name them and the field becomes an allowlist — only what's listed survives.\n\n--- name: reviewer description: Reviews a diff. Reports, never edits. tools: Read, Grep, Glob ---\n\nEverything unlisted is denied. You don't list anything to deny it.\n\nThis matters more than it sounds. A reviewer holding Write will quietly fix what it finds, and you'll never see the finding — you'll see a diff that grew while you weren't looking. No Bash either. Its only output should be the review.\n\nComment REVIEWER for the whole agent file.\n\n#claudecode #aiagents #codingagents #aitools #devtools #programming #softwareengineering #coding #codingtips #ai #developertools #learntocode",
+        "tiktok": "A reviewer that can edit isn't a reviewer.\n\nOmit tools: and a subagent inherits everything. Name them and it's an allowlist: tools: Read, Grep, Glob. Unlisted tools aren't refused — they're removed.\n\nGive a reviewer Write and it'll fix things instead of finding them.\n\nComment REVIEWER for the file.\n\n#claudecode #aiagents #aitools #devtools #coding #programming #codingtips #ai",
+        "youtube": "In .claude/agents/reviewer.md, the tools frontmatter field is an allowlist. tools: Read, Grep, Glob removes Edit, Write and Bash entirely. Omit the field and the subagent inherits every tool instead.\n\nA reviewer holding Write fixes things instead of reporting them.\n\n#Shorts #claudecode #aiagents #devtools #coding"
+      },
+      "youtube": {
+        "title": "Build a Claude subagent that can read but never write #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "replacenotpatch",
+      "media": "replacenotpatch.mp4",
+      "durationMs": 11700,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "editPost replaces the post. It does not patch it.\n\nMoving a scheduled time looks like a one-field edit, so you send { id, dueAt } and expect everything else to stay put.\n\nIt doesn't. The omitted fields are cleared, not kept. All thirty edits came back refused — Invalid post: Post must have either text or media. — plus the per-platform complaints about a missing type and a missing title.\n\nThat refusal is the only reason nothing was damaged. An edit the API had ACCEPTED would have left thirty scheduled posts with no video in them, and nothing would have logged.\n\nSo rebuild the whole intended payload every time: text, assets, per-platform metadata, scheduling type, mode, and the scheduling fields. Never treat a replace-shaped mutation as a PATCH.\n\nComment REPLACE for the payload builder.\n\n#graphql #api #backend #coding #programming #devtools #codingtips #softwareengineering #webdev #apidesign #debugging #learntocode",
+        "tiktok": "editPost REPLACES the post. It doesn't patch it.\n\nSent { id, dueAt } to move a time. Omitted fields get cleared, not kept. All 30 refused: \"Post must have either text or media.\"\n\nThe refusal saved it. An accepted partial edit = 30 scheduled posts with no video.\n\nRebuild the whole payload every time.\n\nComment REPLACE for the builder.\n\n#api #graphql #backend #coding #programming #devtools #codingtips #debugging",
+        "youtube": "editPost is replace-shaped, not PATCH-shaped. Sending { id, dueAt } to move a scheduled time clears the omitted fields; all thirty edits were refused with Invalid post: Post must have either text or media.\n\nThe refusal is the only reason nothing was lost — an accepted partial edit would have stripped the video from thirty scheduled posts. Rebuild the full payload every time.\n\n#Shorts #api #graphql #backend #debugging"
+      },
+      "youtube": {
+        "title": "This API \"edit\" clears every field you leave out #Shorts",
         "categoryId": "28",
         "privacy": "public",
         "madeForKids": false

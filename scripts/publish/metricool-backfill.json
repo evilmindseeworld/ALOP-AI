@@ -20,7 +20,17 @@
     "media is the Metricool CDN copy, which is what Metricool will actually",
     "publish. Our own masters live in the Supabase `reels` bucket and are what",
     "Buffer will use for FUTURE reels - the two are different URLs for the same",
-    "video on purpose, and the ledger records what each scheduler was handed."
+    "video on purpose, and the ledger records what each scheduler was handed.",
+    "",
+    "publicUrl ON THE TIKTOK ROW HOLDS A HANDLE THAT NO LONGER EXISTS. The",
+    "account was renamed to @alop_ai on 2026-08-19 and @userma0e40g4sp now",
+    "404s as a profile. The URL is left exactly as it was read, because this",
+    "file is a record of the planner's state at readAt and not a live index.",
+    "Nothing reads this field: backfill() ingests reel_id, platform,",
+    "scheduler, scheduler_post_id, scheduled_at, status, media_url and",
+    "caption_hash, and publicUrl is dropped. Identity for anything that runs",
+    "is the Buffer channel id in EXPECTED_ACCOUNTS, never a handle - see",
+    "queue.mjs and the rename test in publish-buffer.test.js."
   ],
   "source": {
     "brandId": 6744652,

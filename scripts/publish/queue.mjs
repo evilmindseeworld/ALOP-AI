@@ -73,30 +73,33 @@ export const BUFFER_QUEUE_LIMIT = 10;
 
 /** The accounts a publish is allowed to reach. Anything else is refused. */
 /**
- * The accounts a publish is allowed to reach, as Buffer reported them on
- * 2026-08-19. Matched against name, displayName AND serviceId - see
- * resolveChannels.
+ * The accounts a publish is allowed to reach.
  *
- * INSTAGRAM and YOUTUBE are verified against Metricool's record of the same
- * accounts. YouTube is the reason serviceId matters: Buffer calls the channel
- * "vash" while Metricool knows it as UCjSfNPTI9Obg3wWNnzvDV9g, and only the id
- * ties those two records to one channel.
+ * OWNER-CONFIRMED, 2026-08-19: every social account was renamed to the company
+ * name, which is the whole explanation for the mismatch this list used to trip
+ * over. Metricool's records predate the rename; Buffer's postdate it.
  *
- * TIKTOK IS DELIBERATELY UNRESOLVED. Buffer reports `alop_ai`, open id
- * `_000G6u31g687P--Il2sfCsyv5hJAGMubkxU`; Metricool publishes to the handle
- * `userma0e40g4sp`, which is the one in the live video URL. A renamed handle
- * would explain it and so would a second account, and nothing in either API
- * distinguishes those two stories - TikTok's open id is per-application, so it
- * cannot be compared with anything Metricool holds. Until the owner says which,
- * the list keeps only the identifier that was verified, `--channels` exits 1,
- * and no TikTok post can be created. Add `alop_ai` here to unblock it.
+ *   instagram  alop_ai_   was already the company name in both systems
+ *   tiktok     alop_ai    published as @userma0e40g4sp before the rename -
+ *                         ONE account, confirmed by the owner, not inferred
+ *   youtube    vash       Buffer still shows the old channel name; the id
+ *                         UCjSfNPTI9Obg3wWNnzvDV9g is the ALOP-AI channel
+ *
+ * SO THE BUFFER CHANNEL ID IS THE PRIMARY IDENTIFIER HERE, and the handles are
+ * kept only as a secondary reading. A handle is a label the owner can change at
+ * any time - it changed under us once already, and the version of this list
+ * that trusted handles refused the correct TikTok and YouTube channels. A
+ * channel id does not move when an account is renamed. If a future rename
+ * breaks a match again, fix it by checking the id, never by loosening the rule.
+ *
+ * The refusal this list powers is still the point: a personal Buffer key
+ * reaches every channel its owner has, so publishing has to name its targets.
  */
 export const EXPECTED_ACCOUNTS = Object.freeze({
-  instagram: ['alop_ai_', '17841472991142024'],
-  tiktok: ['userma0e40g4sp'],
-  youtube: ['ALOP-AI', 'vash', 'UCjSfNPTI9Obg3wWNnzvDV9g'],
-});
-export function mediaUrlFor(reel, { supabaseUrl = process.env.SUPABASE_URL, bucket = 'reels' } = {}) {
+  instagram: ['6a858384ccaf649a67d5a2cc', '17841472991142024', 'alop_ai_'],
+  tiktok: ['6a8583a1ccaf649a67d5a36e', '_000G6u31g687P--Il2sfCsyv5hJAGMubkxU', 'alop_ai', 'userma0e40g4sp'],
+  youtube: ['6a858361ccaf649a67d5a228', 'UCjSfNPTI9Obg3wWNnzvDV9g', 'ALOP-AI', 'vash'],
+});export function mediaUrlFor(reel, { supabaseUrl = process.env.SUPABASE_URL, bucket = 'reels' } = {}) {
   if (!supabaseUrl) throw new Error('SUPABASE_URL is not set, so the public media URL cannot be built.');
   return `${String(supabaseUrl).replace(/\/$/, '')}/storage/v1/object/public/${bucket}/${reel.media}`;
 }

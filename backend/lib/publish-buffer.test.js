@@ -219,6 +219,33 @@ test('publishing is refused unless the connected accounts are ALOP-AI, unambiguo
   assert.deepEqual(ambiguous.channels, {});
 });
 
+test('a renamed account still resolves, because the channel id is what is pinned', async () => {
+  const { resolveChannels } = await load();
+  /* The real event, 2026-08-19: every account was renamed to the company name.
+   * Metricool's records hold the OLD handles, Buffer's the new ones, and the
+   * list that trusted handles refused two correct channels. */
+  const expected = {
+    tiktok: ['6a8583a1ccaf649a67d5a36e', 'userma0e40g4sp'],
+    youtube: ['6a858361ccaf649a67d5a228', 'UCjSfNPTI9Obg3wWNnzvDV9g'],
+  };
+  const afterRename = [
+    { id: '6a8583a1ccaf649a67d5a36e', name: 'alop_ai', displayName: 'alop_ai', service: 'tiktok', serviceId: 'open-id-changes-per-app' },
+    { id: '6a858361ccaf649a67d5a228', name: 'vash', displayName: 'vash', service: 'youtube', serviceId: 'UCjSfNPTI9Obg3wWNnzvDV9g' },
+  ];
+
+  const out = resolveChannels(afterRename, expected);
+  assert.deepEqual(out.problems, [], 'a rename must not lock us out of our own channels');
+  assert.deepEqual(out.channels, { tiktok: '6a8583a1ccaf649a67d5a36e', youtube: '6a858361ccaf649a67d5a228' });
+
+  /* And the pin still refuses a stranger: same service, neither id nor handle. */
+  const stranger = resolveChannels(
+    [{ id: 'someone-elses-channel', name: 'alop_ai', displayName: 'alop_ai', service: 'tiktok', serviceId: 'x' }],
+    { tiktok: ['6a8583a1ccaf649a67d5a36e'] },
+  );
+  assert.deepEqual(stranger.channels, {}, 'matching a display name is not proof of identity');
+  assert.match(stranger.problems.join(' '), /not one of/);
+});
+
 test('a channel that cannot publish is refused even when it is the right account', async () => {
   const { resolveChannels } = await load();
   const expected = { instagram: ['alop_ai_'] };

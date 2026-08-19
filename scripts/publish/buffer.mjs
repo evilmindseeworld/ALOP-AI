@@ -240,7 +240,9 @@ export function resolveChannels(channels, expected) {
       continue;
     }
     const wanted = accepted.map(clean);
-    const matches = onService.filter((c) => [c.name, c.displayName, c.serviceId].some((id) => id && wanted.includes(clean(id))));
+    /* `id` first, deliberately: the Buffer channel id is the identifier a
+     * rename cannot move, and every account here HAS been renamed once. */
+    const matches = onService.filter((c) => [c.id, c.serviceId, c.name, c.displayName].some((id) => id && wanted.includes(clean(id))));
 
     if (matches.length > 1) {
       problems.push(`${matches.length} ${platform} channels match ${accepted.join(', ')} — refusing to guess which is ALOP-AI`);

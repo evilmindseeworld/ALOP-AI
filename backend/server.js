@@ -47,6 +47,7 @@ const { createTurnTelemetry } = require('./lib/turn-telemetry');
 const { rescueReasoning } = require('./lib/reasoning-rescue');
 const { createTurnContext } = require('./lib/turn-context');
 const { createTurnLedger } = require('./lib/turn-ledger');
+const { buildTurnReliabilityMeta } = require('./lib/turn-reliability-meta');
 const {
   fingerprint: cacheFingerprint, retrievalMode, sourceFreshness, short: cacheIdentityShort,
 } = require('./lib/cache-identity');
@@ -6250,11 +6251,35 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
      * same reason the settlement above is not — the client may already be gone. */
     if (turnBegun) {
       const finalAnswer = turnAnswerText();
+      const state = turnSignal.aborted ? 'aborted' : finalAnswer ? 'complete' : 'failed';
       turnLedger.finish({
         turnId: turnContext.turnId,
-        state: turnSignal.aborted ? 'aborted' : finalAnswer ? 'complete' : 'failed',
+        state,
         answer: finalAnswer,
         lastEventId: turnEventId,
+        /* THE MEASUREMENT, KEPT. Everything below was already collected for the
+         * whole turn and then thrown away here, because this call passed no
+         * meta and `turns.meta` stayed at its column default.
+         *
+         * The snapshot is taken HERE and nowhere earlier. `auditTelemetry`
+         * snapshots at whichever branch wins the audit latch, and every seat,
+         * retry and stream timing recorded after that branch -- which on a
+         * search or cache turn is most of them -- is missing from it. This is
+         * the only point at which the turn is actually over.
+         *
+         * Through `buildTurnReliabilityMeta`, never spread: the serializer is
+         * an explicit allow-list, and it is what makes it impossible for a
+         * prompt, an answer, a draft or a provider body to reach a column.
+         *
+         * COVERS EVERY TURN THAT REACHED `turnLedger.begin` -- which is what
+         * `turnBegun` says -- and nothing before it. A request refused earlier
+         * has no row to carry this and is deliberately out of scope. */
+        meta: buildTurnReliabilityMeta(telemetry.snapshot({
+          category: state === 'aborted' ? 'aborted' : 'final',
+          msToFirstByte: res.locals?.firstChunkAt ? res.locals.firstChunkAt - t0 : null,
+          msToFirstProgress: res.locals?.firstByteAt ? res.locals.firstByteAt - t0 : null,
+          aborted: turnSignal.aborted,
+        })),
       });
     }
     /* SETTLE THE RESERVATION DOWN TO WHAT THE TURN ACTUALLY COST.

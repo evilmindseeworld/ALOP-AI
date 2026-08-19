@@ -382,6 +382,43 @@ test("reports the phase and per-seat telemetry from structured turn rows", async
   assert.equal(r.result.hitACeiling, "1 of 2");
 });
 
+/* THE REPAIRED AUDIT ROW, READ BY THE VIEW IT WAS BREAKING.
+ *
+ * Before the rename, `seats` arrived here as `selection.members.length` — a
+ * number — so `Array.isArray(row.seats)` was false and both readers fell back
+ * to []. The per-seat panel rendered blank for every council turn. This is the
+ * post-fix row shape: the array under `seats`, the count beside it under
+ * `seatCount`. Watched fail by putting the count back under `seats`. */
+test("the per-seat view reads the repaired row rather than falling back to []", async () => {
+  const c = buildCommands({
+    supabase: fakeSupabase(councilRows([
+      {
+        telemetry: "council_turn",
+        turnMs: 5000,
+        seatCount: 2,
+        seats: [
+          { model: "fast", ms: 700, outcome: "answered" },
+          { model: "slow", ms: 3300, outcome: "timed_out" },
+        ],
+      },
+      {
+        telemetry: "council_turn",
+        turnMs: 4000,
+        seatCount: 2,
+        seats: [
+          { model: "fast", ms: 800, outcome: "answered" },
+          { model: "slow", ms: 2900, outcome: "answered" },
+        ],
+      },
+    ])),
+    env: {}, proc: process,
+  });
+  const r = await c.run("council");
+  assert.equal(r.result.seatMsP90ByModel.fast, 800, "the array was read, not skipped");
+  assert.equal(r.result.seatMsP90ByModel.slow, 3300);
+  assert.deepEqual(r.result.slowestSeatByModel, { slow: 2 });
+});
+
 test("turns with no timing recorded do not break the percentiles", async () => {
   // Rows written before msToFirstByte existed.
   const c = buildCommands({

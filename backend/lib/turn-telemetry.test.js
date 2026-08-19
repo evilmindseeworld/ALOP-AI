@@ -293,3 +293,55 @@ test('cache timings are readable without taking a whole snapshot', async () => {
   reads.answerExact = 'tampered';
   assert.notEqual(t.cacheReads().answerExact, 'tampered', 'the caller gets a copy, not the live bucket');
 });
+
+/* THE PER-SEAT RECORDS WERE BEING DESTROYED BY THE ROW THAT CARRIED THEM.
+ *
+ * `snapshot()` spreads `...extra` last, and every council branch passed
+ * `seats: selection.members.length` — a NUMBER — through `extra`. So the array
+ * `recordSeat` spent the whole turn building was overwritten by a count on its
+ * way into `audit_logs.metadata`.
+ *
+ * MEASURED in production, 30-day window: of 58 current-schema turns, exactly 1
+ * carried a seats array, and 33 council turns and 24 fallback turns carried
+ * none. The one survivor was an aborted turn whose `extra` happened not to
+ * include the key. That is why the seat sample was n=14 — it was never traffic
+ * volume, it was this.
+ *
+ * THE COUNT IS RENAMED, NOT THE ARRAY. `admin-commands.js` reads `row.seats`
+ * expecting an array and falls back to [] when it finds a number, and
+ * `lib/spend.js` reads `snap.seats` the same way. Renaming the array would
+ * mean changing both readers and every already-written row that does hold an
+ * array; renaming the count touches only the eight writers in server.js. The
+ * count now travels as `seatCount`.
+ *
+ * Watched fail before the fix: `seats` === 7, a number, not the two records. */
+test('a count passed through extra cannot destroy the per-seat records', () => {
+  const t = createTurnTelemetry();
+  t.recordSeat({ model: 'a:free', durationMs: 18002, outcome: 'timed_out' });
+  t.recordSeat({ model: 'b:free', durationMs: 900, outcome: 'answered' });
+
+  /* Exactly the shape the council path passes today: `auditTelemetry` hands the
+   * count through the NESTED `extra` bag, which `snapshot()` spreads last. */
+  const snap = t.snapshot({ category: 'council', extra: { seatCount: 7, quorum: 2 } });
+
+  assert.ok(Array.isArray(snap.seats), '`seats` is the per-seat array, always');
+  assert.equal(snap.seats.length, 2, 'and every recorded seat survives the row');
+  assert.deepEqual(snap.seats.map((s) => s.outcome), ['timed_out', 'answered']);
+  assert.equal(snap.seats[0].ms, 18002);
+  assert.equal(snap.seats[0].model, 'a:free');
+
+  assert.equal(snap.seatCount, 7, 'the count travels beside it, under its own name');
+  assert.equal(snap.seatTimings, undefined, 'there is no third name for either of them');
+});
+
+/* The zero-seat branches (arithmetic, greeting, both answer caches) audit with
+ * `seatCount: 0`. Their shape has to be the same shape, or a reader that sums
+ * `seats.length` across rows has to special-case them. */
+test('a turn that dispatched no seats has an empty array and a zero count', () => {
+  const t = createTurnTelemetry();
+  const snap = t.snapshot({ category: 'answer_cache', extra: { seatCount: 0 } });
+
+  assert.deepEqual(snap.seats, [], 'no seats recorded is an empty array, not a missing field');
+  assert.equal(snap.seatCount, 0);
+  assert.equal(snap.seatTimings, undefined);
+});

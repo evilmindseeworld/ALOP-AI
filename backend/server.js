@@ -4139,7 +4139,7 @@ async function handleCouncilTurn(req, res) {
         category: 'arithmetic',
         complexity: 'simple',
         models: 0,
-        seats: 0,
+        seatCount: 0,
         exact: sum.exact,
         msToFirstByte: Date.now() - t0,
       });
@@ -4183,7 +4183,7 @@ async function handleCouncilTurn(req, res) {
         category: 'greeting',
         complexity: 'simple',
         models: 0,
-        seats: 0,
+        seatCount: 0,
         msToFirstByte: Date.now() - t0,
       });
       return;
@@ -4852,7 +4852,7 @@ async function handleCouncilTurn(req, res) {
           category: 'answer_cache',
           complexity: selection.complexity,
           models: 0,
-          seats: 0,
+          seatCount: 0,
           ageMs: Date.now() - hit.storedAt,
           msToFirstByte: Date.now() - t0,
           /* By hand, for the same reason `msToFirstByte` is: `auditBranch`
@@ -4878,7 +4878,7 @@ async function handleCouncilTurn(req, res) {
           sendEvent(res, { type: 'chunk', text: noteWholeAnswer(semanticHit.answer) });
           if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
           await auditBranch({
-            category: 'answer_cache_semantic', models: 0, seats: 0,
+            category: 'answer_cache_semantic', models: 0, seatCount: 0,
             similarity: semanticHit.similarity, msToFirstByte: Date.now() - t0,
             cacheReads: telemetry.cacheReads(),
           });
@@ -5368,7 +5368,7 @@ async function handleCouncilTurn(req, res) {
       rememberTurn(chatId, user.id, pv.value, lastA || 'Search response.', telemetry, turnContext.turnId);
       await auditTelemetry('council.search', 'search', {
         ...(verification ? { verification } : {}),
-        sources: sources.length, seats: selection.members.length, quorum: selection.quorum,
+        sources: sources.length, seatCount: selection.members.length, quorum: selection.quorum,
         tokenLimit: selection.tokenLimit, complexity: selection.complexity,
         synthesisModel: searchSynthesisModelUsed,
         synthesisEffort: searchSynthesisEffort,
@@ -5825,7 +5825,7 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       await auditTelemetry(
         telemetryExtra.rounds !== undefined ? 'council.tools' : 'council',
         'fallback',
-        { ...telemetryExtra, models: 0, seats: selection.members.length, quorum: selection.quorum, tokenLimit: selection.tokenLimit, complexity: selection.complexity, councilRelease },
+        { ...telemetryExtra, models: 0, seatCount: selection.members.length, quorum: selection.quorum, tokenLimit: selection.tokenLimit, complexity: selection.complexity, councilRelease },
       );
       return;
     }
@@ -5896,7 +5896,7 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       await auditTelemetry('council', 'council_solo', {
         ...telemetryExtra,
         ...(verification ? { verification } : {}),
-        seats: selection.members.length,
+        seatCount: selection.members.length,
         quorum: selection.quorum,
         tokenLimit: selection.tokenLimit,
         complexity: selection.complexity,
@@ -6001,10 +6001,10 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
         ...telemetryExtra,
         ...(verification ? { verification } : {}),
         models: validResponses.length,
-        seats: selection.members.length,
+        seatCount: selection.members.length,
         quorum: selection.quorum,
         tokenLimit: selection.tokenLimit,
-        /* WHICH TIER THE ROUTER CHOSE. `seats` alone cannot answer "was this
+        /* WHICH TIER THE ROUTER CHOSE. `seatCount` alone cannot answer "was this
          * answer thin because the router called it easy?" — a three-seat turn
          * looks identical whether it was a moderate question on a Pro roster or
          * any question on a free one. This is the only record that the decision

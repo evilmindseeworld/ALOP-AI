@@ -150,18 +150,22 @@ test('a MutationError is a failure, not a post', async () => {
   );
 });
 
-test('the channel query falls back to the flat argument spelling rather than reporting a schema error as an outage', async () => {
+test('the channel query declares organizationId as the OrganizationId scalar, not ID', async () => {
   const { createBufferClient } = await load();
-  const fetchImpl = fakeFetch((n) => (n === 1
-    ? { ok: true, status: 200, text: async () => JSON.stringify({ errors: [{ message: 'Unknown argument "input" on field "channels"' }] }) }
-    : ok({ channels: [{ id: 'chan-ig', name: 'alop_ai_', service: 'instagram' }] })));
+  const fetchImpl = fakeFetch(() => ok({ channels: [{ id: 'chan-ig', name: 'alop_ai_', service: 'instagram' }] }));
   const client = createBufferClient({ fetchImpl, apiKey: KEY });
 
-  const channels = await client.channels('org-1');
-  assert.equal(channels.length, 1);
-  assert.equal(fetchImpl.seen.length, 2);
-  assert.match(fetchImpl.seen[0].body.query, /input: \{ organizationId/);
-  assert.match(fetchImpl.seen[1].body.query, /channels\(organizationId/);
+  await client.channels('org-1');
+
+  /* Declaring it `ID!` fails validation against the live schema with two errors
+   * that read like a wrong argument NAME — which is how the first version of
+   * this function went looking for a second spelling that does not exist. */
+  assert.match(fetchImpl.seen[0].body.query, /\$organizationId: OrganizationId!/);
+  assert.match(fetchImpl.seen[0].body.query, /channels\(input: \{ organizationId: \$organizationId \}\)/);
+  assert.equal(fetchImpl.seen.length, 1, 'one query — there is no second spelling to fall back to');
+  for (const field of ['serviceId', 'isDisconnected', 'isLocked', 'isQueuePaused']) {
+    assert.ok(fetchImpl.seen[0].body.query.includes(field), `${field} decides whether a channel can actually publish`);
+  }
 });
 
 test('per-platform metadata carries exactly what each API requires on create', async () => {
@@ -183,32 +187,47 @@ test('a YouTube post with no title or category is refused here, not by Buffer', 
 
 test('publishing is refused unless the connected accounts are ALOP-AI, unambiguously', async () => {
   const { resolveChannels } = await load();
-  const expected = { instagram: ['alop_ai_'], tiktok: ['userma0e40g4sp'], youtube: ['ALOP-AI'] };
+  const expected = { instagram: ['alop_ai_'], tiktok: ['userma0e40g4sp'], youtube: ['UCjSfNPTI9Obg3wWNnzvDV9g'] };
 
-  const good = resolveChannels([
-    { id: 'c1', name: 'alop_ai_', service: 'instagram' },
-    { id: 'c2', name: 'userma0e40g4sp', service: 'tiktok' },
-    { id: 'c3', name: 'ALOP-AI', service: 'youtube' },
-  ], expected);
+  /* The live shape, and the reason serviceId matters: Buffer calls the ALOP-AI
+   * YouTube channel "vash". Only the channel id identifies it. */
+  const live = [
+    { id: 'c1', name: 'alop_ai_', displayName: 'alop_ai_', service: 'instagram', serviceId: '17841472991142024' },
+    { id: 'c2', name: 'userma0e40g4sp', displayName: 'userma0e40g4sp', service: 'tiktok', serviceId: '_000G6u' },
+    { id: 'c3', name: 'vash', displayName: 'vash', service: 'youtube', serviceId: 'UCjSfNPTI9Obg3wWNnzvDV9g' },
+  ];
+  const good = resolveChannels(live, expected);
   assert.deepEqual(good.problems, []);
   assert.deepEqual(good.channels, { instagram: 'c1', tiktok: 'c2', youtube: 'c3' });
 
-  const wrongAccount = resolveChannels([
-    { id: 'c1', name: 'someone_else', service: 'instagram' },
-    { id: 'c2', name: 'userma0e40g4sp', service: 'tiktok' },
-    { id: 'c3', name: 'ALOP-AI', service: 'youtube' },
-  ], expected);
-  assert.equal(wrongAccount.channels.instagram, undefined);
+  const wrongAccount = resolveChannels(
+    [{ id: 'c1', name: 'someone_else', service: 'instagram', serviceId: '999' }],
+    { instagram: ['alop_ai_'] },
+  );
+  assert.deepEqual(wrongAccount.channels, {});
   assert.match(wrongAccount.problems.join(' '), /not one of alop_ai_/);
+  assert.match(wrongAccount.problems.join(' '), /999/, 'the refusal must show what IS connected, ids included');
 
-  const missing = resolveChannels([{ id: 'c2', name: 'userma0e40g4sp', service: 'tiktok' }], expected);
-  assert.match(missing.problems.join(' '), /no instagram channel is connected/);
+  const missing = resolveChannels(live.slice(0, 1), expected);
+  assert.match(missing.problems.join(' '), /no tiktok channel is connected/);
 
   const ambiguous = resolveChannels([
-    { id: 'c1', name: 'alop_ai_', service: 'instagram' },
-    { id: 'c9', name: 'ALOP_AI_', service: 'instagram' },
+    { id: 'c1', name: 'alop_ai_', service: 'instagram', serviceId: 'x' },
+    { id: 'c9', name: 'ALOP_AI_', service: 'instagram', serviceId: 'y' },
   ], { instagram: ['alop_ai_'] });
   assert.match(ambiguous.problems.join(' '), /refusing to guess/);
+  assert.deepEqual(ambiguous.channels, {});
+});
+
+test('a channel that cannot publish is refused even when it is the right account', async () => {
+  const { resolveChannels } = await load();
+  const expected = { instagram: ['alop_ai_'] };
+
+  for (const [flag, why] of [['isDisconnected', /disconnected/], ['isLocked', /locked/], ['isQueuePaused', /paused queue/]]) {
+    const out = resolveChannels([{ id: 'c1', name: 'alop_ai_', service: 'instagram', [flag]: true }], expected);
+    assert.deepEqual(out.channels, {}, `${flag} must not resolve to a publishable channel`);
+    assert.match(out.problems.join(' '), why);
+  }
 });
 
 test('the migration and the module agree on which statuses hold a slot', async () => {

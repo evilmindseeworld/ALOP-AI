@@ -101,28 +101,30 @@ export function createBufferClient({ fetchImpl = globalThis.fetch, apiKey = proc
     },
 
     /**
-     * The docs show two spellings of this argument depending on the page, so
-     * try the one the API explorer emits and fall back rather than guessing
-     * once and reporting a schema error as an outage.
+     * `organizationId` is a CUSTOM SCALAR, `OrganizationId!`, not `ID!`.
+     *
+     * Declaring it as `ID!` fails validation with "Unknown argument" plus
+     * "argument input of type ChannelsInput! is required" — two errors that
+     * read like a wrong argument NAME and sent the first version of this
+     * function chasing a second spelling the schema does not have. Taken from
+     * introspection rather than from the guides, which show `channels(input:)`
+     * on one page and `channels(organizationId:)` on another.
+     *
+     * `isDisconnected` and `isLocked` are fetched because a channel can be
+     * present and unpublishable, and a scheduler that cannot tell those apart
+     * queues posts into a channel that will never send them.
      */
     async channels(organizationId) {
-      const fields = 'id name service avatar isQueuePaused';
-      try {
-        const data = await graphql(
-          `query GetChannels($organizationId: ID!) { channels(input: { organizationId: $organizationId }) { ${fields} } }`,
-          { organizationId },
-          { label: 'channel list' },
-        );
-        return data?.channels || [];
-      } catch (err) {
-        if (!(err instanceof BufferApiError)) throw err;
-        const data = await graphql(
-          `query GetChannels($organizationId: ID!) { channels(organizationId: $organizationId) { ${fields} } }`,
-          { organizationId },
-          { label: 'channel list (flat argument)' },
-        );
-        return data?.channels || [];
-      }
+      const data = await graphql(
+        `query GetChannels($organizationId: OrganizationId!) {
+           channels(input: { organizationId: $organizationId }) {
+             id name displayName service serviceId isDisconnected isLocked isQueuePaused
+           }
+         }`,
+        { organizationId },
+        { label: 'channel list' },
+      );
+      return data?.channels || [];
     },
 
     /**
@@ -205,34 +207,56 @@ export function metadataFor(platform, reel) {
  * REFUSE TO PUBLISH INTO SOMEONE ELSE'S ACCOUNT.
  *
  * A personal Buffer key reaches every channel its owner can see. Matching the
- * handles we expect is the difference between "the key works" and "the key
+ * accounts we expect is the difference between "the key works" and "the key
  * points at ALOP-AI". Ambiguity is refused too: two connected Instagram
  * channels means the script cannot know which one was meant.
  *
- * @param {Array<{id: string, name: string, service: string}>} channels
- * @param {Record<string, string[]>} expected service → accepted identifiers
- * @returns {Record<string, string>} platform → channelId
+ * MATCHED ON THREE IDENTIFIERS, and `serviceId` is the one that carries weight.
+ * Buffer's `name` is a DISPLAY name and drifts: the ALOP-AI YouTube channel is
+ * called "vash" in Buffer while Metricool knows it by its channel id
+ * UCjSfNPTI9Obg3wWNnzvDV9g — same channel, and only the id says so. A matcher
+ * that reads names alone rejects the right account and, worse, would accept a
+ * wrong one that happened to be renamed to the string we expected.
+ *
+ * A disconnected, locked or paused channel is refused as well. It is present in
+ * the list and cannot publish, and a scheduler that cannot tell those apart
+ * queues posts into a channel that will never send them.
+ *
+ * @param {Array<{id: string, name: string, displayName?: string, service: string,
+ *                serviceId?: string, isDisconnected?: boolean, isLocked?: boolean,
+ *                isQueuePaused?: boolean}>} channels
+ * @param {Record<string, string[]>} expected service -> accepted identifiers
+ * @returns {{channels: Record<string, string>, problems: string[]}}
  */
 export function resolveChannels(channels, expected) {
   const resolved = {};
   const problems = [];
+  const clean = (v) => String(v ?? '').toLowerCase().replace(/^@/, '');
+
   for (const [platform, accepted] of Object.entries(expected)) {
-    const onService = (channels || []).filter((c) => String(c.service).toLowerCase() === platform);
+    const onService = (channels || []).filter((c) => clean(c.service) === platform);
     if (!onService.length) {
       problems.push(`no ${platform} channel is connected to this Buffer account`);
       continue;
     }
-    const wanted = accepted.map((a) => String(a).toLowerCase());
-    const matches = onService.filter((c) => wanted.includes(String(c.name || '').toLowerCase().replace(/^@/, '')));
-    if (matches.length === 1) {
-      resolved[platform] = matches[0].id;
+    const wanted = accepted.map(clean);
+    const matches = onService.filter((c) => [c.name, c.displayName, c.serviceId].some((id) => id && wanted.includes(clean(id))));
+
+    if (matches.length > 1) {
+      problems.push(`${matches.length} ${platform} channels match ${accepted.join(', ')} — refusing to guess which is ALOP-AI`);
       continue;
     }
     if (!matches.length) {
-      problems.push(`the connected ${platform} channel is ${onService.map((c) => c.name).join(', ')}, not one of ${accepted.join(', ')}`);
+      const seen = onService.map((c) => `${c.name}${c.serviceId ? ` (${c.serviceId})` : ''}`).join(', ');
+      problems.push(`the connected ${platform} channel is ${seen}, not one of ${accepted.join(', ')}`);
       continue;
     }
-    problems.push(`${matches.length} ${platform} channels match ${accepted.join(', ')} — refusing to guess which is ALOP-AI`);
+
+    const channel = matches[0];
+    if (channel.isDisconnected) { problems.push(`the ${platform} channel ${channel.name} is disconnected in Buffer and cannot publish`); continue; }
+    if (channel.isLocked) { problems.push(`the ${platform} channel ${channel.name} is locked in Buffer and cannot publish`); continue; }
+    if (channel.isQueuePaused) { problems.push(`the ${platform} channel ${channel.name} has a paused queue, so a scheduled post would not send`); continue; }
+    resolved[platform] = channel.id;
   }
   return { channels: resolved, problems };
 }

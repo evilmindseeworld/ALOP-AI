@@ -72,12 +72,30 @@ export const SCHEDULE = Object.freeze({
 export const BUFFER_QUEUE_LIMIT = 10;
 
 /** The accounts a publish is allowed to reach. Anything else is refused. */
+/**
+ * The accounts a publish is allowed to reach, as Buffer reported them on
+ * 2026-08-19. Matched against name, displayName AND serviceId - see
+ * resolveChannels.
+ *
+ * INSTAGRAM and YOUTUBE are verified against Metricool's record of the same
+ * accounts. YouTube is the reason serviceId matters: Buffer calls the channel
+ * "vash" while Metricool knows it as UCjSfNPTI9Obg3wWNnzvDV9g, and only the id
+ * ties those two records to one channel.
+ *
+ * TIKTOK IS DELIBERATELY UNRESOLVED. Buffer reports `alop_ai`, open id
+ * `_000G6u31g687P--Il2sfCsyv5hJAGMubkxU`; Metricool publishes to the handle
+ * `userma0e40g4sp`, which is the one in the live video URL. A renamed handle
+ * would explain it and so would a second account, and nothing in either API
+ * distinguishes those two stories - TikTok's open id is per-application, so it
+ * cannot be compared with anything Metricool holds. Until the owner says which,
+ * the list keeps only the identifier that was verified, `--channels` exits 1,
+ * and no TikTok post can be created. Add `alop_ai` here to unblock it.
+ */
 export const EXPECTED_ACCOUNTS = Object.freeze({
-  instagram: ['alop_ai_'],
+  instagram: ['alop_ai_', '17841472991142024'],
   tiktok: ['userma0e40g4sp'],
-  youtube: ['ALOP-AI', 'UCjSfNPTI9Obg3wWNnzvDV9g'],
+  youtube: ['ALOP-AI', 'vash', 'UCjSfNPTI9Obg3wWNnzvDV9g'],
 });
-
 export function mediaUrlFor(reel, { supabaseUrl = process.env.SUPABASE_URL, bucket = 'reels' } = {}) {
   if (!supabaseUrl) throw new Error('SUPABASE_URL is not set, so the public media URL cannot be built.');
   return `${String(supabaseUrl).replace(/\/$/, '')}/storage/v1/object/public/${bucket}/${reel.media}`;

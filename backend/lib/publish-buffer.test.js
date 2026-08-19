@@ -187,7 +187,7 @@ test('a YouTube post with no title or category is refused here, not by Buffer', 
 
 test('publishing is refused unless the connected accounts are ALOP-AI, unambiguously', async () => {
   const { resolveChannels } = await load();
-  const expected = { instagram: ['alop_ai_'], tiktok: ['userma0e40g4sp'], youtube: ['UCjSfNPTI9Obg3wWNnzvDV9g'] };
+  const expected = { instagram: ['17841472991142024'], tiktok: ['c2'], youtube: ['UCjSfNPTI9Obg3wWNnzvDV9g'] };
 
   /* The live shape, and the reason serviceId matters: Buffer calls the ALOP-AI
    * YouTube channel "vash". Only the channel id identifies it. */
@@ -208,13 +208,19 @@ test('publishing is refused unless the connected accounts are ALOP-AI, unambiguo
   assert.match(wrongAccount.problems.join(' '), /not one of alop_ai_/);
   assert.match(wrongAccount.problems.join(' '), /999/, 'the refusal must show what IS connected, ids included');
 
+  /* A handle is not identity even when it is OUR handle: the shipped
+   * EXPECTED_ACCOUNTS lists handles beside ids, and a match on one of those
+   * would accept a stranger's channel renamed to it. */
+  const handleOnly = resolveChannels(live.slice(0, 1), { instagram: ['alop_ai_'] });
+  assert.deepEqual(handleOnly.channels, {}, 'a display-name match is not proof of identity');
+
   const missing = resolveChannels(live.slice(0, 1), expected);
   assert.match(missing.problems.join(' '), /no tiktok channel is connected/);
 
   const ambiguous = resolveChannels([
     { id: 'c1', name: 'alop_ai_', service: 'instagram', serviceId: 'x' },
     { id: 'c9', name: 'ALOP_AI_', service: 'instagram', serviceId: 'y' },
-  ], { instagram: ['alop_ai_'] });
+  ], { instagram: ['c1', 'c9'] });
   assert.match(ambiguous.problems.join(' '), /refusing to guess/);
   assert.deepEqual(ambiguous.channels, {});
 });
@@ -248,7 +254,7 @@ test('a renamed account still resolves, because the channel id is what is pinned
 
 test('a channel that cannot publish is refused even when it is the right account', async () => {
   const { resolveChannels } = await load();
-  const expected = { instagram: ['alop_ai_'] };
+  const expected = { instagram: ['c1'] };
 
   for (const [flag, why] of [['isDisconnected', /disconnected/], ['isLocked', /locked/], ['isQueuePaused', /paused queue/]]) {
     const out = resolveChannels([{ id: 'c1', name: 'alop_ai_', service: 'instagram', [flag]: true }], expected);

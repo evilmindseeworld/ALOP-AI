@@ -84,6 +84,23 @@ test('the dry run refuses all twelve Metricool pairs and creates nothing', async
   assert.deepEqual([...new Set(seen.map((r) => r.method))], ['GET']);
 });
 
+test('--dry-run --commit is refused rather than resolved in favour of committing', async (t) => {
+  const { server, seen } = stubSupabase();
+  const port = await listen(server);
+  t.after(() => server.close());
+
+  /* Dry run is the default, so the flag is only ever a statement of intent.
+   * Letting --commit win over it publishes in the one invocation that asked
+   * hardest not to; the key is present here so a commit path WOULD run. */
+  const env = { ...process.env, SUPABASE_URL: `http://127.0.0.1:${port}`, SUPABASE_SERVICE_ROLE_KEY: 'stub-key', BUFFER_API_KEY: 'stub-buffer-key' };
+
+  const { code, stderr } = await run(['--dry-run', '--commit', '--start', '2026-08-25'], env);
+
+  assert.equal(code, 2, 'the contradiction must be a hard stop, not a silent choice');
+  assert.match(stderr, /mutually exclusive/);
+  assert.deepEqual(seen, [], 'a refused invocation must not even read the ledger');
+});
+
 test('the dry run prints the ownership evidence, not just a verdict', async (t) => {
   const { server } = stubSupabase();
   const port = await listen(server);

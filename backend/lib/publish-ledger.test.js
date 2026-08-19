@@ -13,7 +13,7 @@
  * The fake enforces the same predicate the index does, so a change to
  * ACTIVE_STATUSES that the migration did not get shows up here as a green test
  * for the wrong rule — which is why 030's WHERE clause and ACTIVE_STATUSES are
- * asserted against each other in publish-migration.test.js.
+ * asserted against each other in publish-buffer.test.js.
  */
 
 const test = require('node:test');

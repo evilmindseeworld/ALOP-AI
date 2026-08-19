@@ -27,10 +27,8 @@
  * — a pre-signed URL would create the post fine and fail silently at publish.
  */
 
-const ENDPOINT = 'https://api.buffer.com';
-
-/** Services we publish to, in Buffer's own spelling. */
-export const SERVICES = Object.freeze({ instagram: 'instagram', tiktok: 'tiktok', youtube: 'youtube' });
+/** Buffer's GraphQL endpoint. The only value production ever uses. */
+export const BUFFER_ENDPOINT = 'https://api.buffer.com';
 
 /**
  * Remove the credential from anything about to be shown to a human.
@@ -54,11 +52,16 @@ export class BufferApiError extends Error {
 }
 
 /**
- * @param {{fetchImpl?: Function, apiKey?: string}} [options] `apiKey` is for
- *   TESTS ONLY and is never given a real value by production code paths; the
- *   default comes from the environment and nowhere else.
+ * @param {{fetchImpl?: Function, apiKey?: string, endpoint?: string}} [options]
+ *   `apiKey` is for TESTS ONLY and is never given a real value by production
+ *   code paths; the default comes from the environment and nowhere else.
+ *
+ *   `endpoint` is TESTS ONLY as well, and exists so the commit loop can be run
+ *   end to end against a stub Buffer in a child process — the failure it proves
+ *   (a ledger PATCH failing after a post is real) cannot be reached by calling
+ *   functions one at a time. Unset, it is exactly BUFFER_ENDPOINT.
  */
-export function createBufferClient({ fetchImpl = globalThis.fetch, apiKey = process.env.BUFFER_API_KEY } = {}) {
+export function createBufferClient({ fetchImpl = globalThis.fetch, apiKey = process.env.BUFFER_API_KEY, endpoint = process.env.BUFFER_ENDPOINT_FOR_TESTS || BUFFER_ENDPOINT } = {}) {
   if (!apiKey) {
     throw new Error('BUFFER_API_KEY is not set. Create a key at Buffer → Settings → API and put it in backend/.env (gitignored). Do not pass it on the command line.');
   }
@@ -67,7 +70,7 @@ export function createBufferClient({ fetchImpl = globalThis.fetch, apiKey = proc
 
   const graphql = async (query, variables = {}, { label = 'request' } = {}) => {
     calls.graphql += 1;
-    const res = await fetchImpl(ENDPOINT, {
+    const res = await fetchImpl(endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({ query, variables }),
@@ -84,7 +87,11 @@ export function createBufferClient({ fetchImpl = globalThis.fetch, apiKey = proc
     }
     if (body.errors?.length) {
       const messages = body.errors.map((e) => scrub(e.message, apiKey)).join('; ');
-      throw new BufferApiError(`Buffer rejected the ${label}: ${messages}`, { status: res.status, errors: body.errors });
+      /* Scrubbed here as well as in the message: `errors` is an own-enumerable
+       * property, so an unscrubbed copy reaches any console.dir, JSON.stringify
+       * or crash dump that walks the error. */
+      const errors = body.errors.map((e) => ({ ...e, message: scrub(e.message, apiKey) }));
+      throw new BufferApiError(`Buffer rejected the ${label}: ${messages}`, { status: res.status, errors });
     }
     return body.data;
   };
@@ -211,7 +218,7 @@ export function metadataFor(platform, reel) {
  * points at ALOP-AI". Ambiguity is refused too: two connected Instagram
  * channels means the script cannot know which one was meant.
  *
- * MATCHED ON THREE IDENTIFIERS, and `serviceId` is the one that carries weight.
+ * MATCHED ON IDS ONLY - `id` and `serviceId`. Display names are not identity.
  * Buffer's `name` is a DISPLAY name and drifts: the ALOP-AI YouTube channel is
  * called "vash" in Buffer while Metricool knows it by its channel id
  * UCjSfNPTI9Obg3wWNnzvDV9g — same channel, and only the id says so. A matcher
@@ -242,7 +249,10 @@ export function resolveChannels(channels, expected) {
     const wanted = accepted.map(clean);
     /* `id` first, deliberately: the Buffer channel id is the identifier a
      * rename cannot move, and every account here HAS been renamed once. */
-    const matches = onService.filter((c) => [c.id, c.serviceId, c.name, c.displayName].some((id) => id && wanted.includes(clean(id))));
+    /* IDS ONLY. The handles in the accepted list are documentation and appear
+     * in the refusal below, but a display name is a label the owner can change
+     * — matching one would accept a stranger's channel renamed to our handle. */
+    const matches = onService.filter((c) => [c.id, c.serviceId].some((id) => id && wanted.includes(clean(id))));
 
     if (matches.length > 1) {
       problems.push(`${matches.length} ${platform} channels match ${accepted.join(', ')} — refusing to guess which is ALOP-AI`);

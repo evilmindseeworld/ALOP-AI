@@ -71,7 +71,6 @@ export const SCHEDULE = Object.freeze({
 /** Buffer Free: three channels, ten queued posts per channel, slots recycle. */
 export const BUFFER_QUEUE_LIMIT = 10;
 
-/** The accounts a publish is allowed to reach. Anything else is refused. */
 /**
  * The accounts a publish is allowed to reach.
  *
@@ -212,6 +211,14 @@ if (isMain) {
     key: process.env.SUPABASE_SERVICE_ROLE_KEY,
   });
 
+  /* Dry run is the default, so `--dry-run` only ever appears as a statement of
+   * intent. Silently letting `--commit` win over it publishes to a real
+   * audience in the one invocation that asked hardest not to. */
+  if (has('dry-run') && has('commit')) {
+    console.error('--dry-run and --commit are mutually exclusive.');
+    process.exit(2);
+  }
+
   const readJson = async (name) => JSON.parse(await readFile(join(HERE, name), 'utf8'));
 
   if (has('backfill')) {
@@ -278,8 +285,9 @@ if (isMain) {
       console.log(`skip ${d.reelId}/${d.platform}: ${err.message}`);
       continue;
     }
+    let post;
     try {
-      const post = await buffer.createPost({
+      post = await buffer.createPost({
         channelId: channelIds[d.platform],
         text: d.caption,
         dueAt: d.utc,
@@ -287,12 +295,22 @@ if (isMain) {
         thumbnailOffset: d.thumbnailOffset,
         metadata: metadataFor(d.platform, reel),
       });
+    } catch (err) {
+      /* The create failed, so the claim must not keep holding the pair. Only
+       * createPost is inside this try: releasing the pair is safe when no
+       * Buffer post exists, and unsafe the moment one does. */
+      await ledger.markFailed(claim.id);
+      console.error(`FAILED ${d.reelId}/${d.platform}: ${err.message}`);
+      continue;
+    }
+    try {
       await ledger.markScheduled(claim.id, post.id);
       console.log(`created ${d.reelId}/${d.platform} → buffer post ${post.id} at ${d.utc}`);
     } catch (err) {
-      /* The create failed, so the claim must not keep holding the pair. */
-      await ledger.markFailed(claim.id);
-      console.error(`FAILED ${d.reelId}/${d.platform}: ${err.message}`);
+      /* The post is real and the ledger did not record it. Leave the row
+       * `claimed` — still active, still holding the pair, so the next run
+       * cannot double-post — and print the id a human needs to reconcile. */
+      console.error(`WARN ${d.reelId}/${d.platform}: buffer post ${post.id} exists but the ledger PATCH failed; row left claimed for reconciliation: ${err.message}`);
     }
   }
 }

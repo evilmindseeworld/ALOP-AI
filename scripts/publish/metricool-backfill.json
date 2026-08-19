@@ -1,0 +1,155 @@
+{
+  "$comment": [
+    "THE TWELVE PUBLICATIONS METRICOOL ALREADY OWNS.",
+    "",
+    "Read from the Metricool planner (brand 6744652, ALOP-AI) on 2026-08-19 and",
+    "frozen here because the ledger's whole job is to know what is already",
+    "spoken for BEFORE Buffer is allowed to write. An empty ledger believes",
+    "every reel/platform pair is free, which is exactly the state that produces",
+    "a double publish.",
+    "",
+    "Four reels x three platforms. Two were already PUBLISHED when this was",
+    "read; the other ten were PENDING. Statuses are preserved as they were, not",
+    "normalised - `published` and `scheduled` are both active, so either way",
+    "Buffer is refused, but the operator reading the table should see which is",
+    "which.",
+    "",
+    "NOTHING HERE IS EDITED INTO METRICOOL. This file is a record of that",
+    "planner's state, and importing it changes nothing on Metricool's side.",
+    "",
+    "media is the Metricool CDN copy, which is what Metricool will actually",
+    "publish. Our own masters live in the Supabase `reels` bucket and are what",
+    "Buffer will use for FUTURE reels - the two are different URLs for the same",
+    "video on purpose, and the ledger records what each scheduler was handed."
+  ],
+  "source": {
+    "brandId": 6744652,
+    "brand": "ALOP-AI",
+    "timezone": "Asia/Dubai",
+    "readAt": "2026-08-19T10:20:00Z"
+  },
+  "rows": [
+    {
+      "reelId": "indexscan",
+      "platform": "instagram",
+      "scheduler": "metricool",
+      "schedulerPostId": "363756422",
+      "scheduledAt": "2026-08-18T22:05:00.000Z",
+      "status": "published",
+      "mediaUrl": "https://static.metricool.com/planner/202608/6744652-file-13997204472977569647.mp4",
+      "caption": "24 rows read. Or 1.\n\nWithout an index, a lookup reads rows one after another until it finds the match - a sequential scan.\n\nAn index is a sorted structure the database can descend, so it lands on the row instead of walking to it.\n\nRun EXPLAIN on the query. If it says Seq Scan on a table you filter often, that is the fix.\n\nComment EXPLAIN and I'll send the snippet.\n\n#sql #postgres #database #backend #performance #devtips #coding #programming #webdev #dba #codingtips #softwareengineering",
+      "publicUrl": "https://www.instagram.com/reel/DcMpTJxgKrr/"
+    },
+    {
+      "reelId": "indexscan",
+      "platform": "tiktok",
+      "scheduler": "metricool",
+      "schedulerPostId": "363754471",
+      "scheduledAt": "2026-08-19T06:20:00.000Z",
+      "status": "published",
+      "mediaUrl": "https://static.metricool.com/planner/202608/6744652-file-11985429143956039380.mp4",
+      "caption": "24 rows read. Or 1.\n\nWithout an index, a lookup reads rows one after another until it finds the match - a sequential scan.\n\nAn index is a sorted structure the database can descend, so it lands on the row instead of walking to it.\n\nRun EXPLAIN on the query. If it says Seq Scan on a table you filter often, that is the fix.\n\nComment EXPLAIN and I'll send the snippet.\n\n#sql #postgres #database #backend #performance #devtips",
+      "publicUrl": "https://www.tiktok.com/@userma0e40g4sp/video/7675623770106727701"
+    },
+    {
+      "reelId": "indexscan",
+      "platform": "youtube",
+      "scheduler": "metricool",
+      "schedulerPostId": "363754427",
+      "scheduledAt": "2026-08-19T12:00:00.000Z",
+      "status": "scheduled",
+      "mediaUrl": "https://static.metricool.com/planner/202608/6744652-file-2785416533100010372.mp4",
+      "caption": "24 rows read. Or 1.\n\nAn index is a sorted structure the database can descend, so it lands on the row instead of walking to it.\n\n#sql #postgres #database"
+    },
+    {
+      "reelId": "debounce",
+      "platform": "instagram",
+      "scheduler": "metricool",
+      "schedulerPostId": "363754501",
+      "scheduledAt": "2026-08-20T06:00:00.000Z",
+      "status": "scheduled",
+      "mediaUrl": "https://static.metricool.com/planner/202608/6744652-file-3474876389895811582.mp4",
+      "caption": "12 scroll events. 1 handler call.\n\nEvery scroll, resize and keystroke fires far more often than your handler needs to run.\n\ndebounce restarts a timer on each event and only runs the callback once the events stop.\n\nThe whole trick is the clearTimeout: each call cancels the pending one.\n\nComment DEBOUNCE and I'll send the snippet.\n\n#javascript #webdev #coding #programming #frontend #webdevelopment #javascripttips #codingtips #reactjs #typescript #performance #learntocode"
+    },
+    {
+      "reelId": "debounce",
+      "platform": "tiktok",
+      "scheduler": "metricool",
+      "schedulerPostId": "363754534",
+      "scheduledAt": "2026-08-20T06:20:00.000Z",
+      "status": "scheduled",
+      "mediaUrl": "https://static.metricool.com/planner/202608/6744652-file-524814088948949362.mp4",
+      "caption": "12 scroll events. 1 handler call.\n\nEvery scroll, resize and keystroke fires far more often than your handler needs to run.\n\ndebounce restarts a timer on each event and only runs the callback once the events stop.\n\nThe whole trick is the clearTimeout: each call cancels the pending one.\n\nComment DEBOUNCE and I'll send the snippet.\n\n#javascript #webdev #coding #programming #frontend #webdevelopment"
+    },
+    {
+      "reelId": "debounce",
+      "platform": "youtube",
+      "scheduler": "metricool",
+      "schedulerPostId": "363754569",
+      "scheduledAt": "2026-08-20T12:00:00.000Z",
+      "status": "scheduled",
+      "mediaUrl": "https://static.metricool.com/planner/202608/6744652-file-11280032618729412545.mp4",
+      "caption": "12 scroll events. 1 handler call.\n\ndebounce restarts a timer on each event and only runs the callback once the events stop.\n\n#javascript #webdev #coding"
+    },
+    {
+      "reelId": "nplusone",
+      "platform": "instagram",
+      "scheduler": "metricool",
+      "schedulerPostId": "363754582",
+      "scheduledAt": "2026-08-21T06:00:00.000Z",
+      "status": "scheduled",
+      "mediaUrl": "https://static.metricool.com/planner/202608/6744652-file-13288292737893394470.mp4",
+      "caption": "8 rows. 9 queries. Every request.\n\nOne query fetches the list, then the loop fires another query per row to fetch what it references.\n\nThat is the N+1: it looks like clean code and it scales linearly in round trips.\n\nAsk for the related rows in the first query instead and the whole loop collapses into one trip.\n\nComment NPLUS1 and I'll send the snippet.\n\n#backend #sql #database #orm #prisma #postgres #coding #programming #webdev #performance #codingtips #softwareengineering"
+    },
+    {
+      "reelId": "nplusone",
+      "platform": "tiktok",
+      "scheduler": "metricool",
+      "schedulerPostId": "363754618",
+      "scheduledAt": "2026-08-21T06:20:00.000Z",
+      "status": "scheduled",
+      "mediaUrl": "https://static.metricool.com/planner/202608/6744652-file-13268529215998152252.mp4",
+      "caption": "8 rows. 9 queries. Every request.\n\nOne query fetches the list, then the loop fires another query per row to fetch what it references.\n\nThat is the N+1: it looks like clean code and it scales linearly in round trips.\n\nAsk for the related rows in the first query instead and the whole loop collapses into one trip.\n\nComment NPLUS1 and I'll send the snippet.\n\n#backend #sql #database #orm #prisma #postgres"
+    },
+    {
+      "reelId": "nplusone",
+      "platform": "youtube",
+      "scheduler": "metricool",
+      "schedulerPostId": "363754627",
+      "scheduledAt": "2026-08-21T12:00:00.000Z",
+      "status": "scheduled",
+      "mediaUrl": "https://static.metricool.com/planner/202608/6744652-file-2305387540137230534.mp4",
+      "caption": "8 rows. 9 queries. Every request.\n\nThat is the N+1: it looks like clean code and it scales linearly in round trips.\n\n#backend #sql #database"
+    },
+    {
+      "reelId": "ensureuser",
+      "platform": "instagram",
+      "scheduler": "metricool",
+      "schedulerPostId": "363754653",
+      "scheduledAt": "2026-08-22T06:00:00.000Z",
+      "status": "scheduled",
+      "mediaUrl": "https://static.metricool.com/planner/202608/6744652-file-7989199820316400785.mp4",
+      "caption": "50 requests. 100 selects on the same table.\n\nYour auth middleware reads the users row to check whether the account is suspended. It caches it. Then the next helper down the chain selects the same row again, microseconds later, because it has no idea the first one already has it.\n\nFifteen call sites were paying for that second read — every route with an :id in it.\n\nThe fix is not to thread a cached row through fifteen callers. It is one guard inside the function they all already share: check the cache before you select.\n\nComment CACHE and I'll send the fix.\n\n#backend #nodejs #express #database #postgres #supabase #caching #performance #coding #programming #webdev #softwareengineering"
+    },
+    {
+      "reelId": "ensureuser",
+      "platform": "tiktok",
+      "scheduler": "metricool",
+      "schedulerPostId": "363754693",
+      "scheduledAt": "2026-08-22T06:20:00.000Z",
+      "status": "scheduled",
+      "mediaUrl": "https://static.metricool.com/planner/202608/6744652-file-7465355673636518077.mp4",
+      "caption": "50 requests. 100 selects on the same table.\n\nYour auth middleware reads the users row to check whether the account is suspended, and caches it. Then the next helper down the chain selects that same row again microseconds later, because it has no idea the first one already has it.\n\nFifteen call sites were paying for the second read — every route with an :id in it.\n\nThe fix is one guard inside the function they all share: check the cache before you select.\n\nComment CACHE and I'll send the fix.\n\n#backend #nodejs #database #postgres #supabase #caching #coding #programming #webdev #softwareengineering"
+    },
+    {
+      "reelId": "ensureuser",
+      "platform": "youtube",
+      "scheduler": "metricool",
+      "schedulerPostId": "363754710",
+      "scheduledAt": "2026-08-22T12:00:00.000Z",
+      "status": "scheduled",
+      "mediaUrl": "https://static.metricool.com/planner/202608/6744652-file-7166629458728522065.mp4",
+      "caption": "50 requests. 100 selects on the same table.\n\nYour auth middleware reads the users row to check whether the account is suspended, and caches it. The next helper down the chain selects the same row again, microseconds later, because it has no idea the first one already has it.\n\nThe fix is one guard inside the function they all share, not a cached row threaded through fifteen callers.\n\n#backend #nodejs #database"
+    }
+  ]
+}

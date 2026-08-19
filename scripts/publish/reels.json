@@ -1,0 +1,82 @@
+{
+  "$comment": [
+    "THE REEL CATALOGUE. One entry per video, with the caption each platform",
+    "gets and the metadata that platform's API requires on create.",
+    "",
+    "media is a KEY INTO THE `reels` BUCKET, not a URL. The project host comes",
+    "from SUPABASE_URL at runtime so this file - which is committed to a public",
+    "repository - carries no deployment detail. The bucket is public, so the",
+    "resulting object URL needs no signature and does not expire, which is the",
+    "property Buffer needs: it fetches the media when the post PUBLISHES, days",
+    "after the post was created.",
+    "",
+    "youtube.title and youtube.categoryId are REQUIRED by the Buffer API on",
+    "create. 28 is Science & Technology, matching the SCIENCE_TECHNOLOGY the",
+    "Metricool rows already use.",
+    "",
+    "thumbnailOffset picks a frame in milliseconds, and it is the ONLY thumbnail",
+    "control Buffer's API offers. It works on Instagram and TikTok and does",
+    "nothing on YouTube. The *-9x16.jpg covers sitting beside these files in the",
+    "bucket cannot be used through Buffer at all - Metricool takes them, Buffer",
+    "has no field for them.",
+    "",
+    "The four reels below are ALREADY OWNED BY METRICOOL and are here so the",
+    "dry-run has something to be refused on. Future reels are added here and are",
+    "the ones Buffer will actually take."
+  ],
+  "bucket": "reels",
+  "reels": [
+    {
+      "id": "indexscan",
+      "media": "indexscan.mp4",
+      "durationMs": 6000,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "24 rows read. Or 1.\n\nWithout an index, a lookup reads rows one after another until it finds the match - a sequential scan.\n\nAn index is a sorted structure the database can descend, so it lands on the row instead of walking to it.\n\nRun EXPLAIN on the query. If it says Seq Scan on a table you filter often, that is the fix.\n\nComment EXPLAIN and I'll send the snippet.\n\n#sql #postgres #database #backend #performance #devtips #coding #programming #webdev #dba #codingtips #softwareengineering",
+        "tiktok": "24 rows read. Or 1.\n\nWithout an index, a lookup reads rows one after another until it finds the match - a sequential scan.\n\nAn index is a sorted structure the database can descend, so it lands on the row instead of walking to it.\n\nRun EXPLAIN on the query. If it says Seq Scan on a table you filter often, that is the fix.\n\nComment EXPLAIN and I'll send the snippet.\n\n#sql #postgres #database #backend #performance #devtips",
+        "youtube": "24 rows read. Or 1.\n\nAn index is a sorted structure the database can descend, so it lands on the row instead of walking to it.\n\n#sql #postgres #database"
+      },
+      "youtube": { "title": "an index is a jump, not a walk #Shorts", "categoryId": "28", "privacy": "public", "madeForKids": false }
+    },
+    {
+      "id": "debounce",
+      "media": "debounce.mp4",
+      "durationMs": 8267,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "12 scroll events. 1 handler call.\n\nEvery scroll, resize and keystroke fires far more often than your handler needs to run.\n\ndebounce restarts a timer on each event and only runs the callback once the events stop.\n\nThe whole trick is the clearTimeout: each call cancels the pending one.\n\nComment DEBOUNCE and I'll send the snippet.\n\n#javascript #webdev #coding #programming #frontend #webdevelopment #javascripttips #codingtips #reactjs #typescript #performance #learntocode",
+        "tiktok": "12 scroll events. 1 handler call.\n\nEvery scroll, resize and keystroke fires far more often than your handler needs to run.\n\ndebounce restarts a timer on each event and only runs the callback once the events stop.\n\nThe whole trick is the clearTimeout: each call cancels the pending one.\n\nComment DEBOUNCE and I'll send the snippet.\n\n#javascript #webdev #coding #programming #frontend #webdevelopment",
+        "youtube": "12 scroll events. 1 handler call.\n\ndebounce restarts a timer on each event and only runs the callback once the events stop.\n\n#javascript #webdev #coding"
+      },
+      "youtube": { "title": "debounce runs it once, at the end #Shorts", "categoryId": "28", "privacy": "public", "madeForKids": false }
+    },
+    {
+      "id": "nplusone",
+      "media": "nplusone.mp4",
+      "durationMs": 7400,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "8 rows. 9 queries. Every request.\n\nOne query fetches the list, then the loop fires another query per row to fetch what it references.\n\nThat is the N+1: it looks like clean code and it scales linearly in round trips.\n\nAsk for the related rows in the first query instead and the whole loop collapses into one trip.\n\nComment NPLUS1 and I'll send the snippet.\n\n#backend #sql #database #orm #prisma #postgres #coding #programming #webdev #performance #codingtips #softwareengineering",
+        "tiktok": "8 rows. 9 queries. Every request.\n\nOne query fetches the list, then the loop fires another query per row to fetch what it references.\n\nThat is the N+1: it looks like clean code and it scales linearly in round trips.\n\nAsk for the related rows in the first query instead and the whole loop collapses into one trip.\n\nComment NPLUS1 and I'll send the snippet.\n\n#backend #sql #database #orm #prisma #postgres",
+        "youtube": "8 rows. 9 queries. Every request.\n\nThat is the N+1: it looks like clean code and it scales linearly in round trips.\n\n#backend #sql #database"
+      },
+      "youtube": { "title": "the loop is hitting your db #Shorts", "categoryId": "28", "privacy": "public", "madeForKids": false }
+    },
+    {
+      "id": "ensureuser",
+      "media": "ensureuser.mp4",
+      "durationMs": 16100,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "50 requests. 100 selects on the same table.\n\nYour auth middleware reads the users row to check whether the account is suspended. It caches it. Then the next helper down the chain selects the same row again, microseconds later, because it has no idea the first one already has it.\n\nFifteen call sites were paying for that second read — every route with an :id in it.\n\nThe fix is not to thread a cached row through fifteen callers. It is one guard inside the function they all already share: check the cache before you select.\n\nComment CACHE and I'll send the fix.\n\n#backend #nodejs #express #database #postgres #supabase #caching #performance #coding #programming #webdev #softwareengineering",
+        "tiktok": "50 requests. 100 selects on the same table.\n\nYour auth middleware reads the users row to check whether the account is suspended, and caches it. Then the next helper down the chain selects that same row again microseconds later, because it has no idea the first one already has it.\n\nFifteen call sites were paying for the second read — every route with an :id in it.\n\nThe fix is one guard inside the function they all share: check the cache before you select.\n\nComment CACHE and I'll send the fix.\n\n#backend #nodejs #database #postgres #supabase #caching #coding #programming #webdev #softwareengineering",
+        "youtube": "50 requests. 100 selects on the same table.\n\nYour auth middleware reads the users row to check whether the account is suspended, and caches it. The next helper down the chain selects the same row again, microseconds later, because it has no idea the first one already has it.\n\nThe fix is one guard inside the function they all share, not a cached row threaded through fifteen callers.\n\n#backend #nodejs #database"
+      },
+      "youtube": { "title": "your middleware already fetched it #Shorts", "categoryId": "28", "privacy": "public", "madeForKids": false }
+    }
+  ]
+}

@@ -211,6 +211,23 @@ const MIGRATION_CHECKS = {
     searchPathPinned("reserve_or_requests"),
     searchPathPinned("settle_or_requests"),
   ],
+  "030_publishing_ledger.sql": [
+    tableExists("publishing_ledger"),
+    // The duplicate guard itself. A ledger without this index is a suggestion.
+    indexExists("publishing_ledger_active_owner"),
+    indexExists("publishing_ledger_scheduled"),
+    functionExists("publishing_ledger_touch"),
+    searchPathPinned("publishing_ledger_touch"),
+    rlsForced("publishing_ledger"),
+    {
+      // PARTIAL, and on the right predicate. A plain UNIQUE would also satisfy
+      // indexExists above while making a failed claim hold its pair for ever.
+      label: "publishing_ledger_active_owner is partial on the active statuses",
+      sql: `select 1 from pg_indexes
+            where schemaname='public' and indexname='publishing_ledger_active_owner'
+              and indexdef like '%WHERE%claimed%scheduled%published%'`,
+    },
+  ],
   "015_answer_cache.sql": [
     tableExists("answer_cache"),
     indexExists("answer_cache_expiry"),

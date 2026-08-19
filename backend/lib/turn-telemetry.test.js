@@ -345,3 +345,231 @@ test('a turn that dispatched no seats has an empty array and a zero count', () =
   assert.equal(snap.seatCount, 0);
   assert.equal(snap.seatTimings, undefined);
 });
+
+/* THE PER-ATTEMPT DETAIL WAS BUILT ALL TURN AND THROWN AWAY AT THE BOUNDARY.
+ *
+ * `recordProviderAttempt` has always stored a full row per physical request —
+ * provider, model, PHASE, attempt number, outcome, status, ms, streamed — into
+ * a capped array. `snapshot()` then emitted only `attemptTotals`, so the array
+ * never reached `audit_logs.metadata` and died with the turn. Same shape as the
+ * seats bug: collected all turn, discarded one line from the destination.
+ *
+ * MEASURED CONSEQUENCE, production turn 2026-08-19T01:21:03.9Z: the row said
+ * `providerRequests: 6`, `byOutcome {ok:3, bad_body:2, http_error:1}` and
+ * `synthesisMs: 37402`, and NOTHING in it could say how many of those six
+ * requests the synthesis made or how long any single one took. The 37.4s could
+ * not be attributed to one slow call or several sequential ones, which is the
+ * only question worth asking about the largest phase in the turn.
+ *
+ * The counts stay exactly where they are: `attemptTotals` is what the spend
+ * ceiling settles against, and `byPhase` is derived from the same rows rather
+ * than counted a second time.
+ *
+ * Watched fail before the fix: `byPhase` and `detail` both undefined. */
+test('the snapshot carries per-attempt detail, not only the totals', () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordProviderAttempt({ phase: 'router', model: 'fast', attempt: 1, outcome: 'bad_body', status: 200, ms: 4005 });
+  t.recordProviderAttempt({ phase: 'council', model: 'dead', attempt: 1, outcome: 'http_error', status: 404, ms: 30 });
+  t.recordProviderAttempt({ phase: 'synthesis', model: 'head', attempt: 1, outcome: 'ok', status: 200, ms: 37402, streamed: true });
+  const snap = t.snapshot({});
+
+  assert.equal(snap.providerAttempts.detail.length, 3);
+  const synth = snap.providerAttempts.detail.find((a) => a.phase === 'synthesis');
+  assert.equal(synth.model, 'head');
+  assert.equal(synth.attempt, 1);
+  assert.equal(synth.outcome, 'ok');
+  assert.equal(synth.status, 200);
+  assert.equal(synth.ms, 37402);
+  assert.equal(synth.streamed, true);
+  assert.equal(synth.provider, 'openrouter');
+});
+
+/* WHICH PHASE SPENT THE TIME — the question `synthesisMs` alone cannot answer
+ * once a phase can make more than one request. */
+test('attempts roll up by phase so synthesis can be told from council and router', () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordProviderAttempt({ phase: 'router', model: 'fast', attempt: 1, outcome: 'bad_body', status: 200, ms: 2000 });
+  t.recordProviderAttempt({ phase: 'router', model: 'fast', attempt: 2, outcome: 'bad_body', status: 200, ms: 2005 });
+  t.recordProviderAttempt({ phase: 'council', model: 'dead', attempt: 1, outcome: 'http_error', status: 404, ms: 30 });
+  t.recordProviderAttempt({ phase: 'council', model: 'nano', attempt: 1, outcome: 'ok', status: 200, ms: 7403 });
+  t.recordProviderAttempt({ phase: 'synthesis', model: 'head', attempt: 1, outcome: 'ok', status: 200, ms: 37402, streamed: true });
+  const snap = t.snapshot({});
+
+  assert.deepEqual(snap.providerAttempts.byPhase.synthesis, {
+    attempts: 1, ok: 1, failed: 0, retries: 0, ms: 37402, models: { head: 1 },
+  });
+  assert.deepEqual(snap.providerAttempts.byPhase.router, {
+    attempts: 2, ok: 0, failed: 2, retries: 1, ms: 4005, models: { fast: 2 },
+  });
+  assert.equal(snap.providerAttempts.byPhase.council.attempts, 2);
+
+  /* Derived, never counted twice: the ceiling reads `total`, and a rollup that
+   * disagreed with it would be a second, wrong number for the same fact. */
+  const rolled = Object.values(snap.providerAttempts.byPhase).reduce((n, p) => n + p.attempts, 0);
+  assert.equal(rolled, snap.providerAttempts.total);
+  assert.equal(snap.providerRequests, 5, 'the ceiling still settles against the exact count');
+});
+
+/* An attempt with no phase is still an attempt. Dropping it would make the
+ * rollup disagree with the total, which the test above forbids. */
+test('an unphased attempt lands under a named bucket rather than vanishing', () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordProviderAttempt({ model: 'x', attempt: 1, outcome: 'ok', status: 200, ms: 5 });
+  const snap = t.snapshot({});
+  assert.equal(snap.providerAttempts.byPhase.unattributed.attempts, 1);
+  assert.equal(
+    Object.values(snap.providerAttempts.byPhase).reduce((n, p) => n + p.attempts, 0),
+    snap.providerAttempts.total,
+  );
+});
+
+/* NOTHING IN THIS ROW MAY BE USER TEXT. `audit_owner_read` lets a user SELECT
+ * their own audit rows, and a provider error message can quote the request it
+ * refused. The detail row is an allow-list of scalars for that reason, asserted
+ * by exact key set so a future field cannot be added without meeting it. */
+test('an attempt detail row carries only non-sensitive scalars', () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordProviderAttempt({
+    phase: 'synthesis', model: 'head', attempt: 1, outcome: 'ok', status: 200, ms: 10,
+    prompt: 'the user question', answer: 'the answer', apiKey: 'sk-secret', message: 'refused: <prompt>',
+  });
+  const snap = t.snapshot({});
+  assert.deepEqual(
+    Object.keys(snap.providerAttempts.detail[0]).sort(),
+    ['attempt', 'model', 'ms', 'outcome', 'phase', 'provider', 'status', 'streamed'],
+  );
+});
+
+/* WHY THE HEAD CHANGED, not just that it did. `synthesisModel` records the
+ * model that finally answered and `onModelUsed` overwrites, so a turn that fell
+ * from head to rung 2 to rung 3 looked identical to one that never fell at all.
+ * The reason is CLASSIFIED, never the provider's message: that message can
+ * quote the request it refused. */
+test('a head fallback records where it went and why, without quoting the provider', () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordModelFallback({ phase: 'synthesis', from: 'head', to: 'rung2', reason: 'http_429' });
+  t.recordModelFallback({ phase: 'synthesis', from: 'rung2', to: 'rung3', reason: 'deadline' });
+  const snap = t.snapshot({});
+  assert.equal(snap.modelFallbacks.length, 2);
+  assert.deepEqual(snap.modelFallbacks[0], { phase: 'synthesis', from: 'head', to: 'rung2', reason: 'http_429' });
+  assert.deepEqual(Object.keys(snap.modelFallbacks[1]).sort(), ['from', 'phase', 'reason', 'to']);
+});
+
+/* A turn that never fell back says so with an empty list, not a missing key —
+ * the same rule the zero-seat shape follows. */
+test('a turn with no fallback carries an empty list, not a missing field', () => {
+  const snap = createTurnTelemetry({ now: () => 0, startedAt: 0 }).snapshot({});
+  assert.deepEqual(snap.modelFallbacks, []);
+});
+
+/* THE ATTEMPT ROW MEASURES THE HANDSHAKE, AND THE HANDSHAKE IS NOT THE PROBLEM.
+ *
+ * `fetchOpenRouterStream` calls `reportAttempt('ok', status)` at the moment the
+ * response is handed off, and clears the timer that bounded opening in the same
+ * `finally`. For a STREAMED call that row is time-to-headers and nothing more;
+ * the body is then read by `streamOnce` under no bound of its own.
+ *
+ * MEASURED, production turn 2026-08-19T01:21:03.9Z: `synthesisMs: 37402` for
+ * 587 completion tokens — 15.7 tok/s, against 104 tok/s on the same model out
+ * of band — from ONE stream, HTTP 200, zero retries, zero fallback rungs, zero
+ * 429s. Every one of those 37.4 seconds was body consumption, and an attempt
+ * row would have reported a few hundred milliseconds and explained none of it.
+ *
+ * THE THREE BOUNDARIES ARE NOT INTERCHANGEABLE:
+ *   streamOpenMs  request start -> response handed off
+ *   streamBodyMs  handoff       -> stream fully consumed or aborted
+ *   streamTotalMs request start -> final completion  (open + body)
+ * and `msToFirstToken` splits the body again, because a provider that queues
+ * for 36s and then generates fast has the same total as one that crawls
+ * throughout, and they have opposite fixes.
+ *
+ * Watched fail before the fix: `streamTimings` undefined. */
+test('a streamed generation is timed past the handshake, not just to it', () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordStreamTiming({
+    phase: 'synthesis', provider: 'openrouter', model: 'head', attempt: 1,
+    status: 200, outcome: 'ok',
+    streamOpenMs: 412, msToFirstToken: 35980, streamBodyMs: 36990, streamTotalMs: 37402,
+    completed: true, aborted: false,
+  });
+  const snap = t.snapshot({});
+  assert.equal(snap.streamTimings.length, 1);
+  assert.deepEqual(snap.streamTimings[0], {
+    phase: 'synthesis', provider: 'openrouter', model: 'head', attempt: 1,
+    status: 200, outcome: 'ok',
+    streamOpenMs: 412, msToFirstToken: 35980, streamBodyMs: 36990, streamTotalMs: 37402,
+    completed: true, aborted: false, abortReason: null,
+  });
+  /* The whole point of the row: the body dwarfs the handshake, and until now
+   * only the handshake had a number. */
+  assert.ok(snap.streamTimings[0].streamBodyMs > snap.streamTimings[0].streamOpenMs * 10);
+});
+
+/* The three boundaries must reconcile, or the row is three numbers that cannot
+ * all be true. Total is open plus body, by construction and not by coincidence. */
+test('open plus body equals total', () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordStreamTiming({ model: 'head', streamOpenMs: 412, streamBodyMs: 36990, streamTotalMs: 37402 });
+  const [row] = t.snapshot({}).streamTimings;
+  assert.equal(row.streamOpenMs + row.streamBodyMs, row.streamTotalMs);
+});
+
+/* A stream cut by the turn signal is the case the whole budget question turns
+ * on, and it must be distinguishable from one that finished. */
+test('a stream aborted by the turn signal says so, and is not marked complete', () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordStreamTiming({
+    phase: 'synthesis', model: 'head', streamOpenMs: 300, msToFirstToken: 1000,
+    streamBodyMs: 74700, streamTotalMs: 75000, completed: false, aborted: true,
+  });
+  const [row] = t.snapshot({}).streamTimings;
+  assert.equal(row.aborted, true);
+  assert.equal(row.completed, false);
+});
+
+/* A stream that ended having emitted nothing has no first token, and null is
+ * the honest value — 0 reads as "it answered instantly", which is the opposite
+ * of what happened, and it would drag a percentile down with it. */
+test('a stream that emitted no content records a null first-token time', () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordStreamTiming({ phase: 'synthesis', model: 'head', streamOpenMs: 300, msToFirstToken: null, streamTotalMs: 5000 });
+  assert.equal(t.snapshot({}).streamTimings[0].msToFirstToken, null);
+});
+
+/* Same allow-list rule as the attempt rows: `audit_owner_read` makes this bag
+ * user-visible, so no answer text, no prompt, no token contents, no key. */
+test('a stream timing row carries only non-sensitive scalars', () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordStreamTiming({
+    phase: 'synthesis', model: 'head', streamOpenMs: 1, msToFirstToken: 2, streamBodyMs: 2, streamTotalMs: 3,
+    text: 'the answer', prompt: 'the question', apiKey: 'sk-secret', completion: 'tokens',
+  });
+  assert.deepEqual(
+    Object.keys(t.snapshot({}).streamTimings[0]).sort(),
+    ['abortReason', 'aborted', 'attempt', 'completed', 'model', 'msToFirstToken', 'outcome',
+      'phase', 'provider', 'status', 'streamBodyMs', 'streamOpenMs', 'streamTotalMs'],
+  );
+});
+
+test('a turn that streamed nothing carries an empty list, not a missing field', () => {
+  assert.deepEqual(createTurnTelemetry({ now: () => 0, startedAt: 0 }).snapshot({}).streamTimings, []);
+});
+
+/* A DEADLINE IS NOT A CRASH AND NOT A USER LEAVING, AND THE ROW MUST SAY WHICH.
+ *
+ * The turn deadline now aborts the body (lib/stream-deadline.js). That abort
+ * surfaces as an Error carrying `code: OPENROUTER_DEADLINE` while the TURN
+ * signal is untouched — so the naive classification calls it `failed`, which is
+ * the one label that would hide the very behaviour the fix introduced. Three
+ * outcomes, three different actions: `failed` means look at the provider,
+ * `aborted`/client means the user left and nothing is wrong, `aborted`/
+ * turn_deadline means the budget is now binding and the model is too slow. */
+test('a stream cut by the turn deadline is distinguishable from a crash and from a user leaving', () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordStreamTiming({ phase: 'synthesis', model: 'head', outcome: 'aborted', aborted: true, abortReason: 'turn_deadline', streamOpenMs: 400, streamBodyMs: 74600 });
+  t.recordStreamTiming({ phase: 'synthesis', model: 'head', outcome: 'aborted', aborted: true, abortReason: 'client', streamOpenMs: 400, streamBodyMs: 1200 });
+  t.recordStreamTiming({ phase: 'synthesis', model: 'head', outcome: 'failed', aborted: false, streamOpenMs: 400, streamBodyMs: 30 });
+  const rows = t.snapshot({}).streamTimings;
+  assert.deepEqual(rows.map((r) => r.abortReason), ['turn_deadline', 'client', null]);
+  assert.deepEqual(rows.map((r) => r.outcome), ['aborted', 'aborted', 'failed']);
+});

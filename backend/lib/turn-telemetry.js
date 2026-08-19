@@ -30,6 +30,20 @@ function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null
    * does nothing for it. The status was already captured per attempt and thrown
    * away at the snapshot boundary, one field short of a diagnosis. */
   const attemptTotals = { total: 0, ok: 0, failed: 0, retries: 0, byOutcome: {}, byStatus: {}, byProvider: {} };
+  /* WHY THE HEAD CHANGED. `streamModel` walks a fallback chain and only the
+   * model that finally answered survives, through `onModelUsed`, which
+   * overwrites. A turn that fell head -> rung2 -> rung3 was indistinguishable
+   * from one that never fell, so the ladder could never be judged. Capped for
+   * the same reason the attempt detail is: a chain is short, but nothing here
+   * may grow without a bound. */
+  const modelFallbacks = [];
+  const MAX_FALLBACK_RECORDS = 20;
+  /* WHERE A STREAMED GENERATION ACTUALLY SPENT ITS TIME. The attempt row stops
+   * at the handshake — `fetchOpenRouterStream` reports `ok` the moment it hands
+   * the response off and clears the timer that bounded opening — so the body,
+   * which is the part that took 37.4s on the traced turn, was unmeasured. */
+  const streamTimings = [];
+  const MAX_STREAM_RECORDS = 20;
   /* Tool executions, by name and outcome. The agent loop already reports rounds
    * and call counts; what nothing recorded is whether the calls WORKED, which
    * is the number that decides whether a tool is worth its tokens. */
@@ -221,6 +235,68 @@ function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null
       });
     },
     /**
+     * How long a streamed generation took, split at the two boundaries that
+     * distinguish a queued provider from a slow one.
+     *
+     * `msToFirstToken` is null when the stream ended having emitted no content;
+     * 0 would read as an instant answer, which is the opposite of what
+     * happened. No text of any kind is stored — see the allow-list test.
+     *
+     * @param {{phase?: string, model?: string, openMs?: number,
+     *          msToFirstToken?: number|null, totalMs?: number}} row
+     */
+    recordStreamTiming(row) {
+      if (!row || typeof row !== 'object') return;
+      if (streamTimings.length >= MAX_STREAM_RECORDS) return;
+      /* `Number(null)` is 0 and 0 is finite, so a null first-token time used to
+       * come back as "answered instantly" — the opposite of what it means, and
+       * a value that drags a percentile down with it. */
+      const ms = (v) => (v == null || v === ''
+        ? null
+        : Number.isFinite(Number(v)) ? Math.max(0, Math.round(Number(v))) : null);
+      const openMs = ms(row.streamOpenMs) ?? 0;
+      const bodyMs = ms(row.streamBodyMs) ?? 0;
+      streamTimings.push({
+        phase: row.phase ? String(row.phase) : null,
+        provider: String(row.provider || 'openrouter'),
+        model: String(row.model || 'unknown'),
+        attempt: Number.isFinite(row.attempt) ? row.attempt : 1,
+        status: Number.isFinite(row.status) ? row.status : null,
+        outcome: String(row.outcome || 'unknown'),
+        streamOpenMs: openMs,
+        msToFirstToken: ms(row.msToFirstToken),
+        streamBodyMs: bodyMs,
+        /* Derived, so the three can never disagree. A total measured
+         * independently would be free to drift from its own two halves. */
+        streamTotalMs: openMs + bodyMs,
+        completed: Boolean(row.completed),
+        aborted: Boolean(row.aborted),
+        /* WHICH abort. `turn_deadline` means the budget is now binding and the
+         * model is too slow for it; `client` means the user left and nothing is
+         * wrong. Collapsing them would hide the first behind the second. */
+        abortReason: row.abortReason ? String(row.abortReason) : null,
+      });
+    },
+    /**
+     * One rung of a head fallback chain.
+     *
+     * `reason` MUST be a classification, never the provider's message: an
+     * OpenRouter refusal can quote the request it refused, and `audit_owner_read`
+     * makes this bag user-visible. The caller classifies; this only stores.
+     *
+     * @param {{phase?: string, from?: string, to?: string, reason?: string}} row
+     */
+    recordModelFallback(row) {
+      if (!row || typeof row !== 'object') return;
+      if (modelFallbacks.length >= MAX_FALLBACK_RECORDS) return;
+      modelFallbacks.push({
+        phase: row.phase ? String(row.phase) : null,
+        from: String(row.from || 'unknown'),
+        to: String(row.to || 'unknown'),
+        reason: String(row.reason || 'unknown'),
+      });
+    },
+    /**
      * Did a tool call do what it was asked?
      *
      * @param {{name?: string, ok?: boolean, ms?: number, round?: number, error?: string}} row
@@ -332,6 +408,16 @@ function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null
        * to settle the account-wide request ceiling, and a settlement that had
        * to walk an array to find its own number would be a settlement that
        * silently returns 0 for a truncated row. */
+      const byPhase = {};
+      for (const a of providerAttempts) {
+        const key = a.phase || 'unattributed';
+        const bucket = byPhase[key] || (byPhase[key] = { attempts: 0, ok: 0, failed: 0, retries: 0, ms: 0, models: {} });
+        bucket.attempts += 1;
+        if (a.outcome === 'ok') bucket.ok += 1; else bucket.failed += 1;
+        if (a.attempt > 1) bucket.retries += 1;
+        bucket.ms += a.ms;
+        bucket.models[a.model] = (bucket.models[a.model] || 0) + 1;
+      }
       const toolTotals = toolOutcomes.length === 0 ? null : {
         calls: toolOutcomes.length,
         ok: toolOutcomes.filter((t) => t.ok).length,
@@ -355,6 +441,17 @@ function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null
           byStatus: { ...attemptTotals.byStatus },
           byProvider: { ...attemptTotals.byProvider },
           truncatedDetail: providerAttempts.length >= MAX_ATTEMPT_RECORDS,
+          /* DERIVED from the detail rows, never counted a second time. The
+           * ceiling settles against `total`, and a rollup incremented alongside
+           * it would be a second number for one fact — free to drift, and the
+           * drift would show up as money. An attempt that named no phase lands
+           * under `unattributed` rather than being dropped, so the buckets
+           * always re-add to `total`. */
+          byPhase,
+          /* The rows themselves. Already collected and capped; they were simply
+           * never emitted, so `synthesisMs: 37402` could not be split into one
+           * slow call or several sequential ones. */
+          detail: providerAttempts.map((a) => ({ ...a })),
         },
         /* The number the ceiling settles against. Named separately from the
          * breakdown so a reader of lib/spend.js does not have to know the
@@ -374,6 +471,8 @@ function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null
         cacheReads,
         fastCalls,
         seats: [...seats],
+        modelFallbacks: modelFallbacks.map((f) => ({ ...f })),
+        streamTimings: streamTimings.map((r) => ({ ...r })),
         synthesisMs,
         synthesisModel,
         toolRounds: [...toolRounds],

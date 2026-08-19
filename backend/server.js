@@ -579,6 +579,15 @@ const abortableDelay = (ms, signal) => new Promise((resolve, reject) => {
  * policies underneath, which are about waiting for a window rather than about
  * provider health. luna's a9d5356. */
 const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, meta = {}, answerOptions = {}, turnDeadlineAt = null, modelOptions = {}) => {
+  const streamRequestedAt = Date.now();
+  /* The attempt row that `fetchOpenRouterStream` files at handoff is the only
+   * place the attempt NUMBER and the provider exist. Forwarded untouched — the
+   * spend ceiling settles against this callback's count, so it must see every
+   * row exactly once — and copied aside so the stream row can name them. */
+  let openedAttempt = null;
+  const forwardAttempt = typeof answerOptions?.onAttempt === 'function'
+    ? (row) => { if (row && row.outcome === 'ok') openedAttempt = row; answerOptions.onAttempt(row); }
+    : undefined;
   let response;
   try {
     response = await fetchOpenRouterStream(
@@ -598,7 +607,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
         /* One POST per attempt, including the retry a pre-body 429 triggers.
          * Without this the streamed answer — the single request every turn
          * makes — was invisible to the account-wide request ceiling. */
-        ...(typeof answerOptions?.onAttempt === 'function' ? { onAttempt: answerOptions.onAttempt } : {}),
+        ...(forwardAttempt ? { onAttempt: forwardAttempt } : {}),
       },
     );
   } catch (err) {
@@ -612,6 +621,39 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     throw err;
   }
   if (!response.body) throw new Error(`Stream HTTP ${response.status}: missing stream body`);
+  /* THREE CLOCKS, BECAUSE THREE THINGS CAN BE SLOW AND THEY HAVE DIFFERENT FIXES.
+   *
+   * `fetchOpenRouterStream` reports its attempt the moment it hands this
+   * response over, and clears the timer that bounded opening in the same
+   * breath — so the attempt row is time-to-headers and nothing more. Everything
+   * below runs under no bound except the turn signal, which is
+   * `t0 + STREAM_TURN_BUDGET_MS`.
+   *
+   * open -> first CONTENT byte separates a queued provider from a slow one;
+   * first byte -> end is generation rate. On the traced production turn only
+   * the sum existed (`synthesisMs: 37402`) and it could not tell them apart. */
+  const streamOpenedAt = Date.now();
+  let firstContentAt = null;
+  /* ON `meta`, BY REFERENCE, for the same reason `meta.emitted` is: a stream
+   * that throws or is aborted has no return value to carry its timings out in,
+   * and those are precisely the streams worth timing. `streamModel` reports
+   * from this on every path. It exists only once a stream has actually opened,
+   * so no non-streaming call can ever stamp a body time. */
+  meta.stream = {
+    requestedAt: streamRequestedAt,
+    openedAt: streamOpenedAt,
+    status: response.status,
+    provider: openedAttempt?.provider || 'openrouter',
+    attempt: Number.isFinite(openedAttempt?.attempt) ? openedAttempt.attempt : 1,
+    firstContentAt: null,
+    endedAt: null,
+    completed: false,
+  };
+  const noteFirstContent = () => {
+    if (firstContentAt !== null) return;
+    firstContentAt = Date.now();
+    meta.stream.firstContentAt = firstContentAt;
+  };
   const reader = response.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
@@ -679,6 +721,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
          * is the number every latency change is judged by; leaving it stamped
          * at openStream would have made this feature look like a 15-second
          * improvement while the user waited exactly as long. */
+        noteFirstContent();
         if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
         emitted.push(frame.text);
         try { answerOptions.onChunk?.(frame.text); } catch { /* a recorder must never fail a stream */ }
@@ -688,7 +731,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
        * finish_reason, then the `[DONE]` terminator — so the sentinel is
        * written once and only once. The client treats a second [DONE] as a
        * second turn ending. */
-      if (frame.done && !completed) { completed = true; }
+      if (frame.done && !completed) { completed = true; meta.stream.completed = true; }
     }
   }
   /* THROWN BEFORE THE TEXT IS RETURNED, deliberately. A stream that ended
@@ -702,6 +745,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     const sanitised = sanitizeAnswerText(held.join(''), answerOptions);
     if (sanitised.rejected) throw new Error('Model returned protocol instead of an answer');
     if (sanitised.text) {
+      noteFirstContent();
       if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
       emitted.push(sanitised.text);
       try { answerOptions.onChunk?.(sanitised.text); } catch { /* never fail a stream */ }
@@ -725,6 +769,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
   if (rescued) {
     meta.textSource = 'reasoning';
     try { answerOptions.onTextSource?.('reasoning'); } catch { /* telemetry must never fail a stream */ }
+    noteFirstContent();
     if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
     emitted.push(rescued.text);
     try { answerOptions.onChunk?.(rescued.text); } catch { /* never fail a stream */ }
@@ -738,6 +783,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     res.write(`data: ${JSON.stringify({ type: 'chunk', text: citationSuffix })}\n\n`);
   }
   if (!res.writableEnded) res.write('data: [DONE]\n\n');
+  meta.stream.endedAt = Date.now();
   return emitted.join('');
 };
 
@@ -772,6 +818,21 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
  *   spends a request writing an answer nobody is waiting for, which is exactly
  *   what the abort work existed to stop.
  */
+/* WHY A RUNG WAS TAKEN, AS A CLASSIFICATION AND NEVER AS THE PROVIDER'S OWN
+ * WORDS. `audit_owner_read` lets a user SELECT their own audit rows, and an
+ * OpenRouter refusal can quote the request it refused — so the message is the
+ * one thing that must not travel. A status and a code answer the question the
+ * ladder is judged on ("is the head rate-limited or is it dead?") and carry no
+ * user text at all. */
+const classifyFallbackReason = (err) => {
+  if (!err) return 'unknown';
+  if (err.name === 'AbortError') return 'aborted';
+  if (err.code === 'OPENROUTER_DEADLINE') return 'deadline';
+  if (Number.isFinite(err.status)) return `http_${err.status}`;
+  if (typeof err.code === 'string' && err.code) return `code_${err.code.toLowerCase()}`;
+  return 'failed';
+};
+
 const streamModel = async (res, modelName, messages, temperature = 0.0, signal, maxTokens = null, answerOptions = {}, turnDeadlineAt = null, modelOptions = {}) => {
   const meta = {};
   /* A CHAIN, NOT A NAME. One fallback means one more single point of failure:
@@ -812,13 +873,39 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
       });
     } catch { /* a recorder must never break the call it is recording */ }
   };
+  /* REPORTED ON EVERY PATH, INCLUDING THE ONES THAT THREW. A stream cut by the
+   * turn signal after 70s of crawling is the case the whole budget question
+   * turns on, and it is exactly the case a success-only reporter cannot see.
+   * `meta.stream` is absent when the request never opened, which is how a
+   * failure BEFORE the handshake stays out of the body statistics. */
+  const reportStream = (streamMeta, model, err) => {
+    const st = streamMeta?.stream;
+    if (!st) return;
+    const wasAborted = Boolean(signal?.aborted || err?.name === 'AbortError');
+    try {
+      modelOptions?.onStreamTiming?.({
+        provider: st.provider,
+        model,
+        attempt: st.attempt,
+        status: st.status,
+        outcome: err ? (wasAborted ? 'aborted' : 'failed') : 'ok',
+        streamOpenMs: st.openedAt - st.requestedAt,
+        msToFirstToken: st.firstContentAt === null ? null : st.firstContentAt - st.openedAt,
+        streamBodyMs: (st.endedAt ?? Date.now()) - st.openedAt,
+        completed: Boolean(st.completed),
+        aborted: wasAborted,
+      });
+    } catch { /* diagnostics must never fail a turn */ }
+  };
   const headStartedAt = Date.now();
   try {
     const answer = await streamOnce(res, modelName, messages, temperature, signal, maxTokens, meta, answerOptions, turnDeadlineAt, modelOptions);
     recordStream(modelName, headStartedAt, null);
+    reportStream(meta, modelName, null);
     return answer;
   } catch (err) {
     recordStream(modelName, headStartedAt, err);
+    reportStream(meta, modelName, err);
     const wrote = (meta.emitted || []).join('').length;
     if (!fallbackModel || fallbackModel === modelName || signal?.aborted || wrote > 0) throw err;
     if (err.status === 429 && err.limitSource === 'openrouter_free_tier_per_minute') {
@@ -834,15 +921,35 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
       await abortableDelay(Math.max(0, resetAt - Date.now()), signal);
       /* Returned directly: if this second and final request fails, it escapes.
        * Falling back after it would turn today's two-request failure into three. */
-      return await streamOnce(res, modelName, messages, temperature, signal, maxTokens, {}, answerOptions, turnDeadlineAt, modelOptions);
+      const retryMeta = {};
+      try {
+        const retried = await streamOnce(res, modelName, messages, temperature, signal, maxTokens, retryMeta, answerOptions, turnDeadlineAt, modelOptions);
+        reportStream(retryMeta, modelName, null);
+        return retried;
+      } catch (retryErr) {
+        reportStream(retryMeta, modelName, retryErr);
+        throw retryErr;
+      }
     }
     /* The daily cap is account-wide too, but its policy is the latch above
      * callModel. Do not create a competing stream latch or spend a fallback
      * request that the same daily gate must reject. */
     if (err.status === 429 && err.limitSource === 'openrouter_free_tier_daily') throw err;
     let lastError = err;
+    let fellFrom = modelName;
     for (const entry of fallbackChain) {
       console.warn(`[STREAM] ${modelName} failed before writing anything (${lastError.message}). Falling back to ${entry.model}.`);
+      /* The console line above has carried this since the ladder existed and it
+       * dies with the process. This is the same fact, classified, on its way to
+       * the audit row — see lib/synthesis-telemetry-wiring.test.js. */
+      try {
+        modelOptions?.onFallback?.({
+          from: fellFrom,
+          to: entry.model,
+          reason: classifyFallbackReason(lastError),
+        });
+      } catch { /* diagnostics must never fail a turn */ }
+      fellFrom = entry.model;
       try { modelOptions?.onModelUsed?.(entry.model); } catch { /* diagnostics must never fail a turn */ }
       const attemptMeta = {};
       const rungStartedAt = Date.now();
@@ -860,9 +967,11 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
           { ...modelOptions, reasoning: entry.reasoning || { exclude: true } },
         );
         recordStream(entry.model, rungStartedAt, null);
+        reportStream(attemptMeta, entry.model, null);
         return recovered;
       } catch (fallbackErr) {
         recordStream(entry.model, rungStartedAt, fallbackErr);
+        reportStream(attemptMeta, entry.model, fallbackErr);
         lastError = fallbackErr;
         /* The same two refusals as above, re-checked per attempt: a recovery
          * that wrote half an answer cannot be followed by another one, and a
@@ -5351,6 +5460,8 @@ async function handleCouncilTurn(req, res) {
       const searchSynthesisOptions = { ...searchSynthesis.options };
       let searchSynthesisModelUsed = searchSynthesis.model;
       searchSynthesisOptions.onModelUsed = (model) => { searchSynthesisModelUsed = model; };
+      searchSynthesisOptions.onFallback = (row) => telemetry.recordModelFallback({ ...row, phase: 'search_synthesis' });
+      searchSynthesisOptions.onStreamTiming = (row) => telemetry.recordStreamTiming({ ...row, phase: 'search_synthesis' });
       console.log(`[SYNTHESIS] requested=${searchSynthesis.model} effort=${searchSynthesis.effortLabel} complexity=${selection.complexity} tools=true`);
       const searchSynthesisStartedAt = Date.now();
       const searchAnswer = await streamModel(res, searchSynthesis.model, searchSynthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, answerOptions, turnDeadlineAt, searchSynthesisOptions);
@@ -5399,6 +5510,8 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         const wikiSynthesisOptions = { ...wikiSynthesis.options };
         let wikiSynthesisModelUsed = wikiSynthesis.model;
         wikiSynthesisOptions.onModelUsed = (model) => { wikiSynthesisModelUsed = model; };
+        wikiSynthesisOptions.onFallback = (row) => telemetry.recordModelFallback({ ...row, phase: 'wiki_synthesis' });
+        wikiSynthesisOptions.onStreamTiming = (row) => telemetry.recordStreamTiming({ ...row, phase: 'wiki_synthesis' });
         console.log(`[SYNTHESIS] requested=${wikiSynthesis.model} effort=${wikiSynthesis.effortLabel} complexity=${selection.complexity} tools=true`);
         openStream(res);
         const wikiSynthesisStartedAt = Date.now();
@@ -5949,6 +6062,8 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     const synthesisOptions = { ...synthesis.options };
     let synthesisModelUsed = synthesis.model;
     synthesisOptions.onModelUsed = (model) => { synthesisModelUsed = model; };
+    synthesisOptions.onFallback = (row) => telemetry.recordModelFallback({ ...row, phase: 'synthesis' });
+    synthesisOptions.onStreamTiming = (row) => telemetry.recordStreamTiming({ ...row, phase: 'synthesis' });
     console.log(`[SYNTHESIS] requested=${synthesis.model} effort=${synthesis.effortLabel} complexity=${selection.complexity} tools=${toolQuestion}`);
     telemetryExtra = {
       ...telemetryExtra,

@@ -37,7 +37,12 @@
         "tiktok": "24 rows read. Or 1.\n\nWithout an index, a lookup reads rows one after another until it finds the match - a sequential scan.\n\nAn index is a sorted structure the database can descend, so it lands on the row instead of walking to it.\n\nRun EXPLAIN on the query. If it says Seq Scan on a table you filter often, that is the fix.\n\nComment EXPLAIN and I'll send the snippet.\n\n#sql #postgres #database #backend #performance #devtips",
         "youtube": "24 rows read. Or 1.\n\nAn index is a sorted structure the database can descend, so it lands on the row instead of walking to it.\n\n#sql #postgres #database"
       },
-      "youtube": { "title": "an index is a jump, not a walk #Shorts", "categoryId": "28", "privacy": "public", "madeForKids": false }
+      "youtube": {
+        "title": "an index is a jump, not a walk #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
     },
     {
       "id": "debounce",
@@ -50,7 +55,12 @@
         "tiktok": "12 scroll events. 1 handler call.\n\nEvery scroll, resize and keystroke fires far more often than your handler needs to run.\n\ndebounce restarts a timer on each event and only runs the callback once the events stop.\n\nThe whole trick is the clearTimeout: each call cancels the pending one.\n\nComment DEBOUNCE and I'll send the snippet.\n\n#javascript #webdev #coding #programming #frontend #webdevelopment",
         "youtube": "12 scroll events. 1 handler call.\n\ndebounce restarts a timer on each event and only runs the callback once the events stop.\n\n#javascript #webdev #coding"
       },
-      "youtube": { "title": "debounce runs it once, at the end #Shorts", "categoryId": "28", "privacy": "public", "madeForKids": false }
+      "youtube": {
+        "title": "debounce runs it once, at the end #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
     },
     {
       "id": "nplusone",
@@ -63,7 +73,12 @@
         "tiktok": "8 rows. 9 queries. Every request.\n\nOne query fetches the list, then the loop fires another query per row to fetch what it references.\n\nThat is the N+1: it looks like clean code and it scales linearly in round trips.\n\nAsk for the related rows in the first query instead and the whole loop collapses into one trip.\n\nComment NPLUS1 and I'll send the snippet.\n\n#backend #sql #database #orm #prisma #postgres",
         "youtube": "8 rows. 9 queries. Every request.\n\nThat is the N+1: it looks like clean code and it scales linearly in round trips.\n\n#backend #sql #database"
       },
-      "youtube": { "title": "the loop is hitting your db #Shorts", "categoryId": "28", "privacy": "public", "madeForKids": false }
+      "youtube": {
+        "title": "the loop is hitting your db #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
     },
     {
       "id": "ensureuser",
@@ -76,7 +91,192 @@
         "tiktok": "50 requests. 100 selects on the same table.\n\nYour auth middleware reads the users row to check whether the account is suspended, and caches it. Then the next helper down the chain selects that same row again microseconds later, because it has no idea the first one already has it.\n\nFifteen call sites were paying for the second read — every route with an :id in it.\n\nThe fix is one guard inside the function they all share: check the cache before you select.\n\nComment CACHE and I'll send the fix.\n\n#backend #nodejs #database #postgres #supabase #caching #coding #programming #webdev #softwareengineering",
         "youtube": "50 requests. 100 selects on the same table.\n\nYour auth middleware reads the users row to check whether the account is suspended, and caches it. The next helper down the chain selects the same row again, microseconds later, because it has no idea the first one already has it.\n\nThe fix is one guard inside the function they all share, not a cached row threaded through fifteen callers.\n\n#backend #nodejs #database"
       },
-      "youtube": { "title": "your middleware already fetched it #Shorts", "categoryId": "28", "privacy": "public", "madeForKids": false }
+      "youtube": {
+        "title": "your middleware already fetched it #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "racecondition",
+      "media": "racecondition.mp4",
+      "durationMs": 7700,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "2 writes. 1 counted.\n\nTwo requests read the same counter, both see 0, both write 1. Two writes landed and the row says 1.\n\nNothing here is slow and nothing here throws. The read and the write are two separate trips, and another writer fits between them.\n\nLet the database do the arithmetic instead. One statement, no gap for anyone to land in.\n\nComment ATOMIC and I'll send the snippet.\n\n#sql #postgres #database #backend #coding #programming #webdev #devtips #codingtips #softwareengineering #dba #performance",
+        "tiktok": "2 writes. 1 counted.\n\nTwo requests read the same counter, both see 0, both write 1. Two writes landed and the row says 1.\n\nNothing here is slow and nothing here throws. The read and the write are two separate trips, and another writer fits between them.\n\nLet the database do the arithmetic instead. One statement, no gap for anyone to land in.\n\nComment ATOMIC and I'll send the snippet.\n\n#sql #postgres #database #backend #coding #programming",
+        "youtube": "2 writes. 1 counted.\n\nNothing here is slow and nothing here throws. The read and the write are two separate trips, and another writer fits between them.\n\nUPDATE counters SET n = n + 1 WHERE id = $1\n\n#sql #postgres #database"
+      },
+      "youtube": {
+        "title": "read, modify, write loses the race #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "cachestampede",
+      "media": "cachestampede.mp4",
+      "durationMs": 7659,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "50 cache misses. 50 identical queries.\n\nThe moment a hot key expires, every request in flight misses at once and every one of them goes to the database for the same row.\n\nThe cache is not broken. It is empty for a few milliseconds, and that is long enough for fifty callers to walk through the hole.\n\nStore the in-flight promise, not just the result. The first miss loads it and the other forty-nine await the same promise.\n\nComment STAMPEDE and I'll send the snippet.\n\n#backend #coding #programming #webdev #softwareengineering #devtips #codingtips #nodejs #api #database #performance #learntocode",
+        "tiktok": "50 cache misses. 50 identical queries.\n\nThe moment a hot key expires, every request in flight misses at once and every one of them goes to the database for the same row.\n\nThe cache is not broken. It is empty for a few milliseconds, and that is long enough for fifty callers to walk through the hole.\n\nStore the in-flight promise, not just the result. The first miss loads it and the other forty-nine await the same promise.\n\nComment STAMPEDE and I'll send the snippet.\n\n#backend #coding #programming #webdev #softwareengineering #devtips",
+        "youtube": "50 cache misses. 50 identical queries.\n\nThe cache is not broken. It is empty for a few milliseconds, and that is long enough for fifty callers to walk through the hole.\n\ninflight.set(k, inflight.get(k) ?? load(k))\n\n#backend #coding #programming"
+      },
+      "youtube": {
+        "title": "one key expires, fifty queries fire #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "waterfall",
+      "media": "waterfall.mp4",
+      "durationMs": 7979,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "4 awaits. 4 round trips.\n\nEach await parks the function until its request comes back, so four independent fetches queue up behind each other for no reason.\n\nNothing in the second call needs anything from the first. The order is an accident of how the code was typed.\n\nStart them all, then wait once. Same four requests, one wait instead of four.\n\nComment WATERFALL and I'll send the snippet.\n\n#backend #coding #programming #webdev #softwareengineering #devtips #codingtips #nodejs #api #database #performance #learntocode",
+        "tiktok": "4 awaits. 4 round trips.\n\nEach await parks the function until its request comes back, so four independent fetches queue up behind each other for no reason.\n\nNothing in the second call needs anything from the first. The order is an accident of how the code was typed.\n\nStart them all, then wait once. Same four requests, one wait instead of four.\n\nComment WATERFALL and I'll send the snippet.\n\n#backend #coding #programming #webdev #softwareengineering #devtips",
+        "youtube": "4 awaits. 4 round trips.\n\nNothing in the second call needs anything from the first. The order is an accident of how the code was typed.\n\nconst [a, b] = await Promise.all([getA(), getB()])\n\n#backend #coding #programming"
+      },
+      "youtube": {
+        "title": "four awaits in a row is four round trips #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "rerenders",
+      "media": "rerenders.mp4",
+      "durationMs": 7659,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "1 keystroke. 48 renders.\n\nThe search box writes to state that lives at the top of the tree, so every character re-renders every row underneath it.\n\nThe list did not change. It re-rendered because its parent did, and it takes a new props object on every pass.\n\nMove the state down to the component that owns it, or memo the list so an unchanged rows prop stops the pass.\n\nComment RERENDER and I'll send the snippet.\n\n#javascript #react #reactjs #frontend #webdev #coding #programming #typescript #webdevelopment #codingtips #performance #learntocode",
+        "tiktok": "1 keystroke. 48 renders.\n\nThe search box writes to state that lives at the top of the tree, so every character re-renders every row underneath it.\n\nThe list did not change. It re-rendered because its parent did, and it takes a new props object on every pass.\n\nMove the state down to the component that owns it, or memo the list so an unchanged rows prop stops the pass.\n\nComment RERENDER and I'll send the snippet.\n\n#javascript #react #reactjs #frontend #webdev #coding",
+        "youtube": "1 keystroke. 48 renders.\n\nThe list did not change. It re-rendered because its parent did, and it takes a new props object on every pass.\n\nconst List = memo(function List({ rows }) { ... })\n\n#javascript #react #reactjs"
+      },
+      "youtube": {
+        "title": "one keystroke, forty-eight renders #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "unbounded",
+      "media": "unbounded.mp4",
+      "durationMs": 7979,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "200 items. 200 requests at once.\n\nPromise.all does not run things one after another and it does not limit anything. Map two hundred items and two hundred sockets open in the same tick.\n\nIt works on the ten-item test fixture and takes the machine, or the API's rate limit, out on the real list.\n\nRun them through a pool. Ten in flight, the rest queue, and the two hundred still finish.\n\nComment CONCURRENCY and I'll send the snippet.\n\n#backend #coding #programming #webdev #softwareengineering #devtips #codingtips #nodejs #api #database #performance #learntocode",
+        "tiktok": "200 items. 200 requests at once.\n\nPromise.all does not run things one after another and it does not limit anything. Map two hundred items and two hundred sockets open in the same tick.\n\nIt works on the ten-item test fixture and takes the machine, or the API's rate limit, out on the real list.\n\nRun them through a pool. Ten in flight, the rest queue, and the two hundred still finish.\n\nComment CONCURRENCY and I'll send the snippet.\n\n#backend #coding #programming #webdev #softwareengineering #devtips",
+        "youtube": "200 items. 200 requests at once.\n\nIt works on the ten-item test fixture and takes the machine, or the API's rate limit, out on the real list.\n\nawait pool(10, items, (i) => fetch(i.url))\n\n#backend #coding #programming"
+      },
+      "youtube": {
+        "title": "Promise.all opens all of them at once #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "retrystorm",
+      "media": "retrystorm.mp4",
+      "durationMs": 7600,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "1 click. 16 requests.\n\nThe gateway retries four times. The client inside it retries four times. One click reaches the service sixteen times.\n\nEvery layer that retries multiplies with every other layer that retries, and each one looks reasonable on its own.\n\nPick one layer to retry at. The edge is usually the right one, and the inner call does zero.\n\nComment RETRY and I'll send the snippet.\n\n#backend #coding #programming #webdev #softwareengineering #devtips #codingtips #nodejs #api #database #performance #learntocode",
+        "tiktok": "1 click. 16 requests.\n\nThe gateway retries four times. The client inside it retries four times. One click reaches the service sixteen times.\n\nEvery layer that retries multiplies with every other layer that retries, and each one looks reasonable on its own.\n\nPick one layer to retry at. The edge is usually the right one, and the inner call does zero.\n\nComment RETRY and I'll send the snippet.\n\n#backend #coding #programming #webdev #softwareengineering #devtips",
+        "youtube": "1 click. 16 requests.\n\nEvery layer that retries multiplies with every other layer that retries, and each one looks reasonable on its own.\n\ngateway.retry(4)  ->  client.retry(0)\n\n#backend #coding #programming"
+      },
+      "youtube": {
+        "title": "retries multiply, they do not add #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "idempotency",
+      "media": "idempotency.mp4",
+      "durationMs": 7700,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "1 timeout. 2 charges.\n\nA timeout tells you the answer did not come back. It does not tell you the work did not happen.\n\nRetry blindly and the card is charged twice: the first request landed, you just never heard about it.\n\nSend an idempotency key. Same key, same request, and the server hands back the first result instead of doing it again.\n\nComment IDEMPOTENT and I'll send the snippet.\n\n#backend #coding #programming #webdev #softwareengineering #devtips #codingtips #nodejs #api #database #performance #learntocode",
+        "tiktok": "1 timeout. 2 charges.\n\nA timeout tells you the answer did not come back. It does not tell you the work did not happen.\n\nRetry blindly and the card is charged twice: the first request landed, you just never heard about it.\n\nSend an idempotency key. Same key, same request, and the server hands back the first result instead of doing it again.\n\nComment IDEMPOTENT and I'll send the snippet.\n\n#backend #coding #programming #webdev #softwareengineering #devtips",
+        "youtube": "1 timeout. 2 charges.\n\nRetry blindly and the card is charged twice: the first request landed, you just never heard about it.\n\nawait post('/charge', body, { 'Idempotency-Key': id })\n\n#backend #coding #programming"
+      },
+      "youtube": {
+        "title": "a timeout is not a failure #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "poolleak",
+      "media": "poolleak.mp4",
+      "durationMs": 7700,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "10 connections. 0 free.\n\nrelease() sits on the line after the query. The query throws, the line never runs, and that connection is gone for good.\n\nTen thrown queries and the pool is empty. The next request waits forever on a checkout that will never be handed one.\n\nPut the release in a finally block. A throw still runs it, which is the entire reason finally exists.\n\nComment POOL and I'll send the snippet.\n\n#sql #postgres #database #backend #coding #programming #webdev #devtips #codingtips #softwareengineering #dba #performance",
+        "tiktok": "10 connections. 0 free.\n\nrelease() sits on the line after the query. The query throws, the line never runs, and that connection is gone for good.\n\nTen thrown queries and the pool is empty. The next request waits forever on a checkout that will never be handed one.\n\nPut the release in a finally block. A throw still runs it, which is the entire reason finally exists.\n\nComment POOL and I'll send the snippet.\n\n#sql #postgres #database #backend #coding #programming",
+        "youtube": "10 connections. 0 free.\n\nTen thrown queries and the pool is empty. The next request waits forever on a checkout that will never be handed one.\n\ntry { await c.query(q) } finally { c.release() }\n\n#sql #postgres #database"
+      },
+      "youtube": {
+        "title": "the query threw, the pool never got it back #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "circuitbreaker",
+      "media": "circuitbreaker.mp4",
+      "durationMs": 7915,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "100 requests. 100 timeouts.\n\nThe dependency is down. Every request still waits out the full timeout before failing, and they pile up behind each other while they wait.\n\nThe first five failures already told you everything the hundredth will.\n\nA circuit breaker counts failures, opens, and fails the rest instantly - then lets one through later to test whether the door is back.\n\nComment BREAKER and I'll send the snippet.\n\n#backend #coding #programming #webdev #softwareengineering #devtips #codingtips #nodejs #api #database #performance #learntocode",
+        "tiktok": "100 requests. 100 timeouts.\n\nThe dependency is down. Every request still waits out the full timeout before failing, and they pile up behind each other while they wait.\n\nThe first five failures already told you everything the hundredth will.\n\nA circuit breaker counts failures, opens, and fails the rest instantly - then lets one through later to test whether the door is back.\n\nComment BREAKER and I'll send the snippet.\n\n#backend #coding #programming #webdev #softwareengineering #devtips",
+        "youtube": "100 requests. 100 timeouts.\n\nThe first five failures already told you everything the hundredth will.\n\nif (breaker.open) throw new ServiceDown()\n\n#backend #coding #programming"
+      },
+      "youtube": {
+        "title": "stop knocking on a door that is gone #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
+    },
+    {
+      "id": "offsetpage",
+      "media": "offsetpage.mp4",
+      "durationMs": 7600,
+      "thumbnailOffset": 1000,
+      "isAiGenerated": false,
+      "captions": {
+        "instagram": "2 pages. 1 row shown twice.\n\nOFFSET counts rows from the top at the moment the query runs. One insert between page one and page two shifts everything down by one.\n\nSo row 20 arrives on both pages, and the row that should have been last on page two never appears at all.\n\nPage by the last value you actually saw. The cursor is a row, not a position, so an insert cannot move it.\n\nComment KEYSET and I'll send the snippet.\n\n#sql #postgres #database #backend #coding #programming #webdev #devtips #codingtips #softwareengineering #dba #performance",
+        "tiktok": "2 pages. 1 row shown twice.\n\nOFFSET counts rows from the top at the moment the query runs. One insert between page one and page two shifts everything down by one.\n\nSo row 20 arrives on both pages, and the row that should have been last on page two never appears at all.\n\nPage by the last value you actually saw. The cursor is a row, not a position, so an insert cannot move it.\n\nComment KEYSET and I'll send the snippet.\n\n#sql #postgres #database #backend #coding #programming",
+        "youtube": "2 pages. 1 row shown twice.\n\nSo row 20 arrives on both pages, and the row that should have been last on page two never appears at all.\n\nWHERE created_at < $cursor ORDER BY created_at DESC LIMIT 20\n\n#sql #postgres #database"
+      },
+      "youtube": {
+        "title": "offset pagination shows the same row twice #Shorts",
+        "categoryId": "28",
+        "privacy": "public",
+        "madeForKids": false
+      }
     }
   ]
 }

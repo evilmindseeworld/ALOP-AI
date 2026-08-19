@@ -219,7 +219,14 @@ if (isMain) {
     process.exit(2);
   }
 
-  const readJson = async (name) => JSON.parse(await readFile(join(HERE, name), 'utf8'));
+  /* TESTS ONLY. The CLI-level tests assert on a fixed catalogue - "twelve pairs,
+   * all refused" - and that is a statement about the four Metricool reels, not
+   * about however many reels the file has grown to since. Unset, this is exactly
+   * scripts/publish/reels.json. */
+  const readJson = async (name) => JSON.parse(await readFile(
+    name === 'reels.json' && process.env.PUBLISH_REELS_FILE_FOR_TESTS
+      ? process.env.PUBLISH_REELS_FILE_FOR_TESTS
+      : join(HERE, name), 'utf8'));
 
   if (has('backfill')) {
     const { rows } = await readJson('metricool-backfill.json');

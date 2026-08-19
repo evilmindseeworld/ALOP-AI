@@ -23,6 +23,16 @@ const load = () => import(pathToFileURL(join(PUBLISH_DIR, 'queue.mjs')).href);
 const reels = () => JSON.parse(readFileSync(join(PUBLISH_DIR, 'reels.json'), 'utf8')).reels;
 const backfillRows = () => JSON.parse(readFileSync(join(PUBLISH_DIR, 'metricool-backfill.json'), 'utf8')).rows;
 
+/* The four reels Metricool already owns.
+ *
+ * Taken from the backfill rather than from the top of the catalogue, because
+ * the catalogue GROWS - every new batch adds reels Buffer is meant to take, and
+ * a test that plans over the whole file would then be asserting "no new work
+ * exists", which is not a property anyone wants to hold. What must stay true is
+ * narrower: an owned pair is never offered to Buffer. */
+const ownedIds = () => new Set(backfillRows().map((r) => r.reelId));
+const metricoolReels = () => reels().filter((r) => ownedIds().has(r.id));
+
 const ownersFrom = (rows) => new Map(rows.map((r) => [`${r.reelId} ${r.platform}`, {
   reel_id: r.reelId, platform: r.platform, scheduler: r.scheduler,
   status: r.status, scheduler_post_id: r.schedulerPostId,
@@ -64,7 +74,7 @@ test('the media URL is the public Supabase object, built from the environment', 
 test('every one of the twelve Metricool publications is refused to Buffer', async () => {
   const { plan } = await load();
   const decisions = plan({
-    reels: reels(), owners: ownersFrom(backfillRows()), startDate: '2026-08-25', supabaseUrl: SUPABASE,
+    reels: metricoolReels(), owners: ownersFrom(backfillRows()), startDate: '2026-08-25', supabaseUrl: SUPABASE,
   });
 
   assert.equal(decisions.length, 12);
@@ -123,7 +133,7 @@ test('a missing caption is a skip, not a post with no words', async () => {
 
 test('the printed plan carries every field the operator has to check', async () => {
   const { plan, formatPlan } = await load();
-  const out = formatPlan(plan({ reels: reels(), owners: ownersFrom(backfillRows()), startDate: '2026-08-25', supabaseUrl: SUPABASE }));
+  const out = formatPlan(plan({ reels: metricoolReels(), owners: ownersFrom(backfillRows()), startDate: '2026-08-25', supabaseUrl: SUPABASE }));
 
   for (const needle of ['REEL', 'PLATFORM', 'SCHEDULER', 'DUBAI', 'UTC', 'indexscan', 'instagram', 'metricool', 'sha256:']) {
     assert.ok(out.includes(needle), `the dry-run must print ${needle}`);
@@ -145,9 +155,14 @@ test('planning is pure — it opens no socket', async () => {
   assert.equal(calls, 0);
 });
 
-test('the backfill file and the reel catalogue describe the same four reels', () => {
-  const catalogue = reels().map((r) => r.id).sort();
+test('every reel the backfill claims is present in the catalogue', () => {
+  const catalogue = new Set(reels().map((r) => r.id));
   const owned = [...new Set(backfillRows().map((r) => r.reelId))].sort();
-  assert.deepEqual(owned, catalogue);
+  const missing = owned.filter((id) => !catalogue.has(id));
+  /* Subset, not equality: the catalogue is allowed to be ahead of the backfill,
+   * and always is by exactly the reels Buffer has not published yet. The failure
+   * that matters is a backfill row for a reel nothing can plan - that row would
+   * hold a pair against a reel the planner never sees. */
+  assert.deepEqual(missing, [], 'the backfill owns a reel the catalogue does not describe');
   assert.equal(backfillRows().length, 12, 'four reels times three platforms');
 });

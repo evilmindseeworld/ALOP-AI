@@ -21,10 +21,11 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
+const { tmpdir } = require('node:os');
 const http = require('node:http');
 const { execFile } = require('node:child_process');
 const { join } = require('node:path');
-const { readFileSync } = require('node:fs');
+const { readFileSync, writeFileSync, mkdtempSync } = require('node:fs');
 
 const PUBLISH_DIR = join(__dirname, '..', '..', 'scripts', 'publish');
 const QUEUE = join(PUBLISH_DIR, 'queue.mjs');
@@ -60,12 +61,27 @@ const run = (args, env) => new Promise((resolve) => {
   });
 });
 
+/* A catalogue pinned to the four reels Metricool owns.
+ *
+ * These tests run queue.mjs as a child process, so they read the real
+ * scripts/publish/reels.json - which grows every time a batch is added. The
+ * assertions here are about ownership ("twelve pairs, all refused"), not about
+ * how much work is queued, so the child is pointed at a fixture holding exactly
+ * the owned reels. Built from the real file so the captions stay real. */
+function metricoolCatalogueFile() {
+  const doc = JSON.parse(readFileSync(join(PUBLISH_DIR, 'reels.json'), 'utf8'));
+  const owned = new Set(JSON.parse(readFileSync(join(PUBLISH_DIR, 'metricool-backfill.json'), 'utf8')).rows.map((r) => r.reelId));
+  const file = join(mkdtempSync(join(tmpdir(), 'publish-catalogue-')), 'reels.json');
+  writeFileSync(file, JSON.stringify({ ...doc, reels: doc.reels.filter((r) => owned.has(r.id)) }));
+  return file;
+}
+
 test('the dry run refuses all twelve Metricool pairs and creates nothing', async (t) => {
   const { server, seen } = stubSupabase();
   const port = await listen(server);
   t.after(() => server.close());
 
-  const env = { ...process.env, SUPABASE_URL: `http://127.0.0.1:${port}`, SUPABASE_SERVICE_ROLE_KEY: 'stub-key' };
+  const env = { ...process.env, SUPABASE_URL: `http://127.0.0.1:${port}`, SUPABASE_SERVICE_ROLE_KEY: 'stub-key', PUBLISH_REELS_FILE_FOR_TESTS: metricoolCatalogueFile() };
   /* The whole point — see the header. */
   delete env.BUFFER_API_KEY;
 
@@ -92,7 +108,8 @@ test('--dry-run --commit is refused rather than resolved in favour of committing
   /* Dry run is the default, so the flag is only ever a statement of intent.
    * Letting --commit win over it publishes in the one invocation that asked
    * hardest not to; the key is present here so a commit path WOULD run. */
-  const env = { ...process.env, SUPABASE_URL: `http://127.0.0.1:${port}`, SUPABASE_SERVICE_ROLE_KEY: 'stub-key', BUFFER_API_KEY: 'stub-buffer-key' };
+  const env = { ...process.env, SUPABASE_URL: `http://127.0.0.1:${port}`, SUPABASE_SERVICE_ROLE_KEY: 'stub-key',
+    PUBLISH_REELS_FILE_FOR_TESTS: metricoolCatalogueFile(), BUFFER_API_KEY: 'stub-buffer-key' };
 
   const { code, stderr } = await run(['--dry-run', '--commit', '--start', '2026-08-25'], env);
 
@@ -106,7 +123,7 @@ test('the dry run prints the ownership evidence, not just a verdict', async (t) 
   const port = await listen(server);
   t.after(() => server.close());
 
-  const env = { ...process.env, SUPABASE_URL: `http://127.0.0.1:${port}`, SUPABASE_SERVICE_ROLE_KEY: 'stub-key' };
+  const env = { ...process.env, SUPABASE_URL: `http://127.0.0.1:${port}`, SUPABASE_SERVICE_ROLE_KEY: 'stub-key', PUBLISH_REELS_FILE_FOR_TESTS: metricoolCatalogueFile() };
   delete env.BUFFER_API_KEY;
 
   const { stdout } = await run(['--dry-run', '--start', '2026-08-25'], env);
@@ -128,6 +145,7 @@ test('a Buffer key in the environment is never echoed by the dry run', async (t)
     ...process.env,
     SUPABASE_URL: `http://127.0.0.1:${port}`,
     SUPABASE_SERVICE_ROLE_KEY: 'stub-key',
+    PUBLISH_REELS_FILE_FOR_TESTS: metricoolCatalogueFile(),
     BUFFER_API_KEY: sentinel,
   };
 

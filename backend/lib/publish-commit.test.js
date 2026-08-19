@@ -29,10 +29,11 @@
 
 const test = require('node:test');
 const assert = require('node:assert');
+const { tmpdir } = require('node:os');
 const http = require('node:http');
 const { execFile } = require('node:child_process');
 const { join } = require('node:path');
-const { readFileSync } = require('node:fs');
+const { readFileSync, writeFileSync, mkdtempSync } = require('node:fs');
 
 const PUBLISH_DIR = join(__dirname, '..', '..', 'scripts', 'publish');
 const QUEUE = join(PUBLISH_DIR, 'queue.mjs');
@@ -136,6 +137,21 @@ const run = (args, env) => new Promise((resolve) => {
   });
 });
 
+/* A catalogue pinned to the four reels Metricool owns.
+ *
+ * These tests run queue.mjs as a child process, so they read the real
+ * scripts/publish/reels.json - which grows every time a batch is added. The
+ * assertions here are about ownership ("twelve pairs, all refused"), not about
+ * how much work is queued, so the child is pointed at a fixture holding exactly
+ * the owned reels. Built from the real file so the captions stay real. */
+function metricoolCatalogueFile() {
+  const doc = JSON.parse(readFileSync(join(PUBLISH_DIR, 'reels.json'), 'utf8'));
+  const owned = new Set(JSON.parse(readFileSync(join(PUBLISH_DIR, 'metricool-backfill.json'), 'utf8')).rows.map((r) => r.reelId));
+  const file = join(mkdtempSync(join(tmpdir(), 'publish-catalogue-')), 'reels.json');
+  writeFileSync(file, JSON.stringify({ ...doc, reels: doc.reels.filter((r) => owned.has(r.id)) }));
+  return file;
+}
+
 test('a ledger PATCH that fails after Buffer created the post cannot free the pair', async (t) => {
   const supabase = stubSupabase();
   const buffer = stubBuffer();
@@ -146,6 +162,7 @@ test('a ledger PATCH that fails after Buffer created the post cannot free the pa
     ...process.env,
     SUPABASE_URL: `http://127.0.0.1:${dbPort}`,
     SUPABASE_SERVICE_ROLE_KEY: 'stub-key',
+    PUBLISH_REELS_FILE_FOR_TESTS: metricoolCatalogueFile(),
     BUFFER_API_KEY: API_KEY,
     BUFFER_ENDPOINT_FOR_TESTS: `http://127.0.0.1:${bufPort}`,
   };
@@ -195,6 +212,7 @@ test('a createPost that fails DOES release the claim, which is the other half of
     ...process.env,
     SUPABASE_URL: `http://127.0.0.1:${dbPort}`,
     SUPABASE_SERVICE_ROLE_KEY: 'stub-key',
+    PUBLISH_REELS_FILE_FOR_TESTS: metricoolCatalogueFile(),
     BUFFER_API_KEY: API_KEY,
     BUFFER_ENDPOINT_FOR_TESTS: `http://127.0.0.1:${bufPort}`,
   };

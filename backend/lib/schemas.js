@@ -197,6 +197,29 @@ const FINAL_ANSWER_META = {
   optional: ['confidence'],
 };
 
+/**
+ * The OTHER thing a `turns.meta` row can be: the operational record of a turn
+ * that reached `turnLedger.begin`, built by lib/turn-reliability-meta.js.
+ *
+ * A SECOND SCHEMA RATHER THAN OPTIONAL FIELDS ON THE ONE ABOVE. FINAL_ANSWER_META
+ * defends an invariant its own header states -- a ledger row that can be missing
+ * its own operation id is not a ledger -- and loosening those five fields to
+ * optional so one bag could carry both records would retire that invariant to
+ * save a schema. The two are different records that happen to share a column.
+ *
+ * `reliability` is checked only for being an object here. Its shape is enforced
+ * where it is built, by an allow-list that names every field and re-types every
+ * value; a second field-by-field copy of that list would be a second thing to
+ * keep in step, and the first one to fall behind.
+ */
+const TURN_RELIABILITY_META = {
+  name: 'TurnReliabilityMeta',
+  fields: {
+    reliability: T.object(),
+  },
+  optional: [],
+};
+
 module.exports = {
   T,
   validate,
@@ -206,4 +229,5 @@ module.exports = {
   TOOL_CALL,
   EVIDENCE_RECORD,
   FINAL_ANSWER_META,
+  TURN_RELIABILITY_META,
 };

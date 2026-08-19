@@ -1,6 +1,6 @@
 'use strict';
 
-const { validate, FINAL_ANSWER_META } = require('./schemas');
+const { validate, FINAL_ANSWER_META, TURN_RELIABILITY_META } = require('./schemas');
 
 /**
  * The server's own record of a turn: what was asked, how much of the answer has
@@ -105,9 +105,17 @@ function createTurnLedger({
      * Close the row.
      *
      * @param {'complete'|'failed'|'aborted'} state
-     * @param {object|null} meta  held to FINAL_ANSWER_META; an off-contract meta
-     *        is dropped rather than stored, because a ledger row whose shape
-     *        nobody checked is a ledger row nobody can query.
+     * @param {object|null} meta  held to one of the two `turns.meta` contracts
+     *        -- the final-answer record, or the reliability record the route's
+     *        `finally` builds from the closing telemetry snapshot. An
+     *        off-contract meta is dropped rather than stored, because a ledger
+     *        row whose shape nobody checked is a ledger row nobody can query.
+     *
+     *        THIS REPLACES `meta`, it does not merge into it. That is safe
+     *        because nothing else writes the column: `begin` leaves it at its
+     *        `'{}'` default, `checkpoint_turn` (migrations/019) does not touch
+     *        it, and this is the only `finish`. If a second writer ever appears,
+     *        this is the line that has to become a merge.
      */
     async finish({ turnId, state = 'complete', answer = null, lastEventId = null, meta = null }) {
       if (!turnId) return false;
@@ -119,7 +127,12 @@ function createTurnLedger({
       if (typeof answer === 'string') patch.answer = clip(answer, MAX_ANSWER_CHARS);
       if (Number.isFinite(lastEventId)) patch.last_event_id = Math.max(0, Math.floor(lastEventId));
       if (meta) {
-        const checked = validate(FINAL_ANSWER_META, meta);
+        /* Two shapes, tried in turn, and both STRICT: `validate` refuses an
+         * unknown key rather than carrying it into a row. Whichever matches
+         * wins; a bag matching neither is reported and dropped. */
+        const checked = [FINAL_ANSWER_META, TURN_RELIABILITY_META]
+          .map((schema) => validate(schema, meta))
+          .reduce((best, result) => (best.ok ? best : result));
         if (checked.ok) patch.meta = checked.value;
         else onError(`[TURNS] meta rejected for ${turnId}: ${checked.errors.join('; ')}`);
       }

@@ -39,6 +39,35 @@ test("mustInclude is case-insensitive and mustNotInclude is not fooled by case",
   assert.equal(grade.passed, true, grade.failures.join("|"));
 });
 
+/* The failure this came from: a synthesis answer named the council — "Expert 1
+ * emphasis", "Both experts agree" — in a turn whose system prompt forbids ever
+ * mentioning it, and gradeCase reported a clean structural pass. The model had
+ * written U+202F NARROW NO-BREAK SPACE between "Expert" and "1", so the plain
+ * `includes` never saw it. Measured on a real output, 2026-08-19. */
+test("an exotic space between the words does not hide a forbidden string", () => {
+  const NNBSP = String.fromCharCode(0x202f);
+  const NBSP = String.fromCharCode(0x00a0);
+  const IDEOGRAPHIC = String.fromCharCode(0x3000);
+  for (const space of [NNBSP, NBSP, IDEOGRAPHIC]) {
+    const grade = gradeCase(caseOf({ mustNotInclude: ["Expert 1"] }),
+      obs({ answer: `| Aspect | Expert${space}1 emphasis | What decides |` }));
+    assert.equal(grade.passed, false, `U+${space.charCodeAt(0).toString(16)} hid the violation`);
+    assert.ok(grade.failures.some((f) => f.startsWith("mustNotInclude")));
+  }
+});
+
+test("an exotic space does not hide a required string either", () => {
+  const grade = gradeCase(caseOf({ mustInclude: ["57.8 percent"] }),
+    obs({ answer: `The answer is 57.8${String.fromCharCode(0x202f)}percent of the total.` }));
+  assert.equal(grade.passed, true, grade.failures.join("|"));
+});
+
+test("a line break between the words of a needle is still a match", () => {
+  const grade = gradeCase(caseOf({ mustNotInclude: ["as an AI"] }),
+    obs({ answer: "I should say, as an\nAI, that this is a limitation." }));
+  assert.equal(grade.passed, false);
+});
+
 test("mustCite counts URLs in the answer, and no URL is a failure", () => {
   assert.equal(citationsIn("see https://example.com/a and http://b.org").length, 2);
   const grade = gradeCase(caseOf({ mustCite: true }), obs({ answer: "Node 24 is current." }));

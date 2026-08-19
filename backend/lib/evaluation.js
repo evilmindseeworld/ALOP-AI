@@ -134,6 +134,32 @@ const citationsIn = (text) => [...String(text || '').matchAll(URL_RE)].map((m) =
 const framesOfType = (obs, type) => (obs.frames || []).filter((f) => f && f.type === type);
 
 /**
+ * EVERY UNICODE SPACE SEPARATOR BECOMES AN ORDINARY SPACE.
+ *
+ * A model writing "Expert 1" with U+202F NARROW NO-BREAK SPACE between the word
+ * and the digit walked straight past `mustNotInclude: ['Expert 1']` — the answer
+ * named the council in a synthesis whose system prompt forbids ever mentioning
+ * it, and the grader reported a clean pass. Measured 2026-08-19 on a real
+ * synthesis output; the leak was found by reading the answer, not by the check
+ * that exists to find it.
+ *
+ * Only the space is normalised. Nothing else about the text is touched, because
+ * a needle and a haystack that disagree about anything ELSE is a real
+ * difference and the grader should keep saying so.
+ *
+ * `mustMatch` deliberately still runs against the RAW answer. Collapsing
+ * newlines there would let a pattern match across lines it was never meant to
+ * span, which LOOSENS a check; the failure this fixes is a forbidden string
+ * getting through, and that only lives in the substring checks.
+ */
+function flattenSpaces(text) {
+  /* JavaScript's whitespace class already covers the exotic separators —
+   * U+00A0, U+2000-200A, U+202F, U+205F, U+3000 — so this needs no hand-kept
+   * list of code points to fall behind Unicode. */
+  return text.replace(/\s+/g, ' ');
+}
+
+/**
  * Grade one observation against one case.
  *
  * Every check is named, and a check that could not be evaluated is `null`
@@ -146,7 +172,7 @@ const framesOfType = (obs, type) => (obs.frames || []).filter((f) => f && f.type
 function gradeCase(testCase, obs) {
   const expect = testCase.expect ?? {};
   const answer = String(obs?.answer || '');
-  const lower = answer.toLowerCase();
+  const lower = flattenSpaces(answer.toLowerCase());
   const checks = [];
   const add = (name, ok, detail = '') => checks.push({ name, ok, detail });
 
@@ -164,13 +190,13 @@ function gradeCase(testCase, obs) {
     if (expect.minChars !== undefined) add('minChars', answer.length >= expect.minChars, `${answer.length} chars`);
 
     for (const needle of expect.mustInclude ?? []) {
-      add(`mustInclude:${needle}`, lower.includes(String(needle).toLowerCase()));
+      add(`mustInclude:${needle}`, lower.includes(flattenSpaces(String(needle).toLowerCase())));
     }
     for (const pattern of expect.mustMatch ?? []) {
       add(`mustMatch:${pattern}`, new RegExp(pattern, 'i').test(answer));
     }
     for (const needle of expect.mustNotInclude ?? []) {
-      add(`mustNotInclude:${needle}`, !lower.includes(String(needle).toLowerCase()));
+      add(`mustNotInclude:${needle}`, !lower.includes(flattenSpaces(String(needle).toLowerCase())));
     }
     if (expect.mustCite) {
       const found = citationsIn(answer);

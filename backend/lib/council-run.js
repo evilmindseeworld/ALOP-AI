@@ -166,6 +166,27 @@ async function runCouncil(members, messages, whipMs, quorum, tokenLimit, deps = 
          * the provider's default effort: the expensive seat, bought and not
          * used. `exclude` keeps the reasoning out of the draft, exactly as the
          * default request already does. */
+        /* ONE REQUEST PER SEAT. NO RETRY.
+         *
+         * A council seat is redundant BY CONSTRUCTION — seven are dispatched
+         * and quorum is three — so the council already retries, by having other
+         * seats. Retrying a seat inside the whip spends the account's daily
+         * request budget to recover redundancy that quorum has covered anyway,
+         * and it does it in the one place where the clock is a user waiting.
+         *
+         * What that cost looked like: `google/gemma-4-31b-it:free` answered a
+         * real turn with three 429s, two of them retries, and no usable draft.
+         * It has a single free endpoint (Google AI Studio) and has now returned
+         * a provider 429 on every paced attempt ever recorded against it — two
+         * on 2026-08-12 and nine on 2026-08-19, 11 for 11, median 204ms each.
+         * The retries cost three requests instead of one and bought nothing a
+         * seat that never answers could give.
+         *
+         * DELIBERATELY NOT A GEMMA-SPECIFIC RULE. Naming a model here would be
+         * a rule about today's roster; this is a rule about what a seat IS. The
+         * ladder stays the default everywhere else — the synthesis, the
+         * fallback and the tool loop are each a single call whose failure is
+         * the turn's failure, and those keep their retries. */
         .then(() => callModel(
           model,
           messages,
@@ -173,7 +194,7 @@ async function runCouncil(members, messages, whipMs, quorum, tokenLimit, deps = 
           whipMs,
           tokenLimit,
           councilSignal,
-          effort ? { reasoning: { effort, exclude: true } } : undefined,
+          { maxRetries: 0, ...(effort ? { reasoning: { effort, exclude: true } } : {}) },
         ))
         .then((content) => {
           if (resolved) return;

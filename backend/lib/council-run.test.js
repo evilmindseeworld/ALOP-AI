@@ -273,6 +273,60 @@ test("a seat's reasoning effort reaches the provider, and only that seat's", asy
 
   const plain = seen.find((s) => s.model === "free-a");
   const metered = seen.find((s) => s.model === "openai/gpt-5.6-luna");
-  assert.equal(plain.options, undefined, "a seat with no effort must send the byte-identical body it always has");
-  assert.deepEqual(metered.options, { reasoning: { effort: "high", exclude: true } });
+  /* `options` is no longer undefined for a plain seat: every seat now carries
+   * maxRetries 0. What still has to hold is that no `reasoning` block is sent
+   * for a seat with no effort — that is the part that changes the request BODY,
+   * and the byte-identical-body promise was always about the body. */
+  assert.equal(plain.options.reasoning, undefined, "a seat with no effort must not send a reasoning block");
+  assert.deepEqual(metered.options, { maxRetries: 0, reasoning: { effort: "high", exclude: true } });
+});
+
+test("a council seat is asked exactly once — the council's redundancy is the retry", async () => {
+  /* THE INCIDENT: `google/gemma-4-31b-it:free` answered a real turn with three
+   * 429s, two of them retries, and no usable draft. Seven seats were dispatched
+   * and quorum was three, so the retries bought redundancy the council already
+   * had, and spent three of the account's daily free requests to do it.
+   *
+   * Asserted at the seat call rather than by counting HTTP requests, because
+   * the retry ladder lives in lib/openrouter.js and the thing this file owns is
+   * WHAT THE COUNCIL ASKS FOR. openrouter.test.js owns the other half — that
+   * maxRetries 0 really does mean one POST. */
+  const seen = [];
+  const callModel = async (model, _m, _t, _w, _tl, _s, options) => {
+    seen.push({ model, options });
+    return "a usable answer from this seat";
+  };
+  await runCouncil(
+    [{ model: "a", temperature: 0.3 }, { model: "b", temperature: 0.5 }],
+    [{ role: "user", content: "q" }],
+    5000, 2, 1000,
+    { callModel },
+  );
+  assert.equal(seen.length, 2);
+  for (const call of seen) assert.equal(call.options?.maxRetries, 0, `${call.model} may retry inside the whip`);
+});
+
+test("a seat that fails fast does not stop the council reaching quorum", async () => {
+  /* The shape of the production turn: one seat 404s in 38ms because its model
+   * no longer exists, one 429s, and the rest answer. Quorum must still be met
+   * from the seats that work, and the runner must not wait out the whip. */
+  const started = Date.now();
+  const results = await runCouncil(
+    [seat("dead-404"), seat("rate-limited"), seat("c"), seat("d"), seat("e")],
+    [],
+    5000,
+    3,
+    500,
+    {
+      callModel: scripted({
+        "dead-404": { after: 38, throws: "OpenRouter 404: No endpoints found" },
+        "rate-limited": { after: 205, throws: "OpenRouter 429: Provider returned error" },
+        c: { after: 40, content: "answer c" },
+        d: { after: 45, content: "answer d" },
+        e: { after: 50, content: "answer e" },
+      }),
+    },
+  );
+  assert.equal(results.length, 3, "quorum was not reached from the healthy seats");
+  assert.ok(Date.now() - started < 1000, "the failing seats delayed quorum");
 });

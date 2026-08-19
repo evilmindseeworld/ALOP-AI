@@ -125,6 +125,11 @@ const abortableDelay = (ms, signal) => new Promise((resolve) => {
  * @param {object} [options.reasoning]  overrides the default `{exclude: true}`,
  *        e.g. `{effort: 'high', exclude: true}` for the native tool seat: think
  *        hard, but do not return the thinking as the answer.
+ * @param {number} [options.maxRetries]  how many EXTRA POSTs a retryable
+ *        failure may make. Defaults to the full backoff ladder, which is what
+ *        every caller had before this existed. `0` means one request and no
+ *        more — see the council's use of it in lib/council-run.js, and the
+ *        matching option on `fetchOpenRouterStream`, which has always had one.
  */
 async function callModel(host, apiKey, modelName, messages, temperature, timeoutMs, maxTokens, parentSignal, options = {}) {
   const structured = Boolean(options && options.structured);
@@ -148,7 +153,14 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
     ...(tools && options.toolChoice ? { tool_choice: options.toolChoice } : {}),
   });
 
-  for (let attempt = 0; attempt <= RETRY_DELAYS_MS.length; attempt++) {
+  /* The ladder is the default and stays the default: every caller that does not
+   * ask for something else keeps the two retries it has always had. Clamped to
+   * the ladder because a caller cannot invent delays that do not exist. */
+  const retryLimit = Number.isFinite(Number(options?.maxRetries))
+    ? Math.max(0, Math.min(RETRY_DELAYS_MS.length, Math.floor(Number(options.maxRetries))))
+    : RETRY_DELAYS_MS.length;
+
+  for (let attempt = 0; attempt <= retryLimit; attempt++) {
     const remainingMs = deadline - Date.now();
     if (parentSignal?.aborted) return blank('aborted');
     if (remainingMs <= 0) return blank('deadline');
@@ -213,7 +225,7 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
           const waitMs = rateLimit.resetAt == null
             ? Infinity
             : Math.max(0, rateLimit.resetAt - Date.now() + RATE_LIMIT_RESET_SAFETY_MS);
-          if (attempt >= RETRY_DELAYS_MS.length || waitMs >= deadline - Date.now()) {
+          if (attempt >= retryLimit || waitMs >= deadline - Date.now()) {
             throw new OpenRouterRateLimitError('per-minute', rateLimit.message, { resetAt: rateLimit.resetAt });
           }
           retryable = true;
@@ -224,7 +236,7 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
       } else {
         retryable = response.status >= 500;
       }
-      if (!retryable || attempt >= RETRY_DELAYS_MS.length) {
+      if (!retryable || attempt >= retryLimit) {
         throw new Error(`OpenRouter ${response.status}: ${errorBody.slice(0, 500)}`);
       }
     } catch (error) {
@@ -249,7 +261,7 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
        * is refused. The count is what makes the two agree. */
       if (error && typeof error === 'object') error.providerAttempts = attempt + 1;
       if (!retryable) throw error;
-      if (attempt >= RETRY_DELAYS_MS.length) throw error;
+      if (attempt >= retryLimit) throw error;
     } finally {
       clearTimeout(timer);
       parentSignal?.removeEventListener('abort', onParentAbort);

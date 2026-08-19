@@ -211,14 +211,30 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 //   nvidia/nemotron-3-nano-30b-a3b:free   1  Nvidia
 //   openai/gpt-oss-20b:free               1  Darkbloom
 //
+// RE-READ 2026-08-19, and the first line above is now a headstone: ling has
+// ZERO endpoints and 404s. Novita stopped serving it, and with one provider
+// there was nobody else to serve it. That is the failure mode this paragraph
+// was already describing, taken to its end — a single-provider free seat does
+// not degrade when its provider leaves, it disappears.
+//
+//   cohere/north-mini-code:free           1  Cohere            (ling's seat)
+//   google/gemma-4-26b-a4b-it:free        2  Google AI Studio, Darkbloom
+//   google/gemma-4-31b-it:free            1  Google AI Studio
+//   nvidia/nemotron-3-nano-30b-a3b:free   1  Nvidia
+//   openai/gpt-oss-20b:free               1  Darkbloom
+//   poolside/laguna-s-2.1:free            1  Poolside
+//
 // The paid variants have far more — gemma-4-26b-a4b has EIGHT — but the `:free`
 // suffix pins routing to whoever sponsors the free tier, so OpenRouter has
 // nobody to fall back to when that one provider rate-limits. This was observed
 // live: a simple-tier turn came back 0/1 with
 // `limit_source: upstream_provider_shared_pool` from Novita, which is the
 // provider throttling the model rather than anything to do with our own quota.
-// lib/openrouter.js classifies that as `provider` and retries it, which is
-// right for contention and cannot help when a provider is out for minutes.
+// lib/openrouter.js classifies that as `provider`, and it USED to retry it,
+// which is right for contention and cannot help when a provider is out for
+// minutes. Since 2026-08-19 a council seat does not retry at all — the second
+// half of that sentence is the case that kept happening, and seven other seats
+// are already the retry. Off the council the ladder is unchanged.
 //
 // SO DO NOT "FIX" THAT BY POINTING THE ONE-SEAT TIER AT A MODEL WITH TWO
 // PROVIDERS. The redundancy that matters here is already in place and it is
@@ -241,17 +257,57 @@ const COUNCIL = [
   // model on this list that answers at all, and 0.2 is the seat whose job is to
   // hold to what is literally there.
   { model: 'nvidia/nemotron-3-super-120b-a12b:free', temperature: 0.2, free: false, medianMs: 23900 },
-  // 1.2s measured — the fastest of all twelve, which is why it carries a free
-  // tier that has only three seats to make quorum with.
-  { model: 'inclusionai/ling-3.0-tiny:free',        temperature: 0.3, free: true,  medianMs: 1200 },
-  // 429 on the paced sample and healthy on an earlier one at 2.5s. Retried by
-  // lib/openrouter.js rather than dropped: a 429 here is contention, not
-  // absence, and this is the only OpenAI-lineage seat on the board.
+  // REPLACES `inclusionai/ling-3.0-tiny:free`, WHICH IS GONE — not slow, not
+  // rate-limited, GONE. On 2026-08-19 it answered a real council turn with an
+  // HTTP 404 in 38ms; `/models` no longer lists it among the 414 ids OpenRouter
+  // serves, and `/models/inclusionai~ling-3.0-tiny:free/endpoints` returns the
+  // model's record with an EMPTY endpoint list, which is the same state a chat
+  // request reports as "No endpoints found for inclusionai/ling-3.0-tiny:free".
+  // Zero endpoints is not a transient: no provider serves it, so nothing the
+  // breaker, the pacer or a retry does can make that id answer. `ling-3.0-flash`
+  // exists as an id but has zero endpoints too, so the family is not a swap.
+  //
+  // Cohere is chosen for what the board did not have. The other six seats are
+  // two NVIDIA, two Google, one OpenAI and one Poolside; a fifth lineage is the
+  // only thing a seventh seat can add that the six cannot. It is NOT the
+  // synthesis model, which is the one substitution that would make the council
+  // agree with its own summariser.
+  //
+  // Measured 2026-08-19 at max_tokens 1000, the ceiling a seat actually runs
+  // at: HTTP 200 on 5 of 5 paced calls, 548-856ms, 562-645 chars of content,
+  // none of it scratchpad. Kept at 0.3 and `free: true` so the temperature
+  // ladder and the three-seat free tier keep the shape they had.
+  //
+  // The 600ms is not ling's 1200 carried over — it is the median of those five
+  // calls (584ms), rounded. Every other number on this list was measured at 200
+  // tokens and is a floor; this one was measured at the real ceiling, so it is
+  // the only value here that is not, and it still ranks the same.
+  { model: 'cohere/north-mini-code:free',           temperature: 0.3, free: true,  medianMs: 600 },
+  // 429 on the paced sample and healthy on an earlier one at 2.5s. Kept rather
+  // than dropped: a 429 here is contention, not absence, and this is the only
+  // OpenAI-lineage seat on the board. It is no longer RETRIED, though — that
+  // sentence used to say lib/openrouter.js retries it, and as of 2026-08-19 a
+  // council seat gets one request and the council's own redundancy is the
+  // retry. See the comment at the seat call in lib/council-run.js.
   { model: 'openai/gpt-oss-20b:free',               temperature: 0.4, free: false, medianMs: 2500 },
   { model: 'poolside/laguna-s-2.1:free',            temperature: 0.5, free: false, medianMs: 8900 },
-  // 31B dense, and 429 on both paced attempts. Kept for the same reason as
-  // gpt-oss and with the same retry: it is the best quality-per-second on paper
-  // of anything here, and the free-tier seat below is its small sibling.
+  // 31B dense, and it has NEVER ONCE ANSWERED A PACED CALL. Two provider 429s
+  // on 2026-08-12, nine more on 2026-08-19, plus a real council turn that spent
+  // three attempts on it and got no draft: eleven for eleven, each refusal
+  // arriving in a median 204ms from its single free endpoint, Google AI Studio.
+  //
+  // KEPT ANYWAY, and the reason is that a 429 is a capacity answer rather than
+  // an absence — unlike the ling seat this batch deleted, this id still ROUTES,
+  // and the free tier refusing it is one Google could widen. What changed is
+  // the COST of asking: lib/council-run.js now sends every seat exactly one
+  // request, so this seat costs one refusal per turn rather than three. That is
+  // the smallest change that answers the incident, and it does not need this
+  // seat to be the reason.
+  //
+  // What would settle it: `turns.meta` is written empty today, so there is no
+  // history to compute a 429 RATE from — every number above is a probe, not a
+  // measurement of production. Persist the provider-attempt telemetry that
+  // lib/turn-telemetry.js already computes and this becomes a query.
   //
   // NO medianMs, deliberately: it never completed a paced call, so there is no
   // measurement to write and inventing one would be a guess wearing a

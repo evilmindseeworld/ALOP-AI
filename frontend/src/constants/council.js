@@ -93,11 +93,11 @@ export const COUNCIL = [
     company: "NVIDIA",
   },
   {
-    model: "inclusionai/ling-3.0-tiny:free",
+    model: "cohere/north-mini-code:free",
     temperature: 0.3,
     free: true,
     title: "The Engineer",
-    company: "InclusionAI",
+    company: "Cohere",
   },
   {
     model: "openai/gpt-oss-20b:free",

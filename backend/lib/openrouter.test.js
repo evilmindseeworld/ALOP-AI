@@ -83,6 +83,58 @@ test('provider 429 retains two retries', async () => {
   assert.equal(calls, 3);
 });
 
+test('maxRetries 0 makes a provider 429 exactly one POST', async () => {
+  /* The council's half of this contract is in council-run.test.js — that every
+   * seat asks for maxRetries 0. This is the other half: that asking for it
+   * actually costs one request against the daily cap and not three. The
+   * failure it prevents is a policy that reads correctly at the call site and
+   * is ignored one module down. */
+  let calls = 0;
+  global.fetch = async () => {
+    calls += 1;
+    return response(429, rateLimit('', { provider_code: 429 }));
+  };
+
+  await assert.rejects(
+    callModel('https://openrouter.ai/api/v1', 'key', 'model:free', [], 0, 3000, 20, undefined, { maxRetries: 0 }),
+    /OpenRouter 429/,
+  );
+  assert.equal(calls, 1);
+});
+
+test('maxRetries is clamped, so a caller cannot invent delays the ladder does not have', async () => {
+  let calls = 0;
+  global.fetch = async () => {
+    calls += 1;
+    return response(429, rateLimit('', { provider_code: 429 }));
+  };
+
+  await assert.rejects(
+    callModel('https://openrouter.ai/api/v1', 'key', 'model:free', [], 0, 5000, 20, undefined, { maxRetries: 99 }),
+    /OpenRouter 429/,
+  );
+  assert.equal(calls, 3, 'the ladder is two retries and 99 must not mean 99 requests');
+});
+
+test('an unroutable model id is not retried into three requests', async () => {
+  /* `inclusionai/ling-3.0-tiny:free` answered a council turn with HTTP 404 in
+   * 38ms: OpenRouter still holds the model's record but no provider serves it,
+   * so the id cannot be made to answer by asking again. A 404 is not in the
+   * retryable set, and this pins that — a dead seat costs one request, and the
+   * fix for it is deleting the id, not a backoff. */
+  let calls = 0;
+  global.fetch = async () => {
+    calls += 1;
+    return response(404, { error: { message: 'No endpoints found for inclusionai/ling-3.0-tiny:free', code: 404 } });
+  };
+
+  await assert.rejects(
+    callModel('https://openrouter.ai/api/v1', 'key', 'inclusionai/ling-3.0-tiny:free', [], 0, 3000, 20),
+    /OpenRouter 404/,
+  );
+  assert.equal(calls, 1);
+});
+
 test('stream provider 429 retries before any bytes are available', async () => {
   let calls = 0;
   global.fetch = async () => {

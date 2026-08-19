@@ -42,6 +42,7 @@ const Stripe = require('stripe');
 const { timeoutSignal, childAbortController } = require('./lib/abort');
 const { describeImage, visionModels } = require('./lib/vision');
 const { generateImage } = require('./lib/image-gen');
+const { deadlineSignal } = require('./lib/stream-deadline');
 const { createTurnTelemetry } = require('./lib/turn-telemetry');
 const { rescueReasoning } = require('./lib/reasoning-rescue');
 const { createTurnContext } = require('./lib/turn-context');
@@ -588,6 +589,20 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
   const forwardAttempt = typeof answerOptions?.onAttempt === 'function'
     ? (row) => { if (row && row.outcome === 'ok') openedAttempt = row; answerOptions.onAttempt(row); }
     : undefined;
+  /* THE DEADLINE, COMPOSED INTO THE SIGNAL, SO IT SURVIVES THE HANDSHAKE.
+   *
+   * `fetchOpenRouterStream` clears its own deadline timer in a `finally` that
+   * also runs on the successful return, and keeps only the parent-abort link
+   * alive past handoff. Handing it the RAW turn signal therefore left the body
+   * bounded by nothing — measured in production as three turns outliving the
+   * 75 000 ms budget, the worst at 115 703 ms with a 108 699 ms synthesis and
+   * `aborted: false`, because nothing had aborted them.
+   *
+   * No new timeout: this is the caller's own `turnDeadlineAt` and the caller's
+   * own signal, composed. `releaseDeadline` drops the timer and the listener
+   * together and is called by `streamModel` on every exit path. */
+  const { signal: streamSignal, dispose: releaseDeadline } = deadlineSignal(signal, turnDeadlineAt);
+  meta.releaseDeadline = releaseDeadline;
   let response;
   try {
     response = await fetchOpenRouterStream(
@@ -596,7 +611,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
       modelName,
       messages,
       temperature,
-      signal,
+      streamSignal,
       maxTokens,
       /* The turn's admission deadline when there is one, so a retry can never
        * outlive the turn it belongs to. */
@@ -879,9 +894,21 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
    * `meta.stream` is absent when the request never opened, which is how a
    * failure BEFORE the handshake stays out of the body statistics. */
   const reportStream = (streamMeta, model, err) => {
+    /* RELEASED FIRST, AND UNCONDITIONALLY. This runs on every exit path of
+     * every `streamOnce` call, which makes it the finally the function itself
+     * does not have. A composed deadline that outlived its stream would fire
+     * into whatever holds the signal next. */
+    try { streamMeta?.releaseDeadline?.(); } catch { /* cleanup must never fail a turn */ }
     const st = streamMeta?.stream;
     if (!st) return;
-    const wasAborted = Boolean(signal?.aborted || err?.name === 'AbortError');
+    /* THREE OUTCOMES, NOT TWO. The turn deadline aborts the BODY through the
+     * composed signal, so the turn signal is untouched and the error arrives
+     * carrying `OPENROUTER_DEADLINE` — which the old test (`signal.aborted ||
+     * AbortError`) would have filed as a plain failure, hiding the one event
+     * the deadline fix exists to make visible. */
+    const hitDeadline = err?.code === 'OPENROUTER_DEADLINE';
+    const clientLeft = Boolean(signal?.aborted || err?.name === 'AbortError');
+    const wasAborted = hitDeadline || clientLeft;
     try {
       modelOptions?.onStreamTiming?.({
         provider: st.provider,
@@ -889,6 +916,7 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
         attempt: st.attempt,
         status: st.status,
         outcome: err ? (wasAborted ? 'aborted' : 'failed') : 'ok',
+        abortReason: !err ? null : hitDeadline ? 'turn_deadline' : clientLeft ? 'client' : null,
         streamOpenMs: st.openedAt - st.requestedAt,
         msToFirstToken: st.firstContentAt === null ? null : st.firstContentAt - st.openedAt,
         streamBodyMs: (st.endedAt ?? Date.now()) - st.openedAt,

@@ -1,3 +1,4 @@
+const { deadlineSignal } = require('./stream-deadline');
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { readFileSync } = require("node:fs");
@@ -365,11 +366,17 @@ const loadStreamPolicy = (fetchImpl) => {
      * the slice: the parameter list is the honest statement of what this policy
      * depends on from the rest of server.js, and `false` is the shipped default. */
     "STREAM_USAGE_ACCOUNTING",
+    /* The turn deadline is now enforced for the whole stream rather than only
+     * its handshake, so the policy depends on the real composer. Injected, not
+     * stubbed: a stub here would let the deadline stop reaching the body again
+     * without a single test noticing. See lib/stream-deadline.js. */
+    "deadlineSignal",
     `${policy}\nreturn { streamModel, normaliseResetEpoch };`,
   )(
     fetchImpl, stream, "https://openrouter.test", "secret", "primary:free", "smart:free",
     () => ({ skip: true }), () => false, (text) => ({ text, rejected: false }),
     false,
+    deadlineSignal,
   );
 };
 

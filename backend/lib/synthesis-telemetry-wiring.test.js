@@ -202,3 +202,33 @@ test('the stream clock is never referenced outside the function that declares it
   );
   assert.ok(inside >= 4, 'the declaration, the stamps and the report should all be present');
 });
+/* THE DEADLINE MUST REACH THE BODY, NOT JUST THE HANDSHAKE.
+ *
+ * `streamOnce` used to hand its raw turn signal to `fetchOpenRouterStream`,
+ * whose own deadline timer is cleared at handoff. Composing the deadline into
+ * the signal is what makes the abort link that survives handoff carry it. See
+ * lib/stream-deadline.js and its tests for the behaviour; this asserts the
+ * wiring, because server.js cannot be required in a test.
+ */
+test('streamOnce hands the gateway a signal that carries the turn deadline', () => {
+  assert.ok(/deadlineSignal/.test(STREAM_ONCE), 'the composed signal must be built here');
+  assert.ok(
+    /deadlineSignal\(signal, turnDeadlineAt/.test(STREAM_ONCE),
+    'from the signal and the deadline the caller already passes — not a new timeout',
+  );
+  const fetchCall = STREAM_ONCE.slice(STREAM_ONCE.indexOf('await fetchOpenRouterStream('));
+  const args = fetchCall.slice(0, fetchCall.indexOf('    );'));
+  assert.ok(
+    /deadlineSignal|streamSignal/.test(args),
+    'the gateway must receive the composed signal, or the deadline dies at the handshake again',
+  );
+  assert.ok(!/^\s*signal,\s*$/m.test(args), 'the raw turn signal must not be what the gateway gets');
+});
+
+test('the composed deadline is always released, on success and on failure', () => {
+  assert.ok(/releaseDeadline/.test(STREAM_ONCE), 'streamOnce must keep a disposer');
+  assert.ok(
+    /releaseDeadline/.test(STREAM_MODEL),
+    'and streamModel must release it on every exit path, the way it reports on every exit path',
+  );
+});

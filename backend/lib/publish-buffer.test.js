@@ -129,6 +129,12 @@ test('createPost sends customScheduled, the due time, the public video URL and t
       metadata: { thumbnailOffset: 1500 },
     },
   }]);
+  /* The variable's declared type and needsApproval are checked here because
+   * getting either wrong fails at Buffer's schema validation, which the stub
+   * does not perform - the first batch of thirty came back with
+   * `used in position expecting type "CreatePostInput!"` and no post created. */
+  assert.match(fetchImpl.seen[0].body.query, /\$input: CreatePostInput!/);
+  assert.equal(input.needsApproval, false, 'needsApproval is NON_NULL on CreatePostInput and has no default');
 });
 
 test('no thumbnail offset means no metadata on the asset at all', async () => {

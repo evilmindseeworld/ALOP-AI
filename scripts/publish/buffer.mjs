@@ -150,7 +150,15 @@ export function createBufferClient({ fetchImpl = globalThis.fetch, apiKey = proc
 
       calls.createPost += 1;
       const data = await graphql(
-        `mutation CreatePost($input: PostInput!) {
+        /* `CreatePostInput!`, from introspection, not from the guides.
+         *
+         * Declared as `PostInput!` the whole batch comes back with
+         * `Variable "$input" of type "PostInput!" used in position expecting
+         * type "CreatePostInput!"` - a schema validation error, so it fails
+         * before any post exists, which is the one good thing about it.
+         *
+         * `needsApproval` is NON_NULL on that input and has no default. */
+        `mutation CreatePost($input: CreatePostInput!) {
            createPost(input: $input) {
              ... on PostActionSuccess { post { id text dueAt } }
              ... on MutationError { message }
@@ -162,6 +170,7 @@ export function createBufferClient({ fetchImpl = globalThis.fetch, apiKey = proc
             text,
             schedulingType: 'automatic',
             mode: 'customScheduled',
+            needsApproval: false,
             dueAt,
             assets: [asset],
             metadata,

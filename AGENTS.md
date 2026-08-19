@@ -508,6 +508,42 @@ every other caller is refused for the length of that wait, on a model that may
 already be healthy. Before enabling it, do one of: claim the probe slot after
 pacing, or let the single probe bypass the minute window as one request.
 
+**Buffer Free is capped at 100 API requests per 24 HOURS, not just per 15
+minutes.** Measured 2026-08-19 on the first thirty-post batch: the session spent
+roughly 111 requests and the key started answering `RATE_LIMIT_EXCEEDED`. There
+are two windows and they are enforced separately, so waiting out the 15-minute
+one restores nothing while the daily ceiling is the binding constraint. Trust
+only what the API reports about recovery; do not assume a window is rolling, or
+that it frees all at once.
+
+Creating posts is the cheap part - thirty creates is thirty requests. What
+burned the quota was being wrong thirty times at once: about 30 rejected
+`createPost` mutations (wrong GraphQL input type, see below) and about 30
+rejected `editPost` attempts, ~60 requests that produced nothing. **Before any
+large Buffer write, prove the mutation against ONE call - a stub, a single real
+item, or schema introspection - rather than discovering a type error once per
+item.** Budget the request count before running the loop, and keep exploratory
+introspection and status polling off the same day as a batch.
+
+**`editPost` REPLACES the post, it does not patch it.** Sending only `{ id,
+dueAt }` to move a scheduled time does not modify only the time: the omitted
+fields are cleared, and Buffer refused all thirty edits with `Invalid post: Post
+must have either text or media.`, plus the per-platform complaints (`Instagram
+posts require a type`, `YouTube posts require a title`). The refusal is the only
+reason nothing was damaged - a partial edit that Buffer had ACCEPTED would have
+left thirty scheduled posts with no video.
+
+So every edit rebuilds the whole intended payload from the catalogue: `text`,
+`assets`, per-platform `metadata`, `schedulingType`, `mode`, and the scheduling
+fields. Never treat it as a PATCH. `scripts/publish/share-now.mjs` is the worked
+example.
+
+The input-type half of this is fixed and regression-tested on the Buffer
+publisher branch: `createPost` declares `$input: CreatePostInput!` (not
+`PostInput!`) and sends `needsApproval`, which is NON_NULL with no default.
+Reverting either turns `backend/lib/publish-buffer.test.js` red. Both names came
+from introspection - the guides disagree with the schema.
+
 ## Handoff — 2026-08-07 (second pass)
 
 Read this first; it is the state of play, not history. Delete a line once it

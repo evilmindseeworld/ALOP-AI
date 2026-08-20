@@ -75,6 +75,46 @@ const INTERNAL_FRAMING = [
 /** @param {string} text @returns {boolean} */
 const looksInternal = (text) => INTERNAL_FRAMING.some((re) => re.test(text));
 
+/**
+ * THE OTHER HALF OF SAFETY, AND IT IS PROVENANCE RATHER THAN PROSE.
+ *
+ * `lib/model-reply.js` falls back from `content` to `reasoning` when a model
+ * writes its answer into the reasoning field — kept deliberately, because
+ * removing it blanks every seat on such a model — and LABELS the result:
+ * `textSource` is 'content' or 'reasoning'. Its header names this caller: "a
+ * caller that must not show internal reasoning to a user... can now test
+ * `textSource` instead of guessing."
+ *
+ * Reasoning is REFUSED, never sanitised. A scratchpad is not a badly formatted
+ * answer; there is no deterministic edit that turns "wait, no, let me
+ * reconsider" into something a reader should be shown.
+ *
+ * UNKNOWN COUNTS AS UNSAFE. A producer that does not record where its text
+ * came from loses the recovery rather than getting a silent exemption from it
+ * — which is the property that makes this a provenance check instead of a
+ * naming convention, and it is what makes a missed plumbing site fail loudly
+ * (no degradation) rather than quietly (a scratchpad on someone's screen).
+ */
+const SAFE_TEXT_SOURCES = new Set(['content']);
+
+/**
+ * May this council draft be shown to a reader as it stands?
+ *
+ * Shared with the one-seat solo branch in `server.js`, which streams a draft
+ * directly and writes it to the SHARED answer cache. Two copies of this rule
+ * would drift, and the drift would be invisible until someone read a model's
+ * inner monologue.
+ *
+ * @param {{content?: string, textSource?: string}} draft
+ */
+function isSafeDraft(draft) {
+  if (!draft || typeof draft !== 'object') return false;
+  const text = String(draft.content ?? '').trim();
+  if (!text) return false;
+  if (!SAFE_TEXT_SOURCES.has(draft.textSource)) return false;
+  return !looksInternal(text);
+}
+
 function degradeAnswer({ aborted = false, wroteChars = 0, drafts = [] } = {}) {
   /* A cancelled turn is not a failed one. Writing into a socket the user has
    * left reports a completed turn to the ledger and reaches nobody. */
@@ -83,19 +123,15 @@ function degradeAnswer({ aborted = false, wroteChars = 0, drafts = [] } = {}) {
    * chain, and it holds harder here: the draft is a DIFFERENT answer, so
    * appending it produces one reply that changes its mind mid-sentence. */
   if (Number(wroteChars) > 0) return null;
+  /* THE FIRST SAFE DRAFT IN THE ROUTE'S OWN ORDER. An empty one streams as a
+   * blank answer, one carrying the council's framing shows the machinery, and
+   * one sourced from reasoning is a scratchpad — each is skipped rather than
+   * repaired, and running out of drafts lands on the error frame, which is
+   * where this turn was going anyway. */
   for (const draft of Array.isArray(drafts) ? drafts : []) {
-    const text = String((typeof draft === 'string' ? draft : draft?.content) ?? '').trim();
-    /* An empty draft streams as a blank answer, which is the one outcome worse
-     * than the error frame this replaces. Skip it and keep looking. */
-    if (!text) continue;
-    /* Same treatment for one that would show the user the machinery. Keep
-     * looking: on a three-seat roster the next draft is usually clean, and
-     * running out of drafts lands on the error frame, which is where this
-     * turn was going anyway. */
-    if (looksInternal(text)) continue;
-    return text;
+    if (isSafeDraft(draft)) return String(draft.content).trim();
   }
   return null;
 }
 
-module.exports = { degradeAnswer, looksInternal };
+module.exports = { degradeAnswer, looksInternal, isSafeDraft };

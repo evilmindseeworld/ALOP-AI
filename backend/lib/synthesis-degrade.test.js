@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 
-const { degradeAnswer, looksInternal } = require('./synthesis-degrade');
+const { degradeAnswer, looksInternal, isSafeDraft } = require('./synthesis-degrade');
 const { deadlineSignal } = require('./stream-deadline');
 
 /**
@@ -27,18 +27,21 @@ const { deadlineSignal } = require('./stream-deadline');
  * The invariant: A TURN THAT HOLDS COUNCIL DRAFTS NEVER ENDS WITH NO ANSWER.
  */
 test('a stalled synthesis degrades to the first usable draft', () => {
-  const drafts = [{ model: 'a', content: 'Paris is the capital of France.' }, { model: 'b', content: 'Paris.' }];
+  const drafts = [
+    { model: 'a', content: 'Paris is the capital of France.', textSource: 'content' },
+    { model: 'b', content: 'Paris.', textSource: 'content' },
+  ];
   assert.equal(degradeAnswer({ wroteChars: 0, drafts }), 'Paris is the capital of France.');
 });
 
 test('a draft is trimmed, and an empty one is skipped rather than streamed blank', () => {
-  const drafts = [{ content: '   ' }, { content: '  real answer  ' }];
+  const drafts = [{ content: '   ', textSource: 'content' }, { content: '  real answer  ', textSource: 'content' }];
   assert.equal(degradeAnswer({ wroteChars: 0, drafts }), 'real answer');
 });
 
 test('nothing to degrade to stays nothing — the error frame is still correct', () => {
   assert.equal(degradeAnswer({ wroteChars: 0, drafts: [] }), null);
-  assert.equal(degradeAnswer({ wroteChars: 0, drafts: [{ content: '' }] }), null);
+  assert.equal(degradeAnswer({ wroteChars: 0, drafts: [{ content: '', textSource: 'content' }] }), null);
   assert.equal(degradeAnswer({}), null);
 });
 
@@ -49,19 +52,61 @@ test('never after a partial answer has reached the socket', () => {
   // streamModel keeps the same rule for its fallback chain: appending a second,
   // different answer to the first half of one reads as an answer that changes
   // its mind mid-sentence.
-  const drafts = [{ content: 'a whole other answer' }];
+  const drafts = [{ content: 'a whole other answer', textSource: 'content' }];
   assert.equal(degradeAnswer({ wroteChars: 12, drafts }), null);
 });
 
 test('never on an aborted turn', () => {
   // A cancelled turn is not a failed one. Writing a draft to a socket the user
   // has left spends nothing but says the turn completed when it did not.
-  const drafts = [{ content: 'an answer nobody is waiting for' }];
+  const drafts = [{ content: 'an answer nobody is waiting for', textSource: 'content' }];
   assert.equal(degradeAnswer({ aborted: true, wroteChars: 0, drafts }), null);
 });
 
-test('a bare string draft is accepted, so the shape of validResponses is not a coupling', () => {
-  assert.equal(degradeAnswer({ wroteChars: 0, drafts: ['plain text draft'] }), 'plain text draft');
+/**
+ * PROVENANCE, NOT PROSE-SNIFFING.
+ *
+ * `lib/model-reply.js` keeps the fallback from `content` to `reasoning` — some
+ * models write the whole answer there when reasoning is excluded, and removing
+ * it blanks those seats — and it LABELS the result: `textSource` is 'content'
+ * or 'reasoning'. Its own header says why: "a caller that must not show
+ * internal reasoning to a user, or must not write it into a shared answer
+ * cache, can now test `textSource` instead of guessing."
+ *
+ * Before this feature every draft was read by the synthesiser, which wrote its
+ * own words. Degradation is a NEW direct-to-user path, so this is the caller
+ * that must test it. Reasoning is refused, never sanitised: there is no
+ * deterministic edit that turns a scratchpad into an answer.
+ */
+test('a reasoning-sourced draft is skipped in favour of a content-sourced one', () => {
+  const drafts = [
+    { model: 'a', content: "Hmm, the user wants the capital. Let me think. It's Paris.", textSource: 'reasoning' },
+    { model: 'b', content: 'Paris.', textSource: 'content' },
+  ];
+  assert.equal(degradeAnswer({ wroteChars: 0, drafts }), 'Paris.');
+});
+
+test('a reasoning-sourced draft alone degrades to NOTHING, and its text never leaves', () => {
+  const scratchpad = "Okay, so the user is asking... wait, no. Let me reconsider. Actually the answer is 42.";
+  const drafts = [{ model: 'a', content: scratchpad, textSource: 'reasoning' }];
+  assert.equal(degradeAnswer({ wroteChars: 0, drafts }), null);
+});
+
+test('provenance that is missing or unknown is refused, not assumed safe', () => {
+  // A path that does not plumb `textSource` must lose the recovery, not gain a
+  // silent exemption from it. That is what makes this a provenance check
+  // rather than a naming convention.
+  assert.equal(degradeAnswer({ wroteChars: 0, drafts: ['plain text draft'] }), null);
+  assert.equal(degradeAnswer({ wroteChars: 0, drafts: [{ content: 'no label' }] }), null);
+  assert.equal(degradeAnswer({ wroteChars: 0, drafts: [{ content: 'empty label', textSource: 'none' }] }), null);
+});
+
+test('isSafeDraft is the single predicate, so the solo branch cannot drift from this one', () => {
+  assert.equal(isSafeDraft({ content: 'Paris.', textSource: 'content' }), true);
+  assert.equal(isSafeDraft({ content: 'thinking out loud', textSource: 'reasoning' }), false);
+  assert.equal(isSafeDraft({ content: 'As an expert in the ALOP-AI Council, Paris.', textSource: 'content' }), false);
+  assert.equal(isSafeDraft({ content: '   ', textSource: 'content' }), false);
+  assert.equal(isSafeDraft(undefined), false);
 });
 
 /**
@@ -84,7 +129,7 @@ test('THE PRODUCTION CASE: turn deadline, zero content, drafts in hand, client s
   const decision = degradeAnswer({
     aborted: turnSignalAborted,
     wroteChars: 0, // msToFirstByte was null: not one content token reached the socket
-    drafts: [{ model: 'nvidia/nemotron-3-nano-30b-a3b:free', content: 'The council draft that was already paid for.' }],
+    drafts: [{ model: 'nvidia/nemotron-3-nano-30b-a3b:free', content: 'The council draft that was already paid for.', textSource: 'content' }],
   });
   assert.equal(decision, 'The council draft that was already paid for.',
     'a synthesis killed by the TURN DEADLINE must degrade — this is the whole incident');
@@ -120,8 +165,8 @@ test('the turn deadline aborts the stream and does NOT abort the turn signal', (
  */
 test('a draft carrying council framing is skipped, and the next clean one answers', () => {
   const drafts = [
-    { content: 'As an elite AI expert in the ALOP-AI Council, I would say Paris.' },
-    { content: 'Paris.' },
+    { content: 'As an elite AI expert in the ALOP-AI Council, I would say Paris.', textSource: 'content' },
+    { content: 'Paris.', textSource: 'content' },
   ];
   assert.equal(degradeAnswer({ wroteChars: 0, drafts }), 'Paris.');
 });
@@ -130,7 +175,7 @@ test('a SKIP with a reason never reaches the user', () => {
   // isUsableAnswer only rejects a BARE "skip", so this one is long enough to
   // have counted as an answer all the way to synthesis.
   assert.equal(looksInternal('SKIP — this is outside my expertise.'), true);
-  assert.equal(degradeAnswer({ wroteChars: 0, drafts: [{ content: 'SKIP — outside my expertise.' }] }), null);
+  assert.equal(degradeAnswer({ wroteChars: 0, drafts: [{ content: 'SKIP — outside my expertise.', textSource: 'content' }] }), null);
 });
 
 test('the synthesiser\'s own input format is refused if a seat echoes it', () => {
@@ -152,7 +197,7 @@ test('ordinary English about councils and experts is NOT refused', () => {
 });
 
 test('a roster of nothing but internal framing lands on the error frame, not on a blank answer', () => {
-  const drafts = [{ content: 'SKIP.' }, { content: 'As a member of the ALOP-AI Council, I abstain.' }];
+  const drafts = [{ content: 'SKIP.', textSource: 'content' }, { content: 'As a member of the ALOP-AI Council, I abstain.', textSource: 'content' }];
   assert.equal(degradeAnswer({ wroteChars: 0, drafts }), null);
 });
 
@@ -205,6 +250,35 @@ test('the degraded draft is written to the socket and the turn is not left open'
     'the degraded answer must stamp firstChunkAt before it is written, or msToFirstByte stays null',
   );
   assert.match(after, /data: \[DONE\]/, 'the stream must be terminated like every other answer');
+});
+
+test('every seat producer records where its text came from', () => {
+  /* The provenance exists in lib/model-reply.js and was being dropped at the
+   * council boundary: `callModel` returns a STRING by default, and the tools
+   * path reads `parseToolRequests(reply).text`. Both discard `textSource`.
+   * These are the four places a seat's text is produced; each must record it,
+   * or `validResponses` carries answers with no provenance and the recovery
+   * refuses them. */
+  assert.match(SOURCE, /seatTextSource\.set\(/, 'the provenance map must actually be written');
+  const recorded = SOURCE.match(/noteSeatSource\(/g) || [];
+  // Four producers: the tools seat, the native seat, the tool plain fallback,
+  // and the plain council (which the progressive council also runs through).
+  assert.ok(recorded.length >= 4,
+    `expected four seat producers to record provenance; found ${recorded.length}`);
+  assert.match(SOURCE, /textSource: seatTextSource\.get\(/,
+    'validResponses entries must carry the recorded provenance to degradeAnswer');
+});
+
+test('the solo branch answers from the SAME predicate, so it cannot expose reasoning either', () => {
+  /* The one-seat branch streams a draft straight to the reader and writes it
+   * into the SHARED answer cache. It is the other direct-to-user path and it
+   * predates this work; a second copy of the rule here would drift from the
+   * one degradeAnswer uses. */
+  const solo = at('const soleDraft =');
+  const synth = at('// 6. SYNTHESIS');
+  const branch = SOURCE.slice(solo, synth);
+  assert.match(branch, /isSafeDraft\(/,
+    'the solo branch must use the shared safety predicate before streaming a seat draft');
 });
 
 test('a degraded turn does not write the shared answer cache', () => {

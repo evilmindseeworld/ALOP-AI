@@ -259,14 +259,23 @@ test("every seat-answer boundary rejects whole protocol replies before use", () 
   assert.match(ROUTE, /const answerOptions = \{[\s\S]{0,240}?allowProtocolJson: userRequestedProtocolJson\(truncatedPrompt\)/);
   assert.match(ROUTE, /const parsed = parseToolRequests\(reply, answerOptions\)/,
     "the tool loop must reject protocol blobs before they count toward quorum");
-  assert.match(ROUTE, /sanitizeAnswerText\(raw, answerOptions\)\.text/,
+  /* `sanitizeAnswerText(reply.content, ...)` since the seat call became
+   * structured — the text is the same string the default contract returned,
+   * and the reply now also carries the `textSource` label that the synthesis
+   * recovery and the solo branch judge a draft on. NOT `String(reply)`, which
+   * is "[object Object]" and always truthy. */
+  assert.match(ROUTE, /sanitizeAnswerText\(reply\.content, answerOptions\)\.text/,
     "the plain fallback council must reject protocol blobs before quorum");
   assert.match(ROUTE, /[cC]allModel[\s\S]{0,200}?answerOptions\)\.text/,
     "the plain council must reject protocol blobs before quorum");
   assert.match(ROUTE, /const searchAnswer = await streamModel\([^\n]+answerOptions/,
     "the observed search answer path must use the stream guard");
   assert.match(ROUTE, /const wikiAnswer = await streamModel\([^\n]+answerOptions/);
-  assert.match(ROUTE, /const synthAnswer = await streamModel\([^\n]+answerOptions/);
+  /* Not `const synthAnswer = …`: the call is wrapped in a try so a synthesiser
+   * that writes nothing can degrade to a council draft (lib/synthesis-degrade.js),
+   * which moved the declaration a line up. What this test is about — that the
+   * synthesis stream is sanitised through answerOptions — is unchanged. */
+  assert.match(ROUTE, /synthAnswer = await streamModel\([^\n]+answerOptions/);
 });
 
 test("a one-seat roster inherits the synthesiser's rules", () => {

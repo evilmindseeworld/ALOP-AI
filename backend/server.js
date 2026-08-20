@@ -1148,6 +1148,7 @@ const SOURCE_TRUTH_RULES = `\n\nSOURCE AND FACT DISCIPLINE:\n- For product speci
 // is reachable from a test file. It is the most intricate concurrency in the
 // product and it had no coverage at all until it moved.
 const { runCouncil, isUsableAnswer } = require('./lib/council-run');
+const { degradeAnswer, isSafeDraft } = require('./lib/synthesis-degrade');
 
 /**
  * `members` is a list of { model, temperature } seats. Each speaks at its own
@@ -5661,6 +5662,35 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
     // so this ships dark and a bad turn is one env var from being reverted
     // without a deploy.
     let validResponses, toolResearch = '', toolTruncated = null, toolSourceUrls = [];
+    /* WHERE EACH SEAT'S TEXT CAME FROM, KEPT BESIDE THE ANSWERS RATHER THAN
+     * THREADED THROUGH THEM.
+     *
+     * `lib/model-reply.js` labels every reply `textSource: 'content' |
+     * 'reasoning' | 'none'`, and both council paths drop that label one step
+     * later: `callModel` returns a bare STRING by default, and the tools path
+     * reads `parseToolRequests(reply).text`. Neither drop mattered while the
+     * synthesiser was the only reader of a draft — it writes its own words. A
+     * draft that can now go STRAIGHT to the user needs its provenance, or the
+     * product can show somebody a model's inner monologue.
+     *
+     * A map keyed by model, written at each producer, rather than a new field
+     * threaded through `runCouncil`, `runProgressiveCouncil`, `runAgentLoop`
+     * and `parseToolRequests`: those four all speak in strings on purpose, and
+     * widening their contracts to carry one label is a refactor of the whole
+     * council for a property only two branches read. Last write wins, which is
+     * the right answer for a multi-round loop: the final round is the one that
+     * produced the answer. */
+    const seatTextSource = new Map();
+    const noteSeatSource = (model, reply) => {
+      seatTextSource.set(model, typeof reply?.textSource === 'string' ? reply.textSource : 'unknown');
+    };
+    /* Attached at the one place every branch converges on. `unknown` is
+     * deliberate and is refused by `isSafeDraft`: a producer that stops
+     * recording loses the recovery rather than gaining a silent exemption. */
+    const withSeatSources = (responses) => (Array.isArray(responses) ? responses : []).map((row) => ({
+      ...row,
+      textSource: seatTextSource.get(row?.model) || 'unknown',
+    }));
     let telemetryExtra = {};
     let toolPlainFallback = { used: false, durationMs: null };
     /* What the ladder actually did, folded into the one audit row written after
@@ -5845,6 +5875,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
               signal,
               { timeoutMs: selection.whipMs, maxTokens: selection.tokenLimit },
             );
+            noteSeatSource(model, nativeReply);
             const nativeParsed = parseToolRequests(nativeReply, answerOptions);
             return nativeParsed.calls.length === 0 && nativeParsed.text === '' && nativeReply.content.trim()
               ? ''
@@ -5860,6 +5891,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
             { structured: true, phase: 'tools' },
           );
           telemetry.recordUsage(reply.usage, { phase: 'council' });
+          noteSeatSource(model, reply);
           const parsed = parseToolRequests(reply, answerOptions);
           /* A whole-protocol reply is rejected by the parser, which leaves both
            * calls and text empty while the model DID say something. That is an
@@ -5900,9 +5932,9 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       // of the skip regex. It was a second copy, and the agent loop had a third
       // rule again — any non-empty string — which is how a bare "skip" came to
       // count toward a quorum here.
-      validResponses = Object.entries(loop.answers)
+      validResponses = withSeatSources(Object.entries(loop.answers)
         .filter(([, content]) => isUsableAnswer(content))
-        .map(([model, content]) => ({ model, content }));
+        .map(([model, content]) => ({ model, content })));
       // A loop that produced nothing usable falls through to the plain council
       // rather than to the fallback: losing seven experts because the tool
       // round misfired is a worse answer than not having used tools at all.
@@ -5915,10 +5947,15 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
          * reply can count toward quorum or reach synthesis. A JSON-looking
          * tool block is deliberately stripped, never executed. */
         const sanitisedFallbackCallModel = async (model, messages, temperature, whipMs, tokenLimit, signal) => {
-          const raw = await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, { phase: 'tool_plain_fallback' });
-          return sanitizeAnswerText(raw, answerOptions).text;
+          /* STRUCTURED, for the label rather than for the shape. `.content` is
+           * the same string the default contract returned; what the reply also
+           * carries is `textSource`, which is the only way to know later that
+           * this seat's words were its reasoning and not its answer. */
+          const reply = await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, { structured: true, phase: 'tool_plain_fallback' });
+          noteSeatSource(model, reply);
+          return sanitizeAnswerText(reply.content, answerOptions).text;
         };
-        validResponses = await runCouncilWithWhip(
+        validResponses = withSeatSources(await runCouncilWithWhip(
           selection.members,
           councilMsgs,
           selection.whipMs,
@@ -5931,7 +5968,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
             onFinish: reportCouncilFinish,
             callModel: sanitisedFallbackCallModel,
           },
-        );
+        ));
         toolPlainFallback = { used: true, durationMs: Date.now() - fallbackStartedAt };
       }
 
@@ -5965,8 +6002,14 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
           signal: turnSignal,
           onSeatTiming: reportCouncilTiming('council'),
           onFinish: reportCouncilFinish,
-          callModel: async (model, messages, temperature, whipMs, tokenLimit, signal) =>
-            sanitizeAnswerText(await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, { phase: 'council' }), answerOptions).text,
+          /* Structured for the same reason the tool fallback above is: the
+           * text is unchanged, and the reply carries the `textSource` label
+           * that a draft going straight to a reader has to be judged on. */
+          callModel: async (model, messages, temperature, whipMs, tokenLimit, signal) => {
+            const reply = await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, { structured: true, phase: 'council' });
+            noteSeatSource(model, reply);
+            return sanitizeAnswerText(reply.content, answerOptions).text;
+          },
         },
       );
 
@@ -5990,7 +6033,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
           ask: (models) => plainCouncilSeats(models, Math.min(selection.quorum, models.length)),
           policy: { maxSeats: selection.members.length },
         });
-        validResponses = progressive.drafts;
+        validResponses = withSeatSources(progressive.drafts);
         progressiveOutcome = {
           waves: progressive.waves,
           seatsUsed: progressive.seatsUsed,
@@ -6001,7 +6044,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
         };
         console.log(`[PROGRESSIVE] ${progressive.waves} wave(s), ${progressive.seatsUsed}/${selection.members.length} seat(s), consensus=${progressive.consensus === null ? 'n/a' : progressive.consensus.toFixed(2)}, stop=${progressive.stopReason}`);
       } else {
-        validResponses = await plainCouncilSeats(selection.members, selection.quorum);
+        validResponses = withSeatSources(await plainCouncilSeats(selection.members, selection.quorum));
       }
     }
 
@@ -6063,7 +6106,18 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
      * The seat's draft already carries the synthesiser's length, closing and
      * inference rules, because `soloRules` above put them in the seat's own
      * prompt when the roster is one. */
-    const soleDraft = validResponses.length === 1 ? String(validResponses[0]?.content || '').trim() : '';
+    /* A FIFTH CONDITION, AND IT IS THE ONE THE OTHER FOUR CANNOT SEE.
+     *
+     * This branch streams a seat's own words to the reader AND writes them to
+     * the answer cache, which is shared across users. `isSafeDraft` is the same
+     * predicate the synthesis recovery uses: non-empty, free of the council's
+     * own framing, and sourced from `content` rather than from a model's
+     * reasoning. An unsafe draft simply falls through to synthesis, which is
+     * one model request and the behaviour this branch was optimising away —
+     * the right trade when the alternative is showing somebody a scratchpad. */
+    const soleDraft = validResponses.length === 1 && isSafeDraft(validResponses[0])
+      ? String(validResponses[0].content).trim()
+      : '';
     if (
       selection.members.length === 1 &&
       validResponses.length === 1 &&
@@ -6163,7 +6217,74 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     sendStage(res, 'synthesis', validResponses.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
     openStream(res);
     const synthesisStartedAt = Date.now();
-    const synthAnswer = await streamModel(res, synthesis.model, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, requiredSourceUrls: toolSourceUrls }, turnDeadlineAt, synthesisOptions);
+    /* THE DRAFTS ARE THE LAST RESORT, AND THEY COST NOTHING.
+     *
+     * Every rung of the synthesis fallback chain runs INSIDE this call and
+     * inside the same turn deadline, so a head that fails by exhausting that
+     * deadline leaves each rung below it nothing to run in — measured on two of
+     * the four production turns carrying reliability telemetry (2026-08-20):
+     * a synthesis stream open for 31s and 47s, zero content tokens,
+     * `abortReason: "turn_deadline"`, `msToFirstByte: null`, and one and two
+     * usable council drafts respectively already in `validResponses`. Both
+     * turns answered with an error frame after 75 seconds.
+     *
+     * So when the writer cannot write, the panel's own words go out instead.
+     * No provider call, no wall clock, no change to which models this route
+     * uses. The refusals — never over a partial answer, never on an aborted
+     * turn, never a blank draft — are lib/synthesis-degrade.js's, where they
+     * are testable; `server.js` cannot be required in a test. */
+    let synthAnswer;
+    try {
+      synthAnswer = await streamModel(res, synthesis.model, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, requiredSourceUrls: toolSourceUrls }, turnDeadlineAt, synthesisOptions);
+    } catch (err) {
+      const draft = degradeAnswer({
+        aborted: turnSignal.aborted,
+        wroteChars: turnAnswerText().length,
+        drafts: validResponses,
+      });
+      /* Nothing to fall back on, or nowhere to write it: the error frame the
+       * handler writes is still the honest answer, and rethrowing is how it
+       * gets written. The writability test is explicit rather than left to
+       * `sendEvent`'s own guard — a no-op write would still stamp
+       * `firstChunkAt` and file a `council_degraded` audit row for an answer
+       * that reached nobody, which is telemetry saying the opposite of what
+       * happened. */
+      if (!draft || res.writableEnded) throw err;
+      console.warn(`${turnContext.tag('SYNTHESIS')} ${synthesisModelUsed} wrote nothing (${classifyFallbackReason(err)}). Answering with a council draft.`);
+      /* An ordinary chunk frame and the ordinary terminator, the shape the solo
+       * seat and the answer cache already use, so the client cannot tell this
+       * from a streamed answer. */
+      /* STAMPED HERE, as the solo branch stamps it, or the turn reports
+       * `msToFirstByte: null` — the value that means "this turn answered with
+       * nothing", which is precisely what this path exists to stop being true.
+       * A recovery that lies in the telemetry is a recovery nobody can measure. */
+      if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
+      sendEvent(res, { type: 'chunk', text: noteWholeAnswer(draft) });
+      if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
+      if (turnSignal.aborted) return;
+      /* NOT CACHED. `cacheAnswer` writes a shelf shared by every user; a draft
+       * that reached this user only because the synthesiser died is not a
+       * finished answer, and storing it would serve the failure for its whole
+       * TTL. Memory is written, because the conversation really did contain
+       * this exchange and the next turn has to know what was said. */
+      const lastDegraded = histArr.filter((m) => m.role === 'assistant').slice(-1)[0]?.content || '';
+      rememberTurn(chatId, user.id, pv.value, lastDegraded || draft.slice(0, 800), telemetry, turnContext.turnId);
+      await auditTelemetry(
+        telemetryExtra.rounds !== undefined ? 'council.tools' : 'council',
+        'council_degraded',
+        {
+          ...telemetryExtra,
+          ...(verification ? { verification } : {}),
+          seatCount: selection.members.length,
+          quorum: selection.quorum,
+          complexity: selection.complexity,
+          councilRelease,
+          synthesisSkipped: true,
+          synthesisFailure: classifyFallbackReason(err),
+        },
+      );
+      return;
+    }
     telemetry.recordSynthesis(Date.now() - synthesisStartedAt, synthesisModelUsed);
     const synthesisEffort = synthesisModelUsed === synthesis.model ? synthesis.effortLabel : 'default';
     console.log(`[SYNTHESIS] model=${synthesisModelUsed} effort=${synthesisEffort} complexity=${selection.complexity} tools=${toolQuestion}`);

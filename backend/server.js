@@ -6189,9 +6189,14 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
         wroteChars: turnAnswerText().length,
         drafts: validResponses,
       });
-      /* Nothing to fall back on: the error frame the handler writes is still
-       * the honest answer, and rethrowing is how it gets written. */
-      if (!draft) throw err;
+      /* Nothing to fall back on, or nowhere to write it: the error frame the
+       * handler writes is still the honest answer, and rethrowing is how it
+       * gets written. The writability test is explicit rather than left to
+       * `sendEvent`'s own guard — a no-op write would still stamp
+       * `firstChunkAt` and file a `council_degraded` audit row for an answer
+       * that reached nobody, which is telemetry saying the opposite of what
+       * happened. */
+      if (!draft || res.writableEnded) throw err;
       console.warn(`${turnContext.tag('SYNTHESIS')} ${synthesisModelUsed} wrote nothing (${classifyFallbackReason(err)}). Answering with a council draft.`);
       /* An ordinary chunk frame and the ordinary terminator, the shape the solo
        * seat and the answer cache already use, so the client cannot tell this

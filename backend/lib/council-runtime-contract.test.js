@@ -266,7 +266,11 @@ test("every seat-answer boundary rejects whole protocol replies before use", () 
   assert.match(ROUTE, /const searchAnswer = await streamModel\([^\n]+answerOptions/,
     "the observed search answer path must use the stream guard");
   assert.match(ROUTE, /const wikiAnswer = await streamModel\([^\n]+answerOptions/);
-  assert.match(ROUTE, /const synthAnswer = await streamModel\([^\n]+answerOptions/);
+  /* Not `const synthAnswer = …`: the call is wrapped in a try so a synthesiser
+   * that writes nothing can degrade to a council draft (lib/synthesis-degrade.js),
+   * which moved the declaration a line up. What this test is about — that the
+   * synthesis stream is sanitised through answerOptions — is unchanged. */
+  assert.match(ROUTE, /synthAnswer = await streamModel\([^\n]+answerOptions/);
 });
 
 test("a one-seat roster inherits the synthesiser's rules", () => {

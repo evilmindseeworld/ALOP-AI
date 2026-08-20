@@ -1148,6 +1148,7 @@ const SOURCE_TRUTH_RULES = `\n\nSOURCE AND FACT DISCIPLINE:\n- For product speci
 // is reachable from a test file. It is the most intricate concurrency in the
 // product and it had no coverage at all until it moved.
 const { runCouncil, isUsableAnswer } = require('./lib/council-run');
+const { degradeAnswer } = require('./lib/synthesis-degrade');
 
 /**
  * `members` is a list of { model, temperature } seats. Each speaks at its own
@@ -6163,7 +6164,69 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     sendStage(res, 'synthesis', validResponses.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
     openStream(res);
     const synthesisStartedAt = Date.now();
-    const synthAnswer = await streamModel(res, synthesis.model, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, requiredSourceUrls: toolSourceUrls }, turnDeadlineAt, synthesisOptions);
+    /* THE DRAFTS ARE THE LAST RESORT, AND THEY COST NOTHING.
+     *
+     * Every rung of the synthesis fallback chain runs INSIDE this call and
+     * inside the same turn deadline, so a head that fails by exhausting that
+     * deadline leaves each rung below it nothing to run in — measured on two of
+     * the four production turns carrying reliability telemetry (2026-08-20):
+     * a synthesis stream open for 31s and 47s, zero content tokens,
+     * `abortReason: "turn_deadline"`, `msToFirstByte: null`, and one and two
+     * usable council drafts respectively already in `validResponses`. Both
+     * turns answered with an error frame after 75 seconds.
+     *
+     * So when the writer cannot write, the panel's own words go out instead.
+     * No provider call, no wall clock, no change to which models this route
+     * uses. The refusals — never over a partial answer, never on an aborted
+     * turn, never a blank draft — are lib/synthesis-degrade.js's, where they
+     * are testable; `server.js` cannot be required in a test. */
+    let synthAnswer;
+    try {
+      synthAnswer = await streamModel(res, synthesis.model, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, requiredSourceUrls: toolSourceUrls }, turnDeadlineAt, synthesisOptions);
+    } catch (err) {
+      const draft = degradeAnswer({
+        aborted: turnSignal.aborted,
+        wroteChars: turnAnswerText().length,
+        drafts: validResponses,
+      });
+      /* Nothing to fall back on: the error frame the handler writes is still
+       * the honest answer, and rethrowing is how it gets written. */
+      if (!draft) throw err;
+      console.warn(`${turnContext.tag('SYNTHESIS')} ${synthesisModelUsed} wrote nothing (${classifyFallbackReason(err)}). Answering with a council draft.`);
+      /* An ordinary chunk frame and the ordinary terminator, the shape the solo
+       * seat and the answer cache already use, so the client cannot tell this
+       * from a streamed answer. */
+      /* STAMPED HERE, as the solo branch stamps it, or the turn reports
+       * `msToFirstByte: null` — the value that means "this turn answered with
+       * nothing", which is precisely what this path exists to stop being true.
+       * A recovery that lies in the telemetry is a recovery nobody can measure. */
+      if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
+      sendEvent(res, { type: 'chunk', text: noteWholeAnswer(draft) });
+      if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
+      if (turnSignal.aborted) return;
+      /* NOT CACHED. `cacheAnswer` writes a shelf shared by every user; a draft
+       * that reached this user only because the synthesiser died is not a
+       * finished answer, and storing it would serve the failure for its whole
+       * TTL. Memory is written, because the conversation really did contain
+       * this exchange and the next turn has to know what was said. */
+      const lastDegraded = histArr.filter((m) => m.role === 'assistant').slice(-1)[0]?.content || '';
+      rememberTurn(chatId, user.id, pv.value, lastDegraded || draft.slice(0, 800), telemetry, turnContext.turnId);
+      await auditTelemetry(
+        telemetryExtra.rounds !== undefined ? 'council.tools' : 'council',
+        'council_degraded',
+        {
+          ...telemetryExtra,
+          ...(verification ? { verification } : {}),
+          seatCount: selection.members.length,
+          quorum: selection.quorum,
+          complexity: selection.complexity,
+          councilRelease,
+          synthesisSkipped: true,
+          synthesisFailure: classifyFallbackReason(err),
+        },
+      );
+      return;
+    }
     telemetry.recordSynthesis(Date.now() - synthesisStartedAt, synthesisModelUsed);
     const synthesisEffort = synthesisModelUsed === synthesis.model ? synthesis.effortLabel : 'default';
     console.log(`[SYNTHESIS] model=${synthesisModelUsed} effort=${synthesisEffort} complexity=${selection.complexity} tools=${toolQuestion}`);

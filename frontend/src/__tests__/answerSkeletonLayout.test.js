@@ -18,4 +18,17 @@ describe("answer skeleton layout", () => {
 
     expect(body).toMatch(/(?:^|[;\n])\s*align-self\s*:\s*stretch\s*;/);
   });
+
+  it("reserves a stable process footprint and wraps truthful stage copy", () => {
+    const process = ruleBody(".council-process");
+    const stage = ruleBody(".council-stage-text");
+
+    expect(process).toMatch(/(?:^|[;\n])\s*height\s*:\s*124px\s*;/);
+    expect(process).toMatch(/(?:^|[;\n])\s*overflow\s*:\s*visible\s*;/);
+    expect(css).toMatch(/\.council-process\.is-terminal\s*\{[^}]*height\s*:\s*auto\s*;/s);
+    expect(stage).toMatch(/overflow-wrap\s*:\s*anywhere/);
+    expect(stage).toMatch(/white-space\s*:\s*normal/);
+    expect(stage).not.toMatch(/text-overflow\s*:\s*ellipsis/);
+    expect(stage).not.toMatch(/white-space\s*:\s*nowrap/);
+  });
 });

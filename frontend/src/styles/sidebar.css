@@ -133,8 +133,8 @@
 /* New chat keeps its fill in the rail: it is the primary action in both states,
  * and a rail of five identical ghost buttons has no entry point. */
 .rail-new {
-  background: var(--gradient-primary);
-  color: var(--text-on-fill);
+  background: var(--surface-3);
+  color: var(--text-muted);
   box-shadow: 0 2px 10px var(--primary-glow);
 }
 
@@ -215,7 +215,7 @@
   flex: 1;
   min-width: 0;
   background: none;
-  border: none;
+  border: 1px solid var(--border-strong);
   outline: none;
   color: var(--text);
   font-family: var(--font-body);
@@ -246,9 +246,9 @@
 
 /* ===== NEW CHAT =====
  *
- * The one filled control in the sidebar, so it is unambiguously the primary
- * action. The old version carried a permanent sweeping shimmer — motion with
- * nothing to say, running forever in the corner of the eye. */
+ * The primary action still needs to be easy to find, but it should not outshout
+ * the intelligence states in the transcript. A quiet raised surface leaves
+ * the product accent available for live work, synthesis and completion. */
 .new-chat-btn {
   flex: 1;
   display: flex;
@@ -267,23 +267,24 @@
   border: none;
   cursor: pointer;
   user-select: none;
-  will-change: transform;
-  box-shadow: 0 2px 12px var(--primary-glow);
+  box-shadow: none;
   transition:
     transform var(--dur-fast) var(--ease-out),
-    box-shadow var(--dur) var(--ease-out),
-    filter var(--dur-fast) ease;
+    color var(--dur-fast) ease,
+    background var(--dur-fast) ease,
+    border-color var(--dur-fast) ease;
 }
 
 .new-chat-btn:hover {
-  filter: brightness(1.06);
+  background: var(--surface-4);
+  border-color: color-mix(in srgb, var(--primary) 40%, var(--border-strong));
+  color: var(--text);
 }
 
 /* Keep brightness as touch feedback, but do not leave the button lifted after
  * a tap on the mobile sidebar. */
 @media (hover: hover) and (pointer: fine) {
   .new-chat-btn:hover {
-    box-shadow: 0 6px 22px var(--primary-glow);
     transform: translateY(-1px);
   }
 }
@@ -609,16 +610,17 @@
   height: 28px;
   flex-shrink: 0;
   border-radius: var(--radius-sm);
-  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
-  background: var(--accent-dim);
-  color: var(--accent);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text-subtle);
   cursor: pointer;
   transition: background var(--dur-fast) ease, color var(--dur-fast) ease;
 }
 
 .sidebar-upgrade:hover {
-  background: color-mix(in srgb, var(--accent) 22%, transparent);
-  color: var(--text);
+  background: var(--accent-dim);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  color: var(--accent);
 }
 
 /* ===== THE FOOT OF THE RAIL =====

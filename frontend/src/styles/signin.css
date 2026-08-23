@@ -659,3 +659,151 @@
   .signin-title, .signin-tagline { text-align: center; }
   .council-ladder { max-width: 30ch; }
 }
+
+/* ===== THE REVIEWED COUNCIL EXEMPLAR =====
+ *
+ * The roster above proves plurality but cannot show what plurality changes.
+ * This compact section supplies that missing consequence for a visitor who
+ * has not signed in yet. It is intentionally editorial rather than a fake
+ * dashboard: the copy is fixed, the label says so, and no runtime seat,
+ * source, count, or completion claim is implied.
+ */
+.council-exemplar {
+  width: min(100%, 860px);
+  margin: 0 auto;
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--border);
+}
+
+.council-exemplar-label,
+.council-exemplar-kicker {
+  margin: 0;
+  color: var(--primary);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-eyebrow);
+  text-transform: uppercase;
+}
+
+.council-exemplar-title {
+  margin: 8px 0 0;
+  color: var(--text);
+  font-family: var(--font-heading), 'Clash Grotesk', sans-serif;
+  font-size: clamp(22px, 3vw, 30px);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.council-exemplar-intro {
+  max-width: 62ch;
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+
+.council-exemplar-flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr) minmax(0, 1.45fr);
+  gap: var(--space-4);
+  align-items: stretch;
+  margin-top: var(--space-5);
+}
+
+.council-exemplar-question {
+  min-width: 0;
+  padding: 12px 0 12px var(--space-4);
+  border-left: 1px solid var(--border);
+}
+
+.council-exemplar-answer {
+  min-width: 0;
+  padding: 12px 0 12px var(--space-4);
+  border-left: 1px solid var(--primary);
+}
+
+.council-exemplar-question p,
+.council-exemplar-answer p {
+  margin: 8px 0 0;
+  color: var(--text);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.council-exemplar-steps {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.council-exemplar-step {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--space-3);
+  min-width: 0;
+  padding: 12px 0;
+  border-block: 1px solid var(--border);
+}
+
+.council-exemplar-step + .council-exemplar-step {
+  border-top: 0;
+}
+
+.council-exemplar-number {
+  color: var(--text-subtle);
+  font-family: var(--font-mono-system);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.5;
+}
+
+.council-exemplar-step strong {
+  display: block;
+  color: var(--text);
+  font-size: var(--text-sm);
+  font-weight: 600;
+}
+
+.council-exemplar-step span span {
+  display: block;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.council-exemplar-footnote {
+  margin: var(--space-4) 0 0;
+  color: var(--text-subtle);
+  font-size: var(--text-2xs);
+  line-height: 1.5;
+}
+
+@media (max-width: 900px) {
+  .council-exemplar-flow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .council-exemplar {
+    padding-top: var(--space-4);
+  }
+
+  .council-exemplar-flow {
+    gap: var(--space-3);
+    margin-top: var(--space-4);
+  }
+
+  .council-exemplar-question,
+  .council-exemplar-answer {
+    padding-left: var(--space-3);
+  }
+}

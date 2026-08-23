@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { SignIn, SignUp, useUser } from "@clerk/react";
 import Earring from "./components/Earring";
+import CouncilExemplar from "./components/CouncilExemplar";
 import { Seal } from "./components/SakuraFrame";
 import { COUNCIL, FREE_COUNT } from "./constants/council";
 import { Storage } from "./lib/storage";
@@ -460,6 +461,7 @@ export default function SignInPage() {
             </p>
           </section>
         </div>
+        <CouncilExemplar />
       </div>
     </div>
   );

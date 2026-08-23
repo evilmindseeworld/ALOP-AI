@@ -4,7 +4,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const {
   validate, coerce, assertValid, T,
-  ROUTE_PLAN, TOOL_CALL, EVIDENCE_RECORD, FINAL_ANSWER_META,
+  ROUTE_PLAN, TOOL_CALL, EVIDENCE_RECORD, FINAL_ANSWER_META, TURN_PROVENANCE_META,
 } = require('./schemas');
 const { parseRoutePlan } = require('./search-plan');
 const { parseToolRequests } = require('./tool-protocol');
@@ -144,4 +144,11 @@ test('final answer metadata cannot omit the ids that make it a ledger row', () =
   }
   assert.equal(validate(FINAL_ANSWER_META, { ...row, textSource: 'thinking' }).ok, false);
   assert.equal(validate(FINAL_ANSWER_META, { ...row, model: null }).ok, true, 'a cache hit ran no model');
+});
+
+test('turn provenance can share the existing meta column with reliability', () => {
+  assert.equal(validate(TURN_PROVENANCE_META, { provenance: { schemaVersion: 1 } }).ok, true);
+  assert.equal(validate(TURN_PROVENANCE_META, { provenance: {}, reliability: {} }).ok, true);
+  assert.equal(validate(TURN_PROVENANCE_META, { reliability: {} }).ok, false);
+  assert.equal(validate(TURN_PROVENANCE_META, { provenance: {}, privateReasoning: 'drop' }).ok, false);
 });

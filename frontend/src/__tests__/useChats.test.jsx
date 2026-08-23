@@ -224,6 +224,47 @@ describe("useChats", () => {
     expect(fetchImpl).not.toHaveBeenCalled();
   });
 
+  it("hydrates safe durable process provenance alongside the transcript", async () => {
+    const provenance = {
+      schemaVersion: 1,
+      messageId: "old-a1",
+      requestState: "complete",
+      route: "council",
+      answerProduced: true,
+      stageKeys: ["context", "council", "synthesis"],
+      council: { used: true, seatCount: 3, answered: 3, completed: true, partial: false },
+      synthesis: { started: true, completed: true, skipped: false, failed: false },
+      evidence: { searchUsed: true, sourceCount: 1 },
+      sources: [{ title: "Public page", domain: "example.com", url: "https://example.com/page" }],
+      failure: { occurred: false, userAborted: false, kind: null },
+    };
+    // Keep the response object explicit so this test documents the API seam
+    // without depending on the default setup router.
+    const apiCall = vi.fn(async (path, options = {}) => {
+      if (path === "/api/chats" && !options.method) {
+        return { ok: true, json: async () => [{ id: "old", title: "Old", messages: undefined, updated_at: "v1" }] };
+      }
+      if (path === "/api/chats/old" && !options.method) {
+        return {
+          ok: true,
+          json: async () => ({
+            id: "old",
+            messages: [{ id: "old-a1", role: "assistant", content: "A durable answer." }],
+            turns: [{ turnId: "turn-1", provenance }],
+            updated_at: "v1",
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+
+    const { result } = setup({ apiCallImpl: apiCall });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+    act(() => result.current.setActiveChatId("old"));
+    await waitFor(() => expect(result.current.chats.find((chat) => chat.id === "old").messages?.[0]?.provenance).toEqual(provenance));
+    expect(result.current.chats.find((chat) => chat.id === "old").messages[0].process.phase).toBe("complete");
+  });
+
   it("applies lazy-load responses to their own chat during fast switching", async () => {
     const loads = { a: deferred(), b: deferred() };
     const apiCall = vi.fn(async (path, options = {}) => {
@@ -1025,5 +1066,127 @@ describe("progress while the council is working", () => {
     const messages = result.current.chats[0].messages;
     const last = messages[messages.length - 1];
     expect(last.content).not.toContain("4 of 7");
+  });
+
+  it("keeps keyed council stages through the first token and completion", async () => {
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      body: sseStream([
+        'data: {"type":"stage","key":"context","text":"Reading your conversation"}\n',
+        'data: {"type":"stage","key":"council","text":"Asking 3 seats"}\n',
+        'data: {"type":"stage","key":"council","text":"3 of 3 answered"}\n',
+        'data: {"type":"stage","key":"synthesis","text":"Reconciling the answers"}\n',
+        'data: {"type":"chunk","text":"The answer"}\n',
+        "data: [DONE]\n",
+      ]),
+    }));
+
+    const { result } = setup({ fetchImpl });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+
+    await act(async () => {
+      await result.current.send("hi");
+    });
+
+    await waitFor(() => expect(result.current.status).toBe("idle"));
+    expect(result.current.streamDraft.process).toMatchObject({
+      phase: "complete",
+      partialCouncil: false,
+      announcement: "Answer complete.",
+      stages: [
+        { key: "context", text: "Reading your conversation" },
+        { key: "council", text: "3 of 3 answered" },
+        { key: "synthesis", text: "Reconciling the answers" },
+      ],
+      frames: [
+        { key: "context", text: "Reading your conversation" },
+        { key: "council", text: "Asking 3 seats" },
+        { key: "council", text: "3 of 3 answered" },
+        { key: "synthesis", text: "Reconciling the answers" },
+      ],
+    });
+    expect(result.current.streamDraft.content).toBe("The answer");
+  });
+
+  it("keeps an honest terminal state when a turn stops or fails", async () => {
+    let readIndex = 0;
+    let rejectPendingRead;
+    const frames = [
+      'data: {"type":"stage","key":"context","text":"Reading your conversation"}\n',
+      'data: {"type":"stage","key":"council","text":"2 of 3 answered"}\n',
+      'data: {"type":"chunk","text":"Partial"}\n',
+    ];
+    const fetchImpl = vi.fn(async (url, options = {}) => {
+      if (String(url).includes("/api/chat-title")) return { ok: true, json: async () => ({ title: null }) };
+      options.signal?.addEventListener("abort", () => {
+        rejectPendingRead?.(new DOMException("Aborted", "AbortError"));
+      }, { once: true });
+      return {
+        ok: true,
+        body: {
+          getReader: () => ({
+            read: async () => {
+              if (readIndex < frames.length) return { done: false, value: new TextEncoder().encode(frames[readIndex++]) };
+              return new Promise((resolve, reject) => {
+                rejectPendingRead = reject;
+                options.signal?.addEventListener("abort", () => reject(new DOMException("Aborted", "AbortError")), { once: true });
+              });
+            },
+          }),
+        },
+      };
+    });
+
+    const { result } = setup({ fetchImpl });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+
+    // The stream remains open after the first chunk, so Stop can exercise the
+    // same terminal snapshot the browser uses rather than a synthetic object.
+    let sendPromise;
+    act(() => { sendPromise = result.current.send("stop this"); });
+    await waitFor(() => expect(result.current.status).toBe("streaming"));
+    act(() => { result.current.stopGeneration(); });
+    await act(async () => { await sendPromise; });
+
+    expect(result.current.streamDraft.process).toMatchObject({
+      phase: "stopped",
+      terminalKey: "council",
+      partialCouncil: true,
+      announcement: "Answer stopped before completion.",
+    });
+    expect(result.current.streamDraft.process.stages).toEqual([
+      { key: "context", text: "Reading your conversation", state: "completed" },
+      { key: "council", text: "2 of 3 answered", progress: { answered: 2, total: 3 } },
+    ]);
+  });
+
+  it("retains the prior process receipt in this session without persisting it", async () => {
+    const fetchImpl = vi.fn(async () => ({
+      ok: true,
+      body: sseStream([
+        'data: {"type":"stage","key":"council","text":"3 of 3 answered"}\n',
+        'data: {"type":"stage","key":"synthesis","text":"Reconciling the answers"}\n',
+        'data: {"type":"chunk","text":"Answer"}\n',
+        "data: [DONE]\n",
+      ]),
+    }));
+    const { result, apiCall } = setup({ fetchImpl });
+    await waitFor(() => expect(result.current.isInitialLoading).toBe(false));
+
+    await act(async () => { await result.current.send("first"); });
+    const firstId = result.current.chats[0].messages.at(-1).id;
+    const writes = () => apiCall.mock.calls
+      .filter(([path, options]) => path === "/api/chats/chat-1" && options?.method === "PUT" && options.body)
+      .map(([, options]) => JSON.parse(options.body).messages)
+      .filter(Boolean);
+    expect(writes().at(-1).every((message) => !message.process)).toBe(true);
+
+    await act(async () => { await result.current.send("second"); });
+    const prior = result.current.renderedMessages.find((message) => message.id === firstId);
+    expect(prior.process).toMatchObject({
+      phase: "complete",
+      stages: [{ key: "council", text: "3 of 3 answered" }, { key: "synthesis" }],
+    });
+    expect(writes().every((messages) => messages.every((message) => !message.process))).toBe(true);
   });
 });

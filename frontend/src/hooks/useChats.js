@@ -5,8 +5,31 @@ import { createReveal } from "../lib/streamReveal";
 import { readChats, writeChats } from "../lib/chatCache";
 import { rememberPendingTurn, readPendingTurn, clearPendingTurn } from "../lib/pendingTurn";
 import { newOperationId, withOperationId, shortOperationId } from "../lib/operationId";
+import { processFromProvenance } from "../lib/processSemantics";
 
 const now = () => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+/* Stage frames are a public progress contract, not hidden reasoning. Keep the
+ * key exactly as the server sent it when it is a string, while allowing older
+ * or text-only streams to remain renderable with a null key. */
+const readStageFrame = (frame) => {
+  if (typeof frame?.text !== "string" || !frame.text) return null;
+  return {
+    key: typeof frame.key === "string" && frame.key.length ? frame.key : null,
+    text: frame.text,
+  };
+};
+
+const readCouncilProgress = (text) => {
+  const match = typeof text === "string" && text.match(/\b(\d+)\s+of\s+(\d+)\s+answered\b/i);
+  return match ? { answered: Number(match[1]), total: Number(match[2]) } : null;
+};
+
+const stageName = (key) => ({
+  context: "Context",
+  council: "Council",
+  synthesis: "Synthesis",
+}[key] || (key ? key : "Progress"));
 
 /** How much history the council is given. Older turns are summarised server-side. */
 const HISTORY_TURNS = 8;
@@ -52,6 +75,10 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
    * every row in a long transcript. Keeping the one changing row beside the
    * persisted tree lets that history retain its identity for the whole stream. */
   const [streamDraft, setStreamDraft] = useState(null);
+  /* The durable receipt is hydrated from the turn ledger on reload. This tab
+   * map remains as a narrow compatibility bridge for a just-finished turn when
+   * the PUT has painted before the next transcript read returns. */
+  const [sessionProcesses, setSessionProcesses] = useState({});
   const [feedback, setFeedback] = useState({});
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   /* The list failing is NOT the same as having no chats, and the sidebar used
@@ -113,11 +140,31 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
   const persistedDraftIsTail =
     Boolean(activeStream?.persisted) && activeMessages.at(-1)?.id === activeStream.message.id;
   const draftIsStale = Boolean(activeStream?.persisted) && !persistedDraftIsTail;
-  const activeStreamDraft = activeStream && !draftIsStale ? activeStream.message : null;
+  const activeStreamDraft = activeStream && !draftIsStale
+    ? { ...activeStream.message, ...(activeStream.process ? { process: activeStream.process } : {}) }
+    : null;
+
+  const rememberSessionProcess = useCallback((chatId, messageId, process) => {
+    if (!chatId || !messageId || !process) return;
+    setSessionProcesses((previous) => ({
+      ...previous,
+      [chatId]: {
+        ...(previous[chatId] || {}),
+        [messageId]: process,
+      },
+    }));
+  }, []);
 
   const renderedMessages = useMemo(
-    () => (persistedDraftIsTail ? activeMessages.slice(0, -1) : activeMessages),
-    [activeMessages, persistedDraftIsTail],
+    () => {
+      const messages = persistedDraftIsTail ? activeMessages.slice(0, -1) : activeMessages;
+      const processes = sessionProcesses[activeChatId] || {};
+      return messages.map((message) => {
+        const process = processes[message.id];
+        return process ? { ...message, process } : message;
+      });
+    },
+    [activeMessages, activeChatId, persistedDraftIsTail, sessionProcesses],
   );
 
   /**
@@ -377,6 +424,18 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           const full = await res.json();
           if (!full || !Array.isArray(full.messages)) throw new Error("Invalid conversation response");
+          const provenanceByMessage = new Map(
+            (Array.isArray(full.turns) ? full.turns : [])
+              .map((turn) => [turn?.provenance?.messageId, turn?.provenance])
+              .filter(([messageId, provenance]) => messageId && provenance),
+          );
+          const hydratedMessages = full.messages.map((message) => {
+            const provenance = provenanceByMessage.get(message?.id);
+            const process = processFromProvenance(provenance);
+            return provenance
+              ? { ...message, provenance, ...(process ? { process } : {}) }
+              : message;
+          });
 
           const knownVersion = chatVersionsRef.current.get(chatId);
           const fullTime = typeof full.updated_at === "string" ? Date.parse(full.updated_at) : NaN;
@@ -397,11 +456,11 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
               // path refuses to overwrite local messages that appeared while
               // the GET was in flight; a late read must never erase a write.
               if (!force && c.messages !== undefined) return c;
-              return { ...c, ...full, messages: full.messages };
+              return { ...c, ...full, messages: hydratedMessages };
             })
           );
           setMessageLoadState((p) => ({ ...p, [chatId]: "loaded" }));
-          return full;
+          return { ...full, messages: hydratedMessages };
         } catch (e) {
           console.error(e.message);
           setMessageLoadState((p) => ({ ...p, [chatId]: "error" }));
@@ -570,7 +629,14 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
             }
             await updateChatMessages(pending.chatId, [
               ...messages,
-              { role: "assistant", content: turn.answer, ts: now(), id: uid(), recovered: true },
+              {
+                role: "assistant",
+                content: turn.answer,
+                ts: now(),
+                id: turn.provenance?.messageId || uid(),
+                ...(turn.provenance ? { provenance: turn.provenance, process: processFromProvenance(turn.provenance) } : {}),
+                recovered: true,
+              },
             ]);
             clearPendingTurn(userId);
             return;
@@ -1049,7 +1115,19 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
 
       const assistantId = uid();
       const assistantMsg = { role: "assistant", content: "", typing: true, ts: now(), id: assistantId };
-      setStreamDraft({ chatId, message: assistantMsg });
+      const initialProcess = {
+        phase: "working",
+        reserve: true,
+        activeKey: null,
+        terminalKey: null,
+        stages: [],
+        frames: [],
+        synthesisSeen: false,
+        partialCouncil: false,
+        pendingTools: false,
+        announcement: "Assembling your answer.",
+      };
+      setStreamDraft({ chatId, message: assistantMsg, process: initialProcess });
 
       const history = baseMessages
         .filter((m) => m.content && m.content.trim() && !m.typing)
@@ -1082,16 +1160,154 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
       rememberPendingTurn(userId, { chatId, operationId });
       let started = false;
       let stage = null;
+      /* `stage` is the current frame; these two collections are the bounded
+       * UI receipt that keeps the ordered process visible after the current
+       * line changes. They never enter `finalMessage`, so this phase does not
+       * change chat persistence or the backend message schema. */
+      const stageFrames = [];
+      const stageRows = [];
+      let liveProvenance = null;
       let turnOperationId = operationId;
       let reconnectAttempts = 0;
       let persistCompletedTurn;
       let failTurn;
+      let announcement = initialProcess.announcement;
+      const announcedStageKeys = new Set();
+      let councilFirstAnnounced = false;
+      let councilCompleteAnnounced = false;
+
+      const announceStage = (event) => {
+        const progress = event.key === "council" ? readCouncilProgress(event.text) : null;
+        if (event.key === "council") {
+          if (!councilFirstAnnounced || !progress) {
+            announcement = `${stageName(event.key)}: ${event.text}`;
+            councilFirstAnnounced = true;
+          }
+          if (progress && progress.answered >= progress.total && !councilCompleteAnnounced) {
+            announcement = `${stageName(event.key)}: ${event.text}`;
+            councilCompleteAnnounced = true;
+          }
+          return;
+        }
+        const key = event.key || "__unkeyed__";
+        if (!announcedStageKeys.has(key)) {
+          announcement = `${stageName(event.key)}: ${event.text}`;
+          announcedStageKeys.add(key);
+        }
+      };
+
+      const setTerminalAnnouncement = (phase) => {
+        if (phase === "stopped") announcement = "Answer stopped before completion.";
+        else if (phase === "failed") announcement = "Answer failed before completion.";
+        else if (!stageRows.some(({ key }) => key === "synthesis")) {
+          announcement = "Answer complete without a synthesis stage.";
+        } else if (stageRows.some(({ key, progress }) => key === "council" && progress && progress.answered < progress.total)) {
+          announcement = "Answer complete; council participation was partial.";
+        } else {
+          announcement = "Answer complete.";
+        }
+      };
+
+      const recordStage = (frame) => {
+        const event = readStageFrame(frame);
+        if (!event) return null;
+        stage = event;
+        stageFrames.push(event);
+        announceStage(event);
+        const row = stageRows.find((item) => item.key === event.key);
+        const progress = event.key === "council" ? readCouncilProgress(event.text) : null;
+        if (row) {
+          row.text = event.text;
+          if (progress) row.progress = progress;
+        } else {
+          const previous = stageRows.at(-1);
+          if (previous && !previous.state) {
+            const previousProgress = previous.key === "council"
+              ? previous.progress || readCouncilProgress(previous.text)
+              : null;
+            previous.state = previousProgress && previousProgress.answered < previousProgress.total
+              ? "partial"
+              : "completed";
+          }
+          stageRows.push({ ...event, ...(progress ? { progress } : {}) });
+        }
+        return event;
+      };
+
+      const processSnapshot = (phase = "working") => {
+        const partialCouncil = stageRows.some(({ key, progress, text }) => {
+          const council = key === "council" ? progress || readCouncilProgress(text) : null;
+          return council && council.answered < council.total;
+        });
+        const hasProcess = Boolean(stageRows.length || initialProcess.reserve);
+        if (!hasProcess) return undefined;
+        const council = [...stageRows].reverse().find((row) => row.key === "council");
+        const councilProgress = council?.progress || readCouncilProgress(council?.text);
+        const sourceRows = activity.flatMap((item) => Array.isArray(item.sources) ? item.sources : []);
+        const fallbackProvenance = {
+          schemaVersion: 1,
+          requestState: phase === "complete" ? "complete" : phase === "stopped" ? "aborted" : phase === "failed" ? "failed" : "running",
+          answerProduced: Boolean(acc.trim()),
+          stageKeys: stageRows.map(({ key }) => key).filter(Boolean),
+          council: {
+            used: stageRows.some(({ key }) => key === "council"),
+            seatCount: councilProgress?.total || 0,
+            answered: councilProgress?.answered || 0,
+            completed: Boolean(councilProgress && councilProgress.answered >= councilProgress.total),
+            partial: partialCouncil,
+          },
+          synthesis: {
+            started: stageRows.some(({ key }) => key === "synthesis"),
+            completed: phase === "complete" && stageRows.some(({ key }) => key === "synthesis") && Boolean(acc.trim()),
+            skipped: !stageRows.some(({ key }) => key === "synthesis"),
+            failed: phase === "failed",
+          },
+          evidence: {
+            searchUsed: sourceRows.length > 0,
+            toolUsed: activity.length > 0,
+            toolCount: activity.length,
+            failedTools: activity.filter((item) => item.ok === false).length,
+            sourceCount: sourceRows.length,
+          },
+          failure: { occurred: phase === "failed", userAborted: phase === "stopped" },
+          sources: sourceRows,
+        };
+        const provenance = liveProvenance
+          ? {
+              ...liveProvenance,
+              answerProduced: liveProvenance.answerProduced ?? Boolean(acc.trim()),
+              ...(liveProvenance.sources?.length || !sourceRows.length ? {} : { sources: sourceRows }),
+            }
+          : fallbackProvenance;
+        return {
+          phase,
+          reserve: true,
+          activeKey: phase === "working" || phase === "answering" ? stage?.key || null : null,
+          terminalKey: phase === "stopped" || phase === "failed" ? stage?.key || stageRows.at(-1)?.key || null : null,
+          stages: stageRows.map(({ key, text, progress, state }) => ({
+            key,
+            text,
+            ...(progress ? { progress } : {}),
+            ...(state ? { state } : {}),
+          })),
+          frames: stageFrames.map(({ key, text }) => ({ key, text })),
+          synthesisSeen: stageRows.some(({ key }) => key === "synthesis"),
+          partialCouncil,
+          pendingTools: activity.some((item) => item.pending),
+          announcement,
+          provenance,
+        };
+      };
+
+      const paintDraft = (message, phase = "working", extra = {}) =>
+        setStreamDraft({ chatId, message, process: processSnapshot(phase), ...extra });
 
       const setTurnState = (next) => {
         setStatus(next);
         setStreamDraft((previous) => ({
           chatId,
           message: { ...(previous?.message || assistantMsg), turnState: next },
+          process: previous?.process,
         }));
       };
 
@@ -1167,14 +1383,31 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
             try { frame = JSON.parse(payload); } catch { continue; }
             if (frame.type === "chunk") {
               started = true;
+              announcement = "The answer is forming.";
               acc += frame.text;
               setStatus("streaming");
-              setStreamDraft({ chatId, message: { ...assistantMsg, typing: false, content: acc, activity: activity.length ? [...activity] : undefined } });
+              paintDraft({
+                ...assistantMsg,
+                typing: false,
+                content: acc,
+                activity: activity.length ? [...activity] : undefined,
+              }, "answering");
             } else if (frame.type === "meta" && frame.operationId) {
               turnOperationId = frame.operationId;
-            } else if (frame.type === "stage" && !started) {
-              stage = frame.text;
-              setStreamDraft({ chatId, message: { ...assistantMsg, typing: true, content: "", stage } });
+            } else if (frame.type === "provenance" && frame.provenance) {
+              liveProvenance = frame.provenance;
+            } else if (frame.type === "stage") {
+              recordStage(frame);
+              if (!started) {
+                paintDraft({
+                  ...assistantMsg,
+                  typing: true,
+                  content: "",
+                  stage: stage?.text,
+                  stageKey: stage?.key,
+                  activity: activity.length ? [...activity] : undefined,
+                });
+              }
             } else if (frame.type === "error") {
               throw withOperationId(new Error(frame.text), frame.operationId || turnOperationId, frame.code);
             }
@@ -1208,6 +1441,7 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
 
       const markFailedTurn = (error) => {
         if (painterRef) { clearInterval(painterRef); painterRef = null; }
+        setTerminalAnnouncement("failed");
         const failedMessage = {
           ...assistantMsg,
           typing: false,
@@ -1216,7 +1450,7 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
           turnState: "error",
         };
         retryTurnRef.current = { chatId, retry: retryTurn };
-        setStreamDraft({ chatId, message: failedMessage, persisted: false });
+        paintDraft(failedMessage, "failed", { persisted: false });
         setMessageLoadState((previous) => ({ ...previous, [chatId]: "turn-error" }));
         setStatus("error");
         sendInFlightRef.current = false;
@@ -1231,8 +1465,17 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
          * copy of it. A failed save is the transcript's problem, not the
          * ledger's. */
         clearPendingTurn(userId);
-        const finalMessage = { ...assistantMsg, typing: false, content: acc, activity: activity.length ? [...activity] : undefined };
-        setStreamDraft({ chatId, message: finalMessage, persisted: true });
+        setTerminalAnnouncement("complete");
+        const completedProcess = processSnapshot("complete");
+        const finalMessage = {
+          ...assistantMsg,
+          typing: false,
+          content: acc,
+          activity: activity.length ? [...activity] : undefined,
+          ...(completedProcess?.provenance ? { provenance: completedProcess.provenance } : {}),
+        };
+        rememberSessionProcess(chatId, assistantId, completedProcess);
+        paintDraft(finalMessage, "complete", { persisted: true });
         const saved = await updateChatMessages(chatId, [...updated, finalMessage]);
         if (!saved) {
           setStreamDraft(null);
@@ -1271,7 +1514,7 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
             "Content-Type": "application/json",
             "X-Operation-Id": operationId,
           },
-          body: JSON.stringify({ message: cleanText, history, chatId, timezone: clientTimezone(), ...(image ? { image } : {}) }),
+          body: JSON.stringify({ message: cleanText, history, chatId, messageId: assistantId, timezone: clientTimezone(), ...(image ? { image } : {}) }),
           signal: abortRef.current.signal,
           });
         } catch (error) {
@@ -1312,15 +1555,13 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
          * or the value failed the server's UUID check and was replaced. Prefer
          * the server's — it is the one written into the logs. */
         const paintPending = () =>
-          setStreamDraft({
-            chatId,
-            message: {
-              ...assistantMsg,
-              typing: true,
-              content: "",
-              stage,
-              activity: activity.length ? [...activity] : undefined,
-            },
+          paintDraft({
+            ...assistantMsg,
+            typing: true,
+            content: "",
+            stage: stage?.text,
+            stageKey: stage?.key,
+            activity: activity.length ? [...activity] : undefined,
           });
         paintPending();
 
@@ -1376,15 +1617,12 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
           // race against the first chunk on every single turn.
           if (!text) return;
           painted = text;
-          setStreamDraft({
-            chatId,
-            message: {
-              ...assistantMsg,
-              typing: false,
-              content: text,
-              activity: activity.length ? [...activity] : undefined,
-            },
-          });
+          paintDraft({
+            ...assistantMsg,
+            typing: false,
+            content: text,
+            activity: activity.length ? [...activity] : undefined,
+          }, "answering");
         };
 
         /* THE REVEAL NEEDS ITS OWN CLOCK, not the network's.
@@ -1432,6 +1670,7 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
               // call it: headers now arrive long before words do.
               if (!started) {
                 started = true;
+                announcement = "The answer is forming.";
                 setStatus("streaming");
               }
               acc += frame.text;
@@ -1439,17 +1678,20 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
             else if (frame.type === "meta") {
               if (frame.operationId) turnOperationId = frame.operationId;
             }
+            else if (frame.type === "provenance" && frame.provenance) {
+              liveProvenance = frame.provenance;
+            }
             else if (frame.type === "error") {
               throw withOperationId(new Error(frame.text), frame.operationId || turnOperationId, frame.code);
             }
-            // What the council is doing while it is doing it. Latest wins —
-            // this is a status line, not a log; the tool trail below is the
-            // part that keeps its history because a search that ran is a fact
-            // about the answer, where "3 of 7 answered" stops being true one
-            // second later.
+            // What the council is doing while it is doing it. The latest text
+            // still replaces the active line, but the keyed stage row and raw
+            // frame receipt keep the ordered context/council/synthesis act
+            // visible when the next phase arrives and when the first token
+            // replaces the skeleton.
             else if (frame.type === "stage") {
+              recordStage(frame);
               if (!started) {
-                stage = frame.text;
                 paintPending();
               }
             }
@@ -1467,8 +1709,8 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
               activity.push({ round: frame.round, name: frame.name, summary: frame.summary, pending: true });
             } else if (frame.type === "tool_result") {
               const row = activity.find((a) => a.round === frame.round && a.name === frame.name && a.pending);
-              if (row) Object.assign(row, { ok: frame.ok, summary: frame.summary, pending: false });
-              else activity.push({ round: frame.round, name: frame.name, summary: frame.summary, ok: frame.ok });
+              if (row) Object.assign(row, { ok: frame.ok, summary: frame.summary, pending: false, ...(Array.isArray(frame.sources) ? { sources: frame.sources } : {}) });
+              else activity.push({ round: frame.round, name: frame.name, summary: frame.summary, ok: frame.ok, ...(Array.isArray(frame.sources) ? { sources: frame.sources } : {}) });
             }
             // The trail used to reach the screen because the painter repainted
             // the message on every tick regardless of content. It does not any
@@ -1498,16 +1740,20 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
         }
         paint(reveal.finish());
 
+        const completedProcess = processSnapshot("complete");
         const finalMessage = {
           ...assistantMsg,
           typing: false,
           content: acc,
           activity: activity.length ? [...activity] : undefined,
+          ...(completedProcess?.provenance ? { provenance: completedProcess.provenance } : {}),
         };
+        setTerminalAnnouncement("complete");
+        rememberSessionProcess(chatId, assistantId, completedProcess);
         // Keep this exact keyed row mounted while its complete copy is written
         // into chats. renderedMessages omits that copy, so there is no duplicate
         // and the plain-text-to-Markdown swap does not remount the bubble.
-        setStreamDraft({ chatId, message: finalMessage, persisted: true });
+        paintDraft(finalMessage, "complete", { persisted: true });
         const saved = await updateChatMessages(chatId, [
           ...updated,
           finalMessage,
@@ -1535,8 +1781,17 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
           // Stop existed; and it dropped `acc`, discarding text already on
           // screen.
           if (acc.trim()) {
-            const stoppedMessage = { ...assistantMsg, typing: false, content: acc, stopped: true };
-            setStreamDraft({ chatId, message: stoppedMessage, persisted: true });
+            setTerminalAnnouncement("stopped");
+            const stoppedProcess = processSnapshot("stopped");
+            const stoppedMessage = {
+              ...assistantMsg,
+              typing: false,
+              content: acc,
+              stopped: true,
+              ...(stoppedProcess?.provenance ? { provenance: stoppedProcess.provenance } : {}),
+            };
+            rememberSessionProcess(chatId, assistantId, stoppedProcess);
+            paintDraft(stoppedMessage, "stopped", { persisted: true });
             const saved = await updateChatMessages(chatId, [
               ...updated,
               stoppedMessage,
@@ -1582,12 +1837,16 @@ export function useChats({ apiCall, getToken, isReady, setToast, userId }) {
          * rather than replacing the message: what went wrong still matters more
          * than which request it was. */
         const ref = shortOperationId(err.operationId);
+        const failedProcess = processSnapshot("failed");
         const errorMessage = {
           ...assistantMsg,
           typing: false,
           content: `${err.message || "Connection failed"}${ref ? `\n\n\`ref ${ref}\`` : ""}`,
+          ...(failedProcess?.provenance ? { provenance: failedProcess.provenance } : {}),
         };
-        setStreamDraft({ chatId, message: errorMessage, persisted: true });
+        setTerminalAnnouncement("failed");
+        rememberSessionProcess(chatId, assistantId, failedProcess);
+        paintDraft(errorMessage, "failed", { persisted: true });
         const saved = await updateChatMessages(chatId, [
           ...updated,
           errorMessage,

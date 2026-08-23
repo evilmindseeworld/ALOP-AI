@@ -48,6 +48,7 @@ const { rescueReasoning } = require('./lib/reasoning-rescue');
 const { createTurnContext } = require('./lib/turn-context');
 const { createTurnLedger } = require('./lib/turn-ledger');
 const { buildTurnReliabilityMeta } = require('./lib/turn-reliability-meta');
+const { buildTurnProvenanceMeta, safeSourceRecords } = require('./lib/turn-provenance-meta');
 const {
   fingerprint: cacheFingerprint, retrievalMode, sourceFreshness, short: cacheIdentityShort,
 } = require('./lib/cache-identity');
@@ -854,6 +855,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     try { answerOptions.onChunk?.(citationSuffix); } catch { /* never fail a stream */ }
     res.write(`data: ${JSON.stringify({ type: 'chunk', text: citationSuffix })}\n\n`);
   }
+  try { answerOptions.onComplete?.({ answer: emitted.join('') }); } catch { /* provenance must never fail a turn */ }
   if (!res.writableEnded) res.write('data: [DONE]\n\n');
   meta.stream.endedAt = Date.now();
   return emitted.join('');
@@ -4001,6 +4003,7 @@ app.get('/api/turns/:operationId', requireAuth, checkSuspended, resumeLimiter, a
       complete: Boolean(row.answer_complete),
       lastEventId: row.last_event_id || 0,
       category: row.category || null,
+      provenance: row.meta && typeof row.meta === 'object' ? row.meta.provenance || null : null,
     });
   } catch (err) {
     Sentry.captureException(err);
@@ -4033,6 +4036,7 @@ app.get('/api/turns/:operationId/stream', requireAuth, checkSuspended, resumeLim
     const found = await findResumableTurn(req, res);
     if (!found) return;
     let { row } = found;
+    let sentProvenance = false;
 
     const suppliedId = Number(req.get('Last-Event-ID') || req.query.lastEventId || 0);
     /* Characters already painted by the client. `last_event_id` counts CHUNKS,
@@ -4067,6 +4071,10 @@ app.get('/api/turns/:operationId/stream', requireAuth, checkSuspended, resumeLim
     }
 
     if (!closed) {
+      if (!sentProvenance && row.meta?.provenance) {
+        sendEvent(res, { type: 'provenance', provenance: row.meta.provenance });
+        sentProvenance = true;
+      }
       if (row.state === 'running') {
         /* The turn outlived the resume window. Not an error — the client can
          * come back — but it must not be told the answer is finished. */
@@ -4170,6 +4178,27 @@ async function handleCouncilTurn(req, res) {
   let answerChars = 0;
   let turnEventId = 0;
   let turnBegun = false;
+  /* Public process facts only. These are the inputs to the bounded provenance
+   * serializer below; no prompt, draft or provider body is ever collected. */
+  let provenanceRoute = 'unknown';
+  let provenanceStageKeys = [];
+  let provenanceSources = [];
+  let provenanceVerification = null;
+  let provenanceCouncilSeats = 0;
+  let provenanceCouncilAnswered = 0;
+  let provenanceCouncilUsed = false;
+  let provenanceCouncilComplete = false;
+  let provenanceCouncilPartial = false;
+  let provenanceSynthesisStarted = false;
+  let provenanceSynthesisCompleted = false;
+  let provenanceSynthesisSkipped = false;
+  let provenanceSynthesisFailed = false;
+  let provenanceToolCount = 0;
+  let provenanceFailedTools = 0;
+  let provenanceSearchUsed = false;
+  let provenanceToolUsed = false;
+  let provenanceToolTruncated = false;
+  let provenanceSent = false;
   let lastCheckpointAt = 0;
   let checkpointedChars = 0;
   const CHECKPOINT_EVERY_MS = 1_500;
@@ -4203,6 +4232,94 @@ async function handleCouncilTurn(req, res) {
     answerChars = text.length;
     turnEventId += 1;
     return text;
+  };
+
+  const mergeProvenanceSources = (rows) => {
+    for (const source of safeSourceRecords(rows)) {
+      if (!provenanceSources.some((existing) => existing.url === source.url)) {
+        provenanceSources.push(source);
+      }
+    }
+  };
+
+  const emitStage = (res, key, text) => {
+    if (typeof key === 'string' && !provenanceStageKeys.includes(key)) provenanceStageKeys.push(key);
+    if (key === 'context') provenanceRoute = provenanceRoute === 'unknown' ? 'council' : provenanceRoute;
+    if (key === 'council') {
+      provenanceCouncilUsed = true;
+      const asking = String(text || '').match(/\basking\s+(\d+)\s+seats?\b/i);
+      if (asking) provenanceCouncilSeats = Math.max(provenanceCouncilSeats, Number(asking[1]) || 0);
+      const progress = String(text || '').match(/\b(\d+)\s+of\s+(\d+)\s+answered\b/i);
+      if (progress) {
+        provenanceCouncilAnswered = Math.max(provenanceCouncilAnswered, Number(progress[1]) || 0);
+        provenanceCouncilSeats = Math.max(provenanceCouncilSeats, Number(progress[2]) || 0);
+        provenanceCouncilComplete = provenanceCouncilAnswered >= provenanceCouncilSeats && provenanceCouncilSeats > 0;
+      }
+    }
+    if (key === 'synthesis') {
+      provenanceSynthesisStarted = true;
+      provenanceStageKeys = [...new Set([...provenanceStageKeys, 'synthesis'])];
+    }
+    sendStage(res, key, text);
+  };
+
+  const makeProvenance = (answer, state, failureKind = null) => {
+    const snapshot = telemetry.snapshot({});
+    const cancellationReason = snapshot.cancellation?.reason || null;
+    /* `aborted` covers both a user leaving and the server deadline. Preserve
+     * that distinction in the safe record instead of calling every abort a
+     * user decision. A deadline is a failure even when a partial answer exists. */
+    const userAborted = state === 'aborted'
+      && ['client_disconnected', 'client_abort', null].includes(cancellationReason);
+    return buildTurnProvenanceMeta({
+      messageId: typeof req.body?.messageId === 'string' ? req.body.messageId : null,
+      requestState: state,
+      route: provenanceRoute,
+      answerProduced: Boolean(String(answer || '').trim()),
+      stageKeys: provenanceStageKeys,
+      council: {
+        used: provenanceCouncilUsed,
+        seatCount: provenanceCouncilSeats,
+        answered: provenanceCouncilAnswered,
+        completed: provenanceCouncilComplete,
+        partial: provenanceCouncilPartial,
+      },
+      synthesis: {
+        started: provenanceSynthesisStarted,
+        completed: provenanceSynthesisCompleted,
+        skipped: provenanceSynthesisSkipped,
+        failed: provenanceSynthesisFailed,
+        fallback: provenanceRoute === 'fallback' || provenanceRoute === 'degraded',
+      },
+      evidence: {
+        searchUsed: provenanceSearchUsed,
+        toolUsed: provenanceToolUsed,
+        toolCount: provenanceToolCount,
+        failedTools: provenanceFailedTools,
+        sourceCount: provenanceSources.length,
+        truncated: provenanceToolTruncated,
+      },
+      verification: provenanceVerification,
+      failure: {
+        occurred: state === 'failed' || provenanceSynthesisFailed || (state === 'aborted' && !userAborted),
+        userAborted,
+        kind: failureKind || cancellationReason,
+      },
+      timing: {
+        turnMs: Date.now() - t0,
+        msToFirstByte: res.locals?.firstChunkAt ? res.locals.firstChunkAt - t0 : null,
+      },
+      sources: provenanceSources,
+    });
+  };
+
+  const sendProvenance = (answer, state = 'complete', failureKind = null) => {
+    const meta = makeProvenance(answer, state, failureKind);
+    if (!provenanceSent && !res.writableEnded) {
+      sendEvent(res, { type: 'provenance', provenance: meta.provenance });
+      provenanceSent = true;
+    }
+    return meta;
   };
   const auditBranch = async (metadata) => {
     if (!auditUserId || turnAudited) return;
@@ -4305,6 +4422,8 @@ async function handleCouncilTurn(req, res) {
      * product, shipped by a branch that only meant to skip itself. */
     const sum = attachedImages.length ? null : tryArithmetic(routingText);
     if (sum) {
+      provenanceRoute = 'arithmetic';
+      provenanceSynthesisSkipped = true;
       console.log(`[COUNCIL] Arithmetic fast path: ${sum.answer}`);
       openStream(res);
       /* Written as an ordinary chunk frame followed by the ordinary terminator,
@@ -4369,6 +4488,8 @@ async function handleCouncilTurn(req, res) {
      * record that someone said hello. */
     const greeting = attachedImages.length ? null : await greetingCache.get(pv.value);
     if (greeting) {
+      provenanceRoute = 'greeting';
+      provenanceSynthesisSkipped = true;
       console.log('[COUNCIL] Greeting fast path. 0 model requests.');
       openStream(res);
       if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
@@ -4645,6 +4766,13 @@ async function handleCouncilTurn(req, res) {
       /* THE TURN LEDGER'S SEAM. Reported per frame rather than as a growing
        * string, so checkpointing a long answer stays linear. */
       onChunk: noteChunk,
+      /* The provenance frame travels immediately before the stream terminator
+       * whenever a provider completed a streamed answer. It is a safe process
+       * receipt, not a transcript of the model's private work. */
+      onComplete: ({ answer }) => {
+        if (provenanceSynthesisStarted) provenanceSynthesisCompleted = true;
+        sendProvenance(answer, 'complete');
+      },
     };
     /* THE CLIENT'S COPY IS THE FALLBACK NOW, NOT THE SOURCE.
      *
@@ -4738,7 +4866,7 @@ async function handleCouncilTurn(req, res) {
      * spinner that lies. */
     if (!attachedImages.length) {
       openStream(res);
-      sendStage(res, 'context', 'Reading your conversation');
+      emitStage(res, 'context', 'Reading your conversation');
     }
 
     /* One embedding per question serves both user-fact recall and the optional
@@ -5023,6 +5151,8 @@ async function handleCouncilTurn(req, res) {
        * on every miss and were the only unmeasured stage before first byte. */
       const hit = await telemetry.measureCache('answerExact', () => answerCache.get(cacheKey, { deferMiss: canTrySemantic }));
       if (hit && !turnSignal.aborted) {
+        provenanceRoute = 'answer_cache';
+        provenanceSynthesisSkipped = true;
         console.log(`[ANSWERS] HIT ageMin=${Math.round((Date.now() - hit.storedAt) / 60000)} models=0`);
         if (SEMANTIC_CACHE_ENABLED) {
           durableQuestionEmbeddingP.then((embedding) => answerCache.enrichEmbedding(cacheKey, embedding)).catch(() => {});
@@ -5067,6 +5197,8 @@ async function handleCouncilTurn(req, res) {
           threshold: SEMANTIC_CACHE_THRESHOLD,
         }));
         if (semanticHit?.answer && !turnSignal.aborted) {
+          provenanceRoute = 'answer_cache_semantic';
+          provenanceSynthesisSkipped = true;
           console.log(`[ANSWERS] SEMANTIC HIT similarity=${semanticHit.similarity.toFixed(2)} models=0`);
           openStream(res);
           if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
@@ -5141,6 +5273,7 @@ async function handleCouncilTurn(req, res) {
         unresolved: unresolved.length,
         problems: verdict.problems.map((p) => p.kind),
       };
+      provenanceVerification = verification;
       if (!verdict.ok) {
         console.log(`[VERIFY] ${verdict.problems.map((p) => p.kind).join(',')} — coverage=${verification.coverage} sources=${evidence.size} unresolved=${unresolved.length}${ANSWER_VERIFICATION ? ' — NOT CACHED' : ' (measuring only)'}`);
       }
@@ -5311,6 +5444,8 @@ async function handleCouncilTurn(req, res) {
       : telemetry.measureRouter('route', () => planTurn(routingText, convSummary, region, turnSignal, recordAttempt('router'))).catch(() => NO_ROUTE);
 
     if ((await routeP).memory) {
+      provenanceRoute = 'memory';
+      provenanceSynthesisSkipped = true;
       console.log('[COUNCIL] Memory question.');
       const memSys = identityPrompt(`The user is asking about a previous conversation. The history below IS your memory. Do NOT say you can't remember. Reference what was discussed. Be concise.${convSummary ? `\n\nSummary: ${convSummary}` : ''}`, 'memory');
       const memMsgs = [{ role: 'system', content: memSys }, ...promptHistory, { role: 'user', content: pv.value }];
@@ -5325,6 +5460,8 @@ async function handleCouncilTurn(req, res) {
 
     // 1. GREETING (see the note above on why an image skips this)
     if (!imageContext && selection.category === 'greeting') {
+      provenanceRoute = 'greeting';
+      provenanceSynthesisSkipped = true;
       console.log('[COUNCIL] Greeting.');
       const greetMsgs = [{ role: 'system', content: identityPrompt(`Greet briefly.${convSummary ? ` Context: ${convSummary}` : ''}`, 'greeting') }, { role: 'user', content: pv.value }];
       openStream(res);
@@ -5432,6 +5569,9 @@ async function handleCouncilTurn(req, res) {
      * experiment exists to avoid. The loop runs ONE provider chain instead. */
 
     if (searchQueries && !SEEDED_SEARCH) {
+      provenanceRoute = 'search';
+      provenanceSearchUsed = true;
+      provenanceToolUsed = true;
       /* THE SCREEN STOPS BEING BLANK HERE, not when the answer starts.
        *
        * The search path is the most common one and it showed nothing until the
@@ -5446,7 +5586,10 @@ async function handleCouncilTurn(req, res) {
        * Reusing that contract rather than inventing a second progress channel
        * is also why this is four lines. */
       openStream(res);
+      emitStage(res, 'council', selection.members.length === 1 ? 'Asking one seat' : `Asking ${selection.members.length} seats`);
+      let searchSeatsAnswered = 0;
       sendEvent(res, { type: 'tool_start', round: 1, name: 'web_search', summary: `Searching: ${searchQueries.join(' · ').slice(0, 80)}` });
+      provenanceToolCount += 1;
 
       /* CONCURRENT, so two queries cost the wall clock of one.
        *
@@ -5480,13 +5623,20 @@ async function handleCouncilTurn(req, res) {
         .filter(Boolean)
         .join('\n\n');
 
+      const publicSources = safeSourceRecords(sources);
+      mergeProvenanceSources(publicSources);
       sendEvent(res, {
         type: 'tool_result', round: 1, name: 'web_search', ok: found,
         summary: found ? `${sources.length} source${sources.length === 1 ? '' : 's'}` : 'No results',
+        ...(publicSources.length ? { sources: publicSources } : {}),
       });
+      if (!found) provenanceFailedTools += 1;
       if (!found) {
         openStream(res);
-        res.write(`data: ${JSON.stringify({ type: 'chunk', text: "I searched but couldn't find results. Could you rephrase?" })}\n\n`);
+        const noResultsAnswer = "I searched but couldn't find results. Could you rephrase?";
+        noteWholeAnswer(noResultsAnswer);
+        res.write(`data: ${JSON.stringify({ type: 'chunk', text: noResultsAnswer })}\n\n`);
+        sendProvenance(noResultsAnswer, 'complete', 'search_no_results');
         res.write('data: [DONE]\n\n');
         if (!res.writableEnded) res.end();
         await auditBranch({ category: 'no_results' });
@@ -5520,7 +5670,11 @@ async function handleCouncilTurn(req, res) {
       openStream(res);
       const searchDrafts = await runCouncilWithWhip(
         selection.members, extMsgs, selection.whipMs, selection.quorum,
-        selection.tokenLimit, null, {
+        selection.tokenLimit, ({ state }) => {
+          if (state === 'thinking') return;
+          searchSeatsAnswered += 1;
+          emitStage(res, 'council', `${searchSeatsAnswered} of ${selection.members.length} answered`);
+        }, {
           signal: turnSignal,
           onSeatTiming: (row) => telemetry.recordSeat({ ...row, phase: 'search_council' }),
           onFinish: (event) => {
@@ -5531,6 +5685,8 @@ async function handleCouncilTurn(req, res) {
       if (turnSignal.aborted) return;
       const usableSearchDrafts = searchDrafts.filter((r) => r?.content?.trim());
       if (!usableSearchDrafts.length) throw new Error('Search council returned no usable answers');
+      provenanceCouncilPartial = searchSeatsAnswered < selection.members.length;
+      emitStage(res, 'synthesis', usableSearchDrafts.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
       const searchSynthSys = `${todayLine()}\n\nReconcile these independent answers into one precise response. Use only facts present in the answers and their cited search data. Preserve Markdown source links, note material disagreements, and do not mention the council.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
       const searchSynthSysForAnswer = `${searchSynthSys}${SOURCE_TRUTH_RULES}`;
       const searchSynthMsgs = [{ role: 'system', content: identityPrompt(searchSynthSysForAnswer, 'search_synthesis') }, {
@@ -5578,6 +5734,8 @@ async function handleCouncilTurn(req, res) {
      * ordinary non-search encyclopedia questions, but it must not intercept a
      * request whose server-side web_search is waiting to be injected. */
     if (shouldCheckWiki && !(SEEDED_SEARCH && searchQueries?.length)) {
+      provenanceRoute = 'wiki';
+      provenanceSynthesisSkipped = true;
       const wiki = await searchWikipedia(pv.value, turnSignal);
       if (wiki) {
         const wikiSys = `${todayLine()}
@@ -5621,6 +5779,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
     }
 
     // 4. COUNCIL
+    provenanceRoute = 'council';
     /* The date reaches the COUNCIL too, not only the search path.
      *
      * This branch runs when the router decided no search was needed, which is
@@ -5723,9 +5882,9 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
     const sendSeatProgress = ({ state }) => {
       if (state === 'thinking') return;
       seatsAnswered++;
-      sendStage(res, 'council', `${seatsAnswered} of ${seatCount} answered`);
+      emitStage(res, 'council', `${seatsAnswered} of ${seatCount} answered`);
     };
-    sendStage(res, 'council', seatCount === 1 ? 'Asking one seat' : `Asking ${seatCount} seats`);
+    emitStage(res, 'council', seatCount === 1 ? 'Asking one seat' : `Asking ${seatCount} seats`);
 
     /* TOOLS ARE A ROUTER DECISION, not a global tax. COUNCIL_TOOLS enables the
      * capability; it does not put every ordinary question through the agent
@@ -5734,6 +5893,8 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
      * this turn needs current information. Everything else goes directly to
      * the plain council below with `councilMsgs`, never `toolMessages`. */
     if (TOOLS_ENABLED && SEEDED_SEARCH && searchQueries?.length && !imageContext) {
+      provenanceSearchUsed = true;
+      provenanceToolUsed = true;
       // read_file is offered only when this conversation actually has files.
       // A tool that can only ever answer "no files" is a tool the council
       // wastes a round discovering is useless.
@@ -5839,7 +6000,15 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
            * ONLY difference is this word. `seeded` is the third source: a
            * server-issued search that no model asked for. */
           const via = e.seeded ? 'seeded' : (e.sources || []).join('+') || 'fence';
-          if (e.type === 'tool_start') toolCallsBySource[via] = (toolCallsBySource[via] || 0) + 1;
+          if (e.type === 'tool_start') {
+            toolCallsBySource[via] = (toolCallsBySource[via] || 0) + 1;
+            provenanceToolCount += 1;
+          }
+          if (e.type === 'tool_result' && e.ok === false) provenanceFailedTools += 1;
+          if (e.type === 'tool_result' && Array.isArray(e.evidence)) {
+            const publicSources = safeSourceRecords(e.evidence);
+            mergeProvenanceSources(publicSources);
+          }
           /* TOOL SUCCESS, which nothing counted. `toolRounds` records how many
            * calls a round made and how long it took; whether they WORKED is the
            * number that decides whether a tool earns its ~1,500 tokens per seat
@@ -5850,6 +6019,9 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
            * an implementation detail of the council, and the seat progress
            * events deliberately never name models to the client. */
           const { sources, ...clientEvent } = e;
+          delete clientEvent.evidence;
+          const publicSources = e.evidence ? safeSourceRecords(e.evidence) : [];
+          if (publicSources.length) clientEvent.sources = publicSources;
           sendEvent(res, clientEvent);
         },
         onSeatTiming: reportCouncilTiming('tools'),
@@ -5906,6 +6078,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       if (loop.stopReason && loop.stopReason !== 'quorum') telemetry.markCeiling(loop.stopReason);
       toolResearch = loop.research;
       toolTruncated = loop.truncated;
+      provenanceToolTruncated = Boolean(loop.truncated);
       toolSourceUrls = searchResultUrls(loop.toolResults);
       console.log(`[TOOLS] ${loop.rounds} round(s), ${loop.uniqueCallsUsed} unique call(s), ${Object.keys(loop.answers).length} answer(s)${loop.truncated ? ` — ${loop.truncated}` : ''}`);
       /* THE ADOPTION LINE. Printed whenever a tool call ran at all, including
@@ -6048,8 +6221,19 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       }
     }
 
+    if (provenanceToolUsed) {
+      /* The agent loop has no public seat callback, so its honest bounded
+       * participation signal is the number of usable answers it returned. */
+      provenanceCouncilComplete = validResponses.length >= selection.members.length && selection.members.length > 0;
+      provenanceCouncilPartial = !provenanceCouncilComplete;
+    } else {
+      provenanceCouncilPartial = !provenanceCouncilComplete;
+    }
+
     // 5. FALLBACK
     if (validResponses.length === 0) {
+      provenanceRoute = 'fallback';
+      provenanceSynthesisSkipped = true;
       console.log('[COUNCIL] Fallback.');
       const fbSys = `${todayLine()}
 
@@ -6125,6 +6309,8 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       !toolResearch &&
       !toolTruncated
     ) {
+      provenanceRoute = 'solo';
+      provenanceSynthesisSkipped = true;
       const soloModelUsed = validResponses[0]?.model || selection.members[0]?.model || PRIMARY_MODEL;
       console.log(`[COUNCIL] One seat, no synthesis. 1 model request saved.`);
       console.log(`[SYNTHESIS] skipped model=${soloModelUsed} effort=none complexity=${selection.complexity} tools=false`);
@@ -6214,7 +6400,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     const synthMsgs = [{ role: 'system', content: identityPrompt(synthSysForAnswer, 'synthesis') }, { role: 'user', content: `Question: ${truncatedPrompt}\n\nResponses:\n${validResponses.map((r,i) => `[Expert ${i+1}]: ${r.content}`).join('\n\n')}${researchBlock}${truncationBlock}` }];
     // The last thing that happens before words appear, and the longest single
     // step on a turn where the seats came back quickly.
-    sendStage(res, 'synthesis', validResponses.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
+    emitStage(res, 'synthesis', validResponses.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
     openStream(res);
     const synthesisStartedAt = Date.now();
     /* THE DRAFTS ARE THE LAST RESORT, AND THEY COST NOTHING.
@@ -6237,6 +6423,9 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     try {
       synthAnswer = await streamModel(res, synthesis.model, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, requiredSourceUrls: toolSourceUrls }, turnDeadlineAt, synthesisOptions);
     } catch (err) {
+      provenanceSynthesisFailed = true;
+      provenanceSynthesisSkipped = true;
+      provenanceRoute = 'degraded';
       const draft = degradeAnswer({
         aborted: turnSignal.aborted,
         wroteChars: turnAnswerText().length,
@@ -6373,6 +6562,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     if (turnBegun) {
       const finalAnswer = turnAnswerText();
       const state = turnSignal.aborted ? 'aborted' : finalAnswer ? 'complete' : 'failed';
+      const provenanceMeta = makeProvenance(finalAnswer, state, state === 'aborted' ? telemetry.snapshot({}).cancellation?.reason : null);
       turnLedger.finish({
         turnId: turnContext.turnId,
         state,
@@ -6395,12 +6585,15 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
          * COVERS EVERY TURN THAT REACHED `turnLedger.begin` -- which is what
          * `turnBegun` says -- and nothing before it. A request refused earlier
          * has no row to carry this and is deliberately out of scope. */
-        meta: buildTurnReliabilityMeta(telemetry.snapshot({
+        meta: {
+          ...provenanceMeta,
+          ...buildTurnReliabilityMeta(telemetry.snapshot({
           category: state === 'aborted' ? 'aborted' : 'final',
           msToFirstByte: res.locals?.firstChunkAt ? res.locals.firstChunkAt - t0 : null,
           msToFirstProgress: res.locals?.firstByteAt ? res.locals.firstByteAt - t0 : null,
           aborted: turnSignal.aborted,
-        })),
+          })),
+        },
       });
     }
     /* SETTLE THE RESERVATION DOWN TO WHAT THE TURN ACTUALLY COST.
@@ -7177,7 +7370,8 @@ app.get('/api/chats/:id', requireAuth, requireOwnership('chats'), async (req, re
       .eq('user_id', user.id)
       .single();
     if (error) throw error;
-    res.json(data);
+    const turns = await turnLedger.findProvenanceForChat({ chatId: req.params.id, userId: user.id });
+    res.json({ ...data, turns });
   } catch (err) { Sentry.captureException(err); sendError(res, err); }
 });
 app.post('/api/chats', requireAuth, async (req, res) => { try { const user = await ensureUser(req.auth.userId); const title = sanitizeString(req.body.title, 120) || 'New Chat'; const { data, error } = await supabase.from('chats').insert({ user_id: user.id, title, messages: [] }).select().single(); if (error) throw error; res.json(data); } catch (err) { Sentry.captureException(err); sendError(res, err); } });

@@ -118,7 +118,13 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 100%;
+  /* Let the starter stack participate in the transcript's scroll height. A
+   * fixed 100% box let its children overflow beneath the composer without
+   * reserving their full height, so the last mobile action was technically in
+   * the DOM but visually occluded. The minimum keeps short empty states
+   * centred; max-content keeps every starter reachable above the fade. */
+  min-height: 100%;
+  height: auto;
   /* The positioning context for the sakura frame and the asanoha lattice, both
    * declared in styles/decoration.css. Without it they escape to .chat-main
    * and paint across the whole panel. */
@@ -334,6 +340,68 @@
   overflow-wrap: anywhere;
 }
 
+/* A progressive evidence surface: quiet at rest, useful when opened. The
+ * source ledger is part of the answer's trust story, so it gets the warm
+ * accent reserved for evidence rather than the pink action colour. */
+.source-receipt {
+  width: min(var(--measure), 100%);
+  margin: var(--space-3) 0 0;
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-2);
+  color: var(--text-subtle);
+}
+
+.source-receipt summary {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  width: fit-content;
+  cursor: pointer;
+  color: var(--accent);
+  font-size: var(--text-xs);
+  font-weight: 650;
+  list-style: none;
+}
+
+.source-receipt summary::-webkit-details-marker { display: none; }
+.source-receipt summary:hover { color: var(--text); }
+
+.source-receipt-state {
+  color: var(--text-subtle);
+  font-weight: 500;
+}
+
+.source-receipt-list {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-2) 0 0;
+  padding: 0 0 0 var(--space-4);
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+.source-receipt-row {
+  min-width: 0;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.source-receipt-row a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  text-underline-offset: 2px;
+}
+
+.source-receipt-row a:hover { color: var(--text); }
+
+.source-receipt-domain,
+.source-receipt-date {
+  margin-left: var(--space-2);
+  color: var(--text-subtle);
+}
+
 @keyframes toolPending {
   0%, 100% { opacity: 0.35; }
   50% { opacity: 1; }
@@ -534,6 +602,232 @@
   color: var(--text-subtle);
 }
 
+/* The bounded process receipt is the state change the answer used to hide.
+ * It is intentionally a quiet reading aid: one row per truthful stage, the
+ * latest council count in place, and no model-by-model theatre. It remains in
+ * the same assistant column before and after the first token so the process
+ * resolves into the answer instead of disappearing at the handoff. */
+.council-process {
+  position: relative;
+  display: grid;
+  gap: var(--space-1);
+  width: min(var(--measure), 100%);
+  box-sizing: border-box;
+  height: 124px;
+  min-height: 124px;
+  /* The footprint is fixed while work is live, but the receipt is allowed to
+   * paint its optional detail below that footprint. A fixed box plus hidden
+   * overflow made an opened disclosure look interactive while its rows were
+   * literally unreachable. The overflow is visual only: the fixed height keeps
+   * the answer's first-token baseline where A3 placed it. */
+  overflow: visible;
+  padding: var(--space-1) 0 var(--space-2);
+  color: var(--text-subtle);
+  font-size: var(--text-xs);
+}
+
+/* Live work receives a small edge, not a glowing panel. The edge is the
+ * visual consequence of the stage being active; it stays quiet once the
+ * answer is complete and the receipt carries its own completion mark. */
+.council-process.is-live {
+  border-left: 2px solid color-mix(in srgb, var(--primary) 55%, transparent);
+  padding-left: var(--space-3);
+}
+
+.council-process.is-terminal.is-assembled {
+  border-left: 2px solid color-mix(in srgb, var(--accent) 72%, transparent);
+  padding-left: var(--space-3);
+}
+
+/* Once the request is over, the receipt may tell the whole truth about its
+ * transition and evidence rows. This is the one state where extra height is
+ * allowed to be content-driven; no answer is about to replace the skeleton. */
+.council-process.is-terminal {
+  height: auto;
+  min-height: 124px;
+}
+
+.council-process-heading {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  font-weight: 650;
+}
+
+.council-process-completion {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  color: var(--accent);
+  font-size: var(--text-2xs);
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.council-process-completion-mark {
+  color: var(--ornament-seal);
+  font-size: 14px;
+  line-height: 1;
+}
+
+.council-process-list {
+  display: grid;
+  gap: 2px;
+  list-style: none;
+}
+
+.council-stage-row {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  align-items: baseline;
+  gap: var(--space-2);
+  min-height: 22px;
+}
+
+.council-stage-mark {
+  color: var(--text-subtle);
+  font-size: 13px;
+  text-align: center;
+}
+
+.council-stage-row.is-active .council-stage-mark,
+.council-stage-row.is-active .council-stage-key {
+  color: var(--primary);
+}
+
+.council-stage-row.is-complete {
+  color: color-mix(in srgb, var(--text-subtle) 78%, transparent);
+}
+
+.council-stage-row.is-complete .council-stage-mark {
+  color: var(--primary);
+}
+
+.council-stage-row.is-partial .council-stage-mark,
+.council-stage-row.is-partial .council-stage-key {
+  color: var(--accent);
+}
+
+.council-stage-row.is-interrupted,
+.council-stage-row.is-failed {
+  color: var(--danger);
+}
+
+.council-stage-row.is-converging:not(.is-active) {
+  opacity: 0.62;
+}
+
+@keyframes councilConverge {
+  from { opacity: 0.58; }
+  to { opacity: 1; }
+}
+
+.council-stage-copy {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: baseline;
+  min-width: 0;
+  gap: var(--space-2);
+}
+
+.council-stage-key {
+  flex: 0 0 auto;
+  color: var(--text-muted);
+  font-weight: 650;
+}
+
+.council-stage-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  line-height: 1.35;
+}
+
+.council-process.is-converging .council-stage-row:not(.is-active) {
+  opacity: 0.68;
+}
+
+.council-process.is-converging .council-stage-row.is-active .council-stage-key,
+.council-process.is-converging .council-stage-row.is-active .council-stage-text {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.council-process.is-converging .council-stage-row.is-active {
+  animation: councilConverge 360ms ease-out both;
+}
+
+.council-process-tools {
+  position: relative;
+  min-width: 0;
+  color: var(--text-muted);
+}
+
+.council-process-tools summary {
+  cursor: pointer;
+  width: fit-content;
+  font-size: var(--text-2xs);
+}
+
+.council-process-tools-list {
+  display: grid;
+  gap: var(--space-1);
+  max-height: 48px;
+  margin: var(--space-1) 0 0 24px;
+  padding: 0;
+  overflow: auto;
+  list-style: none;
+  font-size: var(--text-2xs);
+}
+
+/* Opening a live disclosure is a reading choice, not a new layout phase. Keep
+ * the rows attached to the summary and let them paint over the next content;
+ * the process' stable height therefore survives the first answer token. A
+ * terminal receipt returns to normal flow below. */
+.council-process.is-live .council-process-tools[open] .council-process-tools-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: var(--z-in-chat-control);
+  max-height: 7rem;
+  margin-top: var(--space-1);
+  padding: var(--space-2) var(--space-2) var(--space-2) 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  box-shadow: var(--shadow-md);
+}
+
+.council-process.is-terminal .council-process-tools-list {
+  max-height: 12rem;
+}
+
+.council-process-tool {
+  display: flex;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.council-process-tool-mark {
+  flex: 0 0 12px;
+  color: var(--primary);
+}
+
+.council-process-tool.is-pending { color: var(--text-muted); }
+.council-process-tool.is-failed { color: var(--danger); }
+
+.council-process-announcement {
+  position: absolute;
+}
+
+.council-process-transition {
+  margin: var(--space-1) 0 0 24px;
+  color: var(--text-muted);
+  font-size: var(--text-2xs);
+}
+
 /* The waiting state, shaped like the answer rather than like a loader.
  *
  * No border and no background of its own: the bars ARE the placeholder, and a
@@ -568,6 +862,13 @@
   color: var(--text-subtle);
   font-variant-numeric: tabular-nums;
   animation: stageIn var(--dur) ease both;
+}
+
+@media (max-width: 600px) {
+  .council-process {
+    height: 164px;
+    min-height: 164px;
+  }
 }
 
 @keyframes stageIn {

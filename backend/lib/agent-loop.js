@@ -510,7 +510,18 @@ async function runAgentLoop({ members, askMember, registry, seededSearch, onEven
            * asked, and how, is no longer recoverable from the call itself. */
           onEvent({ type: "tool_start", round, name: call.name, summary: describe(call), sources: call.sources });
           const result = await registry.execute(call, { timeoutMs: perCall, signal: turnSignal });
-          onEvent({ type: "tool_result", round, name: call.name, ok: result.ok, summary: result.summary, sources: call.sources });
+          onEvent({
+            type: "tool_result",
+            round,
+            name: call.name,
+            ok: result.ok,
+            summary: result.summary,
+            sources: call.sources,
+            /* Tool implementations may attach already-structured public
+             * source metadata. The caller decides whether it is safe to emit;
+             * raw result.content never crosses this event boundary. */
+            ...(Array.isArray(result.sources) ? { evidence: result.sources } : {}),
+          });
           return { call, result };
         }),
       );

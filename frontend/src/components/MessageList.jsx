@@ -31,8 +31,17 @@ const Markdown = lazy(() =>
 );
 import Icon from "./Icon";
 import { STARTERS } from "../constants/starters";
-import { MessageSkeleton, AnswerSkeleton } from "./Skeletons";
+import { MessageSkeleton, AnswerSkeleton, CouncilProcess } from "./Skeletons";
 import { stopSpeaking, isSpeechSupported } from "../lib/speak";
+
+const PENDING_PROCESS = {
+  phase: "working",
+  reserve: true,
+  stages: [],
+  frames: [],
+  synthesisSeen: false,
+  announcement: "Assembling your answer.",
+};
 
 // react-syntax-highlighter is ~4.9MB installed and carries a grammar for every
 // language it supports. Loading it lazily keeps it off the critical path for
@@ -331,6 +340,194 @@ export const ToolTrail = memo(({ activity }) => {
 
 ToolTrail.displayName = "ToolTrail";
 
+/*
+ * A source receipt is the public edge of the evidence ledger. It intentionally
+ * accepts only bounded HTTP(S) records and renders no snippets, prompts, tool
+ * bodies, or model-private material. The server applies the same allow-list;
+ * this second check keeps an older or hand-authored transcript from turning a
+ * persisted URL into a script or credential-bearing link.
+ */
+const parseIpv4 = (value) => {
+  const parts = String(value || "").split(".");
+  if (parts.length !== 4 || parts.some((part) => !/^\d{1,3}$/.test(part))) return null;
+  const octets = parts.map(Number);
+  return octets.every((octet) => octet >= 0 && octet <= 255) ? octets : null;
+};
+
+const ipv4IsSpecial = (octets) => {
+  if (!octets) return false;
+  const [a, b, c, d] = octets;
+  return a === 0
+    || a === 10
+    || (a === 100 && b >= 64 && b <= 127)
+    || a === 127
+    || (a === 169 && b === 254)
+    || (a === 172 && b >= 16 && b <= 31)
+    || (a === 192 && b === 0 && c === 0)
+    || (a === 192 && b === 0 && c === 2)
+    || (a === 192 && b === 168)
+    || (a === 198 && (b === 18 || b === 19))
+    || (a === 198 && b === 51 && c === 100)
+    || (a === 203 && b === 0 && c === 113)
+    || a >= 224
+    || (a === 255 && b === 255 && c === 255 && d === 255);
+};
+
+const parseIpv6 = (value) => {
+  let input = String(value || "").toLowerCase();
+  if (input.startsWith("[") && input.endsWith("]")) input = input.slice(1, -1);
+  if (!input || input.includes("%")) return null;
+  const halves = input.split("::");
+  if (halves.length > 2) return null;
+  const expand = (part) => {
+    if (!part) return [];
+    const pieces = part.split(":");
+    if (pieces.some((piece) => !piece)) return null;
+    const values = [];
+    for (const piece of pieces) {
+      if (piece.includes(".")) {
+        const octets = parseIpv4(piece);
+        if (!octets || piece !== pieces[pieces.length - 1]) return null;
+        values.push((octets[0] << 8) | octets[1], (octets[2] << 8) | octets[3]);
+      } else {
+        if (!/^[0-9a-f]{1,4}$/.test(piece)) return null;
+        values.push(parseInt(piece, 16));
+      }
+    }
+    return values;
+  };
+  const left = expand(halves[0]);
+  const right = expand(halves[1]);
+  if (!left || !right) return null;
+  const values = halves.length === 2
+    ? [...left, ...Array(8 - left.length - right.length).fill(0), ...right]
+    : [...left];
+  return values.length === 8 ? values : null;
+};
+
+const ipv6IsSpecial = (value) => {
+  const groups = parseIpv6(value);
+  if (!groups) return false;
+  const first = groups[0];
+  if (groups.every((group) => group === 0) || (groups.slice(0, 7).every((group) => group === 0) && groups[7] === 1)) return true;
+  if ((first & 0xfe00) === 0xfc00 || (first & 0xffc0) === 0xfe80 || (first & 0xff00) === 0xff00) return true;
+  if (groups[0] === 0x2001 && groups[1] === 0x0db8) return true;
+  const mapped = groups.slice(0, 5).every((group) => group === 0) && groups[5] === 0xffff;
+  const compatible = groups.slice(0, 6).every((group) => group === 0);
+  if (mapped || compatible) {
+    return ipv4IsSpecial([
+      groups[6] >> 8, groups[6] & 0xff,
+      groups[7] >> 8, groups[7] & 0xff,
+    ]);
+  }
+  return false;
+};
+
+const isPublicHttpHostname = (hostname) => {
+  const normalized = String(hostname || "").toLowerCase().replace(/^\[|\]$/g, "").replace(/\.$/, "");
+  if (!normalized || normalized === "localhost" || normalized.endsWith(".localhost")
+    || normalized === "local" || normalized.endsWith(".local")
+    || normalized.endsWith(".internal") || normalized.endsWith(".intranet")
+    || normalized.endsWith(".lan") || normalized.endsWith(".home")
+    || normalized.endsWith(".corp")) return false;
+  const ipv4 = parseIpv4(normalized);
+  if (ipv4) return !ipv4IsSpecial(ipv4);
+  if (normalized.includes(":")) return !ipv6IsSpecial(normalized);
+  return true;
+};
+
+const safeSourceRows = (provenance) => {
+  const seen = new Set();
+  return (Array.isArray(provenance?.sources) ? provenance.sources : []).flatMap((source) => {
+    if (!source || typeof source.url !== "string") return [];
+    try {
+      const url = new URL(source.url);
+      if ((url.protocol !== "http:" && url.protocol !== "https:") || url.username || url.password) return [];
+      if (!isPublicHttpHostname(url.hostname)) return [];
+      url.hash = "";
+      const href = url.toString();
+      if (seen.has(href)) return [];
+      seen.add(href);
+      return [{
+        ...source,
+        url: href,
+        title: typeof source.title === "string" && source.title.trim() ? source.title.trim() : url.hostname,
+        domain: typeof source.domain === "string" && source.domain.trim() ? source.domain.trim() : url.hostname,
+      }];
+    } catch {
+      return [];
+    }
+  }).slice(0, 24);
+};
+
+/* When the evidence ledger has the same public URLs that a model repeated in
+ * a trailing Markdown `Sources` block, the structured receipt is the clearer
+ * and safer surface. Remove only an exact, link-only duplicate; unknown or
+ * prose-bearing source sections stay visible because the frontend cannot
+ * prove that they are redundant. The raw message remains available to Copy.
+ */
+export const stripRedundantMarkdownSources = (content, provenance) => {
+  if (typeof content !== "string" || !safeSourceRows(provenance).length) return content;
+
+  const match = /\n{2,}#{1,6}\s*(?:sources?|references?)\s*:?\s*\n([\s\S]*)$/i.exec(content);
+  if (!match) return content;
+
+  const prefix = content.slice(0, match.index).trimEnd();
+  const tail = match[1];
+  if (!prefix || !tail.trim()) return content;
+
+  const normalize = (value) => {
+    try {
+      const url = new URL(value);
+      if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+      url.hash = "";
+      return url.toString();
+    } catch {
+      return null;
+    }
+  };
+  const urls = [...tail.matchAll(/https?:\/\/[^\s)\]>"']+/gi)]
+    .map(([value]) => normalize(value.replace(/[.,;:!?]+$/, "")))
+    .filter(Boolean);
+  const known = new Set(safeSourceRows(provenance).map((source) => source.url));
+  if (!urls.length || !urls.every((url) => known.has(url))) return content;
+
+  const residual = tail
+    .replace(/\[[^\]]*\]\([^)]*\)/g, "")
+    .replace(/https?:\/\/[^\s)\]>"']+/gi, "")
+    .replace(/^\s*(?:[-*+] |\d+\. )/gm, "")
+    .trim();
+  return residual ? content : prefix;
+};
+
+export const ProvenanceReceipt = memo(({ provenance }) => {
+  const sources = safeSourceRows(provenance);
+  if (!sources.length) return null;
+  const verificationRecorded = provenance?.verification?.completed === true;
+
+  return (
+    <details className="source-receipt">
+      <summary>
+        <span>Sources · {sources.length}</span>
+        {verificationRecorded && <span className="source-receipt-state">Evidence recorded</span>}
+      </summary>
+      <ol className="source-receipt-list">
+        {sources.map((source) => (
+          <li className="source-receipt-row" key={source.url}>
+            <a href={source.url} target="_blank" rel="noreferrer noopener">
+              {source.title}
+            </a>
+            <span className="source-receipt-domain">{source.domain}</span>
+            {source.date && <time className="source-receipt-date">{source.date}</time>}
+          </li>
+        ))}
+      </ol>
+    </details>
+  );
+});
+
+ProvenanceReceipt.displayName = "ProvenanceReceipt";
+
 /**
  * Raw streamed text, split into the blocks markdown will make of it.
  *
@@ -361,6 +558,10 @@ const PlainParagraphs = ({ text }) =>
 
 export const Message = memo(({ msg, isStreaming, onCopy, onSpeak, onFeedback, feedback }) => {
   const isUser = msg.role === "user";
+  const hasProcess = !isUser && Boolean(msg.process && (msg.process.reserve || msg.process.stages?.length));
+  const displayContent = !isUser && !isStreaming
+    ? stripRedundantMarkdownSources(msg.content, msg.provenance)
+    : msg.content;
 
   return (
     <div className={`msg-row ${msg.role}`}>
@@ -378,8 +579,12 @@ export const Message = memo(({ msg, isStreaming, onCopy, onSpeak, onFeedback, fe
           carries the same fact: read out, it would say "AI" twice. */}
       {!isUser && <div className="avatar" aria-hidden="true">AI</div>}
       <div className="msg-content">
-        {/* Above the answer, because it happened before the answer. */}
-        {!isUser && msg.activity?.length > 0 && <ToolTrail activity={msg.activity} />}
+        {hasProcess ? (
+          <CouncilProcess process={msg.process} activity={msg.activity} />
+        ) : (
+          /* Above the answer, because it happened before the answer. */
+          !isUser && msg.activity?.length > 0 && <ToolTrail activity={msg.activity} />
+        )}
         {/* imagePreview only exists in this session; after a reload the hasImage
             flag survives but the bytes deliberately do not — a data URL runs to
             megabytes and a chat row holds up to 200 messages. */}
@@ -393,7 +598,7 @@ export const Message = memo(({ msg, isStreaming, onCopy, onSpeak, onFeedback, fe
           ))}
 
         {msg.typing ? (
-          <AnswerSkeleton stage={msg.stage} />
+          <AnswerSkeleton stage={msg.stage} showStage={!hasProcess} announce={!hasProcess} />
         ) : msg.content ? (
           <div
             className={`bubble markdown-body ${isStreaming ? "is-streaming" : ""} ${
@@ -434,8 +639,8 @@ export const Message = memo(({ msg, isStreaming, onCopy, onSpeak, onFeedback, fe
                  a few microseconds against a full markdown parse. */
               <PlainParagraphs text={msg.content} />
             ) : (
-              <Suspense fallback={<PlainParagraphs text={msg.content} />}>
-                <Markdown>{msg.content}</Markdown>
+              <Suspense fallback={<PlainParagraphs text={displayContent} />}>
+                <Markdown>{displayContent}</Markdown>
               </Suspense>
             )}
           </div>
@@ -454,6 +659,10 @@ export const Message = memo(({ msg, isStreaming, onCopy, onSpeak, onFeedback, fe
             alt={msg.imagePrompt || "Generated image"}
             onClick={() => window.open(msg.imageUrl, "_blank", "noopener,noreferrer")}
           />
+        )}
+
+        {!isUser && !msg.typing && !isStreaming && (
+          <ProvenanceReceipt provenance={msg.provenance} />
         )}
 
         {!isUser && msg.content && !msg.imageUrl && !msg.typing && !isStreaming && (
@@ -516,6 +725,7 @@ export default function MessageList({
 }) {
   const previousStatusRef = useRef(status);
   const wasResponding = previousStatusRef.current === "loading" || previousStatusRef.current === "streaming";
+  const hasProcess = Boolean(streamDraft?.process && (streamDraft.process.reserve || streamDraft.process.stages?.length));
   useEffect(() => {
     previousStatusRef.current = status;
   }, [status]);
@@ -602,15 +812,15 @@ export default function MessageList({
           feedback at all — it sets the same status and inserts no placeholder
           of its own. */}
       {status === "loading" && !streamDraft && (
-        <Message msg={{ role: "assistant", content: "", typing: true, id: "pending" }} />
+        <Message msg={{ role: "assistant", content: "", typing: true, id: "pending", process: PENDING_PROCESS }} />
       )}
 
       {/* Announced, not just animated. A screen reader had no way to know an
           answer had finished arriving — the only signal was a caret stopping. */}
       <p className="sr-only" role="status" aria-live="polite">
-        {status === "streaming"
+        {!hasProcess && status === "streaming"
           ? "Answer in progress"
-          : status === "idle" && wasResponding
+          : !hasProcess && status === "idle" && wasResponding
             ? "Answer complete"
             : ""}
       </p>

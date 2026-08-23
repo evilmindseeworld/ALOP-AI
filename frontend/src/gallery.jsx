@@ -15,6 +15,7 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import MagneticButton from "@/components/ui/MagneticButton";
 import Earring from "./components/Earring";
+import CouncilExemplar from "./components/CouncilExemplar";
 import CouncilRosette from "./components/CouncilRosette";
 import { SakuraBaseCorners, Seal } from "./components/SakuraFrame";
 import { COUNCIL, FREE_COUNT } from "./constants/council";
@@ -307,6 +308,18 @@ const SAMPLE_MESSAGES = [
     id: "a1",
     role: "assistant",
     ts: "16:05",
+    provenance: {
+      schemaVersion: 1,
+      requestState: "complete",
+      route: "search",
+      answerProduced: true,
+      evidence: { searchUsed: true, sourceCount: 2 },
+      verification: { completed: true },
+      sources: [
+        { title: "Manufacturer product page", domain: "alop-ai.onrender.com", url: "https://alop-ai.onrender.com/example/manufacturer", date: "2026-08-20" },
+        { title: "Independent panel review", domain: "alop-ai.onrender.com", url: "https://alop-ai.onrender.com/example/review", date: "2026-08-18" },
+      ],
+    },
     // All three row states at once — done, still running, refused by the SSRF
     // guard. The failed row is the one worth looking at: it is what a model
     // pointing the server at 169.254.169.254 actually renders as.
@@ -341,10 +354,28 @@ const pick = monitors.find((m) => m.hz >= 240 && m.price < 900);
 
 ### Sources
 
-- [Amazon.ae — ASUS ROG Strix OLED XG27AQWMG](https://example.com/a)
-- [Microless UAE — ASUS ROG Strix OLED](https://example.com/b)`,
+- [Manufacturer product page](https://alop-ai.onrender.com/example/manufacturer)
+- [Independent panel review](https://alop-ai.onrender.com/example/review)`,
   },
 ];
+
+const SAMPLE_STREAM_DRAFT = {
+  ...SAMPLE_MESSAGES.at(-1),
+  content: "The answer is arriving from the council.",
+  process: {
+    phase: "answering",
+    reserve: true,
+    activeKey: null,
+    synthesisSeen: true,
+    pendingTools: true,
+    announcement: "The answer is forming.",
+    stages: [
+      { key: "context", text: "Reading your conversation" },
+      { key: "council", text: "3 of 3 answered" },
+      { key: "synthesis", text: "Reconciling the answers" },
+    ],
+  },
+};
 
 const SAMPLE_CHATS = [
   { id: "1", title: "Monitor buying advice", pinned: true },
@@ -403,6 +434,7 @@ const LiveChrome = ({ theme, empty = false, streaming = false, loaded = false, c
             <Icon name="menu" size={18} />
           </button>
           <div className="brand">
+            <img src="/favicon.png" alt="" className="header-logo" />
             <h1 className="main-title">{empty ? "ALOP-AI" : "Monitor buying advice"}</h1>
             {/* These classes are copied from App.jsx and must stay copied.
                 Without `hidden sm:inline-flex` this frame showed the badge at
@@ -466,7 +498,7 @@ const LiveChrome = ({ theme, empty = false, streaming = false, loaded = false, c
               <div className="scroll-wrapper">
                 <MessageList
                   messages={empty ? [] : streaming ? SAMPLE_MESSAGES.slice(0, -1) : SAMPLE_MESSAGES}
-                  streamDraft={streaming ? SAMPLE_MESSAGES.at(-1) : undefined}
+                  streamDraft={streaming ? SAMPLE_STREAM_DRAFT : undefined}
                   status={streaming ? "streaming" : "idle"}
                   feedback={{ a1: "up" }}
                   onCopy={() => {}}
@@ -668,6 +700,7 @@ const SIGNIN_SHELL = ({ signUp, loading, theme }) => (
             </p>
           </section>
         </div>
+        <CouncilExemplar />
       </div>
     </div>
   </div>

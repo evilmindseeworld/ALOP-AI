@@ -24,7 +24,7 @@ const fakeSupabase = ({ rows = {}, fail = null } = {}) => {
         order() { return api; },
         limit() { return api; },
         maybeSingle() { return Promise.resolve(result(rows[table] ?? null)); },
-        then(resolve) { return Promise.resolve(result(null)).then(resolve); },
+        then(resolve) { return Promise.resolve(result(rows[table] ?? [])).then(resolve); },
       };
       calls.push({ table, query });
       return api;
@@ -123,6 +123,18 @@ test('a resume lookup with no ids never reaches the database', async () => {
   assert.equal(await ledger.findForResume({ operationId: '', userId: 'u' }), null);
   assert.equal(await ledger.findForResume({ operationId: 'op', userId: null }), null);
   assert.deepEqual(supabase.calls, []);
+});
+
+test('chat provenance lookup is tenant-scoped and returns only the safe namespace', async () => {
+  const supabase = fakeSupabase({ rows: { turns: [
+    { id: 't1', created_at: '2026-08-23T00:00:00Z', meta: { provenance: { schemaVersion: 1 } } },
+  ] } });
+  const ledger = createTurnLedger({ supabase });
+  const rows = await ledger.findProvenanceForChat({ chatId: 'c1', userId: 'u1' });
+  assert.deepEqual(rows, [{ turnId: 't1', createdAt: '2026-08-23T00:00:00Z', provenance: { schemaVersion: 1 } }]);
+  const query = supabase.calls.filter((c) => c.query && c.table === 'turns').pop().query;
+  assert.equal(query.filters.chat_id, 'c1');
+  assert.equal(query.filters.user_id, 'u1');
 });
 
 /* ---- the canonical transcript ------------------------------------------ */

@@ -11,10 +11,9 @@ const BASELINE = join(here, "__snapshots__", "cascade.baseline.txt");
 /**
  * The guard for the !important refactor.
  *
- * The baseline was captured from App.css exactly as it stood on `main`, before
- * a single declaration moved. Every commit that folds an override block into
- * the rule it overrides must leave this file byte-identical, because folding
- * changes how the stylesheet is written and must not change what it renders.
+ * The baseline captures the resolved App.css cascade. Mechanical refactors
+ * must leave it byte-identical; an intentional visual change must regenerate
+ * it in the same review so the new rendering remains explicit.
  *
  * To regenerate deliberately — which during phase 1 means you have decided a
  * rendering change is intended, and should be saying so in the commit message:
@@ -42,8 +41,8 @@ describe("App.css cascade", () => {
 
     throw new Error(
       "The resolved cascade changed.\n\n" +
-        "Phase 1 must not change rendering. Do NOT regenerate the baseline to make this pass —\n" +
-        "the fold is wrong, or a declaration that used to win no longer does.\n\n" +
+        "An unrecorded cascade change is not acceptable. Do NOT regenerate the baseline to hide it —\n" +
+        "the refactor is wrong, or an intentional rendering change lacks a reviewed baseline update.\n\n" +
         `First difference at line ${at + 1}:\n\n` +
         `--- baseline ---\n${context(b, at)}\n\n` +
         `--- current ---\n${context(a, at)}\n`

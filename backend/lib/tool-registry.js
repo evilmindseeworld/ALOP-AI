@@ -30,7 +30,7 @@ const { findPassages, renderPassages, renderDocuments, documentCandidates, score
 const Sentry = require("@sentry/node");
 
 /** Result shapes are uniform so the loop never has to know which tool ran. */
-const ok = (summary, content) => ({ ok: true, summary, content });
+const ok = (summary, content, extra = null) => ({ ok: true, summary, content, ...(extra || {}) });
 const fail = (summary) => ({ ok: false, summary, content: "" });
 
 /**
@@ -255,7 +255,18 @@ function buildRegistry(deps = {}) {
           return `${i + 1}. [id: ${id}] ${r.title || "Untitled"}\n   ${r.url || ""}\n   ${(r.description || r.content || "").slice(0, 300)}`;
         }).join("\n\n");
         const note = dropped ? ` (${dropped} dead or unavailable link${dropped === 1 ? "" : "s"} removed)` : "";
-        return ok(`${top.length} results for "${query}"${note}`, clamp(rendered));
+        return ok(`${top.length} results for "${query}"${note}`, clamp(rendered), {
+          /* Structured, displayable fields only. The rendered snippet remains
+           * model input; it is never promoted into user-facing provenance. */
+          sources: top
+            .filter((row) => row && row.url)
+            .map((row) => ({
+              title: row.title || "Untitled",
+              url: row.url,
+              date: row.date || row.publishedDate || null,
+              via: "web_search",
+            })),
+        });
       },
     });
   }

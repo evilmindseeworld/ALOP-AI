@@ -1,6 +1,6 @@
 'use strict';
 
-const { validate, FINAL_ANSWER_META, TURN_RELIABILITY_META } = require('./schemas');
+const { validate, FINAL_ANSWER_META, TURN_RELIABILITY_META, TURN_PROVENANCE_META } = require('./schemas');
 
 /**
  * The server's own record of a turn: what was asked, how much of the answer has
@@ -105,7 +105,7 @@ function createTurnLedger({
      * Close the row.
      *
      * @param {'complete'|'failed'|'aborted'} state
-     * @param {object|null} meta  held to one of the two `turns.meta` contracts
+     * @param {object|null} meta  held to one of the bounded `turns.meta` contracts
      *        -- the final-answer record, or the reliability record the route's
      *        `finally` builds from the closing telemetry snapshot. An
      *        off-contract meta is dropped rather than stored, because a ledger
@@ -130,7 +130,7 @@ function createTurnLedger({
         /* Two shapes, tried in turn, and both STRICT: `validate` refuses an
          * unknown key rather than carrying it into a row. Whichever matches
          * wins; a bag matching neither is reported and dropped. */
-        const checked = [FINAL_ANSWER_META, TURN_RELIABILITY_META]
+        const checked = [FINAL_ANSWER_META, TURN_RELIABILITY_META, TURN_PROVENANCE_META]
           .map((schema) => validate(schema, meta))
           .reduce((best, result) => (best.ok ? best : result));
         if (checked.ok) patch.meta = checked.value;
@@ -166,6 +166,32 @@ function createTurnLedger({
         if (error) throw error;
         return data || null;
       }, null);
+    },
+
+    /**
+     * Return only user-safe provenance for this tenant's chat. The query owns
+     * both predicates; the caller never receives another user's process record
+     * merely because it guessed a chat id.
+     */
+    async findProvenanceForChat({ chatId, userId, limit = 100 }) {
+      if (!chatId || !userId) return [];
+      return guard('findProvenanceForChat', async () => {
+        const { data, error } = await supabase
+          .from('turns')
+          .select('id,meta,created_at')
+          .eq('chat_id', chatId)
+          .eq('user_id', userId)
+          .order('created_at', { ascending: false })
+          .limit(Math.min(Math.max(Number(limit) || 1, 1), 100));
+        if (error) throw error;
+        return (data || [])
+          .map((row) => ({
+            turnId: row.id,
+            createdAt: row.created_at,
+            provenance: row.meta && typeof row.meta === 'object' ? row.meta.provenance || null : null,
+          }))
+          .filter((row) => row.provenance && typeof row.provenance === 'object');
+      }, []);
     },
 
     /**

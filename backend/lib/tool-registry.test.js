@@ -192,6 +192,10 @@ test("web_search renders results the model can act on", async () => {
   assert.equal(r.ok, true);
   assert.ok(r.content.includes("rtings.com/a"));
   assert.ok(r.content.includes("RTINGS OLED"));
+  assert.deepEqual(r.sources, [
+    { title: "RTINGS OLED", url: "https://rtings.com/a", date: null, via: "web_search" },
+    { title: "Tom's Hardware", url: "https://th.com/b", date: null, via: "web_search" },
+  ]);
   resultId(r);
 });
 

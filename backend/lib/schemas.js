@@ -220,6 +220,21 @@ const TURN_RELIABILITY_META = {
   optional: [],
 };
 
+/**
+ * The user-safe process record shares the existing turns.meta JSONB column
+ * with reliability. Nested fields are already narrowed by the explicit
+ * serializer in lib/turn-provenance-meta.js; this outer schema prevents an
+ * arbitrary top-level bag from reaching the ledger.
+ */
+const TURN_PROVENANCE_META = {
+  name: 'TurnProvenanceMeta',
+  fields: {
+    provenance: T.object(),
+    reliability: T.object(),
+  },
+  optional: ['reliability'],
+};
+
 module.exports = {
   T,
   validate,
@@ -230,4 +245,5 @@ module.exports = {
   EVIDENCE_RECORD,
   FINAL_ANSWER_META,
   TURN_RELIABILITY_META,
+  TURN_PROVENANCE_META,
 };

@@ -195,10 +195,10 @@ describe("what has to be on the page whichever card is showing", () => {
 
     it(`shows all seven council seats on ${label}`, () => {
       at(path);
-      render(<SignInPage />);
+      const { container } = render(<SignInPage />);
       // The roster is the page's argument and it is asserted to survive the
       // branch, because the sign-up card is the one a new visitor sees first.
-      expect(screen.getAllByRole("listitem")).toHaveLength(7);
+      expect(container.querySelectorAll(".council-ladder > .council-row")).toHaveLength(7);
       expect(screen.getByText("The Architect")).toBeInTheDocument();
       expect(screen.getByText("The Explorer")).toBeInTheDocument();
     });
@@ -350,6 +350,26 @@ describe("the order a first-time visitor meets the page in", () => {
  * fell through to `:root`, which is Sakura Night, whatever the user had chosen.
  * Sol measured `--bg: #0a0a0a` resolving under `prefers-color-scheme: light`.
  */
+describe("the landing exemplar explains consequence without faking a live turn", () => {
+  for (const path of ["/", "/sign-up"]) {
+    it(`shows the reviewed council shape on ${path}`, () => {
+      at(path);
+      const { container } = render(<SignInPage />);
+      const exemplar = container.querySelector(".council-exemplar");
+      const heading = exemplar.querySelector(".council-exemplar-title");
+
+      expect(exemplar).toBeTruthy();
+      expect(exemplar.getAttribute("aria-live")).toBeNull();
+      expect(exemplar.getAttribute("aria-labelledby")).toBe(heading.id);
+      expect(exemplar.textContent).toMatch(/reviewed example.*not a live turn/i);
+      expect(exemplar.textContent).toMatch(/Should a small team choose Postgres or MongoDB/i);
+      expect(exemplar.textContent).toMatch(/Choose Postgres when relationships/i);
+      expect(exemplar.querySelectorAll(".council-exemplar-step")).toHaveLength(2);
+      expect(exemplar.textContent).toMatch(/after sign-in/i);
+    });
+  }
+});
+
 describe("the signed-out screen honours the saved theme", () => {
   afterEach(() => localStorage.clear());
 

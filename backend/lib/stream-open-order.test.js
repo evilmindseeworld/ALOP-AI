@@ -30,7 +30,7 @@ const at = (needle) => {
 };
 
 test('the council stream opens BEFORE the Supabase context reads', () => {
-  const open = at("sendStage(res, 'context', 'Reading your conversation')");
+  const open = at("emitStage(res, 'context', 'Reading your conversation')");
   const contextReads = at('const dag = await runDag([');
   assert.ok(
     open < contextReads,

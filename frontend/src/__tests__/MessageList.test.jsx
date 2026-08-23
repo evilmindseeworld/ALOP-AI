@@ -155,12 +155,13 @@ describe("MessageList", () => {
     // nothing either way. What is checkable is the contract that produces the
     // behaviour: the boundary's fallback is the plain renderer.
     const src = readFileSync(join(__dirname, "..", "components", "MessageList.jsx"), "utf8");
-    assertMatch(src, /<Suspense fallback=\{<PlainParagraphs text=\{msg\.content\} \/>\}>/);
+    assertMatch(src, /<Suspense fallback=\{<PlainParagraphs text=\{displayContent\} \/>\}>/);
     // And the same renderer serves the streaming branch — one component used
     // twice is what makes the swap between them invisible. Two copies would
     // drift, and the drift would show as a jump at the moment an answer lands.
     assertMatch(src, /const PlainParagraphs = /);
-    expect((src.match(/<PlainParagraphs text=\{msg\.content\} \/>/g) || []).length).toBe(2);
+    expect(src).toMatch(/<PlainParagraphs text=\{msg\.content\} \/>/);
+    expect(src).toMatch(/<PlainParagraphs text=\{displayContent\} \/>/);
   });
 
   /**
@@ -258,10 +259,9 @@ describe("MessageList", () => {
       messages: [{ id: "u1", role: "user", content: "Hi" }],
       status: "loading",
     });
-    expect(container.querySelector(".answer-skeleton")).toHaveAttribute(
-      "aria-label",
-      "The council is thinking",
-    );
+    expect(container.querySelector(".council-process")).toBeInTheDocument();
+    expect(container.querySelector(".answer-skeleton")).not.toHaveAttribute("role", "status");
+    expect(screen.getByRole("status", { name: "Assembling your answer." })).toBeInTheDocument();
     expect(container.querySelector(".msg-stream > .sr-only[role='status']")).toBeEmptyDOMElement();
   });
 
@@ -447,7 +447,7 @@ describe("the wait before the placeholder exists", () => {
         onPickStarter={noop}
       />
     );
-    expect(screen.getByRole("status", { name: "The council is thinking" })).toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "Assembling your answer." })).toBeInTheDocument();
   });
 });
 
@@ -467,7 +467,7 @@ describe("the stage line under the skeleton", () => {
 
   it("says what the council is doing when the server has said so", () => {
     renderTyping("4 of 7 answered");
-    expect(screen.getByText("4 of 7 answered")).toBeInTheDocument();
+    expect(document.querySelector(".answer-stage")).toHaveTextContent("4 of 7 answered");
     // And to a screen reader, which otherwise hears only "The council is
     // thinking" for the whole turn.
     expect(screen.getByRole("status", { name: "4 of 7 answered" })).toBeInTheDocument();
@@ -477,5 +477,288 @@ describe("the stage line under the skeleton", () => {
     renderTyping(undefined);
     expect(document.querySelector(".answer-stage")).not.toBeInTheDocument();
     expect(screen.getByRole("status", { name: "The council is thinking" })).toBeInTheDocument();
+  });
+});
+
+describe("the live council process receipt", () => {
+  it("keeps the current stage available to assistive technology during the handoff", () => {
+    render(
+      <MessageList
+        messages={[{ id: "u1", role: "user", content: "Best air fryer?", ts: "10:04" }]}
+        streamDraft={{
+          id: "a1",
+          role: "assistant",
+          content: "",
+          typing: true,
+          stage: "3 of 3 answered",
+          process: {
+            phase: "working",
+            activeKey: "council",
+            stages: [{ key: "council", text: "3 of 3 answered" }],
+          },
+        }}
+        status="loading"
+        feedback={{}}
+        onCopy={noop}
+        onFeedback={noop}
+        onPickStarter={noop}
+      />
+    );
+
+    expect(document.querySelector(".answer-stage")).not.toBeInTheDocument();
+    expect(screen.getByRole("status", { name: "3 of 3 answered" })).toBeInTheDocument();
+  });
+
+  it("keeps the ordered stages beside the first answer token", () => {
+    render(
+      <MessageList
+        messages={[{ id: "u1", role: "user", content: "Best air fryer?", ts: "10:04" }]}
+        streamDraft={{
+          id: "a1",
+          role: "assistant",
+          content: "The answer is ready.",
+          process: {
+            phase: "answering",
+            activeKey: null,
+            stages: [
+              { key: "context", text: "Reading your conversation" },
+              { key: "council", text: "3 of 3 answered" },
+              { key: "synthesis", text: "Reconciling the answers" },
+            ],
+          },
+        }}
+        status="streaming"
+        feedback={{}}
+        onCopy={noop}
+        onFeedback={noop}
+        onPickStarter={noop}
+      />
+    );
+
+    expect(screen.getByRole("region", { name: "Coming together" })).toBeInTheDocument();
+    expect(screen.getByText("Reading your conversation")).toBeInTheDocument();
+    expect(screen.getByText("3 of 3 answered")).toBeInTheDocument();
+    expect(document.querySelector(".council-stage-text")).toBeInTheDocument();
+    expect(document.querySelectorAll(".council-stage-text")[2]).toHaveTextContent("Reconciling the answers");
+    expect(screen.getByText("The answer is ready.")).toBeInTheDocument();
+    expect(screen.queryByText("Answer in progress")).not.toBeInTheDocument();
+  });
+
+  it("marks a completed process without inventing a correctness seal", () => {
+    render(
+      <MessageList
+        messages={[{ id: "u1", role: "user", content: "Hi", ts: "10:04" }]}
+        streamDraft={{
+          id: "a1",
+          role: "assistant",
+          content: "Done.",
+          process: {
+            phase: "complete",
+            activeKey: null,
+            stages: [{ key: "council", text: "3 of 3 answered" }],
+          },
+        }}
+        status="idle"
+        feedback={{}}
+        onCopy={noop}
+        onFeedback={noop}
+        onPickStarter={noop}
+      />
+    );
+
+    expect(screen.getByRole("region", { name: "Answer assembled" })).toBeInTheDocument();
+    expect(screen.getByText("Answer complete without a synthesis stage")).toBeInTheDocument();
+    expect(screen.queryByText(/seal/i)).not.toBeInTheDocument();
+  });
+
+  it.each([
+    ["stopped", "Process incomplete", "Answer stopped before completion", "is-interrupted"],
+    ["failed", "Process incomplete", "Answer failed before completion", "is-failed"],
+  ])("does not mark the terminal %s stage as successful", (phase, heading, transition, terminalClass) => {
+    render(
+      <MessageList
+        messages={[{ id: "u1", role: "user", content: "Hi", ts: "10:04" }]}
+        streamDraft={{
+          id: "a1",
+          role: "assistant",
+          content: "Partial.",
+          stopped: phase === "stopped",
+          process: {
+            phase,
+            terminalKey: "synthesis",
+            stages: [
+              { key: "context", text: "Reading your conversation", state: "completed" },
+              { key: "council", text: "2 of 3 answered", state: "partial" },
+              { key: "synthesis", text: "Reconciling the answers" },
+            ],
+            partialCouncil: true,
+            announcement: transition,
+          },
+        }}
+        status="error"
+        feedback={{}}
+        onCopy={noop}
+        onFeedback={noop}
+        onPickStarter={noop}
+      />
+    );
+
+    expect(screen.getByRole("region", { name: heading })).toBeInTheDocument();
+    expect(document.querySelector(".council-process-transition")).toHaveTextContent(transition);
+    const terminal = document.querySelector(`.council-stage-row.${terminalClass}`);
+    expect(terminal).toBeInTheDocument();
+    expect(terminal).not.toHaveClass("is-complete");
+    expect(document.querySelectorAll(".council-stage-row.is-complete")).toHaveLength(1);
+  });
+
+  it("consolidates tool activity into the process receipt", () => {
+    render(
+      <MessageList
+        messages={[{ id: "u1", role: "user", content: "Search this", ts: "10:04" }]}
+        streamDraft={{
+          id: "a1",
+          role: "assistant",
+          content: "Answer.",
+          process: {
+            phase: "answering",
+            synthesisSeen: true,
+            stages: [{ key: "synthesis", text: "Writing the reply" }],
+          },
+          activity: [{ round: 1, name: "web_search", summary: "Checked the web", pending: false }],
+        }}
+        status="streaming"
+        feedback={{}}
+        onCopy={noop}
+        onFeedback={noop}
+        onPickStarter={noop}
+      />
+    );
+
+    expect(document.querySelector(".tool-trail")).not.toBeInTheDocument();
+    expect(document.querySelector(".council-process-tools")).toBeInTheDocument();
+    expect(document.querySelector(".council-process-tools")).not.toHaveAttribute("open");
+    expect(screen.getByText("Evidence work · 1 check")).toBeInTheDocument();
+  });
+
+  it("reveals the actual evidence row when the optional disclosure opens", async () => {
+    const user = userEvent.setup();
+    render(
+      <MessageList
+        messages={[{ id: "u1", role: "user", content: "Search this", ts: "10:04" }]}
+        streamDraft={{
+          id: "a1",
+          role: "assistant",
+          content: "Answer.",
+          process: { phase: "answering", stages: [{ key: "council", text: "3 of 3 answered" }] },
+          activity: [{ round: 1, name: "web_search", summary: "Checked the web", pending: false }],
+        }}
+        status="streaming"
+        feedback={{}}
+        onCopy={noop}
+        onFeedback={noop}
+        onPickStarter={noop}
+      />
+    );
+
+    await user.click(screen.getByText("Evidence work · 1 check"));
+    expect(screen.getByText("Checked the web")).toBeVisible();
+  });
+
+  it("shows a progressive source receipt only for safe structured URLs", async () => {
+    renderList({
+      messages: [{
+        id: "a1",
+        role: "assistant",
+        content: "A sourced answer.",
+        provenance: {
+          sources: [
+            { title: "Public page", domain: "example.com", url: "https://example.com/page#fragment", date: "2026-08-23" },
+            { title: "Second page", domain: "example.org", url: "https://example.org/guide" },
+            { title: "Unsafe", url: "javascript:alert(1)" },
+          ],
+          verification: { completed: true },
+        },
+      }],
+    });
+
+    expect(screen.getByText("Sources · 2")).toBeInTheDocument();
+    expect(screen.getByText("Evidence recorded")).toBeInTheDocument();
+    expect(screen.queryByText("Unsafe")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByText("Sources · 2"));
+    const link = screen.getByRole("link", { name: "Public page" });
+    expect(link).toHaveAttribute("href", "https://example.com/page");
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noreferrer noopener");
+    expect(screen.getByText("2026-08-23")).toBeVisible();
+  });
+
+  it("rejects private and special-use hosts before rendering source links", () => {
+    renderList({
+      messages: [{
+        id: "a1",
+        role: "assistant",
+        content: "A sourced answer.",
+        provenance: {
+          sources: [
+            { title: "Loopback", url: "http://127.0.0.1/secret" },
+            { title: "Local host", url: "http://localhost/private" },
+            { title: "IPv6 loopback", url: "http://[::1]/private" },
+            { title: "Public page", url: "https://example.com/page" },
+          ],
+        },
+      }],
+    });
+
+    expect(screen.getByText("Sources · 1")).toBeInTheDocument();
+    expect(screen.queryByText("Loopback")).not.toBeInTheDocument();
+    expect(screen.queryByText("Local host")).not.toBeInTheDocument();
+    expect(screen.queryByText("IPv6 loopback")).not.toBeInTheDocument();
+  });
+
+  it("does not leave an empty source surface when provenance has no public URLs", () => {
+    renderList({
+      messages: [{
+        id: "a1",
+        role: "assistant",
+        content: "An answer without displayable sources.",
+        provenance: { evidence: { sourceCount: 2 }, sources: [] },
+      }],
+    });
+
+    expect(document.querySelector(".source-receipt")).not.toBeInTheDocument();
+  });
+
+  it("uses the structured receipt instead of repeating an exact Markdown Sources block", async () => {
+    const { container } = await renderParsed({
+      messages: [{
+        id: "a1",
+        role: "assistant",
+        content: "A sourced answer.\n\n### Sources\n- [Public page](https://example.com/page)\n- [Second page](https://example.org/guide)",
+        provenance: {
+          sources: [
+            { title: "Public page", url: "https://example.com/page" },
+            { title: "Second page", url: "https://example.org/guide" },
+          ],
+        },
+      }],
+    });
+
+    expect(container.querySelector(".markdown-body")).toHaveTextContent("A sourced answer.");
+    expect(container.querySelector(".markdown-body")).not.toHaveTextContent("Public page");
+    expect(screen.getByText("Sources · 2")).toBeInTheDocument();
+  });
+
+  it("keeps a Markdown source section when its URLs do not match the receipt", async () => {
+    const { container } = await renderParsed({
+      messages: [{
+        id: "a1",
+        role: "assistant",
+        content: "A sourced answer.\n\n### Sources\n- [Unmatched page](https://example.net/other)",
+        provenance: { sources: [{ title: "Recorded page", url: "https://example.com/page" }] },
+      }],
+    });
+
+    expect(container.querySelector(".markdown-body")).toHaveTextContent("Unmatched page");
   });
 });

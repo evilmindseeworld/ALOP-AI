@@ -8,7 +8,7 @@
 
 ## 1. Release Commit
 
-The candidate is on `fix/synthesis-degrades-to-council-draft`, three commits ahead of `origin/main`, with PR #7 open and unmerged. `HEAD` is `a8da6fd194c1e371c0e6973fe65abdb60949bf4c`. The redesign, safe provenance, and release checkpoint are still dirty in the shared worktree at this stage. The release commit will be created only from the explicitly reviewed source, test, and release-document files; local screenshots, `.playwright-mcp/`, and `reel-reference-pack/` remain unstaged user artifacts.
+The release commit is `1d34e91d88d139bfa752d691cdfc869dfa8100e3` (`release: expose council process and safe provenance`) on `fix/synthesis-degrades-to-council-draft`, four commits ahead of `origin/main`, pushed to PR #7. The commit contains only the reviewed source, test, checkpoint, and release-report files. Local screenshots, `.playwright-mcp/`, the remaining design/audit documents, and `reel-reference-pack/` remain unstaged user artifacts.
 
 ## 2. Production State Before Release
 
@@ -106,4 +106,4 @@ Complete the normal release flow: create the clean candidate commit, push/merge 
 
 ## 22. Final Release Verdict
 
-Current verdict: **LOCAL COMPLETE / MIGRATION READY / NOT DEPLOYED / PRODUCTION VERIFICATION PENDING**. The candidate has no known local Blocker or High release defect. It is not yet valid to call it `BACKEND DEPLOYED`, `FRONTEND DEPLOYED`, or `PRODUCTION VERIFIED`. Final success requires the live gates listed above, with `SOL_HIGH_CALLS` remaining exactly 2.
+Current verdict: **LOCAL COMPLETE / MIGRATION READY / RELEASE COMMITTED / NOT DEPLOYED / PRODUCTION VERIFICATION PENDING**. The candidate has no known local Blocker or High release defect. It is not yet valid to call it `BACKEND DEPLOYED`, `FRONTEND DEPLOYED`, or `PRODUCTION VERIFIED`. Final success requires the live gates listed above, with `SOL_HIGH_CALLS` remaining exactly 2.

@@ -4,7 +4,7 @@
 **Date:** 2026-08-23
 **Repository:** `C:\Users\LENOVO\Documents\AI-Classroom`
 **Branch:** `fix/synthesis-degrades-to-council-draft`
-**HEAD:** `a8da6fd` (`fix: never degrade to a draft whose text was the model's reasoning`)
+**HEAD:** `1d34e91` (`release: expose council process and safe provenance`)
 
 ## Status
 
@@ -31,14 +31,15 @@ HIGH_FINDINGS = 0 known open findings in current Luna pass; final red-team unver
 FINAL_SOL_REVIEW = COMPLETE; one High finding fixed; final QA passed
 
 RELEASE_PHASE = PRODUCTION_TRUTH_ESTABLISHED; RELEASE_PACKAGING_PENDING
-LOCAL_HEAD = a8da6fd194c1e371c0e6973fe65abdb60949bf4c
+LOCAL_HEAD = 1d34e91d88d139bfa752d691cdfc869dfa8100e3
 ORIGIN_MAIN_HEAD = 0461c191eb6ce102c1b3cf54cff89185afb44fe8
-WORKTREE_STATUS = MIXED_DIRTY; redesign/release files are uncommitted; unrelated evidence artifacts preserved
-BRANCH_RELATIONSHIP = HEAD is 3 commits ahead of origin/main; PR #7 is open and unmerged
+WORKTREE_STATUS = RELEASE_COMMITTED; unrelated evidence/design artifacts remain unstaged and preserved
+BRANCH_RELATIONSHIP = HEAD is 4 commits ahead of origin/main; PR #7 is open, pushed, and unmerged
 MIGRATION_STATUS = NO_NEW_REDESIGN_MIGRATION_REQUIRED; production turns.meta jsonb verified; 019/026 are absent from migration ledger but their live schema objects exist
 PROD_BACKEND = d8e47a68587af3db199407e995d2e5e3ff9019df; Render deploy dep-da346u2jnfac73bm3k1g is live
 PROD_FRONTEND = 0461c191eb6ce102c1b3cf54cff89185afb44fe8; Vercel deploy dpl_zPesoUGpZvN7Kx91SCTu9hfMFmfL is production
-DEPLOYMENT_STATUS = NOT_PERFORMED
+RELEASE_COMMIT = 1d34e91d88d139bfa752d691cdfc869dfa8100e3; pushed to fix/synthesis-degrades-to-council-draft
+DEPLOYMENT_STATUS = CI_PENDING; no candidate deployment performed
 PRODUCTION_SMOKE = PUBLIC_PAGE_200; HEALTH_200; ALLOWED_ORIGIN_200; EVIL_ORIGIN_403; authenticated/council/provenance smoke pending candidate deployment
 ROLLBACK_STATUS = PREPARED_BY_EXISTING_MAIN_REVISION; no release mutation made
 ```

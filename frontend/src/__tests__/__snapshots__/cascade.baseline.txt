@@ -50106,6 +50106,7 @@
   margin-bottom: <margin: 0>
   margin-left: <margin: 0>
   margin-top: <margin: 0>
+  min-height: 342px
   padding: 0
   padding-bottom: <padding: 0>
   padding-left: <padding: 0>
@@ -51708,6 +51709,10 @@
   - padding-bottom: <padding: 20px>
   - padding-left: <padding: 20px>
   - padding-top: <padding: 20px>
+
+[1010] div.signin-card-inner
+  min-height: 306px
+  - min-height: 342px
 
 [1011] div.signin-card-loading
   min-height: 306px
@@ -64744,6 +64749,10 @@
   - padding-bottom: <padding: 20px>
   - padding-left: <padding: 20px>
   - padding-top: <padding: 20px>
+
+[1010] div.signin-card-inner
+  min-height: 306px
+  - min-height: 342px
 
 [1011] div.signin-card-loading
   min-height: 306px

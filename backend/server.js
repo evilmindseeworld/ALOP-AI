@@ -44,6 +44,7 @@ const { describeImage, visionModels } = require('./lib/vision');
 const { generateImage } = require('./lib/image-gen');
 const { deadlineSignal } = require('./lib/stream-deadline');
 const { createTurnTelemetry } = require('./lib/turn-telemetry');
+const { benchmarkCacheBypass } = require('./lib/benchmark-cache-bypass');
 const { rescueReasoning } = require('./lib/reasoning-rescue');
 const { createTurnContext } = require('./lib/turn-context');
 const { createTurnLedger } = require('./lib/turn-ledger');
@@ -4130,6 +4131,14 @@ async function handleCouncilTurn(req, res) {
     deadlineAt: t0 + STREAM_TURN_BUDGET_MS,
   });
   const telemetry = createTurnTelemetry({ startedAt: t0, context: turnContext });
+  /* The evaluator may request a fresh execution, but only with a secret that
+   * is configured outside the repository. A valid bypass is observable on the
+   * response so a benchmark cannot silently grade a cache hit as fresh. */
+  const cacheBypass = benchmarkCacheBypass({ headers: req.headers });
+  if (cacheBypass.enabled) {
+    res.set('X-ALOP-Cache-Status', 'bypass');
+    console.log('[ANSWERS] BENCHMARK cache bypass authorised');
+  }
   /* EVERY PHYSICAL POST TO THE GATEWAY IS RECORDED, RETRIES INCLUDED.
    *
    * `recordAttempt(phase)` is the sink lib/openrouter.js calls once per request
@@ -4898,7 +4907,7 @@ async function handleCouncilTurn(req, res) {
        * facts and feedback steps below re-decide it against the real answer,
        * which is why they are DAG nodes rather than entries in a Promise.all. */
       hasConversationHistory: true,
-      cacheEligible: !clientHistory.length && !parsedImages.length,
+      cacheEligible: !clientHistory.length && !parsedImages.length && !cacheBypass.enabled,
       semanticCacheEnabled: SEMANTIC_CACHE_ENABLED,
       userHasFacts: true,
       category: selection.category,
@@ -5118,7 +5127,7 @@ async function handleCouncilTurn(req, res) {
     /* Feature flags change how the SAME words are answered. Keep that
      * provenance in the durable key so enabling seeded tools cannot replay a
      * Wikipedia/plain-council answer written before the flag changed. */
-    const cacheKey = personalised || hasUncacheableAttachment
+    const cacheKey = cacheBypass.enabled || personalised || hasUncacheableAttachment
       ? null
       : answerCache.keyFor({
         question: pv.value,
@@ -5216,6 +5225,8 @@ async function handleCouncilTurn(req, res) {
         console.log(`[ANSWERS] SEMANTIC SKIP embedding=unavailable deadlineMs=${SEMANTIC_EMBED_DEADLINE_MS}`);
       }
       console.log('[ANSWERS] MISS');
+    } else if (cacheBypass.enabled) {
+      console.log('[ANSWERS] BYPASS benchmark-authorized');
     } else {
       console.log('[ANSWERS] BYPASS personalised-context');
     }

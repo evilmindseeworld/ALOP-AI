@@ -106,6 +106,10 @@ services:
         sync: false
       - key: TERMINAL_SECRET
         sync: false
+      # Controlled fresh-evaluation gate. The value is set only through the
+      # Render secret/environment path; it is never stored in this blueprint.
+      - key: ALOP_BENCHMARK_CACHE_BYPASS_SECRET
+        sync: false
       # Council behaviour flags. All default OFF; see backend/.env.example for
       # what each one turns on and why none of them ships enabled.
       - key: COUNCIL_TOOLS

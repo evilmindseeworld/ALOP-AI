@@ -170,3 +170,19 @@ test("factualityPassRate reads the tag, so an untagged failure cannot dilute it"
   assert.equal(metrics.factualityPassRate, 1);
   assert.equal(metrics.acceptanceRate, 0.5);
 });
+
+test("fresh-execution timing fields stay null until the runner observes them", () => {
+  const cases = [caseOf({}, { id: "t1" }), caseOf({}, { id: "t2" })];
+  const observations = [
+    obs({ id: "t1", answer: "ok", firstByteMs: 50, firstAnswerTokenMs: 200, firstUsefulStageMs: 20 }),
+    obs({ id: "t2", answer: "ok", firstByteMs: 100, firstAnswerTokenMs: 300, firstUsefulStageMs: 40 }),
+  ];
+  const grades = cases.map((c) => gradeCase(c, observations.find((o) => o.id === c.id)));
+  const metrics = summarise(grades, observations);
+  assert.equal(metrics.firstByteP50Ms, 50);
+  assert.equal(metrics.firstByteP95Ms, 100);
+  assert.equal(metrics.firstAnswerTokenP50Ms, 200);
+  assert.equal(metrics.firstAnswerTokenP95Ms, 300);
+  assert.equal(metrics.firstUsefulStageP50Ms, 20);
+  assert.equal(metrics.firstUsefulStageP95Ms, 40);
+});

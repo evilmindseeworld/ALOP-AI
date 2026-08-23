@@ -17,6 +17,7 @@
  *   --tag <tag>           run only cases carrying this tag  (repeatable)
  *   --limit <n>           run at most n cases
  *   --gates <path>        JSON of { gateName: threshold | {…} | false }
+ *   --cache-bypass         require and send the secret-gated fresh-execution header
  *   --allow-inconclusive  do not fail the run on an unmeasured gate
  *   --validate-only       check the dataset and exit, spending nothing
  *
@@ -68,6 +69,17 @@ const base = (flag("base", process.env.BASE || "http://localhost:3001") || "").r
 const token = process.env.EVAL_TOKEN || "";
 const tags = many("tag");
 const limit = Number(flag("limit", "0")) || 0;
+const cacheBypass = bool("cache-bypass");
+const cacheBypassSecret = process.env.EVAL_CACHE_BYPASS_SECRET || "";
+
+if (cacheBypass && !cacheBypassSecret) {
+  console.error("--cache-bypass requires EVAL_CACHE_BYPASS_SECRET; no fresh run will start without it.");
+  process.exit(1);
+}
+if (process.env.EVAL_CLERK_SECRET_KEY && !process.env.EVAL_USER_ID) {
+  console.error("EVAL_CLERK_SECRET_KEY requires EVAL_USER_ID; refusing to select an arbitrary Clerk user.");
+  process.exit(1);
+}
 /**
  * 30 SECONDS, AND THE OLD 4 WAS MEASURING THIS SCRIPT RATHER THAN THE PRODUCT.
  *
@@ -206,16 +218,7 @@ if (process.env.EVAL_CLERK_SECRET_KEY) {
   const fapi = (process.env.EVAL_CLERK_FAPI || primary.frontend_api_url).replace(/\/$/, "");
   const origin = (process.env.EVAL_ORIGIN || `https://${primary.name}`).replace(/\/$/, "");
 
-  let userId = process.env.EVAL_USER_ID || "";
-  if (!userId) {
-    const users = await bapi("the user list", "/users?limit=1");
-    if (!users.length) {
-      console.error("EVAL_CLERK_SECRET_KEY is set but the instance has no users. Set EVAL_USER_ID.");
-      process.exit(1);
-    }
-    userId = users[0].id;
-    console.log(`No EVAL_USER_ID given; using the first user on the instance (${userId}).`);
-  }
+  const userId = process.env.EVAL_USER_ID;
 
   const ticket = await bapi("a sign-in token", "/sign_in_tokens", {
     method: "POST",
@@ -316,6 +319,11 @@ async function runCase(testCase) {
   const frames = [];
   let answer = "";
   let error = null;
+  let cacheStatus = null;
+  let provenance = null;
+  const firstByteAt = { value: null };
+  const firstAnswerTokenAt = { value: null };
+  const firstUsefulStageAt = { value: null };
 
   try {
     const res = await fetch(`${base}/api/council`, {
@@ -325,8 +333,12 @@ async function runCase(testCase) {
         Authorization: `Bearer ${await tokenFor()}`,
         "X-Operation-Id": operationId,
         Accept: "text/event-stream",
+        ...(cacheBypass ? { "X-ALOP-Benchmark-Cache-Bypass": cacheBypassSecret } : {}),
       },
-      body: JSON.stringify({ message: testCase.question, history: [] }),
+      body: JSON.stringify({
+        message: testCase.question,
+        history: Array.isArray(testCase.history) ? testCase.history : [],
+      }),
     });
 
     /* AN AUTH FAILURE IS NOT A WRONG ANSWER, and grading it as one is the
@@ -364,6 +376,28 @@ async function runCase(testCase) {
         costCents: null,
         textSource: null,
         error: { code: parsed.code || `http_${res.status}`, text: parsed.error || body.slice(0, 200) },
+        cacheStatus: res.headers.get("x-alop-cache-status"),
+      };
+    }
+
+    cacheStatus = res.headers.get("x-alop-cache-status");
+    if (cacheBypass && cacheStatus !== "bypass") {
+      await res.body.cancel().catch(() => {});
+      return {
+        id: testCase.id,
+        answer: "",
+        frames: [],
+        latencyMs: Date.now() - started,
+        firstByteMs: null,
+        firstAnswerTokenMs: null,
+        firstUsefulStageMs: null,
+        costCents: null,
+        textSource: null,
+        cacheStatus,
+        error: {
+          code: "cache_bypass_unconfirmed",
+          text: `The server did not confirm X-ALOP-Cache-Status=bypass (saw ${cacheStatus || "no header"}).`,
+        },
       };
     }
 
@@ -376,6 +410,7 @@ async function runCase(testCase) {
     for (;;) {
       const { value, done } = await reader.read();
       if (done) break;
+      if (firstByteAt.value === null) firstByteAt.value = Date.now();
       buffer += decoder.decode(value, { stream: true });
       let cut;
       while ((cut = buffer.indexOf("\n\n")) !== -1) {
@@ -387,8 +422,16 @@ async function runCase(testCase) {
         let frame;
         try { frame = JSON.parse(payload); } catch { continue; }
         frames.push(frame);
+        if (firstUsefulStageAt.value === null
+          && (frame.type === "stage" || frame.type === "tool_start" || frame.type === "provenance")) {
+          firstUsefulStageAt.value = Date.now();
+        }
         if (frame.type === "chunk") answer += frame.text || "";
+        if (frame.type === "chunk" && frame.text && firstAnswerTokenAt.value === null) {
+          firstAnswerTokenAt.value = Date.now();
+        }
         if (frame.type === "error") error = { code: frame.code || "unknown", text: frame.text || "" };
+        if (frame.type === "provenance") provenance = frame.provenance || null;
       }
     }
   } catch (err) {
@@ -400,8 +443,13 @@ async function runCase(testCase) {
     answer,
     frames,
     latencyMs: Date.now() - started,
+    firstByteMs: firstByteAt.value === null ? null : firstByteAt.value - started,
+    firstAnswerTokenMs: firstAnswerTokenAt.value === null ? null : firstAnswerTokenAt.value - started,
+    firstUsefulStageMs: firstUsefulStageAt.value === null ? null : firstUsefulStageAt.value - started,
     costCents: null,   // unobservable over HTTP today; see the header
     textSource: null,  // ditto
+    cacheStatus,
+    provenance,
     error,
   };
 }
@@ -412,6 +460,11 @@ const observations = [];
 for (const [index, testCase] of selected.entries()) {
   const obs = await runCase(testCase);
   observations.push(obs);
+  if (cacheBypass && obs.error?.code === "cache_bypass_unconfirmed") {
+    console.error(`\nFAILED: fresh-execution proof missing on ${testCase.id}. ${obs.error.text}`);
+    process.exitCode = 1;
+    break;
+  }
   const grade = gradeCase(testCase, obs);
   const mark = grade.passed ? "pass" : grade.inconclusive ? "????" : "FAIL";
   console.log(`${String(index + 1).padStart(2)}/${selected.length} ${mark} ${testCase.id.padEnd(26)} ${obs.latencyMs}ms ${grade.failures.join("; ")}`);
@@ -444,6 +497,10 @@ if (reportPath) {
     dataset: name, base, ranAt: new Date().toISOString(),
     metrics, verdict, grades,
     observations: observations.map((o) => ({ ...o, frames: o.frames.length, answer: o.answer.slice(0, 2000) })),
+    method: {
+      cacheBypassRequested: cacheBypass,
+      cacheBypassProof: cacheBypass ? "X-ALOP-Cache-Status=bypass" : "not requested",
+    },
   }, null, 2));
   console.log(`Report written to ${resolve(reportPath)}`);
 }

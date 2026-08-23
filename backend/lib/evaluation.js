@@ -22,6 +22,9 @@
  *     answer: '…',                  // concatenated `chunk` frames
  *     frames: [{type,…}],           // every SSE frame, in order
  *     latencyMs: 2410,              // request start to stream end
+ *     firstByteMs: 640,             // request start to first body bytes
+ *     firstAnswerTokenMs: 2410,     // request start to first answer chunk
+ *     firstUsefulStageMs: 80,       // request start to first stage/tool event
  *     costCents: null,              // null when unobservable over HTTP
  *     textSource: null,             // 'cache' | 'content' | … | null
  *     error: null,                  // { code, text } from an `error` frame
@@ -91,6 +94,14 @@ function validateCase(testCase, seen = new Set()) {
   else if (seen.has(testCase.id)) at('duplicate id');
   if (typeof testCase.question !== 'string' || !testCase.question.trim()) at('question must be a non-empty string');
   if (testCase.tags !== undefined && !Array.isArray(testCase.tags)) at('tags must be an array');
+  if (testCase.history !== undefined) {
+    if (!Array.isArray(testCase.history)) at('history must be an array');
+    else for (const message of testCase.history) {
+      if (!message || !['user', 'assistant'].includes(message.role) || typeof message.content !== 'string') {
+        at('history entries must be user/assistant messages with string content');
+      }
+    }
+  }
 
   const expect = testCase.expect ?? {};
   if (typeof expect !== 'object' || Array.isArray(expect)) at('expect must be an object');
@@ -271,6 +282,9 @@ function summarise(grades, observations = []) {
   const cacheOk = cacheObs.filter((o) => grades.find((g) => g.id === o.id)?.passed);
 
   const latencies = observations.map((o) => o.latencyMs);
+  const firstBytes = observations.map((o) => o.firstByteMs);
+  const firstAnswerTokens = observations.map((o) => o.firstAnswerTokenMs);
+  const firstUsefulStages = observations.map((o) => o.firstUsefulStageMs);
   const costs = observations.map((o) => o.costCents);
 
   return {
@@ -285,6 +299,12 @@ function summarise(grades, observations = []) {
     cachePrecision: rate(cacheOk.length, cacheObs.length),
     latencyP50Ms: percentile(latencies, 50),
     latencyP95Ms: percentile(latencies, 95),
+    firstByteP50Ms: percentile(firstBytes, 50),
+    firstByteP95Ms: percentile(firstBytes, 95),
+    firstAnswerTokenP50Ms: percentile(firstAnswerTokens, 50),
+    firstAnswerTokenP95Ms: percentile(firstAnswerTokens, 95),
+    firstUsefulStageP50Ms: percentile(firstUsefulStages, 50),
+    firstUsefulStageP95Ms: percentile(firstUsefulStages, 95),
     costCentsPerTurn: mean(costs),
     failures: grades.filter((g) => g.failures.length).map((g) => ({ id: g.id, failures: g.failures })),
   };

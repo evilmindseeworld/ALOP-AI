@@ -264,7 +264,17 @@
   text-align: center;
 }
 
-/* .signin-card-inner has no rule any more, and the div is kept on purpose.
+/* The Clerk slot stays reserved after `isLoaded` flips, because that flag means
+ * the provider is ready to render — not that its own form has finished
+ * mounting. On the production host the Google provider and the email form
+ * arrive in a later layout pass; without this reservation the plan, legal
+ * copy, and council proof all jump down by 316px on a cold 390px load.
+ *
+ * Keep the same measured slot sizes used by `.signin-card-loading` below. This
+ * is not a visual placeholder after mount; it is the geometry contract that
+ * keeps third-party markup from moving the rest of our page.
+ *
+ * The element used to have no rule any more, and the div is kept on purpose.
  *
  * It was a second bordered, inset-shadowed box inside .signin-card — and Clerk
  * draws its own card inside THAT, so the form sat in three nested frames.
@@ -274,8 +284,15 @@
  *
  * The element stays as the card's layout slot: removing it changes the block
  * structure Clerk mounts into, which is a rendering risk for no gain on the one
- * screen every new user sees. It is markup with no styles, which is honest —
- * not a rule that pretends to do something. */
+ * screen every new user sees. The only style here is the measured geometry
+ * reservation; it does not style or depend on Clerk's internal markup. */
+.signin-card-inner {
+  min-height: 342px;
+}
+
+@media (max-width: 480px) {
+  .signin-card-inner { min-height: 306px; }
+}
 
 /* THE SLOT'S PLACEHOLDER, while Clerk's bundle is still on its way.
  *

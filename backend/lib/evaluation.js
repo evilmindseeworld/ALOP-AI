@@ -55,7 +55,7 @@
  *       "mustInclude": ["57.8"],          // case-insensitive substrings
  *       "mustMatch": ["\\b57\\.8\\b"],    // regex, when a substring is too loose
  *       "mustNotInclude": ["as an AI"],
- *       "mustCite": false,                // at least one http(s) URL in the answer
+ *       "mustCite": false,                // an answer URL backed by a source receipt
  *       "expectTools": ["web_search"],    // names seen in `tool_start` frames
  *       "expectNoTools": false,
  *       "expectErrorCode": null,          // for cases that SHOULD be refused
@@ -142,6 +142,35 @@ function loadDataset(raw) {
 
 const citationsIn = (text) => [...String(text || '').matchAll(URL_RE)].map((m) => m[0]);
 
+function canonicalUrl(value) {
+  let candidate = String(value || '').trim().replace(/[),.;:!?]+$/g, '');
+  try {
+    const parsed = new URL(candidate);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
+    parsed.hash = '';
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+function sourceUrlsIn(obs) {
+  const rows = [];
+  if (Array.isArray(obs?.provenance?.sources)) rows.push(...obs.provenance.sources);
+  for (const frame of Array.isArray(obs?.frames) ? obs.frames : []) {
+    if (Array.isArray(frame?.sources)) rows.push(...frame.sources);
+    if (Array.isArray(frame?.evidence)) rows.push(...frame.evidence);
+  }
+  return new Set(rows.map((row) => canonicalUrl(row?.url)).filter(Boolean));
+}
+
+function citationReceiptCoverage(answer, obs) {
+  const found = citationsIn(answer).map(canonicalUrl).filter(Boolean);
+  const receipts = sourceUrlsIn(obs);
+  const matched = found.filter((url) => receipts.has(url));
+  return { found, receipts, matched };
+}
+
 const framesOfType = (obs, type) => (obs.frames || []).filter((f) => f && f.type === type);
 
 /**
@@ -154,20 +183,34 @@ const framesOfType = (obs, type) => (obs.frames || []).filter((f) => f && f.type
  * synthesis output; the leak was found by reading the answer, not by the check
  * that exists to find it.
  *
- * Only the space is normalised. Nothing else about the text is touched, because
- * a needle and a haystack that disagree about anything ELSE is a real
- * difference and the grader should keep saying so.
- *
- * `mustMatch` deliberately still runs against the RAW answer. Collapsing
- * newlines there would let a pattern match across lines it was never meant to
- * span, which LOOSENS a check; the failure this fixes is a forbidden string
- * getting through, and that only lives in the substring checks.
+ * Only Unicode compatibility forms, common editorial punctuation and spaces
+ * are normalised. A needle and a haystack that disagree about content still
+ * disagree; this only prevents typography from changing the meaning of a
+ * content check.
  */
 function flattenSpaces(text) {
   /* JavaScript's whitespace class already covers the exotic separators —
-   * U+00A0, U+2000-200A, U+202F, U+205F, U+3000 — so this needs no hand-kept
-   * list of code points to fall behind Unicode. */
-  return text.replace(/\s+/g, ' ');
+   * U+00A0, U+2000-200A, U+202F, U+205F, U+3000 — after compatibility
+   * normalisation, so this needs no hand-kept list of code points. */
+  return normaliseUnicodeText(text).replace(/\s+/g, ' ');
+}
+
+function normaliseUnicodeText(text) {
+  return String(text ?? '')
+    .normalize('NFKC')
+    .replace(/[\u2018\u2019\u201B\u2032\uFF07]/g, "'")
+    .replace(/[\u201C\u201D\u201F\u2033\uFF02]/g, '"')
+    .replace(/[\u2010\u2011\u2012\u2013\u2212\uFE58\uFE63\uFF0D]/g, '-');
+}
+
+function isLikelyComplete(text) {
+  const answer = String(text ?? '').trim();
+  if (!answer) return false;
+  if ((answer.match(/```/g) || []).length % 2 !== 0) return false;
+
+  const lastLine = answer.split(/\r?\n/).pop().trim();
+  if (!lastLine || /[,;:([{]$/.test(lastLine)) return false;
+  return !/(?:^|\s)(?:and|or|but|because|although|while|with|to|from|including|such as|if|when|that)$/.test(lastLine.toLowerCase());
 }
 
 /**
@@ -198,20 +241,22 @@ function gradeCase(testCase, obs) {
 
   if (!expect.expectErrorCode) {
     add('nonEmpty', answer.trim().length > 0, `${answer.length} chars`);
+    add('completeness', isLikelyComplete(answer), isLikelyComplete(answer) ? 'complete' : 'clear terminal fragment');
     if (expect.minChars !== undefined) add('minChars', answer.length >= expect.minChars, `${answer.length} chars`);
 
     for (const needle of expect.mustInclude ?? []) {
       add(`mustInclude:${needle}`, lower.includes(flattenSpaces(String(needle).toLowerCase())));
     }
     for (const pattern of expect.mustMatch ?? []) {
-      add(`mustMatch:${pattern}`, new RegExp(pattern, 'i').test(answer));
+      add(`mustMatch:${pattern}`, new RegExp(normaliseUnicodeText(pattern), 'i').test(normaliseUnicodeText(answer)));
     }
     for (const needle of expect.mustNotInclude ?? []) {
       add(`mustNotInclude:${needle}`, !lower.includes(flattenSpaces(String(needle).toLowerCase())));
     }
     if (expect.mustCite) {
-      const found = citationsIn(answer);
-      add('mustCite', found.length > 0, `${found.length} url(s)`);
+      const coverage = citationReceiptCoverage(answer, obs);
+      add('mustCite', coverage.matched.length > 0,
+        `${coverage.found.length} url(s), ${coverage.matched.length} backed by ${coverage.receipts.size} receipt(s)`);
     }
   }
 
@@ -313,4 +358,5 @@ function summarise(grades, observations = []) {
 module.exports = {
   URL_RE, KNOWN_EXPECT_KEYS,
   validateCase, loadDataset, gradeCase, summarise, percentile, citationsIn,
+  sourceUrlsIn, citationReceiptCoverage, isLikelyComplete,
 };

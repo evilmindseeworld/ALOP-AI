@@ -178,6 +178,7 @@ test("seeded search deterministically reads the top opaque id and seats only syn
   const id = "11111111-2222-4333-8444-555555555555";
   const url = "https://source.example/report";
   const executed = [];
+  const events = [];
   const registry = {
     list: () => [{ name: "web_search" }, { name: "read_url" }],
     execute: async (call) => {
@@ -187,6 +188,10 @@ test("seeded search deterministically reads the top opaque id and seats only syn
           ok: true,
           summary: "2 results",
           content: `1. [id: ${id}] Report\n   ${url}\n   Search snippet\n\n2. [id: aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee] Other\n   https://other.example/\n   Other snippet`,
+          sources: [
+            { title: "Report", url, via: "web_search" },
+            { title: "Other", url: "https://other.example/", via: "web_search" },
+          ],
         };
       }
       assert.deepEqual(call, { name: "read_url", args: { id } });
@@ -198,6 +203,7 @@ test("seeded search deterministically reads the top opaque id and seats only syn
     members: ["seat"],
     seededSearch: "latest classroom AI",
     registry,
+    onEvent: (event) => events.push(event),
     askMember: async (_member, ctx) => {
       councilContext = ctx;
       return `Teacher-led copilots are expanding ([Report](${url})).\n\n## Sources\n- [Report](${url})`;
@@ -212,6 +218,10 @@ test("seeded search deterministically reads the top opaque id and seats only syn
   assert.match(councilContext.toolResults[1].result.content, /fetched page says classroom copilots/);
   assert.match(result.answers.seat, /https:\/\/source\.example\/report/);
   assert.equal(result.uniqueCallsUsed, 2);
+  assert.deepEqual(events.find((event) => event.type === "tool_result" && event.name === "web_search").evidence, [
+    { title: "Report", url, via: "web_search" },
+    { title: "Other", url: "https://other.example/", via: "web_search" },
+  ]);
 });
 
 test("a seeded search does not consume maxRounds and forces an answer when it uses the tool budget", async () => {

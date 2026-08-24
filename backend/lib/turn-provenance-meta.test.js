@@ -88,3 +88,15 @@ test('partial, aborted, and fallback outcomes never become assembled', () => {
   assert.equal(aborted.provenance.completion.assembled, false);
   assert.equal(fallback.provenance.completion.assembled, false);
 });
+
+test('a complete answer with intentionally skipped synthesis is assembled', () => {
+  const result = buildTurnProvenanceMeta({
+    requestState: 'complete',
+    answerProduced: true,
+    route: 'solo',
+    stageKeys: ['council'],
+    council: { used: true, seatCount: 1, answered: 1, completed: true, partial: false },
+    synthesis: { skipped: true, completed: false },
+  });
+  assert.equal(result.provenance.completion.assembled, true);
+});

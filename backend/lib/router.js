@@ -487,6 +487,17 @@ const STOPWORD_BEFORE_NUMBER = new Set([
   "this", "that", "these", "those", "there", "here", "now", "not", "no", "yes", "me", "him", "her",
 ]);
 
+/* A number followed by an explicit quantity word is a measurement, even when
+ * the verb before it is not in STOPWORD_BEFORE_NUMBER (`serving 30 requests`,
+ * `takes 200 milliseconds`, `retry after 20 seconds`). This is grammar, not a
+ * catalogue of brands or products, so a new identifier remains searchable. */
+const QUANTITY_WORD_AFTER_NUMBER = new Set([
+  "request", "requests", "worker", "workers", "user", "users",
+  "millisecond", "milliseconds", "ms", "second", "seconds",
+  "minute", "minutes", "hour", "hours", "day", "days", "week", "weeks",
+  "month", "months", "year", "years", "item", "items", "record", "records",
+]);
+
 /** The first `word number` pair that looks like a product line, or null. */
 function brandNumber(text) {
   const tokens = String(text || "").split(/[^A-Za-z0-9.]+/).filter(Boolean);
@@ -496,6 +507,7 @@ function brandNumber(text) {
     if (!/^[A-Za-z]{2,}$/.test(word) || STOPWORD_BEFORE_NUMBER.has(word.toLowerCase())) continue;
     if (!/^\d{2,5}[A-Za-z]{0,3}$/.test(number)) continue;
     if (UNIT_TOKEN_RE.test(number) || FORMAT_TOKEN_RE.test(number) || VERSION_TOKEN_RE.test(number)) continue;
+    if (QUANTITY_WORD_AFTER_NUMBER.has((tokens[i + 2] || "").toLowerCase())) continue;
     return `${word} ${number}`;
   }
   return null;
@@ -514,6 +526,13 @@ function modelDesignations(text) {
     if (token.length < 4 || token.length > 16) continue;
     if (!/[A-Za-z]/.test(token) || !/\d/.test(token)) continue;
     if (UNIT_TOKEN_RE.test(token) || FORMAT_TOKEN_RE.test(token) || VERSION_TOKEN_RE.test(token)) continue;
+    if (!found.includes(token)) found.push(token);
+  }
+  /* Hyphenated designations are one grammatical unit: `GPT-5.6` must not be
+   * split into an ordinary word and a version number. The prefix is the model
+   * or product context; no brand list is needed. */
+  for (const match of String(text || '').matchAll(/\b[A-Za-z]{2,}[-_]\d{1,5}(?:\.\d+)?[A-Za-z]{0,3}\b/g)) {
+    const token = match[0];
     if (!found.includes(token)) found.push(token);
   }
   return found;

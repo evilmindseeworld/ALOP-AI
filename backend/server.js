@@ -4451,6 +4451,7 @@ async function handleCouncilTurn(req, res) {
        * with no latency recorded. */
       if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
       sendEvent(res, { type: 'chunk', text: noteWholeAnswer(sum.answer) });
+      sendProvenance(sum.answer, 'complete');
       if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
       /* NOT `rememberTurn`. It runs a summary and a fact-extraction call, which
        * would spend two model requests to record that 80 squared is 6400 —
@@ -4503,6 +4504,7 @@ async function handleCouncilTurn(req, res) {
       openStream(res);
       if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
       sendEvent(res, { type: 'chunk', text: noteWholeAnswer(greeting) });
+      sendProvenance(greeting, 'complete');
       if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
       await auditBranch({
         category: 'greeting',
@@ -5175,6 +5177,7 @@ async function handleCouncilTurn(req, res) {
          * unknown type is silently dropped there, which is a blank answer. */
         if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
         sendEvent(res, { type: 'chunk', text: noteWholeAnswer(hit.answer) });
+        sendProvenance(hit.answer, 'complete');
         if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
         /* NOT `rememberTurn`, on the same argument the arithmetic branch makes:
          * it spends a summary call and a fact-extraction call, which is two
@@ -5212,6 +5215,7 @@ async function handleCouncilTurn(req, res) {
           openStream(res);
           if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
           sendEvent(res, { type: 'chunk', text: noteWholeAnswer(semanticHit.answer) });
+          sendProvenance(semanticHit.answer, 'complete');
           if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
           await auditBranch({
             category: 'answer_cache_semantic', models: 0, seatCount: 0,
@@ -6337,6 +6341,7 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
        * moment synthesis would have STARTED. */
       if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
       sendEvent(res, { type: 'chunk', text: noteWholeAnswer(soleDraft) });
+      sendProvenance(soleDraft, 'complete');
       if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
       if (turnSignal.aborted) return;
       const lastSolo = histArr.filter((m) => m.role === 'assistant').slice(-1)[0]?.content || '';
@@ -6460,6 +6465,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
        * A recovery that lies in the telemetry is a recovery nobody can measure. */
       if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
       sendEvent(res, { type: 'chunk', text: noteWholeAnswer(draft) });
+      sendProvenance(draft, 'complete', classifyFallbackReason(err));
       if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
       if (turnSignal.aborted) return;
       /* NOT CACHED. `cacheAnswer` writes a shelf shared by every user; a draft

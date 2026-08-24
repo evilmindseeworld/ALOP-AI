@@ -192,9 +192,13 @@ function buildTurnProvenanceMeta(input = {}) {
   const partialCouncil = Boolean(councilInput.partial);
   const synthesisCompleted = Boolean(synthesisInput.completed);
   const failedTools = boundedCount(evidenceInput.failedTools, 24);
+  const degradedRoute = route === "fallback" || route === "degraded";
+  const skippedSynthesis = Boolean(synthesisInput.skipped)
+    && !degradedRoute
+    && !Boolean(synthesisInput.fallback);
   const assembled = requestState === "complete"
     && answerProduced
-    && synthesisCompleted
+    && (synthesisCompleted || skippedSynthesis)
     && !Boolean(failureInput.occurred)
     && !Boolean(failureInput.userAborted);
 

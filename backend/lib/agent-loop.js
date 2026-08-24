@@ -236,7 +236,15 @@ async function runAgentLoop({ members, askMember, registry, seededSearch, onEven
       toolMsUsed += durationMs;
       uniqueCallsUsed++;
       toolRounds.push({ round: 0, durationMs, calls: 1, aborted: turnSignal.aborted, seeded: true });
-      onEvent({ type: "tool_result", round: 0, name: seededCall.name, ok: result.ok, summary: result.summary, seeded: true });
+      onEvent({
+        type: "tool_result",
+        round: 0,
+        name: seededCall.name,
+        ok: result.ok,
+        summary: result.summary,
+        seeded: true,
+        ...(Array.isArray(result.sources) ? { evidence: result.sources } : {}),
+      });
 
       const entry = { call: seededCall, result };
       toolResultCache.set(seedKey, entry);
@@ -280,7 +288,15 @@ async function runAgentLoop({ members, askMember, registry, seededSearch, onEven
             toolMsUsed += readDurationMs;
             uniqueCallsUsed++;
             toolRounds.push({ round: 0, durationMs: readDurationMs, calls: 1, aborted: turnSignal.aborted, seeded: true });
-            onEvent({ type: "tool_result", round: 0, name: seededReadCall.name, ok: readResult.ok, summary: readResult.summary, seeded: true });
+            onEvent({
+              type: "tool_result",
+              round: 0,
+              name: seededReadCall.name,
+              ok: readResult.ok,
+              summary: readResult.summary,
+              seeded: true,
+              ...(Array.isArray(readResult.sources) ? { evidence: readResult.sources } : {}),
+            });
             const readEntry = { call: seededReadCall, result: readResult };
             toolResultCache.set(readKey, readEntry);
             transcript.push(readEntry);

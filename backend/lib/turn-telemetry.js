@@ -174,15 +174,33 @@ function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null
       if (!usage || typeof usage !== 'object') return;
       const key = String(phase || 'council');
       const bucket = usageByPhase.get(key)
-        || { promptTokens: 0, completionTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 };
-      const add = (value) => {
-        const n = Number(value);
-        return Number.isFinite(n) && n > 0 ? n : 0;
+        || {
+          promptTokens: null,
+          completionTokens: null,
+          totalTokens: null,
+          costUsd: null,
+          calls: 0,
+          unknown: { promptTokens: false, completionTokens: false, totalTokens: false, costUsd: false },
       };
-      bucket.promptTokens += add(usage.promptTokens);
-      bucket.completionTokens += add(usage.completionTokens);
-      bucket.totalTokens += add(usage.totalTokens);
-      bucket.costUsd += add(usage.costUsd);
+      const add = (field, value) => {
+        if (value == null || value === '') {
+          bucket.unknown[field] = true;
+          bucket[field] = null;
+          return;
+        }
+        const n = Number(value);
+        if (!Number.isFinite(n) || n < 0) {
+          bucket.unknown[field] = true;
+          bucket[field] = null;
+          return;
+        }
+        if (bucket.unknown[field]) return;
+        bucket[field] = (bucket[field] ?? 0) + n;
+      };
+      add('promptTokens', usage.promptTokens);
+      add('completionTokens', usage.completionTokens);
+      add('totalTokens', usage.totalTokens);
+      add('costUsd', usage.costUsd);
       bucket.calls += 1;
       usageByPhase.set(key, bucket);
       usageCalls += 1;
@@ -385,24 +403,26 @@ function createTurnTelemetry({ now = Date.now, startedAt = now(), context = null
       /* null rather than a zeroed object when no provider reported usage. A
        * zero here would read as "this turn cost nothing", which is the one
        * thing it definitely did not. */
+      const phaseBuckets = [...usageByPhase.values()];
+      const sumUsageField = (field) => {
+        if (phaseBuckets.length === 0 || phaseBuckets.some((bucket) => bucket.unknown[field])) return null;
+        return phaseBuckets.reduce((sum, bucket) => sum + (bucket[field] ?? 0), 0);
+      };
       const usage = usageCalls === 0 ? null : {
         calls: usageCalls,
-        promptTokens: 0,
-        completionTokens: 0,
-        totalTokens: 0,
-        costUsd: 0,
+        promptTokens: sumUsageField('promptTokens'),
+        completionTokens: sumUsageField('completionTokens'),
+        totalTokens: sumUsageField('totalTokens'),
+        costUsd: sumUsageField('costUsd'),
         byPhase: {},
       };
       if (usage) {
         for (const [phase, bucket] of usageByPhase) {
-          usage.byPhase[phase] = { ...bucket };
-          usage.promptTokens += bucket.promptTokens;
-          usage.completionTokens += bucket.completionTokens;
-          usage.totalTokens += bucket.totalTokens;
-          usage.costUsd += bucket.costUsd;
+          const { unknown, ...publicBucket } = bucket;
+          usage.byPhase[phase] = publicBucket;
         }
         // Sub-cent sums accumulate float noise that reads as false precision.
-        usage.costUsd = Math.round(usage.costUsd * 1e6) / 1e6;
+        if (Number.isFinite(usage.costUsd)) usage.costUsd = Math.round(usage.costUsd * 1e6) / 1e6;
       }
       /* Summed, not just listed. `providerRequests` is what lib/spend.js reads
        * to settle the account-wide request ceiling, and a settlement that had

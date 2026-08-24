@@ -786,6 +786,33 @@ test("a brand followed by a number counts, and a function word followed by one d
   assert.equal(namesSpecificModel("i bought 27 inch panels"), false, "'bought 27' is not a product line");
 });
 
+test("a number in ordinary quantity grammar is not a product identifier", () => {
+  for (const text of [
+    "serving 30 requests",
+    "takes 200 milliseconds",
+    "50 workers",
+    "handles 300 users",
+    "retry after 20 seconds",
+    "version 2",
+  ]) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced a search`);
+  }
+});
+
+test("designation grammar plus product or model context still forces a search", () => {
+  for (const text of [
+    "GPT-5.6",
+    "RTX 5090",
+    "XG27AQWMG",
+    "iPhone 17 Pro",
+    "Node 26",
+  ]) {
+    assert.equal(namesSpecificModel(text), true, text);
+    assert.ok(routeByRule(`What is ${text}?`, {})?.queries?.length, `${text} did not force a search`);
+  }
+});
+
 test("units, formats and version numbers are a spec the user quoted, not a product", () => {
   for (const text of [
     "my monitor is 1440p 280hz should i cap fps at 240fps",

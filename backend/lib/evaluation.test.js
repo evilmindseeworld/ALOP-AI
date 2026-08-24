@@ -68,11 +68,40 @@ test("a line break between the words of a needle is still a match", () => {
   assert.equal(grade.passed, false);
 });
 
-test("mustCite counts URLs in the answer, and no URL is a failure", () => {
+test("mustCite requires a URL backed by a recorded public source receipt", () => {
   assert.equal(citationsIn("see https://example.com/a and http://b.org").length, 2);
-  const grade = gradeCase(caseOf({ mustCite: true }), obs({ answer: "Node 24 is current." }));
-  assert.equal(grade.passed, false);
-  assert.ok(grade.failures.some((f) => f.startsWith("mustCite")));
+  const noUrl = gradeCase(caseOf({ mustCite: true }), obs({ answer: "Node 24 is current." }));
+  assert.equal(noUrl.passed, false);
+  assert.ok(noUrl.failures.some((f) => f.startsWith("mustCite")));
+
+  const ungrounded = gradeCase(caseOf({ mustCite: true }), obs({ answer: "Node 24 is current: https://example.com/a" }));
+  assert.equal(ungrounded.passed, false);
+  assert.ok(ungrounded.failures.some((f) => f.startsWith("mustCite")));
+
+  const grounded = gradeCase(caseOf({ mustCite: true }), obs({
+    answer: "Node 24 is current: https://example.com/a.",
+    provenance: { sources: [{ title: "Node release", url: "https://example.com/a", via: "web_search" }] },
+  }));
+  assert.equal(grounded.passed, true, grounded.failures.join("|"));
+});
+
+test("mustMatch folds curly apostrophes and Unicode hyphens without flattening line boundaries", () => {
+  const grade = gradeCase(caseOf({ mustMatch: ["don't have|can't|self-host"] }), obs({
+    answer: "I don’t have access to the private figures.\nA self‑hosted copy is not recommended.",
+  }));
+  assert.equal(grade.passed, true, grade.failures.join("|"));
+});
+
+test("clear answer fragments fail completeness even when they meet minChars", () => {
+  const fragment = gradeCase(caseOf({ minChars: 20 }), obs({
+    answer: "The rollout should begin with a controlled baseline and",
+  }));
+  assert.equal(fragment.passed, false);
+  assert.ok(fragment.failures.some((f) => f.startsWith("completeness")));
+
+  const openFence = gradeCase(caseOf({}), obs({ answer: "```js\nconst answer = 42;" }));
+  assert.equal(openFence.passed, false);
+  assert.ok(openFence.failures.some((f) => f.startsWith("completeness")));
 });
 
 test("expectTools reads the tool_start frames rather than the answer text", () => {
@@ -123,7 +152,11 @@ test("citationRate is measured only over the cases that must cite", () => {
     caseOf({ mustInclude: ["4"] }, { id: "a1" }),
   ];
   const observations = [
-    obs({ id: "s1", answer: "https://example.com says so" }),
+    obs({
+      id: "s1",
+      answer: "https://example.com says so",
+      provenance: { sources: [{ title: "Example", url: "https://example.com", via: "web_search" }] },
+    }),
     obs({ id: "a1", answer: "2 + 2 is 4" }),
   ];
   const grades = cases.map((c) => gradeCase(c, observations.find((o) => o.id === c.id)));

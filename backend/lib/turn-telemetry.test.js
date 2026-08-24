@@ -102,7 +102,26 @@ test("a provider that reports no numbers does not poison the sums", () => {
   t.recordUsage({ promptTokens: null, completionTokens: null, totalTokens: null, costUsd: null });
   const { usage } = t.snapshot();
   assert.equal(usage.calls, 1, "the call still happened");
-  assert.equal(usage.totalTokens, 0);
+  assert.equal(usage.promptTokens, null);
+  assert.equal(usage.completionTokens, null);
+  assert.equal(usage.totalTokens, null);
+  assert.equal(usage.costUsd, null);
+  assert.equal(usage.byPhase.council.promptTokens, null);
+});
+
+test("partial provider usage stays partial instead of becoming a false complete total", () => {
+  const t = createTurnTelemetry({ now: () => 0, startedAt: 0 });
+  t.recordUsage({ promptTokens: 100, completionTokens: null, totalTokens: null, costUsd: null });
+  t.recordUsage({ promptTokens: null, completionTokens: 20, totalTokens: null, costUsd: 0 }, { phase: "synthesis" });
+
+  const { usage } = t.snapshot();
+  assert.equal(usage.promptTokens, null, "the council completion count is unknown");
+  assert.equal(usage.completionTokens, null, "the synthesis prompt count is unknown");
+  assert.equal(usage.totalTokens, null);
+  assert.equal(usage.costUsd, null, "one phase did not report cost");
+  assert.deepEqual(usage.byPhase.synthesis, {
+    promptTokens: null, completionTokens: 20, totalTokens: null, costUsd: 0, calls: 1,
+  });
 });
 
 /* ---- physical provider attempts, tool outcomes, cancellation ---------- */

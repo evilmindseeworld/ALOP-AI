@@ -510,7 +510,8 @@ function brandNumber(text) {
     if (!/^[A-Za-z]{2,}$/.test(word) || STOPWORD_BEFORE_NUMBER.has(word.toLowerCase())) continue;
     if (!/^\d{2,5}[A-Za-z]{0,3}$/.test(number)) continue;
     if (UNIT_TOKEN_RE.test(number) || FORMAT_TOKEN_RE.test(number) || VERSION_TOKEN_RE.test(number)) continue;
-    if (percentSuffix || QUANTITY_WORD_AFTER_NUMBER.has((tokens[i + 2] || "").toLowerCase())) continue;
+    const afterNumber = (tokens[i + 2] || "").replace(/[.%]+$/, "").toLowerCase();
+    if (percentSuffix || QUANTITY_WORD_AFTER_NUMBER.has(afterNumber)) continue;
     return `${word} ${number}`;
   }
   return null;

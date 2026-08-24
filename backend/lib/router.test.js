@@ -795,6 +795,9 @@ test("a number in ordinary quantity grammar is not a product identifier", () => 
     "retry after 20 seconds",
     "a cache hit takes 5 ms but misses 20% of the time",
     "a cache hit takes 5 ms but misses 20 percent of the time",
+    "This takes 200 milliseconds.",
+    "The server handles 300 users.",
+    "Retry after 20 seconds.",
     "version 2",
   ]) {
     assert.equal(namesSpecificModel(text), false, text);

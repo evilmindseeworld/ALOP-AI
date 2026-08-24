@@ -15,6 +15,8 @@ test('the evaluator refuses an arbitrary Clerk user', () => {
 
 test('the evaluator uses a real Clerk session and revokes it', () => {
   assert.match(SOURCE, /Authorization: `Bearer \$\{SECRET\}`/);
+  assert.match(SOURCE, /EVAL_CLERK_TESTING_TOKEN/);
+  assert.match(SOURCE, /__clerk_testing_token/);
   assert.match(SOURCE, /\/sign_in_tokens/);
   assert.match(SOURCE, /\/v1\/client\/sign_ins/);
   assert.match(SOURCE, /\/v1\/client\/sessions\/\$\{sessionId\}\/tokens/);

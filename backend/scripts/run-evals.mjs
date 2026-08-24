@@ -18,6 +18,8 @@
  *   --limit <n>           run at most n cases
  *   --gates <path>        JSON of { gateName: threshold | {…} | false }
  *   --cache-bypass         require and send the secret-gated fresh-execution header
+ *   EVAL_CLERK_TESTING_TOKEN
+ *                         short-lived Clerk testing token for development-instance auth
  *   --allow-inconclusive  do not fail the run on an unmeasured gate
  *   --validate-only       check the dataset and exit, spending nothing
  *
@@ -187,6 +189,9 @@ let releaseSession = async () => {};
 if (process.env.EVAL_CLERK_SECRET_KEY) {
   const SECRET = process.env.EVAL_CLERK_SECRET_KEY;
   const CLERK_JS = "_clerk_js_version=5.0.0";
+  const CLERK_TESTING_QUERY = process.env.EVAL_CLERK_TESTING_TOKEN
+    ? `&__clerk_testing_token=${encodeURIComponent(process.env.EVAL_CLERK_TESTING_TOKEN)}`
+    : "";
 
   /* Every Clerk call routed through one reporter. A wrong or wrong-instance
    * secret key answers 401 here, and the useful form of that is one line
@@ -227,7 +232,7 @@ if (process.env.EVAL_CLERK_SECRET_KEY) {
 
   /* Redeeming the ticket at the Frontend API is what makes this a real client
    * session. `Origin` is the load-bearing header: it becomes `azp`. */
-  const signIn = await fetch(`${fapi}/v1/client/sign_ins?${CLERK_JS}`, {
+  const signIn = await fetch(`${fapi}/v1/client/sign_ins?${CLERK_JS}${CLERK_TESTING_QUERY}`, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded", Origin: origin },
     body: new URLSearchParams({ strategy: "ticket", ticket: ticket.token }),
@@ -266,7 +271,7 @@ if (process.env.EVAL_CLERK_SECRET_KEY) {
   /* Minted per case rather than once: that is the whole point. The Frontend
    * API returns a new JWT from the live session every time it is asked. */
   tokenFor = async () => {
-    const res = await fetch(`${fapi}/v1/client/sessions/${sessionId}/tokens?${CLERK_JS}`, {
+    const res = await fetch(`${fapi}/v1/client/sessions/${sessionId}/tokens?${CLERK_JS}${CLERK_TESTING_QUERY}`, {
       method: "POST",
       headers: { Origin: origin, Cookie: cookie },
     });

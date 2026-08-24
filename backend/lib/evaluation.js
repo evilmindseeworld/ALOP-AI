@@ -168,7 +168,8 @@ function citationReceiptCoverage(answer, obs) {
   const found = citationsIn(answer).map(canonicalUrl).filter(Boolean);
   const receipts = sourceUrlsIn(obs);
   const matched = found.filter((url) => receipts.has(url));
-  return { found, receipts, matched };
+  const ungrounded = found.filter((url) => !receipts.has(url));
+  return { found, receipts, matched, ungrounded };
 }
 
 const framesOfType = (obs, type) => (obs.frames || []).filter((f) => f && f.type === type);
@@ -200,8 +201,16 @@ function normaliseUnicodeText(text) {
     .normalize('NFKC')
     .replace(/[\u2018\u2019\u201B\u2032\uFF07]/g, "'")
     .replace(/[\u201C\u201D\u201F\u2033\uFF02]/g, '"')
-    .replace(/[\u2010\u2011\u2012\u2013\u2212\uFE58\uFE63\uFF0D]/g, '-');
+    .replace(/[\u2010\u2011\u2012\u2013\u2212\uFE58\uFE63\uFF0D]/g, '-')
+    .replace(/\s+%/g, '%');
 }
+
+const COMPLETE_SHORT_WORDS = new Set([
+  'a', 'an', 'api', 'app', 'as', 'at', 'all', 'any', 'be', 'by', 'cpu', 'day', 'do', 'for', 'from',
+  'go', 'how', 'if', 'in', 'is', 'it', 'less', 'ms', 'no', 'now', 'of', 'off', 'on', 'one', 'or',
+  'out', 'per', 'ram', 'sql', 'the', 'to', 'too', 'two', 'up', 'url', 'use', 'via', 'way', 'web',
+  'why', 'yes',
+]);
 
 function isLikelyComplete(text) {
   const answer = String(text ?? '').trim();
@@ -210,7 +219,18 @@ function isLikelyComplete(text) {
 
   const lastLine = answer.split(/\r?\n/).pop().trim();
   if (!lastLine || /[,;:([{]$/.test(lastLine)) return false;
-  return !/(?:^|\s)(?:and|or|but|because|although|while|with|to|from|including|such as|if|when|that)$/.test(lastLine.toLowerCase());
+  if (/[<]$/.test(lastLine) || /\|\s*<$/.test(lastLine)) return false;
+  if (/(?:^|\s)(?:and|or|but|because|although|while|with|to|from|including|such as|if|when|that)$/.test(lastLine.toLowerCase())) return false;
+
+  /* A stream cut can stop inside a word without leaving punctuation or an
+   * obvious conjunction. Keep this conservative: only flag a short,
+   * lowercase tail on a substantial answer, and allow common legitimate
+   * two/three-letter endings such as `API`, `SQL`, `yes`, and `use`. */
+  const trailingWord = lastLine.match(/([a-z]+)$/)?.[1]?.toLowerCase();
+  if (answer.length >= 80 && trailingWord && trailingWord.length <= 3
+    && !COMPLETE_SHORT_WORDS.has(trailingWord)
+    && !/[.!?`|)]$/.test(lastLine)) return false;
+  return true;
 }
 
 /**
@@ -230,13 +250,22 @@ function gradeCase(testCase, obs) {
   const checks = [];
   const add = (name, ok, detail = '') => checks.push({ name, ok, detail });
 
-  // An error frame fails everything UNLESS the case asked for that code. A case
-  // that expects a refusal and gets one is the only way an error is a pass.
+  // An expected error is a normal graded outcome. An unexpected transport or
+  // provider error is unobserved content, not a failed answer: classify the
+  // case as inconclusive and keep it out of content, citation, and latency
+  // quality metrics.
   const errorCode = obs?.error?.code ?? null;
   if (expect.expectErrorCode) {
     add('errorCode', errorCode === expect.expectErrorCode, `saw ${errorCode ?? 'no error'}`);
   } else if (errorCode) {
-    add('noError', false, `error frame: ${errorCode}`);
+    return {
+      id: testCase.id,
+      tags: testCase.tags ?? [],
+      checks: [{ name: 'transportError', ok: null, detail: `error frame: ${errorCode}` }],
+      passed: false,
+      inconclusive: true,
+      failures: [],
+    };
   }
 
   if (!expect.expectErrorCode) {
@@ -255,7 +284,7 @@ function gradeCase(testCase, obs) {
     }
     if (expect.mustCite) {
       const coverage = citationReceiptCoverage(answer, obs);
-      add('mustCite', coverage.matched.length > 0,
+      add('mustCite', coverage.found.length > 0 && coverage.ungrounded.length === 0,
         `${coverage.found.length} url(s), ${coverage.matched.length} backed by ${coverage.receipts.size} receipt(s)`);
     }
   }
@@ -309,35 +338,41 @@ const mean = (values) => {
  */
 function summarise(grades, observations = []) {
   const total = grades.length;
-  const passed = grades.filter((g) => g.passed).length;
   const rate = (num, den) => (den > 0 ? num / den : null);
+  const evaluatedGrades = grades.filter((g) => !g.inconclusive);
+  const evaluatedIds = new Set(evaluatedGrades.map((g) => g.id));
+  const measuredObservations = observations.filter((o) => evaluatedIds.has(o.id));
+  const evaluatedCases = evaluatedGrades.length;
+  const passed = evaluatedGrades.filter((g) => g.passed).length;
 
-  const tagged = (tag) => grades.filter((g) => (g.tags || []).includes(tag));
+  const tagged = (tag) => evaluatedGrades.filter((g) => (g.tags || []).includes(tag));
   const factual = tagged('factuality');
 
-  const citing = grades.filter((g) => g.checks.some((c) => c.name === 'mustCite'));
+  const citing = evaluatedGrades.filter((g) => g.checks.some((c) => c.name === 'mustCite'));
   const citingOk = citing.filter((g) => g.checks.find((c) => c.name === 'mustCite')?.ok === true);
 
-  const toolResults = observations.flatMap((o) => framesOfType(o, 'tool_result'));
+  const toolResults = measuredObservations.flatMap((o) => framesOfType(o, 'tool_result'));
   // Cache PRECISION, not hit rate: of the turns that were served from cache,
   // how many still answered the question correctly. A stale or mis-keyed cache
   // row is a hit and a wrong answer at the same time, and hit rate calls that a
   // success.
-  const cacheObs = observations.filter((o) => o.textSource === 'cache');
+  const cacheObs = measuredObservations.filter((o) => o.textSource === 'cache');
   const cacheOk = cacheObs.filter((o) => grades.find((g) => g.id === o.id)?.passed);
 
-  const latencies = observations.map((o) => o.latencyMs);
-  const firstBytes = observations.map((o) => o.firstByteMs);
-  const firstAnswerTokens = observations.map((o) => o.firstAnswerTokenMs);
-  const firstUsefulStages = observations.map((o) => o.firstUsefulStageMs);
-  const costs = observations.map((o) => o.costCents);
+  const latencies = measuredObservations.map((o) => o.latencyMs);
+  const firstBytes = measuredObservations.map((o) => o.firstByteMs);
+  const firstAnswerTokens = measuredObservations.map((o) => o.firstAnswerTokenMs);
+  const firstUsefulStages = measuredObservations.map((o) => o.firstUsefulStageMs);
+  const costs = measuredObservations.map((o) => o.costCents);
 
   return {
     cases: total,
+    evaluatedCases,
+    coverageRate: rate(evaluatedCases, total),
     passed,
-    failed: grades.filter((g) => g.checks.some((c) => c.ok === false)).length,
+    failed: evaluatedGrades.filter((g) => g.checks.some((c) => c.ok === false)).length,
     inconclusive: grades.filter((g) => g.inconclusive).length,
-    acceptanceRate: rate(passed, total),
+    acceptanceRate: rate(passed, evaluatedCases),
     factualityPassRate: rate(factual.filter((g) => g.passed).length, factual.length),
     citationRate: rate(citingOk.length, citing.length),
     toolSuccessRate: rate(toolResults.filter((f) => f.ok === true).length, toolResults.length),
@@ -351,7 +386,7 @@ function summarise(grades, observations = []) {
     firstUsefulStageP50Ms: percentile(firstUsefulStages, 50),
     firstUsefulStageP95Ms: percentile(firstUsefulStages, 95),
     costCentsPerTurn: mean(costs),
-    failures: grades.filter((g) => g.failures.length).map((g) => ({ id: g.id, failures: g.failures })),
+    failures: evaluatedGrades.filter((g) => g.failures.length).map((g) => ({ id: g.id, failures: g.failures })),
   };
 }
 

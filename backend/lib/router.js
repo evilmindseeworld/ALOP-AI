@@ -496,18 +496,21 @@ const QUANTITY_WORD_AFTER_NUMBER = new Set([
   "millisecond", "milliseconds", "ms", "second", "seconds",
   "minute", "minutes", "hour", "hours", "day", "days", "week", "weeks",
   "month", "months", "year", "years", "item", "items", "record", "records",
+  "percent", "percentage",
 ]);
 
 /** The first `word number` pair that looks like a product line, or null. */
 function brandNumber(text) {
-  const tokens = String(text || "").split(/[^A-Za-z0-9.]+/).filter(Boolean);
+  const tokens = String(text || "").split(/[^A-Za-z0-9.%]+/).filter(Boolean);
   for (let i = 0; i < tokens.length - 1; i += 1) {
     const word = tokens[i];
-    const number = tokens[i + 1].replace(/\.+$/, "");
+    const rawNumber = tokens[i + 1];
+    const percentSuffix = rawNumber.endsWith('%') || tokens[i + 2] === '%';
+    const number = rawNumber.replace(/%$/, '').replace(/\.+$/, "");
     if (!/^[A-Za-z]{2,}$/.test(word) || STOPWORD_BEFORE_NUMBER.has(word.toLowerCase())) continue;
     if (!/^\d{2,5}[A-Za-z]{0,3}$/.test(number)) continue;
     if (UNIT_TOKEN_RE.test(number) || FORMAT_TOKEN_RE.test(number) || VERSION_TOKEN_RE.test(number)) continue;
-    if (QUANTITY_WORD_AFTER_NUMBER.has((tokens[i + 2] || "").toLowerCase())) continue;
+    if (percentSuffix || QUANTITY_WORD_AFTER_NUMBER.has((tokens[i + 2] || "").toLowerCase())) continue;
     return `${word} ${number}`;
   }
   return null;

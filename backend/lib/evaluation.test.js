@@ -68,7 +68,7 @@ test("a line break between the words of a needle is still a match", () => {
   assert.equal(grade.passed, false);
 });
 
-test("mustCite requires a URL backed by a recorded public source receipt", () => {
+test("mustCite requires every answer URL to be backed by a recorded public source receipt", () => {
   assert.equal(citationsIn("see https://example.com/a and http://b.org").length, 2);
   const noUrl = gradeCase(caseOf({ mustCite: true }), obs({ answer: "Node 24 is current." }));
   assert.equal(noUrl.passed, false);
@@ -83,11 +83,25 @@ test("mustCite requires a URL backed by a recorded public source receipt", () =>
     provenance: { sources: [{ title: "Node release", url: "https://example.com/a", via: "web_search" }] },
   }));
   assert.equal(grounded.passed, true, grounded.failures.join("|"));
+
+  const mixed = gradeCase(caseOf({ mustCite: true }), obs({
+    answer: "Node 24 is current: https://example.com/a and https://unrelated.example/b",
+    provenance: { sources: [{ title: "Node release", url: "https://example.com/a", via: "web_search" }] },
+  }));
+  assert.equal(mixed.passed, false);
+  assert.ok(mixed.failures.some((f) => f.startsWith("mustCite")));
 });
 
 test("mustMatch folds curly apostrophes and Unicode hyphens without flattening line boundaries", () => {
   const grade = gradeCase(caseOf({ mustMatch: ["don't have|can't|self-host"] }), obs({
     answer: "I don’t have access to the private figures.\nA self‑hosted copy is not recommended.",
+  }));
+  assert.equal(grade.passed, true, grade.failures.join("|"));
+});
+
+test("mustMatch treats a space before percent sign as typography", () => {
+  const grade = gradeCase(caseOf({ mustMatch: ["\\b1%|\\b0\\.9"] }), obs({
+    answer: "About 1 % chance; roughly 1 %.",
   }));
   assert.equal(grade.passed, true, grade.failures.join("|"));
 });
@@ -102,6 +116,18 @@ test("clear answer fragments fail completeness even when they meet minChars", ()
   const openFence = gradeCase(caseOf({}), obs({ answer: "```js\nconst answer = 42;" }));
   assert.equal(openFence.passed, false);
   assert.ok(openFence.failures.some((f) => f.startsWith("completeness")));
+
+  const clippedWord = gradeCase(caseOf({}), obs({
+    answer: "A replica adds operational cost and consistency concerns, but at this traffic level it gives you mo",
+  }));
+  assert.equal(clippedWord.passed, false);
+  assert.ok(clippedWord.failures.some((f) => f.startsWith("completeness")));
+
+  const clippedTable = gradeCase(caseOf({}), obs({
+    answer: "| Metric | Value |\n|---|---|\n| overall confidence | <",
+  }));
+  assert.equal(clippedTable.passed, false);
+  assert.ok(clippedTable.failures.some((f) => f.startsWith("completeness")));
 });
 
 test("expectTools reads the tool_start frames rather than the answer text", () => {
@@ -117,10 +143,11 @@ test("expectNoTools fails a turn that searched, which is the routing regression"
   assert.equal(grade.passed, false);
 });
 
-test("an error frame fails every case except one that asked for that code", () => {
-  const failed = gradeCase(caseOf({ mustInclude: ["x"] }), obs({ error: { code: "model_quota_exhausted" } }));
-  assert.equal(failed.passed, false);
-  assert.ok(failed.failures.some((f) => f.startsWith("noError")));
+test("an unexpected error is inconclusive, while an expected error is graded", () => {
+  const unmeasured = gradeCase(caseOf({ mustInclude: ["x"] }), obs({ error: { code: "model_quota_exhausted" } }));
+  assert.equal(unmeasured.passed, false);
+  assert.equal(unmeasured.inconclusive, true);
+  assert.deepEqual(unmeasured.failures, []);
 
   const expected = gradeCase(caseOf({ expectErrorCode: "model_quota_exhausted" }), obs({ error: { code: "model_quota_exhausted" } }));
   assert.equal(expected.passed, true, expected.failures.join("|"));
@@ -163,6 +190,26 @@ test("citationRate is measured only over the cases that must cite", () => {
   const metrics = summarise(grades, observations);
   assert.equal(metrics.citationRate, 1);
   assert.equal(metrics.cases, 2);
+  assert.equal(metrics.evaluatedCases, 2);
+  assert.equal(metrics.coverageRate, 1);
+});
+
+test("provider errors leave content rates and timing unmeasured", () => {
+  const cases = [caseOf({ mustInclude: ["4"] }, { id: "ok" }), caseOf({ mustInclude: ["4"] }, { id: "quota" })];
+  const observations = [
+    obs({ id: "ok", answer: "4", latencyMs: 100 }),
+    obs({ id: "quota", answer: "", latencyMs: 2000, error: { code: "model_quota_exhausted" } }),
+  ];
+  const grades = cases.map((c) => gradeCase(c, observations.find((o) => o.id === c.id)));
+  const metrics = summarise(grades, observations);
+  assert.equal(metrics.passed, 1);
+  assert.equal(metrics.failed, 0);
+  assert.equal(metrics.inconclusive, 1);
+  assert.equal(metrics.evaluatedCases, 1);
+  assert.equal(metrics.coverageRate, 0.5);
+  assert.equal(metrics.acceptanceRate, 1);
+  assert.equal(metrics.latencyP50Ms, 100);
+  assert.equal(metrics.latencyP95Ms, 100);
 });
 
 test("an unmeasured metric is null, not zero — zero passes every max gate", () => {

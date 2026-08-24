@@ -5,6 +5,8 @@ const { DEFAULT_GATES, mergeGates, evaluateGates, formatGates } = require("./rel
 /** Everything measured, everything comfortably inside its threshold. */
 const GOOD = {
   cases: 22,
+  evaluatedCases: 22,
+  coverageRate: 1,
   acceptanceRate: 1,
   factualityPassRate: 1,
   citationRate: 1,
@@ -28,7 +30,7 @@ test("AN UNMEASURED METRIC IS INCONCLUSIVE, NOT A PASS — zero would clear ever
 });
 
 test("a sample smaller than minSample is inconclusive, so four cases cannot bless a release", () => {
-  const verdict = evaluateGates({ ...GOOD, cases: 4 });
+  const verdict = evaluateGates({ ...GOOD, cases: 4, evaluatedCases: 4, coverageRate: 1 });
   assert.equal(verdict.passed, false);
   assert.ok(verdict.inconclusive.includes("acceptance"), verdict.inconclusive.join(","));
   assert.ok(verdict.results.find((r) => r.name === "acceptance").detail.includes("sample 4 < 10"));
@@ -39,7 +41,7 @@ test("a measured breach fails at ANY sample size, and --allow-inconclusive canno
   // every case failed, the sample was under ten, and the acceptance gate said
   // `inconclusive` — so --allow-inconclusive printed GATES PASSED over a run
   // that answered nothing.
-  const metrics = { ...GOOD, cases: 3, acceptanceRate: 0, factualityPassRate: 0 };
+  const metrics = { ...GOOD, cases: 3, evaluatedCases: 3, coverageRate: 1, acceptanceRate: 0, factualityPassRate: 0 };
   const strict = evaluateGates(metrics);
   assert.ok(strict.failed.includes("acceptance"), strict.failed.join(","));
 

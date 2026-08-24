@@ -5688,6 +5688,8 @@ async function handleCouncilTurn(req, res) {
         selection.tokenLimit, ({ state }) => {
           if (state === 'thinking') return;
           searchSeatsAnswered += 1;
+          provenanceCouncilAnswered = Math.max(provenanceCouncilAnswered, searchSeatsAnswered);
+          provenanceCouncilSeats = Math.max(provenanceCouncilSeats, selection.members.length);
           emitStage(res, 'council', `${searchSeatsAnswered} of ${selection.members.length} answered`);
         }, {
           signal: turnSignal,
@@ -5700,7 +5702,11 @@ async function handleCouncilTurn(req, res) {
       if (turnSignal.aborted) return;
       const usableSearchDrafts = searchDrafts.filter((r) => r?.content?.trim());
       if (!usableSearchDrafts.length) throw new Error('Search council returned no usable answers');
-      provenanceCouncilPartial = searchSeatsAnswered < selection.members.length;
+      /* A council is complete when its configured quorum released the answer.
+       * Waiting for every roster seat mislabels the normal early-release path
+       * as partial even though the policy threshold was satisfied. */
+      provenanceCouncilComplete = searchSeatsAnswered >= selection.quorum && selection.quorum > 0;
+      provenanceCouncilPartial = !provenanceCouncilComplete;
       emitStage(res, 'synthesis', usableSearchDrafts.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
       const searchSynthSys = `${todayLine()}\n\nReconcile these independent answers into one precise response. Use only facts present in the answers and their cited search data. Preserve Markdown source links, note material disagreements, and do not mention the council.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
       const searchSynthSysForAnswer = `${searchSynthSys}${SOURCE_TRUTH_RULES}`;
@@ -6239,7 +6245,9 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
     if (provenanceToolUsed) {
       /* The agent loop has no public seat callback, so its honest bounded
        * participation signal is the number of usable answers it returned. */
-      provenanceCouncilComplete = validResponses.length >= selection.members.length && selection.members.length > 0;
+      provenanceCouncilAnswered = Math.max(provenanceCouncilAnswered, validResponses.length);
+      provenanceCouncilSeats = Math.max(provenanceCouncilSeats, selection.members.length);
+      provenanceCouncilComplete = validResponses.length >= selection.quorum && selection.quorum > 0;
       provenanceCouncilPartial = !provenanceCouncilComplete;
     } else {
       provenanceCouncilPartial = !provenanceCouncilComplete;

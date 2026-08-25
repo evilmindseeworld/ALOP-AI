@@ -480,24 +480,34 @@ const VERSION_TOKEN_RE = /^v?\d+(?:\.\d+)+$/i;
  * quoting. */
 const STOPWORD_BEFORE_NUMBER = new Set([
   "is", "are", "was", "were", "be", "at", "on", "in", "to", "of", "the", "a", "an", "and", "or",
-  "for", "with", "my", "your", "it", "its", "do", "does", "did", "if", "so", "up", "down", "vs",
+  "for", "with", "my", "your", "it", "its", "do", "does", "did", "if", "so", "up", "down", "vs", "after",
   "per", "than", "then", "about", "around", "under", "over", "from", "into", "like", "have", "has",
   "had", "should", "would", "could", "can", "will", "just", "only", "about", "buy", "bought", "got",
   "get", "use", "using", "run", "runs", "cap", "set", "want", "need", "i", "you", "we", "they",
   "this", "that", "these", "those", "there", "here", "now", "not", "no", "yes", "me", "him", "her",
 ]);
 
-/* A number followed by an explicit quantity word is a measurement, even when
- * the verb before it is not in STOPWORD_BEFORE_NUMBER (`serving 30 requests`,
- * `takes 200 milliseconds`, `retry after 20 seconds`). This is grammar, not a
- * catalogue of brands or products, so a new identifier remains searchable. */
-const QUANTITY_WORD_AFTER_NUMBER = new Set([
-  "request", "requests", "worker", "workers", "user", "users",
-  "millisecond", "milliseconds", "ms", "second", "seconds",
-  "minute", "minutes", "hour", "hours", "day", "days", "week", "weeks",
-  "month", "months", "year", "years", "item", "items", "record", "records",
-  "percent", "percentage",
-]);
+/* A quantified phrase has a verb-shaped word before the number and an ordinary
+ * word after it: `holds 500 entries`, `takes 200 milliseconds`, or `serving 30
+ * requests`. That grammatical shape is deliberately open-ended. It avoids
+ * turning every new engineering noun into another exception while leaving
+ * noun-shaped designations such as `RTX 5090` and `Node 26` searchable. */
+const INFLECTED_VERB_RE = /^[a-z]+(?:s|ed|ing)$/;
+const ALPHABETIC_WORD_RE = /^[a-z]+$/i;
+
+function isQuantifiedPhrase(tokens, wordIndex) {
+  const word = tokens[wordIndex] || "";
+  const afterNumber = (tokens[wordIndex + 2] || "").replace(/[.%]+$/, "");
+  if (!ALPHABETIC_WORD_RE.test(word) || !ALPHABETIC_WORD_RE.test(afterNumber)) return false;
+  if (!INFLECTED_VERB_RE.test(word.toLowerCase())) return false;
+
+  /* A capitalized word at a noun-phrase boundary is more likely a named
+   * product (`Nexus 5 specs`) than a sentence-internal verb. Lowercase verbs
+   * at the start still cover the terse grammar used by `takes 200 ms`. */
+  const previous = tokens[wordIndex - 1] || "";
+  const atNounPhraseBoundary = !previous || STOPWORD_BEFORE_NUMBER.has(previous.toLowerCase());
+  return !atNounPhraseBoundary || word === word.toLowerCase();
+}
 
 /** The first `word number` pair that looks like a product line, or null. */
 function brandNumber(text) {
@@ -510,8 +520,7 @@ function brandNumber(text) {
     if (!/^[A-Za-z]{2,}$/.test(word) || STOPWORD_BEFORE_NUMBER.has(word.toLowerCase())) continue;
     if (!/^\d{2,5}[A-Za-z]{0,3}$/.test(number)) continue;
     if (UNIT_TOKEN_RE.test(number) || FORMAT_TOKEN_RE.test(number) || VERSION_TOKEN_RE.test(number)) continue;
-    const afterNumber = (tokens[i + 2] || "").replace(/[.%]+$/, "").toLowerCase();
-    if (percentSuffix || QUANTITY_WORD_AFTER_NUMBER.has(afterNumber)) continue;
+    if (percentSuffix || isQuantifiedPhrase(tokens, i)) continue;
     return `${word} ${number}`;
   }
   return null;

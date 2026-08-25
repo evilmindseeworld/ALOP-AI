@@ -786,7 +786,28 @@ test("a brand followed by a number counts, and a function word followed by one d
   assert.equal(namesSpecificModel("i bought 27 inch panels"), false, "'bought 27' is not a product line");
 });
 
+test("the reported quantified cache phrase is not a product identifier", () => {
+  const text = "Our cache holds 500 entries.";
+  assert.equal(namesSpecificModel(text), false, text);
+  assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced a search`);
+});
+
 test("a number in ordinary quantity grammar is not a product identifier", () => {
+  const ordinaryEngineeringNouns = [
+    "entries", "rows", "keys", "bytes", "connections", "tokens", "shards", "documents",
+    "chunks", "messages", "events", "files", "threads", "retries", "queries", "sessions",
+    "calls", "jobs", "partitions", "nodes", "replicas", "buckets",
+  ];
+  const previouslyCleanNouns = ["requests", "workers", "users", "items", "records", "seconds"];
+  const quantifiedNouns = [...ordinaryEngineeringNouns, ...previouslyCleanNouns];
+  assert.equal(quantifiedNouns.length, 28);
+
+  for (const noun of quantifiedNouns) {
+    const text = `The service holds 500 ${noun}.`;
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced a search`);
+  }
+
   for (const text of [
     "serving 30 requests",
     "takes 200 milliseconds",
@@ -815,6 +836,19 @@ test("designation grammar plus product or model context still forces a search", 
   ]) {
     assert.equal(namesSpecificModel(text), true, text);
     assert.ok(routeByRule(`What is ${text}?`, {})?.queries?.length, `${text} did not force a search`);
+  }
+});
+
+test("adversarial product designations remain searchable in sentence context", () => {
+  for (const text of [
+    "compare RTX 5090 with RTX 5080",
+    "Node 26 release",
+    "iPhone 17 Pro price",
+    "GPT-5.6 latency",
+    "XG27AQWMG settings",
+  ]) {
+    assert.equal(namesSpecificModel(text), true, text);
+    assert.ok(routeByRule(text, {})?.queries?.length, `${text} did not force a search`);
   }
 });
 

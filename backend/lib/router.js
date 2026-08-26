@@ -418,10 +418,11 @@ const CITATION_DEMAND_RE =
  * to that pair. Keeping the relation local is important: `review` in an
  * unrelated clause is ordinary English and must not promote a quantity. */
 const MODEL_RESEARCH_INTENT_WORDS = new Set([
-  "compare", "comparison", "versus", "vs", "spec", "specs", "specification", "specifications",
-  "review", "reviews", "price", "cost", "release", "available", "availability",
+  "compare", "comparison", "spec", "specs", "specification", "specifications",
+  "review", "reviews", "price", "cost", "release", "available", "availability", "sources", "pricing",
 ]);
-const MODEL_RESEARCH_RELATION_WORDS = new Set(["of", "for"]);
+const MODEL_RESEARCH_RELATION_WORDS = new Set(["of", "for", "about"]);
+const MODEL_RESEARCH_COMPARISON_WORDS = new Set(["with", "to", "against", "vs", "versus"]);
 /* First-party product questions are answered from the platform identity prompt,
  * not from web snippets about unrelated companies with similar names. Keep an
  * explicit request to search authoritative: that branch runs before this one. */
@@ -560,39 +561,125 @@ function candidateBoundResearchIntent(tokens, { wordIndex, numberIndex }) {
     && end < tokens.length
     && tokens.slice(start, end + 1).every(isModelEvidenceToken);
 
-  if (contiguous(numberIndex + 1, numberIndex + 1) && isModelResearchIntentWord(after(1))) return true;
-  if (contiguous(numberIndex + 1, numberIndex + 2) && isModelResearchIntentWord(after(2))) return true;
+  /* A candidate-first frame is a query/clause head. Requiring the pair to
+   * start a clause is the boundary that keeps `the cache stores 500 specs`
+   * neutral without assigning semantic roles to `cache` or `stores`. */
+  const clauseStart = (index) => index === 0 || !isModelEvidenceToken(tokens[index - 1]);
+  const startsFrame = (start, end) => clauseStart(start) && contiguous(start, end);
+  const candidateFirst = clauseStart(wordIndex) && (
+    (contiguous(numberIndex + 1, numberIndex + 1) && isModelResearchIntentWord(after(1)))
+    || (contiguous(numberIndex + 1, numberIndex + 2) && isModelResearchIntentWord(after(2)))
+    || (
+      contiguous(numberIndex + 1, numberIndex + 2)
+      && after(1) === "release"
+      && after(2) === "notes"
+    )
+    || (
+      contiguous(numberIndex + 1, numberIndex + 3)
+      && after(2) === "release"
+      && after(3) === "notes"
+    )
+  );
+  if (candidateFirst) return true;
+
   if (
-    contiguous(numberIndex + 1, numberIndex + 2)
-    && after(1) === "release"
-    && after(2) === "notes"
+    startsFrame(wordIndex - 1, wordIndex - 1)
+    && before(1) === "is"
+    && (
+      after(1) === "available"
+      || (contiguous(numberIndex + 1, numberIndex + 2) && after(1) === "still" && after(2) === "available")
+    )
+  ) return true;
+  if (
+    startsFrame(wordIndex - 2, wordIndex - 1)
+    && before(1) === "the"
+    && before(2) === "is"
+    && (
+      after(1) === "available"
+      || (contiguous(numberIndex + 1, numberIndex + 2) && after(1) === "still" && after(2) === "available")
+    )
   ) return true;
 
-  if (contiguous(wordIndex - 1, wordIndex - 1) && before(1) === "compare") return true;
+  /* Comparison frames have an operator before the candidate and an operand
+   * after it. The operand check prevents a bare `compare report 8`-shaped
+   * quantity from being promoted by the operator alone. */
+  const comparisonAfter =
+    contiguous(numberIndex + 1, numberIndex + 2)
+    && MODEL_RESEARCH_COMPARISON_WORDS.has(after(1))
+    && isModelEvidenceToken(tokens[numberIndex + 2]);
+  if (clauseStart(wordIndex) && comparisonAfter) return true;
   if (
-    contiguous(wordIndex - 2, wordIndex - 1)
+    comparisonAfter
+    && (
+      (startsFrame(wordIndex - 1, wordIndex - 1) && before(1) === "compare")
+      || (startsFrame(wordIndex - 2, wordIndex - 1) && before(1) === "the" && before(2) === "compare")
+    )
+  ) return true;
+
+  /* Intent-first frames are also anchored at their request operator. The
+   * optional `the` is structural only; it is not a noun/brand allowlist. */
+  if (
+    startsFrame(wordIndex - 2, wordIndex - 1)
     && MODEL_RESEARCH_RELATION_WORDS.has(before(1))
     && isModelResearchIntentWord(before(2))
+    && (before(2) !== "sources" || before(1) === "about" || after(1) === "pricing")
   ) return true;
   if (
-    contiguous(wordIndex - 3, wordIndex - 1)
+    startsFrame(wordIndex - 3, wordIndex - 1)
     && before(1) === "the"
     && MODEL_RESEARCH_RELATION_WORDS.has(before(2))
     && isModelResearchIntentWord(before(3))
+    && (before(3) !== "sources" || before(2) === "about" || after(1) === "pricing")
   ) return true;
 
   if (
-    contiguous(wordIndex - 3, wordIndex - 1)
+    startsFrame(wordIndex - 3, wordIndex - 1)
     && MODEL_RESEARCH_RELATION_WORDS.has(before(1))
     && before(2) === "notes"
     && before(3) === "release"
   ) return true;
   if (
-    contiguous(wordIndex - 4, wordIndex - 1)
+    startsFrame(wordIndex - 4, wordIndex - 1)
     && before(1) === "the"
     && MODEL_RESEARCH_RELATION_WORDS.has(before(2))
     && before(3) === "notes"
     && before(4) === "release"
+  ) return true;
+
+  /* `review the model` and `how much is the model` are request frames without
+   * a relation word. Keep their whole frame explicit and clause-anchored. */
+  if (
+    startsFrame(wordIndex - 2, wordIndex - 1)
+    && before(1) === "the"
+    && (before(2) === "review" || before(2) === "reviews")
+  ) return true;
+  if (
+    startsFrame(wordIndex - 3, wordIndex - 1)
+    && before(1) === "is"
+    && before(2) === "much"
+    && before(3) === "how"
+  ) return true;
+  if (
+    startsFrame(wordIndex - 4, wordIndex - 1)
+    && before(1) === "the"
+    && before(2) === "is"
+    && before(3) === "much"
+    && before(4) === "how"
+  ) return true;
+  if (
+    startsFrame(wordIndex - 3, wordIndex - 1)
+    && before(1) === "does"
+    && before(2) === "much"
+    && before(3) === "how"
+    && after(1) === "cost"
+  ) return true;
+  if (
+    startsFrame(wordIndex - 4, wordIndex - 1)
+    && before(1) === "the"
+    && before(2) === "does"
+    && before(3) === "much"
+    && before(4) === "how"
+    && after(1) === "cost"
   ) return true;
 
   return false;
@@ -1148,6 +1235,7 @@ const ROUTING_POLICY = [
   hasIndependentResearchIntent.toString(),
   [...MODEL_RESEARCH_INTENT_WORDS].join(","),
   [...MODEL_RESEARCH_RELATION_WORDS].join(","),
+  [...MODEL_RESEARCH_COMPARISON_WORDS].join(","),
   modelDesignations.toString(),
   modelSearchQueries.toString(),
   ...Object.entries(ROUTING_RULES).map(([name, re]) => `${name}=${re.source}`),

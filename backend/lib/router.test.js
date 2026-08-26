@@ -1019,6 +1019,20 @@ test("unseen strong and corroborated designation probes remain searchable", () =
 
 test("NUM-7 unrelated research words do not corroborate an ordinary numeric pair", () => {
   const requiredOpusNegatives = [
+    "the cache stores 500 specs",
+    "the worker processed 500 release notes",
+    "the parser recorded 40 reviews",
+    "the queue held 300 cost estimates",
+    "the parser wrote 7 availability records",
+    "the report contains 8 specifications",
+    "the committee approved 4 reviews",
+    "the server kept 9 available slots",
+    "the cache retained 11 release notes",
+    "the system recorded 5 price changes",
+    "the document lists 4 specs",
+    "the monitor reports 2 availability events",
+    "the job includes 10 comparison rows",
+    "the log mentions 6 release candidates",
     "release the lock after 500 retries",
     "review our queue that holds 900 messages",
     "make the pool available for 200 clients",
@@ -1066,6 +1080,11 @@ test("NUM-7 unrelated research words do not corroborate an ordinary numeric pair
     "release work left 64 messages in flight",
     "reviews mention the parser accepted 21 rows",
     "the pricing parser compares 2 batches and emits 7 warnings",
+    "the report contains 8 comparison rows",
+    "the service retained 6 release notes",
+    "the worker accepted 14 available clients",
+    "the job recorded 5 price changes",
+    "the parser emitted 7 reviews",
   ];
 
   assert.equal(new Set(newUnseenNegatives).size, newUnseenNegatives.length);
@@ -1074,6 +1093,7 @@ test("NUM-7 unrelated research words do not corroborate an ordinary numeric pair
   for (const text of cases) {
     assert.equal(namesSpecificModel(text), false, text);
     assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} generated model research`);
+    assert.deepEqual(modelSearchQueries(text), [], `${text} generated a bogus model query`);
   }
 });
 
@@ -1112,9 +1132,44 @@ test("candidate-bound research intent corroborates generic word-number pairs", (
     "specification for radeon 7900",
     "release notes for the iphone 15",
     "cost of pixel 11",
+    "how much is iphone 17",
+    "review the rtx 5090",
+    "compare the rtx 5090 against 5080",
+    "sources for rtx 5090 pricing",
   ];
 
   assert.ok(cases.length >= 15);
+  for (const text of cases) {
+    assert.equal(namesSpecificModel(text), true, text);
+    assert.ok(routeByRule(text, {})?.queries?.length, `${text} did not generate model research`);
+  }
+});
+
+test("NUM-9 explicit request frames cover unseen weak-pair forms", () => {
+  const cases = [
+    "macbook 16 price",
+    "pixel 12 specs",
+    "xps 15 review",
+    "node 30 release notes",
+    "framework 17 availability",
+    "iphone 18 Pro price",
+    "price of radeon 8900",
+    "specifications for surface 13",
+    "review of zenbook 15",
+    "release notes for node 28",
+    "availability of macbook 17",
+    "cost for pixel 12",
+    "price of the xps 16",
+    "reviews for the galaxy 26",
+    "review the surface 13",
+    "compare the pixel 12 with 13",
+    "compare xps 15 to rtx 5070",
+    "compare galaxy 26 against pixel 12",
+    "how much does radeon 8900 cost",
+    "sources about iphone 18",
+  ];
+
+  assert.equal(cases.length, 20);
   for (const text of cases) {
     assert.equal(namesSpecificModel(text), true, text);
     assert.ok(routeByRule(text, {})?.queries?.length, `${text} did not generate model research`);

@@ -25,7 +25,7 @@
     "stripe": "^22.3.2"
   },
   "engines": {
-    "node": ">=26.0.0"
+    "node": "26.7.0"
   },
   "allowScripts": {
     "@sentry/node-cpu-profiler@2.4.2": true

@@ -446,11 +446,10 @@ test("the zero-model rule does not swallow questions whose answer can move", () 
   ];
 
   /* The property is "never answered WITHOUT live information", which is not the
-   * same as "always handed to the planner" — and that difference is the whole
-   * point of the product-model rule below. Three of these name a specific model,
-   * and the rule now routes them straight to search instead of asking a small
-   * model whether they need one. What must never appear is a no-search
-   * decision. */
+   * same as "always handed to the planner". The strong designation below is
+   * routed straight to search instead of asking a small model whether it needs
+   * one. Generic word-number pairs stay neutral and therefore remain planner
+   * input. What must never appear is a no-search decision. */
   const swallowed = needsPlanner.filter((text) => {
     const route = routeByRule(text, { hasConversationContext: false });
     return route && !route.memory && !route.queries?.length;
@@ -460,8 +459,8 @@ test("the zero-model rule does not swallow questions whose answer can move", () 
   const forcedToSearch = needsPlanner.filter((text) => routeByRule(text, {})?.queries?.length);
   assert.deepEqual(
     forcedToSearch,
-    ["iPhone 17 price in UAE", "is Framework 16 still available?", "what is XG27AQWMG?"],
-    "only the named-model cases may bypass the planner, and only towards search",
+    ["what is XG27AQWMG?"],
+    "only strong designation cases may bypass the planner, and only towards search",
   );
 });
 
@@ -779,7 +778,7 @@ test("a mixed letters-and-digits designation is caught wherever it sits", () => 
   }
 });
 
-test("a generic word-number pair is weak until an independent signal corroborates it", () => {
+test("a generic word-number pair never forces deterministic model research", () => {
   for (const text of [
     "RTX 5090",
     "rtx 5090",
@@ -795,7 +794,8 @@ test("a generic word-number pair is weak until an independent signal corroborate
   }
 
   assert.deepEqual(modelSearchQueries("RTX 5090"), [], "a bare pair must not get a synthetic specs query");
-  assert.equal(namesSpecificModel("pixel 9 vs galaxy 24"), true, "comparison is independent corroboration");
+  assert.equal(namesSpecificModel("pixel 9 vs galaxy 24"), false, "a comparison still needs the planner");
+  assert.equal(routeByRule("pixel 9 vs galaxy 24", {})?.queries?.length ?? 0, 0);
   // The regex this replaced read "is 1440p" as a product and searched for it.
   assert.equal(namesSpecificModel("my monitor is 1440p should i cap at 240fps"), false);
   assert.equal(namesSpecificModel("i bought 27 inch panels"), false, "'bought 27' is not a product line");
@@ -841,24 +841,10 @@ test("a number in ordinary quantity grammar is not a product identifier", () => 
   }
 });
 
-test("strong designations and independently corroborated pairs force a search", () => {
+test("strong designations force a search without weak-pair corroboration", () => {
   for (const text of ["GPT-5.6", "XG27AQWMG", "15ixr10"]) {
     assert.equal(namesSpecificModel(text), true, text);
     assert.ok(routeByRule(`What is ${text}?`, {})?.queries?.length, `${text} did not force a search`);
-  }
-
-  for (const text of [
-    "compare rtx 5090 with 5080",
-    "rtx 5090 price",
-    "rtx 5090 specs",
-    "node 26 release notes",
-    "iphone 17 price",
-    "reviews of iphone 17",
-  ]) {
-    assert.equal(namesSpecificModel(text), true, text);
-    const route = routeByRule(text, {});
-    assert.ok(route?.queries?.length, `${text} did not force a search`);
-    assert.ok(route.queries.some((query) => query.toLowerCase().includes(text.split(/\s+/)[0].toLowerCase())), text);
   }
 });
 
@@ -981,7 +967,7 @@ test("NUM-6b verb-ending-s questions remain ambiguous and planner-neutral", () =
   }
 });
 
-test("unseen strong and corroborated designation probes remain searchable", () => {
+test("unseen strong designation probes remain searchable", () => {
   const strong = [
     "zenbook14",
     "wh1000xm6",
@@ -993,27 +979,53 @@ test("unseen strong and corroborated designation probes remain searchable", () =
     "pixel9pro",
     "xps13plus",
   ];
-  const corroborated = [
-    "rtx 4070 price",
-    "surface 11 specs",
-    "thinkpad 14 release notes",
-    "compare galaxy 25 with pixel 10",
-    "reviews of xps 16",
-    "thinkpad 14 available",
-    "galaxy 25 comparison",
-    "radeon 7900 cost",
-    "framework 13 review",
-    "macbook 16 price in UAE",
-  ];
-
-  assert.ok(strong.length + corroborated.length >= 15);
+  assert.ok(strong.length >= 9);
   for (const text of strong) {
     assert.equal(namesSpecificModel(text), true, text);
     assert.ok(routeByRule(text, {})?.queries?.length, `${text} did not force a search`);
   }
-  for (const text of corroborated) {
-    assert.equal(namesSpecificModel(text), true, text);
-    assert.ok(routeByRule(text, {})?.queries?.length, `${text} did not force a search`);
+});
+
+test("unseen generic product-looking pairs remain planner-neutral", () => {
+  const cases = [
+    "price for galaxy 26",
+    "what does pixel 12 cost",
+    "how much is surface 13",
+    "review the macbook 17",
+    "specs for radeon 8900",
+    "framework 18 release information",
+    "compare zenbook 16 against xps 18",
+    "sources for thinkpad 16 pricing",
+    "iphone 18 availability",
+    "reviews of node 30",
+    "cost of rtx 5080",
+    "availability for ryzen 9950",
+    "specifications of nvidia 5090",
+    "compare ipad 11 with galaxy 26",
+    "playstation 6 price",
+    "switch 2 release notes",
+    "kindle 12 review",
+    "oneplus 13 specs",
+    "nokia 3310 price",
+    "pixel 13 comparison",
+    "surface 14 vs framework 18",
+    "macbook 18 cost",
+    "xps 17 available",
+    "radeon 8900 reviews",
+    "node 31 specifications",
+    "cost for galaxy 27",
+    "price of pixel 14",
+    "review of surface 15",
+    "release notes for framework 19",
+    "compare rtx 5070 to radeon 8900",
+  ];
+
+  assert.equal(new Set(cases).size, cases.length);
+  assert.ok(cases.length >= 25);
+  for (const text of cases) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
+    assert.deepEqual(modelSearchQueries(text), [], `${text} generated a model query`);
   }
 });
 
@@ -1110,7 +1122,7 @@ test("stopword-headed numeric phrases are not generic product candidates", () =>
   }
 });
 
-test("candidate-bound research intent corroborates generic word-number pairs", () => {
+test("generic word-number requests never force research, even with product wording", () => {
   const cases = [
     "rtx 4090 cost",
     "price of rtx 4080",
@@ -1140,12 +1152,29 @@ test("candidate-bound research intent corroborates generic word-number pairs", (
 
   assert.ok(cases.length >= 15);
   for (const text of cases) {
-    assert.equal(namesSpecificModel(text), true, text);
-    assert.ok(routeByRule(text, {})?.queries?.length, `${text} did not generate model research`);
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
+    assert.deepEqual(modelSearchQueries(text), [], `${text} generated a model query`);
   }
 });
 
-test("NUM-9 explicit request frames cover unseen weak-pair forms", () => {
+test("formerly corroborated weak pairs now remain planner-neutral", () => {
+  for (const text of [
+    "rtx 5090 price",
+    "price of rtx 5090",
+    "review the rtx 5090",
+    "rtx 5090 specs",
+    "node 26 release notes",
+    "compare rtx 5090 with 5080",
+    "how much is iphone 17",
+    "sources for rtx 5090 pricing",
+  ]) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
+  }
+});
+
+test("NUM-9 weak-pair request frames remain planner-neutral", () => {
   const cases = [
     "macbook 16 price",
     "pixel 12 specs",
@@ -1171,8 +1200,137 @@ test("NUM-9 explicit request frames cover unseen weak-pair forms", () => {
 
   assert.equal(cases.length, 20);
   for (const text of cases) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
+  }
+});
+
+test("NUM-10 clause-start numeric phrases remain planner-neutral", () => {
+  const cases = [
+    "error 500 availability check failed",
+    "status 404 review needed",
+    "cache 500 specs are stale",
+    "worker 20 reviews the queue",
+    "chapter 13 covers availability planning",
+    "figure 12 shows price over time",
+    "table 4 specs need updating",
+    "pool 8 cost exceeded the budget",
+    "batch 9 price was recomputed overnight",
+    "queue 300 availability dropped",
+    "retry 1 review pending",
+    "label 7 specs internal",
+    "(cache 500 specs) were purged",
+  ];
+
+  assert.equal(cases.length, 13);
+  for (const text of cases) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
+    assert.deepEqual(modelSearchQueries(text), [], `${text} generated a model query`);
+  }
+});
+
+test("unseen ordinary and ambiguous numeric probes remain planner-neutral", () => {
+  const cases = [
+    "the gateway serves 600 requests in parallel",
+    "the worker flushed 75 records before midnight",
+    "our cache retains 320 entries across restarts",
+    "the pipeline completed 18 jobs overnight",
+    "the service accepts 240 users per shard",
+    "the buffer contains 96 bytes after encoding",
+    "the parser emitted 13 warnings during startup",
+    "the scheduler retries 14 calls before aborting",
+    "the database stores 2048 keys in the index",
+    "the process opened 22 connections to the pool",
+    "the queue drained 37 messages after recovery",
+    "the monitor saw 5 failures in one hour",
+    "the worker copied 81 files to staging",
+    "the runtime tracks 44 sessions per region",
+    "the service holds 260 tokens in memory",
+    "the job wrote 19 logs to disk",
+    "the cluster spans 6 zones today",
+    "the endpoint returns 302 responses on redirect",
+    "the client sends 128 packets per batch",
+    "the task allocates 3 buffers for parsing",
+    "a single host serves 48 requests",
+    "one replica keeps 2 locks",
+    "each shard owns 7 partitions",
+    "this report covers 11 chapters",
+    "that room contains 17 chairs",
+    "these results include 23 samples",
+    "those workers completed 9 tasks",
+    "we found 4 mice in the test fixture",
+    "the lab raised 6 geese near the gate",
+    "the index stores 12 children records",
+    "can the service process 55 events at once?",
+    "should the cache retain 88 values overnight?",
+    "will the queue release 21 items before close?",
+    "might the job create 34 files during export?",
+    "does the monitor report 16 alerts locally?",
+    "is the pool limited to 70 clients?",
+    "did the parser consume 29 rows yesterday?",
+    "could the worker keep 42 handles open?",
+    "would the service survive 15 retries?",
+    "the request takes 7 seconds in staging",
+    "the batch runs for 9 minutes each hour",
+    "the job starts at 08:30 and ends at 09:00",
+    "the build targets python 3.13 on windows",
+    "the endpoint speaks HTTP 2 over TLS 1.3",
+    "the archive contains 10 mp4 files",
+    "the monitor reports 5xx responses",
+    "the formula uses 2.5 milliseconds per item",
+    "the image is 1440p at 60hz",
+    "the service tracks 1.5 million rows",
+    "the retry budget is 0.25 percent",
+    "the first pass handled 12 items, the second handled 14",
+    "the cache stores 40 keys and 6 values",
+    "we opened 3 sockets for 2 peers",
+    "the queue held 90 messages; the worker drained 30",
+    "after 16 retries, the request timed out",
+    "before 8 workers started, the pool was empty",
+    "under 64 clients, latency stayed flat",
+    "from 12 rows, the parser built 3 groups",
+    "with 5 replicas, the system survived",
+    "between 2 regions, traffic shifted",
+  ];
+
+  assert.equal(new Set(cases).size, cases.length);
+  assert.ok(cases.length >= 50);
+  for (const text of cases) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
+  }
+});
+
+test("unseen strong designation shapes remain searchable", () => {
+  const cases = [
+    "zenbook16",
+    "wh1000xm7",
+    "legion7",
+    "pixel10pro",
+    "xps15plus",
+    "xg28bqwm",
+    "eosr6",
+    "q1w2e4",
+    "model9x",
+    "bravia8",
+    "mavic3",
+    "r7m2",
+    "sm-s938b",
+    "rx-7800",
+    "ab-9911",
+    "tuf-5070",
+    "qx-55",
+    "foo_77",
+    "mk_12",
+    "gpt-6.1",
+  ];
+
+  assert.equal(new Set(cases).size, cases.length);
+  assert.ok(cases.length >= 15);
+  for (const text of cases) {
     assert.equal(namesSpecificModel(text), true, text);
-    assert.ok(routeByRule(text, {})?.queries?.length, `${text} did not generate model research`);
+    assert.ok(routeByRule(text, {})?.queries?.length, `${text} did not force model research`);
   }
 });
 
@@ -1196,16 +1354,25 @@ test("NUM-8 direct non-comparison intent prefixes do not classify ordinary pairs
   }
 });
 
-test("adversarial product designations remain searchable in sentence context", () => {
+test("strong designations remain searchable in sentence context", () => {
+  for (const text of [
+    "GPT-5.6 latency",
+    "XG27AQWMG settings",
+    "the owner uses 15ixr10 for video",
+  ]) {
+    assert.equal(namesSpecificModel(text), true, text);
+    assert.ok(routeByRule(text, {})?.queries?.length, `${text} did not force a search`);
+  }
+});
+
+test("generic product-looking prose stays neutral regardless of case", () => {
   for (const text of [
     "compare RTX 5090 with RTX 5080",
     "Node 26 release",
     "iPhone 17 Pro price",
-    "GPT-5.6 latency",
-    "XG27AQWMG settings",
   ]) {
-    assert.equal(namesSpecificModel(text), true, text);
-    assert.ok(routeByRule(text, {})?.queries?.length, `${text} did not force a search`);
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
   }
 });
 

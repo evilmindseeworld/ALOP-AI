@@ -413,16 +413,6 @@ const EXPLICIT_WEB_SEARCH_RE = /\b(?:search|browse)\s+(?:the\s+)?(?:live\s+)?web
  * not a research request. */
 const CITATION_DEMAND_RE =
   /\bcit(?:e|es|ed|ing|ation|ations)\b|\b(?:include|provide|give|add|show|post|with|link)\s+(?:me\s+)?(?:a\s+|the\s+|your\s+)?(?:source|sources|link|links|url|urls)\b|\blink\s+(?:to\s+)?where\b|\bwhere\s+did\s+you\s+(?:read|find|get)\b/i;
-/* These are request-intent markers, not a product or brand vocabulary. A
- * marker only corroborates a generic pair when a small token relation ties it
- * to that pair. Keeping the relation local is important: `review` in an
- * unrelated clause is ordinary English and must not promote a quantity. */
-const MODEL_RESEARCH_INTENT_WORDS = new Set([
-  "compare", "comparison", "spec", "specs", "specification", "specifications",
-  "review", "reviews", "price", "cost", "release", "available", "availability", "sources", "pricing",
-]);
-const MODEL_RESEARCH_RELATION_WORDS = new Set(["of", "for", "about"]);
-const MODEL_RESEARCH_COMPARISON_WORDS = new Set(["with", "to", "against", "vs", "versus"]);
 /* First-party product questions are answered from the platform identity prompt,
  * not from web snippets about unrelated companies with similar names. Keep an
  * explicit request to search authoritative: that branch runs before this one. */
@@ -480,10 +470,8 @@ const FORMAT_TOKEN_RE =
 /** `v1.2.3`, `3.12`, `2.0` — a version, not a product line. */
 const VERSION_TOKEN_RE = /^v?\d+(?:\.\d+)+$/i;
 
-/* Existing function-word exclusions for a short SKU's possible brand prefix
- * and for generic word-number candidates. A stopword-headed pair such as
- * `after 500` is not a product candidate; this is a token-shape guard, not a
- * semantic classification rule. */
+/* Existing function-word exclusions for a short SKU's possible brand prefix.
+ * This remains a token-shape guard for the short-SKU detector only. */
 const STOPWORD_BEFORE_NUMBER = new Set([
   "is", "are", "was", "were", "be", "at", "on", "in", "to", "of", "the", "a", "an", "and", "or",
   "for", "with", "my", "your", "it", "its", "do", "does", "did", "if", "so", "up", "down", "vs", "after",
@@ -492,204 +480,6 @@ const STOPWORD_BEFORE_NUMBER = new Set([
   "get", "use", "using", "run", "runs", "cap", "set", "want", "need", "i", "you", "we", "they",
   "this", "that", "these", "those", "there", "here", "now", "not", "no", "yes", "me", "him", "her",
 ]);
-
-/* Keep punctuation as a token so a local relation cannot cross a sentence or
- * clause boundary. Decimal/version tokens remain intact; a terminal period or
- * a comma is emitted separately and therefore breaks the relation. */
-function modelEvidenceTokens(text) {
-  return String(text || '').match(/[A-Za-z0-9]+(?:[.%][A-Za-z0-9]+)*|[^A-Za-z0-9\s]/g) || [];
-}
-
-function isModelEvidenceToken(token) {
-  return /^[A-Za-z0-9]+(?:[.%][A-Za-z0-9]+)*$/.test(String(token || ''));
-}
-
-/* A word followed by a standalone number — `rtx 5060`, `iphone 15`, `xps 13`.
- * This is deliberately an extractor only. It does not decide whether the pair
- * is a product, a label, or a quantity. That distinction is made later only
- * when candidate-bound research intent corroborates the candidate. The
- * token-shape exclusions keep units, formats, versions and percentages out of
- * the candidate stream without pretending to parse English. */
-
-/** Every generic word-number candidate, with token positions for corroboration. */
-function wordNumberCandidates(text) {
-  const tokens = modelEvidenceTokens(text);
-  const found = [];
-  for (let i = 0; i < tokens.length - 1; i += 1) {
-    const word = tokens[i];
-    const rawNumber = tokens[i + 1];
-    const percentSuffix = rawNumber.endsWith('%') || tokens[i + 2] === '%';
-    const number = rawNumber.replace(/%$/, '').replace(/\.+$/, "");
-    if (!/^[A-Za-z]{2,}$/.test(word)) continue;
-    if (STOPWORD_BEFORE_NUMBER.has(word.toLowerCase())) continue;
-    if (!/^\d{1,5}[A-Za-z]{0,3}$/.test(number)) continue;
-    if (UNIT_TOKEN_RE.test(number) || FORMAT_TOKEN_RE.test(number) || VERSION_TOKEN_RE.test(number)) continue;
-    if (percentSuffix || tokens[i + 2]?.toLowerCase() === 'percent') continue;
-    found.push({ value: `${word} ${number}`, wordIndex: i, numberIndex: i + 1 });
-  }
-  return found;
-}
-
-function normaliseModelEvidenceToken(token) {
-  return String(token || '').toLowerCase().replace(/\.+$/, '');
-}
-
-function isModelResearchIntentWord(token) {
-  return MODEL_RESEARCH_INTENT_WORDS.has(normaliseModelEvidenceToken(token));
-}
-
-/**
- * Corroboration is deliberately a few explicit local relations, not a
- * sentence-wide keyword search:
- *
- *   candidate + intent                 `rtx 5090 price`
- *   candidate + one local modifier + intent `iphone 17 Pro price`
- *   intent + of/for + candidate        `price of rtx 5090`
- *   release notes + of/for + candidate `release notes for node 26`
- *   comparison + candidate             `compare rtx 5090 with 5080`
- *   candidate + comparison             `pixel 9 vs galaxy 24`
- *
- * The optional `the` only keeps the same relation intact in ordinary phrasing
- * such as `price of the macbook 16`. No token is assigned a noun, verb,
- * brand, product or grammatical role.
- */
-function candidateBoundResearchIntent(tokens, { wordIndex, numberIndex }) {
-  const before = (offset) => normaliseModelEvidenceToken(tokens[wordIndex - offset]);
-  const after = (offset) => normaliseModelEvidenceToken(tokens[numberIndex + offset]);
-  const contiguous = (start, end) =>
-    start >= 0
-    && end < tokens.length
-    && tokens.slice(start, end + 1).every(isModelEvidenceToken);
-
-  /* A candidate-first frame is a query/clause head. Requiring the pair to
-   * start a clause is the boundary that keeps `the cache stores 500 specs`
-   * neutral without assigning semantic roles to `cache` or `stores`. */
-  const clauseStart = (index) => index === 0 || !isModelEvidenceToken(tokens[index - 1]);
-  const startsFrame = (start, end) => clauseStart(start) && contiguous(start, end);
-  const candidateFirst = clauseStart(wordIndex) && (
-    (contiguous(numberIndex + 1, numberIndex + 1) && isModelResearchIntentWord(after(1)))
-    || (contiguous(numberIndex + 1, numberIndex + 2) && isModelResearchIntentWord(after(2)))
-    || (
-      contiguous(numberIndex + 1, numberIndex + 2)
-      && after(1) === "release"
-      && after(2) === "notes"
-    )
-    || (
-      contiguous(numberIndex + 1, numberIndex + 3)
-      && after(2) === "release"
-      && after(3) === "notes"
-    )
-  );
-  if (candidateFirst) return true;
-
-  if (
-    startsFrame(wordIndex - 1, wordIndex - 1)
-    && before(1) === "is"
-    && (
-      after(1) === "available"
-      || (contiguous(numberIndex + 1, numberIndex + 2) && after(1) === "still" && after(2) === "available")
-    )
-  ) return true;
-  if (
-    startsFrame(wordIndex - 2, wordIndex - 1)
-    && before(1) === "the"
-    && before(2) === "is"
-    && (
-      after(1) === "available"
-      || (contiguous(numberIndex + 1, numberIndex + 2) && after(1) === "still" && after(2) === "available")
-    )
-  ) return true;
-
-  /* Comparison frames have an operator before the candidate and an operand
-   * after it. The operand check prevents a bare `compare report 8`-shaped
-   * quantity from being promoted by the operator alone. */
-  const comparisonAfter =
-    contiguous(numberIndex + 1, numberIndex + 2)
-    && MODEL_RESEARCH_COMPARISON_WORDS.has(after(1))
-    && isModelEvidenceToken(tokens[numberIndex + 2]);
-  if (clauseStart(wordIndex) && comparisonAfter) return true;
-  if (
-    comparisonAfter
-    && (
-      (startsFrame(wordIndex - 1, wordIndex - 1) && before(1) === "compare")
-      || (startsFrame(wordIndex - 2, wordIndex - 1) && before(1) === "the" && before(2) === "compare")
-    )
-  ) return true;
-
-  /* Intent-first frames are also anchored at their request operator. The
-   * optional `the` is structural only; it is not a noun/brand allowlist. */
-  if (
-    startsFrame(wordIndex - 2, wordIndex - 1)
-    && MODEL_RESEARCH_RELATION_WORDS.has(before(1))
-    && isModelResearchIntentWord(before(2))
-    && (before(2) !== "sources" || before(1) === "about" || after(1) === "pricing")
-  ) return true;
-  if (
-    startsFrame(wordIndex - 3, wordIndex - 1)
-    && before(1) === "the"
-    && MODEL_RESEARCH_RELATION_WORDS.has(before(2))
-    && isModelResearchIntentWord(before(3))
-    && (before(3) !== "sources" || before(2) === "about" || after(1) === "pricing")
-  ) return true;
-
-  if (
-    startsFrame(wordIndex - 3, wordIndex - 1)
-    && MODEL_RESEARCH_RELATION_WORDS.has(before(1))
-    && before(2) === "notes"
-    && before(3) === "release"
-  ) return true;
-  if (
-    startsFrame(wordIndex - 4, wordIndex - 1)
-    && before(1) === "the"
-    && MODEL_RESEARCH_RELATION_WORDS.has(before(2))
-    && before(3) === "notes"
-    && before(4) === "release"
-  ) return true;
-
-  /* `review the model` and `how much is the model` are request frames without
-   * a relation word. Keep their whole frame explicit and clause-anchored. */
-  if (
-    startsFrame(wordIndex - 2, wordIndex - 1)
-    && before(1) === "the"
-    && (before(2) === "review" || before(2) === "reviews")
-  ) return true;
-  if (
-    startsFrame(wordIndex - 3, wordIndex - 1)
-    && before(1) === "is"
-    && before(2) === "much"
-    && before(3) === "how"
-  ) return true;
-  if (
-    startsFrame(wordIndex - 4, wordIndex - 1)
-    && before(1) === "the"
-    && before(2) === "is"
-    && before(3) === "much"
-    && before(4) === "how"
-  ) return true;
-  if (
-    startsFrame(wordIndex - 3, wordIndex - 1)
-    && before(1) === "does"
-    && before(2) === "much"
-    && before(3) === "how"
-    && after(1) === "cost"
-  ) return true;
-  if (
-    startsFrame(wordIndex - 4, wordIndex - 1)
-    && before(1) === "the"
-    && before(2) === "does"
-    && before(3) === "much"
-    && before(4) === "how"
-    && after(1) === "cost"
-  ) return true;
-
-  return false;
-}
-
-/** A pair is corroborated only when existing research intent is candidate-bound. */
-function hasIndependentResearchIntent(text, candidates = wordNumberCandidates(text)) {
-  const tokens = modelEvidenceTokens(text);
-  return candidates.some((candidate) => candidateBoundResearchIntent(tokens, candidate));
-}
 
 /**
  * Every model-designation-shaped token in the text, in order, deduplicated.
@@ -771,8 +561,8 @@ function shortSkus(text) {
 }
 
 /**
- * Model evidence is deliberately tiered. A generic word-number pair is an
- * ambiguous candidate until an independent research-intent signal is present.
+ * Strong evidence is deliberately narrow. Generic word-number pairs are
+ * planner input, never deterministic model evidence.
  */
 function modelEvidence(text) {
   const ids = modelDesignations(text);
@@ -781,18 +571,13 @@ function modelEvidence(text) {
   const skus = shortSkus(text);
   if (skus.length) return { kind: 'strong', ids: [], skus, pairs: [] };
 
-  const pairs = wordNumberCandidates(text);
-  if (!pairs.length) return { kind: 'none', ids: [], skus: [], pairs: [] };
-  if (hasIndependentResearchIntent(text, pairs)) {
-    return { kind: 'corroborated', ids: [], skus: [], pairs };
-  }
-  return { kind: 'ambiguous', ids: [], skus: [], pairs };
+  return { kind: 'none', ids: [], skus: [], pairs: [] };
 }
 
 /** True only when model evidence is strong enough to force research. */
 const namesSpecificModel = (text) => {
   const evidence = modelEvidence(text);
-  return evidence.kind === 'strong' || evidence.kind === 'corroborated';
+  return evidence.kind === 'strong';
 };
 
 /**
@@ -805,13 +590,7 @@ const namesSpecificModel = (text) => {
 function modelSearchQueries(text) {
   const t = String(text || "").replace(/\s+/g, " ").trim();
   const evidence = modelEvidence(t);
-  if (evidence.kind === 'none' || evidence.kind === 'ambiguous') return [];
-
-  /* A weak pair has earned research, but it has not earned a synthetic
-   * `specs review` subject. The user's bounded sentence is the safest query
-   * because it preserves the corroborating intent and does not guess the
-   * product role of the pair. */
-  if (evidence.kind === 'corroborated') return t ? [t.slice(0, 200)] : [];
+  if (evidence.kind !== 'strong') return [];
 
   const ids = evidence.ids;
   const skus = evidence.skus;
@@ -864,8 +643,8 @@ function routeByRule(text, { hasConversationContext = false } = {}) {
   if (EXPLICIT_WEB_SEARCH_RE.test(t)) return askedForTheWeb(EXPLICIT_WEB_SEARCH_RE);
   if (ALOP_IDENTITY_QUESTION_RE.test(t)) return { memory: false, queries: null };
 
-  /* Strong or independently corroborated model evidence forces the search,
-   * and it is checked ABOVE the volatility deferral on purpose: deferring hands
+  /* Strong model evidence forces the search, and it is checked ABOVE the
+   * volatility deferral on purpose: deferring hands
    * the decision back to the planner, which is the component that got this
    * wrong. Code, transformations and creative work are excluded first —
    * `sha256` and `x86_64` are not products — and so is a pasted URL, which
@@ -1225,17 +1004,7 @@ const ROUTING_POLICY = [
   routeByRule.toString(),
   namesSpecificModel.toString(),
   modelEvidence.toString(),
-  modelEvidenceTokens.toString(),
-  isModelEvidenceToken.toString(),
-  wordNumberCandidates.toString(),
   [...STOPWORD_BEFORE_NUMBER].join(","),
-  normaliseModelEvidenceToken.toString(),
-  isModelResearchIntentWord.toString(),
-  candidateBoundResearchIntent.toString(),
-  hasIndependentResearchIntent.toString(),
-  [...MODEL_RESEARCH_INTENT_WORDS].join(","),
-  [...MODEL_RESEARCH_RELATION_WORDS].join(","),
-  [...MODEL_RESEARCH_COMPARISON_WORDS].join(","),
   modelDesignations.toString(),
   modelSearchQueries.toString(),
   ...Object.entries(ROUTING_RULES).map(([name, re]) => `${name}=${re.source}`),

@@ -6,6 +6,7 @@ const {
   needsWikiCheck,
   classifyRequest,
   routeByRule,
+  modelSearchQueries,
   assessComplexity,
   ROUTING_RULES,
   ROUTING_POLICY,
@@ -445,11 +446,10 @@ test("the zero-model rule does not swallow questions whose answer can move", () 
   ];
 
   /* The property is "never answered WITHOUT live information", which is not the
-   * same as "always handed to the planner" — and that difference is the whole
-   * point of the product-model rule below. Three of these name a specific model,
-   * and the rule now routes them straight to search instead of asking a small
-   * model whether they need one. What must never appear is a no-search
-   * decision. */
+   * same as "always handed to the planner". The strong designation below is
+   * routed straight to search instead of asking a small model whether it needs
+   * one. Generic word-number pairs stay neutral and therefore remain planner
+   * input. What must never appear is a no-search decision. */
   const swallowed = needsPlanner.filter((text) => {
     const route = routeByRule(text, { hasConversationContext: false });
     return route && !route.memory && !route.queries?.length;
@@ -459,8 +459,8 @@ test("the zero-model rule does not swallow questions whose answer can move", () 
   const forcedToSearch = needsPlanner.filter((text) => routeByRule(text, {})?.queries?.length);
   assert.deepEqual(
     forcedToSearch,
-    ["iPhone 17 price in UAE", "is Framework 16 still available?", "what is XG27AQWMG?"],
-    "only the named-model cases may bypass the planner, and only towards search",
+    ["what is XG27AQWMG?"],
+    "only strong designation cases may bypass the planner, and only towards search",
   );
 });
 
@@ -778,15 +778,51 @@ test("a mixed letters-and-digits designation is caught wherever it sits", () => 
   }
 });
 
-test("a brand followed by a number counts, and a function word followed by one does not", () => {
-  assert.equal(namesSpecificModel("is the iphone 15 waterproof"), true);
-  assert.equal(namesSpecificModel("pixel 9 vs galaxy 24"), true);
+test("a generic word-number pair never forces deterministic model research", () => {
+  for (const text of [
+    "RTX 5090",
+    "rtx 5090",
+    "Node 26",
+    "node 26",
+    "iPhone 17",
+    "worker 20",
+    "cache 500",
+    "is the iphone 15 waterproof",
+  ]) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
+  }
+
+  assert.deepEqual(modelSearchQueries("RTX 5090"), [], "a bare pair must not get a synthetic specs query");
+  assert.equal(namesSpecificModel("pixel 9 vs galaxy 24"), false, "a comparison still needs the planner");
+  assert.equal(routeByRule("pixel 9 vs galaxy 24", {})?.queries?.length ?? 0, 0);
   // The regex this replaced read "is 1440p" as a product and searched for it.
   assert.equal(namesSpecificModel("my monitor is 1440p should i cap at 240fps"), false);
   assert.equal(namesSpecificModel("i bought 27 inch panels"), false, "'bought 27' is not a product line");
 });
 
+test("the reported quantified cache phrase is not a product identifier", () => {
+  const text = "Our cache holds 500 entries.";
+  assert.equal(namesSpecificModel(text), false, text);
+  assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced a search`);
+});
+
 test("a number in ordinary quantity grammar is not a product identifier", () => {
+  const ordinaryEngineeringNouns = [
+    "entries", "rows", "keys", "bytes", "connections", "tokens", "shards", "documents",
+    "chunks", "messages", "events", "files", "threads", "retries", "queries", "sessions",
+    "calls", "jobs", "partitions", "nodes", "replicas", "buckets",
+  ];
+  const previouslyCleanNouns = ["requests", "workers", "users", "items", "records", "seconds"];
+  const quantifiedNouns = [...ordinaryEngineeringNouns, ...previouslyCleanNouns];
+  assert.equal(quantifiedNouns.length, 28);
+
+  for (const noun of quantifiedNouns) {
+    const text = `The service holds 500 ${noun}.`;
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced a search`);
+  }
+
   for (const text of [
     "serving 30 requests",
     "takes 200 milliseconds",
@@ -805,16 +841,538 @@ test("a number in ordinary quantity grammar is not a product identifier", () => 
   }
 });
 
-test("designation grammar plus product or model context still forces a search", () => {
-  for (const text of [
-    "GPT-5.6",
-    "RTX 5090",
-    "XG27AQWMG",
-    "iPhone 17 Pro",
-    "Node 26",
-  ]) {
+test("strong designations force a search without weak-pair corroboration", () => {
+  for (const text of ["GPT-5.6", "XG27AQWMG", "15ixr10"]) {
     assert.equal(namesSpecificModel(text), true, text);
     assert.ok(routeByRule(`What is ${text}?`, {})?.queries?.length, `${text} did not force a search`);
+  }
+});
+
+test("uncorroborated model-looking questions stay neutral rather than becoming quantities", () => {
+  for (const text of [
+    "does node 26 support this api?",
+    "can rtx 5090 render?",
+    "can node 26 process this file?",
+    "does iphone 17 access wifi?",
+    "does xps 13 discuss thermals?",
+    "iPhone 17 Pro",
+    "port 8080",
+    "HTTP 500",
+    "status 404",
+    "room 17",
+    "chapter 13",
+  ]) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} was forced or short-circuited`);
+  }
+});
+
+test("the historical NUM-3 and NUM-5 prose families remain neutral", () => {
+  const cases = [
+    "We store 500 entries.",
+    "The cache can hold 900 values.",
+    "The buffer will hold 250 packets.",
+    "Let it retain 400 keys.",
+    "Our system must track 600 sessions.",
+    "we keep 40 pods running",
+    "can process 700 events per second",
+    "can handle 300 requests without failing",
+    "should retain 450 objects in memory",
+    "must track 80 nodes across regions",
+    "will scale 200 workers next quarter",
+    "can queue 900 messages before backpressure",
+    "might spawn 120 threads under load",
+    "did process 40 batches yesterday",
+    "does cache 300 records locally",
+    "can hold 250 packets and drop the rest",
+    "should log 100 errors to disk",
+    "must drain 700 items from the queue",
+    "let retain 400 keys warm",
+  ];
+
+  for (const text of cases) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
+  }
+});
+
+test("the NUM-6a single-digit quantity family stays neutral", () => {
+  for (const text of [
+    "can process 1 request at a time",
+    "should keep 1 replica online",
+    "must hold 1 lock per thread",
+    "will spawn 1 worker per core",
+    "does allow 1 login per device",
+    "can open 1 connection per host",
+    "should emit 1 event per change",
+    "must write 1 checkpoint per epoch",
+    "will drop 1 frame on overload",
+    "can retain 1 snapshot for rollback",
+  ]) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
+  }
+});
+
+test("unseen ordinary numeric prose does not become model evidence", () => {
+  const unseen = [
+    "The worker handles 1 task.",
+    "We buffer 2 bytes.",
+    "The cache stores 42 values.",
+    "Our queue holds 1000 messages.",
+    "The job processed 4096 records.",
+    "The process is tracking 12 mice.",
+    "We keep 7 children in the pool.",
+    "Can parse 64 packets before timeout?",
+    "Should reserve 2048 slots.",
+    "Must retain 3 leaves.",
+    "Will spawn 16 workers overnight.",
+    "Might drop 99 frames on overload.",
+    "Did write 400 logs yesterday.",
+    "Does cache 300 entries locally.",
+    "We are storing 5 pieces in memory.",
+    "They were batching 700 requests before flush.",
+    "Can process 700 events and continue.",
+    "Will send 8080 bytes per second.",
+    "Let retain 6 keys warm.",
+    "Take 5 minutes to complete.",
+    "The table has 900 rows.",
+    "A room contains 17 chairs.",
+    "Queue 10 items then retry.",
+    "We store 500 geese.",
+    "The API received 404 responses.",
+  ];
+
+  assert.ok(unseen.length >= 20);
+  for (const text of unseen) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
+  }
+});
+
+test("NUM-6b verb-ending-s questions remain ambiguous and planner-neutral", () => {
+  for (const text of [
+    "can node 26 process this file?",
+    "does iphone 17 access wifi?",
+    "does thinkpad 14 press keys well?",
+    "can rtx 5090 compress video?",
+    "does node 26 express this well?",
+    "does xps 13 discuss thermals?",
+    "can radeon 7900 bypass the limit?",
+    "will iphone 17 address this bug?",
+    "does macbook 16 stress the gpu?",
+  ]) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} was decided by pair grammar`);
+  }
+});
+
+test("unseen strong designation probes remain searchable", () => {
+  const strong = [
+    "zenbook14",
+    "wh1000xm6",
+    "g9q7",
+    "ab-1234",
+    "foo_17",
+    "q1w2e3",
+    "legion5",
+    "pixel9pro",
+    "xps13plus",
+  ];
+  assert.ok(strong.length >= 9);
+  for (const text of strong) {
+    assert.equal(namesSpecificModel(text), true, text);
+    assert.ok(routeByRule(text, {})?.queries?.length, `${text} did not force a search`);
+  }
+});
+
+test("unseen generic product-looking pairs remain planner-neutral", () => {
+  const cases = [
+    "price for galaxy 26",
+    "what does pixel 12 cost",
+    "how much is surface 13",
+    "review the macbook 17",
+    "specs for radeon 8900",
+    "framework 18 release information",
+    "compare zenbook 16 against xps 18",
+    "sources for thinkpad 16 pricing",
+    "iphone 18 availability",
+    "reviews of node 30",
+    "cost of rtx 5080",
+    "availability for ryzen 9950",
+    "specifications of nvidia 5090",
+    "compare ipad 11 with galaxy 26",
+    "playstation 6 price",
+    "switch 2 release notes",
+    "kindle 12 review",
+    "oneplus 13 specs",
+    "nokia 3310 price",
+    "pixel 13 comparison",
+    "surface 14 vs framework 18",
+    "macbook 18 cost",
+    "xps 17 available",
+    "radeon 8900 reviews",
+    "node 31 specifications",
+    "cost for galaxy 27",
+    "price of pixel 14",
+    "review of surface 15",
+    "release notes for framework 19",
+    "compare rtx 5070 to radeon 8900",
+  ];
+
+  assert.equal(new Set(cases).size, cases.length);
+  assert.ok(cases.length >= 25);
+  for (const text of cases) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
+    assert.deepEqual(modelSearchQueries(text), [], `${text} generated a model query`);
+  }
+});
+
+test("NUM-7 unrelated research words do not corroborate an ordinary numeric pair", () => {
+  const requiredOpusNegatives = [
+    "the cache stores 500 specs",
+    "the worker processed 500 release notes",
+    "the parser recorded 40 reviews",
+    "the queue held 300 cost estimates",
+    "the parser wrote 7 availability records",
+    "the report contains 8 specifications",
+    "the committee approved 4 reviews",
+    "the server kept 9 available slots",
+    "the cache retained 11 release notes",
+    "the system recorded 5 price changes",
+    "the document lists 4 specs",
+    "the monitor reports 2 availability events",
+    "the job includes 10 comparison rows",
+    "the log mentions 6 release candidates",
+    "release the lock after 500 retries",
+    "review our queue that holds 900 messages",
+    "make the pool available for 200 clients",
+    "the review board approved 3 changes",
+    "price parsing fails on 12 rows",
+    "compare two runs where each spawns 16 threads",
+    "availability dropped when we lost 2 nodes",
+    "our release pipeline deploys 4 services",
+  ];
+  const fullOpusAttackFamily = [
+    "can process 700 events per second",
+    "can handle 300 requests without failing",
+    "should retain 450 objects in memory",
+    "must track 80 nodes across regions",
+    "will scale 200 workers next quarter",
+    "can queue 900 messages before backpressure",
+    "might spawn 120 threads under load",
+    "did process 40 batches yesterday",
+    "does cache 300 records locally",
+    "can hold 250 packets and drop the rest",
+  ];
+  const newUnseenNegatives = [
+    "review the queue after it processed 40 messages",
+    "compare the two pools while worker handles 32 tasks",
+    "price parsing reads 64 fields",
+    "release cleanup removed 12 stale files",
+    "availability changed after the service kept 8 replicas",
+    "specs for the cache hold 900 entries",
+    "reviews of the board changed 3 rows",
+    "cost reports mention service 20 times",
+    "the release board tracks 5 changes",
+    "compare two charts and the job stores 99 rows",
+    "available capacity fell when queue reached 300 entries",
+    "review notes say the process kept 6 handles",
+    "the specs document lists 4 columns",
+    "release notes were filed after service sent 18 packets",
+    "compare two ordinary batches one handled 24 items",
+    "available capacity fell when the queue reached 300 entries",
+    "cost analysis says the worker handles 75 requests",
+    "specification text mentions 11 fields",
+    "review our report while the job writes 6 files",
+    "the service became available after it processed 14 messages",
+    "compare results after the cache stored 50 keys",
+    "price and availability changed after the worker kept 9 slots",
+    "release work left 64 messages in flight",
+    "reviews mention the parser accepted 21 rows",
+    "the pricing parser compares 2 batches and emits 7 warnings",
+    "the report contains 8 comparison rows",
+    "the service retained 6 release notes",
+    "the worker accepted 14 available clients",
+    "the job recorded 5 price changes",
+    "the parser emitted 7 reviews",
+  ];
+
+  assert.equal(new Set(newUnseenNegatives).size, newUnseenNegatives.length);
+  assert.ok(newUnseenNegatives.length >= 25);
+  const cases = [...requiredOpusNegatives, ...fullOpusAttackFamily, ...newUnseenNegatives];
+  for (const text of cases) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} generated model research`);
+    assert.deepEqual(modelSearchQueries(text), [], `${text} generated a bogus model query`);
+  }
+});
+
+test("stopword-headed numeric phrases are not generic product candidates", () => {
+  for (const text of [
+    "release the lock after 500 retries",
+    "make the pool available for 200 clients",
+    "price parsing fails on 12 rows",
+    "review the service with 40 workers",
+    "specs are stable in 3 regions",
+  ]) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} generated model research`);
+  }
+});
+
+test("generic word-number requests never force research, even with product wording", () => {
+  const cases = [
+    "rtx 4090 cost",
+    "price of rtx 4080",
+    "specs for node 22",
+    "review of iphone 16",
+    "pixel 10 reviews",
+    "release notes for node 24",
+    "node 20 release notes",
+    "availability of framework 16",
+    "cost for radeon 7800",
+    "xps 15 specifications",
+    "surface 12 available",
+    "compare rtx 4060 to rtx 4070",
+    "compare pixel 8 with galaxy 25",
+    "pixel 8 vs galaxy 25",
+    "comparison of pixel 10 and galaxy 11",
+    "price of the macbook 16",
+    "reviews for the thinkpad 15",
+    "specification for radeon 7900",
+    "release notes for the iphone 15",
+    "cost of pixel 11",
+    "how much is iphone 17",
+    "review the rtx 5090",
+    "compare the rtx 5090 against 5080",
+    "sources for rtx 5090 pricing",
+  ];
+
+  assert.ok(cases.length >= 15);
+  for (const text of cases) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
+    assert.deepEqual(modelSearchQueries(text), [], `${text} generated a model query`);
+  }
+});
+
+test("formerly corroborated weak pairs now remain planner-neutral", () => {
+  for (const text of [
+    "rtx 5090 price",
+    "price of rtx 5090",
+    "review the rtx 5090",
+    "rtx 5090 specs",
+    "node 26 release notes",
+    "compare rtx 5090 with 5080",
+    "how much is iphone 17",
+    "sources for rtx 5090 pricing",
+  ]) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
+  }
+});
+
+test("NUM-9 weak-pair request frames remain planner-neutral", () => {
+  const cases = [
+    "macbook 16 price",
+    "pixel 12 specs",
+    "xps 15 review",
+    "node 30 release notes",
+    "framework 17 availability",
+    "iphone 18 Pro price",
+    "price of radeon 8900",
+    "specifications for surface 13",
+    "review of zenbook 15",
+    "release notes for node 28",
+    "availability of macbook 17",
+    "cost for pixel 12",
+    "price of the xps 16",
+    "reviews for the galaxy 26",
+    "review the surface 13",
+    "compare the pixel 12 with 13",
+    "compare xps 15 to rtx 5070",
+    "compare galaxy 26 against pixel 12",
+    "how much does radeon 8900 cost",
+    "sources about iphone 18",
+  ];
+
+  assert.equal(cases.length, 20);
+  for (const text of cases) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
+  }
+});
+
+test("NUM-10 clause-start numeric phrases remain planner-neutral", () => {
+  const cases = [
+    "error 500 availability check failed",
+    "status 404 review needed",
+    "cache 500 specs are stale",
+    "worker 20 reviews the queue",
+    "chapter 13 covers availability planning",
+    "figure 12 shows price over time",
+    "table 4 specs need updating",
+    "pool 8 cost exceeded the budget",
+    "batch 9 price was recomputed overnight",
+    "queue 300 availability dropped",
+    "retry 1 review pending",
+    "label 7 specs internal",
+    "(cache 500 specs) were purged",
+  ];
+
+  assert.equal(cases.length, 13);
+  for (const text of cases) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
+    assert.deepEqual(modelSearchQueries(text), [], `${text} generated a model query`);
+  }
+});
+
+test("unseen ordinary and ambiguous numeric probes remain planner-neutral", () => {
+  const cases = [
+    "the gateway serves 600 requests in parallel",
+    "the worker flushed 75 records before midnight",
+    "our cache retains 320 entries across restarts",
+    "the pipeline completed 18 jobs overnight",
+    "the service accepts 240 users per shard",
+    "the buffer contains 96 bytes after encoding",
+    "the parser emitted 13 warnings during startup",
+    "the scheduler retries 14 calls before aborting",
+    "the database stores 2048 keys in the index",
+    "the process opened 22 connections to the pool",
+    "the queue drained 37 messages after recovery",
+    "the monitor saw 5 failures in one hour",
+    "the worker copied 81 files to staging",
+    "the runtime tracks 44 sessions per region",
+    "the service holds 260 tokens in memory",
+    "the job wrote 19 logs to disk",
+    "the cluster spans 6 zones today",
+    "the endpoint returns 302 responses on redirect",
+    "the client sends 128 packets per batch",
+    "the task allocates 3 buffers for parsing",
+    "a single host serves 48 requests",
+    "one replica keeps 2 locks",
+    "each shard owns 7 partitions",
+    "this report covers 11 chapters",
+    "that room contains 17 chairs",
+    "these results include 23 samples",
+    "those workers completed 9 tasks",
+    "we found 4 mice in the test fixture",
+    "the lab raised 6 geese near the gate",
+    "the index stores 12 children records",
+    "can the service process 55 events at once?",
+    "should the cache retain 88 values overnight?",
+    "will the queue release 21 items before close?",
+    "might the job create 34 files during export?",
+    "does the monitor report 16 alerts locally?",
+    "is the pool limited to 70 clients?",
+    "did the parser consume 29 rows yesterday?",
+    "could the worker keep 42 handles open?",
+    "would the service survive 15 retries?",
+    "the request takes 7 seconds in staging",
+    "the batch runs for 9 minutes each hour",
+    "the job starts at 08:30 and ends at 09:00",
+    "the build targets python 3.13 on windows",
+    "the endpoint speaks HTTP 2 over TLS 1.3",
+    "the archive contains 10 mp4 files",
+    "the monitor reports 5xx responses",
+    "the formula uses 2.5 milliseconds per item",
+    "the image is 1440p at 60hz",
+    "the service tracks 1.5 million rows",
+    "the retry budget is 0.25 percent",
+    "the first pass handled 12 items, the second handled 14",
+    "the cache stores 40 keys and 6 values",
+    "we opened 3 sockets for 2 peers",
+    "the queue held 90 messages; the worker drained 30",
+    "after 16 retries, the request timed out",
+    "before 8 workers started, the pool was empty",
+    "under 64 clients, latency stayed flat",
+    "from 12 rows, the parser built 3 groups",
+    "with 5 replicas, the system survived",
+    "between 2 regions, traffic shifted",
+  ];
+
+  assert.equal(new Set(cases).size, cases.length);
+  assert.ok(cases.length >= 50);
+  for (const text of cases) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
+  }
+});
+
+test("unseen strong designation shapes remain searchable", () => {
+  const cases = [
+    "zenbook16",
+    "wh1000xm7",
+    "legion7",
+    "pixel10pro",
+    "xps15plus",
+    "xg28bqwm",
+    "eosr6",
+    "q1w2e4",
+    "model9x",
+    "bravia8",
+    "mavic3",
+    "r7m2",
+    "sm-s938b",
+    "rx-7800",
+    "ab-9911",
+    "tuf-5070",
+    "qx-55",
+    "foo_77",
+    "mk_12",
+    "gpt-6.1",
+  ];
+
+  assert.equal(new Set(cases).size, cases.length);
+  assert.ok(cases.length >= 15);
+  for (const text of cases) {
+    assert.equal(namesSpecificModel(text), true, text);
+    assert.ok(routeByRule(text, {})?.queries?.length, `${text} did not force model research`);
+  }
+});
+
+test("NUM-8 direct non-comparison intent prefixes do not classify ordinary pairs", () => {
+  for (const text of [
+    "review board 3 changes",
+    "price parser 12 rows",
+    "specs document 4 columns",
+    "release pipeline 4 services",
+    "available capacity 8 clients",
+    "availability monitor 2 nodes",
+    "cost report 7 entries",
+    "review report 9 rows",
+    "the queue holds 500. price analysis follows",
+    "the service handles 20; review notes follow",
+    "the cache stores 42, specs are documented separately",
+    "the worker keeps 8: release notes follow",
+  ]) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} generated model research`);
+  }
+});
+
+test("strong designations remain searchable in sentence context", () => {
+  for (const text of [
+    "GPT-5.6 latency",
+    "XG27AQWMG settings",
+    "the owner uses 15ixr10 for video",
+  ]) {
+    assert.equal(namesSpecificModel(text), true, text);
+    assert.ok(routeByRule(text, {})?.queries?.length, `${text} did not force a search`);
+  }
+});
+
+test("generic product-looking prose stays neutral regardless of case", () => {
+  for (const text of [
+    "compare RTX 5090 with RTX 5080",
+    "Node 26 release",
+    "iPhone 17 Pro price",
+  ]) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} forced model research`);
   }
 });
 

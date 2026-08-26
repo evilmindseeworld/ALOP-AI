@@ -445,12 +445,12 @@ const hasNamedEntity = (text) => {
  * mechanism for a decision whose failure mode is silent fabrication, so the
  * rule router — which runs ABOVE it — now settles this shape itself.
  *
- * WHAT COUNTS. Either a single token mixing letters and digits (`xg27aqwmg`,
- * `15ixr10`, `a7iv`), or a word followed by a number (`rtx 5060`, `iphone 15`,
- * `pixel 9`). Units and formats are excluded by list, because `1440p`, `280hz`
- * and `mp4` are the user describing a spec, not naming a thing to look up, and
- * a version number is excluded because `3.12` is usually the subject of a
- * stable question about a language, not a product to price.
+ * WHAT COUNTS. A single token mixing letters and digits (`xg27aqwmg`,
+ * `15ixr10`, `a7iv`) or an explicit hyphenated designation is strong shape
+ * evidence. A word followed by a number (`rtx 5060`, `iphone 15`, `pixel 9`)
+ * is only a candidate: the same shape is an ordinary label or quantity in
+ * `worker 20` and `cache 500`. Units and formats are excluded by shape because
+ * `1440p`, `280hz` and `mp4` are specs, not product names.
  *
  * CEILING, stated rather than papered over: a two-character SKU on its own
  * (`s9`, `m4`) is NOT caught — the pattern needs four characters to keep `x8`
@@ -470,52 +470,16 @@ const FORMAT_TOKEN_RE =
 /** `v1.2.3`, `3.12`, `2.0` — a version, not a product line. */
 const VERSION_TOKEN_RE = /^v?\d+(?:\.\d+)+$/i;
 
-/* A word followed by a standalone number — `rtx 5060`, `iphone 15`, `xps 13`.
- *
- * Written as a scan over token PAIRS rather than one regex, because the regex
- * version (`\b[a-z]{2,}[\s-]\d{2,5}[a-z]{0,3}\b`) read "my monitor is 1440p" as
- * the product "is 1440p" and then searched for it. Two things have to be
- * excluded and neither is expressible as a word boundary: the leading word must
- * not be a function word, and the number must not be a unit the user is
- * quoting. */
+/* Existing function-word exclusions for a short SKU's possible brand prefix.
+ * This remains a token-shape guard for the short-SKU detector only. */
 const STOPWORD_BEFORE_NUMBER = new Set([
   "is", "are", "was", "were", "be", "at", "on", "in", "to", "of", "the", "a", "an", "and", "or",
-  "for", "with", "my", "your", "it", "its", "do", "does", "did", "if", "so", "up", "down", "vs",
+  "for", "with", "my", "your", "it", "its", "do", "does", "did", "if", "so", "up", "down", "vs", "after",
   "per", "than", "then", "about", "around", "under", "over", "from", "into", "like", "have", "has",
   "had", "should", "would", "could", "can", "will", "just", "only", "about", "buy", "bought", "got",
   "get", "use", "using", "run", "runs", "cap", "set", "want", "need", "i", "you", "we", "they",
   "this", "that", "these", "those", "there", "here", "now", "not", "no", "yes", "me", "him", "her",
 ]);
-
-/* A number followed by an explicit quantity word is a measurement, even when
- * the verb before it is not in STOPWORD_BEFORE_NUMBER (`serving 30 requests`,
- * `takes 200 milliseconds`, `retry after 20 seconds`). This is grammar, not a
- * catalogue of brands or products, so a new identifier remains searchable. */
-const QUANTITY_WORD_AFTER_NUMBER = new Set([
-  "request", "requests", "worker", "workers", "user", "users",
-  "millisecond", "milliseconds", "ms", "second", "seconds",
-  "minute", "minutes", "hour", "hours", "day", "days", "week", "weeks",
-  "month", "months", "year", "years", "item", "items", "record", "records",
-  "percent", "percentage",
-]);
-
-/** The first `word number` pair that looks like a product line, or null. */
-function brandNumber(text) {
-  const tokens = String(text || "").split(/[^A-Za-z0-9.%]+/).filter(Boolean);
-  for (let i = 0; i < tokens.length - 1; i += 1) {
-    const word = tokens[i];
-    const rawNumber = tokens[i + 1];
-    const percentSuffix = rawNumber.endsWith('%') || tokens[i + 2] === '%';
-    const number = rawNumber.replace(/%$/, '').replace(/\.+$/, "");
-    if (!/^[A-Za-z]{2,}$/.test(word) || STOPWORD_BEFORE_NUMBER.has(word.toLowerCase())) continue;
-    if (!/^\d{2,5}[A-Za-z]{0,3}$/.test(number)) continue;
-    if (UNIT_TOKEN_RE.test(number) || FORMAT_TOKEN_RE.test(number) || VERSION_TOKEN_RE.test(number)) continue;
-    const afterNumber = (tokens[i + 2] || "").replace(/[.%]+$/, "").toLowerCase();
-    if (percentSuffix || QUANTITY_WORD_AFTER_NUMBER.has(afterNumber)) continue;
-    return `${word} ${number}`;
-  }
-  return null;
-}
 
 /**
  * Every model-designation-shaped token in the text, in order, deduplicated.
@@ -596,9 +560,25 @@ function shortSkus(text) {
   return qualifies ? found : [];
 }
 
-/** True when the text names a specific product model the answer depends on. */
-const namesSpecificModel = (text) =>
-  modelDesignations(text).length > 0 || brandNumber(text) !== null || shortSkus(text).length > 0;
+/**
+ * Strong evidence is deliberately narrow. Generic word-number pairs are
+ * planner input, never deterministic model evidence.
+ */
+function modelEvidence(text) {
+  const ids = modelDesignations(text);
+  if (ids.length) return { kind: 'strong', ids, skus: [], pairs: [] };
+
+  const skus = shortSkus(text);
+  if (skus.length) return { kind: 'strong', ids: [], skus, pairs: [] };
+
+  return { kind: 'none', ids: [], skus: [], pairs: [] };
+}
+
+/** True only when model evidence is strong enough to force research. */
+const namesSpecificModel = (text) => {
+  const evidence = modelEvidence(text);
+  return evidence.kind === 'strong';
+};
 
 /**
  * Two queries: the designation on its own, which is what actually finds a spec
@@ -609,8 +589,11 @@ const namesSpecificModel = (text) =>
  */
 function modelSearchQueries(text) {
   const t = String(text || "").replace(/\s+/g, " ").trim();
-  const ids = modelDesignations(t);
-  const skus = shortSkus(t);
+  const evidence = modelEvidence(t);
+  if (evidence.kind !== 'strong') return [];
+
+  const ids = evidence.ids;
+  const skus = evidence.skus;
   /* A short SKU is only a search term WITH its brand — "s9 specs review" finds
    * a Samsung phone, a Sony headphone and a vacuum. The brand comes from the
    * word before whichever SKU had one, and is applied to all of them, because
@@ -620,9 +603,7 @@ function modelSearchQueries(text) {
     const names = skus.map((s) => s.token).join(" ");
     return `${brand} ${names}`.trim();
   };
-  const subject = (ids.length
-    ? ids.join(" ")
-    : (brandNumber(t) || (skus.length ? skuSubject() : ""))).trim();
+  const subject = (ids.length ? ids.join(" ") : (skus.length ? skuSubject() : "")).trim();
   const queries = [];
   if (subject) queries.push(`${subject} specs review`);
   const context = t.slice(0, 200);
@@ -662,13 +643,14 @@ function routeByRule(text, { hasConversationContext = false } = {}) {
   if (EXPLICIT_WEB_SEARCH_RE.test(t)) return askedForTheWeb(EXPLICIT_WEB_SEARCH_RE);
   if (ALOP_IDENTITY_QUESTION_RE.test(t)) return { memory: false, queries: null };
 
-  /* A named product model forces the search, and it is checked ABOVE the
-   * volatility deferral on purpose: deferring hands the decision back to the
-   * planner, which is the component that got this wrong. Code, transformations
-   * and creative work are excluded first — `sha256` and `x86_64` are not
-   * products — and so is a pasted URL, which already means "read this page".
-   * This is the one rule here that OVERRIDES rather than pre-empts the planner;
-   * everything else in this function only saves it a call. */
+  /* Strong model evidence forces the search, and it is checked ABOVE the
+   * volatility deferral on purpose: deferring hands
+   * the decision back to the planner, which is the component that got this
+   * wrong. Code, transformations and creative work are excluded first —
+   * `sha256` and `x86_64` are not products — and so is a pasted URL, which
+   * already means "read this page". This is the one rule here that OVERRIDES
+   * rather than pre-empts the planner; ambiguous word-number pairs remain
+   * neutral. */
   const stableShape = CODE_RE.test(t) || DIRECT_TRANSFORM_RE.test(t) || CREATIVE_RE.test(t);
 
   if (!stableShape && !URL_RE.test(t) && namesSpecificModel(t)) {
@@ -1021,6 +1003,8 @@ const ROUTING_RULES = {
 const ROUTING_POLICY = [
   routeByRule.toString(),
   namesSpecificModel.toString(),
+  modelEvidence.toString(),
+  [...STOPWORD_BEFORE_NUMBER].join(","),
   modelDesignations.toString(),
   modelSearchQueries.toString(),
   ...Object.entries(ROUTING_RULES).map(([name, re]) => `${name}=${re.source}`),

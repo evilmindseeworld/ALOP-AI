@@ -327,12 +327,13 @@ const COUNCIL = [
  *
  * It is NOT in the COUNCIL array above, and that is deliberate. Every seat in
  * that array is a `:free` id billed at $0 and eligible for narrowing by
- * temperature band; this one is METERED, is added by policy rather than by the
- * ladder, and must never be picked as a substitute for a free seat. It joins a
- * turn through `withToolSeat` and only when the turn earns it — see the policy
- * comment in lib/router.js.
+ * temperature band; this one is the native-tools seat, added by policy rather
+ * than by the ladder, and only when the turn earns it — see the policy comment
+ * in lib/router.js. FREE_ONLY applies to it at the shared request boundary too.
  *
- * `openai/gpt-5.6-luna` is the default because it is what was measured: the
+ * `openai/gpt-5.6-luna` entry below is historical measurement data, not a
+ * permitted default. The current default is free; the old Luna path was
+ * measured because the
  * catalogue reports `tools`, `tool_choice` and `reasoning_effort` among its
  * supported parameters, and a live round trip on 2026-08-14 confirmed all
  * three — it emitted `tool_calls` with `finish_reason: "tool_calls"`, accepted
@@ -346,10 +347,11 @@ const COUNCIL = [
  *
  * THAT PARAGRAPH WAS ALREADY HERE AND THE DEFAULT UNDERNEATH IT WAS METERED
  * ANYWAY, which is the whole failure: the reasoning was written down and then
- * not applied. The owner's instruction, 2026-08-16, is that this product runs
- * on OpenRouter's free models and that the subscriptions belong to the people
- * building it. So the default is the strongest free rung the catalogue says can
- * call tools, and paying is an explicit COUNCIL_TOOL_SEAT_MODEL.
+ * not applied. The owner's instruction is that this product runs on OpenRouter's
+ * free models and that subscriptions belong to the people building it. The
+ * default is now the strongest free rung the catalogue says can call tools, and
+ * any non-free override is refused before inference rather than treated as a
+ * paid opt-in.
  *
  * The effort follows the MODEL rather than being pinned high: `high` was
  * written for Luna, and sending an unestablished reasoning parameter to a free
@@ -360,12 +362,9 @@ const TOOL_SEAT_MODEL = (process.env.COUNCIL_TOOL_SEAT_MODEL || 'nvidia/nemotron
 const TOOL_SEAT_EFFORT = (process.env.COUNCIL_TOOL_SEAT_EFFORT || '').trim()
   || effortFor(TOOL_SEAT_MODEL)
   || '';
-/* PRO ONLY BY DEFAULT, and this is a spend boundary rather than a product one.
- * Every other seat costs $0, so `rosterForPlan` has never had money riding on
- * it. Handing a metered model to an unbounded free tier is how a $20/month
- * ceiling becomes a surprise, and the per-user spend ceiling is the only thing
- * that would catch it — after the fact. Set COUNCIL_TOOL_SEAT_FREE_PLAN=1 to
- * extend it, deliberately, once the numbers are known. */
+/* PRO ONLY BY DEFAULT. This is a product entitlement, not a billing override:
+ * every OpenRouter model still has to pass FREE_ONLY. Set
+ * COUNCIL_TOOL_SEAT_FREE_PLAN=1 to extend the native-tools feature deliberately. */
 const TOOL_SEAT_FREE_PLAN = /^(1|true)$/i.test(process.env.COUNCIL_TOOL_SEAT_FREE_PLAN || '');
 const TOOL_SEAT_ENABLED = Boolean(TOOL_SEAT_MODEL) && !/^(off|none|0|false)$/i.test(TOOL_SEAT_MODEL);
 const TOOL_SEAT = TOOL_SEAT_ENABLED
@@ -374,9 +373,9 @@ const TOOL_SEAT = TOOL_SEAT_ENABLED
       /* Low, like the 120B seat above: this member's job is to hold to what the
        * evidence literally says. The lateral seats are already on the board. */
       temperature: 0.2,
-      /* `free` means "included in the FREE PLAN", not "costs nothing" — see
-       * rosterForPlan. This seat is the first place those two readings come
-       * apart, and reading it the other way is a metered model on a free tier. */
+      /* `free` means "included in the FREE PLAN" — see rosterForPlan. The
+       * model's actual OpenRouter billing status is enforced separately by
+       * FREE_ONLY at request time. */
       free: TOOL_SEAT_FREE_PLAN,
       nativeTools: true,
       effort: TOOL_SEAT_EFFORT,
@@ -518,6 +517,7 @@ const callModelWithLadder = async (model, call, { label = 'model', signal = null
  * process.exit(1) at import time on a missing env var, so nothing defined here
  * is reachable from a test. Only the socket and the telemetry stay here. */
 const { callModel: orCallModel, parseOpenRouterSseLine, fetchOpenRouterStream } = require('./lib/openrouter');
+const { assertAllowedOpenRouterModel } = require('./lib/openrouter-policy');
 
 /**
  * THE ACCOUNT-WIDE DAILY CAP, LATCHED.
@@ -2653,10 +2653,12 @@ const embedAnswerText = async (text) => {
   if (!OPENROUTER_API_KEY || !text) return null;
   const timed = timeoutSignal(undefined, 30000);
   try {
+    const requestBody = answerEmbeddingRequest(text);
+    assertAllowedOpenRouterModel(requestBody.model, { source: 'answer-cache-embedding' });
     const res = await fetch('https://openrouter.ai/api/v1/embeddings', {
       method: 'POST',
       headers: { Authorization: `Bearer ${OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(answerEmbeddingRequest(text)),
+      body: JSON.stringify(requestBody),
       signal: timed.signal,
     });
     if (!res.ok) { console.error(`[ANSWERS] EMBEDDING ERROR status=${res.status}`); return null; }
@@ -3191,7 +3193,7 @@ const createLimiter = (windowMs, max, msg, name) => {
  *
  * Sol found it by reading the mount order rather than the function, 2026-08-12.
  * The consequence is economic and it is the one that matters on this product: a
- * council turn is seven paid model calls plus search plus a possible fallback
+ * council turn is seven model calls plus search plus a possible fallback
  * whip, so one valid account rotating source addresses collected a fresh
  * 30-per-minute allowance per address, and the owner collected the bill.
  *
@@ -3797,9 +3799,9 @@ const turnLedger = createTurnLedger({ supabase });
  *
  * WHY BOTH EXIST. The cost ledger meters MONEY, per USER. Every model on the
  * roster is a `:free` id costing exactly $0, so that ceiling can no longer bind
- * on a model call — it now guards search and page fetches, and it stays exactly
- * as it was so that it becomes protective again the moment a seat is swapped to
- * a paid model. What binds today is OpenRouter's free-model REQUEST cap: 50 per
+ * on a model call — it now guards search and page fetches, and it remains as
+ * defensive accounting under the permanent FREE_ONLY policy. Paid/unknown model
+ * swaps are refused before inference. What binds today is OpenRouter's free-model REQUEST cap: 50 per
  * UTC day on a zero-credit account, 1000 after $10 of credits. Two ceilings,
  * counting disjoint things.
  *
@@ -4529,11 +4531,11 @@ async function handleCouncilTurn(req, res) {
      * null as "no seat" rather than as "use the default". */
     const toolSeat = TOOL_SEAT && (userPlan === 'pro' || TOOL_SEAT_FREE_PLAN) ? TOOL_SEAT : null;
     let selection = classifyRequest(routingText, planRoster, isDetailed);
-    /* COMPLEXITY DOES NOT ARM THE METERED TOOL SEAT. Complex turns use the free
+    /* COMPLEXITY DOES NOT ARM THE NATIVE TOOL SEAT. Complex turns use the free
      * council for parallel drafts, then the configured head model synthesises
-     * them. The router's later search decision is the only thing that adds Luna
-     * as a native tool operator; the reservation below still covers that
-     * possible widening before the router has run. */
+     * them. The router's later search decision is the only thing that adds the
+     * native tool operator; FREE_ONLY still guards its request, and the
+     * reservation below covers that possible widening before the router runs. */
     /* `let`, because a turn the router later sends to live research is re-selected
      * onto the full roster below — see escalateForResearch. The reservation two
      * blocks down covers that roster, not this one, so the widening cannot spend
@@ -6639,11 +6641,11 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
      * `.catch` because an unhandled rejection in a `finally` ends the process
      * under Node's default policy. */
     if (spendReserved > 0 && auditUserId) {
-      /* PRICED AGAINST THE TOOL SEAT'S MODEL ID, or the settlement refunds the
-       * difference between a metered seat and a free one straight back to the
-       * user. The reservation above already held the metered figure, so getting
-       * this wrong does not overcharge — it silently UNDER-charges, and the
-       * ceiling stops seeing the only seat that can reach it. */
+       /* PRICED AGAINST THE TOOL SEAT'S MODEL ID for defensive settlement. The
+        * historical table distinguishes metered and free records, but FREE_ONLY
+        * blocks a metered request before inference. The reservation above still
+        * holds the conservative figure, so getting this wrong cannot overcharge
+        * a current model call. */
       const settleSnapshot = telemetry.snapshot({ category: 'settle' });
       const actual = priceTurn(settleSnapshot, { toolSeatModel: TOOL_SEAT_MODEL });
       reservationLedger.settle({

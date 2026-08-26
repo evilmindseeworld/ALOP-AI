@@ -11,7 +11,7 @@ const {
 const PRIMARY = 'google/gemma-4-26b-a4b-it:free';
 const LUNA = 'openai/gpt-5.6-luna';
 
-test('the synthesis model defaults to high-effort Luna', () => {
+test('the synthesis model defaults to the configured free head', () => {
   assert.equal(configuredSynthesisModel(undefined), DEFAULT_SYNTHESIS_MODEL);
   assert.equal(configuredSynthesisModel(''), DEFAULT_SYNTHESIS_MODEL);
 });

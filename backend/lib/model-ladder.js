@@ -29,10 +29,10 @@
  *      server.js already said exactly that, and the default underneath it was a
  *      metered model anyway.
  *
- *      So Luna, Gemini 2.5 Flash and Sonnet 5 are in METERED_RUNGS below and on
- *      no default path. A deployment that has decided to pay opts in through
- *      COUNCIL_HEAD_FALLBACKS / COUNCIL_SYNTHESIS_MODEL / COUNCIL_TOOL_SEAT_MODEL.
- *      Do not promote one back to a default because the free rung is slower.
+ *      So Luna, Gemini 2.5 Flash and Sonnet 5 remain below as historical
+ *      pricing/effort data, but they are not runnable paths. FREE_ONLY is a
+ *      standing rule: COUNCIL_HEAD_FALLBACKS, COUNCIL_SYNTHESIS_MODEL and
+ *      COUNCIL_TOOL_SEAT_MODEL cannot opt back into paid inference.
  *
  *      WHAT THIS COSTS, stated rather than buried: the free rungs are the
  *      slowest models on the roster — 120B measured at 23.9s median against
@@ -51,18 +51,17 @@
  *      OpenRouter's account-wide daily REQUEST quota, which is the ceiling that
  *      actually binds here — see the second half of lib/spend.js.
  *
- * PRICES (OpenRouter catalogue, 2026-08-16, $/M prompt / $/M completion):
+ * HISTORICAL PRICES (OpenRouter catalogue, 2026-08-16, $/M prompt / $/M completion):
  *   nvidia/nemotron-3-ultra-550b-a55b:free 0 / 0   (1M context)
  *   nvidia/nemotron-3-super-120b-a12b:free 0 / 0   (the previous sole fallback)
- *   -- opt-in only, METERED_RUNGS below --
+ *   -- historical data only; FREE_ONLY provides no paid opt-in --
  *   openai/gpt-5.6-luna                    0.10 / 0.60
  *   google/gemini-2.5-flash                0.30 / 2.50
  *   anthropic/claude-sonnet-5              2.00 / 10.00
  *
- * IF YOU OPT IN, THE PRICING FOLLOWS. `SYNTHESIS_MODEL_TENTHS` in lib/spend.js
- * prices the metered rungs individually and the reservation holds the dearest
- * one, so putting a metered model on this path changes what every turn
- * reserves. Check that table when you change this list.
+ * `SYNTHESIS_MODEL_TENTHS` in lib/spend.js retains the historical rates for
+ * defensive settlement accounting. Putting a metered model in configuration
+ * does not opt in: FREE_ONLY rejects it before any OpenRouter request.
  */
 
 const DEFAULT_HEAD_LADDER = Object.freeze([
@@ -71,12 +70,9 @@ const DEFAULT_HEAD_LADDER = Object.freeze([
 ]);
 
 /**
- * The metered rungs, kept as data rather than as prose so an opt-in deployment
- * has an ordered list to paste, and so the tool-capability test still covers
- * them. NOT on the default ladder: see the paragraph above.
- *
- * `COUNCIL_HEAD_FALLBACKS="openai/gpt-5.6-luna:high,google/gemini-2.5-flash:high"`
- * is how a deployment that has decided to pay opts in.
+ * The metered rungs stay as data for historical pricing/effort compatibility
+ * and tests. They are NEVER runnable under FREE_ONLY; the request boundary
+ * rejects them even when a deployment variable names one.
  */
 const METERED_RUNGS = Object.freeze([
   Object.freeze({ model: 'openai/gpt-5.6-luna', effort: 'high' }),

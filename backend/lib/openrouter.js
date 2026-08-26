@@ -1,6 +1,7 @@
 'use strict';
 
 const { normaliseCompletion, emptyReply, normaliseUsage } = require('./model-reply');
+const { assertAllowedOpenRouterModel } = require('./openrouter-policy');
 
 const RETRY_DELAYS_MS = [400, 1200];
 const RATE_LIMIT_RESET_SAFETY_MS = 50;
@@ -132,6 +133,7 @@ const abortableDelay = (ms, signal) => new Promise((resolve) => {
  *        matching option on `fetchOpenRouterStream`, which has always had one.
  */
 async function callModel(host, apiKey, modelName, messages, temperature, timeoutMs, maxTokens, parentSignal, options = {}) {
+  assertAllowedOpenRouterModel(modelName, { source: 'callModel' });
   const structured = Boolean(options && options.structured);
   /* Every early exit below used to be the bare string ''. In structured mode it
    * has to be an object or each caller grows a type check it will forget. */
@@ -293,6 +295,7 @@ async function fetchOpenRouterStream(
   maxTokens = null,
   { deadlineAt = null, timeoutMs = 30_000, maxRetries = 1, includeUsage = false, reasoning, onAttempt } = {},
 ) {
+  assertAllowedOpenRouterModel(modelName, { source: 'fetchOpenRouterStream' });
   if (parentSignal?.aborted) throw parentSignal.reason || new DOMException('Aborted', 'AbortError');
   const suppliedDeadline = deadlineAt == null ? null : Number(deadlineAt);
   const fallbackTimeout = Number(timeoutMs);

@@ -3,8 +3,12 @@ import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 import answerCache from '../lib/answer-cache.js';
 import embeddings from '../lib/answer-embeddings.js';
+
+const require = createRequire(import.meta.url);
+const { assertAllowedOpenRouterModel } = require('../lib/openrouter-policy.js');
 
 dotenv.config({ path: join(dirname(fileURLToPath(import.meta.url)), '..', '.env') });
 
@@ -31,12 +35,14 @@ const summary = { scanned: 0, backfilled: 0, failed: 0, raced: 0 };
 let cursor = resumeAt;
 
 async function embed(text) {
+  const requestBody = embeddings.requestBody(answerCache.normalise(text));
   for (let attempt = 0; attempt < 3; attempt++) {
+    assertAllowedOpenRouterModel(requestBody.model, { source: 'backfill-answer-cache-embeddings' });
     try {
       const res = await fetch('https://openrouter.ai/api/v1/embeddings', {
         method: 'POST',
         headers: { Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(embeddings.requestBody(answerCache.normalise(text))),
+        body: JSON.stringify(requestBody),
       });
       if (res.ok) return embeddings.parseEmbedding(await res.json());
       if (![408, 429, 500, 502, 503, 504].includes(res.status)) return null;

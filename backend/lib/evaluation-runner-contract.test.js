@@ -6,6 +6,13 @@ const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 
 const SOURCE = readFileSync(join(__dirname, '..', 'scripts', 'run-evals.mjs'), 'utf8');
+const EVALUATION = readFileSync(join(__dirname, 'evaluation.js'), 'utf8');
+
+test('the judge is pure and neither evaluator source selects Luna through OpenRouter', () => {
+  assert.doesNotMatch(EVALUATION, /\bfetch\s*\(/);
+  assert.doesNotMatch(EVALUATION, /OPENROUTER_API_KEY|gpt-5\.6-luna/);
+  assert.doesNotMatch(SOURCE, /OPENROUTER_API_KEY|OPENROUTER_MODEL|gpt-5\.6-luna/);
+});
 
 test('the evaluator refuses an arbitrary Clerk user', () => {
   assert.match(SOURCE, /EVAL_CLERK_SECRET_KEY && !process\.env\.EVAL_USER_ID/);

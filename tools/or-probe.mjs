@@ -1,3 +1,8 @@
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const { assertAllowedOpenRouterModel } = require('../backend/lib/openrouter-policy.js');
+
 const API_ROOT = 'https://openrouter.ai/api/v1';
 const apiKey = process.env.OPENROUTER_API_KEY;
 
@@ -38,6 +43,7 @@ if (!apiKey) {
       const signal = AbortSignal.timeout(20000);
       let response;
       try {
+        assertAllowedOpenRouterModel(model, { source: 'tools-or-probe' });
         response = await fetchTransiently(`${API_ROOT}/chat/completions`, {
           method: 'POST', headers, signal,
           body: JSON.stringify({ model, messages: [{ role: 'user', content: 'Reply with exactly: probe successful' }], max_tokens: maxTokens, temperature: 0, stream: true }),

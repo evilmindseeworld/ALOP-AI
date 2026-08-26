@@ -24,11 +24,10 @@ const { effortFor, DEFAULT_HEAD_LADDER } = require('./model-ladder');
  * THE RULES, in the order they are applied:
  *
  *   1. NOTHING METERED ARRIVES BY RANKING. The candidate list is what the
- *      caller supplies, and the caller supplies free models unless a deployment
- *      has opted in — see lib/model-ladder.js. A selector that could promote a
- *      metered model on a latency score would turn "this one is faster" into a
- *      bill, which is precisely the failure the free-only default exists to
- *      prevent.
+ *      caller supplies, and FREE_ONLY rejects every non-free candidate before
+ *      inference. A selector that could promote a metered model on a latency
+ *      score would turn "this one is faster" into a bill, which is precisely
+ *      the failure the permanent policy exists to prevent.
  *
  *   2. NO DATA CHANGES NOTHING. `health.rank` keeps an unmeasured model at its
  *      list position, and `confident` requires MIN_CONFIDENT_SAMPLES calls. So

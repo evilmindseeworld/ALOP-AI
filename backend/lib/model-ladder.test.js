@@ -5,6 +5,7 @@ const { join } = require('node:path');
 const {
   DEFAULT_HEAD_LADDER, METERED_RUNGS, parseLadder, fallbacksAfter, asStreamFallbacks, effortFor,
 } = require('./model-ladder');
+const { isAllowedOpenRouterModel } = require('./openrouter-policy');
 
 /* THIS TEST USED TO PASS BY NOT LOOKING. It ran `i < length - 1`, so on the
  * two-rung free ladder the loop body never executed and a green result meant
@@ -48,13 +49,13 @@ test('EVERY DEFAULT RUNG IS FREE', () => {
   }
 });
 
-test('the metered rungs are reachable only by opting in', () => {
+test('historical metered rungs remain non-runnable under FREE_ONLY', () => {
   const defaults = new Set(DEFAULT_HEAD_LADDER.map((r) => r.model));
   for (const rung of METERED_RUNGS) {
-    assert.ok(!defaults.has(rung.model), `${rung.model} is metered and must be opt-in`);
+    assert.ok(!defaults.has(rung.model), `${rung.model} is metered and must not be a default`);
+    assert.equal(isAllowedOpenRouterModel(rung.model), false, `${rung.model} must be blocked`);
   }
-  /* Still ordered and still diverse, so the opt-in list is worth pasting: the
-   * cheap recovery first, and no two rungs from one provider in a row. */
+  /* The historical list remains ordered and diverse for pricing/effort data. */
   assert.deepEqual(METERED_RUNGS.map((r) => r.model.split('/')[0]), ['openai', 'google', 'anthropic']);
 });
 

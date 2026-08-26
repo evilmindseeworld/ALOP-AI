@@ -413,12 +413,15 @@ const EXPLICIT_WEB_SEARCH_RE = /\b(?:search|browse)\s+(?:the\s+)?(?:live\s+)?web
  * not a research request. */
 const CITATION_DEMAND_RE =
   /\bcit(?:e|es|ed|ing|ation|ations)\b|\b(?:include|provide|give|add|show|post|with|link)\s+(?:me\s+)?(?:a\s+|the\s+|your\s+)?(?:source|sources|link|links|url|urls)\b|\blink\s+(?:to\s+)?where\b|\bwhere\s+did\s+you\s+(?:read|find|get)\b/i;
-/* These are request-intent markers, not a product or brand vocabulary. They
- * only corroborate a generic pair when they remain after that pair is removed
- * from the token stream. The explicit comparison and product-lookup markers
- * are a small intent surface; they never identify products by name. */
-const MODEL_RESEARCH_INTENT_RE =
-  /\b(?:compare|comparison|versus|vs\.?|specs?|specifications?|reviews?|price|cost|release(?:\s+notes?)?|available|availability)\b/i;
+/* These are request-intent markers, not a product or brand vocabulary. A
+ * marker only corroborates a generic pair when a small token relation ties it
+ * to that pair. Keeping the relation local is important: `review` in an
+ * unrelated clause is ordinary English and must not promote a quantity. */
+const MODEL_RESEARCH_INTENT_WORDS = new Set([
+  "compare", "comparison", "versus", "vs", "spec", "specs", "specification", "specifications",
+  "review", "reviews", "price", "cost", "release", "available", "availability",
+]);
+const MODEL_RESEARCH_RELATION_WORDS = new Set(["of", "for"]);
 /* First-party product questions are answered from the platform identity prompt,
  * not from web snippets about unrelated companies with similar names. Keep an
  * explicit request to search authoritative: that branch runs before this one. */
@@ -476,9 +479,10 @@ const FORMAT_TOKEN_RE =
 /** `v1.2.3`, `3.12`, `2.0` — a version, not a product line. */
 const VERSION_TOKEN_RE = /^v?\d+(?:\.\d+)+$/i;
 
-/* Existing function-word exclusions for a short SKU's possible brand prefix.
- * Generic word-number extraction deliberately does not consult this set,
- * because that boundary must not classify English grammar. */
+/* Existing function-word exclusions for a short SKU's possible brand prefix
+ * and for generic word-number candidates. A stopword-headed pair such as
+ * `after 500` is not a product candidate; this is a token-shape guard, not a
+ * semantic classification rule. */
 const STOPWORD_BEFORE_NUMBER = new Set([
   "is", "are", "was", "were", "be", "at", "on", "in", "to", "of", "the", "a", "an", "and", "or",
   "for", "with", "my", "your", "it", "its", "do", "does", "did", "if", "so", "up", "down", "vs", "after",
@@ -488,16 +492,27 @@ const STOPWORD_BEFORE_NUMBER = new Set([
   "this", "that", "these", "those", "there", "here", "now", "not", "no", "yes", "me", "him", "her",
 ]);
 
+/* Keep punctuation as a token so a local relation cannot cross a sentence or
+ * clause boundary. Decimal/version tokens remain intact; a terminal period or
+ * a comma is emitted separately and therefore breaks the relation. */
+function modelEvidenceTokens(text) {
+  return String(text || '').match(/[A-Za-z0-9]+(?:[.%][A-Za-z0-9]+)*|[^A-Za-z0-9\s]/g) || [];
+}
+
+function isModelEvidenceToken(token) {
+  return /^[A-Za-z0-9]+(?:[.%][A-Za-z0-9]+)*$/.test(String(token || ''));
+}
+
 /* A word followed by a standalone number — `rtx 5060`, `iphone 15`, `xps 13`.
  * This is deliberately an extractor only. It does not decide whether the pair
  * is a product, a label, or a quantity. That distinction is made later only
- * when an independent research-intent signal corroborates the candidate. The
+ * when candidate-bound research intent corroborates the candidate. The
  * token-shape exclusions keep units, formats, versions and percentages out of
  * the candidate stream without pretending to parse English. */
 
 /** Every generic word-number candidate, with token positions for corroboration. */
 function wordNumberCandidates(text) {
-  const tokens = String(text || "").split(/[^A-Za-z0-9.%]+/).filter(Boolean);
+  const tokens = modelEvidenceTokens(text);
   const found = [];
   for (let i = 0; i < tokens.length - 1; i += 1) {
     const word = tokens[i];
@@ -505,6 +520,7 @@ function wordNumberCandidates(text) {
     const percentSuffix = rawNumber.endsWith('%') || tokens[i + 2] === '%';
     const number = rawNumber.replace(/%$/, '').replace(/\.+$/, "");
     if (!/^[A-Za-z]{2,}$/.test(word)) continue;
+    if (STOPWORD_BEFORE_NUMBER.has(word.toLowerCase())) continue;
     if (!/^\d{1,5}[A-Za-z]{0,3}$/.test(number)) continue;
     if (UNIT_TOKEN_RE.test(number) || FORMAT_TOKEN_RE.test(number) || VERSION_TOKEN_RE.test(number)) continue;
     if (percentSuffix || tokens[i + 2]?.toLowerCase() === 'percent') continue;
@@ -513,21 +529,79 @@ function wordNumberCandidates(text) {
   return found;
 }
 
+function normaliseModelEvidenceToken(token) {
+  return String(token || '').toLowerCase().replace(/\.+$/, '');
+}
+
+function isModelResearchIntentWord(token) {
+  return MODEL_RESEARCH_INTENT_WORDS.has(normaliseModelEvidenceToken(token));
+}
+
 /**
- * A pair is corroborated only by an independent router intent signal. Removing
- * the candidate tokens prevents `price 500` or `specs 500` from corroborating
- * itself. No token is assigned a noun, verb, brand or product role here.
+ * Corroboration is deliberately a few explicit local relations, not a
+ * sentence-wide keyword search:
+ *
+ *   candidate + intent                 `rtx 5090 price`
+ *   candidate + one local modifier + intent `iphone 17 Pro price`
+ *   intent + of/for + candidate        `price of rtx 5090`
+ *   release notes + of/for + candidate `release notes for node 26`
+ *   comparison + candidate             `compare rtx 5090 with 5080`
+ *   candidate + comparison             `pixel 9 vs galaxy 24`
+ *
+ * The optional `the` only keeps the same relation intact in ordinary phrasing
+ * such as `price of the macbook 16`. No token is assigned a noun, verb,
+ * brand, product or grammatical role.
  */
+function candidateBoundResearchIntent(tokens, { wordIndex, numberIndex }) {
+  const before = (offset) => normaliseModelEvidenceToken(tokens[wordIndex - offset]);
+  const after = (offset) => normaliseModelEvidenceToken(tokens[numberIndex + offset]);
+  const contiguous = (start, end) =>
+    start >= 0
+    && end < tokens.length
+    && tokens.slice(start, end + 1).every(isModelEvidenceToken);
+
+  if (contiguous(numberIndex + 1, numberIndex + 1) && isModelResearchIntentWord(after(1))) return true;
+  if (contiguous(numberIndex + 1, numberIndex + 2) && isModelResearchIntentWord(after(2))) return true;
+  if (
+    contiguous(numberIndex + 1, numberIndex + 2)
+    && after(1) === "release"
+    && after(2) === "notes"
+  ) return true;
+
+  if (contiguous(wordIndex - 1, wordIndex - 1) && before(1) === "compare") return true;
+  if (
+    contiguous(wordIndex - 2, wordIndex - 1)
+    && MODEL_RESEARCH_RELATION_WORDS.has(before(1))
+    && isModelResearchIntentWord(before(2))
+  ) return true;
+  if (
+    contiguous(wordIndex - 3, wordIndex - 1)
+    && before(1) === "the"
+    && MODEL_RESEARCH_RELATION_WORDS.has(before(2))
+    && isModelResearchIntentWord(before(3))
+  ) return true;
+
+  if (
+    contiguous(wordIndex - 3, wordIndex - 1)
+    && MODEL_RESEARCH_RELATION_WORDS.has(before(1))
+    && before(2) === "notes"
+    && before(3) === "release"
+  ) return true;
+  if (
+    contiguous(wordIndex - 4, wordIndex - 1)
+    && before(1) === "the"
+    && MODEL_RESEARCH_RELATION_WORDS.has(before(2))
+    && before(3) === "notes"
+    && before(4) === "release"
+  ) return true;
+
+  return false;
+}
+
+/** A pair is corroborated only when existing research intent is candidate-bound. */
 function hasIndependentResearchIntent(text, candidates = wordNumberCandidates(text)) {
-  const tokens = String(text || '').split(/[^A-Za-z0-9.%]+/).filter(Boolean);
-  return candidates.some(({ wordIndex, numberIndex }) => {
-    const withoutPair = tokens
-      .filter((_, index) => index !== wordIndex && index !== numberIndex)
-      .join(' ');
-    return MODEL_RESEARCH_INTENT_RE.test(withoutPair)
-      || EXPLICIT_WEB_SEARCH_RE.test(withoutPair)
-      || CITATION_DEMAND_RE.test(withoutPair);
-  });
+  const tokens = modelEvidenceTokens(text);
+  return candidates.some((candidate) => candidateBoundResearchIntent(tokens, candidate));
 }
 
 /**
@@ -1057,7 +1131,6 @@ const ROUTING_RULES = {
   CREATIVE_RE,
   STABLE_QUESTION_RE,
   VOLATILE_RE,
-  MODEL_RESEARCH_INTENT_RE,
   URL_RE,
 };
 
@@ -1065,8 +1138,16 @@ const ROUTING_POLICY = [
   routeByRule.toString(),
   namesSpecificModel.toString(),
   modelEvidence.toString(),
+  modelEvidenceTokens.toString(),
+  isModelEvidenceToken.toString(),
   wordNumberCandidates.toString(),
+  [...STOPWORD_BEFORE_NUMBER].join(","),
+  normaliseModelEvidenceToken.toString(),
+  isModelResearchIntentWord.toString(),
+  candidateBoundResearchIntent.toString(),
   hasIndependentResearchIntent.toString(),
+  [...MODEL_RESEARCH_INTENT_WORDS].join(","),
+  [...MODEL_RESEARCH_RELATION_WORDS].join(","),
   modelDesignations.toString(),
   modelSearchQueries.toString(),
   ...Object.entries(ROUTING_RULES).map(([name, re]) => `${name}=${re.source}`),

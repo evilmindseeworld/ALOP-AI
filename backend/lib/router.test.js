@@ -1017,6 +1017,130 @@ test("unseen strong and corroborated designation probes remain searchable", () =
   }
 });
 
+test("NUM-7 unrelated research words do not corroborate an ordinary numeric pair", () => {
+  const requiredOpusNegatives = [
+    "release the lock after 500 retries",
+    "review our queue that holds 900 messages",
+    "make the pool available for 200 clients",
+    "the review board approved 3 changes",
+    "price parsing fails on 12 rows",
+    "compare two runs where each spawns 16 threads",
+    "availability dropped when we lost 2 nodes",
+    "our release pipeline deploys 4 services",
+  ];
+  const fullOpusAttackFamily = [
+    "can process 700 events per second",
+    "can handle 300 requests without failing",
+    "should retain 450 objects in memory",
+    "must track 80 nodes across regions",
+    "will scale 200 workers next quarter",
+    "can queue 900 messages before backpressure",
+    "might spawn 120 threads under load",
+    "did process 40 batches yesterday",
+    "does cache 300 records locally",
+    "can hold 250 packets and drop the rest",
+  ];
+  const newUnseenNegatives = [
+    "review the queue after it processed 40 messages",
+    "compare the two pools while worker handles 32 tasks",
+    "price parsing reads 64 fields",
+    "release cleanup removed 12 stale files",
+    "availability changed after the service kept 8 replicas",
+    "specs for the cache hold 900 entries",
+    "reviews of the board changed 3 rows",
+    "cost reports mention service 20 times",
+    "the release board tracks 5 changes",
+    "compare two charts and the job stores 99 rows",
+    "available capacity fell when queue reached 300 entries",
+    "review notes say the process kept 6 handles",
+    "the specs document lists 4 columns",
+    "release notes were filed after service sent 18 packets",
+    "compare two ordinary batches one handled 24 items",
+    "available capacity fell when the queue reached 300 entries",
+    "cost analysis says the worker handles 75 requests",
+    "specification text mentions 11 fields",
+    "review our report while the job writes 6 files",
+    "the service became available after it processed 14 messages",
+    "compare results after the cache stored 50 keys",
+    "price and availability changed after the worker kept 9 slots",
+    "release work left 64 messages in flight",
+    "reviews mention the parser accepted 21 rows",
+    "the pricing parser compares 2 batches and emits 7 warnings",
+  ];
+
+  assert.equal(new Set(newUnseenNegatives).size, newUnseenNegatives.length);
+  assert.ok(newUnseenNegatives.length >= 25);
+  const cases = [...requiredOpusNegatives, ...fullOpusAttackFamily, ...newUnseenNegatives];
+  for (const text of cases) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} generated model research`);
+  }
+});
+
+test("stopword-headed numeric phrases are not generic product candidates", () => {
+  for (const text of [
+    "release the lock after 500 retries",
+    "make the pool available for 200 clients",
+    "price parsing fails on 12 rows",
+    "review the service with 40 workers",
+    "specs are stable in 3 regions",
+  ]) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} generated model research`);
+  }
+});
+
+test("candidate-bound research intent corroborates generic word-number pairs", () => {
+  const cases = [
+    "rtx 4090 cost",
+    "price of rtx 4080",
+    "specs for node 22",
+    "review of iphone 16",
+    "pixel 10 reviews",
+    "release notes for node 24",
+    "node 20 release notes",
+    "availability of framework 16",
+    "cost for radeon 7800",
+    "xps 15 specifications",
+    "surface 12 available",
+    "compare rtx 4060 to rtx 4070",
+    "compare pixel 8 with galaxy 25",
+    "pixel 8 vs galaxy 25",
+    "comparison of pixel 10 and galaxy 11",
+    "price of the macbook 16",
+    "reviews for the thinkpad 15",
+    "specification for radeon 7900",
+    "release notes for the iphone 15",
+    "cost of pixel 11",
+  ];
+
+  assert.ok(cases.length >= 15);
+  for (const text of cases) {
+    assert.equal(namesSpecificModel(text), true, text);
+    assert.ok(routeByRule(text, {})?.queries?.length, `${text} did not generate model research`);
+  }
+});
+
+test("NUM-8 direct non-comparison intent prefixes do not classify ordinary pairs", () => {
+  for (const text of [
+    "review board 3 changes",
+    "price parser 12 rows",
+    "specs document 4 columns",
+    "release pipeline 4 services",
+    "available capacity 8 clients",
+    "availability monitor 2 nodes",
+    "cost report 7 entries",
+    "review report 9 rows",
+    "the queue holds 500. price analysis follows",
+    "the service handles 20; review notes follow",
+    "the cache stores 42, specs are documented separately",
+    "the worker keeps 8: release notes follow",
+  ]) {
+    assert.equal(namesSpecificModel(text), false, text);
+    assert.equal(routeByRule(text, {})?.queries?.length ?? 0, 0, `${text} generated model research`);
+  }
+});
+
 test("adversarial product designations remain searchable in sentence context", () => {
   for (const text of [
     "compare RTX 5090 with RTX 5080",

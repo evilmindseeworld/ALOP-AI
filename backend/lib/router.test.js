@@ -601,6 +601,7 @@ test("a question about what the assistant can do is a one-seat question", () => 
     "Can you connect to my Notion?",
     "Does ALOP-AI integrate with Figma?",
     "Do you use the internet?",
+    "Can you read my files?",
   ]) {
     assert.equal(classifyRequest(text, ROSTER).complexity, "simple", text);
     assert.equal(classifyRequest(text, ROSTER).members.length, 1, text);
@@ -620,6 +621,8 @@ test("a modal opening does not by itself make a request simple", () => {
     "Can you use Bayes' theorem?",
     "Can you use qzxwvb?",
     "Can you access the database and determine why these records disagree?",
+    "Can you read and summarize this file?",
+    "Can you read this page and explain it?",
   ]) {
     assert.notEqual(classifyRequest(text, ROSTER).complexity, "simple", text);
   }
@@ -1400,6 +1403,11 @@ test("code, transformations and creative work keep their no-search answer", () =
   assert.deepEqual(routeByRule("function hash(x) { return sha256(x) } why is this slow?", {}), { memory: false, queries: null });
   assert.deepEqual(routeByRule("define 4k", {}), { memory: false, queries: null });
   assert.deepEqual(routeByRule("write a haiku about mp4 files", {}), { memory: false, queries: null });
+});
+
+test("a safe file-capability question bypasses the routing model", () => {
+  assert.deepEqual(routeByRule("Can you read my files?", {}), { memory: false, queries: null });
+  assert.equal(classifyRequest("Can you read my files?", ROSTER).members.length, 1);
 });
 
 test("a pasted URL still defers, because it already means read this page", () => {

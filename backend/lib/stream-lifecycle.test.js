@@ -27,6 +27,7 @@ const { deadlineSignal } = require('./stream-deadline');
 const { fetchOpenRouterStream, parseOpenRouterSseLine } = require('./openrouter');
 const { rescueReasoning } = require('./reasoning-rescue');
 const { createTurnTelemetry } = require('./turn-telemetry');
+const { canRetryStream } = require('./stream-retry-policy');
 
 const SOURCE = readFileSync(join(__dirname, '..', 'server.js'), 'utf8');
 
@@ -35,7 +36,8 @@ const NL = String.fromCharCode(10);
 /* A gateway whose body is under the test's control. `stall` never sends another
  * frame, which is the 108-second synthesis reduced to its essence; the reader
  * blocks in `reader.read()` and only an abort can free it. */
-const fakeGateway = ({ frames = [], stall = false, openDelayMs = 0 }) => async (_url, options) => {
+const fakeGateway = ({ frames = [], stall = false, openDelayMs = 0, onRequest = null }) => async (_url, options) => {
+  onRequest?.(options);
   if (openDelayMs) await new Promise((r) => setTimeout(r, openDelayMs));
   const signal = options && options.signal;
   const body = new ReadableStream({
@@ -59,9 +61,10 @@ const done = () => 'data: ' + JSON.stringify({ choices: [{ delta: {}, finish_rea
 
 const fakeRes = () => ({
   locals: {},
+  writes: [],
   writableEnded: false,
   writableFinished: false,
-  write() { return true; },
+  write(chunk) { this.writes.push(String(chunk)); return true; },
   end() { this.writableEnded = true; },
 });
 
@@ -86,12 +89,12 @@ const loadPolicy = (fetchImpl) => {
   const api = Function(
     'fetch', 'fetchOpenRouterStream', 'OPENROUTER_HOST', 'OPENROUTER_API_KEY', 'PRIMARY_MODEL', 'SMART_MODEL',
     'parseOpenRouterSseLine', 'looksLikeProtocolOpening', 'sanitizeAnswerText', 'STREAM_USAGE_ACCOUNTING',
-    'deadlineSignal', 'requiredCitationSuffix', 'providerHealth', 'rescueReasoning',
+    'deadlineSignal', 'requiredCitationSuffix', 'providerHealth', 'rescueReasoning', 'canRetryStream',
     policy + NL + 'return { streamModel, streamOnce };',
   )(
     fetchImpl, gateway, 'https://openrouter.test', 'secret', 'primary:free', 'smart:free',
     parseOpenRouterSseLine, () => false, (text) => ({ text, rejected: false }), false,
-    spyDeadline, () => '', { record() {} }, rescueReasoning,
+    spyDeadline, () => '', { record() {} }, rescueReasoning, canRetryStream,
   );
   return Object.assign(api, { composed });
 };
@@ -102,26 +105,43 @@ const loadPolicy = (fetchImpl) => {
  * `streamTotalMs`, which is derived there so the three boundaries can never
  * disagree. Asserting on the raw callback argument would test a shape that
  * nothing ever persists. */
-const run = async (gatewayOpts, { deadlineIn = 200, abortAfterMs = null } = {}) => {
+const run = async (gatewayOpts, {
+  deadlineIn = 200,
+  abortAfterMs = null,
+  answerOptions = {},
+  modelOptions = {},
+} = {}) => {
   const { streamModel, composed } = loadPolicy(fakeGateway(gatewayOpts));
   const telemetry = createTurnTelemetry();
   const parent = new AbortController();
   if (abortAfterMs !== null) {
     setTimeout(() => parent.abort(new DOMException('Client disconnected', 'AbortError')), abortAfterMs);
   }
+  const res = fakeRes();
   const startedAt = Date.now();
   let error = null;
   let answer = null;
   try {
     answer = await streamModel(
-      fakeRes(), 'primary:free', [], 0, parent.signal, 100, {},
+      res, 'primary:free', [], 0, parent.signal, 100, answerOptions,
       deadlineIn === null ? null : startedAt + deadlineIn,
-      { onStreamTiming: (row) => telemetry.recordStreamTiming({ ...row, phase: 'synthesis' }), fallbackModels: [] },
+      {
+        onStreamTiming: (row) => telemetry.recordStreamTiming({ ...row, phase: 'synthesis' }),
+        fallbackModels: [],
+        ...modelOptions,
+      },
     );
   } catch (err) {
     error = err;
   }
-  return { rows: telemetry.snapshot({}).streamTimings, error, answer, elapsed: Date.now() - startedAt, composed };
+  return {
+    rows: telemetry.snapshot({}).streamTimings,
+    error,
+    answer,
+    elapsed: Date.now() - startedAt,
+    composed,
+    writes: res.writes,
+  };
 };
 
 test('a stream that opens in time but stalls mid-body is aborted at the turn deadline', async () => {
@@ -202,4 +222,93 @@ test('the deadline timer does not keep the process alive', () => {
   dispose();
   const after = process.getActiveResourcesInfo().filter((r) => r === 'Timeout').length;
   assert.ok(after <= before, 'a disposed deadline must leave no timer handle behind');
+});
+
+const chunkWrites = (writes) => writes
+  .filter((write) => write.startsWith('data: {'))
+  .map((write) => JSON.parse(write.slice('data: '.length).trim()))
+  .filter((event) => event.type === 'chunk')
+  .map((event) => event.text);
+
+test('deferred output commits exactly one validated answer and never leaks the discarded draft', async () => {
+  const completions = [];
+  const result = await run(
+    { frames: [sse('draft A'), done()] },
+    {
+      deadlineIn: 5000,
+      answerOptions: {
+        deferOutput: true,
+        answerGuard: (text) => ({ ok: text === 'draft B' }),
+        outputFallback: 'draft B',
+        onComplete: (event) => completions.push(event),
+      },
+    },
+  );
+
+  assert.equal(result.error, null);
+  assert.equal(result.answer, 'draft B');
+  assert.deepEqual(chunkWrites(result.writes), ['draft B']);
+  assert.equal(completions.length, 1);
+  assert.equal(completions[0].answer, 'draft B');
+  assert.equal(completions[0].finishReason, null, 'the discarded stream finish reason cannot describe the fallback text');
+  assert.deepEqual(completions[0].substitution, { used: true, reason: 'answer_contract' });
+});
+
+test('a local answer-contract rejection does not rerun the full model ladder', async () => {
+  let requests = 0;
+  const result = await run(
+    { frames: [sse('unsupported draft'), done()], onRequest: () => { requests += 1; } },
+    {
+      deadlineIn: 5000,
+      answerOptions: {
+        deferOutput: true,
+        answerGuard: () => ({ ok: false, problems: [{ kind: 'unsupported_claims' }] }),
+      },
+      modelOptions: { fallbackModels: ['recovery:free', 'last-resort:free'] },
+    },
+  );
+
+  assert.equal(result.error?.code, 'ANSWER_OUTPUT_CONTRACT');
+  assert.equal(requests, 1, 'a deterministic local gate must not spend the provider ladder again');
+  assert.deepEqual(chunkWrites(result.writes), []);
+});
+
+test('an invalid substituted answer is neither displayed nor retried', async () => {
+  let requests = 0;
+  const result = await run(
+    { frames: [sse('draft A'), done()], onRequest: () => { requests += 1; } },
+    {
+      deadlineIn: 5000,
+      answerOptions: {
+        deferOutput: true,
+        answerGuard: () => ({ ok: false, problems: [{ kind: 'unsupported_citation' }] }),
+        outputFallback: 'draft B',
+      },
+      modelOptions: { fallbackModels: ['recovery:free'] },
+    },
+  );
+
+  assert.equal(result.error?.code, 'ANSWER_OUTPUT_CONTRACT');
+  assert.equal(requests, 1);
+  assert.deepEqual(chunkWrites(result.writes), []);
+});
+
+test('the normal deferred path reports the provider completion for the text it commits', async () => {
+  const completions = [];
+  const result = await run(
+    { frames: [sse('draft A'), done()] },
+    {
+      deadlineIn: 5000,
+      answerOptions: {
+        deferOutput: true,
+        answerGuard: () => ({ ok: true }),
+        onComplete: (event) => completions.push(event),
+      },
+    },
+  );
+
+  assert.equal(result.error, null);
+  assert.deepEqual(chunkWrites(result.writes), ['draft A']);
+  assert.deepEqual(completions[0].substitution, null);
+  assert.equal(completions[0].finishReason, 'stop');
 });

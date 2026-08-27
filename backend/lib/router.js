@@ -285,7 +285,7 @@ function isGenerationRequest(text) {
  * example here ("Do you have access to Google Drive?") is seven.
  */
 const CAPABILITY_RE =
-  /^(?:can|could|do|does|are|is|will|would)\s+(?:you|alop[-\s]?ai)\b(?:\W+\w+){0,6}\W+\b(?:access|browse|connect|integrate|support|plugins?|integrations?|internet|api)\b/i;
+  /^(?:can|could|do|does|are|is|will|would)\s+(?:you|alop[-\s]?ai)\b(?:\W+\w+){0,6}\W+\b(?:access|browse|connect|integrate|read|support|plugins?|integrations?|internet|api)\b(?:(?:\W+(?!(?:and|then)\b)\w+)){0,6}\W*[?.!]*$/i;
 
 /* `use` is safe only when its object is a known integration product. A broad
  * match would mistake "Can you use Bayes' theorem?" for an availability
@@ -642,6 +642,11 @@ function routeByRule(text, { hasConversationContext = false } = {}) {
 
   if (EXPLICIT_WEB_SEARCH_RE.test(t)) return askedForTheWeb(EXPLICIT_WEB_SEARCH_RE);
   if (ALOP_IDENTITY_QUESTION_RE.test(t)) return { memory: false, queries: null };
+  /* A bounded capability question is settled by the assistant's product
+   * contract, not by a routing-model guess. Keep it ahead of volatile lookup
+   * handling: "Can you read my files?" asks what this surface can access, not
+   * for a current fact about the files. */
+  if (isCapabilityQuestion(t)) return { memory: false, queries: null };
 
   /* Strong model evidence forces the search, and it is checked ABOVE the
    * volatility deferral on purpose: deferring hands
@@ -992,6 +997,7 @@ const ROUTING_RULES = {
   EXPLICIT_WEB_SEARCH_RE,
   CITATION_DEMAND_RE,
   ALOP_IDENTITY_QUESTION_RE,
+  CAPABILITY_RE,
   CODE_RE,
   DIRECT_TRANSFORM_RE,
   CREATIVE_RE,

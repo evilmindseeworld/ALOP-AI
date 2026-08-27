@@ -310,9 +310,18 @@ function buildRegistry(deps = {}) {
         });
         const text = typeof read === "string" ? read : read && read.body;
         if (!text) return fail(`Nothing readable at ${safe.url.hostname}.`);
-        const destination = read && read.finalUrl ? new URL(read.finalUrl).hostname : safe.url.hostname;
+        const finalUrl = read && read.finalUrl ? new URL(read.finalUrl).toString() : safe.url.toString();
+        const destination = new URL(finalUrl).hostname;
         const status = read && Number.isInteger(read.status) ? ` (HTTP ${read.status})` : "";
-        return ok(`Read ${destination}${status}`, clamp(text));
+        const content = clamp(text);
+        return ok(`Read ${destination}${status}`, content, {
+          sources: [{
+            title: `Read ${destination}`,
+            url: finalUrl,
+            text: content,
+            via: "read_url",
+          }],
+        });
       },
     });
   }

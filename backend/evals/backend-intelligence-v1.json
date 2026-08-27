@@ -22,7 +22,7 @@
       "id": "moderate-cache-tradeoff",
       "question": "Why can a cache make an application faster while still making its answers wrong?",
       "tags": ["moderate reasoning", "evidence-sensitive"],
-      "expect": { "mustMatch": ["faster|latency|performance", "stale|out of date|invalidat"], "minChars": 100, "maxLatencyMs": 75000 }
+      "expect": { "mustMatch": ["(?:\\bcach(?:e|ed|ing|es)\\b[\\s\\S]{0,160}\\b(?:faster|speed|latency|performance)\\b|\\b(?:faster|speed|latency|performance)\\b[\\s\\S]{0,160}\\bcach(?:e|ed|ing|es)\\b)", "stale|out of date|invalidat"], "minChars": 100, "maxLatencyMs": 75000 }
     },
     {
       "id": "hard-replica-decision",
@@ -104,7 +104,7 @@
       "id": "model-disagreement-value",
       "question": "If five models give nearly identical answers, when is asking more models still useful?",
       "tags": ["model disagreement", "intelligence value", "moderate reasoning"],
-      "expect": { "mustMatch": ["disagree|uncertain|risk|novel|different", "redundant|duplicate|diminishing"], "minChars": 160, "maxLatencyMs": 75000 }
+      "expect": { "mustMatch": ["disagree|uncertain|risk|novel|different", "(?:(?:extra|additional|more|another)\\s+(?:model|vote|answer|round)[^.!?\\n]{0,80}\\b(?:redundant|duplicate|diminish\\w*)\\b|(?:gain|benefit|value|utility|returns?|confidence)[^.!?\\n]{0,80}\\b(?:redundant|duplicate|diminish\\w*)\\b|\\b(?:redundant|duplicate|diminish\\w*)\\b[^.!?\\n]{0,80}\\b(?:model|vote|answer|round|gain|benefit|value|utility|returns?|confidence)\\b)"], "minChars": 160, "maxLatencyMs": 75000 }
     },
     {
       "id": "full-council-resilience-design",

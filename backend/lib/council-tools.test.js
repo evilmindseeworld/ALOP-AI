@@ -152,6 +152,14 @@ test("seeded search URLs are extracted and a missing final citation is repaired"
   assert.equal(requiredCitationSuffix("Already cited https://two.example/news", urls), "");
 });
 
+test("seeded search URL extraction removes Unicode and Markdown terminal delimiters", () => {
+  const urls = searchResultUrls([{
+    call: { name: "web_search" },
+    result: { ok: true, content: "https://one.example/report】])},.;" },
+  }]);
+  assert.deepEqual(urls, ["https://one.example/report"]);
+});
+
 test("the final round does not pay for a catalogue it cannot use", () => {
   const normal = toolMessages(BASE, registry, { round: 1, isFinalRound: false })[0].content;
   const final = toolMessages(BASE, registry, { round: 3, isFinalRound: true })[0].content;

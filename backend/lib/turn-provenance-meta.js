@@ -191,6 +191,7 @@ function buildTurnProvenanceMeta(input = {}) {
   const answerProduced = Boolean(input.answerProduced);
   const partialCouncil = Boolean(councilInput.partial);
   const synthesisCompleted = Boolean(synthesisInput.completed);
+  const explicitQualification = input.completion?.qualified === "incomplete" ? "incomplete" : null;
   const failedTools = boundedCount(evidenceInput.failedTools, 24);
   const degradedRoute = route === "fallback" || route === "degraded";
   const skippedSynthesis = Boolean(synthesisInput.skipped)
@@ -199,8 +200,11 @@ function buildTurnProvenanceMeta(input = {}) {
   const assembled = requestState === "complete"
     && answerProduced
     && (synthesisCompleted || skippedSynthesis)
+    && explicitQualification !== "incomplete"
     && !Boolean(failureInput.occurred)
     && !Boolean(failureInput.userAborted);
+  const qualification = explicitQualification
+    || (partialCouncil ? "partial_council" : failedTools ? "partial_evidence" : "none");
 
   return {
     provenance: {
@@ -251,7 +255,7 @@ function buildTurnProvenanceMeta(input = {}) {
       },
       completion: {
         assembled,
-        qualified: partialCouncil ? "partial_council" : failedTools ? "partial_evidence" : "none",
+        qualified: qualification,
       },
       failure: {
         occurred: Boolean(failureInput.occurred),

@@ -50,6 +50,7 @@ const { createTurnContext } = require('./lib/turn-context');
 const { createTurnLedger } = require('./lib/turn-ledger');
 const { buildTurnReliabilityMeta } = require('./lib/turn-reliability-meta');
 const { buildTurnProvenanceMeta, safeSourceRecords } = require('./lib/turn-provenance-meta');
+const { COMPLETENESS_CONTRACT, assessAnswer, buildAnswerContract } = require('./lib/answer-contract');
 const {
   fingerprint: cacheFingerprint, retrievalMode, sourceFreshness, short: cacheIdentityShort,
 } = require('./lib/cache-identity');
@@ -722,6 +723,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     firstContentAt: null,
     endedAt: null,
     completed: false,
+    finishReason: null,
   };
   const noteFirstContent = () => {
     if (firstContentAt !== null) return;
@@ -805,6 +807,9 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
        * finish_reason, then the `[DONE]` terminator — so the sentinel is
        * written once and only once. The client treats a second [DONE] as a
        * second turn ending. */
+      if (typeof frame.finishReason === 'string' && frame.finishReason) {
+        meta.stream.finishReason = frame.finishReason;
+      }
       if (frame.done && !completed) { completed = true; meta.stream.completed = true; }
     }
   }
@@ -856,7 +861,9 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     try { answerOptions.onChunk?.(citationSuffix); } catch { /* never fail a stream */ }
     res.write(`data: ${JSON.stringify({ type: 'chunk', text: citationSuffix })}\n\n`);
   }
-  try { answerOptions.onComplete?.({ answer: emitted.join('') }); } catch { /* provenance must never fail a turn */ }
+  try {
+    answerOptions.onComplete?.({ answer: emitted.join(''), finishReason: meta.stream.finishReason });
+  } catch { /* provenance must never fail a turn */ }
   if (!res.writableEnded) res.write('data: [DONE]\n\n');
   meta.stream.endedAt = Date.now();
   return emitted.join('');
@@ -4204,6 +4211,9 @@ async function handleCouncilTurn(req, res) {
   let provenanceSynthesisCompleted = false;
   let provenanceSynthesisSkipped = false;
   let provenanceSynthesisFailed = false;
+  let provenanceCompletionQuality = null;
+  let answerContract = null;
+  let lastAnswerAssessment = null;
   let provenanceToolCount = 0;
   let provenanceFailedTools = 0;
   let provenanceSearchUsed = false;
@@ -4311,6 +4321,7 @@ async function handleCouncilTurn(req, res) {
         truncated: provenanceToolTruncated,
       },
       verification: provenanceVerification,
+      ...(provenanceCompletionQuality ? { completion: { qualified: provenanceCompletionQuality } } : {}),
       failure: {
         occurred: state === 'failed' || provenanceSynthesisFailed || (state === 'aborted' && !userAborted),
         userAborted,
@@ -4766,6 +4777,7 @@ async function handleCouncilTurn(req, res) {
     };
 
     const truncatedPrompt = truncatePrompt(pv.value);
+    answerContract = buildAnswerContract({ question: pv.value });
     /* `onUsage` reaches streamOnce unchanged through every streamModel call on
      * this route, which is why it lives here rather than being threaded as a
      * ninth positional argument through four call sites. */
@@ -4782,9 +4794,16 @@ async function handleCouncilTurn(req, res) {
       /* The provenance frame travels immediately before the stream terminator
        * whenever a provider completed a streamed answer. It is a safe process
        * receipt, not a transcript of the model's private work. */
-      onComplete: ({ answer }) => {
+      onComplete: ({ answer, finishReason }) => {
+        const assessment = assessAnswer({ answer, finishReason, contract: answerContract });
+        lastAnswerAssessment = assessment;
+        provenanceCompletionQuality = assessment.ok ? null : 'incomplete';
         if (provenanceSynthesisStarted) provenanceSynthesisCompleted = true;
-        sendProvenance(answer, 'complete');
+        sendProvenance(
+          answer,
+          assessment.ok ? 'complete' : 'failed',
+          assessment.ok ? null : `incomplete_${assessment.reason}`,
+        );
       },
     };
     /* THE CLIENT'S COPY IS THE FALLBACK NOW, NOT THE SOURCE.
@@ -5020,6 +5039,7 @@ async function handleCouncilTurn(req, res) {
       complexity: selection.complexity,
     });
     const promptHistory = compressedContext.messages;
+    answerContract = buildAnswerContract({ question: pv.value, history: promptHistory });
     telemetry.recordContextCompression(compressedContext.stats);
     if (compressedContext.stats.compressed) {
       console.log(`[CONTEXT] history ${compressedContext.stats.retainedMessages}/${compressedContext.stats.originalMessages} messages, ${compressedContext.stats.retainedChars}/${compressedContext.stats.originalChars} chars, relevantTurns=${compressedContext.stats.relevantTurns}`);
@@ -5299,6 +5319,10 @@ async function handleCouncilTurn(req, res) {
 
     const cacheAnswer = (text, { searched = false, fresh = false } = {}) => {
       if (!cacheKey) return;
+      if (lastAnswerAssessment && !lastAnswerAssessment.ok) {
+        console.warn(`[ANSWERS] incomplete answer not cached reason=${lastAnswerAssessment.reason}`);
+        return;
+      }
       if (!verifyBeforeCache(text, { searched })) return;
       const persist = (embedding) => {
         const method = selection.complexity === 'simple' && !searched ? 'setBrief' : 'set';
@@ -5872,6 +5896,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
     const withSeatSources = (responses) => (Array.isArray(responses) ? responses : []).map((row) => ({
       ...row,
       textSource: seatTextSource.get(row?.model) || 'unknown',
+      ...(typeof row?.textSource === 'string' ? { textSource: row.textSource } : {}),
     }));
     let telemetryExtra = {};
     let toolPlainFallback = { used: false, durationMs: null };
@@ -6149,7 +6174,11 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
            * this seat's words were its reasoning and not its answer. */
           const reply = await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, { structured: true, phase: 'tool_plain_fallback' });
           noteSeatSource(model, reply);
-          return sanitizeAnswerText(reply.content, answerOptions).text;
+          return {
+            content: sanitizeAnswerText(reply.content, answerOptions).text,
+            textSource: reply.textSource,
+            finishReason: reply.finishReason,
+          };
         };
         validResponses = withSeatSources(await runCouncilWithWhip(
           selection.members,
@@ -6204,7 +6233,12 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
           callModel: async (model, messages, temperature, whipMs, tokenLimit, signal) => {
             const reply = await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, { structured: true, phase: 'council' });
             noteSeatSource(model, reply);
-            return sanitizeAnswerText(reply.content, answerOptions).text;
+            const callModelAnswerText = sanitizeAnswerText(reply.content, answerOptions).text;
+            return {
+              content: callModelAnswerText,
+              textSource: reply.textSource,
+              finishReason: reply.finishReason,
+            };
           },
         },
       );
@@ -6327,10 +6361,19 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
     const soleDraft = validResponses.length === 1 && isSafeDraft(validResponses[0])
       ? String(validResponses[0].content).trim()
       : '';
+    const soloAssessment = soleDraft
+      ? assessAnswer({
+        answer: soleDraft,
+        finishReason: validResponses[0]?.finishReason,
+        contract: answerContract,
+      })
+      : null;
+    if (soloAssessment) lastAnswerAssessment = soloAssessment;
     if (
       selection.members.length === 1 &&
       validResponses.length === 1 &&
       soleDraft &&
+      soloAssessment?.ok &&
       !toolResearch &&
       !toolTruncated
     ) {
@@ -6381,12 +6424,12 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
 2. Where they disagree on a FACT, say so and give the competing claims. Do not silently pick one.
 3. Where they disagree on JUDGEMENT or approach, give the strongest version of each and say what would decide between them.
 4. Prefer the more specific, better-supported answer — but never invent a justification for preferring it.
-5. Introduce no fact that appears in none of the responses.
+5. Introduce no fact that appears in none of the responses or supplied context.
 6. Never mention the panel, the experts, how many there were, or that synthesis happened. Write as a single voice.
 7. ${LENGTH_RULE[selection.complexity] || LENGTH_RULE.moderate}
 8. Use Markdown. Write mathematics in plain Unicode, never LaTeX: x², √2, ½, π, ≈, ≤, →, Fe₂O₃. Never $…$, never \\frac, never \\sin. The reader's screen renders Markdown and nothing else, so LaTeX reaches them as literal dollar signs and backslashes.
 9. End on the answer. No "Would you like help with anything else?", no "Let me know if...", no closing offer of further assistance. The user knows they can ask again.
-10. If you are inferring rather than reporting — a price you did not see, a spec you are reasoning to, a substitute product — say so IN THE SAME SENTENCE. "Likely higher" without "I did not find a listed price" reads as a fact.${lang !== 'English' ? `\n11. Respond in ${lang}.` : ''}`;
+10. If you are inferring rather than reporting — a price you did not see, a spec you are reasoning to, a substitute product — say so IN THE SAME SENTENCE. "Likely higher" without "I did not find a listed price" reads as a fact.${COMPLETENESS_CONTRACT}${lang !== 'English' ? `\n11. Respond in ${lang}.` : ''}`;
     // Research and truncation reach the synthesiser, because the design's rule
     // is that a cut-short answer must be able to hedge rather than assert. A
     // truncated answer presented as a complete one is worse than a slow one.
@@ -6422,8 +6465,15 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
       synthesisEffort: synthesis.effortLabel,
       ...(progressiveOutcome ? { progressive: progressiveOutcome } : {}),
     };
+    // COMPLETENESS_CONTRACT requires every explicit part of the question,
+    // including each condition, measurement, caveat, argument and counterargument.
     const synthSysForAnswer = `${synthSys}${SOURCE_TRUTH_RULES}`;
-    const synthMsgs = [{ role: 'system', content: identityPrompt(synthSysForAnswer, 'synthesis') }, { role: 'user', content: `Question: ${truncatedPrompt}\n\nResponses:\n${validResponses.map((r,i) => `[Expert ${i+1}]: ${r.content}`).join('\n\n')}${researchBlock}${truncationBlock}` }];
+    const synthMsgs = [
+      { role: 'system', content: identityPrompt(synthSysForAnswer, 'synthesis') },
+      ...contextMsgs,
+      ...promptHistory,
+      { role: 'user', content: `Question: ${truncatedPrompt}\n\nResponses:\n${validResponses.map((r,i) => `[Expert ${i+1}]: ${r.content}`).join('\n\n')}${researchBlock}${truncationBlock}` },
+    ];
     // The last thing that happens before words appear, and the longest single
     // step on a turn where the seats came back quickly.
     emitStage(res, 'synthesis', validResponses.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
@@ -6456,6 +6506,11 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
         aborted: turnSignal.aborted,
         wroteChars: turnAnswerText().length,
         drafts: validResponses,
+        draftGuard: (candidate) => isSafeDraft(candidate) && assessAnswer({
+          answer: candidate?.content,
+          finishReason: candidate?.finishReason,
+          contract: answerContract,
+        }).ok,
       });
       /* Nothing to fall back on, or nowhere to write it: the error frame the
        * handler writes is still the honest answer, and rethrowing is how it

@@ -183,6 +183,22 @@ test("an answer that merely starts with skip is still an answer", () => {
   }).then((results) => assert.equal(results.length, 1));
 });
 
+test("a structured seat reply preserves completion metadata for final-answer gates", async () => {
+  const results = await runCouncil([seat("a")], [], 5000, 1, 500, {
+    callModel: async () => ({
+      content: "A complete answer.",
+      textSource: "content",
+      finishReason: "stop",
+    }),
+  });
+  assert.deepEqual(results, [{
+    model: "a",
+    content: "A complete answer.",
+    textSource: "content",
+    finishReason: "stop",
+  }]);
+});
+
 test("an empty completion is failed, not skipped", async () => {
   // The model did not choose to say nothing, so it must not read as a
   // deliberate abstention in the interface.

@@ -1,5 +1,7 @@
 'use strict';
 
+const { assessAnswer } = require('./answer-contract');
+
 /**
  * WHAT A TURN ANSWERS WITH WHEN THE SYNTHESISER NEVER WROTE A WORD.
  *
@@ -105,17 +107,18 @@ const SAFE_TEXT_SOURCES = new Set(['content']);
  * would drift, and the drift would be invisible until someone read a model's
  * inner monologue.
  *
- * @param {{content?: string, textSource?: string}} draft
+ * @param {{content?: string, textSource?: string, finishReason?: string}} draft
  */
 function isSafeDraft(draft) {
   if (!draft || typeof draft !== 'object') return false;
   const text = String(draft.content ?? '').trim();
   if (!text) return false;
   if (!SAFE_TEXT_SOURCES.has(draft.textSource)) return false;
+  if (!assessAnswer({ answer: text, finishReason: draft.finishReason }).ok) return false;
   return !looksInternal(text);
 }
 
-function degradeAnswer({ aborted = false, wroteChars = 0, drafts = [] } = {}) {
+function degradeAnswer({ aborted = false, wroteChars = 0, drafts = [], draftGuard = isSafeDraft } = {}) {
   /* A cancelled turn is not a failed one. Writing into a socket the user has
    * left reports a completed turn to the ledger and reaches nobody. */
   if (aborted) return null;
@@ -128,8 +131,13 @@ function degradeAnswer({ aborted = false, wroteChars = 0, drafts = [] } = {}) {
    * one sourced from reasoning is a scratchpad — each is skipped rather than
    * repaired, and running out of drafts lands on the error frame, which is
    * where this turn was going anyway. */
+  const guard = typeof draftGuard === 'function' ? draftGuard : isSafeDraft;
   for (const draft of Array.isArray(drafts) ? drafts : []) {
-    if (isSafeDraft(draft)) return String(draft.content).trim();
+    try {
+      if (guard(draft)) return String(draft.content).trim();
+    } catch {
+      /* A guard is safety policy; a broken policy must refuse the draft. */
+    }
   }
   return null;
 }

@@ -109,6 +109,13 @@ test('isSafeDraft is the single predicate, so the solo branch cannot drift from 
   assert.equal(isSafeDraft(undefined), false);
 });
 
+test('a provider-truncated draft is not safe for direct degradation', () => {
+  const truncated = { content: 'The rollout should begin with a baseline', textSource: 'content', finishReason: 'length' };
+  const complete = { content: 'The rollout should begin with a baseline.', textSource: 'content', finishReason: 'stop' };
+  assert.equal(isSafeDraft(truncated), false);
+  assert.equal(degradeAnswer({ wroteChars: 0, drafts: [truncated, complete] }), 'The rollout should begin with a baseline.');
+});
+
 /**
  * ROWS 2 AND 3, REPRODUCED AT THE SEAM THAT DECIDES THEM.
  *

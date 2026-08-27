@@ -100,3 +100,17 @@ test('a complete answer with intentionally skipped synthesis is assembled', () =
   });
   assert.equal(result.provenance.completion.assembled, true);
 });
+
+test('an explicit incomplete quality result cannot become an assembled answer', () => {
+  const result = buildTurnProvenanceMeta({
+    requestState: 'complete',
+    answerProduced: true,
+    route: 'solo',
+    stageKeys: ['council'],
+    council: { used: true, seatCount: 1, answered: 1, completed: true },
+    synthesis: { skipped: true, completed: false },
+    completion: { qualified: 'incomplete' },
+  });
+  assert.equal(result.provenance.completion.assembled, false);
+  assert.equal(result.provenance.completion.qualified, 'incomplete');
+});

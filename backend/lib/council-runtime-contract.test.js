@@ -293,6 +293,30 @@ test("a one-seat roster inherits the synthesiser's rules", () => {
   assert.match(ROUTE, /\$\{soloRules\}/, "soloRules is computed but never reaches the prompt");
 });
 
+test('a one-seat draft must pass the general answer contract before it bypasses synthesis', () => {
+  const solo = ROUTE.indexOf('const soleDraft');
+  const synth = ROUTE.indexOf('// 6. SYNTHESIS', solo);
+  assert.ok(solo > 0 && synth > solo, 'one-seat branch not found');
+  const branch = ROUTE.slice(solo, synth);
+  assert.match(branch, /assessAnswer\(/,
+    'a non-empty draft is not enough to become a clean final answer');
+  assert.match(branch, /answerContract/,
+    'the direct path must inspect the question/context contract');
+  assert.match(branch, /finishReason/,
+    'provider truncation metadata must be available at the direct-answer boundary');
+});
+
+test('synthesis receives bounded context and a general completeness contract', () => {
+  const synth = ROUTE.indexOf('// 6. SYNTHESIS');
+  const call = ROUTE.slice(synth, synth + 7000);
+  assert.match(call, /COMPLETENESS_CONTRACT/);
+  assert.match(call, /\.\.\.contextMsgs/,
+    'the head cannot recover omitted context if only seat drafts are sent');
+  assert.match(call, /\.\.\.promptHistory/,
+    'the head must receive the same bounded transcript the seats saw');
+  assert.match(call, /every explicit part/i);
+});
+
 /**
  * THE ORCHESTRATOR'S FALLBACK. A throw at the streaming step is the most
  * expensive failure in the route: the council has already deliberated and the

@@ -80,6 +80,15 @@ const isUsableAnswer = (content) => {
   return trimmed.length > 3 && !/^skip[.!]?$/i.test(trimmed);
 };
 
+const replyContent = (reply) => typeof reply === "string"
+  ? reply
+  : typeof reply?.content === "string" ? reply.content : "";
+
+const replyMetadata = (reply) => ({
+  ...(typeof reply?.textSource === "string" ? { textSource: reply.textSource } : {}),
+  ...(typeof reply?.finishReason === "string" ? { finishReason: reply.finishReason } : {}),
+});
+
 async function runCouncil(members, messages, whipMs, quorum, tokenLimit, deps = {}) {
   const { callModel, onSeat, onSeatTiming, onFinish, signal, now = Date.now } = deps;
   if (typeof callModel !== "function") throw new Error("runCouncil needs callModel");
@@ -199,7 +208,8 @@ async function runCouncil(members, messages, whipMs, quorum, tokenLimit, deps = 
         .then((content) => {
           if (resolved) return;
           settledCount++;
-          const trimmed = (content || "").trim();
+          const answerText = replyContent(content);
+          const trimmed = answerText.trim();
           // A bare "skip" is the model declining, and the regex is anchored so
           // an answer that merely BEGINS with the word is not mistaken for one.
           const isSkip = /^skip[.!]?$/i.test(trimmed);
@@ -207,7 +217,7 @@ async function runCouncil(members, messages, whipMs, quorum, tokenLimit, deps = 
             report(model, SEAT_STATES.SKIPPED);
           } else if (isUsableAnswer(trimmed)) {
             validCount++;
-            results.push({ model, content });
+            results.push({ model, content: answerText, ...replyMetadata(content) });
             report(model, SEAT_STATES.ANSWERED);
           } else {
             // Too short to be an answer and not a skip: an empty completion.

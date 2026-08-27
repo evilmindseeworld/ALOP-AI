@@ -232,3 +232,17 @@ test('the composed deadline is always released, on success and on failure', () =
     'and streamModel must release it on every exit path, the way it reports on every exit path',
   );
 });
+
+test('streamed synthesis validates the complete answer before committing it', () => {
+  const guard = STREAM_ONCE.indexOf('const answerGuard');
+  const commit = STREAM_ONCE.indexOf('commitChunk(emitted.join');
+  assert.ok(guard >= 0 && commit > guard, 'the final answer must pass its guard before one buffered chunk reaches the socket');
+  assert.ok(/answerGuard: answerOutputGuard/.test(SOURCE), 'synthesis must wire the output/evidence guard');
+  assert.ok((SOURCE.match(/deferOutput: answerNeedsBuffer/g) || []).length >= 3, 'fallback, search, and council synthesis must use the same buffering decision');
+});
+
+test('a deadline error cannot enter the stream fallback ladder', () => {
+  assert.ok((STREAM_MODEL.match(/canRetryStream\(/g) || []).length >= 2, 'the head and each fallback rung must share the terminal-deadline policy');
+  assert.ok(/error:\s*err/.test(STREAM_MODEL), 'the head error must reach the retry policy');
+  assert.ok(/error:\s*fallbackErr/.test(STREAM_MODEL), 'a later rung deadline must stop the remaining ladder too');
+});

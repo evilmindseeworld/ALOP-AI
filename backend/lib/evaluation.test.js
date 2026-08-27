@@ -92,6 +92,28 @@ test("mustCite requires every answer URL to be backed by a recorded public sourc
   assert.ok(mixed.failures.some((f) => f.startsWith("mustCite")));
 });
 
+test("cache tradeoff grading accepts speed only when it is attached to caching", () => {
+  const tradeoff = "(?:\\bcach(?:e|ed|ing|es)\\b[\\s\\S]{0,160}\\b(?:faster|speed|latency|performance)\\b|\\b(?:faster|speed|latency|performance)\\b[\\s\\S]{0,160}\\bcach(?:e|ed|ing|es)\\b)";
+  const expect = { mustMatch: [tradeoff, "stale|out of date|invalidat"] };
+  const good = gradeCase(caseOf(expect), obs({ answer: "Caching can improve speed by serving a fast result, but stale data can be wrong." }));
+  const unrelated = gradeCase(caseOf(expect), obs({ answer: "The deployment speed improved, but stale data can still be wrong." }));
+  assert.equal(good.passed, true, good.failures.join("|"));
+  assert.equal(unrelated.passed, false);
+});
+
+test("model-disagreement grading accepts inflected diminishing language without accepting unrelated prose", () => {
+  const value = "(?:(?:extra|additional|more|another)\\s+(?:model|vote|answer|round)[^.!?\\n]{0,80}\\b(?:redundant|duplicate|diminish\\w*)\\b|(?:gain|benefit|value|utility|returns?|confidence)[^.!?\\n]{0,80}\\b(?:redundant|duplicate|diminish\\w*)\\b|\\b(?:redundant|duplicate|diminish\\w*)\\b[^.!?\\n]{0,80}\\b(?:model|vote|answer|round|gain|benefit|value|utility|returns?|confidence)\\b)";
+  const expect = { mustMatch: ["disagree|uncertain|risk|novel|different", value] };
+  for (const wording of ["the gain diminishes", "diminishing returns", "the extra vote is redundant", "the answer is a duplicate"]) {
+    const grade = gradeCase(caseOf(expect), obs({ answer: `More models help when the first answers disagree; ${wording}.` }));
+    assert.equal(grade.passed, true, wording + ": " + grade.failures.join("|"));
+  }
+  const unrelated = gradeCase(caseOf(expect), obs({ answer: "The models disagree, but the duplicate file was deleted after a long day." }));
+  assert.equal(unrelated.passed, false);
+  const noValue = gradeCase(caseOf(expect), obs({ answer: "More models help when the first answers disagree; the result is stable." }));
+  assert.equal(noValue.passed, false);
+});
+
 test("mustMatch folds curly apostrophes and Unicode hyphens without flattening line boundaries", () => {
   const grade = gradeCase(caseOf({ mustMatch: ["don't have|can't|self-host"] }), obs({
     answer: "I don’t have access to the private figures.\nA self‑hosted copy is not recommended.",

@@ -1,4 +1,5 @@
 const { deadlineSignal } = require('./stream-deadline');
+const { canRetryStream } = require('./stream-retry-policy');
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { readFileSync } = require("node:fs");
@@ -406,12 +407,13 @@ const loadStreamPolicy = (fetchImpl) => {
      * stubbed: a stub here would let the deadline stop reaching the body again
      * without a single test noticing. See lib/stream-deadline.js. */
     "deadlineSignal",
+    "canRetryStream",
     `${policy}\nreturn { streamModel, normaliseResetEpoch };`,
   )(
     fetchImpl, stream, "https://openrouter.test", "secret", "primary:free", "smart:free",
     () => ({ skip: true }), () => false, (text) => ({ text, rejected: false }),
     false,
-    deadlineSignal,
+    deadlineSignal, canRetryStream,
   );
 };
 

@@ -312,7 +312,15 @@ function buildRegistry(deps = {}) {
         if (!text) return fail(`Nothing readable at ${safe.url.hostname}.`);
         const destination = read && read.finalUrl ? new URL(read.finalUrl).hostname : safe.url.hostname;
         const status = read && Number.isInteger(read.status) ? ` (HTTP ${read.status})` : "";
-        return ok(`Read ${destination}${status}`, clamp(text));
+        const content = clamp(text);
+        return ok(`Read ${destination}${status}`, content, {
+          sources: [{
+            title: `Read ${destination}`,
+            url: safe.url.toString(),
+            text: content,
+            via: "read_url",
+          }],
+        });
       },
     });
   }

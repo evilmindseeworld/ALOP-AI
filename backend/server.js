@@ -43,6 +43,7 @@ const { timeoutSignal, childAbortController } = require('./lib/abort');
 const { describeImage, visionModels } = require('./lib/vision');
 const { generateImage } = require('./lib/image-gen');
 const { deadlineSignal } = require('./lib/stream-deadline');
+const { canRetryStream } = require('./lib/stream-retry-policy');
 const { createTurnTelemetry } = require('./lib/turn-telemetry');
 const { benchmarkCacheBypass } = require('./lib/benchmark-cache-bypass');
 const { rescueReasoning } = require('./lib/reasoning-rescue');
@@ -51,6 +52,12 @@ const { createTurnLedger } = require('./lib/turn-ledger');
 const { buildTurnReliabilityMeta } = require('./lib/turn-reliability-meta');
 const { buildTurnProvenanceMeta, safeSourceRecords } = require('./lib/turn-provenance-meta');
 const { COMPLETENESS_CONTRACT, assessAnswer, buildAnswerContract } = require('./lib/answer-contract');
+const {
+  buildOutputContract,
+  assessOutputObligations,
+  selectObligationPreservingDraft,
+  outputObligationPrompt,
+} = require('./lib/answer-obligations');
 const {
   fingerprint: cacheFingerprint, retrievalMode, sourceFreshness, short: cacheIdentityShort,
 } = require('./lib/cache-identity');
@@ -61,6 +68,7 @@ const { chooseHead } = require('./lib/head-selection');
 const { runProgressiveCouncil } = require('./lib/progressive-council');
 const { createEvidenceLedger } = require('./lib/evidence-ledger');
 const { resolveConflicts, verifyAnswer } = require('./lib/contradiction');
+const { verifyAnswerForDisplay } = require('./lib/answer-evidence');
 const { classifyFact, ttlFor: memoryTtlFor, conflictsWith, recallPlan } = require('./lib/memory-kinds');
 const { fuse, lexicalQuery } = require('./lib/hybrid-retrieval');
 const { pendingSpans, selectSummaries, spanTurns } = require('./lib/episodic-summary');
@@ -757,10 +765,40 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
   /* Handed back to the caller BY REFERENCE, so that a throw halfway through
    * a stream can still be asked how much of the answer reached the socket.
    * `streamModel` needs that to decide whether a retry is safe, and a thrown
-   * error carries no return value to put it in. */
-  meta.emitted = emitted;
+   * error carries no return value to put it in. A guarded answer is assembled
+   * in `emitted` but remains retryable until its final shape and evidence have
+   * passed; `delivered` is the socket truth. */
+  const delivered = [];
+  const deferOutput = Boolean(answerOptions?.deferOutput);
+  const commitChunk = (text) => {
+    if (!text || res.writableEnded) return;
+    if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
+    try { answerOptions.onChunk?.(text); } catch { /* a recorder must never fail a stream */ }
+    res.write(`data: ${JSON.stringify({ type: 'chunk', text })}\n\n`);
+    delivered.push(text);
+  };
+  const appendChunk = (text) => {
+    if (!text) return;
+    emitted.push(text);
+    if (!deferOutput) commitChunk(text);
+  };
+  meta.emitted = delivered;
+  const readChunk = async () => {
+    try {
+      return await reader.read();
+    } catch (error) {
+      /* Some fetch implementations surface an abort as a generic
+       * `AbortError`, even when the composed signal carries the typed turn
+       * deadline. Preserve that cause so the fallback ladder cannot mistake a
+       * spent turn budget for a transient provider failure. */
+      if (streamSignal.aborted && streamSignal.reason?.code === 'OPENROUTER_DEADLINE') {
+        throw streamSignal.reason;
+      }
+      throw error;
+    }
+  };
   while (true) {
-    const { done, value } = await reader.read();
+    const { done, value } = await readChunk();
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
@@ -798,10 +836,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
          * at openStream would have made this feature look like a 15-second
          * improvement while the user waited exactly as long. */
         noteFirstContent();
-        if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
-        emitted.push(frame.text);
-        try { answerOptions.onChunk?.(frame.text); } catch { /* a recorder must never fail a stream */ }
-        res.write(`data: ${JSON.stringify({ type: 'chunk', text: frame.text })}\n\n`);
+        appendChunk(frame.text);
       }
       /* Completion arrives TWICE in this protocol — a delta carrying
        * finish_reason, then the `[DONE]` terminator — so the sentinel is
@@ -825,10 +860,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     if (sanitised.rejected) throw new Error('Model returned protocol instead of an answer');
     if (sanitised.text) {
       noteFirstContent();
-      if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
-      emitted.push(sanitised.text);
-      try { answerOptions.onChunk?.(sanitised.text); } catch { /* never fail a stream */ }
-      res.write(`data: ${JSON.stringify({ type: 'chunk', text: sanitised.text })}\n\n`);
+      appendChunk(sanitised.text);
     }
   }
   /* THE RESCUE, AND IT FIRES ONCE, AT THE END, OR NOT AT ALL.
@@ -849,17 +881,33 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     meta.textSource = 'reasoning';
     try { answerOptions.onTextSource?.('reasoning'); } catch { /* telemetry must never fail a stream */ }
     noteFirstContent();
-    if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
-    emitted.push(rescued.text);
-    try { answerOptions.onChunk?.(rescued.text); } catch { /* never fail a stream */ }
-    res.write(`data: ${JSON.stringify({ type: 'chunk', text: rescued.text })}\n\n`);
+    appendChunk(rescued.text);
   }
   if (!emitted.length) throw new Error('Model returned no usable answer');
+  const answerGuard = typeof answerOptions?.answerGuard === 'function'
+    ? answerOptions.answerGuard
+    : null;
+  const initialAnswer = emitted.join('');
+  const initialVerdict = answerGuard ? answerGuard(initialAnswer) : true;
+  const initialOk = initialVerdict === true || initialVerdict?.ok === true;
+  if (!initialOk) {
+    const fallback = String(answerOptions?.outputFallback || '').trim();
+    const fallbackVerdict = fallback && answerGuard ? answerGuard(fallback) : Boolean(fallback);
+    const fallbackOk = fallbackVerdict === true || fallbackVerdict?.ok === true;
+    if (!deferOutput || !fallbackOk) {
+      const error = new Error('Model answer did not satisfy the output or evidence contract');
+      error.code = 'ANSWER_OUTPUT_CONTRACT';
+      throw error;
+    }
+    emitted.length = 0;
+    appendChunk(fallback);
+  }
   const citationSuffix = requiredCitationSuffix(emitted.join(''), answerOptions.requiredSourceUrls);
   if (citationSuffix && !res.writableEnded) {
-    emitted.push(citationSuffix);
-    try { answerOptions.onChunk?.(citationSuffix); } catch { /* never fail a stream */ }
-    res.write(`data: ${JSON.stringify({ type: 'chunk', text: citationSuffix })}\n\n`);
+    appendChunk(citationSuffix);
+  }
+  if (deferOutput && emitted.length) {
+    commitChunk(emitted.join(''));
   }
   try {
     answerOptions.onComplete?.({ answer: emitted.join(''), finishReason: meta.stream.finishReason });
@@ -1002,7 +1050,8 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
     recordStream(modelName, headStartedAt, err);
     reportStream(meta, modelName, err);
     const wrote = (meta.emitted || []).join('').length;
-    if (!fallbackModel || fallbackModel === modelName || signal?.aborted || wrote > 0) throw err;
+    if (!fallbackModel || signal?.aborted || wrote > 0
+      || !canRetryStream({ fallbackModel, error: err, signal, wroteChars: wrote })) throw err;
     if (err.status === 429 && err.limitSource === 'openrouter_free_tier_per_minute') {
       const resetAt = Number(err.resetAt);
       /* No reset means there is no evidence for a safe wait. A reset at or
@@ -1071,7 +1120,12 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
         /* The same two refusals as above, re-checked per attempt: a recovery
          * that wrote half an answer cannot be followed by another one, and a
          * cancelled turn is not a failed one. */
-        if (signal?.aborted || (attemptMeta.emitted || []).join('').length > 0) throw fallbackErr;
+        if (!canRetryStream({
+          fallbackModel: true,
+          error: fallbackErr,
+          signal,
+          wroteChars: (attemptMeta.emitted || []).join('').length,
+        })) throw fallbackErr;
       }
     }
     throw lastError;
@@ -4222,6 +4276,8 @@ async function handleCouncilTurn(req, res) {
   let provenanceSent = false;
   let lastCheckpointAt = 0;
   let checkpointedChars = 0;
+  let outputContract = null;
+  let displayAnswerGuard = () => ({ ok: true, problems: [] });
   const CHECKPOINT_EVERY_MS = 1_500;
   const CHECKPOINT_EVERY_CHARS = 1_200;
   const turnAnswerText = () => answerParts.join('');
@@ -5040,6 +5096,7 @@ async function handleCouncilTurn(req, res) {
     });
     const promptHistory = compressedContext.messages;
     answerContract = buildAnswerContract({ question: pv.value, history: promptHistory });
+    outputContract = buildOutputContract({ question: pv.value });
     telemetry.recordContextCompression(compressedContext.stats);
     if (compressedContext.stats.compressed) {
       console.log(`[CONTEXT] history ${compressedContext.stats.retainedMessages}/${compressedContext.stats.originalMessages} messages, ${compressedContext.stats.retainedChars}/${compressedContext.stats.originalChars} chars, relevantTurns=${compressedContext.stats.relevantTurns}`);
@@ -5295,6 +5352,32 @@ async function handleCouncilTurn(req, res) {
       freshnessWindowMs: turnFreshness ? turnFreshness.days * 24 * 3600 * 1000 : null,
     });
     let verification = null;
+    displayAnswerGuard = (text) => verifyAnswerForDisplay({
+      answer: text,
+      evidence,
+      searched: usedLiveWeb,
+    });
+    const recordToolEvidence = (toolResults) => {
+      for (const entry of Array.isArray(toolResults) ? toolResults : []) {
+        const result = entry?.result;
+        if (!result?.ok || !Array.isArray(result.sources)) continue;
+        const rendered = String(result.content || '');
+        for (const source of result.sources) {
+          if (!source?.url) continue;
+          const sourceBlock = rendered
+            .split(/\n\s*\n/)
+            .find((block) => block.includes(String(source.url))) || '';
+          evidence.record({
+            text: source.text || source.content || sourceBlock || source.title,
+            url: source.url,
+            title: source.title,
+            date: source.date || source.publishedDate || null,
+            via: source.via || entry.call?.name || 'tool',
+            confidence: Number.isFinite(Number(source.confidence)) ? Number(source.confidence) : entry.call?.name === 'read_url' ? 0.8 : 0.6,
+          });
+        }
+      }
+    };
 
     const verifyBeforeCache = (text, { searched = false } = {}) => {
       if (!evidence.size && !searched) return true;
@@ -5586,6 +5669,19 @@ async function handleCouncilTurn(req, res) {
      * "council" answer and kept it for ninety days. The router's own decision is
      * the honest signal, and it is the one the owner asked to key this on. */
     const usedLiveWeb = Boolean(searchQueries?.length);
+    const answerOutputGuard = (text) => {
+      const shape = assessOutputObligations({ text, contract: outputContract });
+      if (!shape.ok) return shape;
+      return displayAnswerGuard(text);
+    };
+    const answerNeedsBuffer = Boolean(
+      usedLiveWeb
+      || outputContract?.code?.required
+      || outputContract?.json?.required
+      || outputContract?.table?.required
+      || outputContract?.list?.required
+      || outputContract?.performance?.required,
+    );
     /* Reported to whoever called this handler. A background refresh needs to
      * know whether the answer it just produced was search-backed, and deriving
      * that a second time from the text would be a second copy of the router's
@@ -5734,7 +5830,7 @@ async function handleCouncilTurn(req, res) {
       provenanceCouncilComplete = searchSeatsAnswered >= selection.quorum && selection.quorum > 0;
       provenanceCouncilPartial = !provenanceCouncilComplete;
       emitStage(res, 'synthesis', usableSearchDrafts.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
-      const searchSynthSys = `${todayLine()}\n\nReconcile these independent answers into one precise response. Use only facts present in the answers and their cited search data. Preserve Markdown source links, note material disagreements, and do not mention the council.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+      const searchSynthSys = `${todayLine()}\n\nReconcile these independent answers into one precise response. Use only facts present in the answers and their cited search data. Preserve Markdown source links, note material disagreements, and do not mention the council.${outputObligationPrompt(outputContract)}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
       const searchSynthSysForAnswer = `${searchSynthSys}${SOURCE_TRUTH_RULES}`;
       const searchSynthMsgs = [{ role: 'system', content: identityPrompt(searchSynthSysForAnswer, 'search_synthesis') }, {
         role: 'user',
@@ -5753,7 +5849,7 @@ async function handleCouncilTurn(req, res) {
       searchSynthesisOptions.onStreamTiming = (row) => telemetry.recordStreamTiming({ ...row, phase: 'search_synthesis' });
       console.log(`[SYNTHESIS] requested=${searchSynthesis.model} effort=${searchSynthesis.effortLabel} complexity=${selection.complexity} tools=true`);
       const searchSynthesisStartedAt = Date.now();
-      const searchAnswer = await streamModel(res, searchSynthesis.model, searchSynthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, answerOptions, turnDeadlineAt, searchSynthesisOptions);
+      const searchAnswer = await streamModel(res, searchSynthesis.model, searchSynthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, answerGuard: answerOutputGuard, deferOutput: answerNeedsBuffer }, turnDeadlineAt, searchSynthesisOptions);
       telemetry.recordSynthesis(Date.now() - searchSynthesisStartedAt, searchSynthesisModelUsed);
       const searchSynthesisEffort = searchSynthesisModelUsed === searchSynthesis.model ? searchSynthesis.effortLabel : 'default';
       console.log(`[SYNTHESIS] model=${searchSynthesisModelUsed} effort=${searchSynthesisEffort} complexity=${selection.complexity} tools=true`);
@@ -5787,7 +5883,7 @@ async function handleCouncilTurn(req, res) {
       if (wiki) {
         const wikiSys = `${todayLine()}
 
-You are a data extraction engine. Use ONLY the Wikipedia content. No training data. If the article does not cover what was asked, say what the article DOES cover and invite the user to ask again — never end on "I couldn't find this". Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+You are a data extraction engine. Use ONLY the Wikipedia content. No training data. If the article does not cover what was asked, say what the article DOES cover and invite the user to ask again — never end on "I couldn't find this". Use Markdown.${outputObligationPrompt(outputContract)}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
         // Its own fetch, not searchWeb's, so it needs its own label. Wikipedia is
         // world-editable: this is the one source where an attacker does not even
         // need a site of their own.
@@ -5806,7 +5902,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         console.log(`[SYNTHESIS] requested=${wikiSynthesis.model} effort=${wikiSynthesis.effortLabel} complexity=${selection.complexity} tools=true`);
         openStream(res);
         const wikiSynthesisStartedAt = Date.now();
-        const wikiAnswer = await streamModel(res, wikiSynthesis.model, wikiMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt, wikiSynthesisOptions);
+        const wikiAnswer = await streamModel(res, wikiSynthesis.model, wikiMsgs, 0.0, turnSignal, null, { ...answerOptions, answerGuard: answerOutputGuard, deferOutput: answerNeedsBuffer }, turnDeadlineAt, wikiSynthesisOptions);
         telemetry.recordSynthesis(Date.now() - wikiSynthesisStartedAt, wikiSynthesisModelUsed);
         const wikiSynthesisEffort = wikiSynthesisModelUsed === wikiSynthesis.model ? wikiSynthesis.effortLabel : 'default';
         console.log(`[SYNTHESIS] model=${wikiSynthesisModelUsed} effort=${wikiSynthesisEffort} complexity=${selection.complexity} tools=true`);
@@ -5855,7 +5951,7 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
       : '';
     const councilSys = `${todayLine()}
 
-You are an elite AI expert in the ALOP-AI Council. If outside your expertise, reply ONLY "SKIP". If you answer, be direct. Match response length to question complexity. Use Markdown. Write maths in plain Unicode (x², √2, ½, π, ≈), never LaTeX. If context/history provided, use for continuity. ${isDetailed ? 'Be thorough.' : 'Be concise.'}${lang !== 'English' ? ` Respond in ${lang}.` : ''}${soloRules}`;
+You are an elite AI expert in the ALOP-AI Council. If outside your expertise, reply ONLY "SKIP". If you answer, be direct. Match response length to question complexity. Use Markdown. Write maths in plain Unicode (x², √2, ½, π, ≈), never LaTeX. If context/history provided, use for continuity. ${isDetailed ? 'Be thorough.' : 'Be concise.'}${outputObligationPrompt(outputContract)}${lang !== 'English' ? ` Respond in ${lang}.` : ''}${soloRules}`;
     const councilMsgs = [{ role: 'system', content: identityPrompt(councilSys, 'plain_council') }, ...contextMsgs, ...promptHistory, { role: 'user', content: truncatedPrompt }];
 
     // The agent loop, when enabled, replaces the single-shot council with
@@ -6128,6 +6224,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       toolTruncated = loop.truncated;
       provenanceToolTruncated = Boolean(loop.truncated);
       toolSourceUrls = searchResultUrls(loop.toolResults);
+      recordToolEvidence(loop.toolResults);
       console.log(`[TOOLS] ${loop.rounds} round(s), ${loop.uniqueCallsUsed} unique call(s), ${Object.keys(loop.answers).length} answer(s)${loop.truncated ? ` — ${loop.truncated}` : ''}`);
       /* THE ADOPTION LINE. Printed whenever a tool call ran at all, including
        * on turns with no native seat — a turn where the native seat was armed
@@ -6278,6 +6375,22 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       }
     }
 
+    const safeDisplayDraft = (candidate) => {
+      if (!isSafeDraft(candidate)) return false;
+      const text = String(candidate.content).trim();
+      const quality = assessAnswer({
+        answer: text,
+        finishReason: candidate.finishReason,
+        contract: answerContract,
+      });
+      return quality.ok && answerOutputGuard(text).ok;
+    };
+    const obligationFallback = selectObligationPreservingDraft({
+      contract: outputContract,
+      drafts: validResponses,
+      isCandidate: safeDisplayDraft,
+    });
+
     if (provenanceToolUsed) {
       /* The agent loop has no public seat callback, so its honest bounded
        * participation signal is the number of usable answers it returned. */
@@ -6296,11 +6409,20 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       console.log('[COUNCIL] Fallback.');
       const fbSys = `${todayLine()}
 
-You are a helpful AI assistant. Answer directly. Match length to question. If you don't know, say "I don't have enough information." Don't guess. Use context if provided. Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+You are a helpful AI assistant. Answer directly. Match length to question. If you don't know, say "I don't have enough information." Don't guess. Use context if provided. Use Markdown.${outputObligationPrompt(outputContract)}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
       const fbMsgs = [{ role: 'system', content: identityPrompt(fbSys, 'fallback') }, ...contextMsgs, ...promptHistory, { role: 'user', content: truncatedPrompt }];
       openStream(res);
       const fallbackStartedAt = Date.now();
-      const fallbackAnswer = await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
+      const fallbackAnswer = await streamModel(
+        res,
+        PRIMARY_MODEL,
+        fbMsgs,
+        0.0,
+        turnSignal,
+        null,
+        { ...answerOptions, answerGuard: answerOutputGuard, deferOutput: answerNeedsBuffer, outputFallback: obligationFallback },
+        turnDeadlineAt,
+      );
       telemetry.recordFallback(Date.now() - fallbackStartedAt, 'post_council');
       if (turnSignal.aborted) return;
       if (!res.writableEnded) res.end();
@@ -6368,12 +6490,17 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
         contract: answerContract,
       })
       : null;
+    const soloOutputAssessment = soleDraft
+      ? assessOutputObligations({ text: soleDraft, contract: outputContract })
+      : null;
     if (soloAssessment) lastAnswerAssessment = soloAssessment;
     if (
       selection.members.length === 1 &&
       validResponses.length === 1 &&
       soleDraft &&
       soloAssessment?.ok &&
+      soloOutputAssessment?.ok &&
+      displayAnswerGuard(soleDraft).ok &&
       !toolResearch &&
       !toolTruncated
     ) {
@@ -6429,7 +6556,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
 7. ${LENGTH_RULE[selection.complexity] || LENGTH_RULE.moderate}
 8. Use Markdown. Write mathematics in plain Unicode, never LaTeX: x², √2, ½, π, ≈, ≤, →, Fe₂O₃. Never $…$, never \\frac, never \\sin. The reader's screen renders Markdown and nothing else, so LaTeX reaches them as literal dollar signs and backslashes.
 9. End on the answer. No "Would you like help with anything else?", no "Let me know if...", no closing offer of further assistance. The user knows they can ask again.
-10. If you are inferring rather than reporting — a price you did not see, a spec you are reasoning to, a substitute product — say so IN THE SAME SENTENCE. "Likely higher" without "I did not find a listed price" reads as a fact.${COMPLETENESS_CONTRACT}${lang !== 'English' ? `\n11. Respond in ${lang}.` : ''}`;
+10. If you are inferring rather than reporting — a price you did not see, a spec you are reasoning to, a substitute product — say so IN THE SAME SENTENCE. "Likely higher" without "I did not find a listed price" reads as a fact.${COMPLETENESS_CONTRACT}${outputObligationPrompt(outputContract)}${lang !== 'English' ? `\n11. Respond in ${lang}.` : ''}`;
     // Research and truncation reach the synthesiser, because the design's rule
     // is that a cut-short answer must be able to hedge rather than assert. A
     // truncated answer presented as a complete one is worse than a slow one.
@@ -6497,7 +6624,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
      * are testable; `server.js` cannot be required in a test. */
     let synthAnswer;
     try {
-      synthAnswer = await streamModel(res, synthesis.model, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, requiredSourceUrls: toolSourceUrls }, turnDeadlineAt, synthesisOptions);
+      synthAnswer = await streamModel(res, synthesis.model, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, requiredSourceUrls: toolSourceUrls, answerGuard: answerOutputGuard, deferOutput: answerNeedsBuffer, outputFallback: obligationFallback }, turnDeadlineAt, synthesisOptions);
     } catch (err) {
       provenanceSynthesisFailed = true;
       provenanceSynthesisSkipped = true;
@@ -6506,11 +6633,15 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
         aborted: turnSignal.aborted,
         wroteChars: turnAnswerText().length,
         drafts: validResponses,
-        draftGuard: (candidate) => isSafeDraft(candidate) && assessAnswer({
-          answer: candidate?.content,
-          finishReason: candidate?.finishReason,
-          contract: answerContract,
-        }).ok,
+        draftGuard: (candidate) => {
+          if (!isSafeDraft(candidate)) return false;
+          const text = String(candidate.content).trim();
+          return assessAnswer({
+            answer: text,
+            finishReason: candidate.finishReason,
+            contract: answerContract,
+          }).ok && answerOutputGuard(text).ok;
+        },
       });
       /* Nothing to fall back on, or nowhere to write it: the error frame the
        * handler writes is still the honest answer, and rethrowing is how it

@@ -330,6 +330,12 @@ const CONST = {
 const OPENERS =
   /^(?:please\s+)?(?:can you\s+|could you\s+)?(?:tell me\s+)?(?:what(?:'|’)?s|what is|what are|whats|how much is|how much are|calculate|compute|solve|work out|evaluate)\s+/i;
 
+/* A format instruction may follow a complete arithmetic question. It is
+ * stripped only in this constrained suffix shape; arbitrary prose still makes
+ * the whole parse fail and falls through to the council. */
+const ANSWER_FORMAT_SUFFIX =
+  /\?\s*(?:please\s+)?(?:answer|respond|reply|give|return)\s+(?:(?:with|using)\s+)?(?:just\s+)?(?:the\s+)?(?:number|result|answer)\s*[.!]*$/i;
+
 /**
  * Word operators, longest first so "divided by" is consumed before "by" could
  * ever be looked at, and "to the power of" before "of".
@@ -1142,6 +1148,7 @@ function tryArithmetic(text) {
   if (!s || s.length > MAX_LENGTH) return null;
 
   s = fold(s);
+  s = s.replace(ANSWER_FORMAT_SUFFIX, '');
   /* Trailing punctuation, never internal — and `!` only when it cannot be a
    * factorial. "5!" is a computation; "5 + 5!" is excitement to one reader and
    * 125 to another, and the digit before the mark is the only signal there is.

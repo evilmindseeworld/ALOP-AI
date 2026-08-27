@@ -27,6 +27,7 @@ const { deadlineSignal } = require('./stream-deadline');
 const { fetchOpenRouterStream, parseOpenRouterSseLine } = require('./openrouter');
 const { rescueReasoning } = require('./reasoning-rescue');
 const { createTurnTelemetry } = require('./turn-telemetry');
+const { canRetryStream } = require('./stream-retry-policy');
 
 const SOURCE = readFileSync(join(__dirname, '..', 'server.js'), 'utf8');
 
@@ -86,12 +87,12 @@ const loadPolicy = (fetchImpl) => {
   const api = Function(
     'fetch', 'fetchOpenRouterStream', 'OPENROUTER_HOST', 'OPENROUTER_API_KEY', 'PRIMARY_MODEL', 'SMART_MODEL',
     'parseOpenRouterSseLine', 'looksLikeProtocolOpening', 'sanitizeAnswerText', 'STREAM_USAGE_ACCOUNTING',
-    'deadlineSignal', 'requiredCitationSuffix', 'providerHealth', 'rescueReasoning',
+    'deadlineSignal', 'requiredCitationSuffix', 'providerHealth', 'rescueReasoning', 'canRetryStream',
     policy + NL + 'return { streamModel, streamOnce };',
   )(
     fetchImpl, gateway, 'https://openrouter.test', 'secret', 'primary:free', 'smart:free',
     parseOpenRouterSseLine, () => false, (text) => ({ text, rejected: false }), false,
-    spyDeadline, () => '', { record() {} }, rescueReasoning,
+    spyDeadline, () => '', { record() {} }, rescueReasoning, canRetryStream,
   );
   return Object.assign(api, { composed });
 };

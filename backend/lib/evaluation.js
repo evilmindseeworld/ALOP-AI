@@ -71,7 +71,7 @@
 /** Answers cite by URL. Deliberately not markdown-link-aware: a link whose text
  *  looks like a citation but whose href is missing is not a citation, and the
  *  URL form is the one `lib/council-tools.js` actually appends. */
-const URL_RE = /https?:\/\/[^\s<>()[\]"']+/g;
+const { URL_RE, extractUrls, canonicalUrl } = require('./citation-urls');
 
 const KNOWN_EXPECT_KEYS = new Set([
   'mustInclude', 'mustMatch', 'mustNotInclude', 'mustCite',
@@ -140,19 +140,7 @@ function loadDataset(raw) {
   return { name: raw.name ?? null, cases: raw.cases, problems };
 }
 
-const citationsIn = (text) => [...String(text || '').matchAll(URL_RE)].map((m) => m[0]);
-
-function canonicalUrl(value) {
-  let candidate = String(value || '').trim().replace(/[),.;:!?]+$/g, '');
-  try {
-    const parsed = new URL(candidate);
-    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null;
-    parsed.hash = '';
-    return parsed.toString();
-  } catch {
-    return null;
-  }
-}
+const citationsIn = extractUrls;
 
 function sourceUrlsIn(obs) {
   const rows = [];

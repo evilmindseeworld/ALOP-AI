@@ -376,6 +376,12 @@ test("read_url renders the structured reader result and reports its final host a
   assert.equal(result.ok, true);
   assert.equal(result.content, "final body");
   assert.equal(result.summary, "Read www.allowed.example (HTTP 200)");
+  assert.deepEqual(result.sources, [{
+    title: "Read www.allowed.example",
+    url: "https://allowed.example/page",
+    text: "final body",
+    via: "read_url",
+  }]);
 });
 
 // ===== bad calls from the model =====

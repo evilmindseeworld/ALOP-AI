@@ -890,6 +890,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
   const initialAnswer = emitted.join('');
   const initialVerdict = answerGuard ? answerGuard(initialAnswer) : true;
   const initialOk = initialVerdict === true || initialVerdict?.ok === true;
+  let substitution = null;
   if (!initialOk) {
     const fallback = String(answerOptions?.outputFallback || '').trim();
     const fallbackVerdict = fallback && answerGuard ? answerGuard(fallback) : Boolean(fallback);
@@ -901,6 +902,10 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     }
     emitted.length = 0;
     appendChunk(fallback);
+    /* The fallback text is not the stream that just completed. Keep this fact
+     * attached to the completion so callers cannot pair the replacement with
+     * the discarded model's finish reason or clean provenance. */
+    substitution = { used: true, reason: 'answer_contract' };
   }
   const citationSuffix = requiredCitationSuffix(emitted.join(''), answerOptions.requiredSourceUrls);
   if (citationSuffix && !res.writableEnded) {
@@ -910,7 +915,11 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     commitChunk(emitted.join(''));
   }
   try {
-    answerOptions.onComplete?.({ answer: emitted.join(''), finishReason: meta.stream.finishReason });
+    answerOptions.onComplete?.({
+      answer: emitted.join(''),
+      finishReason: substitution ? null : meta.stream.finishReason,
+      substitution,
+    });
   } catch { /* provenance must never fail a turn */ }
   if (!res.writableEnded) res.write('data: [DONE]\n\n');
   meta.stream.endedAt = Date.now();
@@ -4268,6 +4277,11 @@ async function handleCouncilTurn(req, res) {
   let provenanceCompletionQuality = null;
   let answerContract = null;
   let lastAnswerAssessment = null;
+  /* A buffered stream can replace its discarded draft with a caller-provided
+   * answer. Keep that state beside the answer assessment so every downstream
+   * projection—provenance, telemetry and cache qualification—describes the
+   * text that actually reached the socket. */
+  let streamSubstitution = null;
   let provenanceToolCount = 0;
   let provenanceFailedTools = 0;
   let provenanceSearchUsed = false;
@@ -4850,15 +4864,38 @@ async function handleCouncilTurn(req, res) {
       /* The provenance frame travels immediately before the stream terminator
        * whenever a provider completed a streamed answer. It is a safe process
        * receipt, not a transcript of the model's private work. */
-      onComplete: ({ answer, finishReason }) => {
-        const assessment = assessAnswer({ answer, finishReason, contract: answerContract });
-        lastAnswerAssessment = assessment;
-        provenanceCompletionQuality = assessment.ok ? null : 'incomplete';
-        if (provenanceSynthesisStarted) provenanceSynthesisCompleted = true;
+      onComplete: ({ answer, finishReason, substitution = null }) => {
+        const substituted = substitution?.used === true;
+        streamSubstitution = substituted ? { ...substitution } : null;
+        if (substituted) {
+          /* This answer is real text, but it was not produced by the stream that
+           * just failed its local contract. Mark the turn degraded before the
+           * provenance frame is built; otherwise the frame says "complete" and
+           * the cache sees a clean synthesis. */
+          provenanceSynthesisFailed = true;
+          provenanceSynthesisSkipped = true;
+          provenanceSynthesisCompleted = false;
+          provenanceRoute = 'degraded';
+          provenanceCompletionQuality = 'incomplete';
+        }
+        /* A provider finish reason belongs only to the provider's own text.
+         * The substituted draft has no provider completion reason. */
+        const actualFinishReason = substituted ? null : finishReason;
+        const assessment = assessAnswer({ answer, finishReason: actualFinishReason, contract: answerContract });
+        /* Keep the existing assessment sink as the cache gate, but make a
+         * substitution explicitly ineligible even when its text is otherwise
+         * structurally complete. */
+        lastAnswerAssessment = substituted
+          ? { ...assessment, ok: false, reason: 'output_contract_substitution' }
+          : assessment;
+        if (!substituted) {
+          provenanceCompletionQuality = assessment.ok ? null : 'incomplete';
+          if (provenanceSynthesisStarted) provenanceSynthesisCompleted = true;
+        }
         sendProvenance(
           answer,
-          assessment.ok ? 'complete' : 'failed',
-          assessment.ok ? null : `incomplete_${assessment.reason}`,
+          substituted || !assessment.ok ? 'failed' : 'complete',
+          substituted ? 'output_contract_substitution' : assessment.ok ? null : `incomplete_${assessment.reason}`,
         );
       },
     };
@@ -5383,18 +5420,24 @@ async function handleCouncilTurn(req, res) {
       if (!evidence.size && !searched) return true;
       const audit = evidence.audit(text);
       const { conflicts, unresolved } = resolveConflicts(evidence.all());
-      const verdict = verifyAnswer({ answer: text, audit, conflicts, searched });
+      /* Search answers use the same split authority as display: lexical
+       * support and unknown evidence remain cache concerns, while hard source
+       * identity/contradiction failures remain invalid. Keeping this path on
+       * the display verifier prevents the two projections from disagreeing. */
+      const verdict = searched
+        ? verifyAnswerForDisplay({ answer: text, evidence, searched })
+        : verifyAnswer({ answer: text, audit, conflicts, searched });
       verification = {
-        claims: audit.claims.length,
-        grounded: audit.supported,
-        coverage: Number(audit.coverage.toFixed(2)),
+        claims: (verdict.audit || audit).claims.length,
+        grounded: (verdict.audit || audit).supported,
+        coverage: Number((verdict.audit || audit).coverage.toFixed(2)),
         sources: evidence.size,
-        conflicts: conflicts.length,
-        unresolved: unresolved.length,
+        conflicts: (verdict.conflicts || conflicts).length,
+        unresolved: (verdict.unresolved || unresolved).length,
         problems: verdict.problems.map((p) => p.kind),
       };
       provenanceVerification = verification;
-      if (!verdict.ok) {
+      if (verdict.problems.length) {
         console.log(`[VERIFY] ${verdict.problems.map((p) => p.kind).join(',')} — coverage=${verification.coverage} sources=${evidence.size} unresolved=${unresolved.length}${ANSWER_VERIFICATION ? ' — NOT CACHED' : ' (measuring only)'}`);
       }
       return ANSWER_VERIFICATION ? verdict.cacheable : true;
@@ -5850,8 +5893,12 @@ async function handleCouncilTurn(req, res) {
       console.log(`[SYNTHESIS] requested=${searchSynthesis.model} effort=${searchSynthesis.effortLabel} complexity=${selection.complexity} tools=true`);
       const searchSynthesisStartedAt = Date.now();
       const searchAnswer = await streamModel(res, searchSynthesis.model, searchSynthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, answerGuard: answerOutputGuard, deferOutput: answerNeedsBuffer }, turnDeadlineAt, searchSynthesisOptions);
+      const searchSubstituted = streamSubstitution?.used === true;
+      if (searchSubstituted) searchSynthesisModelUsed = null;
       telemetry.recordSynthesis(Date.now() - searchSynthesisStartedAt, searchSynthesisModelUsed);
-      const searchSynthesisEffort = searchSynthesisModelUsed === searchSynthesis.model ? searchSynthesis.effortLabel : 'default';
+      const searchSynthesisEffort = searchSubstituted
+        ? 'substituted'
+        : searchSynthesisModelUsed === searchSynthesis.model ? searchSynthesis.effortLabel : 'default';
       console.log(`[SYNTHESIS] model=${searchSynthesisModelUsed} effort=${searchSynthesisEffort} complexity=${selection.complexity} tools=true`);
       if (!res.writableEnded) res.end();
       /* A SHORTER SHELF LIFE WHEN THE QUESTION ASKED FOR NOW. `fresh` is the
@@ -5903,8 +5950,12 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         openStream(res);
         const wikiSynthesisStartedAt = Date.now();
         const wikiAnswer = await streamModel(res, wikiSynthesis.model, wikiMsgs, 0.0, turnSignal, null, { ...answerOptions, answerGuard: answerOutputGuard, deferOutput: answerNeedsBuffer }, turnDeadlineAt, wikiSynthesisOptions);
+        const wikiSubstituted = streamSubstitution?.used === true;
+        if (wikiSubstituted) wikiSynthesisModelUsed = null;
         telemetry.recordSynthesis(Date.now() - wikiSynthesisStartedAt, wikiSynthesisModelUsed);
-        const wikiSynthesisEffort = wikiSynthesisModelUsed === wikiSynthesis.model ? wikiSynthesis.effortLabel : 'default';
+        const wikiSynthesisEffort = wikiSubstituted
+          ? 'substituted'
+          : wikiSynthesisModelUsed === wikiSynthesis.model ? wikiSynthesis.effortLabel : 'default';
         console.log(`[SYNTHESIS] model=${wikiSynthesisModelUsed} effort=${wikiSynthesisEffort} complexity=${selection.complexity} tools=true`);
         if (!res.writableEnded) res.end();
         // An encyclopedia answer is still good next week.
@@ -6687,8 +6738,12 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
       );
       return;
     }
+    const synthesisSubstituted = streamSubstitution?.used === true;
+    if (synthesisSubstituted) synthesisModelUsed = null;
     telemetry.recordSynthesis(Date.now() - synthesisStartedAt, synthesisModelUsed);
-    const synthesisEffort = synthesisModelUsed === synthesis.model ? synthesis.effortLabel : 'default';
+    const synthesisEffort = synthesisSubstituted
+      ? 'substituted'
+      : synthesisModelUsed === synthesis.model ? synthesis.effortLabel : 'default';
     console.log(`[SYNTHESIS] model=${synthesisModelUsed} effort=${synthesisEffort} complexity=${selection.complexity} tools=${toolQuestion}`);
     telemetryExtra.synthesisModel = synthesisModelUsed;
     telemetryExtra.synthesisEffort = synthesisEffort;

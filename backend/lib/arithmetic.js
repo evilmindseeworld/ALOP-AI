@@ -334,7 +334,7 @@ const OPENERS =
  * stripped only in this constrained suffix shape; arbitrary prose still makes
  * the whole parse fail and falls through to the council. */
 const ANSWER_FORMAT_SUFFIX =
-  /\?\s*(?:please\s+)?(?:answer|respond|reply|give|return)\s+(?:(?:with|using)\s+)?(?:just\s+)?(?:the\s+)?(?:number|result|answer)\s*[.!]*$/i;
+  /\?\s*(?:(?:please\s+)?(?:answer|respond|reply|give|return)\s+(?:(?:with|using)\s+)?(?:(?:just|only)\s+)?(?:the\s+)?(?:number|result|answer)|(?:number|result|answer)\s+only)\s*[.!?]*$/i;
 
 /**
  * Word operators, longest first so "divided by" is consumed before "by" could

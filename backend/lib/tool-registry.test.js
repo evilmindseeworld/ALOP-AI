@@ -2,6 +2,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { buildRegistry, MAX_RESULT_CHARS, clampTimeoutMs } = require("./tool-registry");
 const { UrlBlocked } = require("./url-guard");
+const { createEvidenceLedger } = require("./evidence-ledger");
+const { verifyAnswerForDisplay } = require("./answer-evidence");
 
 const RESULTS = [
   { title: "RTINGS OLED", url: "https://rtings.com/a", description: "Burn-in results." },
@@ -378,10 +380,38 @@ test("read_url renders the structured reader result and reports its final host a
   assert.equal(result.summary, "Read www.allowed.example (HTTP 200)");
   assert.deepEqual(result.sources, [{
     title: "Read www.allowed.example",
-    url: "https://allowed.example/page",
+    url: "https://www.allowed.example/final",
     text: "final body",
     via: "read_url",
   }]);
+});
+
+test("read_url evidence uses the final URL for supported citations and rejects an unrelated URL", async () => {
+  const finalUrl = "https://www.allowed.example/final";
+  const reg = buildRegistry({
+    search: async () => [{ title: "Page", url: "https://allowed.example/page", description: "x" }],
+    readUrl: async () => ({ body: "The current price is $1,999.", finalUrl, status: 200 }),
+    assertSafeUrl: async (url) => ({ url: new URL(url), address: "93.184.216.34", family: 4 }),
+  });
+  const search = await reg.execute({ name: "web_search", args: { query: "page" } });
+  const result = await reg.execute({ name: "read_url", args: { id: resultId(search) } });
+  const evidence = createEvidenceLedger();
+  for (const source of result.sources) evidence.record(source);
+
+  const supported = verifyAnswerForDisplay({
+    answer: `The current price is $1,999. ${finalUrl}`,
+    evidence,
+    searched: true,
+  });
+  assert.equal(supported.ok, true);
+
+  const unrelated = verifyAnswerForDisplay({
+    answer: "The current price is $1,999. https://unrelated.example/price",
+    evidence,
+    searched: true,
+  });
+  assert.equal(unrelated.ok, false);
+  assert.ok(unrelated.hardProblems.some((problem) => problem.kind === "unsupported_citation"));
 });
 
 // ===== bad calls from the model =====

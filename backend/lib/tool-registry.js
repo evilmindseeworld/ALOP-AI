@@ -310,13 +310,14 @@ function buildRegistry(deps = {}) {
         });
         const text = typeof read === "string" ? read : read && read.body;
         if (!text) return fail(`Nothing readable at ${safe.url.hostname}.`);
-        const destination = read && read.finalUrl ? new URL(read.finalUrl).hostname : safe.url.hostname;
+        const finalUrl = read && read.finalUrl ? new URL(read.finalUrl).toString() : safe.url.toString();
+        const destination = new URL(finalUrl).hostname;
         const status = read && Number.isInteger(read.status) ? ` (HTTP ${read.status})` : "";
         const content = clamp(text);
         return ok(`Read ${destination}${status}`, content, {
           sources: [{
             title: `Read ${destination}`,
-            url: safe.url.toString(),
+            url: finalUrl,
             text: content,
             via: "read_url",
           }],

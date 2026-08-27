@@ -114,3 +114,24 @@ test('an explicit incomplete quality result cannot become an assembled answer', 
   assert.equal(result.provenance.completion.assembled, false);
   assert.equal(result.provenance.completion.qualified, 'incomplete');
 });
+
+test('a substituted buffered answer uses the existing degraded provenance shape', () => {
+  const result = buildTurnProvenanceMeta({
+    requestState: 'failed',
+    route: 'degraded',
+    answerProduced: true,
+    stageKeys: ['council', 'synthesis'],
+    council: { used: true, seatCount: 3, answered: 3, completed: true },
+    synthesis: { started: true, completed: false, skipped: true, failed: true, fallback: true },
+    completion: { qualified: 'incomplete' },
+    failure: { occurred: true, kind: 'output_contract_substitution' },
+  });
+
+  assert.equal(result.provenance.route, 'degraded');
+  assert.equal(result.provenance.synthesis.completed, false);
+  assert.equal(result.provenance.synthesis.failed, true);
+  assert.equal(result.provenance.synthesis.fallback, true);
+  assert.equal(result.provenance.completion.assembled, false);
+  assert.equal(result.provenance.completion.qualified, 'incomplete');
+  assert.equal(result.provenance.failure.kind, 'output_contract_substitution');
+});

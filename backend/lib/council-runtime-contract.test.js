@@ -304,6 +304,8 @@ test('a one-seat draft must pass the general answer contract before it bypasses 
     'the direct path must inspect the question/context contract');
   assert.match(branch, /finishReason/,
     'provider truncation metadata must be available at the direct-answer boundary');
+  assert.match(branch, /soloAssessment\??\.ok/,
+    'the direct path must bypass synthesis only after the answer contract passes');
 });
 
 test('synthesis receives bounded context and a general completeness contract', () => {

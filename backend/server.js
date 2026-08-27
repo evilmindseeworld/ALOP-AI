@@ -6373,6 +6373,7 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       selection.members.length === 1 &&
       validResponses.length === 1 &&
       soleDraft &&
+      soloAssessment?.ok &&
       !toolResearch &&
       !toolTruncated
     ) {

@@ -101,6 +101,21 @@ test('a complete answer with intentionally skipped synthesis is assembled', () =
   assert.equal(result.provenance.completion.assembled, true);
 });
 
+test('a complete multi-seat council can skip synthesis for a resolved refusal', () => {
+  const result = buildTurnProvenanceMeta({
+    requestState: 'complete',
+    answerProduced: true,
+    route: 'council',
+    stageKeys: ['context', 'council'],
+    council: { used: true, seatCount: 3, answered: 3, completed: true, partial: false },
+    synthesis: { skipped: true, completed: false, failed: false },
+  });
+  assert.equal(result.provenance.completion.assembled, true);
+  assert.equal(result.provenance.synthesis.started, false);
+  assert.equal(result.provenance.synthesis.skipped, true);
+  assert.equal(result.provenance.failure.occurred, false);
+});
+
 test('an explicit incomplete quality result cannot become an assembled answer', () => {
   const result = buildTurnProvenanceMeta({
     requestState: 'complete',

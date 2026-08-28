@@ -164,6 +164,22 @@ test("resolves when every seat has settled, even below quorum", async () => {
   assert.ok(Date.now() - started < 1000, "held the room open after every seat had settled");
 });
 
+test("an all-provider failure is an empty council result, not a fabricated answer", async () => {
+  const results = await runCouncil(
+    [seat("a"), seat("b"), seat("c")],
+    [],
+    5000,
+    3,
+    500,
+    {
+      callModel: async () => {
+        throw Object.assign(new Error("mock provider unavailable"), { code: "EAI_AGAIN" });
+      },
+    },
+  );
+  assert.deepEqual(results, []);
+});
+
 test("a bare skip is neither an answer nor a failure", async () => {
   const seen = [];
   const results = await runCouncil([seat("a"), seat("skipper")], [], 5000, 5, 500, {

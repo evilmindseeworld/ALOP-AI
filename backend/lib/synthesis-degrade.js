@@ -100,6 +100,64 @@ const looksInternal = (text) => INTERNAL_FRAMING.some((re) => re.test(text));
 const SAFE_TEXT_SOURCES = new Set(['content']);
 
 /**
+ * A refusal is a complete answer to a disallowed request, but only when it is
+ * still a refusal rather than a refusal followed by a substantive payload.
+ * Keep this deliberately narrow: the lifecycle may skip synthesis only for a
+ * short, refusal-only sentence that every completed seat independently gave.
+ */
+const REFUSAL_ONLY_RE = /^(?:(?:i am sorry|i'm sorry|sorry)[,;:]?\s+)?(?:but\s+)?i\s+(?:can't|cannot|can not|won't|will not|am unable to|am not able to)\s+(?:comply|assist|help|provide|share|reveal|fulfill|answer|do)(?:\s+(?:with|about))?\s+(?:that|this|the|your)(?:\s+request)?[.!]?$/i;
+
+const normaliseRefusalText = (text) => String(text ?? '')
+  .normalize('NFKC')
+  .replace(/[’‘]/gu, "'")
+  .replace(/\s+/gu, ' ')
+  .trim();
+
+/** @param {string} text @returns {boolean} */
+const isSafeRefusalText = (text) => {
+  const normalised = normaliseRefusalText(text);
+  return normalised.length <= 180 && REFUSAL_ONLY_RE.test(normalised);
+};
+
+/**
+ * Resolve a unanimous refusal before a synthesis request is made.
+ *
+ * The caller supplies the configured roster size so quorum is not mistaken for
+ * completion. `blockedByEvidence` prevents a refusal from bypassing research
+ * or a truncated tool round, and `isCandidate` lets the route retain its
+ * stronger output-contract checks.
+ *
+ * @param {Array<object>} drafts
+ * @param {object} opts
+ * @param {number} [opts.expectedSeats]
+ * @param {boolean} [opts.blockedByEvidence]
+ * @param {(draft: object) => boolean} [opts.isCandidate]
+ * @returns {string|null}
+ */
+function resolveSafeRefusal(drafts, {
+  expectedSeats,
+  blockedByEvidence = false,
+  isCandidate = isSafeDraft,
+} = {}) {
+  if (!Array.isArray(drafts) || drafts.length === 0 || blockedByEvidence) return null;
+  if (Number.isInteger(expectedSeats) && drafts.length !== expectedSeats) return null;
+
+  const candidates = [];
+  for (const draft of drafts) {
+    let accepted = false;
+    try { accepted = isCandidate(draft); } catch { accepted = false; }
+    if (!accepted) return null;
+    const original = String(draft.content ?? '').trim();
+    const normalised = normaliseRefusalText(original);
+    if (!isSafeRefusalText(normalised)) return null;
+    candidates.push({ original, normalised });
+  }
+
+  if (new Set(candidates.map(({ normalised }) => normalised)).size !== 1) return null;
+  return candidates[0].original;
+}
+
+/**
  * May this council draft be shown to a reader as it stands?
  *
  * Shared with the one-seat solo branch in `server.js`, which streams a draft
@@ -142,4 +200,10 @@ function degradeAnswer({ aborted = false, wroteChars = 0, drafts = [], draftGuar
   return null;
 }
 
-module.exports = { degradeAnswer, looksInternal, isSafeDraft };
+module.exports = {
+  degradeAnswer,
+  looksInternal,
+  isSafeDraft,
+  isSafeRefusalText,
+  resolveSafeRefusal,
+};

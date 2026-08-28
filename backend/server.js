@@ -1221,7 +1221,8 @@ const SOURCE_TRUTH_RULES = `\n\nSOURCE AND FACT DISCIPLINE:\n- For product speci
 // is reachable from a test file. It is the most intricate concurrency in the
 // product and it had no coverage at all until it moved.
 const { runCouncil, isUsableAnswer } = require('./lib/council-run');
-const { degradeAnswer, isSafeDraft } = require('./lib/synthesis-degrade');
+const { degradeAnswer, isSafeDraft, resolveSafeRefusal } = require('./lib/synthesis-degrade');
+const { TRADEOFF_GUIDANCE } = require('./lib/synthesis-guidance');
 
 /**
  * `members` is a list of { model, temperature } seats. Each speaks at its own
@@ -3469,7 +3470,7 @@ const CACHE_IDENTITY = cacheFingerprint({
   /* ROUTING_POLICY is here because the cache lookup sits ABOVE the router, so
    * a routing change is invisible to every question already in the cache — see
    * its header in lib/router.js, and the evaluation re-run that measured it. */
-  policies: [SOURCE_TRUTH_RULES, LENGTH_RULE.simple, LENGTH_RULE.moderate, LENGTH_RULE.complex, ...ROUTING_POLICY],
+  policies: [SOURCE_TRUTH_RULES, TRADEOFF_GUIDANCE, LENGTH_RULE.simple, LENGTH_RULE.moderate, LENGTH_RULE.complex, ...ROUTING_POLICY],
   models: [PRIMARY_MODEL, SYNTHESIS_MODEL, SMART_MODEL],
   /* The registry is built per turn from whichever provider keys are present, so
    * this is the WIDEST schema set this deployment can offer. A turn that ran
@@ -5873,7 +5874,7 @@ async function handleCouncilTurn(req, res) {
       provenanceCouncilComplete = searchSeatsAnswered >= selection.quorum && selection.quorum > 0;
       provenanceCouncilPartial = !provenanceCouncilComplete;
       emitStage(res, 'synthesis', usableSearchDrafts.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
-      const searchSynthSys = `${todayLine()}\n\nReconcile these independent answers into one precise response. Use only facts present in the answers and their cited search data. Preserve Markdown source links, note material disagreements, and do not mention the council.${outputObligationPrompt(outputContract)}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+      const searchSynthSys = `${todayLine()}\n${TRADEOFF_GUIDANCE}\n\nReconcile these independent answers into one precise response. Use only facts present in the answers and their cited search data. Preserve Markdown source links, note material disagreements, and do not mention the council.${outputObligationPrompt(outputContract)}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
       const searchSynthSysForAnswer = `${searchSynthSys}${SOURCE_TRUTH_RULES}`;
       const searchSynthMsgs = [{ role: 'system', content: identityPrompt(searchSynthSysForAnswer, 'search_synthesis') }, {
         role: 'user',
@@ -5928,7 +5929,7 @@ async function handleCouncilTurn(req, res) {
       provenanceSynthesisSkipped = true;
       const wiki = await searchWikipedia(pv.value, turnSignal);
       if (wiki) {
-        const wikiSys = `${todayLine()}
+        const wikiSys = `${todayLine()}\n\n${TRADEOFF_GUIDANCE}
 
 You are a data extraction engine. Use ONLY the Wikipedia content. No training data. If the article does not cover what was asked, say what the article DOES cover and invite the user to ask again — never end on "I couldn't find this". Use Markdown.${outputObligationPrompt(outputContract)}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
         // Its own fetch, not searchWeb's, so it needs its own label. Wikipedia is
@@ -6001,6 +6002,8 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
       ? `\n\nYou are the only expert answering, so your reply IS the final answer. ${LENGTH_RULE[selection.complexity] || LENGTH_RULE.moderate} End on the answer — no "let me know if", no closing offer of further help. If you are inferring rather than reporting — a price you did not see, a spec you are reasoning to — say so in the same sentence.`
       : '';
     const councilSys = `${todayLine()}
+
+${TRADEOFF_GUIDANCE}
 
 You are an elite AI expert in the ALOP-AI Council. If outside your expertise, reply ONLY "SKIP". If you answer, be direct. Match response length to question complexity. Use Markdown. Write maths in plain Unicode (x², √2, ½, π, ≈), never LaTeX. If context/history provided, use for continuity. ${isDetailed ? 'Be thorough.' : 'Be concise.'}${outputObligationPrompt(outputContract)}${lang !== 'English' ? ` Respond in ${lang}.` : ''}${soloRules}`;
     const councilMsgs = [{ role: 'system', content: identityPrompt(councilSys, 'plain_council') }, ...contextMsgs, ...promptHistory, { role: 'user', content: truncatedPrompt }];
@@ -6593,8 +6596,69 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       return;
     }
 
+    /* 5a. COMPLETE, UNANIMOUS SAFE REFUSAL.
+     *
+     * A refusal is already the final answer to a disallowed request. Sending
+     * it through another model adds latency without adding judgement, and the
+     * live safety case showed the failure mode: synthesis timed out, then the
+     * same refusal was recovered as a degraded draft after the 30s budget.
+     *
+     * This is deliberately stricter than quorum. Every configured seat must
+     * have returned the same refusal-only answer, the council must be complete,
+     * and no research/tool path may be waiting for a synthesis step to reconcile
+     * evidence. `safeDisplayDraft` keeps the existing provenance, completion,
+     * and output-obligation gates in force. Anything less falls through to the
+     * ordinary synthesis path, so refusal semantics and fallback safety stay
+     * unchanged for mixed or partial councils. */
+    const resolvedRefusal = resolveSafeRefusal(validResponses, {
+      expectedSeats: selection.members.length,
+      blockedByEvidence: Boolean(
+        provenanceToolUsed
+        || toolResearch
+        || toolTruncated
+        || toolSourceUrls.length
+        || usedLiveWeb,
+      ),
+      isCandidate: safeDisplayDraft,
+    });
+    if (selection.members.length > 1 && resolvedRefusal && provenanceCouncilComplete && !turnSignal.aborted) {
+      provenanceRoute = 'council';
+      provenanceSynthesisSkipped = true;
+      lastAnswerAssessment = assessAnswer({
+        answer: resolvedRefusal,
+        finishReason: validResponses[0]?.finishReason,
+        contract: answerContract,
+      });
+      console.log(`[COUNCIL] Complete unanimous safe refusal. Synthesis skipped; no extra model request.`);
+      console.log(`[SYNTHESIS] skipped reason=safe_refusal complexity=${selection.complexity}`);
+      openStream(res);
+      if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
+      sendEvent(res, { type: 'chunk', text: noteWholeAnswer(resolvedRefusal) });
+      sendProvenance(resolvedRefusal, 'complete');
+      if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
+      if (turnSignal.aborted) return;
+      const lastRefusal = histArr.filter((m) => m.role === 'assistant').slice(-1)[0]?.content || '';
+      rememberTurn(chatId, user.id, pv.value, lastRefusal || resolvedRefusal, telemetry, turnContext.turnId);
+      cacheAnswer(resolvedRefusal, { searched: usedLiveWeb });
+      await auditTelemetry('council', 'council_refusal', {
+        ...telemetryExtra,
+        ...(verification ? { verification } : {}),
+        models: validResponses.length,
+        seatCount: selection.members.length,
+        quorum: selection.quorum,
+        tokenLimit: selection.tokenLimit,
+        complexity: selection.complexity,
+        councilRelease,
+        synthesisSkipped: true,
+        refusalResolved: true,
+      });
+      return;
+    }
+
     // 6. SYNTHESIS
     const synthSys = `${todayLine()}
+
+${TRADEOFF_GUIDANCE}
 
 You are the Chief Synthesiser for a panel of independent experts who answered the same question separately. Reconcile them — do not average them.
 

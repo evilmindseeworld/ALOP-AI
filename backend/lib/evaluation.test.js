@@ -92,6 +92,18 @@ test("mustCite requires every answer URL to be backed by a recorded public sourc
   assert.ok(mixed.failures.some((f) => f.startsWith("mustCite")));
 });
 
+test("the live BBC weather citation is extracted and matched to its canonical receipt", () => {
+  const url = "https://www.bbc.com/weather/2643743";
+  const grade = gradeCase(caseOf({ mustCite: true }), obs({
+    answer: `London is mostly cloudy【${url}】.`,
+    provenance: {
+      sources: [{ title: "BBC Weather", url: `${url}#today`, via: "web_search" }],
+    },
+  }));
+  assert.deepEqual(citationsIn(`London is mostly cloudy【${url}】.`), [url]);
+  assert.equal(grade.passed, true, grade.failures.join("|"));
+});
+
 test("cache tradeoff grading accepts speed only when it is attached to caching", () => {
   const tradeoff = "(?:\\bcach(?:e|ed|ing|es)\\b[\\s\\S]{0,160}\\b(?:faster|speed|latency|performance)\\b|\\b(?:faster|speed|latency|performance)\\b[\\s\\S]{0,160}\\bcach(?:e|ed|ing|es)\\b)";
   const expect = { mustMatch: [tradeoff, "stale|out of date|invalidat"] };

@@ -3,14 +3,9 @@
 /*
  * MUTATION COVERAGE FOR THE OFFLINE EVALUATOR.
  *
- * A fixture that passes tells you the code agreed with you once. It does not
- * tell you the code would have DISAGREED with a broken version of itself —
- * and that is the property that matters for a grading instrument, because a
- * loose evaluator inflates the acceptance number it exists to measure.
- *
- * Each test below breaks the evaluator in one specific, previously-shipped or
- * plausible way and asserts a fixture goes red. The mutants are compiled from
- * source text, so nothing here can pass by reading a constant.
+ * Each mutant is compiled from source text, but every assertion exercises a
+ * public evaluator export. A fixture passing once is not enough: each
+ * dangerous relaxation from the P1 review must turn a required example red.
  */
 
 const test = require('node:test');
@@ -18,7 +13,8 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 
-const SOURCE = readFileSync(join(__dirname, 'evaluation.js'), 'utf8');
+const SOURCE = readFileSync(join(__dirname, 'evaluation.js'), 'utf8')
+  .replace(/\r\n/g, '\n');
 const current = require('./evaluation');
 
 const loadMutant = (source) => {
@@ -28,180 +24,186 @@ const loadMutant = (source) => {
   return module.exports;
 };
 
-/**
- * Apply one textual mutation, failing loudly if the anchor has moved.
- *
- * Anchors are written with `\n`; the checkout may be CRLF, so match whichever
- * terminator the file on disk actually uses rather than silently finding
- * nothing and reporting a green mutant.
- */
-const mutate = (find, replace) => {
-  const eol = SOURCE.includes('\r\n') ? '\r\n' : '\n';
-  const anchor = find.split('\n').join(eol);
-  const patch = replace.split('\n').join(eol);
-  assert.ok(SOURCE.includes(anchor), `mutation anchor vanished from evaluation.js: ${find}`);
-  return loadMutant(SOURCE.replace(anchor, patch));
+const mutateLine = (needle, replacement) => {
+  const lines = SOURCE.split('\n');
+  const index = lines.findIndex((line) => line.includes(needle));
+  assert.notEqual(index, -1, 'mutation anchor vanished from evaluation.js: ' + needle);
+  lines[index] = replacement;
+  return loadMutant(lines.join('\n'));
 };
 
-const BODY = 'This is a substantive answer about council design and model selection that runs past the length floor. ';
 const POEM = 'Endpoints whisper soft\nLogs scream in silent rows\nRetries spin, nothing works\nCoffee fuels the fix';
 
-/* ---- completion: the short-tail rules -------------------------------- */
+/* ---- completeness mutants -------------------------------------------- */
 
-test('M1: a blanket two-letter shortcut stops catching three-letter hanging tails', () => {
-  const hanging = `${BODY}\nThe reason the second attempt failed was`;
-  assert.equal(current.isLikelyComplete(hanging), false);
-  const mutant = mutate(
-    'if (CONTINUATION_WORDS.has(last)) return false;',
-    'if (last.length <= 2 && CONTINUATION_WORDS.has(last)) return false;',
+test('M1: treating every terminal auxiliary as incomplete is caught', () => {
+  const complete = ['Yes, I can', 'If necessary, I would', 'The request may'];
+  for (const answer of complete) assert.equal(current.isLikelyComplete(answer), true, answer);
+  const mutant = mutateLine(
+    "if (metadata.status === 'incomplete') return false;",
+    "  if (metadata.status === 'incomplete' || /(?:can|could|may|might|must|shall|should|will|would|is|are|was|were|has|have|had|do|does|did|be|been|being)$/.test(answer.trim())) return false;",
   );
-  assert.equal(mutant.isLikelyComplete(hanging), true,
-    'reverting to a length gate must be caught by a three-letter hanging tail');
+  for (const answer of complete) {
+    assert.equal(mutant.isLikelyComplete(answer), false,
+      'terminal auxiliary must remain eligible: ' + answer);
+  }
 });
 
-test('M2: a blanket three-letter rejection starts calling complete poetry truncated', () => {
+test('M2: treating every terminal preposition as incomplete is caught', () => {
+  const answer = 'This is the person I spoke to';
+  assert.equal(current.isLikelyComplete(answer), true);
+  const mutant = mutateLine(
+    "if (metadata.status === 'incomplete') return false;",
+    "  if (metadata.status === 'incomplete' || /(?:to|on|of|from|with|for|about|in|at)$/.test(answer.trim())) return false;",
+  );
+  assert.equal(mutant.isLikelyComplete(answer), false,
+    'preposition stranding is grammatical');
+});
+
+test('M3: restoring a blanket <=3 tail rejection is caught by poetry', () => {
   assert.equal(current.isLikelyComplete(POEM), true);
-  const mutant = mutate(
-    "  if (answer.length >= 80 && trailingWord && trailingWord.length <= 2",
-    "  if (answer.length >= 80 && trailingWord && trailingWord.length <= 3",
+  const mutant = mutateLine(
+    'return !hasStrongTextTruncation(answer);',
+    '  if (answer.length >= 80 && /[A-Za-z]{1,3}$/.test(answer.trim())) return false;\n  return !hasStrongTextTruncation(answer);',
   );
   assert.equal(mutant.isLikelyComplete(POEM), false,
-    'the old blanket <=3 rule must be caught by the poetry fixture');
+    'a short content-word tail must not be rejected');
 });
 
-test('M3: treating every punctuation-free answer as complete hides real truncation', () => {
-  const hanging = `${BODY}\nYou should configure the service to`;
-  assert.equal(current.isLikelyComplete(hanging), false);
-  const mutant = mutate(
-    "  const lastLine = answer.split(/\\r?\\n/).pop().trim();",
-    "  if (!/[.!?]$/.test(answer)) return true;\n  const lastLine = answer.split(/\\r?\\n/).pop().trim();",
-  );
-  assert.equal(mutant.isLikelyComplete(hanging), true,
-    'punctuation is not evidence of completeness and a fixture must say so');
+test('M4: marking every punctuation-free answer complete is caught', () => {
+  const answer = 'The result depends on';
+  assert.equal(current.isLikelyComplete(answer), false);
+  const mutant = mutateLine('return !hasStrongTextTruncation(answer);', '  return true;');
+  assert.equal(mutant.isLikelyComplete(answer), true,
+    'strong continuation evidence must remain active');
 });
 
-/* ---- completion: the structural exemption ---------------------------- */
-
-test('M4: an unanchored symbol match hands prose a structural exemption', () => {
-  const prose = `${BODY}\nThe array [1, 2, 3] should be transformed to`;
-  assert.equal(current.isLikelyComplete(prose), false);
-  const mutant = mutate(
-    'const isCodeShaped = (line) => /^(?: {4}|\\t)/.test(line)',
-    'const isCodeShaped = (line) => /[`{}[\\]<>]/.test(line) || /^(?: {4}|\\t)/.test(line)',
+test('M5: a bare if prefix must remain ordinary prose', () => {
+  const answer = 'if the service fails because';
+  assert.equal(current.isLikelyComplete(answer), false);
+  const mutant = mutateLine(
+    'if (/^(?:if|for|while)',
+    '  if (/^(?:if|for|while)\\s*\\(/i.test(trimmed) || /^if\\b/i.test(trimmed)) return true;',
   );
-  assert.equal(mutant.isLikelyComplete(prose), true,
-    'a stray bracket must not be able to buy a completeness exemption');
+  assert.equal(mutant.isLikelyComplete(answer), true,
+    'bare English if must not buy a code exemption');
 });
 
-test('M5: bracket- and backtick-bearing prose must not become structured', () => {
-  const cases = [
-    `${BODY}\nUse <main> because it`,
-    `${BODY}\nThe object {a: 1} can`,
-    `${BODY}\nThe \`cache\` layer should`,
-  ];
-  for (const prose of cases) assert.equal(current.isLikelyComplete(prose), false, prose);
-  const mutant = mutate(
-    '  if (!codeShaped && !terminated && tokens.length) {',
-    '  if (!/[`{}[\\]<>]/.test(lastLine) && !terminated && tokens.length) {',
+test('M6: a bare for prefix must remain ordinary prose', () => {
+  const answer = 'for every model configure the service to';
+  assert.equal(current.isLikelyComplete(answer), false);
+  const mutant = mutateLine(
+    'if (/^(?:if|for|while)',
+    '  if (/^(?:if|for|while)\\s*\\(/i.test(trimmed) || /^for\\b/i.test(trimmed)) return true;',
   );
-  for (const prose of cases) {
-    assert.equal(mutant.isLikelyComplete(prose), true,
-      `symbol-presence gating must be caught by: ${prose.split('\n').pop()}`);
-  }
+  assert.equal(mutant.isLikelyComplete(answer), true,
+    'bare English for must not buy a code exemption');
 });
 
-test('M6: no benchmark word can be the reason a fixture passes', () => {
-  /* There is no completeness allow-list to hack, so the guard is a positive
-   * one: the poem must pass for every content word, and fail for every
-   * hanging one. A mutant that keys on the benchmark word `fix` cannot
-   * satisfy both halves. */
-  const poem = (tail) => `Endpoints whisper soft\nLogs scream in silent rows\nRetries spin, nothing works\nCoffee fuels the ${tail}`;
-  for (const word of ['fix', 'bug', 'sky', 'dawn']) {
-    assert.equal(current.isLikelyComplete(poem(word)), true, word);
-  }
-  const mutant = mutate(
-    'if (CONTINUATION_WORDS.has(last)) return false;',
-    "if (last === 'fix') return true;\n    if (CONTINUATION_WORDS.has(last)) return false;",
+test('M7: a stray bracket must not create a structured exemption', () => {
+  const answer = 'The array [1, 2, 3] should be transformed to';
+  assert.equal(current.isLikelyComplete(answer), false);
+  const mutant = mutateLine(
+    'if (!trimmed) return false;',
+    '  if (/[\\[\\]{}<>]/.test(trimmed)) return true;\n  if (!trimmed) return false;',
   );
-  assert.equal(mutant.isLikelyComplete(poem('fix')), true, 'the special case is inert for a content word');
-  assert.equal(mutant.isLikelyComplete(poem('was')), false,
-    'a benchmark special case must not be able to rescue a hanging tail');
+  assert.equal(mutant.isLikelyComplete(answer), true,
+    'symbol presence alone must not bypass prose truncation');
 });
 
-/* ---- diminishing value: negation and relation ------------------------ */
-
-test('M7: treating bare "not" as diminishing evidence accepts the opposite claim', () => {
-  const opposite = 'Extra models are not redundant at all; every one of them adds real value.';
-  assert.equal(current.hasDiminishingValueReasoning(opposite), false);
-  const mutant = mutate(
-    'const negated = (tokens, index) => {',
-    'const negated = () => false;\nconst unusedNegated = (tokens, index) => {',
+test('M8: removing structural truncation detection is caught', () => {
+  const answer = 'const x = a +';
+  assert.equal(current.isLikelyComplete(answer), false);
+  const mutant = mutateLine(
+    'if (hasStrongStructuralTruncation(answer)) return false;',
+    '  if (false && hasStrongStructuralTruncation(answer)) return false;',
   );
-  assert.equal(mutant.hasDiminishingValueReasoning(opposite), true,
-    'dropping negation handling must be caught by a negated redundancy claim');
+  assert.equal(mutant.isLikelyComplete(answer), true,
+    'dangling code operators are structural evidence');
 });
 
-test('M8: "same" alone is similarity, never evidence that value fell', () => {
-  const similarityOnly = 'The answers are the same length as the ones we measured last week.';
-  assert.equal(current.hasDiminishingValueReasoning(similarityOnly), false);
-  const mutant = mutate(
-    "  'replica', 'replicas', 'repeat', 'repeats', 'repeated', 'repetition',",
-    "  'replica', 'replicas', 'repeat', 'repeats', 'repeated', 'repetition', 'same', 'similar',",
+/* ---- polarity, relation, and role-boundary mutants ------------------- */
+
+test('M9: bare not must negate a redundancy claim', () => {
+  const answer = 'Extra models are not redundant at all; every one adds value.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), false);
+  const mutant = mutateLine(
+    'if (rejectsDiminishingRelation(sentence)) return false;',
+    '    if (false && rejectsDiminishingRelation(sentence)) return false;',
   );
-  assert.equal(mutant.hasDiminishingValueReasoning(similarityOnly), true,
-    'promoting a similarity word to a redundancy claim must be caught');
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), true,
+    'removing the polarity veto must be caught');
 });
 
-test('M9: an arbitrary cost word is not a diminishing-value relation', () => {
-  const costOnly = 'Running more models costs more money and uses a larger compute budget for every request.';
-  const latencyOnly = 'Adding more models increases latency and slows the response for every user.';
-  assert.equal(current.hasDiminishingValueReasoning(costOnly), false);
-  assert.equal(current.hasDiminishingValueReasoning(latencyOnly), false);
-  const mutant = mutate(
-    '    return values.some((v) => decreases.some((d) => within(v, d, 6)));',
-    "    if (/\\b(?:cost|costs|latency|money|budget)\\b/.test(sentence)) return true;\n    return values.some((v) => decreases.some((d) => within(v, d, 6)));",
-  );
-  assert.equal(mutant.hasDiminishingValueReasoning(costOnly), true,
-    'admitting a bare cost mention as the diminishing leg must be caught by a cost-only answer');
-  assert.equal(mutant.hasDiminishingValueReasoning(latencyOnly), true,
-    'admitting a bare latency mention must be caught by a latency-only answer');
+test('M10: long-scope proposition negation must be honored', () => {
+  const answer = 'It is not true that additional models add valuable information; the extra model is redundant.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), false);
+  const mutant = mutateLine('const deniedProposition =', '  const deniedProposition = /a^/;');
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), true,
+    'a proposition cue must not be replaced with a local token window');
 });
 
-test('M10: the relation must stay bound to the seats being added', () => {
-  const unrelated = 'The models disagree, but the duplicate file was deleted after a long day.';
-  assert.equal(current.hasDiminishingValueReasoning(unrelated), false);
-  const mutant = mutate(
-    'const within = (left, right, distance) => Math.abs(left - right) <= distance;',
-    'const within = () => true;',
-  );
-  assert.equal(mutant.hasDiminishingValueReasoning(unrelated), true,
-    'removing proximity binding must be caught by vocabulary that belongs to another topic');
+test('M11: no reasonable person must not become positive redundancy evidence', () => {
+  const answer = 'No reasonable person would call these models redundant.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), false);
+  const mutant = mutateLine('const noReasonablePerson =', '  const noReasonablePerson = /a^/;');
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), true,
+    'removing the no-agent cue must be caught');
 });
 
-test('M11: the legitimate paraphrase must not depend on any single word', () => {
-  const paraphrase = 'The incremental benefit falls as the models become more similar.';
-  assert.equal(current.hasDiminishingValueReasoning(paraphrase), true);
-  const mutant = mutate(
-    "'falls', 'falling',",
-    "'falling',",
-  );
-  assert.equal(mutant.hasDiminishingValueReasoning(paraphrase), false,
-    'the paraphrase fixture must be the thing that notices a shrunken decrease vocabulary');
+test('M12: repeat language alone must not satisfy the relation', () => {
+  const answer = 'The extra model repeats an unrelated log line.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), false);
+  const mutant = mutateLine('const contextualRepeat =', '  const contextualRepeat = true;');
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), true,
+    'repeat* needs a perspective relation');
 });
 
-test('M12: a negated redundancy claim must never be accepted', () => {
-  const negated = [
-    'Extra models are not redundant at all; every one of them adds real value.',
-    'The marginal gain from another model is not negligible on hard questions.',
-    'You should ask more models, not fewer, whenever the stakes are high.',
-  ];
-  for (const answer of negated) {
-    assert.equal(current.hasDiminishingValueReasoning(answer), false, answer);
-  }
-  const mutant = mutate(
-    "const TRADEOFF_NEGATORS = new Set([\n  'not', \"n't\", 'never', 'nor',",
-    "const TRADEOFF_NEGATORS = new Set([\n  'never', 'nor',",
+test('M13: evidence must not serve as both subject and value', () => {
+  const answer = 'The duplicate file contains negligible evidence.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), false);
+  const mutant = mutateLine(
+    "'reasoning', 'bias', 'biases', 'result', 'results', 'response', 'responses',",
+    "  'reasoning', 'bias', 'biases', 'result', 'results', 'response', 'responses', 'evidence',",
   );
-  assert.equal(mutant.hasDiminishingValueReasoning(negated[0]), true,
-    'dropping `not` from the negator set must be caught by a negated redundancy claim');
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), true,
+    'promoting evidence into the subject role must be caught');
+});
+
+test('M14: semantic roles must not leak across sentences', () => {
+  const answer = 'More models improve diversity. Marginal revenue falls.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), false);
+  const mutant = mutateLine(
+    'const sentences =',
+    "  const sentences = [normaliseUnicodeText(String(text ?? ''))];",
+  );
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), true,
+    'combining independent sentences must be caught');
+});
+
+test('M15: but that is wrong must veto the apparent redundancy claim', () => {
+  const answer = 'Some people call the models redundant, but that is wrong.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), false);
+  const mutant = mutateLine('const wrongContrast =', '  const wrongContrast = /a^/;');
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), true,
+    'the rejected first clause must not survive contrast');
+});
+
+test('M16: yet value remains high must veto the apparent repeat relation', () => {
+  const answer = 'The extra model repeats an existing perspective, yet its incremental benefit remains high.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), false);
+  const mutant = mutateLine('const staysHigh =', '  const staysHigh = /a^/;');
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), true,
+    'high marginal value is the opposite conclusion');
+});
+
+test('M17: the live valid paraphrase must remain recognized', () => {
+  const answer = 'The incremental benefit falls as the models become more similar.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), true);
+  const mutant = mutateLine(
+    'return values.some((value) => decreases.some((decrease) => within(value, decrease, 6)));',
+    '  return false;',
+  );
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), false,
+    'removing the informational decrease leg must be caught');
 });

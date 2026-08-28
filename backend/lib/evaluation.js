@@ -197,80 +197,166 @@ function normaliseUnicodeText(text) {
     .replace(/\s+%/g, '%');
 }
 
-const COMPLETE_SHORT_WORDS = new Set([
-  'a', 'an', 'api', 'app', 'as', 'at', 'all', 'any', 'be', 'by', 'cpu', 'day', 'do', 'for', 'from',
-  'go', 'how', 'if', 'in', 'is', 'it', 'less', 'ms', 'no', 'now', 'of', 'off', 'on', 'one', 'or',
-  'out', 'per', 'ram', 'sql', 'the', 'to', 'too', 'two', 'up', 'url', 'use', 'via', 'way', 'web',
-  'why', 'yes',
-]);
-
 /*
- * The evaluator needs to recognise a RELATION, not a phrase. The useful
- * answer to the model-disagreement question has two parts: it names the
- * thing being added or compared, and it connects that thing to diminishing
- * value or redundant information. These vocabularies are intentionally
- * broader than the shipped case and are used only within a bounded token
- * window; a stray "duplicate file" cannot satisfy a model-value rubric.
+ * Completion is judged from the strongest evidence available. The runner's
+ * provenance and provider finish state are authoritative for a clean stream;
+ * a declared abort, length stop, or incomplete qualification is authoritative
+ * for an incomplete stream. Text-only checks remain conservative and protect
+ * only against unmistakable structural or grammatical cuts.
+ */
+const COMPLETE_FINISH_REASONS = new Set([
+  'stop', 'eos', 'end_turn', 'complete', 'completed', 'finished', 'done', 'success',
+]);
+const INCOMPLETE_FINISH_REASONS = new Set([
+  'length', 'max_tokens', 'token_limit', 'context_limit', 'timeout', 'deadline',
+  'abort', 'aborted', 'cancel', 'cancelled', 'canceled', 'failed', 'failure',
+  'error', 'incomplete', 'truncated', 'content_filter', 'running', 'streaming',
+  'in_progress', 'pending',
+]);
+const isRecord = (value) => Boolean(value && typeof value === 'object' && !Array.isArray(value));
+
+function completionToken(value) {
+  return typeof value === 'string'
+    ? value.trim().toLowerCase().replace(/[-\s:]+/g, '_')
+    : '';
+}
+
+function statusForCompletionValue(value) {
+  const token = completionToken(value);
+  if (!token) return null;
+  if (INCOMPLETE_FINISH_REASONS.has(token)
+    || /(?:length|token|timeout|deadline|abort|cancel|truncat|incomplete|limit|context|error|fail)/.test(token)) {
+    return 'incomplete';
+  }
+  if (COMPLETE_FINISH_REASONS.has(token)
+    || /(?:complete|finish|success|stop|eos|end_turn|done)/.test(token)) {
+    return 'complete';
+  }
+  return null;
+}
+
+function inspectCompletionMetadata(observation = {}) {
+  const fields = [];
+  const completeFields = [];
+  const incompleteFields = [];
+  const seen = new Set();
+  const mark = (field, status) => {
+    if (!status || seen.has(field)) return;
+    seen.add(field);
+    fields.push(field);
+    if (status === 'complete') completeFields.push(field);
+    if (status === 'incomplete') incompleteFields.push(field);
+  };
+
+  const scan = (value, prefix, allowBooleans = true) => {
+    if (!isRecord(value)) return;
+    const valueKeys = [
+      'finishReason', 'finish_reason', 'providerFinishReason', 'provider_finish_reason',
+      'completionStatus', 'completion_status', 'status', 'state', 'requestState',
+      'request_state', 'streamState', 'stream_state', 'outputContractState',
+      'output_contract_state', 'qualified', 'reason',
+    ];
+    for (const key of valueKeys) {
+      if (Object.prototype.hasOwnProperty.call(value, key)) {
+        mark(prefix + '.' + key, statusForCompletionValue(value[key]));
+      }
+    }
+    if (allowBooleans) {
+      for (const key of ['complete', 'completed', 'done', 'finished', 'final', 'assembled',
+        'streamComplete', 'stream_complete', 'providerComplete', 'provider_complete']) {
+        if (typeof value[key] === 'boolean') mark(prefix + '.' + key, value[key] ? 'complete' : 'incomplete');
+      }
+    }
+    for (const key of ['abortReason', 'abort_reason']) {
+      if (value[key]) mark(prefix + '.' + key, 'incomplete');
+    }
+    for (const key of ['completion', 'outputContract', 'output_contract', 'answerContract',
+      'answer_contract', 'stream', 'provenance']) {
+      if (isRecord(value[key])) scan(value[key], prefix + '.' + key, allowBooleans);
+    }
+  };
+
+  scan(observation, 'observation', true);
+  if (isRecord(observation?.error)) mark('observation.error', 'incomplete');
+  if (observation?.aborted === true) mark('observation.aborted', 'incomplete');
+  if (observation?.cancelled === true || observation?.canceled === true) {
+    mark('observation.cancelled', 'incomplete');
+  }
+  if (observation?.timedOut === true || observation?.timed_out === true) {
+    mark('observation.timedOut', 'incomplete');
+  }
+
+  const provenance = observation?.provenance;
+  if (isRecord(provenance)) {
+    const requestState = completionToken(provenance.requestState ?? provenance.request_state);
+    if (requestState === 'complete') mark('observation.provenance.requestState', 'complete');
+    if (requestState && requestState !== 'complete'
+      && /(?:running|streaming|pending|abort|cancel|fail|error|incomplete|partial)/.test(requestState)
+      && requestState !== 'partial') {
+      mark('observation.provenance.requestState', 'incomplete');
+    }
+    if (isRecord(provenance.failure)) {
+      if (provenance.failure.occurred === true) mark('observation.provenance.failure.occurred', 'incomplete');
+      if (provenance.failure.userAborted === true) {
+        mark('observation.provenance.failure.userAborted', 'incomplete');
+      }
+    }
+  }
+
+  for (const [index, frame] of (Array.isArray(observation?.frames) ? observation.frames : []).entries()) {
+    if (!isRecord(frame)) continue;
+    const type = completionToken(frame.type);
+    const terminal = /(?:done|complete|finish|final|eos|error|abort|cancel)/.test(type)
+      || Object.keys(frame).some((key) => /^(?:finishReason|finish_reason|completed|complete|done|final)$/.test(key));
+    if (type === 'error' || /(?:error|abort|cancel)/.test(type)) {
+      mark('frames[' + index + '].type', 'incomplete');
+    } else if (/(?:done|complete|finish|final|eos)/.test(type)) {
+      mark('frames[' + index + '].type', 'complete');
+    }
+    scan(frame, 'frames[' + index + ']', terminal);
+  }
+
+  const status = incompleteFields.length > 0
+    ? 'incomplete'
+    : completeFields.length > 0
+      ? 'complete'
+      : 'unknown';
+  return { status, available: fields.length > 0, fields, completeFields, incompleteFields };
+}
+/*
+ * The tradeoff grader recognises a relation, not a bag of topical words:
+ * additional or similar council seats are tied to diminishing informational
+ * value or to redundancy of the same perspective. Cost, latency, and an
+ * unrelated duplicate file are intentionally outside that relation.
  */
 const TRADEOFF_SUBJECT_WORDS = new Set([
-  'model', 'models', 'vote', 'votes', 'answer', 'answers', 'round', 'rounds',
-  'perspective', 'perspectives', 'reasoning', 'bias', 'biases', 'evidence',
-  'result', 'results', 'response', 'responses', 'candidate', 'candidates',
-  'seat', 'seats', 'opinion', 'opinions', 'sample', 'samples', 'judge',
-  'judges', 'expert', 'experts', 'replica', 'replicas', 'view', 'views',
+  'model', 'models', 'vote', 'votes', 'round', 'rounds', 'perspective', 'perspectives',
+  'reasoning', 'bias', 'biases', 'result', 'results', 'response', 'responses',
+  'candidate', 'candidates', 'seat', 'seats', 'opinion', 'opinions', 'sample', 'samples',
+  'judge', 'judges', 'expert', 'experts', 'replica', 'replicas', 'view', 'views',
 ]);
-
-/* The answer must be talking about ADDING a seat, or about seats that are
- * ALIKE. Without this the rubric would accept any sentence that mentions
- * models and something getting smaller. */
 const TRADEOFF_ADDITION_WORDS = new Set([
-  'extra', 'additional', 'more', 'another', 'further', 'added', 'adding',
-  'repeated', 'repeat', 'repeats', 'repeating', 'duplicate', 'duplicated',
-  'duplicates', 'redundant', 'redundancy', 'identical', 'similar', 'same',
-  'alike', 'replica', 'replicas', 'converge', 'converges', 'converging',
-  'convergent', 'overlapping', 'overlap', 'nth', 'sixth', 'fifth',
+  'extra', 'additional', 'more', 'another', 'further', 'added', 'adding', 'new',
+  'repeated', 'repeat', 'repeats', 'repeating', 'duplicate', 'duplicated', 'duplicates',
+  'redundant', 'redundancy', 'identical', 'similar', 'same', 'alike', 'replica', 'replicas',
+  'converge', 'converges', 'converging', 'convergent', 'overlapping', 'overlap',
+  'nth', 'fifth', 'sixth',
 ]);
-
-/* What is getting smaller has to be INFORMATION, not money or milliseconds —
- * that is the whole difference between the intended relation and "more
- * models cost more". */
 const TRADEOFF_VALUE_WORDS = new Set([
   'gain', 'gains', 'benefit', 'benefits', 'value', 'utility', 'return', 'returns',
-  'novelty', 'insight', 'insights', 'contribution', 'improvement', 'coverage',
-  'accuracy', 'usefulness', 'information', 'diversity', 'signal', 'evidence',
-  'confidence',
+  'novelty', 'insight', 'insights', 'contribution', 'improvement', 'coverage', 'accuracy',
+  'usefulness', 'information', 'diversity', 'signal', 'evidence', 'confidence',
 ]);
-
-/* `marginal` is deliberately ABSENT. In this subject matter it usually means
- * "incremental", not "tiny" — so "the marginal gain from another model is not
- * negligible" was scoring as a diminishing-value answer while saying the
- * opposite. The sentences that should pass all carry a real decrease word
- * (`negligible`, `little`, `falls`, `zero`) alongside it. */
 const TRADEOFF_DECREASE_WORDS = new Set([
-  'negligible', 'little', 'limited', 'minimal',
-  'hardly', 'barely', 'less', 'lower', 'lowers', 'smaller', 'shrink', 'shrinks',
-  'shrinking', 'diminish', 'diminishes', 'diminished', 'diminishing', 'decline',
-  'declines', 'declining', 'decrease', 'decreases', 'decreasing', 'fall',
-  'falls', 'falling', 'drop', 'drops', 'dropping', 'zero', 'nothing', 'flat',
-  'plateau', 'plateaus', 'saturate', 'saturates', 'saturating',
+  'negligible', 'little', 'limited', 'minimal', 'hardly', 'barely', 'less', 'lower',
+  'lowers', 'smaller', 'shrink', 'shrinks', 'shrinking', 'diminish', 'diminishes',
+  'diminished', 'diminishing', 'decline', 'declines', 'declining', 'decrease',
+  'decreases', 'decreasing', 'fall', 'falls', 'falling', 'drop', 'drops', 'dropping',
+  'zero', 'nothing', 'flat', 'plateau', 'plateaus', 'saturate', 'saturates', 'saturating',
 ]);
-
-/* Redundancy IS the decrease, stated as a property of the seats themselves.
- * Kept separate from the addition vocabulary because it has to be bound
- * tightly to a subject: "duplicated reasoning" counts, "duplicate file" is a
- * build problem. */
 const TRADEOFF_REDUNDANCY_WORDS = new Set([
-  'redundant', 'redundancy', 'duplicate', 'duplicated', 'duplicates',
-  'replica', 'replicas', 'repeat', 'repeats', 'repeated', 'repetition',
-]);
-
-/* NEGATION IS NOT DIMINISHMENT. Treating bare `not` as evidence let "extra
- * models are not redundant at all" and "ask more models, not fewer" — both
- * the OPPOSITE conclusion — score as a correct tradeoff answer. */
-const TRADEOFF_NEGATORS = new Set([
-  'not', "n't", 'never', 'nor', "isn't", "aren't", "wasn't", "weren't",
-  "doesn't", "don't", "didn't", "won't", "wouldn't", "can't", "cannot",
-  "couldn't", "shouldn't", 'rarely', 'seldom',
+  'redundant', 'redundancy', 'duplicate', 'duplicated', 'duplicates', 'replica', 'replicas',
+  'repeat', 'repeats', 'repeated', 'repetition',
 ]);
 
 const evaluatorTokens = (text) => normaliseUnicodeText(text)
@@ -278,190 +364,184 @@ const evaluatorTokens = (text) => normaliseUnicodeText(text)
   .match(/[a-z]+(?:'[a-z]+)?/g) || [];
 
 const within = (left, right, distance) => Math.abs(left - right) <= distance;
+const positionsOf = (tokens, vocabulary) => tokens
+  .map((token, index) => vocabulary.has(token) ? index : -1)
+  .filter((index) => index >= 0);
 
-/* A decrease claim two tokens after a negator is a claim that the decrease
- * does NOT hold. */
-const negated = (tokens, index) => {
-  for (let i = Math.max(0, index - 2); i < index; i++) {
-    if (TRADEOFF_NEGATORS.has(tokens[i])) return true;
-  }
-  return false;
+const hasCouncilAdditionBinding = (tokens) => {
+  const subjects = positionsOf(tokens, TRADEOFF_SUBJECT_WORDS);
+  const additions = positionsOf(tokens, TRADEOFF_ADDITION_WORDS);
+  return subjects.length > 0 && additions.some((addition) =>
+    subjects.some((subject) => within(addition, subject, 4)));
 };
 
-/**
- * Does the answer state the RELATION the rubric asks about — that additional
- * or mutually similar seats contribute progressively less NEW INFORMATION?
- *
- * Three roles must all be present in one sentence, and two of them must be
- * bound to each other by proximity rather than merely co-occurring:
- *
- *   1. a subject (models, votes, seats, perspectives...),
- *   2. an addition-or-similarity qualifier bound to that subject,
- *   3. a decrease in informational value — either a value noun paired with a
- *      decrease word, or a redundancy word attached to the subject.
- *
- * Negated decrease claims are discarded, so asserting the relation does not
- * hold cannot be mistaken for asserting it does. No case id, no benchmark
- * phrase, and no dependency on any live answer's exact wording.
- */
+const hasInformationalDecrease = (tokens) => {
+  const values = positionsOf(tokens, TRADEOFF_VALUE_WORDS);
+  const decreases = positionsOf(tokens, TRADEOFF_DECREASE_WORDS);
+  return values.some((value) => decreases.some((decrease) => within(value, decrease, 6)));
+};
+
+function hasBoundRedundancy(sentence, tokens) {
+  const subjects = positionsOf(tokens, TRADEOFF_SUBJECT_WORDS);
+  const additions = positionsOf(tokens, TRADEOFF_ADDITION_WORDS);
+  const redundancies = positionsOf(tokens, TRADEOFF_REDUNDANCY_WORDS);
+  if (!subjects.length || !additions.some((addition) =>
+    subjects.some((subject) => within(addition, subject, 4)))) return false;
+  if (!redundancies.some((redundancy) =>
+    subjects.some((subject) => within(redundancy, subject, 3)))) return false;
+
+  /* Property words are strong when attached to the subject. Bare repeat
+   * language needs an existing/shared/same perspective, not any repeated file. */
+  const directProperty = redundancies.some((redundancy) =>
+    !['repeat', 'repeats', 'repeated', 'repetition'].includes(tokens[redundancy])
+    && subjects.some((subject) => within(redundancy, subject, 3)));
+  const contextualRepeat = /\b(?:extra|additional|another|more|new|added|repeated|duplicated|duplicate|replica|replicated)\s+(?:model|models|seat|seats|vote|votes|perspective|perspectives|view|views|reasoning|bias|biases)\b[^.!?;]*\b(?:repeat|repeats|repeated|duplicate|duplicates|duplicated)\b[^.!?;]*\b(?:existing|same|shared|another)\s+(?:perspective|view|reasoning|bias|biases|answer|output|context|evidence)\b/i.test(sentence);
+  return directProperty || contextualRepeat;
+}
+
+function rejectsDiminishingRelation(sentence) {
+  const text = normaliseUnicodeText(sentence);
+  const noDecrease = /\b(?:not|never)\b[^.!?;]*\b(?:negligible|little|limited|minimal|less|lower|smaller|zero|diminish\w*|declin\w*|decreas\w*|fall\w*|drop\w*)\b/i;
+  const noRedundancy = /\b(?:not|never)\b[^.!?;]*\b(?:redundant|redundancy|duplicate\w*|replica\w*|repeat\w*|repetition)\b/i;
+  const deniedPredicate = /\b(?:does|do|did|will|would|can|could|should|may|might|is|are|was|were)\s+not\b[^.!?;]*\b(?:diminish\w*|declin\w*|decreas\w*|fall\w*|drop\w*|negligible|little|limited|minimal|zero)\b/i;
+  const deniedProposition = /\bnot\s+(?:true|correct|the case)\s+that\b[^.!?;]*(?:additional|extra|more|another|model|models|seat|seats)\b/i;
+  const personalDenial = /\b(?:i|we)\s+(?:would|will|do|does|did)\s+not\s+(?:say|call|consider|describe|claim)\b[^.!?;]*(?:model|models|seat|seats)\b[^.!?;]*(?:redundant|duplicate\w*|replica\w*)\b/i;
+  const noReasonablePerson = /\bno\s+(?:reasonable\s+)?(?:person|one|expert|observer)\b[^.!?;]*\b(?:call|consider|describe|say)\b[^.!?;]*(?:model|models|seat|seats)\b[^.!?;]*(?:redundant|duplicate\w*|replica\w*)\b/i;
+  const staysHigh = /\b(?:marginal|incremental)\s+(?:benefit|value|gain|contribution|information)\b[^.!?;]*\b(?:remain|remains|stays|stay|is|are)\s+(?:high|substantial|significant|large|strong)\b/i;
+  const wrongContrast = /\b(?:call|called|consider|considered|describe|described)\b[^.!?;]*\b(?:redundant|duplicate\w*|replica\w*)\b[^.!?;]*\b(?:but|yet|however)\b[^.!?;]*\b(?:wrong|false|incorrect|mistaken)\b/i;
+  const eachAdds = /\b(?:each|every|all|both|everyone)\b[^.!?;]*\b(?:add|adds|adding|contribute|contributes|provide|provides|offer|offers)\b[^.!?;]*\b(?:substantial|significant|meaningful|real|novel|new|high)\b[^.!?;]*\b(?:value|benefit|information|evidence|insight|novelty)\b/i;
+  return noDecrease.test(text)
+    || noRedundancy.test(text)
+    || deniedPredicate.test(text)
+    || deniedProposition.test(text)
+    || personalDenial.test(text)
+    || noReasonablePerson.test(text)
+    || staysHigh.test(text)
+    || wrongContrast.test(text)
+    || eachAdds.test(text);
+}
+
 function hasDiminishingValueReasoning(text) {
   const sentences = normaliseUnicodeText(String(text ?? '')).split(/[.!?]+/);
   return sentences.some((sentence) => {
-    const tokens = evaluatorTokens(sentence);
-    if (!tokens.length) return false;
-
-    const subjects = [];
-    const additions = [];
-    const values = [];
-    const decreases = [];
-    const redundancies = [];
-    tokens.forEach((token, index) => {
-      if (TRADEOFF_SUBJECT_WORDS.has(token)) subjects.push(index);
-      if (TRADEOFF_ADDITION_WORDS.has(token)) additions.push(index);
-      if (TRADEOFF_VALUE_WORDS.has(token)) values.push(index);
-      if (TRADEOFF_DECREASE_WORDS.has(token) && !negated(tokens, index)) decreases.push(index);
-      if (TRADEOFF_REDUNDANCY_WORDS.has(token) && !negated(tokens, index)) redundancies.push(index);
+    if (rejectsDiminishingRelation(sentence)) return false;
+    const clauses = sentence.split(/;|,\s*(?:but|yet|although|though|however|while)\b/i);
+    return clauses.some((clause) => {
+      const tokens = evaluatorTokens(clause);
+      if (!tokens.length || !hasCouncilAdditionBinding(tokens)) return false;
+      return hasInformationalDecrease(tokens) || hasBoundRedundancy(clause, tokens);
     });
-    if (!subjects.length) return false;
-
-    /* The qualifier has to be describing the seats, not sitting elsewhere in
-     * a long sentence. */
-    const addedSeats = additions.some((a) => subjects.some((s) => within(a, s, 4)));
-    if (!addedSeats) return false;
-
-    /* Redundancy stated OF the subject is itself the diminishing claim. */
-    const redundantSeats = redundancies.some((r) => subjects.some((s) => within(r, s, 3)));
-    if (redundantSeats) return true;
-
-    /* Otherwise: something informational, explicitly getting smaller. */
-    return values.some((v) => decreases.some((d) => within(v, d, 6)));
   });
 }
-
 /*
- * WORD CLASS, NOT WORD LENGTH.
- *
- * The previous rule flagged any short lowercase tail, which called the
- * complete line `Coffee fuels the fix` truncated. Lowering the threshold to
- * two characters fixed that one fixture and blinded the detector to every
- * three-letter hanging tail — `is not`, `failed was`, `file can` all read as
- * complete. Length was never the signal. What actually distinguishes a cut
- * stream from a terse ending is whether the final word is a FUNCTION word
- * that grammatically demands a complement: an article needs its noun, a
- * preposition its object, an auxiliary its predicate. Content words —
- * `fix`, `sky`, `API` — end an utterance perfectly well at any length.
- *
- * Particles that legitimately end a clause (`up`, `out`, `off`, `on`, `in`,
- * `about`) are deliberately EXCLUDED: `the service is up` and `the build
- * timed out` are finished sentences. So are bare comparatives (`matters
- * most`, `we need more`), which is why no degree word appears here.
+ * Completion detection intentionally does not reject terminal auxiliaries,
+ * modals, short words, or every punctuation-free fragment. Those are common
+ * complete endings in technical prose. Strong text-only protection is limited
+ * to an explicit dangling relation or an unmistakable structural cut.
  */
-const CONTINUATION_WORDS = new Set([
-  /* Determiners — a determiner without its noun is a cut phrase. */
-  'a', 'an', 'the', 'this', 'these', 'those', 'its', 'his', 'her', 'their',
-  'our', 'your', 'my', 'every', 'each', 'another', 'both', 'either', 'neither',
-  /* Prepositions that essentially always take an object. */
-  'of', 'to', 'from', 'with', 'without', 'into', 'onto', 'between', 'among',
-  'amongst', 'during', 'than', 'per', 'via', 'upon', 'against', 'toward',
-  'towards', 'versus', 'unlike', 'besides', 'within', 'throughout', 'beyond',
-  'across',
-  /* Coordinators. */
-  'and', 'or', 'but', 'nor',
-  /* Subordinators. */
-  'because', 'although', 'though', 'unless', 'until', 'whereas', 'while',
-  'since', 'whether',
-  /* Auxiliaries, modals and copulas — the predicate is still owed. */
-  'is', 'are', 'was', 'were', 'am', 'be', 'been', 'being', 'has', 'have',
-  'had', 'having', 'do', 'does', 'did', 'can', 'could', 'may', 'might',
-  'must', 'shall', 'should', 'will', 'would', 'ought',
-  /* Negation and relatives. */
-  'not', 'such', 'whose', 'whom',
-]);
+const TRAILING_COORDINATORS = new Set(['and', 'or', 'but', 'nor']);
+const TRAILING_PREPOSITION_PATTERNS = [
+  /\b(?:depend|depends|depending|rely|relies|relying|based|determined|determines|varies|varying)\b[^.!?]*\b(?:of|to|from|with|without|into|onto|between|among|against|toward|towards|via|through|within|beyond|across|on)\s*$/i,
+  /\b(?:number|amount|set|kind|type|one|part|rest|some|most|all|each|every|result|answer|reason|cause|example|combination|choice|version|list|majority|subset|range)\s+(?:of|from|between|among|with|without|for)\s*$/i,
+];
+const TRAILING_INFINITIVE_PATTERN = /\b(?:configure|set|use|make|take|give|add|remove|choose|select|enable|disable|start|stop|run|check|verify|update|install|deploy|call|send|return|write|read|create|delete|transform|transformed|convert|converted|map|apply|applies|handle|provide|require|requires|ensure|consider|compare|explain|show|describe|tell|measure|support|include|reuse|replace|process|parse|load|save|build)\b(?:\s+[a-z0-9_$.[\]{}-]+){0,4}\s+to$/i;
+const TRAILING_DETERMINER_PATTERN = /\b(?:is|are|was|were|be|been|being|has|have|had|as|not|than|of)\s+(?:a|an|the|this|these|those|each|every|another|either|neither|one|some|any)\s*$/i;
+const TRAILING_SUBORDINATOR_PATTERN = /\b(?:because|although|though|unless|until|whereas|while|since|whether)\s*(?:it|this|that|they|he|she|we|you|the|a|an)?\s*$/i;
+const TRAILING_ENUMERATION_PATTERN = /\bthe\s+following\s+(?:steps|items|points|reasons|rules|examples|considerations)\s+(?:is|are)\s*$/i;
+const TRAILING_COPULA_VERB_PATTERN = /\b(?:is|are|was|were|be|been|being)\s+(?:add|use|make|take|give|set|put|call|send|keep|find|need|want|configure|enable|disable|start|stop|run|check|verify|update|install|deploy|return|write|read|create|delete|transform|convert|apply|handle|provide|require|ensure|compare|explain|show|describe|tell|measure|support|include|reuse|replace|process|parse|load|save|build)\s*$/i;
 
-/* A subordinate clause needs a subject AND a predicate, so a subordinator
- * with almost nothing after it is a clause that never finished — which is
- * how `...is because it` is caught without pretending `it` can never end a
- * sentence. */
-const SUBORDINATORS = new Set([
-  'because', 'although', 'though', 'unless', 'until', 'whereas', 'while',
-  'since', 'whether', 'if', 'when', 'that', 'which', 'who',
-]);
+function isCodeShaped(line) {
+  const trimmed = String(line ?? '').trim();
+  if (!trimmed) return false;
+  if (/^\s*[$#]\s+/.test(line)) return true;
+  if (/^(?:const|let|var|return|throw|yield|function|class|import|export|def|async|await|public|private|protected)\b/i.test(trimmed)) return true;
+  if (/^(?:if|for|while)\s*\(/i.test(trimmed)) return true;
+  if (/^(?:if|for|while)\s+[^.!?]*[{};]\s*$/i.test(trimmed)) return true;
+  if (/^[A-Za-z_$][\w$]*\s*=(?!=)/.test(trimmed)) return true;
+  if (/(?:=>|===|!==|==|!=|&&|\|\||[+\-*/%]=?)\s*$/.test(trimmed)) return true;
+  if (/\b(?:function|class|import|export)\b/.test(trimmed)) return true;
+  if (/[A-Za-z_$][\w$]*\s*\([^)]*\)\s*;?$/.test(trimmed)) return true;
+  return false;
+}
 
-/* `...the team should do is add` is a copula followed by a bare transitive
- * verb whose object never arrived. The auxiliary is the discriminator: `and
- * reuse` at the end of a bullet is a finished coordination, `is add` is not. */
-const AUX_BEFORE_BARE_VERB = new Set([
-  'is', 'are', 'was', 'were', 'be', 'been', 'to', 'will', 'would', 'shall',
-  'should', 'can', 'could', 'may', 'might', 'must', 'do', 'does', 'did',
-]);
-const BARE_TRANSITIVE_VERBS = new Set([
-  'add', 'use', 'make', 'take', 'give', 'set', 'put', 'call', 'send', 'keep',
-  'find', 'need', 'want', 'include', 'provide', 'create', 'remove', 'apply',
-  'choose', 'select', 'expect', 'consider', 'avoid', 'reduce', 'increase',
-]);
+function isJsonLikeLine(line) {
+  const trimmed = String(line ?? '').trim();
+  return /^\s*[\[{]/.test(trimmed)
+    || /^\s*["']?[A-Za-z_$][\w$-]*["']?\s*:\s*/.test(trimmed);
+}
 
-/* SHAPE, NOT STRAY PUNCTUATION. The previous test accepted any line merely
- * CONTAINING a bracket or a backtick, so `The array [1, 2, 3] should be
- * transformed to` bought itself a completeness exemption with one square
- * bracket. Both predicates below are anchored to how the line STARTS or how
- * it ENDS, which is what actually makes a line structural. */
-const isListOrHeading = (line) => /^(?:#{1,6}\s|\s*[-*+]\s+|\s*\d+[.)]\s+|>\s|\|)/.test(line);
-const isCodeShaped = (line) => /^(?: {4}|\t)/.test(line)
-  || /^\s*[$#]\s/.test(line)
-  || /^\s*(?:const|let|var|return|function|class|import|export|def|if|for|while|await|async|public|private)\b/.test(line)
-  || /^\s*[\w.$[\]'"]+\s*[-+*/|&^]?=[^=]/.test(line)
-  || /^\s*[\w.$]+\(.*\)\s*[;,]?$/.test(line)
-  || /(?:=>|===|&&|\|\||;)\s*$/.test(line)
-  || /[)}\]];?$/.test(line);
+function isTableContext(lines) {
+  const pipeRows = lines.filter((line) => (line.match(/\|/g) || []).length >= 2);
+  return pipeRows.length >= 2 && lines[lines.length - 1].includes('|');
+}
 
-const lineTokens = (line) => line.toLowerCase().match(/[a-z]+(?:'[a-z]+)?/g) || [];
+function hasUnclosedDoubleQuote(text) {
+  let escaped = false;
+  let count = 0;
+  for (const character of String(text ?? '')) {
+    if (escaped) escaped = false;
+    else if (character === '\\') escaped = true;
+    else if (character === '"') count++;
+  }
+  return count % 2 === 1;
+}
 
-function isLikelyComplete(text) {
-  const answer = String(text ?? '').trim();
-  if (!answer) return false;
-  if ((answer.match(/```/g) || []).length % 2 !== 0) return false;
-
-  const lastLine = answer.split(/\r?\n/).pop().trim();
-  if (!lastLine || /[,;:([{]$/.test(lastLine)) return false;
-  if (/[<]$/.test(lastLine) || /\|\s*<$/.test(lastLine)) return false;
-  /* A list marker with no item after it. */
-  if (/^(?:[-*+]|\d+[.)])$/.test(lastLine)) return false;
-  /* A binary operator with its right operand missing. The leading space keeps
-   * markdown emphasis (`**Important**`) out of this. */
-  if (/\s[-+*/%^=&|<>]$/.test(lastLine)) return false;
-  /* More openers than closers ON THIS LINE — a half-written object or call. */
-  const opened = (lastLine.match(/[([{]/g) || []).length - (lastLine.match(/[)\]}]/g) || []).length;
-  if (opened > 0) return false;
-  if (/(?:^|\s)such as$/.test(lastLine.toLowerCase())) return false;
-
-  const tokens = lineTokens(lastLine);
-  const trailingWord = lastLine.match(/([a-z]+)$/)?.[1]?.toLowerCase();
-  const codeShaped = isCodeShaped(lastLine);
-  const terminated = /[.!?`|)]$/.test(lastLine);
-
-  if (!codeShaped && !terminated && tokens.length) {
-    const last = tokens[tokens.length - 1];
-    const penultimate = tokens[tokens.length - 2];
-    if (CONTINUATION_WORDS.has(last)) return false;
-    if (penultimate && AUX_BEFORE_BARE_VERB.has(penultimate) && BARE_TRANSITIVE_VERBS.has(last)) return false;
-    /* The last subordinator on the line, and how much clause followed it. */
-    for (let i = tokens.length - 1; i >= 0; i--) {
-      if (SUBORDINATORS.has(tokens[i])) {
-        if (tokens.length - 1 - i < 2) return false;
-        break;
-      }
+function hasUnbalancedDelimiters(text) {
+  const stack = [];
+  const pairs = { ')': '(', ']': '[', '}': '{' };
+  for (const character of String(text ?? '')) {
+    if ('([{'.includes(character)) stack.push(character);
+    else if (')]}'.includes(character)) {
+      if (stack.pop() !== pairs[character]) return true;
     }
   }
+  return stack.length > 0;
+}
 
-  /* A stream can also stop INSIDE a word, leaving a one or two letter stub
-   * that is not an English word at all (`...it gives you mo`). This is a
-   * lexical test for "is that even a word", not a completeness allow-list,
-   * and it is the only place a word list is consulted. */
-  if (answer.length >= 80 && trailingWord && trailingWord.length <= 2
-    && !COMPLETE_SHORT_WORDS.has(trailingWord)
-    && !codeShaped && !isListOrHeading(lastLine)
-    && !terminated) return false;
-  return true;
+function hasStrongStructuralTruncation(answer) {
+  const lines = String(answer ?? '').split(/\r?\n/);
+  if ((String(answer ?? '').match(/\x60\x60\x60/g) || []).length % 2 === 1) return true;
+  const lastLine = lines[lines.length - 1].trim();
+  if (!lastLine) return false;
+  if (/^\s*(?:[-*+•]|\d+[.)])\s*$/.test(lastLine)) return true;
+
+  const structured = isCodeShaped(lastLine) || isJsonLikeLine(lastLine) || isTableContext(lines);
+  if (!structured) return false;
+  if (/\|\s*(?:<|,)\s*$/.test(lastLine)) return true;
+  if (/[,:;(\[{]\s*$/.test(lastLine)) return true;
+  if (/(?:[+*/%=&|^-]|=>|===|!==|==|!=|&&|\|\||<)\s*$/.test(lastLine)) return true;
+  if (hasUnbalancedDelimiters(answer)) return true;
+  if (isJsonLikeLine(lastLine) && hasUnclosedDoubleQuote(answer)) return true;
+  return false;
+}
+
+function hasStrongTextTruncation(answer) {
+  const lines = String(answer ?? '').split(/\r?\n/);
+  const lastLine = lines[lines.length - 1].trim();
+  if (!lastLine || isCodeShaped(lastLine) || isJsonLikeLine(lastLine) || isTableContext(lines)) return false;
+  if (/[.!?)]\s*$/.test(lastLine)) return false;
+  if (/,\s*$/.test(lastLine)) return true;
+  const tokens = evaluatorTokens(lastLine);
+  const last = tokens[tokens.length - 1];
+  if (!last) return false;
+  if (TRAILING_COORDINATORS.has(last)) return true;
+  if (TRAILING_PREPOSITION_PATTERNS.some((pattern) => pattern.test(lastLine))) return true;
+  if (TRAILING_INFINITIVE_PATTERN.test(lastLine)) return true;
+  if (TRAILING_DETERMINER_PATTERN.test(lastLine)) return true;
+  if (TRAILING_SUBORDINATOR_PATTERN.test(lastLine)) return true;
+  if (TRAILING_ENUMERATION_PATTERN.test(lastLine)) return true;
+  if (TRAILING_COPULA_VERB_PATTERN.test(lastLine)) return true;
+  return false;
+}
+
+function isLikelyComplete(text, observation = null) {
+  const answer = String(text ?? '');
+  if (!answer.trim()) return false;
+  const metadata = inspectCompletionMetadata(observation);
+  if (metadata.status === 'incomplete') return false;
+  if (hasStrongStructuralTruncation(answer)) return false;
+  if (metadata.status === 'complete') return true;
+  return !hasStrongTextTruncation(answer);
 }
 
 /**
@@ -501,7 +581,8 @@ function gradeCase(testCase, obs) {
 
   if (!expect.expectErrorCode) {
     add('nonEmpty', answer.trim().length > 0, `${answer.length} chars`);
-    add('completeness', isLikelyComplete(answer), isLikelyComplete(answer) ? 'complete' : 'clear terminal fragment');
+    const complete = isLikelyComplete(answer, obs);
+    add('completeness', complete, complete ? 'complete' : 'clear terminal fragment');
     if (expect.minChars !== undefined) add('minChars', answer.length >= expect.minChars, `${answer.length} chars`);
 
     for (const needle of expect.mustInclude ?? []) {
@@ -629,5 +710,6 @@ function summarise(grades, observations = []) {
 module.exports = {
   URL_RE, KNOWN_EXPECT_KEYS,
   validateCase, loadDataset, gradeCase, summarise, percentile, citationsIn,
-  sourceUrlsIn, citationReceiptCoverage, isLikelyComplete, hasDiminishingValueReasoning,
+  sourceUrlsIn, citationReceiptCoverage, isLikelyComplete, inspectCompletionMetadata,
+  hasDiminishingValueReasoning,
 };

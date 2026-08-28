@@ -130,7 +130,9 @@ test('an unroutable model id is not retried into three requests', async () => {
 
   await assert.rejects(
     callModel('https://openrouter.ai/api/v1', 'key', 'inclusionai/ling-3.0-tiny:free', [], 0, 3000, 20),
-    /OpenRouter 404/,
+    (error) => /OpenRouter 404/.test(error.message)
+      && error.status === 404
+      && error.code === 'OPENROUTER_HTTP_ERROR',
   );
   assert.equal(calls, 1);
 });

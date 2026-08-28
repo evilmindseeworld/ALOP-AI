@@ -66,6 +66,13 @@ test('a failing head falls to the rungs below it, never back to itself', () => {
   assert.equal(after.length, DEFAULT_HEAD_LADDER.length - 1);
 });
 
+test('the default ladder starts with Super and keeps Ultra as the last-resort free rung', () => {
+  assert.deepEqual(DEFAULT_HEAD_LADDER.map(({ model }) => model), [
+    'nvidia/nemotron-3-super-120b-a12b:free',
+    'nvidia/nemotron-3-ultra-550b-a55b:free',
+  ]);
+});
+
 /* An opted-in metered head still falls to the free rungs, which is the property
  * that keeps a paying deployment answering after its credit runs out. */
 test('a metered head configured by hand falls onto the free ladder', () => {

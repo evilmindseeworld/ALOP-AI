@@ -6,11 +6,12 @@
  * covers that model on a DIFFERENT account and does not transfer to an API key.
  * The owner's instruction, 2026-08-16: this product runs on free models.
  *
- * The strongest free rung that the catalogue says can call tools, which the head
- * must be able to do — it holds the native tool loop. A non-free
- * COUNCIL_SYNTHESIS_MODEL value is rejected by the shared request boundary.
+ * The measured lower-latency free rung that can call tools, which the head must
+ * be able to do because it holds the native tool loop. Ultra remains the
+ * last-resort rung in lib/model-ladder.js. A non-free COUNCIL_SYNTHESIS_MODEL
+ * value is rejected by the shared request boundary.
  */
-const DEFAULT_SYNTHESIS_MODEL = 'nvidia/nemotron-3-ultra-550b-a55b:free';
+const DEFAULT_SYNTHESIS_MODEL = 'nvidia/nemotron-3-super-120b-a12b:free';
 const DISABLED_MODEL = /^(off|none|0|false)$/i;
 
 /**

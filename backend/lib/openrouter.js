@@ -95,6 +95,9 @@ const streamHttpError = (response, errorBody, payload, rateLimit) => {
   const detail = String(errorBody || '').replace(/\s+/g, ' ').trim().slice(0, 300);
   const error = new Error(`Stream HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}${detail ? `: ${detail}` : ''}`);
   error.status = response.status;
+  error.code = response.status === 429
+    ? rateLimit?.kind === 'daily' ? 'OPENROUTER_DAILY_LIMIT' : 'OPENROUTER_RATE_LIMIT'
+    : 'OPENROUTER_HTTP_ERROR';
   error.limitSource = payload?.error?.metadata?.limit_source
     || payload?.error?.limit_source
     || payload?.limit_source
@@ -239,7 +242,10 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
         retryable = response.status >= 500;
       }
       if (!retryable || attempt >= retryLimit) {
-        throw new Error(`OpenRouter ${response.status}: ${errorBody.slice(0, 500)}`);
+        const error = new Error(`OpenRouter ${response.status}: ${errorBody.slice(0, 500)}`);
+        error.status = response.status;
+        error.code = response.status === 429 ? 'OPENROUTER_RATE_LIMIT' : 'OPENROUTER_HTTP_ERROR';
+        throw error;
       }
     } catch (error) {
       if (controller.signal.aborted || parentSignal?.aborted || Date.now() >= deadline) {

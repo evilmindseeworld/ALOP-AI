@@ -51,6 +51,7 @@ const { createTurnContext } = require('./lib/turn-context');
 const { createTurnLedger } = require('./lib/turn-ledger');
 const { buildTurnReliabilityMeta } = require('./lib/turn-reliability-meta');
 const { buildTurnProvenanceMeta, safeSourceRecords } = require('./lib/turn-provenance-meta');
+const { classifyFailureKind } = require('./lib/failure-kind');
 const { COMPLETENESS_CONTRACT, assessAnswer, buildAnswerContract } = require('./lib/answer-contract');
 const {
   buildOutputContract,
@@ -1384,7 +1385,10 @@ openai ceo ${new Date().getUTCFullYear()}${locale}`;
   // 120 tokens rather than 50: two queries plus a stray word of preamble did
   // not fit in 50, and the ceiling truncated the SECOND query mid-word, which
   // parses as a valid short query and searches for half a phrase.
-  const response = await callModel(FAST_MODEL, [{ role: 'system', content: sys }, { role: 'user', content: userContent }], 0.0, 4000, 120, signal, onAttempt ? { onAttempt } : undefined);
+  const response = await callModel(FAST_MODEL, [{ role: 'system', content: sys }, { role: 'user', content: userContent }], 0.0, 4000, 120, signal, {
+    maxRetries: 0,
+    ...(onAttempt ? { onAttempt } : {}),
+  });
   /* A ROUTER THAT NEVER ANSWERED IS NOT A ROUTER THAT SAID NO. `callModel`
    * returns '' for a deadline, an abort and an empty reply alike, and that
    * parsed to the same object a deliberate NO produces — so a third of routed
@@ -4275,6 +4279,7 @@ async function handleCouncilTurn(req, res) {
   let provenanceSynthesisCompleted = false;
   let provenanceSynthesisSkipped = false;
   let provenanceSynthesisFailed = false;
+  let provenanceFailureKind = null;
   let provenanceCompletionQuality = null;
   let answerContract = null;
   let lastAnswerAssessment = null;
@@ -4355,6 +4360,16 @@ async function handleCouncilTurn(req, res) {
     sendStage(res, key, text);
   };
 
+  /* The immediate SSE provenance frame and the final ledger row are built at
+   * different times. Keep the classified terminal failure beside the other
+   * route facts so `finally` cannot replace a known provider/deadline failure
+   * with a fresh null argument. Unknown and local policy failures stay null. */
+  const noteTerminalFailure = (error) => {
+    const kind = classifyFailureKind(error);
+    if (kind) provenanceFailureKind = kind;
+    return kind;
+  };
+
   const makeProvenance = (answer, state, failureKind = null) => {
     const snapshot = telemetry.snapshot({});
     const cancellationReason = snapshot.cancellation?.reason || null;
@@ -4363,6 +4378,8 @@ async function handleCouncilTurn(req, res) {
      * user decision. A deadline is a failure even when a partial answer exists. */
     const userAborted = state === 'aborted'
       && ['client_disconnected', 'client_abort', null].includes(cancellationReason);
+    const effectiveFailureKind = failureKind
+      || (state === 'aborted' ? cancellationReason : provenanceFailureKind);
     return buildTurnProvenanceMeta({
       messageId: typeof req.body?.messageId === 'string' ? req.body.messageId : null,
       requestState: state,
@@ -4394,9 +4411,11 @@ async function handleCouncilTurn(req, res) {
       verification: provenanceVerification,
       ...(provenanceCompletionQuality ? { completion: { qualified: provenanceCompletionQuality } } : {}),
       failure: {
-        occurred: state === 'failed' || provenanceSynthesisFailed || (state === 'aborted' && !userAborted),
+        occurred: state === 'failed' || provenanceSynthesisFailed
+          || (state !== 'aborted' && Boolean(provenanceFailureKind))
+          || (state === 'aborted' && !userAborted),
         userAborted,
-        kind: failureKind || cancellationReason,
+        kind: effectiveFailureKind,
       },
       timing: {
         turnMs: Date.now() - t0,
@@ -5525,7 +5544,11 @@ async function handleCouncilTurn(req, res) {
              * indistinguishable from a member that answered nothing. The
              * verdict it printed was therefore an undercount of exactly the
              * models the feature most wants to find. */
-            const reply = await meteredCallModel(model, toolMessages(probeMsgs, probeRegistry, { round: 1, isFinalRound: false }), 0.0, selection.whipMs, selection.tokenLimit, turnSignal, { structured: true, phase: 'probe' });
+            const reply = await meteredCallModel(model, toolMessages(probeMsgs, probeRegistry, { round: 1, isFinalRound: false }), 0.0, selection.whipMs, selection.tokenLimit, turnSignal, {
+              structured: true,
+              phase: 'probe',
+              maxRetries: 0,
+            });
             telemetry.recordUsage(reply.usage, { phase: 'probe' });
             return { member: model, ...parseToolRequests(reply) };
           } catch (err) {
@@ -6164,7 +6187,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
             callModel: (m, msgs, temp, ms, tokens, sig, opts) =>
               callModelWithLadder(
                 m,
-                (model) => meteredCallModel(model, msgs, temp, ms, tokens, sig, { ...opts, phase: 'tool_seat' }),
+                (model) => meteredCallModel(model, msgs, temp, ms, tokens, sig, { ...opts, maxRetries: 0, phase: 'tool_seat' }),
                 { label: 'TOOLS', signal: sig },
               ),
             registry,
@@ -6258,7 +6281,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
             selection.whipMs,
             selection.tokenLimit,
             signal,
-            { structured: true, phase: 'tools' },
+            { structured: true, phase: 'tools', maxRetries: 0 },
           );
           telemetry.recordUsage(reply.usage, { phase: 'council' });
           noteSeatSource(model, reply);
@@ -6318,12 +6341,16 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
          * this fallback text-only, but apply the same fence sanitiser before a
          * reply can count toward quorum or reach synthesis. A JSON-looking
          * tool block is deliberately stripped, never executed. */
-        const sanitisedFallbackCallModel = async (model, messages, temperature, whipMs, tokenLimit, signal) => {
+        const sanitisedFallbackCallModel = async (model, messages, temperature, whipMs, tokenLimit, signal, callOptions = {}) => {
           /* STRUCTURED, for the label rather than for the shape. `.content` is
            * the same string the default contract returned; what the reply also
            * carries is `textSource`, which is the only way to know later that
            * this seat's words were its reasoning and not its answer. */
-          const reply = await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, { structured: true, phase: 'tool_plain_fallback' });
+          const reply = await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, {
+            ...callOptions,
+            structured: true,
+            phase: 'tool_plain_fallback',
+          });
           noteSeatSource(model, reply);
           return {
             content: sanitizeAnswerText(reply.content, answerOptions).text,
@@ -6381,8 +6408,12 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
           /* Structured for the same reason the tool fallback above is: the
            * text is unchanged, and the reply carries the `textSource` label
            * that a draft going straight to a reader has to be judged on. */
-          callModel: async (model, messages, temperature, whipMs, tokenLimit, signal) => {
-            const reply = await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, { structured: true, phase: 'council' });
+          callModel: async (model, messages, temperature, whipMs, tokenLimit, signal, callOptions = {}) => {
+            const reply = await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, {
+              ...callOptions,
+              structured: true,
+              phase: 'council',
+            });
             noteSeatSource(model, reply);
             const callModelAnswerText = sanitizeAnswerText(reply.content, answerOptions).text;
             return {
@@ -6741,6 +6772,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     try {
       synthAnswer = await streamModel(res, synthesis.model, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, requiredSourceUrls: toolSourceUrls, answerGuard: answerOutputGuard, deferOutput: answerNeedsBuffer, outputFallback: obligationFallback }, turnDeadlineAt, synthesisOptions);
     } catch (err) {
+      const terminalFailureKind = noteTerminalFailure(err);
       provenanceSynthesisFailed = true;
       provenanceSynthesisSkipped = true;
       provenanceRoute = 'degraded';
@@ -6776,7 +6808,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
        * A recovery that lies in the telemetry is a recovery nobody can measure. */
       if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
       sendEvent(res, { type: 'chunk', text: noteWholeAnswer(draft) });
-      sendProvenance(draft, 'complete', classifyFallbackReason(err));
+      sendProvenance(draft, 'complete', terminalFailureKind);
       if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
       if (turnSignal.aborted) return;
       /* NOT CACHED. `cacheAnswer` writes a shelf shared by every user; a draft
@@ -6860,6 +6892,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     );
   } catch (err) {
     if (turnSignal.aborted) return;
+    noteTerminalFailure(err);
     console.error('Council error:', err.message);
     Sentry.captureException(err);
     if (!res.headersSent) return sendError(res, err);
@@ -6894,7 +6927,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     if (turnBegun) {
       const finalAnswer = turnAnswerText();
       const state = turnSignal.aborted ? 'aborted' : finalAnswer ? 'complete' : 'failed';
-      const provenanceMeta = makeProvenance(finalAnswer, state, state === 'aborted' ? telemetry.snapshot({}).cancellation?.reason : null);
+      const provenanceMeta = makeProvenance(finalAnswer, state);
       turnLedger.finish({
         turnId: turnContext.turnId,
         state,

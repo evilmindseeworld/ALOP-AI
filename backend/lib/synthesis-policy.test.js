@@ -16,6 +16,10 @@ test('the synthesis model defaults to the configured free head', () => {
   assert.equal(configuredSynthesisModel(''), DEFAULT_SYNTHESIS_MODEL);
 });
 
+test('the default free head is the measured fast recovery, with Ultra retained below it', () => {
+  assert.equal(DEFAULT_SYNTHESIS_MODEL, 'nvidia/nemotron-3-super-120b-a12b:free');
+});
+
 test('simple turns stay on the fast primary model', () => {
   assert.deepEqual(
     chooseSynthesis({ complexity: 'simple', primaryModel: PRIMARY, configuredModel: LUNA }),

@@ -5,7 +5,7 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 
-const { degradeAnswer, looksInternal, isSafeDraft } = require('./synthesis-degrade');
+const { degradeAnswer, looksInternal, isSafeDraft, resolveSafeRefusal } = require('./synthesis-degrade');
 const { assessAnswer, buildAnswerContract } = require('./answer-contract');
 const { deadlineSignal } = require('./stream-deadline');
 
@@ -239,6 +239,18 @@ test('ordinary English about councils and experts is NOT refused', () => {
 test('a roster of nothing but internal framing lands on the error frame, not on a blank answer', () => {
   const drafts = [{ content: 'SKIP.', textSource: 'content' }, { content: 'As a member of the ALOP-AI Council, I abstain.', textSource: 'content' }];
   assert.equal(degradeAnswer({ wroteChars: 0, drafts }), null);
+});
+
+test('safe refusal remains fail-closed for partial, mixed, and evidence-backed councils', () => {
+  const refusal = { content: "I'm sorry, but I can't help with that.", textSource: 'content', finishReason: 'stop' };
+  const substantive = { content: 'Here is a substantive answer instead.', textSource: 'content', finishReason: 'stop' };
+  assert.equal(resolveSafeRefusal([refusal, refusal], { expectedSeats: 3 }), null,
+    'quorum is not unanimous refusal');
+  assert.equal(resolveSafeRefusal([refusal, refusal, substantive], { expectedSeats: 3 }), null,
+    'a contradictory substantive seat must not be bypassed');
+  assert.equal(resolveSafeRefusal([refusal, refusal, refusal], { expectedSeats: 3, blockedByEvidence: true }), null,
+    'evidence-backed paths must still synthesize');
+  assert.equal(resolveSafeRefusal([refusal, refusal, refusal], { expectedSeats: 3 }), refusal.content);
 });
 
 /**

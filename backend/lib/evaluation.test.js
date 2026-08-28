@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { readFileSync } = require("node:fs");
 const { join } = require("node:path");
-const { validateCase, loadDataset, gradeCase, summarise, percentile, citationsIn } = require("./evaluation");
+const { validateCase, loadDataset, gradeCase, summarise, percentile, citationsIn, isLikelyComplete } = require("./evaluation");
 
 const caseOf = (expect, extra = {}) => ({ id: "c1", question: "q?", ...extra, expect });
 const obs = (over = {}) => ({ id: "c1", answer: "", frames: [], latencyMs: 100, costCents: null, textSource: null, error: null, ...over });
@@ -22,6 +22,11 @@ test("a duplicate id is refused, because every report cites ids", () => {
 test("a mustMatch that is not a regex is refused before anything is spent", () => {
   const problems = validateCase(caseOf({ mustMatch: ["(unclosed"] }));
   assert.ok(problems.some((p) => p.includes("not a regex")));
+});
+
+test("mustDiscussTradeoff is a known boolean expectation", () => {
+  assert.deepEqual(validateCase(caseOf({ mustDiscussTradeoff: true })), []);
+  assert.ok(validateCase(caseOf({ mustDiscussTradeoff: "yes" })).some((p) => p.includes("mustDiscussTradeoff must be a boolean")));
 });
 
 test("the shipped release dataset validates", () => {
@@ -113,17 +118,28 @@ test("cache tradeoff grading accepts speed only when it is attached to caching",
   assert.equal(unrelated.passed, false);
 });
 
-test("model-disagreement grading accepts inflected diminishing language without accepting unrelated prose", () => {
-  const value = "(?:(?:extra|additional|more|another)\\s+(?:model|vote|answer|round)[^.!?\\n]{0,80}\\b(?:redundant|duplicate|diminish\\w*)\\b|(?:gain|benefit|value|utility|returns?|confidence)[^.!?\\n]{0,80}\\b(?:redundant|duplicate|diminish\\w*)\\b|\\b(?:redundant|duplicate|diminish\\w*)\\b[^.!?\\n]{0,80}\\b(?:model|vote|answer|round|gain|benefit|value|utility|returns?|confidence)\\b)";
-  const expect = { mustMatch: ["disagree|uncertain|risk|novel|different", value] };
-  for (const wording of ["the gain diminishes", "diminishing returns", "the extra vote is redundant", "the answer is a duplicate"]) {
-    const grade = gradeCase(caseOf(expect), obs({ answer: `More models help when the first answers disagree; ${wording}.` }));
-    assert.equal(grade.passed, true, wording + ": " + grade.failures.join("|"));
+test("model-disagreement grading checks the relationship, not a magic phrase", () => {
+  const expect = { mustMatch: ["disagree|uncertain|risk|novel|different"], mustDiscussTradeoff: true };
+  const positives = [
+    "The first answers disagree, so the gain diminishes as more models repeat the same view.",
+    "When models are uncertain, an extra model adds little new information and limited value.",
+    "Different perspectives help, but the same biases mean little incremental value from another vote.",
+    "Risk is lower when answers differ; duplicated reasoning adds cost without useful novelty.",
+  ];
+  for (const answer of positives) {
+    const grade = gradeCase(caseOf(expect), obs({ answer }));
+    assert.equal(grade.passed, true, answer + ": " + grade.failures.join("|"));
   }
+  const productionWording = gradeCase(caseOf({ mustDiscussTradeoff: true }), obs({
+    answer: "If the new model is just a replica of the existing five (same data, same cut-offs, same biases), the marginal gain is negligible and the extra latency, cost, and complexity are not justified.",
+  }));
+  assert.equal(productionWording.passed, true, productionWording.failures.join("|"));
   const unrelated = gradeCase(caseOf(expect), obs({ answer: "The models disagree, but the duplicate file was deleted after a long day." }));
   assert.equal(unrelated.passed, false);
-  const noValue = gradeCase(caseOf(expect), obs({ answer: "More models help when the first answers disagree; the result is stable." }));
-  assert.equal(noValue.passed, false);
+  assert.ok(unrelated.failures.some((f) => f.startsWith("mustDiscussTradeoff")));
+  const benefitsOnly = gradeCase(caseOf(expect), obs({ answer: "The models disagree, and more models improve coverage and accuracy." }));
+  assert.equal(benefitsOnly.passed, false);
+  assert.ok(benefitsOnly.failures.some((f) => f.startsWith("mustDiscussTradeoff")));
 });
 
 test("mustMatch folds curly apostrophes and Unicode hyphens without flattening line boundaries", () => {
@@ -162,6 +178,17 @@ test("clear answer fragments fail completeness even when they meet minChars", ()
   }));
   assert.equal(clippedTable.passed, false);
   assert.ok(clippedTable.failures.some((f) => f.startsWith("completeness")));
+});
+
+test("legitimate short endings in poetry and structured output are complete", () => {
+  const haiku = "Endpoints whisper soft\nLogs scream in silent rows\nRetries spin, nothing works\nCoffee fuels the fix";
+  assert.equal(isLikelyComplete(haiku), true);
+
+  const code = "The function receives the validated configuration and returns the normalized result.\nreturn fix";
+  assert.equal(isLikelyComplete(code), true);
+
+  const bullet = "The final checklist is intentionally short but complete for this release.\n- fix";
+  assert.equal(isLikelyComplete(bullet), true);
 });
 
 test("expectTools reads the tool_start frames rather than the answer text", () => {

@@ -13,7 +13,8 @@
  * Hence a LADDER, ordered, and the ordering rule is stated so the next person
  * changing it knows what they are trading:
  *
- *   1. Capability first, then price. Every rung must support native tool
+ *   1. Measured latency first among the verified free rungs, then capability
+ *      and price. Every rung must support native tool
  *      calling, because a tool turn that falls to a model without `tools`
  *      cannot answer the question it was routed for. Checked against
  *      OpenRouter's catalogue on 2026-08-16: every id below reports `tools`
@@ -65,8 +66,8 @@
  */
 
 const DEFAULT_HEAD_LADDER = Object.freeze([
-  Object.freeze({ model: 'nvidia/nemotron-3-ultra-550b-a55b:free', effort: null }),
   Object.freeze({ model: 'nvidia/nemotron-3-super-120b-a12b:free', effort: null }),
+  Object.freeze({ model: 'nvidia/nemotron-3-ultra-550b-a55b:free', effort: null }),
 ]);
 
 /**

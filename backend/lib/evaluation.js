@@ -58,6 +58,7 @@
  *       "mustCite": false,                // an answer URL backed by a source receipt
  *       "expectTools": ["web_search"],    // names seen in `tool_start` frames
  *       "expectNoTools": false,
+ *       "mustDiscussTradeoff": true,      // a relational, diminishing-value rubric
  *       "expectErrorCode": null,          // for cases that SHOULD be refused
  *       "maxLatencyMs": 20000,
  *       "minChars": 20
@@ -76,7 +77,7 @@ const { URL_RE, extractUrls, canonicalUrl } = require('./citation-urls');
 const KNOWN_EXPECT_KEYS = new Set([
   'mustInclude', 'mustMatch', 'mustNotInclude', 'mustCite',
   'expectTools', 'expectNoTools', 'expectErrorCode',
-  'maxLatencyMs', 'minChars',
+  'mustDiscussTradeoff', 'maxLatencyMs', 'minChars',
 ]);
 
 /**
@@ -111,6 +112,9 @@ function validateCase(testCase, seen = new Set()) {
     }
     for (const key of ['mustInclude', 'mustMatch', 'mustNotInclude', 'expectTools']) {
       if (expect[key] !== undefined && !Array.isArray(expect[key])) at(`${key} must be an array`);
+    }
+    if (expect.mustDiscussTradeoff !== undefined && typeof expect.mustDiscussTradeoff !== 'boolean') {
+      at('mustDiscussTradeoff must be a boolean');
     }
     for (const pattern of expect.mustMatch ?? []) {
       try { new RegExp(pattern, 'i'); } catch { at(`mustMatch pattern is not a regex: ${pattern}`); }
@@ -200,6 +204,61 @@ const COMPLETE_SHORT_WORDS = new Set([
   'why', 'yes',
 ]);
 
+/*
+ * The evaluator needs to recognise a RELATION, not a phrase. The useful
+ * answer to the model-disagreement question has two parts: it names the
+ * thing being added or compared, and it connects that thing to diminishing
+ * value or redundant information. These vocabularies are intentionally
+ * broader than the shipped case and are used only within a bounded token
+ * window; a stray "duplicate file" cannot satisfy a model-value rubric.
+ */
+const TRADEOFF_SUBJECT_WORDS = new Set([
+  'model', 'models', 'vote', 'votes', 'answer', 'answers', 'round', 'rounds',
+  'perspective', 'perspectives', 'reasoning', 'bias', 'biases', 'evidence',
+  'result', 'results', 'response', 'responses', 'candidate', 'candidates',
+]);
+const TRADEOFF_VALUE_WORDS = new Set([
+  'gain', 'gains', 'benefit', 'benefits', 'value', 'utility', 'return', 'returns',
+  'novelty', 'insight', 'contribution', 'improvement', 'coverage', 'accuracy',
+  'useful', 'usefulness', 'information', 'diversity', 'distinct',
+]);
+const TRADEOFF_DIMINISHING_WORDS = new Set([
+  'negligible', 'marginal', 'little', 'limited', 'minimal', 'hardly', 'barely',
+  'no', 'not', 'without', 'diminish', 'diminishes', 'diminished', 'diminishing',
+  'redundant', 'redundancy', 'duplicate', 'duplicates', 'duplicated', 'replica',
+  'replicas', 'same', 'overlap', 'overlapping',
+]);
+
+const evaluatorTokens = (text) => normaliseUnicodeText(text)
+  .toLowerCase()
+  .match(/[a-z]+(?:'[a-z]+)?/g) || [];
+
+const within = (left, right, distance) => Math.abs(left - right) <= distance;
+
+/**
+ * A semantic-ish relational check with no case id, benchmark phrase, or exact
+ * answer dependency. It is deliberately conservative: either a diminishing
+ * word directly modifies a council-like subject, or a value word and a
+ * diminishing word occur near one another with the subject nearby too.
+ */
+function hasDiminishingValueReasoning(text) {
+  const tokens = evaluatorTokens(text);
+  const subjects = [];
+  const values = [];
+  const diminishing = [];
+  tokens.forEach((token, index) => {
+    if (TRADEOFF_SUBJECT_WORDS.has(token)) subjects.push(index);
+    if (TRADEOFF_VALUE_WORDS.has(token)) values.push(index);
+    if (TRADEOFF_DIMINISHING_WORDS.has(token)) diminishing.push(index);
+  });
+
+  const direct = diminishing.some((d) => subjects.some((s) => within(d, s, 3)));
+  if (direct) return true;
+
+  return values.some((value) => diminishing.some((d) => within(value, d, 10)
+    && subjects.some((subject) => within(subject, value, 18) || within(subject, d, 18))));
+}
+
 function isLikelyComplete(text) {
   const answer = String(text ?? '').trim();
   if (!answer) return false;
@@ -211,12 +270,14 @@ function isLikelyComplete(text) {
   if (/(?:^|\s)(?:and|or|but|because|although|while|with|to|from|including|such as|if|when|that)$/.test(lastLine.toLowerCase())) return false;
 
   /* A stream cut can stop inside a word without leaving punctuation or an
-   * obvious conjunction. Keep this conservative: only flag a short,
-   * lowercase tail on a substantial answer, and allow common legitimate
-   * two/three-letter endings such as `API`, `SQL`, `yes`, and `use`. */
+   * obvious conjunction. Keep this conservative: only flag a one/two-letter,
+   * lowercase tail on plain prose. Headings, bullets and code-like lines have
+   * their own valid terminal shapes and must not need a word allow-list. */
   const trailingWord = lastLine.match(/([a-z]+)$/)?.[1]?.toLowerCase();
-  if (answer.length >= 80 && trailingWord && trailingWord.length <= 3
+  const structuredLine = /^(?:#{1,6}\s|[-*+]\s+|\d+[.)]\s+)|(?:\b(?:const|let|var|return|function|class|import|export)\b|[`{}[\]<>]|=>|===|&&|\|\|)/i.test(lastLine);
+  if (answer.length >= 80 && trailingWord && trailingWord.length <= 2
     && !COMPLETE_SHORT_WORDS.has(trailingWord)
+    && !structuredLine
     && !/[.!?`|)]$/.test(lastLine)) return false;
   return true;
 }
@@ -266,6 +327,11 @@ function gradeCase(testCase, obs) {
     }
     for (const pattern of expect.mustMatch ?? []) {
       add(`mustMatch:${pattern}`, new RegExp(normaliseUnicodeText(pattern), 'i').test(normaliseUnicodeText(answer)));
+    }
+    if (expect.mustDiscussTradeoff === true) {
+      const discussesTradeoff = hasDiminishingValueReasoning(answer);
+      add('mustDiscussTradeoff', discussesTradeoff,
+        discussesTradeoff ? 'relational diminishing-value language found' : 'no subject/value/diminishing relation found');
     }
     for (const needle of expect.mustNotInclude ?? []) {
       add(`mustNotInclude:${needle}`, !lower.includes(flattenSpaces(String(needle).toLowerCase())));
@@ -381,5 +447,5 @@ function summarise(grades, observations = []) {
 module.exports = {
   URL_RE, KNOWN_EXPECT_KEYS,
   validateCase, loadDataset, gradeCase, summarise, percentile, citationsIn,
-  sourceUrlsIn, citationReceiptCoverage, isLikelyComplete,
+  sourceUrlsIn, citationReceiptCoverage, isLikelyComplete, hasDiminishingValueReasoning,
 };

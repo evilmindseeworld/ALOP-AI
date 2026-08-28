@@ -216,17 +216,61 @@ const TRADEOFF_SUBJECT_WORDS = new Set([
   'model', 'models', 'vote', 'votes', 'answer', 'answers', 'round', 'rounds',
   'perspective', 'perspectives', 'reasoning', 'bias', 'biases', 'evidence',
   'result', 'results', 'response', 'responses', 'candidate', 'candidates',
+  'seat', 'seats', 'opinion', 'opinions', 'sample', 'samples', 'judge',
+  'judges', 'expert', 'experts', 'replica', 'replicas', 'view', 'views',
 ]);
+
+/* The answer must be talking about ADDING a seat, or about seats that are
+ * ALIKE. Without this the rubric would accept any sentence that mentions
+ * models and something getting smaller. */
+const TRADEOFF_ADDITION_WORDS = new Set([
+  'extra', 'additional', 'more', 'another', 'further', 'added', 'adding',
+  'repeated', 'repeat', 'repeats', 'repeating', 'duplicate', 'duplicated',
+  'duplicates', 'redundant', 'redundancy', 'identical', 'similar', 'same',
+  'alike', 'replica', 'replicas', 'converge', 'converges', 'converging',
+  'convergent', 'overlapping', 'overlap', 'nth', 'sixth', 'fifth',
+]);
+
+/* What is getting smaller has to be INFORMATION, not money or milliseconds —
+ * that is the whole difference between the intended relation and "more
+ * models cost more". */
 const TRADEOFF_VALUE_WORDS = new Set([
   'gain', 'gains', 'benefit', 'benefits', 'value', 'utility', 'return', 'returns',
-  'novelty', 'insight', 'contribution', 'improvement', 'coverage', 'accuracy',
-  'useful', 'usefulness', 'information', 'diversity', 'distinct',
+  'novelty', 'insight', 'insights', 'contribution', 'improvement', 'coverage',
+  'accuracy', 'usefulness', 'information', 'diversity', 'signal', 'evidence',
+  'confidence',
 ]);
-const TRADEOFF_DIMINISHING_WORDS = new Set([
-  'negligible', 'marginal', 'little', 'limited', 'minimal', 'hardly', 'barely',
-  'no', 'not', 'without', 'diminish', 'diminishes', 'diminished', 'diminishing',
-  'redundant', 'redundancy', 'duplicate', 'duplicates', 'duplicated', 'replica',
-  'replicas', 'same', 'overlap', 'overlapping',
+
+/* `marginal` is deliberately ABSENT. In this subject matter it usually means
+ * "incremental", not "tiny" — so "the marginal gain from another model is not
+ * negligible" was scoring as a diminishing-value answer while saying the
+ * opposite. The sentences that should pass all carry a real decrease word
+ * (`negligible`, `little`, `falls`, `zero`) alongside it. */
+const TRADEOFF_DECREASE_WORDS = new Set([
+  'negligible', 'little', 'limited', 'minimal',
+  'hardly', 'barely', 'less', 'lower', 'lowers', 'smaller', 'shrink', 'shrinks',
+  'shrinking', 'diminish', 'diminishes', 'diminished', 'diminishing', 'decline',
+  'declines', 'declining', 'decrease', 'decreases', 'decreasing', 'fall',
+  'falls', 'falling', 'drop', 'drops', 'dropping', 'zero', 'nothing', 'flat',
+  'plateau', 'plateaus', 'saturate', 'saturates', 'saturating',
+]);
+
+/* Redundancy IS the decrease, stated as a property of the seats themselves.
+ * Kept separate from the addition vocabulary because it has to be bound
+ * tightly to a subject: "duplicated reasoning" counts, "duplicate file" is a
+ * build problem. */
+const TRADEOFF_REDUNDANCY_WORDS = new Set([
+  'redundant', 'redundancy', 'duplicate', 'duplicated', 'duplicates',
+  'replica', 'replicas', 'repeat', 'repeats', 'repeated', 'repetition',
+]);
+
+/* NEGATION IS NOT DIMINISHMENT. Treating bare `not` as evidence let "extra
+ * models are not redundant at all" and "ask more models, not fewer" — both
+ * the OPPOSITE conclusion — score as a correct tradeoff answer. */
+const TRADEOFF_NEGATORS = new Set([
+  'not', "n't", 'never', 'nor', "isn't", "aren't", "wasn't", "weren't",
+  "doesn't", "don't", "didn't", "won't", "wouldn't", "can't", "cannot",
+  "couldn't", "shouldn't", 'rarely', 'seldom',
 ]);
 
 const evaluatorTokens = (text) => normaliseUnicodeText(text)
@@ -235,29 +279,142 @@ const evaluatorTokens = (text) => normaliseUnicodeText(text)
 
 const within = (left, right, distance) => Math.abs(left - right) <= distance;
 
+/* A decrease claim two tokens after a negator is a claim that the decrease
+ * does NOT hold. */
+const negated = (tokens, index) => {
+  for (let i = Math.max(0, index - 2); i < index; i++) {
+    if (TRADEOFF_NEGATORS.has(tokens[i])) return true;
+  }
+  return false;
+};
+
 /**
- * A semantic-ish relational check with no case id, benchmark phrase, or exact
- * answer dependency. It is deliberately conservative: either a diminishing
- * word directly modifies a council-like subject, or a value word and a
- * diminishing word occur near one another with the subject nearby too.
+ * Does the answer state the RELATION the rubric asks about — that additional
+ * or mutually similar seats contribute progressively less NEW INFORMATION?
+ *
+ * Three roles must all be present in one sentence, and two of them must be
+ * bound to each other by proximity rather than merely co-occurring:
+ *
+ *   1. a subject (models, votes, seats, perspectives...),
+ *   2. an addition-or-similarity qualifier bound to that subject,
+ *   3. a decrease in informational value — either a value noun paired with a
+ *      decrease word, or a redundancy word attached to the subject.
+ *
+ * Negated decrease claims are discarded, so asserting the relation does not
+ * hold cannot be mistaken for asserting it does. No case id, no benchmark
+ * phrase, and no dependency on any live answer's exact wording.
  */
 function hasDiminishingValueReasoning(text) {
-  const tokens = evaluatorTokens(text);
-  const subjects = [];
-  const values = [];
-  const diminishing = [];
-  tokens.forEach((token, index) => {
-    if (TRADEOFF_SUBJECT_WORDS.has(token)) subjects.push(index);
-    if (TRADEOFF_VALUE_WORDS.has(token)) values.push(index);
-    if (TRADEOFF_DIMINISHING_WORDS.has(token)) diminishing.push(index);
+  const sentences = normaliseUnicodeText(String(text ?? '')).split(/[.!?]+/);
+  return sentences.some((sentence) => {
+    const tokens = evaluatorTokens(sentence);
+    if (!tokens.length) return false;
+
+    const subjects = [];
+    const additions = [];
+    const values = [];
+    const decreases = [];
+    const redundancies = [];
+    tokens.forEach((token, index) => {
+      if (TRADEOFF_SUBJECT_WORDS.has(token)) subjects.push(index);
+      if (TRADEOFF_ADDITION_WORDS.has(token)) additions.push(index);
+      if (TRADEOFF_VALUE_WORDS.has(token)) values.push(index);
+      if (TRADEOFF_DECREASE_WORDS.has(token) && !negated(tokens, index)) decreases.push(index);
+      if (TRADEOFF_REDUNDANCY_WORDS.has(token) && !negated(tokens, index)) redundancies.push(index);
+    });
+    if (!subjects.length) return false;
+
+    /* The qualifier has to be describing the seats, not sitting elsewhere in
+     * a long sentence. */
+    const addedSeats = additions.some((a) => subjects.some((s) => within(a, s, 4)));
+    if (!addedSeats) return false;
+
+    /* Redundancy stated OF the subject is itself the diminishing claim. */
+    const redundantSeats = redundancies.some((r) => subjects.some((s) => within(r, s, 3)));
+    if (redundantSeats) return true;
+
+    /* Otherwise: something informational, explicitly getting smaller. */
+    return values.some((v) => decreases.some((d) => within(v, d, 6)));
   });
-
-  const direct = diminishing.some((d) => subjects.some((s) => within(d, s, 3)));
-  if (direct) return true;
-
-  return values.some((value) => diminishing.some((d) => within(value, d, 10)
-    && subjects.some((subject) => within(subject, value, 18) || within(subject, d, 18))));
 }
+
+/*
+ * WORD CLASS, NOT WORD LENGTH.
+ *
+ * The previous rule flagged any short lowercase tail, which called the
+ * complete line `Coffee fuels the fix` truncated. Lowering the threshold to
+ * two characters fixed that one fixture and blinded the detector to every
+ * three-letter hanging tail — `is not`, `failed was`, `file can` all read as
+ * complete. Length was never the signal. What actually distinguishes a cut
+ * stream from a terse ending is whether the final word is a FUNCTION word
+ * that grammatically demands a complement: an article needs its noun, a
+ * preposition its object, an auxiliary its predicate. Content words —
+ * `fix`, `sky`, `API` — end an utterance perfectly well at any length.
+ *
+ * Particles that legitimately end a clause (`up`, `out`, `off`, `on`, `in`,
+ * `about`) are deliberately EXCLUDED: `the service is up` and `the build
+ * timed out` are finished sentences. So are bare comparatives (`matters
+ * most`, `we need more`), which is why no degree word appears here.
+ */
+const CONTINUATION_WORDS = new Set([
+  /* Determiners — a determiner without its noun is a cut phrase. */
+  'a', 'an', 'the', 'this', 'these', 'those', 'its', 'his', 'her', 'their',
+  'our', 'your', 'my', 'every', 'each', 'another', 'both', 'either', 'neither',
+  /* Prepositions that essentially always take an object. */
+  'of', 'to', 'from', 'with', 'without', 'into', 'onto', 'between', 'among',
+  'amongst', 'during', 'than', 'per', 'via', 'upon', 'against', 'toward',
+  'towards', 'versus', 'unlike', 'besides', 'within', 'throughout', 'beyond',
+  'across',
+  /* Coordinators. */
+  'and', 'or', 'but', 'nor',
+  /* Subordinators. */
+  'because', 'although', 'though', 'unless', 'until', 'whereas', 'while',
+  'since', 'whether',
+  /* Auxiliaries, modals and copulas — the predicate is still owed. */
+  'is', 'are', 'was', 'were', 'am', 'be', 'been', 'being', 'has', 'have',
+  'had', 'having', 'do', 'does', 'did', 'can', 'could', 'may', 'might',
+  'must', 'shall', 'should', 'will', 'would', 'ought',
+  /* Negation and relatives. */
+  'not', 'such', 'whose', 'whom',
+]);
+
+/* A subordinate clause needs a subject AND a predicate, so a subordinator
+ * with almost nothing after it is a clause that never finished — which is
+ * how `...is because it` is caught without pretending `it` can never end a
+ * sentence. */
+const SUBORDINATORS = new Set([
+  'because', 'although', 'though', 'unless', 'until', 'whereas', 'while',
+  'since', 'whether', 'if', 'when', 'that', 'which', 'who',
+]);
+
+/* `...the team should do is add` is a copula followed by a bare transitive
+ * verb whose object never arrived. The auxiliary is the discriminator: `and
+ * reuse` at the end of a bullet is a finished coordination, `is add` is not. */
+const AUX_BEFORE_BARE_VERB = new Set([
+  'is', 'are', 'was', 'were', 'be', 'been', 'to', 'will', 'would', 'shall',
+  'should', 'can', 'could', 'may', 'might', 'must', 'do', 'does', 'did',
+]);
+const BARE_TRANSITIVE_VERBS = new Set([
+  'add', 'use', 'make', 'take', 'give', 'set', 'put', 'call', 'send', 'keep',
+  'find', 'need', 'want', 'include', 'provide', 'create', 'remove', 'apply',
+  'choose', 'select', 'expect', 'consider', 'avoid', 'reduce', 'increase',
+]);
+
+/* SHAPE, NOT STRAY PUNCTUATION. The previous test accepted any line merely
+ * CONTAINING a bracket or a backtick, so `The array [1, 2, 3] should be
+ * transformed to` bought itself a completeness exemption with one square
+ * bracket. Both predicates below are anchored to how the line STARTS or how
+ * it ENDS, which is what actually makes a line structural. */
+const isListOrHeading = (line) => /^(?:#{1,6}\s|\s*[-*+]\s+|\s*\d+[.)]\s+|>\s|\|)/.test(line);
+const isCodeShaped = (line) => /^(?: {4}|\t)/.test(line)
+  || /^\s*[$#]\s/.test(line)
+  || /^\s*(?:const|let|var|return|function|class|import|export|def|if|for|while|await|async|public|private)\b/.test(line)
+  || /^\s*[\w.$[\]'"]+\s*[-+*/|&^]?=[^=]/.test(line)
+  || /^\s*[\w.$]+\(.*\)\s*[;,]?$/.test(line)
+  || /(?:=>|===|&&|\|\||;)\s*$/.test(line)
+  || /[)}\]];?$/.test(line);
+
+const lineTokens = (line) => line.toLowerCase().match(/[a-z]+(?:'[a-z]+)?/g) || [];
 
 function isLikelyComplete(text) {
   const answer = String(text ?? '').trim();
@@ -267,18 +424,43 @@ function isLikelyComplete(text) {
   const lastLine = answer.split(/\r?\n/).pop().trim();
   if (!lastLine || /[,;:([{]$/.test(lastLine)) return false;
   if (/[<]$/.test(lastLine) || /\|\s*<$/.test(lastLine)) return false;
-  if (/(?:^|\s)(?:and|or|but|because|although|while|with|to|from|including|such as|if|when|that)$/.test(lastLine.toLowerCase())) return false;
+  /* A list marker with no item after it. */
+  if (/^(?:[-*+]|\d+[.)])$/.test(lastLine)) return false;
+  /* A binary operator with its right operand missing. The leading space keeps
+   * markdown emphasis (`**Important**`) out of this. */
+  if (/\s[-+*/%^=&|<>]$/.test(lastLine)) return false;
+  /* More openers than closers ON THIS LINE — a half-written object or call. */
+  const opened = (lastLine.match(/[([{]/g) || []).length - (lastLine.match(/[)\]}]/g) || []).length;
+  if (opened > 0) return false;
+  if (/(?:^|\s)such as$/.test(lastLine.toLowerCase())) return false;
 
-  /* A stream cut can stop inside a word without leaving punctuation or an
-   * obvious conjunction. Keep this conservative: only flag a one/two-letter,
-   * lowercase tail on plain prose. Headings, bullets and code-like lines have
-   * their own valid terminal shapes and must not need a word allow-list. */
+  const tokens = lineTokens(lastLine);
   const trailingWord = lastLine.match(/([a-z]+)$/)?.[1]?.toLowerCase();
-  const structuredLine = /^(?:#{1,6}\s|[-*+]\s+|\d+[.)]\s+)|(?:\b(?:const|let|var|return|function|class|import|export)\b|[`{}[\]<>]|=>|===|&&|\|\|)/i.test(lastLine);
+  const codeShaped = isCodeShaped(lastLine);
+  const terminated = /[.!?`|)]$/.test(lastLine);
+
+  if (!codeShaped && !terminated && tokens.length) {
+    const last = tokens[tokens.length - 1];
+    const penultimate = tokens[tokens.length - 2];
+    if (CONTINUATION_WORDS.has(last)) return false;
+    if (penultimate && AUX_BEFORE_BARE_VERB.has(penultimate) && BARE_TRANSITIVE_VERBS.has(last)) return false;
+    /* The last subordinator on the line, and how much clause followed it. */
+    for (let i = tokens.length - 1; i >= 0; i--) {
+      if (SUBORDINATORS.has(tokens[i])) {
+        if (tokens.length - 1 - i < 2) return false;
+        break;
+      }
+    }
+  }
+
+  /* A stream can also stop INSIDE a word, leaving a one or two letter stub
+   * that is not an English word at all (`...it gives you mo`). This is a
+   * lexical test for "is that even a word", not a completeness allow-list,
+   * and it is the only place a word list is consulted. */
   if (answer.length >= 80 && trailingWord && trailingWord.length <= 2
     && !COMPLETE_SHORT_WORDS.has(trailingWord)
-    && !structuredLine
-    && !/[.!?`|)]$/.test(lastLine)) return false;
+    && !codeShaped && !isListOrHeading(lastLine)
+    && !terminated) return false;
   return true;
 }
 

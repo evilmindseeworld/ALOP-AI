@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const { readFileSync } = require("node:fs");
 const { join } = require("node:path");
-const { validateCase, loadDataset, gradeCase, summarise, percentile, citationsIn, isLikelyComplete } = require("./evaluation");
+const { validateCase, loadDataset, gradeCase, summarise, percentile, citationsIn, isLikelyComplete, hasDiminishingValueReasoning } = require("./evaluation");
 
 const caseOf = (expect, extra = {}) => ({ id: "c1", question: "q?", ...extra, expect });
 const obs = (over = {}) => ({ id: "c1", answer: "", frames: [], latencyMs: 100, costCents: null, textSource: null, error: null, ...over });
@@ -118,28 +118,93 @@ test("cache tradeoff grading accepts speed only when it is attached to caching",
   assert.equal(unrelated.passed, false);
 });
 
+/* INPUT / EXPECTED / WHY. The rubric asks one question: does the answer say
+ * that additional or mutually similar seats contribute progressively less NEW
+ * INFORMATION? Everything here is judged against that sentence. */
+const TRADEOFF_CASES = [
+  // --- the relation, in many different wordings ---
+  ["The new model is essentially a replica of the existing ones, so the marginal gain is negligible.",
+    true, "similarity qualifier on the subject plus an informational value that is negligible"],
+  ["Because they share the same biases and cutoffs, extra models add little new information.",
+    true, "addition qualifier plus `little` bound to `information`"],
+  ["An extra model repeats the same perspective while adding latency, so the value it contributes falls.",
+    true, "repetition of a perspective, and the value explicitly falls"],
+  ["Duplicated reasoning adds cost with very little novelty for the panel.",
+    true, "redundancy stated of the subject itself"],
+  ["The incremental benefit falls as the models become more similar.",
+    true, "the paraphrase that the previous matcher missed: benefit + falls, models + more similar"],
+  ["Marginal value approaches zero as the perspectives converge.",
+    true, "convergence of perspectives with value going to zero"],
+  ["Repeated perspectives contribute progressively less new evidence.",
+    true, "repetition plus less informational evidence"],
+  ["Additional replicas add negligible marginal information to the panel.",
+    true, "addition plus negligible information"],
+  ["An additional seat repeats an existing perspective while adding latency.",
+    true, "redundancy bound to the added seat"],
+  ["If the new model is just a replica of the existing five (same data, same cut-offs, same biases), the marginal gain is negligible and the extra latency, cost, and complexity are not justified.",
+    true, "the shipped question's own subject matter, phrased as a reader would"],
+  ["The first answers disagree, so the gain diminishes as more models repeat the same view.",
+    true, "gain diminishes as models repeat"],
+  ["When models are uncertain, an extra model adds little new information and limited value.",
+    true, "extra model, little information"],
+  ["Different perspectives help, but the same biases mean little incremental value from another vote.",
+    true, "same biases, little value"],
+  ["Risk is lower when answers differ; duplicated reasoning adds cost without useful novelty.",
+    true, "duplicated reasoning bound to the subject"],
+
+  // --- negation must not read as diminishment ---
+  ["Extra models are not redundant at all; every one of them adds real value.",
+    false, "the redundancy claim is NEGATED — this asserts the opposite relation"],
+  ["You should ask more models, not fewer, whenever the stakes are high.",
+    false, "opposite conclusion; `not` is a negator, never evidence of diminishing value"],
+  ["These models should not be trusted blindly by anyone on the team.",
+    false, "`not` near a subject, on an entirely unrelated point"],
+  ["The marginal gain from another model is not negligible on hard questions.",
+    false, "explicitly denies the diminishing relation"],
+
+  // --- one leg of the relation missing ---
+  ["Running more models costs more money and uses a larger compute budget for every request.",
+    false, "cost only: money is not informational value"],
+  ["Adding more models increases latency and slows the response for every user.",
+    false, "latency only, with no informational-value relation"],
+  ["The models disagree, and more models improve coverage and accuracy.",
+    false, "benefits only, nothing diminishing"],
+  ["Additional models provide better coverage, higher accuracy and greater diversity of perspectives.",
+    false, "benefits only"],
+  ["The answers are the same length as the ones we measured last week.",
+    false, "similarity with no value claim at all"],
+
+  // --- vocabulary present, relation absent ---
+  ["The models disagree, but the duplicate file was deleted after a long day.",
+    false, "`duplicate` modifies a file, not the seats"],
+  ["The team saw a large gain in revenue after the pricing change shipped.",
+    false, "a value word with no subject and no decrease"],
+  ["Returns on the marketing spend diminished sharply after the third week.",
+    false, "diminishing returns about marketing, not about models"],
+];
+
 test("model-disagreement grading checks the relationship, not a magic phrase", () => {
-  const expect = { mustMatch: ["disagree|uncertain|risk|novel|different"], mustDiscussTradeoff: true };
-  const positives = [
-    "The first answers disagree, so the gain diminishes as more models repeat the same view.",
-    "When models are uncertain, an extra model adds little new information and limited value.",
-    "Different perspectives help, but the same biases mean little incremental value from another vote.",
-    "Risk is lower when answers differ; duplicated reasoning adds cost without useful novelty.",
-  ];
-  for (const answer of positives) {
-    const grade = gradeCase(caseOf(expect), obs({ answer }));
-    assert.equal(grade.passed, true, answer + ": " + grade.failures.join("|"));
+  for (const [answer, expected, why] of TRADEOFF_CASES) {
+    assert.equal(hasDiminishingValueReasoning(answer), expected, `${why}\n  answer: ${answer}`);
   }
-  const productionWording = gradeCase(caseOf({ mustDiscussTradeoff: true }), obs({
-    answer: "If the new model is just a replica of the existing five (same data, same cut-offs, same biases), the marginal gain is negligible and the extra latency, cost, and complexity are not justified.",
+});
+
+test("mustDiscussTradeoff reaches the grader and names itself on failure", () => {
+  const expect = { mustMatch: ["disagree|uncertain|risk|novel|different"], mustDiscussTradeoff: true };
+  const passing = gradeCase(caseOf(expect), obs({
+    answer: "The first answers disagree, so the gain diminishes as more models repeat the same view.",
   }));
-  assert.equal(productionWording.passed, true, productionWording.failures.join("|"));
-  const unrelated = gradeCase(caseOf(expect), obs({ answer: "The models disagree, but the duplicate file was deleted after a long day." }));
-  assert.equal(unrelated.passed, false);
-  assert.ok(unrelated.failures.some((f) => f.startsWith("mustDiscussTradeoff")));
-  const benefitsOnly = gradeCase(caseOf(expect), obs({ answer: "The models disagree, and more models improve coverage and accuracy." }));
-  assert.equal(benefitsOnly.passed, false);
-  assert.ok(benefitsOnly.failures.some((f) => f.startsWith("mustDiscussTradeoff")));
+  assert.equal(passing.passed, true, passing.failures.join("|"));
+
+  for (const answer of [
+    "The models disagree, but the duplicate file was deleted after a long day.",
+    "The models disagree, and more models improve coverage and accuracy.",
+    "Extra models are not redundant at all; different answers each add real value.",
+  ]) {
+    const grade = gradeCase(caseOf(expect), obs({ answer }));
+    assert.equal(grade.passed, false, answer);
+    assert.ok(grade.failures.some((f) => f.startsWith("mustDiscussTradeoff")), answer);
+  }
 });
 
 test("mustMatch folds curly apostrophes and Unicode hyphens without flattening line boundaries", () => {
@@ -180,15 +245,112 @@ test("clear answer fragments fail completeness even when they meet minChars", ()
   assert.ok(clippedTable.failures.some((f) => f.startsWith("completeness")));
 });
 
-test("legitimate short endings in poetry and structured output are complete", () => {
-  const haiku = "Endpoints whisper soft\nLogs scream in silent rows\nRetries spin, nothing works\nCoffee fuels the fix";
-  assert.equal(isLikelyComplete(haiku), true);
+/* Long enough to clear the 80-character floor the mid-word stub check uses,
+ * so each fixture below is judged on its ENDING and nothing else. */
+const BODY = "This is a substantive answer about council design and model selection that runs past the length floor. ";
 
-  const code = "The function receives the validated configuration and returns the normalized result.\nreturn fix";
-  assert.equal(isLikelyComplete(code), true);
+/* INPUT / EXPECTED / WHY, so a future reader can tell whether a failure means
+ * the detector broke or the fixture was wrong. */
+const COMPLETION_CASES = [
+  // --- legitimately complete ---
+  ["Endpoints whisper soft\nLogs scream in silent rows\nRetries spin, nothing works\nCoffee fuels the fix",
+    true, "poetry: no punctuation, and `fix` is a content word that can end an utterance"],
+  [BODY + "\nThe morning breaks and lifts the empty sky",
+    true, "poetry: three-letter content-word tail is not a hanging tail"],
+  [BODY + "\n## The Future of AI",
+    true, "markdown heading ending on an initialism"],
+  [BODY + "\n- Call the public API",
+    true, "bullet ending on an initialism"],
+  [BODY + "\ngit push origin main",
+    true, "shell command, no terminal punctuation, content-word tail"],
+  [BODY + "\nconst result = compute(input)",
+    true, "code line closing its own call"],
+  [BODY + "\nThink different",
+    true, "slogan: deliberate fragment, content-word tail"],
+  [BODY + "\n# Getting started with the app",
+    true, "markdown heading"],
+  [BODY + "\nBecause latency matters most",
+    true, "requested terse fragment: subordinator has a full clause after it"],
+  [BODY + "\nThe council streams the synthesised answer to every connected reader",
+    true, "punctuation-free prose ending on a noun"],
+  [BODY + "\n- Cache the compiled result",
+    true, "list item ending on a content word"],
+  [BODY + "\nThe root cause was a race condition, not a bug",
+    true, "three-letter content tail after a comma clause"],
+  [BODY + "\nAfter the restart the service came back up",
+    true, "particle `up` legitimately ends a clause and must not read as a preposition"],
+  [BODY + "\nOf all the constraints, latency matters most",
+    true, "bare comparative legitimately ends a clause"],
+  [BODY + "\nreturn fix",
+    true, "code-shaped line, content-word tail"],
 
-  const bullet = "The final checklist is intentionally short but complete for this release.\n- fix";
-  assert.equal(isLikelyComplete(bullet), true);
+  // --- genuinely truncated ---
+  [BODY + "\nThe primary reason this architecture fails is because it",
+    false, "subordinate clause opened by `because` never got a predicate"],
+  [BODY + "\nYou should configure the service to",
+    false, "infinitival `to` with no verb"],
+  [BODY + "\nThree main tradeoffs are latency, cost, and",
+    false, "coordinator with no third conjunct"],
+  [BODY + "\nThe result of the second probe is not",
+    false, "negation particle with nothing negated (three letters, so length alone missed it)"],
+  [BODY + "\nThe reason the second attempt failed was",
+    false, "copula with no complement"],
+  [BODY + "\nThe next thing the team should do is add",
+    false, "copula plus bare transitive verb whose object never arrived"],
+  [BODY + "\nEvery seat that answered in time has",
+    false, "auxiliary with no participle"],
+  [BODY + "\nThe only component that reads this file can",
+    false, "modal with no verb"],
+  [BODY + "\nDepending on the provider the request may",
+    false, "modal with no verb"],
+  ["```js\nconst answer = 42;",
+    false, "unbalanced code fence"],
+  [BODY + '\n{ "model": "super", "retries":',
+    false, "JSON object cut after a key"],
+  [BODY + "\nconst total = price *",
+    false, "binary operator missing its right operand"],
+  [BODY + "\n-",
+    false, "list marker with no item"],
+  [BODY + "\nThe answer depends entirely on the number of",
+    false, "preposition with no object"],
+  [BODY + "\n- The first consideration is the",
+    false, "determiner with no noun, inside a bullet"],
+  ["A replica adds operational cost and consistency concerns, but at this traffic level it gives you mo",
+    false, "stream stopped mid-word; `mo` is not an English word"],
+  ["| Metric | Value |\n|---|---|\n| overall confidence | <",
+    false, "table row cut inside a cell"],
+  ["The rollout should begin with a controlled baseline and",
+    false, "coordinator with no second conjunct, below the length floor"],
+
+  // --- prose that merely CONTAINS code punctuation earns no exemption ---
+  [BODY + "\nThe array [1, 2, 3] should be transformed to",
+    false, "square brackets in prose must not buy a structural exemption"],
+  [BODY + "\nUse <main> because it",
+    false, "angle brackets in prose must not buy a structural exemption"],
+  [BODY + "\nThe object {a: 1} can",
+    false, "braces in prose must not buy a structural exemption"],
+  [BODY + "\nThe `cache` layer should",
+    false, "backticks in prose must not buy a structural exemption"],
+];
+
+test("completion is judged on grammatical shape, not on tail length", () => {
+  for (const [input, expected, why] of COMPLETION_CASES) {
+    assert.equal(isLikelyComplete(input), expected,
+      `${why}\n  tail: ${JSON.stringify(input.split("\n").pop().slice(-42))}`);
+  }
+});
+
+/* THE FIXTURE MUST PASS FOR A REASON, NOT FOR A NAME. Swapping the poem's
+ * final content word for a hanging function word has to flip the verdict; if
+ * it does not, something is keying on the word `fix` itself. */
+test("the poetry fixture passes on word class, not on the word", () => {
+  const poem = (tail) => `Endpoints whisper soft\nLogs scream in silent rows\nRetries spin, nothing works\nCoffee fuels the ${tail}`;
+  for (const contentWord of ["fix", "bug", "dawn", "sky", "cat"]) {
+    assert.equal(isLikelyComplete(poem(contentWord)), true, `${contentWord} is a content word`);
+  }
+  for (const functionWord of ["was", "not", "and", "of", "can"]) {
+    assert.equal(isLikelyComplete(poem(functionWord)), false, `${functionWord} still owes a complement`);
+  }
 });
 
 test("expectTools reads the tool_start frames rather than the answer text", () => {

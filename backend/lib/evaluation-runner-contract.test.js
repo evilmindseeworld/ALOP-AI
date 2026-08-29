@@ -37,6 +37,13 @@ test('fresh evaluation requires both the explicit CLI mode and its secret', () =
   assert.match(SOURCE, /cache_bypass_unconfirmed/);
 });
 
+test('a live gate requires a zero-price catalog freshness preflight before model calls', () => {
+  assert.match(SOURCE, /zero-price-preflight/);
+  assert.match(SOURCE, /ZERO_PRICE_PREFLIGHT/);
+  assert.match(SOURCE, /pass !== true/);
+  assert.match(SOURCE, /activeRoutes/);
+});
+
 test('the cache validation phase is fixed, separate, and explicitly non-bypass', () => {
   assert.match(SOURCE, /--cache-validation/);
   assert.match(SOURCE, /buildCacheValidationPlan/);

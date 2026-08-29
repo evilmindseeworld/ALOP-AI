@@ -24,6 +24,8 @@ const {
 const SCHEMA_VERSION = 1;
 
 const CACHE_HIT_ROUTES = new Set(['answer_cache', 'answer_cache_semantic']);
+const VALIDATION_PHASES = new Set(['seed', 'hit']);
+const SAFE_VALIDATION_FIELD = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/;
 
 /* These routes are known to make no OpenRouter request. A zero here is derived
  * from the observed request counter, not from FREE_ONLY policy. */
@@ -67,7 +69,14 @@ const unknownUsage = () => ({ ...UNKNOWN_USAGE });
  */
 function buildTurnAccountingMeta(
   snapshot = {},
-  { route = 'unknown', cacheBypassRequested = false, cacheBypassAccepted = false } = {},
+  {
+    route = 'unknown',
+    cacheBypassRequested = false,
+    cacheBypassAccepted = false,
+    cacheValidationRunId = null,
+    cacheValidationCaseId = null,
+    cacheValidationPhase = null,
+  } = {},
 ) {
   const attempts = snapshot?.providerAttempts && typeof snapshot.providerAttempts === 'object'
     ? snapshot.providerAttempts
@@ -101,9 +110,20 @@ function buildTurnAccountingMeta(
     ? snapshot.cacheReads
     : {};
   const cacheLookupAttempted = Object.keys(cacheReads).length > 0;
-  const noProviderSpend = providerRequests === 0
+  const hasAttemptEvidence = (attemptDetail !== null && attemptDetail.length > 0)
+    || attempts.truncatedDetail === true
+    || finiteNonNegative(attempts.total) > 0
+    || Object.values(attempts.byProvider || {}).some((count) => finiteNonNegative(count) > 0);
+  const hasUsageReceipt = usage !== null;
+  const noProviderCandidate = providerRequests === 0
     && failedProviderAttempts === 0
     && ZERO_OPENROUTER_ROUTES.has(route);
+  /* A zero-request route is only a measured zero when telemetry also says that
+   * no provider evidence or usage receipt exists. A contradictory receipt is
+   * unknown, even if the contradiction reports a zero amount. */
+  const contradictoryNoProviderAccounting = noProviderCandidate
+    && (hasAttemptEvidence || hasUsageReceipt || reportedCostUsd !== null);
+  const noProviderSpend = noProviderCandidate && !contradictoryNoProviderAccounting;
   const zeroPriceCatalogConflict = zeroPriceAttemptsVerified
     && reportedCostUsd !== null
     && reportedCostUsd !== 0;
@@ -133,7 +153,9 @@ function buildTurnAccountingMeta(
   const costCents = costUsd === null ? null : rounded(costUsd * 100);
 
   const unknownReason = !costMeasured
-    ? zeroPriceCatalogConflict
+    ? contradictoryNoProviderAccounting
+      ? 'contradictory_accounting'
+      : zeroPriceCatalogConflict
       ? 'zero_price_catalog_conflict'
       : failedProviderAttempts > 0
         ? 'failed_provider_attempt_without_settled_cost'
@@ -152,6 +174,15 @@ function buildTurnAccountingMeta(
     : cacheHit
       ? 'hit'
       : cacheLookupAttempted ? 'miss' : 'unknown';
+  const hasValidationBinding = SAFE_VALIDATION_FIELD.test(String(cacheValidationRunId || ''))
+    && SAFE_VALIDATION_FIELD.test(String(cacheValidationCaseId || ''))
+    && VALIDATION_PHASES.has(cacheValidationPhase);
+  const validationReceipt = hasValidationBinding ? {
+    validationRunId: cacheValidationRunId,
+    validationCaseId: cacheValidationCaseId,
+    validationPhase: cacheValidationPhase,
+    validationReceiptId: `${cacheValidationRunId}:${cacheValidationCaseId}:${cacheValidationPhase}`,
+  } : {};
 
   return {
     schemaVersion: SCHEMA_VERSION,
@@ -164,6 +195,7 @@ function buildTurnAccountingMeta(
       providerRequests,
       failedProviderAttempts,
       zeroPriceVerified: verifiedZeroProviderSpend,
+      ...(noProviderSpend ? { noProviderEvidence: true } : {}),
       ...(failedZeroPriceAttemptsVerified ? { failedZeroPriceVerified: true } : {}),
       ...((verifiedZeroProviderSpend || failedZeroPriceAttemptsVerified) ? {
         zeroPriceCatalogVersion: ZERO_PRICE_CATALOG_VERSION,
@@ -178,6 +210,7 @@ function buildTurnAccountingMeta(
       lookupAttempted: cacheLookupAttempted,
       bypassRequested,
       bypassAccepted,
+      ...validationReceipt,
     },
   };
 }
@@ -230,7 +263,8 @@ function observationTelemetry({ provenance = null, accounting = null, cacheStatu
     && cost?.measured === true
     && providerRequests !== null
     && failedProviderAttempts === 0
-    && (providerRequests > 0 || ZERO_OPENROUTER_ROUTES.has(route));
+    && (providerRequests > 0
+      || (ZERO_OPENROUTER_ROUTES.has(route) && cost?.noProviderEvidence === true));
   const trustedSettledCostWithVerifiedZeroFailures = cost?.provider === 'openrouter'
     && cost?.source === 'openrouter.response.usage.costUsd'
     && cost?.measured === true

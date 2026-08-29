@@ -6,6 +6,23 @@ const { validateCase, loadDataset, gradeCase, summarise, percentile, citationsIn
 
 const caseOf = (expect, extra = {}) => ({ id: "c1", question: "q?", ...extra, expect });
 const obs = (over = {}) => ({ id: "c1", answer: "", frames: [], latencyMs: 100, costCents: null, textSource: null, error: null, ...over });
+const cacheHit = (over = {}) => obs({
+  answer: "A complete cached answer.",
+  textSource: "cache",
+  cacheDecision: "hit",
+  provenance: { route: "answer_cache" },
+  accounting: {
+    schemaVersion: 1,
+    cache: {
+      source: "turn_provenance.route",
+      decision: "hit",
+      lookupAttempted: true,
+      bypassRequested: false,
+      bypassAccepted: false,
+    },
+  },
+  ...over,
+});
 
 /* ---- the dataset is code, and a typo in it grades nothing ------------ */
 
@@ -498,8 +515,8 @@ test("an unmeasured metric is null, not zero — zero passes every max gate", ()
 test("a cache hit that answers wrongly is a precision failure, not a hit", () => {
   const cases = [caseOf({ mustInclude: ["Canberra"] }, { id: "k1" }), caseOf({ mustInclude: ["Canberra"] }, { id: "k2" })];
   const observations = [
-    obs({ id: "k1", answer: "Canberra.", textSource: "cache", cacheDecision: "hit" }),
-    obs({ id: "k2", answer: "Sydney.", textSource: "cache", cacheDecision: "hit" }),
+    cacheHit({ id: "k1", answer: "Canberra." }),
+    cacheHit({ id: "k2", answer: "Sydney." }),
   ];
   const grades = cases.map((c) => gradeCase(c, observations.find((o) => o.id === c.id)));
   assert.equal(summarise(grades, observations).cachePrecision, 0.5);
@@ -511,16 +528,63 @@ test("hard metric denominators count measured receipts and proven hits independe
     caseOf({ mustInclude: ["not present"] }, { id: "inconclusive" }),
   ];
   const observations = [
-    obs({ id: "measured", answer: "A good cached answer.", costCents: 0.2, textSource: "cache", cacheDecision: "hit" }),
-    obs({ id: "inconclusive", answer: "A complete cached answer.", costCents: 0, textSource: "cache", cacheDecision: "hit", error: { code: "transport" } }),
+    cacheHit({ id: "measured", answer: "A good cached answer.", costCents: 0.2 }),
+    cacheHit({ id: "inconclusive", costCents: 0, error: { code: "transport" } }),
   ];
   const grades = cases.map((testCase) => gradeCase(testCase, observations.find((observation) => observation.id === testCase.id)));
   const metrics = summarise(grades, observations);
   assert.equal(metrics.cases, 2);
   assert.equal(metrics.costMeasuredCases, 2);
   assert.equal(metrics.costCentsPerTurn, 0.1);
+  assert.equal(metrics.cachePrecisionCases, 1);
+  assert.equal(metrics.cachePrecision, 1);
+});
+
+test("cache precision uses the same eligible hit set for numerator and denominator", () => {
+  const cases = [
+    caseOf({ mustInclude: ["good"] }, { id: "a" }),
+    caseOf({ mustInclude: ["good"] }, { id: "b" }),
+    caseOf({ mustInclude: ["good"] }, { id: "c" }),
+  ];
+  const observations = [
+    cacheHit({ id: "a", answer: "good" }),
+    cacheHit({ id: "b", answer: "good", error: { code: "transport" } }),
+    cacheHit({ id: "c", answer: "good" }),
+  ];
+  const grades = cases.map((testCase) => gradeCase(testCase, observations.find((observation) => observation.id === testCase.id)));
+  const metrics = summarise(grades, observations);
   assert.equal(metrics.cachePrecisionCases, 2);
-  assert.equal(metrics.cachePrecision, 0.5);
+  assert.equal(metrics.cachePrecision, 1);
+});
+
+test("cache precision excludes malformed receipts and inconclusive grades from the measured denominator", () => {
+  const cases = Array.from({ length: 12 }, (_, index) => caseOf({ mustInclude: ["good"] }, { id: `sample-${index}` }));
+  const observations = [
+    cacheHit({ id: "sample-0", answer: "good" }),
+    cacheHit({ id: "sample-1", answer: "good" }),
+    cacheHit({ id: "sample-2", answer: "good", accounting: { schemaVersion: 1, cache: { decision: "hit" } } }),
+    cacheHit({ id: "sample-3", answer: "good", validationRunId: "helper-run", validationCaseId: "sample-3", validationPhase: "seed" }),
+    ...Array.from({ length: 8 }, (_, index) => cacheHit({
+      id: `sample-${index + 4}`,
+      error: { code: "transport" },
+    })),
+  ];
+  const grades = cases.map((testCase) => gradeCase(testCase, observations.find((observation) => observation.id === testCase.id)));
+  const metrics = summarise(grades, observations);
+  assert.equal(metrics.cachePrecisionCases, 2);
+  assert.equal(metrics.cachePrecision, 1);
+  assert.equal(metrics.cachePrecisionCases < 3, true);
+});
+
+test("three valid non-inconclusive cache hits are the complete measured sample", () => {
+  const cases = [
+    caseOf({ mustInclude: ["good"] }, { id: "valid-a" }),
+    caseOf({ mustInclude: ["good"] }, { id: "valid-b" }),
+    caseOf({ mustInclude: ["good"] }, { id: "valid-c" }),
+  ];
+  const observations = cases.map((testCase) => cacheHit({ id: testCase.id, answer: "good" }));
+  const grades = cases.map((testCase) => gradeCase(testCase, observations.find((observation) => observation.id === testCase.id)));
+  assert.equal(summarise(grades, observations).cachePrecisionCases, 3);
 });
 
 test("toolSuccessRate counts tool_result frames, failures included", () => {

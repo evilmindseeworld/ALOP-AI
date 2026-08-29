@@ -1,5 +1,7 @@
 'use strict';
 
+const { randomUUID } = require('node:crypto');
+
 /*
  * The cache-precision proof is a separate experiment from the quality run.
  * Its plan is complete before the first response exists: three fixed cases,
@@ -13,6 +15,7 @@ const CACHE_VALIDATION_PHASE_ORDER = Object.freeze(['seed', 'hit']);
 const CACHE_HIT_ROUTES = new Set(['answer_cache', 'answer_cache_semantic']);
 const CACHE_RECEIPT_SOURCE = 'turn_provenance.route';
 const CACHE_VALIDATION_NAME = 'cache-validation-v1';
+const SAFE_BINDING = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,119}$/;
 
 const own = (value, key) => Object.prototype.hasOwnProperty.call(value || {}, key);
 
@@ -62,9 +65,17 @@ function validateCacheValidationManifest(manifest) {
   return problems;
 }
 
-function buildCacheValidationPlan(manifest) {
+function cacheValidationBranch(baseBranch, runId) {
+  if (!SAFE_BINDING.test(String(baseBranch || '')) || !SAFE_BINDING.test(String(runId || ''))) {
+    throw new TypeError('cache validation branch requires bounded base branch and run id');
+  }
+  return `${baseBranch}:validation:${runId}`;
+}
+
+function buildCacheValidationPlan(manifest, { runId = randomUUID() } = {}) {
   const problems = validateCacheValidationManifest(manifest);
   if (problems.length) throw new TypeError(`invalid cache validation manifest: ${problems.join('; ')}`);
+  if (!SAFE_BINDING.test(String(runId || ''))) throw new TypeError('cache validation run id is invalid');
 
   const cases = manifest.cases.map((testCase, index) => Object.freeze({
     index,
@@ -80,6 +91,7 @@ function buildCacheValidationPlan(manifest) {
   ].map((step) => Object.freeze({
     ...step,
     operationId: `${CACHE_VALIDATION_NAME}-${step.caseId}-${step.phase}`,
+    validationRunId: runId,
     cacheBypass: false,
     requestMode: 'normal-cache-semantics',
   }));
@@ -110,7 +122,23 @@ function validateResultSequence(plan, results) {
  * accounting receipt, agree with the provenance route, and be explicitly
  * non-bypassed. This is the only predicate allowed to increment the HIT count.
  */
-function isProvenCacheHit(observation = {}) {
+function bindingMatches(cache, binding = null) {
+  if (!binding) return true;
+  const expected = {
+    runId: binding.runId ?? binding.validationRunId,
+    caseId: binding.caseId ?? binding.validationCaseId,
+    phase: binding.phase ?? binding.validationPhase,
+  };
+  if (!SAFE_BINDING.test(String(expected.runId || ''))
+    || !SAFE_BINDING.test(String(expected.caseId || ''))
+    || !CACHE_VALIDATION_PHASE_ORDER.includes(expected.phase)) return false;
+  return cache?.validationRunId === expected.runId
+    && cache?.validationCaseId === expected.caseId
+    && cache?.validationPhase === expected.phase
+    && cache?.validationReceiptId === `${expected.runId}:${expected.caseId}:${expected.phase}`;
+}
+
+function isProvenCacheHit(observation = {}, binding = null) {
   const cache = observation.accounting?.cache;
   return observation.error == null
     && String(observation.cacheStatus || '').toLowerCase() !== 'bypass'
@@ -122,18 +150,64 @@ function isProvenCacheHit(observation = {}) {
     && cache?.decision === 'hit'
     && cache?.lookupAttempted === true
     && cache?.bypassRequested === false
-    && cache?.bypassAccepted === false;
+    && cache?.bypassAccepted === false
+    && bindingMatches(cache, binding);
+}
+
+function isProvenCacheMiss(observation = {}, binding = null) {
+  const cache = observation.accounting?.cache;
+  const route = observation.provenance?.route;
+  return observation.error == null
+    && typeof observation.answer === 'string'
+    && observation.answer.trim().length > 0
+    && String(observation.cacheStatus || '').toLowerCase() !== 'bypass'
+    && typeof route === 'string'
+    && !CACHE_HIT_ROUTES.has(route)
+    && observation.textSource == null
+    && observation.cacheDecision === 'miss'
+    && observation.accounting?.schemaVersion === 1
+    && cache?.source === CACHE_RECEIPT_SOURCE
+    && cache?.decision === 'miss'
+    && cache?.lookupAttempted === true
+    && cache?.bypassRequested === false
+    && cache?.bypassAccepted === false
+    && bindingMatches(cache, binding);
 }
 
 function finaliseCacheValidation(plan, results, { casesById = new Map(), gradeCase = null } = {}) {
   const sequenceProblems = validateResultSequence(plan, results);
   if (sequenceProblems.length) throw new TypeError(`cache validation result sequence is invalid: ${sequenceProblems.join('; ')}`);
 
+  const runId = plan[0]?.validationRunId || null;
+  const seedProof = new Map();
+  const seedFailures = [];
+  for (const [index, step] of plan.entries()) {
+    if (step.phase !== 'seed') continue;
+    const proven = isProvenCacheMiss(results[index], {
+      runId: step.validationRunId,
+      caseId: step.caseId,
+      phase: step.phase,
+    });
+    seedProof.set(step.caseId, proven);
+    if (!proven) seedFailures.push(step.caseId);
+  }
+
   const hitRows = [];
+  const hitFailures = [];
+  const seenReceiptIds = new Set();
   for (const [index, step] of plan.entries()) {
     if (step.phase !== 'hit') continue;
     const result = results[index];
-    if (isProvenCacheHit(result)) hitRows.push({ caseId: step.caseId, operationId: step.operationId, observation: result });
+    if (!seedProof.get(step.caseId)) continue;
+    const binding = { runId: step.validationRunId, caseId: step.caseId, phase: step.phase };
+    if (!isProvenCacheHit(result, binding)) {
+      hitFailures.push(step.caseId);
+      continue;
+    }
+    const receiptId = result.accounting.cache.validationReceiptId;
+    if (seenReceiptIds.has(receiptId)) continue;
+    seenReceiptIds.add(receiptId);
+    hitRows.push({ caseId: step.caseId, operationId: step.operationId, observation: result, receiptId });
   }
 
   const gradedHits = hitRows.map((row) => {
@@ -141,8 +215,11 @@ function finaliseCacheValidation(plan, results, { casesById = new Map(), gradeCa
     const grade = typeof gradeCase === 'function' && testCase ? gradeCase(testCase, row.observation) : null;
     return { caseId: row.caseId, grade };
   });
-  const passedHits = gradedHits.filter((row) => row.grade?.passed === true).length;
-  const cachePrecisionCases = hitRows.length;
+  const eligibleHits = gradedHits.filter((row) => row.grade
+    && row.grade.inconclusive !== true
+    && typeof row.grade.passed === 'boolean');
+  const passedHits = eligibleHits.filter((row) => row.grade.passed === true).length;
+  const cachePrecisionCases = eligibleHits.length;
   const cachePrecision = cachePrecisionCases > 0 ? passedHits / cachePrecisionCases : null;
   const status = cachePrecisionCases === 0 || cachePrecisionCases < CACHE_VALIDATION_CASE_COUNT
     ? 'inconclusive'
@@ -155,11 +232,20 @@ function finaliseCacheValidation(plan, results, { casesById = new Map(), gradeCa
     seedRequestCount: plan.filter((step) => step.phase === 'seed').length,
     hitRequestCount: plan.filter((step) => step.phase === 'hit').length,
     cacheHitCaseIds: hitRows.map((row) => row.caseId),
+    eligibleHitCaseIds: eligibleHits.map((row) => row.caseId),
+    seedProofCaseIds: [...seedProof.entries()].filter(([, proven]) => proven).map(([caseId]) => caseId),
+    seedFailures: [...new Set(seedFailures)],
+    hitFailures: [...new Set(hitFailures)],
+    inconclusiveHitCaseIds: gradedHits.filter((row) => row.grade?.inconclusive === true).map((row) => row.caseId),
+    ungradedHitCaseIds: gradedHits.filter((row) => !row.grade).map((row) => row.caseId),
     cachePrecisionCases,
     cachePrecision,
     status,
     ready: status === 'pass',
     gradedHits,
+    validationRunId: runId,
+    retries: 0,
+    replacements: 0,
   };
 }
 
@@ -169,8 +255,10 @@ module.exports = {
   CACHE_VALIDATION_CASE_COUNT,
   CACHE_VALIDATION_PHASE_ORDER,
   validateCacheValidationManifest,
+  cacheValidationBranch,
   buildCacheValidationPlan,
   validateResultSequence,
   isProvenCacheHit,
+  isProvenCacheMiss,
   finaliseCacheValidation,
 };

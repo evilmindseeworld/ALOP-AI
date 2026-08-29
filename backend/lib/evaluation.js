@@ -74,6 +74,25 @@ const KNOWN_EXPECT_KEYS = new Set([
   'mustDiscussTradeoff', 'maxLatencyMs', 'minChars',
 ]);
 
+const CACHE_HIT_ROUTES = new Set(['answer_cache', 'answer_cache_semantic']);
+const isQualifyingCacheObservation = (observation) => {
+  const cache = observation?.accounting?.cache;
+  return observation?.error == null
+    && observation?.validationRunId == null
+    && observation?.validationCaseId == null
+    && observation?.validationPhase == null
+    && String(observation?.cacheStatus || '').toLowerCase() !== 'bypass'
+    && observation?.textSource === 'cache'
+    && observation?.cacheDecision === 'hit'
+    && CACHE_HIT_ROUTES.has(observation?.provenance?.route)
+    && observation?.accounting?.schemaVersion === 1
+    && cache?.source === 'turn_provenance.route'
+    && cache?.decision === 'hit'
+    && cache?.lookupAttempted === true
+    && cache?.bypassRequested === false
+    && cache?.bypassAccepted === false;
+};
+
 /**
  * Case validation, because a dataset is code. A typo'd expectation key is the
  * failure this catches: `mustContain` instead of `mustInclude` silently grades
@@ -705,6 +724,8 @@ function summarise(grades, observations = []) {
   const rate = (num, den) => (den > 0 ? num / den : null);
   const evaluatedGrades = grades.filter((g) => !g.inconclusive);
   const evaluatedIds = new Set(evaluatedGrades.map((g) => g.id));
+  const evaluatedGradesById = new Map(evaluatedGrades.map((g) => [g.id, g]));
+  const gradeIds = new Set(grades.map((g) => g.id));
   const measuredObservations = observations.filter((o) => evaluatedIds.has(o.id));
   const evaluatedCases = evaluatedGrades.length;
   const passed = evaluatedGrades.filter((g) => g.passed).length;
@@ -716,15 +737,13 @@ function summarise(grades, observations = []) {
   const citingOk = citing.filter((g) => g.checks.find((c) => c.name === 'mustCite')?.ok === true);
 
   const toolResults = measuredObservations.flatMap((o) => framesOfType(o, 'tool_result'));
-  const gradeIds = new Set(grades.map((g) => g.id));
   // Cache PRECISION, not hit rate: of the turns that were served from cache,
   // how many still answered the question correctly. A stale or mis-keyed cache
   // row is a hit and a wrong answer at the same time, and hit rate calls that a
   // success.
-  const cacheObs = observations.filter((o) => gradeIds.has(o.id)
-    && o.textSource === 'cache'
-    && o.cacheDecision === 'hit');
-  const cacheOk = cacheObs.filter((o) => grades.find((g) => g.id === o.id)?.passed);
+  const cacheObs = observations.filter((o) => evaluatedGradesById.has(o.id)
+    && isQualifyingCacheObservation(o));
+  const cacheOk = cacheObs.filter((o) => evaluatedGradesById.get(o.id)?.passed === true);
 
   /* A cost receipt is independent evidence even when the answer itself was
    * incomplete. In particular, a failed attempt to a verified zero-price route

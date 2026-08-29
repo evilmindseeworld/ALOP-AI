@@ -46,7 +46,12 @@ const { deadlineSignal } = require('./lib/stream-deadline');
 const { canRetryStream } = require('./lib/stream-retry-policy');
 const { createTurnTelemetry } = require('./lib/turn-telemetry');
 const { buildTurnAccountingMeta, unknownUsage } = require('./lib/turn-accounting-meta');
-const { benchmarkCacheBypass } = require('./lib/benchmark-cache-bypass');
+const {
+  benchmarkCacheBypass,
+  benchmarkCacheValidation,
+  benchmarkZeroPricePreflight,
+} = require('./lib/benchmark-cache-bypass');
+const { preflightZeroPriceCatalog } = require('./lib/openrouter-zero-price-preflight');
 const { rescueReasoning } = require('./lib/reasoning-rescue');
 const { createTurnContext } = require('./lib/turn-context');
 const { createTurnLedger } = require('./lib/turn-ledger');
@@ -98,6 +103,7 @@ const {
   configuredSynthesisModel,
   chooseSynthesis,
 } = require('./lib/synthesis-policy');
+const { cacheValidationBranch } = require('./lib/cache-validation');
 /* Required here rather than beside the ladder constants below, because the tool
  * seat resolves its effort from `effortFor` and is declared first. */
 const { parseLadder, fallbacksAfter, asStreamFallbacks, effortFor } = require('./lib/model-ladder');
@@ -496,6 +502,18 @@ const ADAPTIVE_HEAD = !/^(0|false|off)$/i.test(
 const SYNTHESIS_MODEL_CANDIDATES = [
   ...new Set([SYNTHESIS_MODEL, PRIMARY_MODEL, SMART_MODEL, ...HEAD_FALLBACKS.map((rung) => rung.model)]),
 ];
+
+const activeOpenRouterRouteIds = () => [...new Set([
+  ...COUNCIL.map((seat) => seat.model),
+  TOOL_SEAT?.model,
+  PRIMARY_MODEL,
+  FAST_MODEL,
+  SYNTHESIS_MODEL,
+  SMART_MODEL,
+  ...HEAD_CANDIDATES,
+  ...SYNTHESIS_MODEL_CANDIDATES,
+].filter((model) => typeof model === 'string' && model.trim()
+  && !/^(off|none|0|false)$/i.test(model.trim())))];
 
 /**
  * THE SAME LADDER FOR THE NON-STREAMING CALL, which is what the native tool
@@ -4031,6 +4049,21 @@ app.get('/health', (req, res) => res.json({
   rateLimitStore: USE_PG_RATE_LIMIT ? 'postgres' : 'memory',
 }));
 
+/* Metadata-only evaluator preflight. It is authenticated and separately
+ * secret-gated, returns no provider credentials, and must pass before a live
+ * quality run is allowed to send a model request. */
+app.get('/api/benchmark/zero-price-preflight', requireAuth, checkSuspended, async (req, res) => {
+  const authorization = benchmarkZeroPricePreflight({ headers: req.headers });
+  if (!authorization.enabled) return fail(res, 403, 'Benchmark preflight is not authorised.', 'benchmark_preflight_unauthorized');
+  const result = await preflightZeroPriceCatalog({
+    routeIds: activeOpenRouterRouteIds(),
+    host: OPENROUTER_HOST,
+    apiKey: OPENROUTER_API_KEY,
+  });
+  res.set('Cache-Control', 'no-store');
+  return res.status(result.pass ? 200 : 503).json(result);
+});
+
 // ===== COUNCIL =====
 /* THE COUNCIL TURN, NAMED so a background job can call it in process.
  *
@@ -4234,6 +4267,13 @@ async function handleCouncilTurn(req, res) {
    * is configured outside the repository. A valid bypass is observable on the
    * response so a benchmark cannot silently grade a cache hit as fresh. */
   const cacheBypass = benchmarkCacheBypass({ headers: req.headers });
+  const cacheValidation = benchmarkCacheValidation({ headers: req.headers });
+  const cacheBranch = cacheValidation.enabled
+    ? cacheValidationBranch(ANSWER_CACHE_BRANCH, cacheValidation.runId)
+    : ANSWER_CACHE_BRANCH;
+  if (cacheValidation.enabled) {
+    console.log(`[ANSWERS] BENCHMARK cache validation namespace run=${cacheValidation.runId} case=${cacheValidation.caseId} phase=${cacheValidation.phase}`);
+  }
   if (cacheBypass.enabled) {
     res.set('X-ALOP-Cache-Status', 'bypass');
     console.log('[ANSWERS] BENCHMARK cache bypass authorised');
@@ -4457,6 +4497,9 @@ async function handleCouncilTurn(req, res) {
           route: provenanceRoute,
           cacheBypassRequested: cacheBypass.requested,
           cacheBypassAccepted: cacheBypass.enabled,
+          cacheValidationRunId: cacheValidation.enabled ? cacheValidation.runId : null,
+          cacheValidationCaseId: cacheValidation.enabled ? cacheValidation.caseId : null,
+          cacheValidationPhase: cacheValidation.enabled ? cacheValidation.phase : null,
         }),
       },
     };
@@ -5319,7 +5362,7 @@ async function handleCouncilTurn(req, res) {
         country: region?.country || '',
         plan: userPlan,
         detailed: isDetailed,
-        branch: ANSWER_CACHE_BRANCH,
+        branch: cacheBranch,
         /* WHAT ANSWERED, not just what was asked. Without these an answer
          * written by the old synthesis prompt kept being served for up to
          * ninety days with nothing anywhere marking it stale — the prompt
@@ -5387,7 +5430,7 @@ async function handleCouncilTurn(req, res) {
           country: region?.country || '',
           plan: userPlan,
           detailed: isDetailed,
-          branch: ANSWER_CACHE_BRANCH,
+          branch: cacheBranch,
           threshold: SEMANTIC_CACHE_THRESHOLD,
         }));
         if (semanticHit?.answer && !turnSignal.aborted) {
@@ -5526,11 +5569,11 @@ async function handleCouncilTurn(req, res) {
             country: region?.country || '',
             plan: userPlan,
             detailed: isDetailed,
-            branch: ANSWER_CACHE_BRANCH,
+            branch: cacheBranch,
             usedLiveWeb: searched,
           },
           provenance: {
-            branch: ANSWER_CACHE_BRANCH,
+            branch: cacheBranch,
             searched,
             fresh,
             source_count: evidence.size,

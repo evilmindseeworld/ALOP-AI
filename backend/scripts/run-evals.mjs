@@ -50,6 +50,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
+import { randomUUID } from "node:crypto";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
@@ -90,6 +91,10 @@ const QUALITY_CACHE_BYPASS_DATASETS = new Set([
 
 if (cacheBypass && !cacheBypassSecret) {
   console.error("--cache-bypass requires EVAL_CACHE_BYPASS_SECRET; no fresh run will start without it.");
+  process.exit(1);
+}
+if (cacheValidation && !cacheBypassSecret) {
+  console.error("--cache-validation requires EVAL_CACHE_BYPASS_SECRET; no validation run will start without it.");
   process.exit(1);
 }
 if (cacheValidation && cacheBypass) {
@@ -344,6 +349,36 @@ if (process.env.EVAL_CLERK_SECRET_KEY) {
   );
 }
 
+/* A quality gate cannot begin until the actual production route set has a
+ * fresh official OpenRouter metadata receipt. This is a metadata GET only; a
+ * missing, malformed, nonzero, or ambiguous response stops the run before any
+ * council request is sent. */
+let zeroPricePreflight = null;
+if (QUALITY_CACHE_BYPASS_DATASETS.has(datasetName)) {
+  try {
+    const response = await fetch(`${base}/api/benchmark/zero-price-preflight`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${await tokenFor()}`,
+        "X-ALOP-Benchmark-Zero-Price-Preflight": cacheBypassSecret,
+        Accept: "application/json",
+      },
+    });
+    zeroPricePreflight = await response.json().catch(() => ({}));
+    if (!response.ok || zeroPricePreflight?.pass !== true) {
+      console.error(`ZERO_PRICE_PREFLIGHT = FAIL ${JSON.stringify({
+        reason: zeroPricePreflight?.reason || `http_${response.status}`,
+        activeRoutes: zeroPricePreflight?.activeRoutes || [],
+      })}`);
+      process.exit(1);
+    }
+    console.log(`ZERO_PRICE_PREFLIGHT = PASS (${zeroPricePreflight.activeRouteCount} active routes)`);
+  } catch {
+    console.error(`ZERO_PRICE_PREFLIGHT = FAIL ${JSON.stringify({ reason: "metadata_request_failed" })}`);
+    process.exit(1);
+  }
+}
+
 /* ---- one turn -------------------------------------------------------- */
 
 /**
@@ -356,7 +391,13 @@ if (process.env.EVAL_CLERK_SECRET_KEY) {
  * number is gated against the agent loop's 75s wall clock, which is a whole-turn
  * budget.
  */
-async function runCase(testCase, { operationId = `eval-${datasetName}-${testCase.id}`, useCacheBypass = cacheBypass } = {}) {
+async function runCase(testCase, {
+  operationId = `eval-${datasetName}-${testCase.id}`,
+  useCacheBypass = cacheBypass,
+  validationRunId = null,
+  validationCaseId = null,
+  validationPhase = null,
+} = {}) {
   const started = Date.now();
   const frames = [];
   let answer = "";
@@ -375,6 +416,12 @@ async function runCase(testCase, { operationId = `eval-${datasetName}-${testCase
         "X-Operation-Id": operationId,
         Accept: "text/event-stream",
         ...(useCacheBypass ? { "X-ALOP-Benchmark-Cache-Bypass": cacheBypassSecret } : {}),
+        ...(validationRunId ? {
+          "X-ALOP-Benchmark-Cache-Validation": cacheBypassSecret,
+          "X-ALOP-Benchmark-Cache-Validation-Run": validationRunId,
+          "X-ALOP-Benchmark-Cache-Validation-Case": validationCaseId,
+          "X-ALOP-Benchmark-Cache-Validation-Phase": validationPhase,
+        } : {}),
       },
       body: JSON.stringify({
         message: testCase.question,
@@ -503,7 +550,8 @@ if (cacheValidation) {
   /* PRE-RESULTS means this complete plan is built before the first HTTP
    * response. The hit half is never shortened, retried, or replaced based on
    * what the seed half returned. */
-  const plan = buildCacheValidationPlan(raw);
+  const validationRunId = randomUUID();
+  const plan = buildCacheValidationPlan(raw, { runId: validationRunId });
   const casesById = new Map(cases.map((testCase) => [testCase.id, testCase]));
   const results = [];
   console.log(`Cache validation: ${plan.length / 2} fixed cases, seed phase then hit phase, all requests non-bypass.`);
@@ -512,12 +560,18 @@ if (cacheValidation) {
     const observation = await runCase(testCase, {
       operationId: step.operationId,
       useCacheBypass: false,
+      validationRunId,
+      validationCaseId: step.caseId,
+      validationPhase: step.phase,
     });
     results.push({
       ...observation,
       caseId: step.caseId,
       phase: step.phase,
       operationId: step.operationId,
+      validationRunId,
+      validationCaseId: step.caseId,
+      validationPhase: step.phase,
     });
     console.log(`${String(index + 1).padStart(2)}/${plan.length} ${step.phase.padEnd(4)} ${step.caseId.padEnd(32)} ${observation.cacheDecision || "unknown"}`);
   }
@@ -535,6 +589,13 @@ if (cacheValidation) {
       base,
       ranAt: new Date().toISOString(),
       preResults: true,
+      validationRunId,
+      cacheNamespace: {
+        evaluatorOnly: true,
+        runId: validationRunId,
+        keyOnly: true,
+        ordinaryProductionSemanticsUnchanged: true,
+      },
       plan,
       validation,
       observations: results.map((observation) => ({
@@ -598,6 +659,7 @@ if (reportPath) {
   // without the thing it measured is not evidence about anything.
   await writeFile(resolve(reportPath), JSON.stringify({
     dataset: name, base, ranAt: new Date().toISOString(),
+    zeroPricePreflight,
     metrics, verdict, grades,
     COST_MEASURED: metricFlags.COST_MEASURED ? "YES" : "NO",
     CACHE_PRECISION_MEASURED: metricFlags.CACHE_PRECISION_MEASURED ? "YES" : "NO",

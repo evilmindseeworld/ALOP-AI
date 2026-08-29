@@ -4,9 +4,25 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
-const { benchmarkCacheBypass, HEADER, SECRET_ENV } = require('./benchmark-cache-bypass');
+const {
+  benchmarkCacheBypass,
+  benchmarkCacheValidation,
+  HEADER,
+  SECRET_ENV,
+  VALIDATION_HEADER,
+  VALIDATION_RUN_HEADER,
+  VALIDATION_CASE_HEADER,
+  VALIDATION_PHASE_HEADER,
+} = require('./benchmark-cache-bypass');
 
 const headers = (value) => ({ [HEADER]: value });
+const validationHeaders = (over = {}) => ({
+  [VALIDATION_HEADER]: 'correct',
+  [VALIDATION_RUN_HEADER]: 'validation-run-test',
+  [VALIDATION_CASE_HEADER]: 'cache-validation-case',
+  [VALIDATION_PHASE_HEADER]: 'seed',
+  ...over,
+});
 const SOURCE = readFileSync(join(__dirname, '..', 'server.js'), 'utf8');
 const ROUTE = SOURCE.slice(SOURCE.indexOf("app.post('/api/council'"), SOURCE.indexOf('// ===== OVERLAY'));
 
@@ -36,6 +52,32 @@ test('the evaluator can authorise an explicit cache bypass', () => {
     headers: headers('correct'),
     env: { [SECRET_ENV]: 'correct' },
   }), { enabled: true, requested: true, reason: 'authorized' });
+});
+
+test('the evaluator can authorise a bound cache-validation namespace without enabling bypass', () => {
+  assert.deepEqual(benchmarkCacheValidation({
+    headers: validationHeaders(),
+    env: { [SECRET_ENV]: 'correct' },
+  }), {
+    enabled: true,
+    requested: true,
+    reason: 'authorized',
+    runId: 'validation-run-test',
+    caseId: 'cache-validation-case',
+    phase: 'seed',
+  });
+  assert.equal(benchmarkCacheBypass({ headers: validationHeaders(), env: { [SECRET_ENV]: 'correct' } }).enabled, false);
+});
+
+test('cache validation rejects missing or malformed binding and never exposes the secret', () => {
+  const env = { [SECRET_ENV]: 'correct' };
+  assert.equal(benchmarkCacheValidation({ headers: { [VALIDATION_HEADER]: 'correct' }, env }).enabled, false);
+  const invalid = benchmarkCacheValidation({
+    headers: validationHeaders({ [VALIDATION_PHASE_HEADER]: 'other' }),
+    env,
+  });
+  assert.equal(invalid.enabled, false);
+  assert.equal(JSON.stringify(invalid).includes('correct'), false);
 });
 
 test('the comparison is exact, including case and header shape', () => {

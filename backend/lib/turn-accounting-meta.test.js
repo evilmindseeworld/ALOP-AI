@@ -175,8 +175,58 @@ test('zero cost is derived only for a known no-provider route', () => {
   const missingRouteAccounting = snapshotFor({ route: 'council' });
   assert.equal(local.cost.measured, true);
   assert.equal(local.cost.costCents, 0);
+  assert.equal(local.cost.noProviderEvidence, true);
   assert.equal(missingRouteAccounting.cost.measured, false);
   assert.equal(missingRouteAccounting.cost.costCents, null);
+});
+
+test('a no-provider zero is unknown when a usage receipt or provider evidence exists', () => {
+  const usageReceipt = buildTurnAccountingMeta({
+    providerRequests: 0,
+    providerAttempts: { failed: 0, detail: [] },
+    usage: usage(0),
+  }, { route: 'arithmetic' });
+  const providerDetail = buildTurnAccountingMeta({
+    providerRequests: 0,
+    providerAttempts: { failed: 0, detail: [attempt('ok')] },
+    usage: null,
+  }, { route: 'arithmetic' });
+
+  for (const receipt of [usageReceipt, providerDetail]) {
+    assert.equal(receipt.cost.measured, false);
+    assert.equal(receipt.cost.costUsd, null);
+    assert.equal(receipt.cost.unknownReason, 'contradictory_accounting');
+    assert.equal(receipt.cost.noProviderEvidence, undefined);
+  }
+});
+
+test('failed detail and positive provider spend cannot be represented as no-provider zero', () => {
+  const failedDetail = buildTurnAccountingMeta({
+    providerRequests: 0,
+    providerAttempts: { failed: 1, detail: [attempt('http_error')] },
+    usage: null,
+  }, { route: 'arithmetic' });
+  const positiveSpend = buildTurnAccountingMeta({
+    providerRequests: 0,
+    providerAttempts: { failed: 0, detail: [] },
+    usage: usage(0.001),
+  }, { route: 'answer_cache' });
+
+  assert.equal(failedDetail.cost.measured, false);
+  assert.equal(failedDetail.cost.costCents, null);
+  assert.equal(positiveSpend.cost.measured, false);
+  assert.equal(positiveSpend.cost.costCents, null);
+});
+
+test('the observation projection requires the explicit no-provider receipt marker', () => {
+  const receipt = buildTurnAccountingMeta({
+    providerRequests: 0,
+    providerAttempts: { failed: 0, detail: [] },
+    usage: null,
+  }, { route: 'arithmetic' });
+  const forged = { ...receipt, cost: { ...receipt.cost, noProviderEvidence: undefined } };
+  assert.equal(observationTelemetry({ provenance: { route: 'arithmetic' }, accounting: receipt }).costCents, 0);
+  assert.equal(observationTelemetry({ provenance: { route: 'arithmetic' }, accounting: forged }).costCents, null);
 });
 
 test('cache provenance labels a real cache hit and never labels a normal council route as a hit', () => {
@@ -322,9 +372,19 @@ test('cache miss receipts require an observed lookup rather than a route guess',
 test('cache precision is correctness over labelled cache observations, not hit rate', () => {
   const goodCase = { id: 'cache-good', expect: { mustInclude: ['Canberra'] } };
   const badCase = { id: 'cache-bad', expect: { mustInclude: ['Canberra'] } };
+  const cacheReceipt = {
+    schemaVersion: 1,
+    cache: {
+      source: 'turn_provenance.route',
+      decision: 'hit',
+      lookupAttempted: true,
+      bypassRequested: false,
+      bypassAccepted: false,
+    },
+  };
   const observations = [
-    { id: goodCase.id, answer: 'Canberra is the capital of Australia.', textSource: 'cache', cacheDecision: 'hit', latencyMs: 1, frames: [] },
-    { id: badCase.id, answer: 'Sydney is the capital of Australia.', textSource: 'cache', cacheDecision: 'hit', latencyMs: 1, frames: [] },
+    { id: goodCase.id, answer: 'Canberra is the capital of Australia.', textSource: 'cache', cacheDecision: 'hit', provenance: { route: 'answer_cache' }, accounting: cacheReceipt, latencyMs: 1, frames: [] },
+    { id: badCase.id, answer: 'Sydney is the capital of Australia.', textSource: 'cache', cacheDecision: 'hit', provenance: { route: 'answer_cache' }, accounting: cacheReceipt, latencyMs: 1, frames: [] },
   ];
   const grades = [gradeCase(goodCase, observations[0]), gradeCase(badCase, observations[1])];
   const metrics = summarise(grades, observations);

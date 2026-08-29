@@ -9,6 +9,18 @@ const {
 } = require('./openrouter-zero-price-preflight');
 
 const routes = ZERO_PRICE_CATALOG.slice(0, 3).map((entry) => entry.model);
+const currentActiveRoutes = [
+  'nvidia/nemotron-3-super-120b-a12b:free',
+  'cohere/north-mini-code:free',
+  'poolside/laguna-s-2.1:free',
+  'google/gemma-4-31b-it:free',
+  'google/gemma-4-26b-a4b-it:free',
+  'nvidia/nemotron-3-ultra-550b-a55b:free',
+];
+const removedRoutes = [
+  'openai/gpt-oss-20b:free',
+  'nvidia/nemotron-3-nano-30b-a3b:free',
+];
 const response = (body, status = 200) => ({
   ok: status >= 200 && status < 300,
   status,
@@ -45,6 +57,39 @@ test('the preflight passes only for the exact active routes and exact zero input
   assert.deepEqual(result.nonzeroOutputRoutes, []);
   assert.deepEqual(result.missingRoutes, []);
   assert.equal(JSON.stringify(result).includes('test-key'), false);
+});
+
+test('the six current active routes pass while historical dead catalog rows are ignored', async () => {
+  const result = await preflightZeroPriceCatalog({
+    routeIds: currentActiveRoutes,
+    apiKey: 'test-key',
+    fetchImpl: fakeFetch(metadata([...currentActiveRoutes, ...removedRoutes])),
+  });
+
+  assert.equal(result.pass, true);
+  assert.equal(result.activeRouteCount, 6);
+  assert.deepEqual(result.checkedRoutes, currentActiveRoutes);
+  assert.deepEqual(result.missingRoutes, []);
+  assert.deepEqual(result.unknownActiveRoutes, []);
+});
+
+test('a paid base model cannot satisfy a missing exact free route', async () => {
+  const result = await preflightZeroPriceCatalog({
+    routeIds: [removedRoutes[0]],
+    apiKey: 'test-key',
+    fetchImpl: fakeFetch({
+      data: [{
+        id: 'openai/gpt-oss-20b',
+        pricing: { prompt: '0.00000003', completion: '0.00000013' },
+      }],
+    }),
+  });
+
+  assert.equal(result.pass, false);
+  assert.deepEqual(result.missingRoutes, [removedRoutes[0]]);
+  assert.deepEqual(result.nonzeroInputRoutes, []);
+  assert.deepEqual(result.nonzeroOutputRoutes, []);
+  assert.equal(result.reason, 'catalog_route_missing');
 });
 
 test('a missing active route fails closed instead of falling back to an alias or snapshot', async () => {

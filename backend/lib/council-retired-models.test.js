@@ -80,8 +80,8 @@ test('the guard can actually see a seat — it is parsing ids, not an empty list
    * zero seats, the two assertions above are vacuously true. */
   const backend = configuredIds(BACKEND);
   const frontend = configuredIds(FRONTEND);
-  assert.ok(backend.length >= 7, `parsed only ${backend.length} backend model ids`);
-  assert.ok(frontend.length >= 7, `parsed only ${frontend.length} frontend model ids`);
+  assert.ok(backend.length >= 5, `parsed only ${backend.length} backend model ids`);
+  assert.ok(frontend.length >= 5, `parsed only ${frontend.length} frontend model ids`);
   assert.ok(backend.includes('cohere/north-mini-code:free'), 'the seat that replaced ling is not in the roster');
 });
 

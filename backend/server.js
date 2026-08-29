@@ -185,7 +185,7 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 // step with nothing to reconcile. The determinism that matters — extracting
 // facts from search results — is unaffected; those paths still run at 0.0.
 // ---------------------------------------------------------------------------
-// OPENROUTER FREE MODELS, AND WHY THESE SEVEN. Migrated 2026-08-12.
+// OPENROUTER FREE MODELS, AND WHY THESE FIVE CURRENT COUNCIL SEATS. Migrated 2026-08-12.
 //
 // Every id ends in `:free` and that suffix is part of the id — drop it and the
 // call 404s. `free: true` keeps its existing meaning: the seat a FREE-TIER USER
@@ -303,13 +303,6 @@ const COUNCIL = [
   // tokens and is a floor; this one was measured at the real ceiling, so it is
   // the only value here that is not, and it still ranks the same.
   { model: 'cohere/north-mini-code:free',           temperature: 0.3, free: true,  medianMs: 600 },
-  // 429 on the paced sample and healthy on an earlier one at 2.5s. Kept rather
-  // than dropped: a 429 here is contention, not absence, and this is the only
-  // OpenAI-lineage seat on the board. It is no longer RETRIED, though — that
-  // sentence used to say lib/openrouter.js retries it, and as of 2026-08-19 a
-  // council seat gets one request and the council's own redundancy is the
-  // retry. See the comment at the seat call in lib/council-run.js.
-  { model: 'openai/gpt-oss-20b:free',               temperature: 0.4, free: false, medianMs: 2500 },
   { model: 'poolside/laguna-s-2.1:free',            temperature: 0.5, free: false, medianMs: 8900 },
   // 31B dense, and it has NEVER ONCE ANSWERED A PACED CALL. Two provider 429s
   // on 2026-08-12, nine more on 2026-08-19, plus a real council turn that spent
@@ -335,7 +328,6 @@ const COUNCIL = [
   // still pickable, so this seat stays eligible without being preferred.
   { model: 'google/gemma-4-31b-it:free',            temperature: 0.6, free: false },
   { model: 'google/gemma-4-26b-a4b-it:free',        temperature: 0.7, free: true,  medianMs: 2400 },
-  { model: 'nvidia/nemotron-3-nano-30b-a3b:free',   temperature: 0.8, free: true,  medianMs: 2100 },
 ];
 
 /**

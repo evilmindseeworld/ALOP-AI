@@ -173,6 +173,72 @@ test("model-disagreement grading checks assertion polarity and bounded relation"
   }
 });
 
+test("tradeoff polarity follows the final contrastive clause", () => {
+  for (const answer of [
+    "The models might appear redundant; however, every one contributes unique evidence.",
+    "The models are redundant; however, that redundancy is only superficial and each adds new information.",
+    "Some call them redundant; however, that is wrong.",
+    "Some reviewers call the seats repetitive; nevertheless, each adds substantial novel insight.",
+    "One could argue their value diminishes; however, the data shows every additional model improves the result materially.",
+    "They share some context; yet the marginal benefit remains high.",
+    "Although similar, each additional model continues contributing unique evidence.",
+  ]) {
+    assert.equal(hasDiminishingValueReasoning(answer), false, answer);
+  }
+
+  for (const answer of [
+    "The first few seats help; however, once the models become similar, each additional one contributes less new information.",
+    "Extra perspectives are useful initially; nevertheless, repeated perspectives eventually add little novel evidence.",
+    "The panel benefits from diversity; yet another near-identical judge contributes almost nothing new.",
+  ]) {
+    assert.equal(hasDiminishingValueReasoning(answer), true, answer);
+  }
+});
+
+test("implicit contribution decrease requires a council addition relation", () => {
+  for (const answer of [
+    "The sixth near-identical judge adds almost nothing that the first five did not already cover.",
+    "Another similar model contributes very little beyond the existing panel.",
+    "Each extra replica brings almost nothing new.",
+    "The next aligned opinion adds little that is genuinely novel.",
+  ]) {
+    assert.equal(hasDiminishingValueReasoning(answer), true, answer);
+  }
+
+  for (const answer of [
+    "Nothing happened after the model call.",
+    "The model knows almost nothing about biology.",
+    "The duplicate file adds nothing to disk usage.",
+    "Another model contributes little latency.",
+    "Another model adds nothing to disk usage.",
+    "Another model costs almost nothing.",
+    "The HTTP retry contributes little latency.",
+    "The judge said nothing.",
+    "Nothing was logged.",
+    "Additional models were tested. Nothing happened afterward.",
+  ]) {
+    assert.equal(hasDiminishingValueReasoning(answer), false, answer);
+  }
+});
+
+test("bounded tradeoff paraphrases remain category-safe", () => {
+  const recognized = [
+    "After several aligned opinions, the next opinion tends to add less that is genuinely new.",
+    "The usefulness of another near-identical perspective tapers off.",
+  ];
+  for (const answer of recognized) {
+    assert.equal(hasDiminishingValueReasoning(answer), true, answer);
+  }
+
+  const notYetRecognized = [
+    "Once everyone is saying effectively the same thing, asking one more judge rarely tells you anything you did not already know.",
+    "The panel eventually reaches a point where another similar answer changes very little.",
+  ];
+  for (const answer of notYetRecognized) {
+    assert.equal(hasDiminishingValueReasoning(answer), false, answer);
+  }
+});
+
 test("mustDiscussTradeoff reaches the grader and respects final stance", () => {
   const expect = { mustMatch: ["disagree|uncertain|risk|novel|different"], mustDiscussTradeoff: true };
   const passing = gradeCase(caseOf(expect), obs({

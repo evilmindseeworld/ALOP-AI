@@ -207,3 +207,99 @@ test('M17: the live valid paraphrase must remain recognized', () => {
   assert.equal(mutant.hasDiminishingValueReasoning(answer), false,
     'removing the informational decrease leg must be caught');
 });
+
+test('M18: semicolon contrast rejection must not be disabled', () => {
+  const answer = 'The models appear redundant; every one contributes unique evidence.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), false);
+  const mutant = mutateLine('return contrastiveRejection;', '  return false;');
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), true,
+    'a semicolon-bound rejection must not be ignored');
+});
+
+test('M19: unique evidence must remain an explicit rejection stance', () => {
+  const answer = 'The models appear redundant; however, every one contributes unique evidence.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), false);
+  const mutant = mutateLine(
+    "const TRADEOFF_POSITIVE_QUALITY_WORDS = new Set(['substantial', 'significant', 'meaningful', 'real', 'novel', 'new', 'high', 'unique', 'material', 'materially', 'valuable', 'useful']);",
+    "  const TRADEOFF_POSITIVE_QUALITY_WORDS = new Set(['substantial', 'significant', 'meaningful', 'real', 'novel', 'new', 'high', 'material', 'materially', 'valuable', 'useful']);",
+  );
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), true,
+    'removing unique from positive evidence must be caught');
+});
+
+test('M20: explicit however must remain a contrast boundary', () => {
+  const answer = 'The models appear redundant, however, every one contributes unique evidence.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), false);
+  const mutant = mutateLine(
+    "const TRADEOFF_CONTRAST_WORDS = new Set(['but', 'yet', 'although', 'though', 'however', 'while', 'nevertheless']);",
+    "  const TRADEOFF_CONTRAST_WORDS = new Set(['but', 'yet', 'although', 'though', 'while', 'nevertheless']);",
+  );
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), true,
+    'removing however from explicit contrast handling must be caught');
+});
+
+test('M21: bare nothing must not satisfy a bound relation', () => {
+  const answer = 'Another model says nothing.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), false);
+  const mutant = mutateLine(
+    'return hasInformationalDecrease(tokens) || hasImplicitContributionDecrease(tokens) || hasBoundRedundancy(clause, tokens);',
+    "  return hasInformationalDecrease(tokens) || tokens.includes('nothing') || hasImplicitContributionDecrease(tokens) || hasBoundRedundancy(clause, tokens);",
+  );
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), true,
+    'accepting bare nothing after topical binding must be caught');
+});
+
+test('M22: contribution relation must be required for implicit decrease', () => {
+  const answer = 'The sixth near-identical judge adds almost nothing that the first five did not already cover.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), true);
+  const mutant = mutateLine(
+    'return contributionVerbs.some((verb) => lowQuantifiers.some((low) => within(verb, low, 3)));',
+    '  return false;',
+  );
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), false,
+    'removing the contribution-to-low-quantifier relation must be caught');
+});
+
+test('M23: cost-only almost nothing must not become contribution evidence', () => {
+  const answer = 'Another model costs almost nothing.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), false);
+  const mutant = mutateLine(
+    "const TRADEOFF_CONTRIBUTION_WORDS = new Set(['add', 'adds', 'adding', 'contribute', 'contributes', 'contributing', 'bring', 'brings', 'bringing', 'offer', 'offers', 'offering', 'provide', 'provides', 'providing', 'improve', 'improves', 'improving']);",
+    "  const TRADEOFF_CONTRIBUTION_WORDS = new Set(['add', 'adds', 'adding', 'contribute', 'contributes', 'contributing', 'bring', 'brings', 'bringing', 'offer', 'offers', 'offering', 'provide', 'provides', 'providing', 'improve', 'improves', 'improving', 'costs']);",
+  );
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), true,
+    'classifying cost as a contribution verb must be caught');
+});
+
+test('M24: an unrelated judge saying nothing must not pass', () => {
+  const answer = 'The judge said nothing.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), false);
+  const mutant = mutateLine(
+    'if (!tokens.length || !hasCouncilAdditionBinding(tokens)) return false;',
+    "      if (tokens.includes('nothing')) return true;\n      if (!tokens.length || !hasCouncilAdditionBinding(tokens)) return false;",
+  );
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), true,
+    'accepting an unbound nothing claim must be caught');
+});
+
+test('M25: sentence boundaries must remain relation boundaries', () => {
+  const answer = 'More models improve diversity. Marginal revenue falls.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), false);
+  const mutant = mutateLine(
+    'const sentences = answerText.split(/[.!?]+/);',
+    '  const sentences = [answerText];',
+  );
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), true,
+    'combining separate sentences must be caught');
+});
+
+test('M26: a final diminishing stance must survive earlier redundancy setup', () => {
+  const answer = 'The models are redundant but each adds useful context; however, the marginal benefit from another model falls.';
+  assert.equal(current.hasDiminishingValueReasoning(answer), true);
+  const mutant = mutateLine(
+    'const laterClauses = clauses.slice(1);',
+    '  const laterClauses = clauses;',
+  );
+  assert.equal(mutant.hasDiminishingValueReasoning(answer), false,
+    'earlier positive wording must not veto the final diminishing stance');
+});

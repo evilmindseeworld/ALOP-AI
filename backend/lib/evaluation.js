@@ -340,7 +340,7 @@ const TRADEOFF_ADDITION_WORDS = new Set([
   'repeated', 'repeat', 'repeats', 'repeating', 'duplicate', 'duplicated', 'duplicates',
   'redundant', 'redundancy', 'identical', 'similar', 'same', 'alike', 'replica', 'replicas',
   'converge', 'converges', 'converging', 'convergent', 'overlapping', 'overlap',
-  'nth', 'fifth', 'sixth',
+  'nth', 'fifth', 'sixth', 'next', 'aligned',
 ]);
 const TRADEOFF_VALUE_WORDS = new Set([
   'gain', 'gains', 'benefit', 'benefits', 'value', 'utility', 'return', 'returns',
@@ -353,11 +353,18 @@ const TRADEOFF_DECREASE_WORDS = new Set([
   'diminished', 'diminishing', 'decline', 'declines', 'declining', 'decrease',
   'decreases', 'decreasing', 'fall', 'falls', 'falling', 'drop', 'drops', 'dropping',
   'zero', 'nothing', 'flat', 'plateau', 'plateaus', 'saturate', 'saturates', 'saturating',
+  'taper', 'tapers', 'tapering',
 ]);
 const TRADEOFF_REDUNDANCY_WORDS = new Set([
   'redundant', 'redundancy', 'duplicate', 'duplicated', 'duplicates', 'replica', 'replicas',
   'repeat', 'repeats', 'repeated', 'repetition',
 ]);
+const TRADEOFF_POSITIVE_QUALITY_WORDS = new Set(['substantial', 'significant', 'meaningful', 'real', 'novel', 'new', 'high', 'unique', 'material', 'materially', 'valuable', 'useful']);
+const TRADEOFF_CONTRIBUTION_WORDS = new Set(['add', 'adds', 'adding', 'contribute', 'contributes', 'contributing', 'bring', 'brings', 'bringing', 'offer', 'offers', 'offering', 'provide', 'provides', 'providing', 'improve', 'improves', 'improving']);
+const TRADEOFF_LOW_QUANTIFIER_WORDS = new Set(['no', 'little', 'nothing', 'negligible', 'minimal', 'hardly', 'barely', 'zero', 'less']);
+const TRADEOFF_QUANTIFIER_WORDS = new Set(['each', 'every', 'all', 'both', 'everyone']);
+const TRADEOFF_CONTRAST_WORDS = new Set(['but', 'yet', 'although', 'though', 'however', 'while', 'nevertheless']);
+const TRADEOFF_NON_INFORMATION_TARGET_WORDS = new Set(['latency', 'cost', 'costs', 'money', 'budget', 'compute', 'disk', 'storage', 'usage', 'time', 'delay', 'delays', 'overhead', 'bandwidth', 'throughput']);
 
 const evaluatorTokens = (text) => normaliseUnicodeText(text)
   .toLowerCase()
@@ -380,6 +387,47 @@ const hasInformationalDecrease = (tokens) => {
   const decreases = positionsOf(tokens, TRADEOFF_DECREASE_WORDS);
   return values.some((value) => decreases.some((decrease) => within(value, decrease, 6)));
 };
+
+const hasImplicitContributionDecrease = (tokens) => {
+  if (!hasCouncilAdditionBinding(tokens)) return false;
+  const contributionVerbs = positionsOf(tokens, TRADEOFF_CONTRIBUTION_WORDS);
+  let lowQuantifiers = positionsOf(tokens, TRADEOFF_LOW_QUANTIFIER_WORDS);
+  if (!contributionVerbs.length || !lowQuantifiers.length) return false;
+  lowQuantifiers = lowQuantifiers.filter((low) =>
+    !tokens.slice(low + 1, low + 4).some((token) => TRADEOFF_NON_INFORMATION_TARGET_WORDS.has(token)));
+  if (!lowQuantifiers.length) return false;
+  return contributionVerbs.some((verb) => lowQuantifiers.some((low) => within(verb, low, 3)));
+};
+
+const hasPositiveContributionStance = (sentence) => {
+  const tokens = evaluatorTokens(sentence);
+  const quantifiers = tokens.filter((token) => TRADEOFF_QUANTIFIER_WORDS.has(token));
+  const contributionVerbs = positionsOf(tokens, TRADEOFF_CONTRIBUTION_WORDS);
+  const qualities = positionsOf(tokens, TRADEOFF_POSITIVE_QUALITY_WORDS);
+  const lowQuantifiers = positionsOf(tokens, TRADEOFF_LOW_QUANTIFIER_WORDS);
+  if (!quantifiers.length || !contributionVerbs.length || !qualities.length) return false;
+  return contributionVerbs.some((verb) => qualities.some((quality) =>
+    quality >= verb
+    && within(verb, quality, 6)
+    && !lowQuantifiers.some((low) => low > verb && low < quality)
+    && !tokens.slice(Math.max(0, verb - 3), verb).some((token) => token === 'not' || token === 'never')));
+};
+
+const splitTradeoffClauses = (sentence) => normaliseUnicodeText(sentence)
+  .split(/;|,\s*(?:but|yet|although|though|however|while|nevertheless)\b/i)
+  .map((clause) => clause.trim())
+  .filter(Boolean);
+
+function hasContrastiveRejection(sentence, clauses) {
+  const text = normaliseUnicodeText(sentence);
+  if (clauses.length < 2) return false;
+  const hasSemicolonBoundary = text.includes(';');
+  const hasExplicitContrast = evaluatorTokens(text).some((token) => TRADEOFF_CONTRAST_WORDS.has(token));
+  if (!hasSemicolonBoundary && !hasExplicitContrast) return false;
+  const laterClauses = clauses.slice(1);
+  const contrastiveRejection = laterClauses.some((clause) => hasPositiveContributionStance(clause));
+  return contrastiveRejection;
+}
 
 function hasBoundRedundancy(sentence, tokens) {
   const subjects = positionsOf(tokens, TRADEOFF_SUBJECT_WORDS);
@@ -409,7 +457,8 @@ function rejectsDiminishingRelation(sentence) {
   const noReasonablePerson = /\bno\s+(?:reasonable\s+)?(?:person|one|expert|observer)\b[^.!?;]*\b(?:call|consider|describe|say)\b[^.!?;]*(?:model|models|seat|seats)\b[^.!?;]*(?:redundant|duplicate\w*|replica\w*)\b/i;
   const staysHigh = /\b(?:marginal|incremental)\s+(?:benefit|value|gain|contribution|information)\b[^.!?;]*\b(?:remain|remains|stays|stay|is|are)\s+(?:high|substantial|significant|large|strong)\b/i;
   const wrongContrast = /\b(?:call|called|consider|considered|describe|described)\b[^.!?;]*\b(?:redundant|duplicate\w*|replica\w*)\b[^.!?;]*\b(?:but|yet|however)\b[^.!?;]*\b(?:wrong|false|incorrect|mistaken)\b/i;
-  const eachAdds = /\b(?:each|every|all|both|everyone)\b[^.!?;]*\b(?:add|adds|adding|contribute|contributes|provide|provides|offer|offers)\b[^.!?;]*\b(?:substantial|significant|meaningful|real|novel|new|high)\b[^.!?;]*\b(?:value|benefit|information|evidence|insight|novelty)\b/i;
+  const eachAdds = !/[;]|,\s*(?:but|yet|although|though|however|while|nevertheless)\b/i.test(text)
+    && hasPositiveContributionStance(text);
   return noDecrease.test(text)
     || noRedundancy.test(text)
     || deniedPredicate.test(text)
@@ -418,18 +467,20 @@ function rejectsDiminishingRelation(sentence) {
     || noReasonablePerson.test(text)
     || staysHigh.test(text)
     || wrongContrast.test(text)
-    || eachAdds.test(text);
+    || eachAdds;
 }
 
 function hasDiminishingValueReasoning(text) {
-  const sentences = normaliseUnicodeText(String(text ?? '')).split(/[.!?]+/);
+  const answerText = normaliseUnicodeText(String(text ?? ''));
+  const sentences = answerText.split(/[.!?]+/);
   return sentences.some((sentence) => {
     if (rejectsDiminishingRelation(sentence)) return false;
-    const clauses = sentence.split(/;|,\s*(?:but|yet|although|though|however|while)\b/i);
+    const clauses = splitTradeoffClauses(sentence);
+    if (hasContrastiveRejection(sentence, clauses)) return false;
     return clauses.some((clause) => {
       const tokens = evaluatorTokens(clause);
       if (!tokens.length || !hasCouncilAdditionBinding(tokens)) return false;
-      return hasInformationalDecrease(tokens) || hasBoundRedundancy(clause, tokens);
+      return hasInformationalDecrease(tokens) || hasImplicitContributionDecrease(tokens) || hasBoundRedundancy(clause, tokens);
     });
   });
 }

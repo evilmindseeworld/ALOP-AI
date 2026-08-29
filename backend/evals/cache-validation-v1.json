@@ -1,0 +1,53 @@
+{
+  "name": "cache-validation-v1",
+  "notes": [
+    "This is an independent cache proof manifest, not a quality manifest.",
+    "The three cases are fixed before execution and are cache-eligible: no history, images, or attachments.",
+    "Each case is requested once with normal cache semantics to seed it, then once more with the same normal non-bypass semantics.",
+    "Only the second request's proven cache receipt can count as a cache hit. A miss is recorded and never retried or replaced."
+  ],
+  "preResults": {
+    "phase": "pre-results",
+    "caseCount": 3,
+    "requestsPerCase": 2,
+    "phaseOrder": ["seed", "hit"],
+    "selection": "fixed-manifest-order",
+    "cacheBypass": false,
+    "postResultsAdaptation": false
+  },
+  "cases": [
+    {
+      "id": "cache-validation-invalidation",
+      "question": "Why does a cache need an invalidation strategy? Explain the trade-off between speed and freshness.",
+      "cacheEligible": true,
+      "tags": ["cache-validation", "pre-results"],
+      "expect": {
+        "mustMatch": ["cache|cached", "stale|fresh|invalidation"],
+        "expectNoTools": true,
+        "minChars": 100
+      }
+    },
+    {
+      "id": "cache-validation-index",
+      "question": "What is a database index, and what trade-off does it introduce for writes and storage?",
+      "cacheEligible": true,
+      "tags": ["cache-validation", "pre-results"],
+      "expect": {
+        "mustMatch": ["index", "write|storage"],
+        "expectNoTools": true,
+        "minChars": 100
+      }
+    },
+    {
+      "id": "cache-validation-idempotency",
+      "question": "Explain in two sentences why idempotent API operations are useful when clients retry requests.",
+      "cacheEligible": true,
+      "tags": ["cache-validation", "pre-results"],
+      "expect": {
+        "mustMatch": ["idempotent", "retry|repeat|same"],
+        "expectNoTools": true,
+        "minChars": 100
+      }
+    }
+  ]
+}

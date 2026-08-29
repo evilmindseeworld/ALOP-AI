@@ -7,6 +7,7 @@ const { join } = require('node:path');
 
 const SOURCE = readFileSync(join(__dirname, '..', 'scripts', 'run-evals.mjs'), 'utf8');
 const EVALUATION = readFileSync(join(__dirname, 'evaluation.js'), 'utf8');
+const CACHE_VALIDATION = JSON.parse(readFileSync(join(__dirname, '..', 'evals', 'cache-validation-v1.json'), 'utf8'));
 
 test('the judge is pure and neither evaluator source selects Luna through OpenRouter', () => {
   assert.doesNotMatch(EVALUATION, /\bfetch\s*\(/);
@@ -34,4 +35,22 @@ test('fresh evaluation requires both the explicit CLI mode and its secret', () =
   assert.match(SOURCE, /cacheBypass && !cacheBypassSecret/);
   assert.match(SOURCE, /X-ALOP-Benchmark-Cache-Bypass/);
   assert.match(SOURCE, /cache_bypass_unconfirmed/);
+});
+
+test('the cache validation phase is fixed, separate, and explicitly non-bypass', () => {
+  assert.match(SOURCE, /--cache-validation/);
+  assert.match(SOURCE, /buildCacheValidationPlan/);
+  assert.match(SOURCE, /useCacheBypass: false/);
+  assert.match(SOURCE, /finaliseCacheValidation/);
+  assert.equal(CACHE_VALIDATION.name, 'cache-validation-v1');
+  assert.equal(CACHE_VALIDATION.preResults.phase, 'pre-results');
+  assert.equal(CACHE_VALIDATION.preResults.cacheBypass, false);
+  assert.equal(CACHE_VALIDATION.preResults.postResultsAdaptation, false);
+});
+
+test('quality manifests remain the cache-bypassed set', () => {
+  for (const name of ['core-v1', 'backend-intelligence-v1', 'backend-intelligence-v1-recovery10']) {
+    assert.match(SOURCE, new RegExp(`"${name}"`));
+  }
+  assert.match(SOURCE, /QUALITY_CACHE_BYPASS_DATASETS/);
 });

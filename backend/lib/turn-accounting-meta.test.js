@@ -6,6 +6,12 @@ const { createTurnTelemetry } = require('./turn-telemetry');
 const { gradeCase, summarise } = require('./evaluation');
 const { evaluateGates } = require('./release-gates');
 const {
+  ZERO_PRICE_CATALOG,
+  ZERO_PRICE_CATALOG_SOURCE,
+  ZERO_PRICE_CATALOG_VERSION,
+  isVerifiedZeroPriceModel,
+} = require('./openrouter-zero-price-catalog');
+const {
   UNKNOWN_USAGE,
   buildTurnAccountingMeta,
   measurementFromFrames,
@@ -21,18 +27,20 @@ const usage = (costUsd) => ({
   costUsd,
 });
 
-const attempt = (outcome = 'ok', attemptNumber = 1) => ({
+const attempt = (outcome = 'ok', attemptNumber = 1, model = 'model:free') => ({
   provider: 'openrouter',
-  model: 'model:free',
+  model,
   phase: 'council',
   attempt: attemptNumber,
   outcome,
   status: outcome === 'ok' ? 200 : 503,
 });
 
-const snapshotFor = ({ costs = [], attempts = ['ok'], route = 'council' } = {}) => {
+const snapshotFor = ({ costs = [], attempts = ['ok'], attemptModels = [], route = 'council' } = {}) => {
   const telemetry = createTurnTelemetry();
-  for (const [index, outcome] of attempts.entries()) telemetry.recordProviderAttempt(attempt(outcome, index + 1));
+  for (const [index, outcome] of attempts.entries()) {
+    telemetry.recordProviderAttempt(attempt(outcome, index + 1, attemptModels[index] || 'model:free'));
+  }
   for (const costUsd of costs) telemetry.recordUsage(usage(costUsd), { phase: 'council' });
   return buildTurnAccountingMeta(telemetry.snapshot({}), { route });
 };
@@ -73,6 +81,95 @@ test('multiple settled provider receipts are summed once and converted to cents'
   assert.equal(receipt.cost.providerRequests, 2);
 });
 
+test('the committed catalog, not FREE_ONLY, is the zero-price source of truth', () => {
+  assert.ok(ZERO_PRICE_CATALOG.length >= 3);
+  assert.ok(ZERO_PRICE_CATALOG.every((entry) => entry.verified === true
+    && entry.inputUsdPerMillionTokens === 0
+    && entry.outputUsdPerMillionTokens === 0
+    && entry.source === ZERO_PRICE_CATALOG_SOURCE
+    && entry.catalogVersion === ZERO_PRICE_CATALOG_VERSION));
+  assert.equal(isVerifiedZeroPriceModel(ZERO_PRICE_CATALOG[0].model), true);
+  assert.equal(isVerifiedZeroPriceModel('unlisted/model:free'), false);
+  assert.equal(isVerifiedZeroPriceModel('openrouter/free'), false);
+  assert.doesNotMatch(ZERO_PRICE_CATALOG_SOURCE, /FREE_ONLY/);
+});
+
+test('failed attempts to independently verified zero-price models measure truthful zero', () => {
+  const model = ZERO_PRICE_CATALOG[0].model;
+  const receipt = snapshotFor({
+    attempts: ['http_error'],
+    attemptModels: [model],
+  });
+  assert.equal(receipt.cost.measured, true);
+  assert.equal(receipt.cost.costUsd, 0);
+  assert.equal(receipt.cost.costCents, 0);
+  assert.equal(receipt.cost.failedProviderAttempts, 1);
+  assert.equal(receipt.cost.zeroPriceVerified, true);
+  assert.equal(receipt.cost.zeroPriceCatalogVersion, ZERO_PRICE_CATALOG_VERSION);
+  const measurement = measurementFromFrames([
+    { type: 'provenance', provenance: { route: 'council', accounting: receipt } },
+  ]);
+  assert.equal(measurement.costCents, 0);
+  assert.equal(measurement.costMeasured, true);
+});
+
+test('multiple verified zero-price attempts aggregate to one measured zero', () => {
+  const models = [ZERO_PRICE_CATALOG[0].model, ZERO_PRICE_CATALOG[1].model, ZERO_PRICE_CATALOG[2].model];
+  const receipt = snapshotFor({
+    attempts: ['http_error', 'http_error', 'ok'],
+    attemptModels: models,
+  });
+  assert.equal(receipt.cost.providerRequests, 3);
+  assert.equal(receipt.cost.failedProviderAttempts, 2);
+  assert.equal(receipt.cost.measured, true);
+  assert.equal(receipt.cost.costCents, 0);
+});
+
+test('a verified zero-price failure aggregates with a settled priced success', () => {
+  const receipt = snapshotFor({
+    attempts: ['http_error', 'ok'],
+    attemptModels: [ZERO_PRICE_CATALOG[0].model, 'openai/gpt-5.6-luna'],
+    costs: [0.002],
+  });
+  assert.equal(receipt.cost.providerRequests, 2);
+  assert.equal(receipt.cost.failedProviderAttempts, 1);
+  assert.equal(receipt.cost.failedZeroPriceVerified, true);
+  assert.equal(receipt.cost.measured, true);
+  assert.equal(receipt.cost.costUsd, 0.002);
+  assert.equal(receipt.cost.costCents, 0.2);
+  const measurement = measurementFromFrames([
+    { type: 'provenance', provenance: { route: 'council', accounting: receipt } },
+  ]);
+  assert.equal(measurement.costCents, 0.2);
+});
+
+test('unknown or nonzero failed routes remain unknown, even under FREE_ONLY', () => {
+  const unknown = snapshotFor({
+    attempts: ['http_error', 'ok'],
+    attemptModels: ['unlisted/model:free', ZERO_PRICE_CATALOG[0].model],
+    costs: [0],
+  });
+  const nonzero = snapshotFor({
+    attempts: ['http_error'],
+    attemptModels: ['openai/gpt-5.6-luna'],
+  });
+  assert.equal(unknown.cost.measured, false);
+  assert.equal(unknown.cost.costCents, null);
+  assert.equal(nonzero.cost.measured, false);
+  assert.equal(nonzero.cost.costCents, null);
+});
+
+test('a nonzero usage conflict never gets overwritten by the zero-price catalog', () => {
+  const receipt = snapshotFor({
+    attempts: ['ok'],
+    attemptModels: [ZERO_PRICE_CATALOG[0].model],
+    costs: [0.001],
+  });
+  assert.equal(receipt.cost.measured, false);
+  assert.equal(receipt.cost.costCents, null);
+  assert.equal(receipt.cost.unknownReason, 'zero_price_catalog_conflict');
+});
+
 test('zero cost is derived only for a known no-provider route', () => {
   const local = snapshotFor({ route: 'arithmetic', attempts: [] });
   const missingRouteAccounting = snapshotFor({ route: 'council' });
@@ -85,7 +182,16 @@ test('zero cost is derived only for a known no-provider route', () => {
 test('cache provenance labels a real cache hit and never labels a normal council route as a hit', () => {
   const hit = observationTelemetry({
     provenance: { route: 'answer_cache' },
-    accounting: { cache: { bypassAccepted: false } },
+    accounting: {
+      schemaVersion: 1,
+      cache: {
+        source: 'turn_provenance.route',
+        decision: 'hit',
+        lookupAttempted: true,
+        bypassRequested: false,
+        bypassAccepted: false,
+      },
+    },
   });
   const miss = observationTelemetry({
     provenance: { route: 'council' },
@@ -105,6 +211,25 @@ test('cache provenance labels a real cache hit and never labels a normal council
   assert.equal(hit.cacheTelemetryMeasured, true);
   assert.equal(miss.cacheDecision, 'miss');
   assert.equal(miss.textSource, null);
+});
+
+test('a cache route without a complete hit receipt is not counted as a proven hit', () => {
+  const observation = observationTelemetry({
+    provenance: { route: 'answer_cache' },
+    accounting: {
+      schemaVersion: 1,
+      cache: {
+        source: 'turn_provenance.route',
+        decision: 'hit',
+        lookupAttempted: false,
+        bypassRequested: false,
+        bypassAccepted: false,
+      },
+    },
+  });
+  assert.equal(observation.cacheDecision, 'unknown');
+  assert.equal(observation.cacheTelemetryMeasured, false);
+  assert.equal(observation.textSource, null);
 });
 
 test('a route without a cache lookup is not relabelled as a cache miss', () => {
@@ -198,19 +323,21 @@ test('cache precision is correctness over labelled cache observations, not hit r
   const goodCase = { id: 'cache-good', expect: { mustInclude: ['Canberra'] } };
   const badCase = { id: 'cache-bad', expect: { mustInclude: ['Canberra'] } };
   const observations = [
-    { id: goodCase.id, answer: 'Canberra is the capital of Australia.', textSource: 'cache', latencyMs: 1, frames: [] },
-    { id: badCase.id, answer: 'Sydney is the capital of Australia.', textSource: 'cache', latencyMs: 1, frames: [] },
+    { id: goodCase.id, answer: 'Canberra is the capital of Australia.', textSource: 'cache', cacheDecision: 'hit', latencyMs: 1, frames: [] },
+    { id: badCase.id, answer: 'Sydney is the capital of Australia.', textSource: 'cache', cacheDecision: 'hit', latencyMs: 1, frames: [] },
   ];
   const grades = [gradeCase(goodCase, observations[0]), gradeCase(badCase, observations[1])];
   const metrics = summarise(grades, observations);
   assert.equal(metrics.cachePrecision, 0.5);
+  assert.equal(metrics.cachePrecisionCases, 2);
 });
 
 test('zero cache denominator stays null and cannot pass its hard gate', () => {
   const metrics = summarise([], []);
   assert.equal(metrics.cachePrecision, null);
+  assert.equal(metrics.cachePrecisionCases, 0);
   const verdict = evaluateGates(metrics, {
-    gates: [{ name: 'cache', metric: 'cachePrecision', direction: 'min', threshold: 1, sample: 'cases', minSample: 3 }],
+    gates: [{ name: 'cache', metric: 'cachePrecision', direction: 'min', threshold: 1, sample: 'cachePrecisionCases', minSample: 3 }],
   });
   assert.equal(verdict.passed, false);
   assert.equal(verdict.results[0].status, 'inconclusive');
@@ -218,12 +345,12 @@ test('zero cache denominator stays null and cannot pass its hard gate', () => {
 
 test('synthetic cost and cache gates distinguish measured pass, measured fail, and unknown', () => {
   const gates = [
-    { name: 'cost', metric: 'costCentsPerTurn', direction: 'max', threshold: 5, sample: 'cases', minSample: 10 },
-    { name: 'cache', metric: 'cachePrecision', direction: 'min', threshold: 1, sample: 'cases', minSample: 3 },
+    { name: 'cost', metric: 'costCentsPerTurn', direction: 'max', threshold: 5, sample: 'costMeasuredCases', minSample: 10 },
+    { name: 'cache', metric: 'cachePrecision', direction: 'min', threshold: 1, sample: 'cachePrecisionCases', minSample: 3 },
   ];
-  const pass = evaluateGates({ cases: 10, costCentsPerTurn: 0, cachePrecision: 1 }, { gates });
-  const fail = evaluateGates({ cases: 10, costCentsPerTurn: 5.01, cachePrecision: 0.5 }, { gates });
-  const unknown = evaluateGates({ cases: 10, costCentsPerTurn: null, cachePrecision: null }, { gates });
+  const pass = evaluateGates({ costMeasuredCases: 10, cachePrecisionCases: 3, costCentsPerTurn: 0, cachePrecision: 1 }, { gates });
+  const fail = evaluateGates({ costMeasuredCases: 10, cachePrecisionCases: 3, costCentsPerTurn: 5.01, cachePrecision: 0.5 }, { gates });
+  const unknown = evaluateGates({ costMeasuredCases: 0, cachePrecisionCases: 0, costCentsPerTurn: null, cachePrecision: null }, { gates });
   assert.equal(pass.passed, true);
   assert.deepEqual(fail.failed, ['cost', 'cache']);
   assert.deepEqual(unknown.inconclusive, ['cost', 'cache']);

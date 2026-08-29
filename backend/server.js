@@ -5932,14 +5932,6 @@ async function handleCouncilTurn(req, res) {
           onFinish: (event) => {
             if (event?.reason === 'whip') telemetry.markCeiling('search_council_whip');
           },
-          /* The extracted council runner defaults to the process-level model
-           * adapter. Use the same metered adapter as the ordinary council so
-           * search turns do not lose their non-streaming usage receipts. */
-          callModel: (model, messages, temperature, whipMs, tokenLimit, signal, callOptions = {}) =>
-            meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, {
-              ...callOptions,
-              phase: 'search_council',
-            }),
         },
       );
       if (turnSignal.aborted) return;

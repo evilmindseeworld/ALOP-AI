@@ -18,6 +18,7 @@
  *   --limit <n>           run at most n cases
  *   --gates <path>        JSON of { gateName: threshold | {…} | false }
  *   --cache-bypass         require and send the secret-gated fresh-execution header
+ *   --cache-validation     run the fixed pre-results seed-then-hit cache phase
  *   EVAL_CLERK_TESTING_TOKEN
  *                         short-lived Clerk testing token for development-instance auth
  *   --allow-inconclusive  do not fail the run on an unmeasured gate
@@ -55,6 +56,12 @@ const require = createRequire(import.meta.url);
 const { loadDataset, gradeCase, summarise } = require("../lib/evaluation");
 const { mergeGates, evaluateGates, formatGates } = require("../lib/release-gates");
 const { measurementFromFrames, metricMeasurementFlags } = require("../lib/turn-accounting-meta");
+const {
+  CACHE_VALIDATION_NAME,
+  buildCacheValidationPlan,
+  finaliseCacheValidation,
+  validateCacheValidationManifest,
+} = require("../lib/cache-validation");
 
 /* ---- arguments ------------------------------------------------------- */
 
@@ -66,16 +73,39 @@ const flag = (name, fallback = null) => {
 const bool = (name) => argv.includes(`--${name}`);
 const many = (name) => argv.reduce((out, a, i) => (a === `--${name}` ? [...out, argv[i + 1]] : out), []);
 
-const datasetName = flag("dataset", "core-v1");
+const requestedDataset = flag("dataset");
+const cacheValidation = bool("cache-validation");
+const datasetName = requestedDataset || (cacheValidation ? CACHE_VALIDATION_NAME : "core-v1");
 const base = (flag("base", process.env.BASE || "http://localhost:3001") || "").replace(/\/$/, "");
 const token = process.env.EVAL_TOKEN || "";
 const tags = many("tag");
 const limit = Number(flag("limit", "0")) || 0;
 const cacheBypass = bool("cache-bypass");
 const cacheBypassSecret = process.env.EVAL_CACHE_BYPASS_SECRET || "";
+const QUALITY_CACHE_BYPASS_DATASETS = new Set([
+  "core-v1",
+  "backend-intelligence-v1",
+  "backend-intelligence-v1-recovery10",
+]);
 
 if (cacheBypass && !cacheBypassSecret) {
   console.error("--cache-bypass requires EVAL_CACHE_BYPASS_SECRET; no fresh run will start without it.");
+  process.exit(1);
+}
+if (cacheValidation && cacheBypass) {
+  console.error("--cache-validation is a normal non-bypass phase; do not combine it with --cache-bypass.");
+  process.exit(1);
+}
+if (cacheValidation && requestedDataset && requestedDataset !== CACHE_VALIDATION_NAME) {
+  console.error(`--cache-validation only accepts --dataset ${CACHE_VALIDATION_NAME}.`);
+  process.exit(1);
+}
+if (cacheValidation && (tags.length || limit)) {
+  console.error("--cache-validation has a fixed manifest and does not accept --tag or --limit.");
+  process.exit(1);
+}
+if (!cacheValidation && !bool("validate-only") && QUALITY_CACHE_BYPASS_DATASETS.has(datasetName) && !cacheBypass) {
+  console.error(`Dataset ${datasetName} is a quality run and must use --cache-bypass; use --cache-validation for normal cache hits.`);
   process.exit(1);
 }
 if (process.env.EVAL_CLERK_SECRET_KEY && !process.env.EVAL_USER_ID) {
@@ -124,8 +154,16 @@ let selected = tags.length ? cases.filter((c) => (c.tags || []).some((t) => tags
 if (limit) selected = selected.slice(0, limit);
 console.log(`Dataset ${name}: ${cases.length} cases, ${selected.length} selected.`);
 
+if (cacheValidation) {
+  const manifestProblems = validateCacheValidationManifest(raw);
+  if (manifestProblems.length) {
+    console.error(`Cache validation manifest is not runnable:\n  ${manifestProblems.join("\n  ")}`);
+    process.exit(1);
+  }
+}
+
 if (bool("validate-only")) {
-  console.log("Dataset is valid. Nothing was spent.");
+  console.log(`${cacheValidation ? "Cache validation manifest" : "Dataset"} is valid. Nothing was spent.`);
   process.exit(0);
 }
 /* ---- authentication -------------------------------------------------- */
@@ -318,8 +356,7 @@ if (process.env.EVAL_CLERK_SECRET_KEY) {
  * number is gated against the agent loop's 75s wall clock, which is a whole-turn
  * budget.
  */
-async function runCase(testCase) {
-  const operationId = `eval-${datasetName}-${testCase.id}`;
+async function runCase(testCase, { operationId = `eval-${datasetName}-${testCase.id}`, useCacheBypass = cacheBypass } = {}) {
   const started = Date.now();
   const frames = [];
   let answer = "";
@@ -337,7 +374,7 @@ async function runCase(testCase) {
         Authorization: `Bearer ${await tokenFor()}`,
         "X-Operation-Id": operationId,
         Accept: "text/event-stream",
-        ...(cacheBypass ? { "X-ALOP-Benchmark-Cache-Bypass": cacheBypassSecret } : {}),
+        ...(useCacheBypass ? { "X-ALOP-Benchmark-Cache-Bypass": cacheBypassSecret } : {}),
       },
       body: JSON.stringify({
         message: testCase.question,
@@ -385,7 +422,7 @@ async function runCase(testCase) {
     }
 
     cacheStatus = res.headers.get("x-alop-cache-status");
-    if (cacheBypass && cacheStatus !== "bypass") {
+    if (useCacheBypass && cacheStatus !== "bypass") {
       await res.body.cancel().catch(() => {});
       return {
         id: testCase.id,
@@ -462,6 +499,63 @@ async function runCase(testCase) {
 
 /* ---- the run --------------------------------------------------------- */
 
+if (cacheValidation) {
+  /* PRE-RESULTS means this complete plan is built before the first HTTP
+   * response. The hit half is never shortened, retried, or replaced based on
+   * what the seed half returned. */
+  const plan = buildCacheValidationPlan(raw);
+  const casesById = new Map(cases.map((testCase) => [testCase.id, testCase]));
+  const results = [];
+  console.log(`Cache validation: ${plan.length / 2} fixed cases, seed phase then hit phase, all requests non-bypass.`);
+  for (const [index, step] of plan.entries()) {
+    const testCase = casesById.get(step.caseId);
+    const observation = await runCase(testCase, {
+      operationId: step.operationId,
+      useCacheBypass: false,
+    });
+    results.push({
+      ...observation,
+      caseId: step.caseId,
+      phase: step.phase,
+      operationId: step.operationId,
+    });
+    console.log(`${String(index + 1).padStart(2)}/${plan.length} ${step.phase.padEnd(4)} ${step.caseId.padEnd(32)} ${observation.cacheDecision || "unknown"}`);
+  }
+
+  const validation = finaliseCacheValidation(plan, results, { casesById, gradeCase });
+  console.log(`CACHE_VALIDATION_HITS = ${validation.cachePrecisionCases}/${validation.plannedCaseCount}`);
+  console.log(`CACHE_VALIDATION_PRECISION = ${validation.cachePrecision ?? "inconclusive"}`);
+  console.log(`CACHE_VALIDATION = ${validation.status.toUpperCase()}`);
+
+  const reportPath = flag("report");
+  if (reportPath) {
+    await writeFile(resolve(reportPath), JSON.stringify({
+      mode: "cache-validation",
+      manifest: name,
+      base,
+      ranAt: new Date().toISOString(),
+      preResults: true,
+      plan,
+      validation,
+      observations: results.map((observation) => ({
+        ...observation,
+        frames: observation.frames.length,
+        answer: observation.answer.slice(0, 2000),
+      })),
+      method: {
+        seed: "normal existing cache semantics",
+        hit: "fixed normal non-bypass request",
+        hitProof: "provenance route plus accounting cache receipt",
+        retriesAfterResults: false,
+        substitutionsAfterResults: false,
+        contaminatesQualityManifests: false,
+      },
+    }, null, 2));
+    console.log(`Report written to ${resolve(reportPath)}`);
+  }
+
+  process.exitCode = validation.ready ? 0 : 1;
+} else {
 const observations = [];
 for (const [index, testCase] of selected.entries()) {
   const obs = await runCase(testCase);
@@ -528,3 +622,4 @@ console.log(verdict.passed ? "\nGATES PASSED" : `\nGATES REFUSED: ${[...verdict.
  * release for no reason. Setting the code lets the loop drain and exit on its
  * own, which is also what makes the report's last line trustworthy. */
 process.exitCode = verdict.passed ? 0 : 1;
+}

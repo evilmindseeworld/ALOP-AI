@@ -696,7 +696,9 @@ const mean = (values) => {
  * Each rate is `null` when its denominator is empty, and the gate for it then
  * reads inconclusive. `citationRate` is measured only over the cases that
  * REQUIRE a citation — averaging in the cases that must not cite would let a
- * dataset raise its own citation score by adding arithmetic questions.
+ * dataset raise its own citation score by adding arithmetic questions. The two
+ * hard metrics have their own denominators: only finite cost receipts and
+ * proven cache-served observations are evidence for their respective gates.
  */
 function summarise(grades, observations = []) {
   const total = grades.length;
@@ -714,18 +716,25 @@ function summarise(grades, observations = []) {
   const citingOk = citing.filter((g) => g.checks.find((c) => c.name === 'mustCite')?.ok === true);
 
   const toolResults = measuredObservations.flatMap((o) => framesOfType(o, 'tool_result'));
+  const gradeIds = new Set(grades.map((g) => g.id));
   // Cache PRECISION, not hit rate: of the turns that were served from cache,
   // how many still answered the question correctly. A stale or mis-keyed cache
   // row is a hit and a wrong answer at the same time, and hit rate calls that a
   // success.
-  const cacheObs = measuredObservations.filter((o) => o.textSource === 'cache');
+  const cacheObs = observations.filter((o) => gradeIds.has(o.id)
+    && o.textSource === 'cache'
+    && o.cacheDecision === 'hit');
   const cacheOk = cacheObs.filter((o) => grades.find((g) => g.id === o.id)?.passed);
 
+  /* A cost receipt is independent evidence even when the answer itself was
+   * incomplete. In particular, a failed attempt to a verified zero-price route
+   * can truthfully contribute a measured zero to this denominator. */
+  const costObservations = observations.filter((o) => gradeIds.has(o.id) && Number.isFinite(o.costCents));
   const latencies = measuredObservations.map((o) => o.latencyMs);
   const firstBytes = measuredObservations.map((o) => o.firstByteMs);
   const firstAnswerTokens = measuredObservations.map((o) => o.firstAnswerTokenMs);
   const firstUsefulStages = measuredObservations.map((o) => o.firstUsefulStageMs);
-  const costs = measuredObservations.map((o) => o.costCents);
+  const costs = costObservations.map((o) => o.costCents);
 
   return {
     cases: total,
@@ -739,6 +748,8 @@ function summarise(grades, observations = []) {
     citationRate: rate(citingOk.length, citing.length),
     toolSuccessRate: rate(toolResults.filter((f) => f.ok === true).length, toolResults.length),
     cachePrecision: rate(cacheOk.length, cacheObs.length),
+    costMeasuredCases: costObservations.length,
+    cachePrecisionCases: cacheObs.length,
     latencyP50Ms: percentile(latencies, 50),
     latencyP95Ms: percentile(latencies, 95),
     firstByteP50Ms: percentile(firstBytes, 50),

@@ -12,8 +12,10 @@ const GOOD = {
   citationRate: 1,
   latencyP95Ms: 30_000,
   costCentsPerTurn: 2,
+  costMeasuredCases: 22,
   toolSuccessRate: 1,
   cachePrecision: 1,
+  cachePrecisionCases: 22,
 };
 
 test("a fully measured, healthy run passes every gate", () => {
@@ -34,6 +36,20 @@ test("a sample smaller than minSample is inconclusive, so four cases cannot bles
   assert.equal(verdict.passed, false);
   assert.ok(verdict.inconclusive.includes("acceptance"), verdict.inconclusive.join(","));
   assert.ok(verdict.results.find((r) => r.name === "acceptance").detail.includes("sample 4 < 10"));
+});
+
+test("hard metric samples use measured denominators, not the total dataset size", () => {
+  const verdict = evaluateGates({
+    ...GOOD,
+    cases: 100,
+    costMeasuredCases: 9,
+    cachePrecisionCases: 2,
+  });
+  assert.ok(verdict.inconclusive.includes("cost-per-turn"));
+  assert.ok(verdict.inconclusive.includes("cache-precision"));
+  assert.equal(verdict.results.find((r) => r.name === "cost-per-turn").sample, 9);
+  assert.equal(verdict.results.find((r) => r.name === "cache-precision").sample, 2);
+  assert.equal(verdict.passed, false);
 });
 
 test("a measured breach fails at ANY sample size, and --allow-inconclusive cannot rescue it", () => {

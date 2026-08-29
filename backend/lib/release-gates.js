@@ -81,9 +81,9 @@ const DEFAULT_GATES = [
     metric: 'costCentsPerTurn',
     direction: 'max',
     threshold: 5,
-    sample: 'cases',
+    sample: 'costMeasuredCases',
     minSample: 10,
-    why: 'five cents a turn is the ceiling the daily spend reservation is sized against',
+    why: 'five cents a turn is the ceiling the daily spend reservation is sized against, over ten measured costs',
   },
   {
     name: 'tools',
@@ -99,9 +99,9 @@ const DEFAULT_GATES = [
     metric: 'cachePrecision',
     direction: 'min',
     threshold: 1,
-    sample: 'cases',
+    sample: 'cachePrecisionCases',
     minSample: 3,
-    why: 'a cache hit that answers the wrong question is worse than a miss, and free to ship',
+    why: 'a cache hit that answers the wrong question is worse than a miss, and three proven hits are the minimum evidence',
   },
 ];
 

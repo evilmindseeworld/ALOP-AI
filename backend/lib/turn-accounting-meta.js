@@ -10,10 +10,16 @@
  * This module is intentionally a projection, not a second accounting system.
  * It accepts the turn telemetry snapshot that already exists and emits a
  * bounded allow-list. Unknown cost stays unknown. A failed OpenRouter attempt
- * makes the turn's cost unmeasured unless the existing provider usage receipt
- * has a complete, settled cost for the turn; the current snapshot has no
- * per-failed-attempt receipt, so refusing the number is the safe result.
+ * is measurable at zero only when every physical attempt is independently
+ * matched to the committed zero-price catalogue; FREE_ONLY alone never proves
+ * a price.
  */
+
+const {
+  ZERO_PRICE_CATALOG_VERSION,
+  ZERO_PRICE_CATALOG_SOURCE,
+  isVerifiedZeroPriceModel,
+} = require('./openrouter-zero-price-catalog');
 
 const SCHEMA_VERSION = 1;
 
@@ -67,9 +73,30 @@ function buildTurnAccountingMeta(
     ? snapshot.providerAttempts
     : {};
   const usage = snapshot?.usage && typeof snapshot.usage === 'object' ? snapshot.usage : null;
-  const providerRequests = nonNegativeInteger(snapshot?.providerRequests);
+  const providerRequests = nonNegativeInteger(
+    snapshot?.providerRequests ?? attempts.byProvider?.openrouter,
+  );
   const failedProviderAttempts = nonNegativeInteger(attempts.failed);
   const reportedCostUsd = rounded(usage?.costUsd);
+  const attemptDetail = Array.isArray(attempts.detail) ? attempts.detail : null;
+  const openRouterAttemptDetail = attemptDetail
+    ? attemptDetail.filter((row) => String(row?.provider || 'openrouter') === 'openrouter')
+    : [];
+  /* A capped detail list cannot prove that all attempts were zero-price. The
+   * exact count is checked against the physical OpenRouter request count so a
+   * missing row cannot silently become a free row. */
+  const attemptDetailComplete = attemptDetail !== null
+    && attempts.truncatedDetail !== true
+    && providerRequests !== null
+    && openRouterAttemptDetail.length === providerRequests;
+  const zeroPriceAttemptsVerified = attemptDetailComplete
+    && providerRequests > 0
+    && openRouterAttemptDetail.every((row) => isVerifiedZeroPriceModel(row?.model));
+  const failedAttemptDetail = openRouterAttemptDetail.filter((row) => row?.outcome !== 'ok');
+  const failedZeroPriceAttemptsVerified = attemptDetailComplete
+    && failedProviderAttempts > 0
+    && failedAttemptDetail.length === failedProviderAttempts
+    && failedAttemptDetail.every((row) => isVerifiedZeroPriceModel(row?.model));
   const cacheReads = snapshot?.cacheReads && typeof snapshot.cacheReads === 'object'
     ? snapshot.cacheReads
     : {};
@@ -77,22 +104,45 @@ function buildTurnAccountingMeta(
   const noProviderSpend = providerRequests === 0
     && failedProviderAttempts === 0
     && ZERO_OPENROUTER_ROUTES.has(route);
+  const zeroPriceCatalogConflict = zeroPriceAttemptsVerified
+    && reportedCostUsd !== null
+    && reportedCostUsd !== 0;
+  const verifiedZeroProviderSpend = zeroPriceAttemptsVerified
+    && !zeroPriceCatalogConflict
+    && (reportedCostUsd === null || reportedCostUsd === 0);
+  const settledProviderSpend = providerRequests !== null
+    && providerRequests > 0
+    && failedProviderAttempts === 0
+    && reportedCostUsd !== null
+    && !zeroPriceCatalogConflict;
+  /* A verified zero-price failure contributes exactly zero to the aggregate.
+   * If another attempt succeeded and reported a cost, that settled cost is
+   * still measurable; an unknown failed route would make the same aggregate
+   * unknown instead. */
+  const settledWithVerifiedZeroFailures = providerRequests !== null
+    && providerRequests > 0
+    && failedProviderAttempts > 0
+    && failedZeroPriceAttemptsVerified
+    && reportedCostUsd !== null
+    && !zeroPriceCatalogConflict;
   const costMeasured = noProviderSpend
-    || (providerRequests !== null
-      && providerRequests > 0
-      && failedProviderAttempts === 0
-      && reportedCostUsd !== null);
-  const costUsd = noProviderSpend ? 0 : costMeasured ? reportedCostUsd : null;
+    || verifiedZeroProviderSpend
+    || settledProviderSpend
+    || settledWithVerifiedZeroFailures;
+  const costUsd = noProviderSpend || verifiedZeroProviderSpend ? 0 : costMeasured ? reportedCostUsd : null;
   const costCents = costUsd === null ? null : rounded(costUsd * 100);
 
-  let unknownReason = null;
-  if (!costMeasured) {
-    unknownReason = failedProviderAttempts > 0
-      ? 'failed_provider_attempt_without_settled_cost'
-      : providerRequests === 0 && !ZERO_OPENROUTER_ROUTES.has(route)
-        ? 'provider_request_accounting_missing'
-        : 'provider_usage_cost_missing';
-  }
+  const unknownReason = !costMeasured
+    ? zeroPriceCatalogConflict
+      ? 'zero_price_catalog_conflict'
+      : failedProviderAttempts > 0
+        ? 'failed_provider_attempt_without_settled_cost'
+        : providerRequests !== null && providerRequests > 0 && !attemptDetailComplete
+          ? 'provider_route_price_unverified'
+          : providerRequests === 0 && !ZERO_OPENROUTER_ROUTES.has(route)
+            ? 'provider_request_accounting_missing'
+            : 'provider_usage_cost_missing'
+    : null;
 
   const bypassRequested = Boolean(cacheBypassRequested);
   const bypassAccepted = Boolean(cacheBypassAccepted);
@@ -113,6 +163,12 @@ function buildTurnAccountingMeta(
       costCents,
       providerRequests,
       failedProviderAttempts,
+      zeroPriceVerified: verifiedZeroProviderSpend,
+      ...(failedZeroPriceAttemptsVerified ? { failedZeroPriceVerified: true } : {}),
+      ...((verifiedZeroProviderSpend || failedZeroPriceAttemptsVerified) ? {
+        zeroPriceCatalogVersion: ZERO_PRICE_CATALOG_VERSION,
+        zeroPriceSource: ZERO_PRICE_CATALOG_SOURCE,
+      } : {}),
       ...(unknownReason ? { unknownReason } : {}),
     },
     cache: {
@@ -142,7 +198,13 @@ function observationTelemetry({ provenance = null, accounting = null, cacheStatu
     && typeof cache?.bypassAccepted === 'boolean';
   const bypassed = String(cacheStatus || '').toLowerCase() === 'bypass'
     || (cacheReceiptValid && cache.bypassAccepted === true);
-  const actualCacheHit = !bypassed && CACHE_HIT_ROUTES.has(route);
+  const actualCacheHit = !bypassed
+    && CACHE_HIT_ROUTES.has(route)
+    && cacheReceiptValid
+    && cache.decision === 'hit'
+    && cache.lookupAttempted === true
+    && cache.bypassRequested === false
+    && cache.bypassAccepted === false;
   const cacheMiss = !bypassed
     && !actualCacheHit
     && cacheReceiptValid
@@ -153,12 +215,41 @@ function observationTelemetry({ provenance = null, accounting = null, cacheStatu
   const reportedCostCents = rounded(cost?.costCents);
   const providerRequests = nonNegativeInteger(cost?.providerRequests);
   const failedProviderAttempts = nonNegativeInteger(cost?.failedProviderAttempts);
-  const trustedCost = cost?.provider === 'openrouter'
+  const zeroPriceCatalogReceipt = cost?.zeroPriceCatalogVersion === ZERO_PRICE_CATALOG_VERSION
+    && cost?.zeroPriceSource === ZERO_PRICE_CATALOG_SOURCE;
+  const verifiedZeroPriceReceipt = cost?.zeroPriceVerified === true
+    && zeroPriceCatalogReceipt
+    && costUsd === 0
+    && reportedCostCents === 0;
+  const verifiedZeroFailureReceipt = cost?.failedZeroPriceVerified === true
+    && zeroPriceCatalogReceipt
+    && failedProviderAttempts !== null
+    && failedProviderAttempts > 0;
+  const trustedSettledCost = cost?.provider === 'openrouter'
     && cost?.source === 'openrouter.response.usage.costUsd'
     && cost?.measured === true
     && providerRequests !== null
     && failedProviderAttempts === 0
     && (providerRequests > 0 || ZERO_OPENROUTER_ROUTES.has(route));
+  const trustedSettledCostWithVerifiedZeroFailures = cost?.provider === 'openrouter'
+    && cost?.source === 'openrouter.response.usage.costUsd'
+    && cost?.measured === true
+    && providerRequests !== null
+    && failedProviderAttempts !== null
+    && failedProviderAttempts > 0
+    && verifiedZeroFailureReceipt
+    && providerRequests > 0;
+  const trustedZeroPriceCost = cost?.provider === 'openrouter'
+    && cost?.source === 'openrouter.response.usage.costUsd'
+    && cost?.measured === true
+    && providerRequests !== null
+    && failedProviderAttempts !== null
+    && failedProviderAttempts > 0
+    && verifiedZeroPriceReceipt
+    && providerRequests > 0;
+  const trustedCost = trustedSettledCost
+    || trustedSettledCostWithVerifiedZeroFailures
+    || trustedZeroPriceCost;
   const costCents = accounting?.schemaVersion === SCHEMA_VERSION
     && trustedCost
     && costUsd !== null

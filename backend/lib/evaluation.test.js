@@ -498,11 +498,29 @@ test("an unmeasured metric is null, not zero — zero passes every max gate", ()
 test("a cache hit that answers wrongly is a precision failure, not a hit", () => {
   const cases = [caseOf({ mustInclude: ["Canberra"] }, { id: "k1" }), caseOf({ mustInclude: ["Canberra"] }, { id: "k2" })];
   const observations = [
-    obs({ id: "k1", answer: "Canberra.", textSource: "cache" }),
-    obs({ id: "k2", answer: "Sydney.", textSource: "cache" }),
+    obs({ id: "k1", answer: "Canberra.", textSource: "cache", cacheDecision: "hit" }),
+    obs({ id: "k2", answer: "Sydney.", textSource: "cache", cacheDecision: "hit" }),
   ];
   const grades = cases.map((c) => gradeCase(c, observations.find((o) => o.id === c.id)));
   assert.equal(summarise(grades, observations).cachePrecision, 0.5);
+});
+
+test("hard metric denominators count measured receipts and proven hits independently of dataset size", () => {
+  const cases = [
+    caseOf({ mustInclude: ["good"] }, { id: "measured" }),
+    caseOf({ mustInclude: ["not present"] }, { id: "inconclusive" }),
+  ];
+  const observations = [
+    obs({ id: "measured", answer: "A good cached answer.", costCents: 0.2, textSource: "cache", cacheDecision: "hit" }),
+    obs({ id: "inconclusive", answer: "A complete cached answer.", costCents: 0, textSource: "cache", cacheDecision: "hit", error: { code: "transport" } }),
+  ];
+  const grades = cases.map((testCase) => gradeCase(testCase, observations.find((observation) => observation.id === testCase.id)));
+  const metrics = summarise(grades, observations);
+  assert.equal(metrics.cases, 2);
+  assert.equal(metrics.costMeasuredCases, 2);
+  assert.equal(metrics.costCentsPerTurn, 0.1);
+  assert.equal(metrics.cachePrecisionCases, 2);
+  assert.equal(metrics.cachePrecision, 0.5);
 });
 
 test("toolSuccessRate counts tool_result frames, failures included", () => {

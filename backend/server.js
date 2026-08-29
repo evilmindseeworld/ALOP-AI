@@ -45,6 +45,7 @@ const { generateImage } = require('./lib/image-gen');
 const { deadlineSignal } = require('./lib/stream-deadline');
 const { canRetryStream } = require('./lib/stream-retry-policy');
 const { createTurnTelemetry } = require('./lib/turn-telemetry');
+const { buildTurnAccountingMeta, unknownUsage } = require('./lib/turn-accounting-meta');
 const { benchmarkCacheBypass } = require('./lib/benchmark-cache-bypass');
 const { rescueReasoning } = require('./lib/reasoning-rescue');
 const { createTurnContext } = require('./lib/turn-context');
@@ -734,6 +735,12 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     completed: false,
     finishReason: null,
   };
+  meta.usageReported = false;
+  const reportMissingUsage = () => {
+    if (meta.usageReported) return;
+    meta.usageReported = true;
+    try { answerOptions.onUsage?.(unknownUsage()); } catch { /* telemetry must never fail a stream */ }
+  };
   const noteFirstContent = () => {
     if (firstContentAt !== null) return;
     firstContentAt = Date.now();
@@ -820,6 +827,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
        * on its own frame after finish_reason, so this sits above the text and
        * done branches rather than inside either. */
       if (frame.usage) {
+        meta.usageReported = true;
         try { answerOptions.onUsage?.(frame.usage); } catch { /* telemetry must never fail a stream */ }
       }
       if (frame.reasoning) reasoningParts.push(frame.reasoning);
@@ -855,10 +863,14 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
    * store the half of it that arrived and serve that to everybody for the next
    * six hours. Returning after the throw is unreachable and that is the point:
    * there is no path by which an incomplete answer becomes a cached one. */
+  reportMissingUsage();
   if (!completed) throw new Error('Stream ended before provider completion');
   if (held.length) {
     const sanitised = sanitizeAnswerText(held.join(''), answerOptions);
-    if (sanitised.rejected) throw new Error('Model returned protocol instead of an answer');
+    if (sanitised.rejected) {
+      reportMissingUsage();
+      throw new Error('Model returned protocol instead of an answer');
+    }
     if (sanitised.text) {
       noteFirstContent();
       appendChunk(sanitised.text);
@@ -884,7 +896,10 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     noteFirstContent();
     appendChunk(rescued.text);
   }
-  if (!emitted.length) throw new Error('Model returned no usable answer');
+  if (!emitted.length) {
+    reportMissingUsage();
+    throw new Error('Model returned no usable answer');
+  }
   const answerGuard = typeof answerOptions?.answerGuard === 'function'
     ? answerOptions.answerGuard
     : null;
@@ -899,6 +914,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     if (!deferOutput || !fallbackOk) {
       const error = new Error('Model answer did not satisfy the output or evidence contract');
       error.code = 'ANSWER_OUTPUT_CONTRACT';
+      reportMissingUsage();
       throw error;
     }
     emitted.length = 0;
@@ -915,6 +931,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
   if (deferOutput && emitted.length) {
     commitChunk(emitted.join(''));
   }
+  reportMissingUsage();
   try {
     answerOptions.onComplete?.({
       answer: emitted.join(''),
@@ -1026,6 +1043,10 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
     try { streamMeta?.releaseDeadline?.(); } catch { /* cleanup must never fail a turn */ }
     const st = streamMeta?.stream;
     if (!st) return;
+    if (!streamMeta.usageReported) {
+      streamMeta.usageReported = true;
+      try { answerOptions.onUsage?.(unknownUsage()); } catch { /* telemetry must never fail a stream */ }
+    }
     /* THREE OUTCOMES, NOT TWO. The turn deadline aborts the BODY through the
      * composed signal, so the turn signal is untouched and the error arrives
      * carrying `OPENROUTER_DEADLINE` — which the old test (`signal.aborted ||
@@ -1299,7 +1320,7 @@ const { normaliseForRouting } = require('./lib/spelling');
 // Only where it helps: a query about tax law or a person is not improved by a
 // country appended to it, so the model is told to use it when the answer is
 // local and to leave it alone otherwise.
-const planTurn = async (text, convSummary, region, signal, onAttempt) => {
+const planTurn = async (text, convSummary, region, signal, onAttempt, onUsage) => {
   const userContent = convSummary ? `Context: ${convSummary}\n\nQuestion: ${text}` : text;
   const locale = region
     ? ` The user appears to be in ${region.place}. If — and only if — the answer depends on where they are (prices, availability, retailers, local services, regulations), include that country in the query. Otherwise ignore it.`
@@ -1388,6 +1409,7 @@ openai ceo ${new Date().getUTCFullYear()}${locale}`;
   const response = await callModel(FAST_MODEL, [{ role: 'system', content: sys }, { role: 'user', content: userContent }], 0.0, 4000, 120, signal, {
     maxRetries: 0,
     ...(onAttempt ? { onAttempt } : {}),
+    ...(onUsage ? { onUsage } : {}),
   });
   /* A ROUTER THAT NEVER ANSWERED IS NOT A ROUTER THAT SAID NO. `callModel`
    * returns '' for a deadline, an abort and an empty reply alike, and that
@@ -4380,7 +4402,7 @@ async function handleCouncilTurn(req, res) {
       && ['client_disconnected', 'client_abort', null].includes(cancellationReason);
     const effectiveFailureKind = failureKind
       || (state === 'aborted' ? cancellationReason : provenanceFailureKind);
-    return buildTurnProvenanceMeta({
+    const provenanceMeta = buildTurnProvenanceMeta({
       messageId: typeof req.body?.messageId === 'string' ? req.body.messageId : null,
       requestState: state,
       route: provenanceRoute,
@@ -4423,6 +4445,21 @@ async function handleCouncilTurn(req, res) {
       },
       sources: provenanceSources,
     });
+    /* The evaluator needs the provider receipt and cache decision, but not the
+     * full internal telemetry snapshot. Keep the public frame bounded and put
+     * the projection inside the already-public provenance object so the strict
+     * top-level turn-ledger schema remains unchanged. */
+    return {
+      ...provenanceMeta,
+      provenance: {
+        ...provenanceMeta.provenance,
+        accounting: buildTurnAccountingMeta(snapshot, {
+          route: provenanceRoute,
+          cacheBypassRequested: cacheBypass.requested,
+          cacheBypassAccepted: cacheBypass.enabled,
+        }),
+      },
+    };
   };
 
   const sendProvenance = (answer, state = 'complete', failureKind = null) => {
@@ -4817,7 +4854,16 @@ async function handleCouncilTurn(req, res) {
      * counted at dispatch by `recordFastCalls` instead, because they settle
      * after this turn's row has been written. */
     const meteredCallModel = async (model, messages, temperature, timeoutMs, maxTokens, signal, options = {}) => {
-      const { phase, ...rest } = options || {};
+      const { phase, onUsage: downstreamOnUsage, ...rest } = options || {};
+      /* The provider adapter reports one usage receipt for every completed
+       * non-streaming response, including an explicit all-null receipt when the
+       * provider omitted usage. Keep the historical `tools` bucket in the
+       * aggregate so this is an additive accounting path rather than a phase
+       * rename in existing telemetry. */
+      const onUsage = (usage) => {
+        telemetry.recordUsage(usage, { phase: phase === 'tools' ? 'council' : phase || 'council' });
+        try { downstreamOnUsage?.(usage); } catch { /* telemetry must never fail a model call */ }
+      };
       const startedAt = Date.now();
       let offeredTools = Array.isArray(rest.tools) && rest.tools.length > 0;
       try {
@@ -4827,7 +4873,7 @@ async function handleCouncilTurn(req, res) {
          * deadline before the council could conclude it had failed. */
         const reply = await modelPacer.run(model, () => callModel(
           model, messages, temperature, timeoutMs, maxTokens, signal,
-          { ...rest, onAttempt: recordAttempt(phase || 'council') },
+          { ...rest, onAttempt: recordAttempt(phase || 'council'), onUsage },
         ), {
           signal,
           /* OUR OWN QUOTA SAYS NOTHING ABOUT THE PROVIDER. Opening a breaker on
@@ -5549,7 +5595,6 @@ async function handleCouncilTurn(req, res) {
               phase: 'probe',
               maxRetries: 0,
             });
-            telemetry.recordUsage(reply.usage, { phase: 'probe' });
             return { member: model, ...parseToolRequests(reply) };
           } catch (err) {
             return { member: model, calls: [], text: '', error: err.message };
@@ -5632,7 +5677,8 @@ async function handleCouncilTurn(req, res) {
     }
     const routeP = skipRouter || ruleRoute
       ? Promise.resolve(ruleRoute || NO_ROUTE)
-      : telemetry.measureRouter('route', () => planTurn(routingText, convSummary, region, turnSignal, recordAttempt('router'))).catch(() => NO_ROUTE);
+      : telemetry.measureRouter('route', () => planTurn(routingText, convSummary, region, turnSignal, recordAttempt('router'),
+        (usage) => telemetry.recordUsage(usage, { phase: 'router' }))).catch(() => NO_ROUTE);
 
     if ((await routeP).memory) {
       provenanceRoute = 'memory';
@@ -5886,6 +5932,14 @@ async function handleCouncilTurn(req, res) {
           onFinish: (event) => {
             if (event?.reason === 'whip') telemetry.markCeiling('search_council_whip');
           },
+          /* The extracted council runner defaults to the process-level model
+           * adapter. Use the same metered adapter as the ordinary council so
+           * search turns do not lose their non-streaming usage receipts. */
+          callModel: (model, messages, temperature, whipMs, tokenLimit, signal, callOptions = {}) =>
+            meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, {
+              ...callOptions,
+              phase: 'search_council',
+            }),
         },
       );
       if (turnSignal.aborted) return;
@@ -6192,7 +6246,6 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
               ),
             registry,
             effort: TOOL_SEAT_EFFORT,
-            onUsage: (usage) => telemetry.recordUsage(usage, { phase: 'tool_seat' }),
           })
         : null;
       if (nativeSeat) {
@@ -6283,7 +6336,6 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
             signal,
             { structured: true, phase: 'tools', maxRetries: 0 },
           );
-          telemetry.recordUsage(reply.usage, { phase: 'council' });
           noteSeatSource(model, reply);
           const parsed = parseToolRequests(reply, answerOptions);
           /* A whole-protocol reply is rejected by the parser, which leaves both

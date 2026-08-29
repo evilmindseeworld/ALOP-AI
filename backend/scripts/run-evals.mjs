@@ -37,11 +37,10 @@
  * thoroughly, then reported the queueing as the product's latency. Measured and
  * corrected 2026-08-18; see the note on `pauseMs`.
  *
- * WHAT IT CANNOT SEE, said out loud rather than defaulted to zero: the HTTP
- * surface exposes no price and no `textSource`, so `costCentsPerTurn` and
- * `cachePrecision` come back null and their gates read `inconclusive`. That is
- * why `--allow-inconclusive` is a flag someone has to type. See the ponytail
- * note in `lib/evaluation.js` for the two additive changes that would fix it.
+ * HARD-METRIC RECEIPTS ARE ADDITIVE. The server's closing provenance frame may
+ * carry a bounded OpenRouter usage-cost receipt and the route that served the
+ * answer. Missing or contradictory receipts remain unmeasured; this runner
+ * never turns policy, a bypass request, or a missing number into zero.
  *
  * The exit code is the product: 0 when every gate passed, 1 otherwise.
  */
@@ -55,6 +54,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const { loadDataset, gradeCase, summarise } = require("../lib/evaluation");
 const { mergeGates, evaluateGates, formatGates } = require("../lib/release-gates");
+const { measurementFromFrames, metricMeasurementFlags } = require("../lib/turn-accounting-meta");
 
 /* ---- arguments ------------------------------------------------------- */
 
@@ -325,7 +325,6 @@ async function runCase(testCase) {
   let answer = "";
   let error = null;
   let cacheStatus = null;
-  let provenance = null;
   const firstByteAt = { value: null };
   const firstAnswerTokenAt = { value: null };
   const firstUsefulStageAt = { value: null };
@@ -436,13 +435,13 @@ async function runCase(testCase) {
           firstAnswerTokenAt.value = Date.now();
         }
         if (frame.type === "error") error = { code: frame.code || "unknown", text: frame.text || "" };
-        if (frame.type === "provenance") provenance = frame.provenance || null;
       }
     }
   } catch (err) {
     error = { code: "transport", text: err.message };
   }
 
+  const measurement = measurementFromFrames(frames, cacheStatus);
   return {
     id: testCase.id,
     answer,
@@ -451,10 +450,12 @@ async function runCase(testCase) {
     firstByteMs: firstByteAt.value === null ? null : firstByteAt.value - started,
     firstAnswerTokenMs: firstAnswerTokenAt.value === null ? null : firstAnswerTokenAt.value - started,
     firstUsefulStageMs: firstUsefulStageAt.value === null ? null : firstUsefulStageAt.value - started,
-    costCents: null,   // unobservable over HTTP today; see the header
-    textSource: null,  // ditto
+    costCents: measurement.costCents,
+    textSource: measurement.textSource,
+    cacheDecision: measurement.cacheDecision,
     cacheStatus,
-    provenance,
+    provenance: measurement.provenance,
+    accounting: measurement.accounting,
     error,
   };
 }
@@ -478,6 +479,7 @@ for (const [index, testCase] of selected.entries()) {
 
 const grades = selected.map((c) => gradeCase(c, observations.find((o) => o.id === c.id)));
 const metrics = summarise(grades, observations);
+const metricFlags = metricMeasurementFlags(metrics);
 
 let overrides = {};
 const gatesPath = flag("gates");
@@ -489,6 +491,8 @@ const verdict = evaluateGates(metrics, {
 
 console.log(`\n${formatGates(verdict)}`);
 console.log(`\n${metrics.passed}/${metrics.cases} cases passed, ${metrics.inconclusive} inconclusive.`);
+console.log(`COST_MEASURED = ${metricFlags.COST_MEASURED ? "YES" : "NO"}`);
+console.log(`CACHE_PRECISION_MEASURED = ${metricFlags.CACHE_PRECISION_MEASURED ? "YES" : "NO"}`);
 if (metrics.failures.length) {
   console.log("Failures:");
   for (const f of metrics.failures) console.log(`  ${f.id}: ${f.failures.join("; ")}`);
@@ -501,8 +505,12 @@ if (reportPath) {
   await writeFile(resolve(reportPath), JSON.stringify({
     dataset: name, base, ranAt: new Date().toISOString(),
     metrics, verdict, grades,
+    COST_MEASURED: metricFlags.COST_MEASURED ? "YES" : "NO",
+    CACHE_PRECISION_MEASURED: metricFlags.CACHE_PRECISION_MEASURED ? "YES" : "NO",
     observations: observations.map((o) => ({ ...o, frames: o.frames.length, answer: o.answer.slice(0, 2000) })),
     method: {
+      costSource: "openrouter.response.usage.costUsd",
+      cacheSource: "turn_provenance.route",
       cacheBypassRequested: cacheBypass,
       cacheBypassProof: cacheBypass ? "X-ALOP-Cache-Status=bypass" : "not requested",
     },

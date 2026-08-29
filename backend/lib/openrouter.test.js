@@ -116,6 +116,50 @@ test('maxRetries is clamped, so a caller cannot invent delays the ladder does no
   assert.equal(calls, 3, 'the ladder is two retries and 99 must not mean 99 requests');
 });
 
+test('a completed provider response exposes its normalized usage receipt once', async () => {
+  const seen = [];
+  global.fetch = async () => response(200, {
+    id: 'response-1',
+    model: 'model:free',
+    usage: { prompt_tokens: 2, completion_tokens: 3, cost: 0 },
+    choices: [{ message: { content: 'measured' } }],
+  });
+
+  const answer = await callModel(
+    'https://openrouter.ai/api/v1',
+    'key',
+    'model:free',
+    [],
+    0,
+    1000,
+    20,
+    undefined,
+    { onUsage: (receipt) => seen.push(receipt) },
+  );
+  assert.equal(answer, 'measured');
+  assert.deepEqual(seen, [{ promptTokens: 2, completionTokens: 3, totalTokens: 5, costUsd: 0 }]);
+});
+
+test('a completed provider response without usage emits an explicit unknown receipt', async () => {
+  const seen = [];
+  global.fetch = async () => response(200, {
+    choices: [{ message: { content: 'unpriced' } }],
+  });
+
+  await callModel(
+    'https://openrouter.ai/api/v1',
+    'key',
+    'model:free',
+    [],
+    0,
+    1000,
+    20,
+    undefined,
+    { onUsage: (receipt) => seen.push(receipt) },
+  );
+  assert.deepEqual(seen, [{ promptTokens: null, completionTokens: null, totalTokens: null, costUsd: null }]);
+});
+
 test('an unroutable model id is not retried into three requests', async () => {
   /* `inclusionai/ling-3.0-tiny:free` answered a council turn with HTTP 404 in
    * 38ms: OpenRouter still holds the model's record but no provider serves it,

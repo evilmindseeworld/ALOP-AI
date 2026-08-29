@@ -25,25 +25,19 @@
  *     firstByteMs: 640,             // request start to first body bytes
  *     firstAnswerTokenMs: 2410,     // request start to first answer chunk
  *     firstUsefulStageMs: 80,       // request start to first stage/tool event
- *     costCents: null,              // null when unobservable over HTTP
+ *     costCents: null,              // null when the closing receipt is unknown
  *     textSource: null,             // 'cache' | 'content' | … | null
  *     error: null,                  // { code, text } from an `error` frame
  *   }
  *
  * `null` MEANS UNOBSERVED, AND IS NOT A ZERO. A metric with nothing behind it
  * is reported as `null` and the gate that reads it reports `inconclusive` —
- * never a pass. That distinction is the whole reason this file exists rather
- * than a script that prints "looks fine": cost per turn and cache precision are
- * NOT observable from the HTTP surface today (no frame carries the price, and
- * `textSource` reaches the client on no path), so a runner that reported them
- * as 0 would gate on a number it never measured.
+ * never a pass. The closing provenance receipt is additive: when it carries a
+ * trusted provider cost or a labelled cache hit, the runner can measure the
+ * corresponding field; missing or contradictory receipts remain unmeasured.
  *
- * ponytail: cache precision and cost stay unobserved until either the turn
- * ledger's meta is exposed on `GET /api/turns/:operationId` or a closing `meta`
- * frame carries `textSource` and the settled price. Both are additive; neither
- * was worth changing eleven stream exits for before anything consumed it. When
- * one lands, the runner fills these two fields and the gates start biting with
- * no change here.
+ * The server's closing provenance frame carries the bounded receipt; this
+ * runner fills the two fields without changing the evaluator's gate formulas.
  *
  * A CASE looks like this (see `evals/core-v1.json`):
  *

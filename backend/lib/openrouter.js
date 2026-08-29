@@ -1,6 +1,7 @@
 'use strict';
 
 const { normaliseCompletion, emptyReply, normaliseUsage } = require('./model-reply');
+const { unknownUsage } = require('./turn-accounting-meta');
 const { assertAllowedOpenRouterModel } = require('./openrouter-policy');
 
 const RETRY_DELAYS_MS = [400, 1200];
@@ -134,6 +135,9 @@ const abortableDelay = (ms, signal) => new Promise((resolve) => {
  *        every caller had before this existed. `0` means one request and no
  *        more — see the council's use of it in lib/council-run.js, and the
  *        matching option on `fetchOpenRouterStream`, which has always had one.
+ * @param {(usage: object) => void} [options.onUsage]  called once for every
+ *        completed provider response; an all-null receipt means the provider
+ *        returned no usable usage numbers.
  */
 async function callModel(host, apiKey, modelName, messages, temperature, timeoutMs, maxTokens, parentSignal, options = {}) {
   assertAllowedOpenRouterModel(modelName, { source: 'callModel' });
@@ -141,6 +145,9 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
   /* Every early exit below used to be the bare string ''. In structured mode it
    * has to be an object or each caller grows a type check it will forget. */
   const blank = (reason) => (structured ? emptyReply(reason) : '');
+  const reportUsage = (reply) => {
+    try { options?.onUsage?.(reply?.usage || unknownUsage()); } catch { /* telemetry must never break a model call */ }
+  };
   if (parentSignal?.aborted) return blank('aborted');
   const deadline = Date.now() + Math.max(0, Number(timeoutMs) || 0);
   const tools = Array.isArray(options?.tools) && options.tools.length ? options.tools : null;
@@ -216,8 +223,10 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
           reportAttempt('bad_body', response.status);
           throw parseError;
         }
+        const reply = normaliseCompletion(payload);
         reportAttempt('ok', response.status);
-        return structured ? normaliseCompletion(payload) : completionText(payload);
+        reportUsage(reply);
+        return structured ? reply : reply.content;
       }
       const errorBody = await response.text().catch(() => '');
       reportAttempt('http_error', response.status);

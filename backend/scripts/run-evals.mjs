@@ -89,14 +89,6 @@ const QUALITY_CACHE_BYPASS_DATASETS = new Set([
   "backend-intelligence-v1-recovery10",
 ]);
 
-if (cacheBypass && !cacheBypassSecret) {
-  console.error("--cache-bypass requires EVAL_CACHE_BYPASS_SECRET; no fresh run will start without it.");
-  process.exit(1);
-}
-if (cacheValidation && !cacheBypassSecret) {
-  console.error("--cache-validation requires EVAL_CACHE_BYPASS_SECRET; no validation run will start without it.");
-  process.exit(1);
-}
 if (cacheValidation && cacheBypass) {
   console.error("--cache-validation is a normal non-bypass phase; do not combine it with --cache-bypass.");
   process.exit(1);
@@ -111,10 +103,6 @@ if (cacheValidation && (tags.length || limit)) {
 }
 if (!cacheValidation && !bool("validate-only") && QUALITY_CACHE_BYPASS_DATASETS.has(datasetName) && !cacheBypass) {
   console.error(`Dataset ${datasetName} is a quality run and must use --cache-bypass; use --cache-validation for normal cache hits.`);
-  process.exit(1);
-}
-if (process.env.EVAL_CLERK_SECRET_KEY && !process.env.EVAL_USER_ID) {
-  console.error("EVAL_CLERK_SECRET_KEY requires EVAL_USER_ID; refusing to select an arbitrary Clerk user.");
   process.exit(1);
 }
 /**
@@ -172,6 +160,19 @@ if (bool("validate-only")) {
   process.exit(0);
 }
 /* ---- authentication -------------------------------------------------- */
+
+if (cacheBypass && !cacheBypassSecret) {
+  console.error("--cache-bypass requires EVAL_CACHE_BYPASS_SECRET; no fresh run will start without it.");
+  process.exit(1);
+}
+if (cacheValidation && !cacheBypassSecret) {
+  console.error("--cache-validation requires EVAL_CACHE_BYPASS_SECRET; no validation run will start without it.");
+  process.exit(1);
+}
+if (process.env.EVAL_CLERK_SECRET_KEY && !process.env.EVAL_USER_ID) {
+  console.error("EVAL_CLERK_SECRET_KEY requires EVAL_USER_ID; refusing to select an arbitrary Clerk user.");
+  process.exit(1);
+}
 
 /**
  * A STATIC `EVAL_TOKEN` CANNOT SURVIVE THIS RUN, and the failure is silent.

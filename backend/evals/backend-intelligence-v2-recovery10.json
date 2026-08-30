@@ -175,9 +175,9 @@
             "id": "idempotency-same-effect",
             "claim": "Repeating an idempotent API request or operation has the same effect without creating an additional side effect.",
             "patterns": [
-              "\\bidempotent(?:cy|)\\b[^.!?;]{0,160}\\b(?:same\\s+(?:effect|result)|unchanged|without\\s+duplicat)\\b",
-              "\\b(?:repeat(?:ed|ing|s)?|again)\\b[^.!?;]{0,100}\\b(?:idempotent|idempotency)\\b[^.!?;]{0,100}\\b(?:same\\s+(?:effect|result)|unchanged|without\\s+duplicat)\\b",
-              "\\bidempotent(?:cy|)\\b[^.!?;]{0,180}\\b(?:request|operation|api)\\b[^.!?;]{0,180}\\b(?:same\\s+(?:effect|result)|without\\s+duplicat|unchanged)\\b"
+              "\\bidempot(?:ent|ency)\\b[^.!?;]{0,160}\\b(?:same\\s+(?:effect|result|state)|unchanged|without\\s+duplicat)\\b",
+              "\\b(?:repeat(?:ed|ing|s)?|again)\\b[^.!?;]{0,100}\\b(?:idempotent|idempotency)\\b[^.!?;]{0,100}\\b(?:same\\s+(?:effect|result|state)|unchanged|without\\s+duplicat)\\b",
+              "\\bidempot(?:ent|ency)\\b[^.!?;]{0,180}\\b(?:request|operation|api)\\b[^.!?;]{0,180}\\b(?:same\\s+(?:effect|result|state)|without\\s+duplicat|unchanged)\\b"
             ],
             "forbiddenPatterns": [
               "\\b(?:idempotent|idempotency)\\b[^.!?;]{0,160}\\b(?:does not|doesn't|not|never)\\b[^.!?;]{0,100}\\b(?:mean|ensure|produce)\\b[^.!?;]{0,100}\\b(?:same|unchanged)\\b",

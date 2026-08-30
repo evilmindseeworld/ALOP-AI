@@ -20,12 +20,14 @@
             "id": "japan-capital-tokyo",
             "claim": "Japan's capital is Tokyo.",
             "patterns": [
+              "^\\s*tokyo\\s*[.!]?\\s*$",
               "\\b(?:capital|capital city)\\b[^.!?;]{0,80}\\b(?:of\\s+)?japan\\b[^.!?;]{0,80}\\b(?:is|called)\\b[^.!?;]{0,40}\\btokyo\\b",
               "\\btokyo\\b[^.!?;]{0,60}\\b(?:is|serves as)\\b[^.!?;]{0,50}\\b(?:the\\s+)?capital\\b[^.!?;]{0,50}\\bof\\s+japan\\b",
               "\\bjapan(?:['’]s)?\\b[^.!?;]{0,45}\\b(?:capital|capital city)\\b[^.!?;]{0,50}\\b(?:is|called)\\b[^.!?;]{0,35}\\btokyo\\b"
             ],
             "forbiddenPatterns": [
               "\\b(?:tokyo|japan)\\b[^.!?;]{0,70}\\b(?:is|are|was|were)\\s+not\\b[^.!?;]{0,80}\\b(?:the\\s+)?capital\\b",
+              "\\btokyo\\b[^.!?;]{0,80}\\b(?:is|serves as)\\b[^.!?;]{0,50}\\b(?:the\\s+)?capital\\b[^.!?;]{0,50}\\bof\\s+(?!japan\\b)[a-z]+\\b",
               "\\bjapan(?:['’]s)?\\b[^.!?;]{0,45}\\b(?:capital|capital city)\\b[^.!?;]{0,50}\\b(?:is|called)\\b[^.!?;]{0,35}\\b(?:osaka|kyoto|paris|london)\\b",
               "\\b(?:capital|capital city)\\b[^.!?;]{0,80}\\b(?:of\\s+)?japan\\b[^.!?;]{0,80}\\b(?:is|are|was|were)\\s+(?:osaka|kyoto|paris|london)\\b"
             ]
@@ -46,7 +48,8 @@
             "id": "photosynthesis-chlorophyll-light",
             "claim": "Plants use chlorophyll to capture or use light energy in photosynthesis.",
             "patterns": [
-              "\\bphotosynthesis\\b[^.!?;]{0,120}\\bplants?\\b[^.!?;]{0,60}\\b(?:use|uses|using)\\b[^.!?;]{0,50}\\bchlorophyll\\b[^.!?;]{0,100}\\b(?:light|solar)\\s+energy\\b",
+              "\\bphotosynthesis\\b[\\s\\S]{0,220}\\b(?:green\\s+)?plants?\\b[\\s\\S]{0,120}\\b(?:convert|capture|use|uses|harness)\\b[\\s\\S]{0,120}\\b(?:light|sunlight|solar)\\s+energy\\b",
+              "\\bphotosynthesis\\b[\\s\\S]{0,260}\\bchlorophyll\\b[\\s\\S]{0,80}\\b(?:capture|captures|absorb|absorbs|use|uses|harness)\\b[\\s\\S]{0,80}\\b(?:light|sunlight|solar)\\b",
               "\\bplants?\\b[^.!?;]{0,60}\\b(?:use|uses|using)\\b[^.!?;]{0,50}\\bchlorophyll\\b[^.!?;]{0,100}\\b(?:capture|absorb|harness|convert)\\b[^.!?;]{0,60}\\b(?:light|solar)\\b"
             ],
             "forbiddenPatterns": [
@@ -232,9 +235,9 @@
             "id": "idempotency-same-effect",
             "claim": "Repeating an idempotent API request or operation has the same effect without creating an additional side effect.",
             "patterns": [
-              "\\bidempotent(?:cy|)\\b[^.!?;]{0,160}\\b(?:same\\s+(?:effect|result)|unchanged|without\\s+duplicat)\\b",
-              "\\b(?:repeat(?:ed|ing|s)?|again)\\b[^.!?;]{0,100}\\b(?:idempotent|idempotency)\\b[^.!?;]{0,100}\\b(?:same\\s+(?:effect|result)|unchanged|without\\s+duplicat)\\b",
-              "\\bidempotent(?:cy|)\\b[^.!?;]{0,180}\\b(?:request|operation|api)\\b[^.!?;]{0,180}\\b(?:same\\s+(?:effect|result)|without\\s+duplicat|unchanged)\\b"
+              "\\bidempot(?:ent|ency)\\b[^.!?;]{0,160}\\b(?:same\\s+(?:effect|result|state)|unchanged|without\\s+duplicat)\\b",
+              "\\b(?:repeat(?:ed|ing|s)?|again)\\b[^.!?;]{0,100}\\b(?:idempotent|idempotency)\\b[^.!?;]{0,100}\\b(?:same\\s+(?:effect|result|state)|unchanged|without\\s+duplicat)\\b",
+              "\\bidempot(?:ent|ency)\\b[^.!?;]{0,180}\\b(?:request|operation|api)\\b[^.!?;]{0,180}\\b(?:same\\s+(?:effect|result|state)|without\\s+duplicat|unchanged)\\b"
             ],
             "forbiddenPatterns": [
               "\\b(?:idempotent|idempotency)\\b[^.!?;]{0,160}\\b(?:does not|doesn't|not|never)\\b[^.!?;]{0,100}\\b(?:mean|ensure|produce)\\b[^.!?;]{0,100}\\b(?:same|unchanged)\\b",

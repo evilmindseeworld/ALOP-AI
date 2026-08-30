@@ -312,3 +312,92 @@ test('M48: spreading diagnostics back to the observation top level is killed by 
     () => assert.match(mutantSource, /diagnostics:\s*answerReplayDiagnostics\(observation\)/),
   );
 });
+
+test('M49: removing idempotency negation awareness is killed by a never-creates paraphrase', () => {
+  const answer = 'Repeating an idempotent request produces the same result and never creates an additional side effect.';
+  assert.equal(current.gradeCase(idempotencyCase, observation(answer, { id: idempotencyCase.id })).factuality.passed, true);
+
+  const mutantCase = clone(idempotencyCase);
+  mutantCase.factualityChecks.assertions[0].forbiddenPatterns[1] =
+    '\\b(?:idempotent|idempotency)\\b[^.!?;]{0,150}\\b(?:creates|causes|makes)\\b[^.!?;]{0,80}\\b(?:duplicate|another|additional)\\b';
+  const mutantGrade = current.gradeCase(mutantCase, observation(answer, { id: idempotencyCase.id }));
+  assert.equal(mutantGrade.factuality.passed, false,
+    'a broad non-negation-aware forbidden relation must be observable as a killed mutant');
+});
+
+test('M50: making the idempotency forbidden relation permissive is killed by a contradictory duplicate claim', () => {
+  const answer = 'Idempotency means performing an operation again produces the same result without creating an additional effect, but repeated idempotent requests create duplicate effects.';
+  assert.equal(current.gradeCase(idempotencyCase, observation(answer, { id: idempotencyCase.id })).factuality.passed, false);
+
+  const mutantCase = clone(idempotencyCase);
+  mutantCase.factualityChecks.assertions[0].forbiddenPatterns = [];
+  const mutantGrade = current.gradeCase(mutantCase, observation(answer, { id: idempotencyCase.id }));
+  assert.equal(mutantGrade.factuality.passed, true,
+    'removing the forbidden duplicate relation must be observable as a killed mutant');
+});
+
+test('M51: removing the expanded lease ownership verbs is killed', () => {
+  const answer = 'A worker retries a failed job. A lease gives one worker exclusive ownership. If the lease expires, another worker reclaims the job.';
+  assert.equal(current.hasSummarySemantics(answer), true);
+
+  const expandedVerbs = '(?:prevent|prevents|stop|stops|block|blocks|limit|limits|ensure|ensures|allow|allows|give|gives|grant|grants|guarantee|guarantees|provide|provides|keep|keeps|maintain|maintains)';
+  const legacyVerbs = '(?:prevent|prevents|stop|stops|block|blocks|limit|limits|ensure|ensures|allow|allows)';
+  let mutantSource = EVALUATION_SOURCE;
+  for (let occurrence = 0; occurrence < 3; occurrence += 1) {
+    mutantSource = replaceOccurrence(mutantSource, expandedVerbs, legacyVerbs, 0, 'expanded ownership verbs');
+  }
+  const mutant = loadCjs(mutantSource);
+  assert.equal(mutant.hasSummarySemantics(answer), false,
+    'removing gives/grants/guarantees and the bounded companion verbs must be observable');
+});
+
+test('M52: allowing lease and ownership tokens without a relation is killed', () => {
+  const answer = 'A worker retries a failed job. A lease discusses ownership. If the lease expires, another worker reclaims the job.';
+  assert.equal(current.hasSummarySemantics(answer), false);
+  const mutant = loadCjs(replaceOnce(
+    EVALUATION_SOURCE,
+    'if (!bounded.test(text) && !boundedExclusive.test(text) && !boundedWorkerExclusive.test(text) && !reverse.test(text)) return false;',
+    'if (false) return false;',
+    'lease ownership relation requirement',
+  ));
+  assert.equal(mutant.hasSummarySemantics(answer), true,
+    'token presence alone must remain an observable rejected mutant');
+});
+
+test('M53: removing the chlorophyll subject-order alternative is killed', () => {
+  const answer = 'Chlorophyll harnesses solar energy during photosynthesis.';
+  assert.equal(current.gradeCase(photoCase, observation(answer, { id: photoCase.id })).factuality.passed, true);
+
+  const mutantCase = clone(photoCase);
+  assert.equal(mutantCase.factualityChecks.assertions[0].patterns.length, 3);
+  mutantCase.factualityChecks.assertions[0].patterns = mutantCase.factualityChecks.assertions[0].patterns.slice(0, 2);
+  const mutantGrade = current.gradeCase(mutantCase, observation(answer, { id: photoCase.id }));
+  assert.equal(mutantGrade.factuality.passed, false,
+    'removing the bounded subject-first chlorophyll relation must be observable');
+});
+
+test('M54: broadening chlorophyll factuality to keyword-only matching is killed', () => {
+  const answer = 'Photosynthesis: plants use melanin to capture light energy, and chlorophyll plays no role at all.';
+  assert.equal(current.gradeCase(photoCase, observation(answer, { id: photoCase.id })).factuality.passed, false);
+
+  const mutantCase = clone(photoCase);
+  mutantCase.factualityChecks.assertions[0].patterns = ['\\b(?:photosynthesis|chlorophyll|light)\\b'];
+  mutantCase.factualityChecks.assertions[0].forbiddenPatterns = [];
+  const mutantGrade = current.gradeCase(mutantCase, observation(answer, { id: photoCase.id }));
+  assert.equal(mutantGrade.factuality.passed, true,
+    'a keyword-only chlorophyll pattern must be observable as a killed mutant');
+});
+
+test('M55: permitting the existing melanin/no-role answer is killed', () => {
+  const answer = 'Photosynthesis: plants use melanin to capture light energy, and chlorophyll plays no role at all.';
+  assert.equal(current.gradeCase(photoCase, observation(answer, { id: photoCase.id })).factuality.passed, false);
+
+  const mutantCase = clone(photoCase);
+  mutantCase.factualityChecks.assertions[0].patterns.unshift(
+    '\\bphotosynthesis\\b[\\s\\S]{0,260}\\bchlorophyll\\b',
+  );
+  mutantCase.factualityChecks.assertions[0].forbiddenPatterns = [];
+  const mutantGrade = current.gradeCase(mutantCase, observation(answer, { id: photoCase.id }));
+  assert.equal(mutantGrade.factuality.passed, true,
+    'permitting the known melanin/no-role false claim must be observable as a killed mutant');
+});

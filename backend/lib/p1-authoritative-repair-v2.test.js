@@ -73,8 +73,12 @@ test('the summary matcher rejects missing relations, unrelated vocabulary, negat
     ['negated retry semantics', 'A worker does not retry a failed job. A lease prevents two workers from owning the same job. If the lease expires, another worker reclaims it.'],
     ['reversed reclaim timing', 'A worker retries a failed job. Another worker reclaims the job before the lease expires.'],
     ['substring traps', 'A leaseholder owns the job; a retrial and a failure report are unrelated words, and reclamation is discussed without expiry.'],
+    ['ownership discussion only', 'A worker retries a failed job. A lease discusses ownership. If the lease expires, another worker reclaims the job.'],
+    ['multiple simultaneous owners', 'A worker retries a failed job. A lease can coexist with multiple simultaneous owners. If the lease expires, another worker reclaims the job.'],
+    ['negated exclusive ownership', 'A worker retries a failed job. The lease does not guarantee exclusive ownership. If the lease expires, another worker reclaims the job.'],
+    ['ownership keyword salad', 'Retry failure lease worker ownership reclaim expiry discussed gives guarantees exclusive same job multiple owners.'],
   ];
-  assert.equal(adversarialNegatives.length, 12);
+  assert.equal(adversarialNegatives.length, 16);
   for (const [label, answer] of adversarialNegatives) {
     assert.equal(hasSummarySemantics(answer), false, `${label}: ${JSON.stringify(summarySemantics(answer))}`);
   }
@@ -158,8 +162,12 @@ test('photosynthesis factuality rejects broad light-energy claims and wrong-pigm
     'Plants use melanin rather than chlorophyll to capture light energy.',
     'Chlorophyll is unrelated to photosynthesis.',
     'Plants do not use chlorophyll during photosynthesis.',
+    'Chlorophyll plays no role in photosynthesis.',
+    'Plants use melanin instead of chlorophyll to capture light.',
+    'Photosynthesis does not use chlorophyll.',
+    'Chlorophyll prevents plants from using light energy.',
   ];
-  assert.equal(falseClaims.length, 5);
+  assert.equal(falseClaims.length, 9);
   for (const answer of falseClaims) {
     const result = gradeCase(photosynthesis, observation(answer, { id: photosynthesis.id }));
     assert.equal(result.factuality.passed, false, answer);
@@ -181,11 +189,50 @@ test('idempotency factuality requires a meaningful repeat/effect/no-duplicate re
   const falseClaims = [
     'idempotent idempotency request operation api same effect unchanged without duplicate repeat again',
     'Repeated idempotent requests create duplicate effects.',
+    'An idempotent operation creates another side effect every time.',
+    'Retries of an idempotent request add an additional effect.',
+    'Idempotency means the same request creates duplicates on repetition.',
     'An idempotent API behaves differently each time it is repeated.',
     'Idempotency means retries always add another side effect.',
   ];
   for (const answer of falseClaims) {
     assert.equal(gradeCase(idempotency, observation(answer, { id: idempotency.id })).factuality.passed, false, answer);
+  }
+});
+
+test('micro-hardening red-first controls cover valid idempotency, ownership, and subject-order phrasing', () => {
+  const idempotency = v2.cases.find(({ id }) => id === 'timeless-definition-idempotency');
+  const idempotencyParaphrases = [
+    'Repeating an idempotent request produces the same result and never creates an additional side effect.',
+    'An idempotent operation does not create another side effect when repeated.',
+    'Retries leave the same state without creating duplicate effects.',
+    'Repeating an idempotent API request has the same effect and will not create an additional operation.',
+  ];
+  for (const answer of idempotencyParaphrases) {
+    assert.equal(gradeCase(idempotency, observation(answer, { id: idempotency.id })).factuality.passed, true, answer);
+  }
+
+  const summary = v2.cases.find(({ id }) => id === 'user-text-summary-v2');
+  const ownershipParaphrases = [
+    'A lease gives one worker exclusive ownership.',
+    'The lease guarantees exclusive ownership until expiry.',
+    'A lease grants a single worker ownership of the job.',
+    'The lease ensures only one worker owns the job at a time.',
+  ].map((ownership) => `A worker retries a failed job. ${ownership} If the lease expires, another worker reclaims the job.`);
+  for (const answer of ownershipParaphrases) {
+    const grade = gradeCase(summary, observation(answer, { id: summary.id }));
+    assert.equal(grade.checks.find(({ name }) => name === 'mustPreserveSummary').ok, true, answer);
+  }
+
+  const photosynthesis = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
+  const photosynthesisParaphrases = [
+    'Chlorophyll harnesses solar energy during photosynthesis.',
+    'During photosynthesis, chlorophyll absorbs light energy.',
+    'Chlorophyll captures sunlight for photosynthesis.',
+    'Plants use chlorophyll to capture light energy during photosynthesis.',
+  ];
+  for (const answer of photosynthesisParaphrases) {
+    assert.equal(gradeCase(photosynthesis, observation(answer, { id: photosynthesis.id })).factuality.passed, true, answer);
   }
 });
 

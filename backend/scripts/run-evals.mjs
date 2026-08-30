@@ -24,8 +24,8 @@
  *   --allow-inconclusive  do not fail the run on an unmeasured gate
  *   --validate-only       check the dataset and exit, spending nothing
  *
- * IT COSTS REAL MONEY AND REAL QUOTA. Twenty-two cases is up to twenty-two
- * council turns, four of them research turns with the full roster, against an
+ * IT COSTS REAL MONEY AND REAL QUOTA. A full backend intelligence manifest is
+ * up to twenty-one council turns, four of them research turns with the full roster, against an
  * account-wide OpenRouter limit that the handoff measured at 20 requests a
  * minute. So: cases run ONE AT A TIME with a pause between them, never
  * concurrently. A parallel runner would be faster and would spend the whole run
@@ -87,6 +87,8 @@ const QUALITY_CACHE_BYPASS_DATASETS = new Set([
   "core-v1",
   "backend-intelligence-v1",
   "backend-intelligence-v1-recovery10",
+  "backend-intelligence-v2",
+  "backend-intelligence-v2-recovery10",
 ]);
 
 if (cacheValidation && cacheBypass) {
@@ -124,7 +126,7 @@ if (!cacheValidation && !bool("validate-only") && QUALITY_CACHE_BYPASS_DATASETS.
  * writes that wait down as product latency.
  *
  * Ten requests a case against twenty a minute is one case per thirty seconds.
- * That makes a 22-case run about eleven minutes instead of ninety seconds, and
+ * That makes a 21-case run about eleven minutes instead of ninety seconds, and
  * the eleven minutes are the honest ones.
  *
  * IF THE ROSTER OR THE ROUTER CHANGES ITS REQUEST COUNT, THIS NUMBER IS WRONG.

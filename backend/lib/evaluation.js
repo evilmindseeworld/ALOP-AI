@@ -71,8 +71,10 @@ const { URL_RE, extractUrls, canonicalUrl } = require('./citation-urls');
 const KNOWN_EXPECT_KEYS = new Set([
   'mustInclude', 'mustMatch', 'mustNotInclude', 'mustCite',
   'expectTools', 'expectNoTools', 'expectErrorCode',
-  'mustDiscussTradeoff', 'maxLatencyMs', 'minChars',
+  'mustDiscussTradeoff', 'mustPreserveSummary', 'maxLatencyMs', 'minChars',
 ]);
+
+const SUMMARY_SEMANTICS_ID = 'worker-lease-retry-reclaim-v1';
 
 const CACHE_HIT_ROUTES = new Set(['answer_cache', 'answer_cache_semantic']);
 const isQualifyingCacheObservation = (observation) => {
@@ -129,12 +131,20 @@ function validateCase(testCase, seen = new Set()) {
     if (expect.mustDiscussTradeoff !== undefined && typeof expect.mustDiscussTradeoff !== 'boolean') {
       at('mustDiscussTradeoff must be a boolean');
     }
+    if (expect.mustPreserveSummary !== undefined
+      && (typeof expect.mustPreserveSummary !== 'string' || expect.mustPreserveSummary !== SUMMARY_SEMANTICS_ID)) {
+      at(`mustPreserveSummary must be "${SUMMARY_SEMANTICS_ID}"`);
+    }
     for (const pattern of expect.mustMatch ?? []) {
       try { new RegExp(pattern, 'i'); } catch { at(`mustMatch pattern is not a regex: ${pattern}`); }
     }
     for (const key of ['maxLatencyMs', 'minChars']) {
       if (expect[key] !== undefined && !(Number.isFinite(expect[key]) && expect[key] >= 0)) at(`${key} must be a non-negative number`);
     }
+  }
+
+  if (testCase.factualityChecks !== undefined) {
+    problems.push(...validateFactualityChecks(testCase));
   }
   return problems;
 }
@@ -208,6 +218,214 @@ function normaliseUnicodeText(text) {
     .replace(/[\u201C\u201D\u201F\u2033\uFF02]/g, '"')
     .replace(/[\u2010\u2011\u2012\u2013\u2212\uFE58\uFE63\uFF0D]/g, '-')
     .replace(/\s+%/g, '%');
+}
+
+const FACTUALITY_CHECK_KEYS = new Set(['modelInvolved', 'stableWhy', 'assertions']);
+const FACTUALITY_ASSERTION_KEYS = new Set(['id', 'claim', 'patterns', 'forbiddenPatterns']);
+
+function validateFactualityChecks(testCase) {
+  const problems = [];
+  const at = (message) => problems.push(`${testCase?.id || '(no id)'}: ${message}`);
+  const checks = testCase?.factualityChecks;
+
+  if (!checks || typeof checks !== 'object' || Array.isArray(checks)) {
+    at('factualityChecks must be an object');
+    return problems;
+  }
+  for (const key of Object.keys(checks)) {
+    if (!FACTUALITY_CHECK_KEYS.has(key)) at(`unknown factualityChecks key "${key}"`);
+  }
+  if (typeof checks.modelInvolved !== 'boolean') at('factualityChecks.modelInvolved must be a boolean');
+  if (typeof checks.stableWhy !== 'string' || !checks.stableWhy.trim()) {
+    at('factualityChecks.stableWhy must be a non-empty string');
+  }
+  if (!Array.isArray(checks.assertions) || checks.assertions.length === 0) {
+    at('factualityChecks.assertions must be a non-empty array');
+    return problems;
+  }
+
+  const assertionIds = new Set();
+  for (const assertion of checks.assertions) {
+    if (!assertion || typeof assertion !== 'object' || Array.isArray(assertion)) {
+      at('factuality assertions must be objects');
+      continue;
+    }
+    for (const key of Object.keys(assertion)) {
+      if (!FACTUALITY_ASSERTION_KEYS.has(key)) at(`unknown factuality assertion key "${key}"`);
+    }
+    if (typeof assertion.id !== 'string' || !assertion.id.trim()) at('factuality assertion id must be non-empty');
+    else if (assertionIds.has(assertion.id)) at(`duplicate factuality assertion id "${assertion.id}"`);
+    else assertionIds.add(assertion.id);
+    if (typeof assertion.claim !== 'string' || !assertion.claim.trim()) at('factuality assertion claim must be non-empty');
+
+    for (const key of ['patterns', 'forbiddenPatterns']) {
+      if (assertion[key] !== undefined && !Array.isArray(assertion[key])) {
+        at(`factuality assertion ${key} must be an array`);
+      }
+    }
+    if (!Array.isArray(assertion.patterns) || assertion.patterns.length === 0) {
+      at('factuality assertion patterns must be a non-empty array');
+    }
+    for (const key of ['patterns', 'forbiddenPatterns']) {
+      for (const pattern of assertion[key] || []) {
+        if (typeof pattern !== 'string' || !pattern.trim()) {
+          at(`factuality assertion ${key} entries must be non-empty strings`);
+          continue;
+        }
+        if (/^(?:\^)?\.\*(?:\$)?$/.test(pattern.trim())) {
+          at('factuality assertions may not use a wildcard-only pattern');
+        }
+        try {
+          new RegExp(normaliseUnicodeText(pattern), 'i');
+        } catch {
+          at(`factuality assertion pattern is not a regex: ${pattern}`);
+        }
+      }
+    }
+  }
+  return problems;
+}
+
+/*
+ * The Aug 30 summary observation is a semantic summary, not a request for two
+ * literal stems.  Keep this matcher deliberately narrow: it proves the three
+ * relations in the source text and rejects a bag of retry/lease vocabulary.
+ * The bounded clause windows are part of the contract; a failure in one
+ * sentence and an unrelated retry in another must not satisfy the assertion.
+ */
+const SUMMARY_RETRY_RE = /\bretr(?:y|ies|ied|ying)\b/i;
+const SUMMARY_FAILURE_RE = /\bfail(?:s|ed|ing|ure|ures)?\b/i;
+const SUMMARY_LEASE_RE = /\blease(?:s|d|ing)?\b/i;
+const SUMMARY_WORKER_RE = /\bworkers?\b/i;
+const SUMMARY_OWNERSHIP_RE = /\b(?:own|owns|owning|ownership)\b/i;
+const SUMMARY_EXPIRY_RE = /\bexpir(?:e|es|ed|ing|y|ation|ations)\b/i;
+const SUMMARY_RECLAIM_RE = /\breclaim(?:s|ed|ing)?\b/i;
+const SUMMARY_JOB_RE = /\b(?:job|jobs|task|tasks)\b/i;
+const SUMMARY_NEGATION_RE = /\b(?:not|never|no|without|cannot|can't|doesn't|doesnt|don't|dont|isn't|isnt|won't|wont)\b/i;
+const SUMMARY_SEPARATION_RE = /\b(?:separate|unrelated|independent)\b|\bdifferent\s+(?:job|jobs|task|tasks|entity|operation|request)\b/i;
+
+const summaryClauses = (text) => normaliseUnicodeText(String(text ?? ''))
+  .split(/[.!?;]+/)
+  .map((clause) => clause.trim())
+  .filter(Boolean);
+
+const hasNearby = (text, left, right, distance = 100) => {
+  const leftMatch = text.match(left);
+  const rightMatch = text.match(right);
+  if (!leftMatch || !rightMatch) return false;
+  return Math.abs(leftMatch.index - rightMatch.index) <= distance;
+};
+
+function hasFailureRetryRelation(clause) {
+  const text = normaliseUnicodeText(clause);
+  if (!SUMMARY_FAILURE_RE.test(text) || !SUMMARY_RETRY_RE.test(text)
+    || !SUMMARY_WORKER_RE.test(text) || !SUMMARY_JOB_RE.test(text)) return false;
+  const positive = [
+    /\b(?:jobs?|tasks?)\b[^.!?;]{0,70}\bfail(?:s|ed|ing|ure|ures)?\b[^.!?;]{0,90}\bworkers?\b[^.!?;]{0,60}\bretr(?:y|ies|ied|ying)\b/i,
+    /\bworkers?\b[^.!?;]{0,60}\bretr(?:y|ies|ied|ying)\b[^.!?;]{0,80}\bfail(?:s|ed|ing|ure|ures)?\b[^.!?;]{0,40}\b(?:jobs?|tasks?)\b/i,
+    /\bworkers?\b[^.!?;]{0,60}\bretr(?:y|ies|ied|ying)\b[^.!?;]{0,80}\b(?:jobs?|tasks?)\b[^.!?;]{0,40}\bfail(?:s|ed|ing|ure|ures)?\b/i,
+    /\bfail(?:s|ed|ing|ure|ures)?\b[^.!?;]{0,40}\b(?:jobs?|tasks?)\b[^.!?;]{0,80}\bretr(?:y|ies|ied|ying)\b[^.!?;]{0,70}\bworkers?\b/i,
+  ];
+  if (!positive.some((pattern) => pattern.test(text))) return false;
+  if (SUMMARY_NEGATION_RE.test(text.replace(/\bretr(?:y|ies|ied|ying)\b/i, ''))) return false;
+  if (SUMMARY_SEPARATION_RE.test(text)) return false;
+  return true;
+}
+
+function hasLeaseOwnershipRelation(clause) {
+  const text = normaliseUnicodeText(clause);
+  if (!SUMMARY_LEASE_RE.test(text) || !SUMMARY_WORKER_RE.test(text)
+    || !SUMMARY_OWNERSHIP_RE.test(text) || !SUMMARY_JOB_RE.test(text)) return false;
+  const bounded = /\blease(?:s|d|ing)?\b[^.!?;]{0,120}\b(?:prevent|prevents|stop|stops|block|blocks|limit|limits|ensure|ensures|allow|allows)\b[^.!?;]{0,120}\b(?:workers?|one|single|two)\b[^.!?;]{0,70}\b(?:own|owns|owning|ownership)\b[^.!?;]{0,70}\b(?:same|one|single|exclusive)?\s*(?:jobs?|tasks?)\b/i;
+  const reverse = /\b(?:workers?|one|single|two)\b[^.!?;]{0,70}\b(?:own|owns|owning|ownership)\b[^.!?;]{0,80}\b(?:same|one|single|exclusive)\b[^.!?;]{0,50}\b(?:jobs?|tasks?)\b[^.!?;]{0,100}\blease(?:s|d|ing)?\b/i;
+  if (!bounded.test(text) && !reverse.test(text)) return false;
+  if (/\b(?:lease(?:s|d|ing)?|workers?|ownership|owning)\b[^.!?;]{0,100}\b(?:not|never|no|without|cannot|can't|doesn't|doesnt|isn't|isnt)\b[^.!?;]{0,80}\b(?:own|owns|owning|ownership|prevent|prevents|same|exclusive)\b/i.test(text)) return false;
+  if (SUMMARY_SEPARATION_RE.test(text)) return false;
+  return true;
+}
+
+function hasReclaimAfterExpiryRelation(clause) {
+  const text = normaliseUnicodeText(clause);
+  const positive = [
+    /\b(?:if|when|once|after|upon|following)\b[^.!?;]{0,80}\blease(?:s|d|ing)?\b[^.!?;]{0,35}\bexpir(?:e|es|ed|ing|y|ation|ations)\b[^.!?;]{0,100}(?:an?\s+)?(?:another|different|new|other)?\s*workers?\b[^.!?;]{0,70}\breclaim(?:s|ed|ing)?\b/i,
+    /\blease(?:s|d|ing)?\b[^.!?;]{0,55}\bexpir(?:e|es|ed|ing|y|ation|ations)\b[^.!?;]{0,100}(?:an?\s+)?(?:another|different|new|other)?\s*workers?\b[^.!?;]{0,70}\breclaim(?:s|ed|ing)?\b/i,
+    /\breclaim(?:s|ed|ing)?\b[^.!?;]{0,100}\b(?:after|when|once|upon|following)\b[^.!?;]{0,60}\b(?:the\s+)?lease(?:s|d|ing)?\b[^.!?;]{0,35}\bexpir(?:e|es|ed|ing|y|ation|ations)\b/i,
+  ];
+  if (!positive.some((pattern) => pattern.test(text))) return false;
+  if (/\b(?:cannot|can't|may not|not|never|no|without)\b[^.!?;]{0,100}\breclaim(?:s|ed|ing)?\b/i.test(text)) return false;
+  if (SUMMARY_SEPARATION_RE.test(text)) return false;
+  return true;
+}
+
+function summarySemantics(text) {
+  const clauses = summaryClauses(text);
+  return {
+    failureRetryRelation: clauses.some(hasFailureRetryRelation),
+    leaseOwnership: clauses.some(hasLeaseOwnershipRelation),
+    reclaimAfterExpiry: clauses.some(hasReclaimAfterExpiryRelation),
+  };
+}
+
+function hasSummarySemantics(text) {
+  return Object.values(summarySemantics(text)).every(Boolean);
+}
+
+function evaluateFactuality(testCase, answer, observation = {}) {
+  const spec = testCase?.factualityChecks;
+  if (spec === undefined) return null;
+
+  const assertions = Array.isArray(spec.assertions) ? spec.assertions : [];
+  const base = {
+    eligible: spec.modelInvolved === true,
+    modelInvolved: spec.modelInvolved === true,
+    measured: false,
+    inconclusive: true,
+    passed: false,
+    assertions: [],
+    failures: [],
+  };
+  if (spec.modelInvolved !== true) return { ...base, reason: 'model_not_involved' };
+  if (observation?.error?.code) {
+    return {
+      ...base,
+      reason: `not measured: error frame ${observation.error.code}`,
+      assertions: assertions.map((assertion) => ({
+        id: assertion.id,
+        claim: assertion.claim,
+        ok: null,
+        detail: 'not measured because the model observation ended with an error',
+      })),
+    };
+  }
+
+  const normalisedAnswer = normaliseUnicodeText(answer);
+  const results = assertions.map((assertion) => {
+    const positive = (assertion.patterns || []).some((pattern) =>
+      new RegExp(normaliseUnicodeText(pattern), 'i').test(normalisedAnswer));
+    const forbidden = (assertion.forbiddenPatterns || []).filter((pattern) =>
+      new RegExp(normaliseUnicodeText(pattern), 'i').test(normalisedAnswer));
+    const ok = positive && forbidden.length === 0;
+    return {
+      id: assertion.id,
+      claim: assertion.claim,
+      ok,
+      positive,
+      forbidden,
+      detail: ok
+        ? 'positive assertion matched and no forbidden claim matched'
+        : `positive=${positive}; forbidden=${forbidden.length}`,
+    };
+  });
+  const failures = results.filter((assertion) => assertion.ok !== true);
+  return {
+    eligible: true,
+    modelInvolved: true,
+    measured: true,
+    inconclusive: false,
+    passed: failures.length === 0,
+    assertions: results,
+    failures: failures.map((assertion) => `${assertion.id} (${assertion.detail})`),
+  };
 }
 
 /*
@@ -624,6 +842,7 @@ function gradeCase(testCase, obs) {
   const lower = flattenSpaces(answer.toLowerCase());
   const checks = [];
   const add = (name, ok, detail = '') => checks.push({ name, ok, detail });
+  const factuality = evaluateFactuality(testCase, answer, obs);
 
   // An expected error is a normal graded outcome. An unexpected transport or
   // provider error is unobserved content, not a failed answer: classify the
@@ -640,6 +859,7 @@ function gradeCase(testCase, obs) {
       passed: false,
       inconclusive: true,
       failures: [],
+      factuality,
     };
   }
 
@@ -659,6 +879,16 @@ function gradeCase(testCase, obs) {
       const discussesTradeoff = hasDiminishingValueReasoning(answer);
       add('mustDiscussTradeoff', discussesTradeoff,
         discussesTradeoff ? 'relational diminishing-value language found' : 'no subject/value/diminishing relation found');
+    }
+    if (expect.mustPreserveSummary !== undefined) {
+      const semantics = summarySemantics(answer);
+      const preserves = hasSummarySemantics(answer);
+      const missing = Object.entries(semantics)
+        .filter(([, ok]) => !ok)
+        .map(([name]) => name)
+        .join(', ');
+      add('mustPreserveSummary', preserves,
+        preserves ? `${expect.mustPreserveSummary} semantics found` : `missing ${missing}`);
     }
     for (const needle of expect.mustNotInclude ?? []) {
       add(`mustNotInclude:${needle}`, !lower.includes(flattenSpaces(String(needle).toLowerCase())));
@@ -692,6 +922,7 @@ function gradeCase(testCase, obs) {
     passed: failed.length === 0 && inconclusive.length === 0,
     inconclusive: failed.length === 0 && inconclusive.length > 0,
     failures: failed.map((c) => `${c.name}${c.detail ? ` (${c.detail})` : ''}`),
+    factuality,
   };
 }
 
@@ -730,8 +961,18 @@ function summarise(grades, observations = []) {
   const evaluatedCases = evaluatedGrades.length;
   const passed = evaluatedGrades.filter((g) => g.passed).length;
 
-  const tagged = (tag) => evaluatedGrades.filter((g) => (g.tags || []).includes(tag));
-  const factual = tagged('factuality');
+  /* Factuality is a separately measured assertion suite. It deliberately
+   * does not reuse whole-case `passed`: a latency/completeness failure may
+   * still have a factual answer, and a broad keyword pass may still contain a
+   * negated or wrong fact. Model-involved cases with transport errors remain
+   * eligible but unmeasured. */
+  const factualityResults = grades
+    .map((grade) => grade.factuality)
+    .filter((result) => result?.eligible === true && result.modelInvolved === true);
+  const measuredFactuality = factualityResults.filter((result) =>
+    result.measured === true && result.inconclusive === false);
+  const factualityAssertionCount = factualityResults
+    .reduce((count, result) => count + result.assertions.length, 0);
 
   const citing = evaluatedGrades.filter((g) => g.checks.some((c) => c.name === 'mustCite'));
   const citingOk = citing.filter((g) => g.checks.find((c) => c.name === 'mustCite')?.ok === true);
@@ -763,7 +1004,12 @@ function summarise(grades, observations = []) {
     failed: evaluatedGrades.filter((g) => g.checks.some((c) => c.ok === false)).length,
     inconclusive: grades.filter((g) => g.inconclusive).length,
     acceptanceRate: rate(passed, evaluatedCases),
-    factualityPassRate: rate(factual.filter((g) => g.passed).length, factual.length),
+    factualityEligibleModelCases: factualityResults.length,
+    factualityMeasuredCases: measuredFactuality.length,
+    factualityAssertionCount,
+    factualityMeasuredAssertions: measuredFactuality
+      .reduce((count, result) => count + result.assertions.length, 0),
+    factualityPassRate: rate(measuredFactuality.filter((result) => result.passed).length, measuredFactuality.length),
     citationRate: rate(citingOk.length, citing.length),
     toolSuccessRate: rate(toolResults.filter((f) => f.ok === true).length, toolResults.length),
     cachePrecision: rate(cacheOk.length, cacheObs.length),
@@ -784,7 +1030,7 @@ function summarise(grades, observations = []) {
 
 module.exports = {
   URL_RE, KNOWN_EXPECT_KEYS,
-  validateCase, loadDataset, gradeCase, summarise, percentile, citationsIn,
+  SUMMARY_SEMANTICS_ID, validateCase, loadDataset, gradeCase, summarise, percentile, citationsIn,
   sourceUrlsIn, citationReceiptCoverage, isLikelyComplete, inspectCompletionMetadata,
-  hasDiminishingValueReasoning,
+  hasDiminishingValueReasoning, summarySemantics, hasSummarySemantics, evaluateFactuality,
 };

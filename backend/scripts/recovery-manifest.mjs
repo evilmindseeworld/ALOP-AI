@@ -2,9 +2,9 @@
 /**
  * Build and verify the authoritative ten-case recovery projection.
  *
- * The fixed list below is the historical recovery selection only. Every case
- * object in the generated manifest comes from the current committed backend
- * dataset; this file never reads the old untracked recovery copy.
+ * The fixed lists below contain recovery IDs and order only. Every case object
+ * in a generated manifest comes from the selected committed backend dataset;
+ * this file never reads an old untracked recovery copy.
  */
 
 import { readFile, writeFile } from 'node:fs/promises';
@@ -13,11 +13,11 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const BACKEND_ROOT = join(HERE, '..');
-const DEFAULT_BACKEND_PATH = join(BACKEND_ROOT, 'evals', 'backend-intelligence-v1.json');
-const DEFAULT_RECOVERY_PATH = join(BACKEND_ROOT, 'evals', 'backend-intelligence-v1-recovery10.json');
+const DEFAULT_BACKEND_PATH = join(BACKEND_ROOT, 'evals', 'backend-intelligence-v2.json');
+const DEFAULT_RECOVERY_PATH = join(BACKEND_ROOT, 'evals', 'backend-intelligence-v2-recovery10.json');
 
-// Historical recovery selection, recovered as IDs and order only.
-export const RECOVERY_CASE_IDS = Object.freeze([
+// Historical recovery selection, retained for checking the v1 projection.
+export const RECOVERY_CASE_IDS_V1 = Object.freeze([
   'long-context-constraint-recall',
   'evidence-before-speed-claim',
   'model-disagreement-value',
@@ -25,6 +25,21 @@ export const RECOVERY_CASE_IDS = Object.freeze([
   'full-council-overkill-arithmetic',
   'creative-no-search',
   'user-text-summary',
+  'timeless-definition-idempotency',
+  'fresh-weather-search',
+  'safety-prompt-boundary',
+]);
+
+// The v2 selection keeps the same ten positions and replaces only the
+// one-for-one summary ID; no new case is smuggled into the denominator.
+export const RECOVERY_CASE_IDS = Object.freeze([
+  'long-context-constraint-recall',
+  'evidence-before-speed-claim',
+  'model-disagreement-value',
+  'full-council-resilience-design',
+  'full-council-overkill-arithmetic',
+  'creative-no-search',
+  'user-text-summary-v2',
   'timeless-definition-idempotency',
   'fresh-weather-search',
   'safety-prompt-boundary',
@@ -78,7 +93,7 @@ export function projectRecoveryCases(backendManifest, recoveryIds = RECOVERY_CAS
 export function projectRecoveryManifest(backendManifest, recoveryIds = RECOVERY_CASE_IDS) {
   const sourceName = typeof backendManifest?.name === 'string'
     ? backendManifest.name
-    : 'backend-intelligence-v1';
+    : 'backend-intelligence-v2';
 
   return {
     name: `${sourceName}-recovery10`,
@@ -90,9 +105,9 @@ export function projectRecoveryManifest(backendManifest, recoveryIds = RECOVERY_
   };
 }
 
-export function assertRecoveryProjection(backendManifest, recoveryManifest) {
+export function assertRecoveryProjection(backendManifest, recoveryManifest, recoveryIds = RECOVERY_CASE_IDS) {
   assertObject(recoveryManifest, 'recovery manifest');
-  const expected = projectRecoveryManifest(backendManifest);
+  const expected = projectRecoveryManifest(backendManifest, recoveryIds);
 
   if (recoveryManifest.name !== expected.name) {
     throw new Error(`recovery manifest name mismatch: expected ${expected.name}; got ${recoveryManifest.name}`);

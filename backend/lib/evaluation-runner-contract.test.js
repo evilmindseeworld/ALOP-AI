@@ -133,7 +133,7 @@ test('the cache validation phase is fixed, separate, and explicitly non-bypass',
 });
 
 test('quality manifests remain the cache-bypassed set', () => {
-  for (const name of ['core-v1', 'backend-intelligence-v1', 'backend-intelligence-v1-recovery10']) {
+  for (const name of ['core-v1', 'backend-intelligence-v1', 'backend-intelligence-v1-recovery10', 'backend-intelligence-v2', 'backend-intelligence-v2-recovery10']) {
     assert.match(SOURCE, new RegExp(`"${name}"`));
   }
   assert.match(SOURCE, /QUALITY_CACHE_BYPASS_DATASETS/);
@@ -185,7 +185,7 @@ test('a present cache secret does not change validate-only behavior', async () =
 });
 
 test('validate-only keeps normal quality manifests offline and unchanged', async () => {
-  const names = ['core-v1', 'backend-intelligence-v1', 'backend-intelligence-v1-recovery10'];
+  const names = ['core-v1', 'backend-intelligence-v1', 'backend-intelligence-v1-recovery10', 'backend-intelligence-v2', 'backend-intelligence-v2-recovery10'];
   const results = await Promise.all(names.map((name) => runRunner(['--validate-only', '--dataset', name])));
   for (const [index, result] of results.entries()) {
     assert.equal(result.code, 0, result.stderr);

@@ -54,9 +54,9 @@ const DEFAULT_GATES = [
     metric: 'factualityPassRate',
     direction: 'min',
     threshold: 0.95,
-    sample: 'cases',
+    sample: 'factualityMeasuredCases',
     minSample: 5,
-    why: 'a factuality case has a checkable answer; getting one wrong is not a style difference',
+    why: 'a measured model-involved factuality case has explicit assertions; getting one wrong is not a style difference',
   },
   {
     name: 'citations',

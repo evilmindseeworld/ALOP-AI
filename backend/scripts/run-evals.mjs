@@ -86,6 +86,7 @@ const cacheBypassSecret = process.env.EVAL_CACHE_BYPASS_SECRET || "";
 const QUALITY_CACHE_BYPASS_DATASETS = new Set([
   "core-v1",
   "backend-intelligence-v1",
+  "backend-intelligence-v2",
   "backend-intelligence-v1-recovery10",
 ]);
 

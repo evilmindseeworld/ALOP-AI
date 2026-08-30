@@ -21,6 +21,7 @@ const manifest = JSON.parse(readFileSync(join(__dirname, '..', 'evals', `${CACHE
 const qualityManifestNames = [
   'core-v1',
   'backend-intelligence-v1',
+  'backend-intelligence-v2',
   'backend-intelligence-v1-recovery10',
 ];
 const qualityCaseIds = new Set(qualityManifestNames.flatMap((name) => {

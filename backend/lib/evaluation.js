@@ -298,11 +298,15 @@ const SUMMARY_FAILURE_RE = /\bfail(?:s|ed|ing|ure|ures)?\b/i;
 const SUMMARY_LEASE_RE = /\blease(?:s|d|ing)?\b/i;
 const SUMMARY_WORKER_RE = /\bworkers?\b/i;
 const SUMMARY_OWNERSHIP_RE = /\b(?:own|owns|owning|ownership)\b/i;
+const SUMMARY_POSSESSION_RE = /\b(?:hold|holds|holding|retain|retains|retaining|keep|keeps|keeping|control|controls|controlling|possess|possesses|possessing|possession)\b/i;
 const SUMMARY_EXPIRY_RE = /\bexpir(?:e|es|ed|ing|y|ation|ations)\b/i;
 const SUMMARY_RECLAIM_RE = /\breclaim(?:s|ed|ing)?\b/i;
+const SUMMARY_TRANSFER_RE = /\b(?:reclaim(?:s|ed|ing)?|take\s+over|takes\s+over|taking\s+over|takeover|assum(?:e|es|ed|ing)\s+control|pick\s+up|picks\s+up|picking\s+up|claim(?:s|ed|ing)?|acquire(?:s|d|ing)?|resum(?:e|es|ed|ing)\s+(?:ownership|control))\b/i;
 const SUMMARY_JOB_RE = /\b(?:job|jobs|task|tasks)\b/i;
 const SUMMARY_NEGATION_RE = /\b(?:not|never|no|without|cannot|can't|doesn't|doesnt|don't|dont|isn't|isnt|won't|wont)\b/i;
 const SUMMARY_SEPARATION_RE = /\b(?:separate|unrelated|independent)\b|\bdifferent\s+(?:job|jobs|task|tasks|entity|operation|request)\b/i;
+const SUMMARY_OWNERSHIP_NEGATION_RE = /\b(?:lease(?:s|d|ing)?|workers?|ownership|owning|hold|holds|holding|retain|retains|keep|keeps|control|controls|possession)\b[^.!?;]{0,100}\b(?:not|never|no|without|cannot|can't|can\s+not|does\s+not|doesn't|doesnt|do\s+not|don't|dont|is\s+not|isn't|isnt|will\s+not|won't|wont|may\s+not)\b[^.!?;]{0,100}\b(?:own|owns|owning|ownership|prevent|prevents|ensure|ensures|let|lets|allow|allows|same|exclusive|hold|holds|holding|retain|retains|keep|keeps|control|controls|possess|possesses|possession)\b/i;
+const SUMMARY_TRANSFER_NEGATION_RE = /\b(?:not|never|no|without|cannot|can't|can\s+not|does\s+not|doesn't|doesnt|do\s+not|don't|dont|is\s+not|isn't|isnt|will\s+not|won't|wont|may\s+not)\b[^.!?;]{0,100}\b(?:reclaim(?:s|ed|ing)?|take\s+over|takes\s+over|taking\s+over|takeover|assum(?:e|es|ed|ing)\s+control|pick\s+up|picks\s+up|picking\s+up|claim(?:s|ed|ing)?|acquire(?:s|d|ing)?|resum(?:e|es|ed|ing)\s+(?:ownership|control))\b/i;
 
 const summaryClauses = (text) => normaliseUnicodeText(String(text ?? ''))
   .split(/[.!?;]+/)
@@ -335,26 +339,63 @@ function hasFailureRetryRelation(clause) {
 
 function hasLeaseOwnershipRelation(clause) {
   const text = normaliseUnicodeText(clause);
-  if (!SUMMARY_LEASE_RE.test(text) || !SUMMARY_OWNERSHIP_RE.test(text)) return false;
+  if (!SUMMARY_LEASE_RE.test(text)
+    || (!SUMMARY_OWNERSHIP_RE.test(text) && !SUMMARY_POSSESSION_RE.test(text))) return false;
   const bounded = /\blease(?:s|d|ing)?\b[^.!?;]{0,120}\b(?:prevent|prevents|stop|stops|block|blocks|limit|limits|ensure|ensures|allow|allows|give|gives|grant|grants|guarantee|guarantees|provide|provides|keep|keeps|maintain|maintains)\b[^.!?;]{0,120}\b(?:workers?|one|single|two)\b[^.!?;]{0,70}\b(?:own|owns|owning|ownership)\b[^.!?;]{0,70}\b(?:same|one|single|exclusive)?\s*(?:jobs?|tasks?)\b/i;
   const boundedExclusive = /\blease(?:s|d|ing)?\b[^.!?;]{0,120}\b(?:prevent|prevents|stop|stops|block|blocks|limit|limits|ensure|ensures|allow|allows|give|gives|grant|grants|guarantee|guarantees|provide|provides|keep|keeps|maintain|maintains)\b[^.!?;]{0,100}\b(?:duplicate|exclusive|single|same|one|two|multiple)\b[^.!?;]{0,50}\bownership\b/i;
   const boundedWorkerExclusive = /\blease(?:s|d|ing)?\b[^.!?;]{0,120}\b(?:prevent|prevents|stop|stops|block|blocks|limit|limits|ensure|ensures|allow|allows|give|gives|grant|grants|guarantee|guarantees|provide|provides|keep|keeps|maintain|maintains)\b[^.!?;]{0,100}\b(?:one|single|two|a|an)?\s*workers?\b[^.!?;]{0,60}\b(?:exclusive|single|only|one)\s+ownership\b/i;
+  const boundedPossession = /\blease(?:s|d|ing)?\b[^.!?;]{0,120}\b(?:prevent|prevents|stop|stops|block|blocks|limit|limits|ensure|ensures|allow|allows|let|lets|letting|give|gives|grant|grants|guarantee|guarantees|provide|provides|keep|keeps|maintain|maintains)\b[^.!?;]{0,120}\b(?:only\s+one|one|single|exclusive)\b[^.!?;]{0,45}\bworkers?\b[^.!?;]{0,45}\b(?:can|may|must|will)?\s*(?:exclusive\s+)?(?:hold|holds|holding|retain|retains|retaining|keep|keeps|keeping|control|controls|controlling|possess|possesses|possessing|possession)\b\s*(?:(?:of|for|on|with|over)\s+)?(?:a|an|the|same|one|single)?\s*(?:jobs?|tasks?)\b/i;
+  const boundedControlPossession = /\blease(?:s|d|ing)?\b[^.!?;]{0,120}\b(?:prevent|prevents|stop|stops|block|blocks|limit|limits|ensure|ensures|allow|allows|let|lets|letting|give|gives|grant|grants|guarantee|guarantees|provide|provides|keep|keeps|maintain|maintains)\b[^.!?;]{0,120}\b(?:only\s+one|one|single|exclusive)\b[^.!?;]{0,45}\bworkers?\b[^.!?;]{0,45}\b(?:can|may|must|will)?\s*(?:retain|retains|retaining|keep|keeps|keeping|hold|holds|holding)\b[^.!?;]{0,25}\b(?:control|possession|ownership)\b\s*(?:(?:of|for|on|with|over)\s+)?(?:a|an|the|same|one|single)?\s*(?:jobs?|tasks?)\b/i;
+  const boundedJobWorkerControl = /\blease(?:s|d|ing)?\b[^.!?;]{0,80}\b(?:active|valid|current|in[- ]effect)\b[^.!?;]{0,50}\b(?:jobs?|tasks?)\b[^.!?;]{0,60}\b(?:under|with)\b[^.!?;]{0,30}\b(?:only\s+one|one|single)\s+workers?\b[^.!?;]{0,50}\b(?:control|possession|ownership)\b/i;
+  const boundedJobWithWorker = /\blease(?:s|d|ing)?\b[^.!?;]{0,120}\b(?:keep|keeps|keeping|retain|retains|retaining)\b[^.!?;]{0,100}\b(?:jobs?|tasks?)\b[^.!?;]{0,50}\b(?:with|under)\b[^.!?;]{0,30}\b(?:only\s+one|one|single)\s+workers?\b/i;
   const reverse = /\b(?:workers?|one|single|two)\b[^.!?;]{0,70}\b(?:own|owns|owning|ownership)\b[^.!?;]{0,80}\b(?:same|one|single|exclusive)\b[^.!?;]{0,50}\b(?:jobs?|tasks?)\b[^.!?;]{0,100}\blease(?:s|d|ing)?\b/i;
-  if (!bounded.test(text) && !boundedExclusive.test(text) && !boundedWorkerExclusive.test(text) && !reverse.test(text)) return false;
-  if (/\b(?:lease(?:s|d|ing)?|workers?|ownership|owning)\b[^.!?;]{0,100}\b(?:not|never|no|without|cannot|can't|doesn't|doesnt|isn't|isnt)\b[^.!?;]{0,80}\b(?:own|owns|owning|ownership|prevent|prevents|same|exclusive)\b/i.test(text)) return false;
+  if (!bounded.test(text) && !boundedExclusive.test(text) && !boundedWorkerExclusive.test(text)
+    && !boundedPossession.test(text) && !boundedControlPossession.test(text)
+    && !boundedJobWorkerControl.test(text)
+    && !boundedJobWithWorker.test(text) && !reverse.test(text)) return false;
+  if (SUMMARY_OWNERSHIP_NEGATION_RE.test(text)) return false;
   if (SUMMARY_SEPARATION_RE.test(text)) return false;
   return true;
 }
 
+const matchAfter = (text, pattern, start) => {
+  const match = text.slice(start).match(pattern);
+  return match ? { ...match, index: start + match.index, end: start + match.index + match[0].length } : null;
+};
+
+const orderedWithin = (left, right, distance) => Boolean(left && right && right.index >= left.end
+  && right.index - left.end <= distance);
+
+function hasForwardExpiryTransfer(text) {
+  const cue = matchAfter(text, /\b(?:if|when|once|after|upon|following)\b/i, 0);
+  const expiry = matchAfter(text, SUMMARY_EXPIRY_RE, cue ? cue.index + cue[0].length : 0);
+  const worker = matchAfter(text, SUMMARY_WORKER_RE, expiry?.end ?? text.length);
+  const transfer = matchAfter(text, SUMMARY_TRANSFER_RE, worker?.end ?? text.length);
+  return Boolean(cue && orderedWithin(cue, expiry, 100)
+    && orderedWithin(expiry, worker, 110)
+    && orderedWithin(worker, transfer, 100));
+}
+
+function hasReverseExpiryTransfer(text) {
+  const worker = matchAfter(text, SUMMARY_WORKER_RE, 0);
+  const transfer = matchAfter(text, SUMMARY_TRANSFER_RE, worker?.end ?? text.length);
+  const cue = matchAfter(text, /\b(?:after|when|once|upon|following)\b/i, transfer?.end ?? text.length);
+  const expiry = matchAfter(text, SUMMARY_EXPIRY_RE, cue?.index ?? text.length);
+  return Boolean(worker && orderedWithin(worker, transfer, 100)
+    && orderedWithin(transfer, cue, 100)
+    && orderedWithin(cue, expiry, 100));
+}
+
 function hasReclaimAfterExpiryRelation(clause) {
   const text = normaliseUnicodeText(clause);
+  if (!SUMMARY_EXPIRY_RE.test(text) || !SUMMARY_WORKER_RE.test(text) || !SUMMARY_TRANSFER_RE.test(text)) return false;
   const positive = [
     /\b(?:if|when|once|after|upon|following)\b[^.!?;]{0,80}\blease(?:s|d|ing)?\b[^.!?;]{0,35}\bexpir(?:e|es|ed|ing|y|ation|ations)\b[^.!?;]{0,100}(?:an?\s+)?(?:another|different|new|other)?\s*workers?\b[^.!?;]{0,70}\breclaim(?:s|ed|ing)?\b/i,
     /\blease(?:s|d|ing)?\b[^.!?;]{0,120}\bexpir(?:e|es|ed|ing|y|ation|ations)\b[^.!?;]{0,100}(?:an?\s+)?(?:another|different|new|other)?\s*workers?\b[^.!?;]{0,70}\breclaim(?:s|ed|ing)?\b/i,
     /\breclaim(?:s|ed|ing)?\b[^.!?;]{0,100}\b(?:after|when|once|upon|following)\b[^.!?;]{0,60}\b(?:the\s+)?lease(?:s|d|ing)?\b[^.!?;]{0,35}\bexpir(?:e|es|ed|ing|y|ation|ations)\b/i,
   ];
-  if (!positive.some((pattern) => pattern.test(text))) return false;
-  if (/\b(?:cannot|can't|may not|not|never|no|without)\b[^.!?;]{0,100}\breclaim(?:s|ed|ing)?\b/i.test(text)) return false;
+  if (!positive.some((pattern) => pattern.test(text)) && !hasForwardExpiryTransfer(text) && !hasReverseExpiryTransfer(text)) return false;
+  if (SUMMARY_TRANSFER_NEGATION_RE.test(text)) return false;
   if (SUMMARY_SEPARATION_RE.test(text)) return false;
   return true;
 }

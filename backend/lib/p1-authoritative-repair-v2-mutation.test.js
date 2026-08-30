@@ -356,7 +356,12 @@ test('M52: allowing lease and ownership tokens without a relation is killed', ()
   assert.equal(current.hasSummarySemantics(answer), false);
   const mutant = loadCjs(replaceOnce(
     EVALUATION_SOURCE,
-    'if (!bounded.test(text) && !boundedExclusive.test(text) && !boundedWorkerExclusive.test(text) && !reverse.test(text)) return false;',
+    [
+      '  if (!bounded.test(text) && !boundedExclusive.test(text) && !boundedWorkerExclusive.test(text)',
+      '    && !boundedPossession.test(text) && !boundedControlPossession.test(text)',
+      '    && !boundedJobWorkerControl.test(text)',
+      '    && !boundedJobWithWorker.test(text) && !reverse.test(text)) return false;',
+    ].join('\n'),
     'if (false) return false;',
     'lease ownership relation requirement',
   ));

@@ -2,7 +2,9 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { readFileSync } = require('node:fs');
+const { execFileSync } = require('node:child_process');
+const { createHash } = require('node:crypto');
+const { existsSync, readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const {
   gradeCase,
@@ -17,6 +19,11 @@ const {
 const EVAL_ROOT = join(__dirname, '..', 'evals');
 const v1 = JSON.parse(readFileSync(join(EVAL_ROOT, 'backend-intelligence-v1.json'), 'utf8'));
 const v2 = JSON.parse(readFileSync(join(EVAL_ROOT, 'backend-intelligence-v2.json'), 'utf8'));
+const PARENT_SHA = '448b54dc1d29c86213813ea2033e66cedecb718c';
+const LIVE_ARTIFACT_PATH = process.env.P1_LIVE_SUMMARY_ARTIFACT
+  || 'C:/Users/LENOVO/Documents/AI-Classroom/eval-runs/p1-v2-focused-summary-2026-08-31/summary-attempt-1.json';
+const LIVE_ARTIFACT_SHA256 = '321b7b4fa95a451181f5a4645c942c79f6edae8bbb28ea13b328b36932122bc1';
+const LIVE_SUMMARY_ANSWER = 'A worker retries a failed job after a delay, and a lease mechanism ensures that only one worker can hold the job at any time. When the lease expires, another worker can safely take over the job.';
 
 const observation = (answer, over = {}) => ({
   id: over.id || 'fixture',
@@ -27,22 +34,56 @@ const observation = (answer, over = {}) => ({
   ...over,
 });
 
-const authoritativeSummaryAnswer = 'When a job fails, the worker retries it after a delay. A lease prevents two workers from owning the same job, but if the lease expires another worker may safely reclaim the job.';
+const loadEvaluatorSource = (source) => {
+  const module = { exports: {} };
+  const localRequire = (request) => require(join(__dirname, request));
+  new Function('require', 'module', 'exports', source)(localRequire, module, module.exports);
+  return module.exports;
+};
 
-test('the authoritative Aug 30 summary reproduces the old false negative and passes the semantic v2 expectation', () => {
-  assert.equal(/retry|failed/i.test(authoritativeSummaryAnswer), false, 'the old literal stems must fail on the stored answer');
-  assert.equal(/lease|worker/i.test(authoritativeSummaryAnswer), true, 'the second old literal check still matches');
+const readLiveSummaryAnswer = () => {
+  if (!existsSync(LIVE_ARTIFACT_PATH)) return LIVE_SUMMARY_ANSWER;
+  const bytes = readFileSync(LIVE_ARTIFACT_PATH);
+  assert.equal(createHash('sha256').update(bytes).digest('hex'), LIVE_ARTIFACT_SHA256,
+    'the pinned live artifact must not drift');
+  const report = JSON.parse(bytes.toString('utf8'));
+  const answer = report.observations?.[0]?.answer;
+  assert.equal(answer, LIVE_SUMMARY_ANSWER, 'the pinned report must contain the exact live answer');
+  return answer;
+};
+
+const liveSummaryAnswer = readLiveSummaryAnswer();
+const parentEvaluator = loadEvaluatorSource(
+  execFileSync('git', ['show', `${PARENT_SHA}:backend/lib/evaluation.js`], {
+    cwd: join(__dirname, '..', '..'),
+    encoding: 'utf8',
+  }).replace(/\r\n/g, '\n'),
+);
+
+test('the persisted live summary reproduces the parent red state and passes after repair', () => {
+  assert.deepEqual(parentEvaluator.summarySemantics(liveSummaryAnswer), {
+    failureRetryRelation: true,
+    leaseOwnership: false,
+    reclaimAfterExpiry: false,
+  });
+  assert.equal(parentEvaluator.hasSummarySemantics(liveSummaryAnswer), false,
+    'the exact live answer must fail the parent matcher');
+  assert.deepEqual(summarySemantics(liveSummaryAnswer), {
+    failureRetryRelation: true,
+    leaseOwnership: true,
+    reclaimAfterExpiry: true,
+  });
 
   const testCase = v2.cases.find(({ id }) => id === 'user-text-summary-v2');
-  const grade = gradeCase(testCase, observation(authoritativeSummaryAnswer, { id: testCase.id }));
+  const grade = gradeCase(testCase, observation(liveSummaryAnswer, { id: testCase.id }));
   const summaryCheck = grade.checks.find(({ name }) => name === 'mustPreserveSummary');
   assert.equal(summaryCheck.ok, true, summaryCheck.detail);
   assert.equal(grade.passed, true, grade.failures.join('|'));
 });
 
-test('the summary matcher accepts morphology and paraphrase while requiring all three relations', () => {
+test('the summary matcher accepts at least sixteen relational paraphrases', () => {
   const positiveParaphrases = [
-    authoritativeSummaryAnswer,
+    liveSummaryAnswer,
     'A worker retries a failed task after a delay. A lease prevents multiple workers from owning the same task. Once the lease has expired, another worker can reclaim the task.',
     'Workers retry failed jobs; a lease ensures only one worker owns a job; when the lease expires, another worker reclaims the job.',
     'A failed job is retried by its worker. A lease prevents two workers from owning the same job. If the lease has expired, a different worker may reclaim it.',
@@ -52,14 +93,20 @@ test('the summary matcher accepts morphology and paraphrase while requiring all 
     'A failed task is retried by a worker. A lease ensures one worker owns the task, and after the lease expires another worker may reclaim it.',
     'Workers retry jobs that failed. A lease stops two workers from owning the same job. If the lease expires, a new worker can reclaim it.',
     'The worker retries a failed job. A lease ensures exclusive ownership of the job, and after it expires a different worker may reclaim it.',
+    'A worker retries a failed job. A lease ensures that only one worker can hold the job at any time. When the lease expires, another worker can safely take over the job.',
+    'A worker retries failed jobs. The lease lets a single worker hold the job. After lease expiry, another worker may take over.',
+    "The worker retries a failed task. While the lease is active, the task remains under one worker's control. Once the lease expires, a different worker can assume control of the task.",
+    'Workers retry failed jobs. A lease keeps the job with only one worker. After expiration, a new worker can pick up the job.',
+    'A failed job is retried by a worker. The active lease grants one worker exclusive possession of the job. Another worker may safely claim the job after the lease has expired.',
+    "When a task fails, its worker retries it; the lease ensures that only one worker retains control of the task, and following lease expiration another worker can resume control.",
   ];
-  assert.equal(positiveParaphrases.length, 10);
+  assert.equal(positiveParaphrases.length, 16);
   for (const answer of positiveParaphrases) {
     assert.equal(hasSummarySemantics(answer), true, JSON.stringify({ answer, semantics: summarySemantics(answer) }));
   }
 });
 
-test('the summary matcher rejects missing relations, unrelated vocabulary, negation, and substring traps', () => {
+test('the summary matcher rejects at least twenty relational adversarial negatives', () => {
   const adversarialNegatives = [
     ['failure without retry relationship', 'The job failed, but the worker logged the incident. A lease prevents two workers from owning the job. If the lease expires, another worker reclaims it.'],
     ['retry without failure relationship', 'The worker retries healthy jobs after a delay. A lease prevents two workers from owning the job. If the lease expires, another worker reclaims it.'],
@@ -77,8 +124,15 @@ test('the summary matcher rejects missing relations, unrelated vocabulary, negat
     ['multiple simultaneous owners', 'A worker retries a failed job. A lease can coexist with multiple simultaneous owners. If the lease expires, another worker reclaims the job.'],
     ['negated exclusive ownership', 'A worker retries a failed job. The lease does not guarantee exclusive ownership. If the lease expires, another worker reclaims the job.'],
     ['ownership keyword salad', 'Retry failure lease worker ownership reclaim expiry discussed gives guarantees exclusive same job multiple owners.'],
+    ['several workers can hold', 'A worker retries a failed job. A lease lets several workers hold the same job simultaneously. If the lease expires, another worker reclaims the job.'],
+    ['negated hold exclusivity', 'A worker retries a failed job. A lease does not ensure that only one worker holds the job. If the lease expires, another worker reclaims the job.'],
+    ['all workers can hold', 'A worker retries a failed job. Workers can all hold the job while the lease is active. If the lease expires, another worker reclaims the job.'],
+    ['associated words only', 'A worker retries a failed job. A lease is associated with a worker and a job. If the lease expires, another worker reclaims the job.'],
+    ['worker holds lease only', 'A worker retries a failed job. The worker holds a lease. If the lease expires, another worker reclaims the job.'],
+    ['meeting is not job possession', 'A worker retries a failed job. A lease ensures that only one worker can hold a meeting about the job. If the lease expires, another worker reclaims the job.'],
+    ['negated takeover', 'A worker retries a failed job. When the lease expires, another worker cannot take over the job.'],
   ];
-  assert.equal(adversarialNegatives.length, 16);
+  assert.equal(adversarialNegatives.length, 23);
   for (const [label, answer] of adversarialNegatives) {
     assert.equal(hasSummarySemantics(answer), false, `${label}: ${JSON.stringify(summarySemantics(answer))}`);
   }

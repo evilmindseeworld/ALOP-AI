@@ -13,8 +13,8 @@ const { join } = require("node:path");
  * detail. That reasoning is sound and it is written down in the frontend file.
  *
  * What was not sound is the sentence after it: "it is wrong until someone
- * updates it". The hero of the sign-in page is the roster — seven real models
- * at seven real temperatures — and the whole argument of that page is that the
+ * updates it". The hero of the sign-in page is the roster — five real models
+ * at five real temperatures — and the whole argument of that page is that the
  * numbers are checkable. A roster that has drifted from the server is the one
  * claim on the page that must not be false, because it is the only claim the
  * page makes about the product's internals.
@@ -67,13 +67,6 @@ const seats = (src) =>
 
 const backendSeats = seats(BACKEND);
 const frontendSeats = seats(FRONTEND);
-const HISTORICAL_FRONTEND_ROUTES = new Set([
-  "openai/gpt-oss-20b:free",
-  "nvidia/nemotron-3-nano-30b-a3b:free",
-]);
-const activeFrontendSeats = frontendSeats.filter(
-  (seat) => ![...HISTORICAL_FRONTEND_ROUTES].some((model) => seat.startsWith(`${model} @`)),
-);
 
 test("the parser found a roster on both sides at all", () => {
   // A guard on the guard. Two empty lists compare equal, and would turn this
@@ -84,13 +77,16 @@ test("the parser found a roster on both sides at all", () => {
 
 test("the sign-in page advertises exactly the council the server runs", () => {
   // Model name, temperature and free/pro, all three. A temperature drift is the
-  // subtle one: the page's argument is the 0.2-to-0.8 spread, so a seat quietly
+  // subtle one: the page's argument is the 0.2-to-0.7 spread, so a seat quietly
   // retuned on the server makes the ladder a picture of something that is no
   // longer true.
-  /* The two upstream-dead rows remain in this unauthenticated historical
-   * display snapshot by explicit route-drift policy; they are not runtime
-   * seats. Compare only the active display rows to the backend council. */
-  assert.deepEqual(activeFrontendSeats, backendSeats);
+  assert.deepEqual(frontendSeats, backendSeats);
+});
+
+test("the current council has exactly five seats, including two free seats", () => {
+  assert.equal(backendSeats.length, 5);
+  assert.equal(backendSeats.filter((seat) => seat.endsWith("free")).length, 2);
+  assert.equal(backendSeats.filter((seat) => seat.endsWith("pro")).length, 3);
 });
 
 test("the free tier is a real subset, not the whole council", () => {
@@ -143,8 +139,8 @@ test("the social preview card shows the roster the server runs", () => {
 });
 
 test("temperatures actually spread, because the spread is the product claim", () => {
-  // "They disagree on purpose" is on the sign-in page. Seven seats at one
-  // temperature would be one answer seven times, and the page would be lying.
+  // "They disagree on purpose" is on the sign-in page. Five seats at one
+  // temperature would be one answer five times, and the page would be lying.
   const temps = backendSeats.map((s) => Number(/@([0-9.]+)/.exec(s)[1]));
   assert.ok(Math.max(...temps) - Math.min(...temps) >= 0.3, `spread is only ${Math.max(...temps) - Math.min(...temps)}`);
   assert.ok(new Set(temps).size >= 3, "fewer than three distinct temperatures");

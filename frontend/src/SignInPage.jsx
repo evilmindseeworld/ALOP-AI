@@ -76,19 +76,19 @@ const wantsSignUp = () => {
 /**
  * The sign-in screen.
  *
- * THE THESIS: the most characteristic thing about this product is that seven
+ * THE THESIS: the most characteristic thing about this product is that five
  * models answer separately and then have to agree. The old page described that
  * in a sentence and then showed four emoji in cards — which is the shape of
  * every AI landing page, and says nothing a competitor could not copy.
  *
  * So the hero IS the council: the real roster, ordered by temperature, low to
  * high. That ordering is not decoration and it is not "01 / 02 / 03" wearing a
- * disguise — the spread from 0.2 to 0.8 is the actual reason a council works.
- * A panel of seven identical models would return one answer seven times. The
+ * disguise — the spread from 0.2 to 0.7 is the actual reason a council works.
+ * A panel of five identical models would return one answer five times. The
  * ladder shows why it does not, using the product's own numbers, and it could
  * not be lifted onto any other product.
  *
- * The convergence rule beneath it is the single signature element: seven dim
+ * The convergence rule beneath it is the single signature element: five dim
  * voices, one bright line. Everything else on the page is deliberately quiet.
  *
  * Cut on the way: the "ONLINE" status pill (invented telemetry — nothing was
@@ -256,7 +256,7 @@ export default function SignInPage() {
                 explains why in the note above <title>: a count followed by a
                 contrast ("Seven X. One Y.") is a rhythm that reads as generated
                 rather than written, and the number dates the product — the
-                roster is three seats on free and seven on pro, so it was wrong
+                old roster was three seats on free and seven on pro, so it was wrong
                 for most of the people reading it. That reasoning was applied to
                 the <title> and never to the heading the visitor actually sees.
 
@@ -411,20 +411,20 @@ export default function SignInPage() {
                 SCREEN READER. Visually it now reads one step behind the seat
                 name, which was today's fix. But a screen reader still meets
                 every row as "zero point two, The Architect, Zhipu AI" — an
-                unexplained decimal, seven times, with nothing saying what the
+                unexplained decimal, five times, with nothing saying what the
                 number is. One hidden sentence explains the scale once, and the
                 visual texture is unchanged. */}
             <p id="council-scale" className="sr-only">
-              Seven seats, ordered from the most literal to the most lateral.
+              Five seats, ordered from the most literal to the most lateral.
               Each row begins with that seat&rsquo;s sampling temperature, from
-              0.2 to 0.8.
+              0.2 to 0.7.
             </p>
 
-            {/* The roster is still the argument — seven seats, each held at its
+            {/* The roster is still the argument — five seats, each held at its
                 own temperature — but a seat is named for what it DOES, and
                 credited to the company behind it rather than to a model id.
                 The titles run the same axis as the numbers beside them: The
-                Architect holds to what is literally there, The Explorer is
+                Architect holds to what is literally there, The Alchemist is
                 furthest from it. The second line is the COMPANY and nothing
                 more — constants/council.js records why there is no superlative
                 on it, and why one must not be added back. */}
@@ -446,7 +446,7 @@ export default function SignInPage() {
 
                 A hanko is applied at the END of a document, as the stroke that
                 commits to what is above it — which is exactly what this line
-                is doing to the seven above it. The drawing is already the
+                is doing to the five above it. The drawing is already the
                 argument: two strokes converging into a single point. It is the
                 council mechanic, not a flower.
 

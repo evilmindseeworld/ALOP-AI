@@ -292,7 +292,7 @@ EmptyState.displayName = "EmptyState";
  * What the council did before it answered.
  *
  * The tool loop runs to completion before synthesis emits a single chunk, so
- * without this the user watches a spinner for up to 25 seconds while seven
+ * without this the user watches a spinner for up to 25 seconds while five
  * models search and read pages. The events arrive on the same SSE stream as
  * the answer.
  *

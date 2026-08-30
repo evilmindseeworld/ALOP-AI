@@ -65056,8 +65056,6 @@ toolPending: 0%, 100% { opacity: 0.35; } 50% { opacity: 1; }
 .council-row:nth-child(3)
 .council-row:nth-child(4)
 .council-row:nth-child(5)
-.council-row:nth-child(6)
-.council-row:nth-child(7)
 .council-seat
 .council-stage-row.is-active .council-stage-key
 .council-stage-row.is-active .council-stage-mark

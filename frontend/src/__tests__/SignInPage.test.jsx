@@ -193,14 +193,15 @@ describe("what has to be on the page whichever card is showing", () => {
       expect(screen.getByText(/16 in the EEA and/i)).toBeInTheDocument();
     });
 
-    it(`shows all seven council seats on ${label}`, () => {
+    it(`shows all five council seats on ${label}`, () => {
       at(path);
       const { container } = render(<SignInPage />);
       // The roster is the page's argument and it is asserted to survive the
       // branch, because the sign-up card is the one a new visitor sees first.
-      expect(container.querySelectorAll(".council-ladder > .council-row")).toHaveLength(7);
+      expect(container.querySelectorAll(".council-ladder > .council-row")).toHaveLength(5);
+      expect(screen.getByText("2 models free. All 5 on Pro.")).toBeInTheDocument();
       expect(screen.getByText("The Architect")).toBeInTheDocument();
-      expect(screen.getByText("The Explorer")).toBeInTheDocument();
+      expect(screen.getByText("The Alchemist")).toBeInTheDocument();
     });
 
     it(`leaks no vendor model id into the DOM on ${label}`, () => {
@@ -228,7 +229,7 @@ describe("what has to be on the page whichever card is showing", () => {
       // "Powered by [company]'s most powerful model", which was false on two
       // seats, unverifiable on the other five, and did not describe how the
       // service routes — greetings never reach the council, search and fallback
-      // answer from a single model, and the whip resolves at three of seven.
+      // answer from a single model, and the whip resolves at three of five.
       //
       // Under FTC standards that is a comparative performance claim needing
       // substantiation, on a page that exists to induce a AED 30/month purchase.

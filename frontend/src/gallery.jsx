@@ -155,7 +155,7 @@ const Primitives = () => (
       </div>
     </Section>
 
-    <Section title="Council rosette" note="Seven traces, one per model in the pro council, superimposed until they resolve into one figure. Shown at full strength; it renders at 0.16 in the app.">
+    <Section title="Council rosette" note={`${COUNCIL.length} traces, one per model in the pro council, superimposed until they resolve into one figure. Shown at full strength; it renders at 0.16 in the app.`}>
       <div className="app-root dark" style={{ position: "relative", height: 300, display: "grid", placeItems: "center", borderRadius: 12, border: "1px solid rgba(255,255,255,0.12)" }}>
         <div style={{ position: "relative", width: 300, height: 300, color: "var(--primary)", opacity: 0.5 }}>
           <CouncilRosette />
@@ -443,7 +443,7 @@ const LiveChrome = ({ theme, empty = false, streaming = false, loaded = false, c
                 actually have. A fixture that differs from the app stops
                 guarding the thing it differs on. */}
             <Badge variant="secondary" data-ui-scope="" className="hidden shrink-0 sm:inline-flex">
-              7 models
+              {COUNCIL.length} models
             </Badge>
           </div>
           <div className="header-actions">
@@ -675,9 +675,9 @@ const SIGNIN_SHELL = ({ signUp, loading, theme }) => (
               How the council is composed
             </h2>
             <p id={`gallery-council-scale-${theme}-${signUp ? "up" : "in"}`} className="sr-only">
-              Seven seats, ordered from the most literal to the most lateral.
+              Five seats, ordered from the most literal to the most lateral.
               Each row begins with that seat&rsquo;s sampling temperature, from
-              0.2 to 0.8.
+              0.2 to 0.7.
             </p>
             <ol
               className="council-ladder"

@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import { COUNCIL } from "../constants/council";
 
 /**
  * Plan, prices, checkout and the post-payment return.
@@ -132,7 +133,7 @@ export function useBilling({ apiCall, isReady, setToast }) {
           const d = await (await apiCall("/api/user/plan")).json();
           if (d.plan === "pro") {
             setUserPlan("pro");
-            setToast("Pro is active — all 7 models unlocked.");
+            setToast(`Pro is active — all ${COUNCIL.length} models unlocked.`);
             return;
           }
         } catch (e) {

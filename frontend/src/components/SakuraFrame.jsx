@@ -300,13 +300,11 @@ export const ComposerSkyline = memo(() => (
           would compete with the one thing in the strip that is meant to be
           looked at. None of them touches the disc — a bar across the sun is a
           handsome drawing at poster size and a smudge at 44px. */}
-      {/* SEVEN BARS, ONE PER SEAT. Four approach from the left, three answer
-          from the right, and the sun is the one resolved mark between them. The
-          council is seven voices reconciled into a single reply, and this is
-          that shape in weather rather than printed as a widget — the owner has
-          ruled out a council table on the chat screen, and this is not one: it
-          labels nothing, counts nothing, and updates never. If the roster size
-          ever changes this does not have to.
+      {/* SEVEN DECORATIVE BARS, deliberately independent of the seat count.
+          Four approach from the left, three answer from the right, and the sun
+          is the one resolved mark between them. This is the shape of several
+          voices reconciling, rendered as weather rather than printed as a
+          widget — it labels nothing, counts nothing, and updates never.
 
           CHECKED AGAINST THE DISC RATHER THAN EYEBALLED, centre (96, 11) and
           r=9. The nearest corner in the set is (82, 7.4) on the fourth bar:

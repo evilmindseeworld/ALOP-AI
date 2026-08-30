@@ -30,4 +30,10 @@ describe("council badge", () => {
     expect(FREE_COUNT).toBe(COUNCIL.filter((m) => m.free).length);
     expect(FREE_COUNT).toBeLessThan(COUNCIL.length);
   });
+
+  it("advertises the current five-seat council and its two free seats", () => {
+    expect(COUNCIL).toHaveLength(5);
+    expect(FREE_COUNT).toBe(2);
+    expect(COUNCIL.filter((m) => !m.free)).toHaveLength(3);
+  });
 });

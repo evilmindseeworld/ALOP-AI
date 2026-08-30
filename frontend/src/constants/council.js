@@ -19,18 +19,18 @@
  * advertising someone else's product. A title says what the seat is FOR.
  *
  * The titles run the same axis the temperatures do — The Architect holds to
- * what is literally there, The Explorer is furthest from it, and the five
+ * what is literally there, The Alchemist is furthest from it, and the three
  * between move along that line in order. That ordering is the argument the page
- * makes: seven identical models would return one answer seven times.
+ * makes: five identical models would return one answer five times.
  *
  * The last seat was "The Oracle" and was renamed on evidence. Research on
  * anthropomorphism in AI splits persona names into ones that signal a ROLE and
  * ones that signal AUTHORITY: role names calibrate what a user expects, while
  * authority names inflate it and are punished harder when the system is wrong.
- * "Oracle" promises foresight, and it sat on the 0.8 seat — the most lateral,
- * the likeliest to be wrong, and Pro-only. It was the seat most likely to
- * disappoint wearing the name that promised most. "Explorer" carries the same
- * lateral meaning without claiming to be right.
+ * "Oracle" promised foresight, and it sat on the old 0.8 seat — the most
+ * lateral, the likeliest to be wrong, and Pro-only. It was the seat most likely
+ * to disappoint wearing the name that promised most. "Explorer" carried the
+ * same lateral meaning without claiming to be right.
  *
  * The COMPANY is named and the MODEL is not. That is a real distinction and it
  * is deliberate: which vendor is behind a seat is stable and worth stating,
@@ -45,10 +45,11 @@
  * seat. It was removed, and the reasons are worth keeping because the line is
  * tempting and the objection is not obvious.
  *
- * 1. IT WAS FALSE ON TWO SEATS. gemma-4-26b-a4b is Google's small MoE,
- *    and gpt-oss-20b is OpenAI's open-weights model, not GPT.
+ * 1. IT WAS FALSE ON TWO OF THE ORIGINAL SEVEN SEATS. gemma-4-26b-a4b is
+ *    Google's small MoE, and gpt-oss-20b is OpenAI's open-weights model, not
+ *    GPT.
  *
- * 2. IT WAS UNVERIFIABLE ON THE OTHER FIVE. Nobody here has checked that these
+ * 2. IT WAS UNVERIFIABLE ON THE OTHER FIVE ORIGINAL SEATS. Nobody here has checked that these
  *    versions are their vendors' flagships, and a claim you cannot check is one
  *    you cannot defend.
  *
@@ -56,8 +57,8 @@
  *    that survives even if every seat really were a flagship. Greetings never
  *    reach the council at all. The search and Wikipedia paths answer from a
  *    single PRIMARY_MODEL. The fallback is one model. runCouncilWithWhip
- *    resolves at a quorum of 3, so a Pro user routinely gets three of seven and
- *    a free user only ever has three seats. "Powered by the most powerful
+ *    resolves at a quorum of 3, so a Pro user routinely got three of seven and
+ *    a free user only ever had three seats. "Powered by the most powerful
  *    model" describes none of that.
  *
  * Under FTC standards a line like that is a source claim AND a comparative
@@ -100,13 +101,6 @@ export const COUNCIL = [
     company: "Cohere",
   },
   {
-    model: "openai/gpt-oss-20b:free",
-    temperature: 0.4,
-    free: false,
-    title: "The Analyst",
-    company: "OpenAI",
-  },
-  {
     model: "poolside/laguna-s-2.1:free",
     temperature: 0.5,
     free: false,
@@ -126,13 +120,6 @@ export const COUNCIL = [
     free: true,
     title: "The Alchemist",
     company: "Google",
-  },
-  {
-    model: "nvidia/nemotron-3-nano-30b-a3b:free",
-    temperature: 0.8,
-    free: true,
-    title: "The Explorer",
-    company: "NVIDIA",
   },
 ]
   // Sorted by temperature so the ladder reads literal at the top and lateral at

@@ -371,8 +371,8 @@
  *
  * It is a roster, not an ornament. Each row is a real model from the real
  * COUNCIL array with its real temperature, sorted low to high — and that
- * ordering is the argument the page is making: seven identical models would
- * return one answer seven times, and the 0.2-to-0.8 spread is why they do not.
+ * ordering is the argument the page is making: five identical models would
+ * return one answer five times, and the 0.2-to-0.7 spread is why they do not.
  *
  * The numbers deliberately are NOT an invented 01/02/03 sequence. They are
  * data, they are checkable, and they are the reason the product works.
@@ -449,7 +449,7 @@
   width: 100%;
   max-width: 34ch;
   /* The rule that gathers. It runs the height of the roster on the left of the
-   * temperature column, and stops at the resolve line — seven voices entering,
+   * temperature column, and stops at the resolve line — five voices entering,
    * one leaving. */
   border-left: 1px solid var(--border);
 }
@@ -471,16 +471,14 @@
   animation: councilRow 380ms var(--ease-out) backwards;
 }
 
-/* Seven explicit delays rather than a loop. The list is a fixed roster read
- * from a constant, not an arbitrary-length collection, and seven lines here is
+/* Five explicit delays rather than a loop. The list is a fixed roster read
+ * from a constant, not an arbitrary-length collection, and five lines here is
  * less machinery than a CSS variable threaded through the JSX. */
 .council-row:nth-child(1) { animation-delay: 120ms; }
 .council-row:nth-child(2) { animation-delay: 180ms; }
 .council-row:nth-child(3) { animation-delay: 240ms; }
 .council-row:nth-child(4) { animation-delay: 300ms; }
 .council-row:nth-child(5) { animation-delay: 360ms; }
-.council-row:nth-child(6) { animation-delay: 420ms; }
-.council-row:nth-child(7) { animation-delay: 480ms; }
 
 @keyframes councilRow {
   from { opacity: 0; transform: translateX(-6px); }
@@ -573,7 +571,7 @@
  * anyone has signed in. */
 .council-row.is-pro .council-name { color: var(--text-muted); }
 
-/* The resolution. Seven dim rows above, one bright line here — the convergence
+/* The resolution. Five dim rows above, one bright line here — the convergence
  * the whole page exists to claim, arriving last. */
 .council-resolve {
   margin: 0;
@@ -615,7 +613,7 @@
   to { opacity: 1; transform: scale(1) rotate(-4deg); }
 }
 
-/* A short rule that meets the ladder's border where it ends, so the seven
+/* A short rule that meets the ladder's border where it ends, so the five
  * lines visibly feed into this one. */
 .council-resolve::before {
   content: "";
@@ -647,7 +645,7 @@
  * worse trade than reading it afterwards".
  *
  * That reasoning is HALF right, and the half it got right is the half that is
- * kept. Putting the seven-row roster before the form on a phone is the wrong
+ * kept. Putting the five-row roster before the form on a phone is the wrong
  * trade. But `order:` moves boxes and leaves the DOM alone, so it bought the
  * better visual sequence by giving screen-reader users the worse one — and it
  * pushed the HEADLINE down with the roster, because the two were one element.

@@ -1,4 +1,5 @@
 import { memo, useMemo } from "react";
+import { COUNCIL } from "../constants/council";
 
 /**
  * The council, drawn.
@@ -61,7 +62,7 @@ const trace = ({ R, d, k, phase, cx, cy, steps = 240 }) => {
   return `${out}Z`;
 };
 
-const CouncilRosette = memo(({ traces = 7, petals = 5 }) => {
+const CouncilRosette = memo(({ traces = COUNCIL.length, petals = 5 }) => {
   // Computed once per trace count. The whole figure is a few hundred numbers,
   // so this is memoised for tidiness rather than for speed.
   const paths = useMemo(() => {

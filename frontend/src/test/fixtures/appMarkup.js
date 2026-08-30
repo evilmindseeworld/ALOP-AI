@@ -211,11 +211,11 @@ export const appTree = (theme) => `
     <div class="plan-grid">
               <div class="plan-col">
                 <div class="plan-name">Free</div>
-                <ul class="plan-feats"><li>4 models in the council</li></ul>
+                <ul class="plan-feats"><li>2 models in the council</li></ul>
               </div>
               <div class="plan-col is-pro">
                 <div class="plan-name">Pro <span class="plan-badge">Recommended</span></div>
-                <ul class="plan-feats"><li><strong>All 7 models</strong></li></ul>
+                <ul class="plan-feats"><li><strong>All 5 models</strong></li></ul>
               </div>
             </div>
             <div class="plan-buttons">
@@ -484,12 +484,12 @@ export const outsideAppRoot = `
 
     <div class="signin-grid">
       <section class="signin-intro">
-        <h1 class="signin-title">Seven answers.<span class="signin-title-accent">One reply.</span></h1>
+        <h1 class="signin-title">Several models answer.<span class="signin-title-accent">One reply.</span></h1>
         <p class="signin-tagline">They disagree on purpose.</p>
       </section>
       <section class="signin-proof" aria-labelledby="council-proof-title">
         <h2 id="council-proof-title" class="sr-only">How the council is composed</h2>
-        <p id="council-scale" class="sr-only">Seven seats, ordered from the most literal to the most lateral.</p>
+        <p id="council-scale" class="sr-only">Five seats, ordered from the most literal to the most lateral.</p>
         <ol class="council-ladder" aria-describedby="council-scale">
           <li class="council-row"><span class="council-temp">0.3</span><span class="council-name">kimi-k2.7-code</span></li>
           <li class="council-row is-pro"><span class="council-temp">0.8</span><span class="council-name">minimax-m3</span><span class="council-tag">Pro</span></li>
@@ -500,7 +500,7 @@ export const outsideAppRoot = `
       <section class="signin-card">
         <h2 class="signin-card-title">Sign in</h2>
         <div class="signin-card-inner"><div class="signin-card-loading"></div></div>
-        <p class="signin-plan">3 models free. All 7 on Pro.</p>
+        <p class="signin-plan">2 models free. All 5 on Pro.</p>
         <p class="signin-legal">
           By continuing you confirm you are at least 13 years old (16 in the EEA and UK) and agree
           to our <a href="/terms.html">Terms</a> and <a href="/privacy.html">Privacy Policy</a>.

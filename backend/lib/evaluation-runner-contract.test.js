@@ -118,6 +118,8 @@ test('fresh evaluation requires both the explicit CLI mode and its secret', () =
 test('runner persists bounded replay diagnostics without changing the grader input', () => {
   assert.match(SOURCE, /answerReplayDiagnostics/);
   assert.match(SOURCE, /withDiagnostics/);
+  assert.match(SOURCE, /diagnostics:\s*answerReplayDiagnostics\(observation\)/);
+  assert.doesNotMatch(SOURCE, /\.\.\.answerReplayDiagnostics\(observation\)/);
   assert.match(SOURCE, /answer: observation\.answer\.slice\(0, 2000\)/);
 });
 

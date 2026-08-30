@@ -7,6 +7,7 @@ const { join } = require('node:path');
 const {
   gradeCase,
   hasSummarySemantics,
+  inspectCompletionMetadata,
   loadDataset,
   summarise,
   summarySemantics,
@@ -41,10 +42,18 @@ test('the authoritative Aug 30 summary reproduces the old false negative and pas
 
 test('the summary matcher accepts morphology and paraphrase while requiring all three relations', () => {
   const positiveParaphrases = [
+    authoritativeSummaryAnswer,
     'A worker retries a failed task after a delay. A lease prevents multiple workers from owning the same task. Once the lease has expired, another worker can reclaim the task.',
     'Workers retry failed jobs; a lease ensures only one worker owns a job; when the lease expires, another worker reclaims the job.',
     'A failed job is retried by its worker. A lease prevents two workers from owning the same job. If the lease has expired, a different worker may reclaim it.',
+    'A job that fails is retried by the worker after a pause. A lease prevents duplicate ownership; after the lease expires another worker may reclaim the job.',
+    'Jobs that fail get retried by workers after a delay. Leases ensure exclusive ownership until expiry, after which another worker can reclaim them.',
+    'When a task fails, its worker retries the task. A lease limits two workers from owning the same task, and once it expires a new worker can reclaim the task.',
+    'A failed task is retried by a worker. A lease ensures one worker owns the task, and after the lease expires another worker may reclaim it.',
+    'Workers retry jobs that failed. A lease stops two workers from owning the same job. If the lease expires, a new worker can reclaim it.',
+    'The worker retries a failed job. A lease ensures exclusive ownership of the job, and after it expires a different worker may reclaim it.',
   ];
+  assert.equal(positiveParaphrases.length, 10);
   for (const answer of positiveParaphrases) {
     assert.equal(hasSummarySemantics(answer), true, JSON.stringify({ answer, semantics: summarySemantics(answer) }));
   }
@@ -55,13 +64,17 @@ test('the summary matcher rejects missing relations, unrelated vocabulary, negat
     ['failure without retry relationship', 'The job failed, but the worker logged the incident. A lease prevents two workers from owning the job. If the lease expires, another worker reclaims it.'],
     ['retry without failure relationship', 'The worker retries healthy jobs after a delay. A lease prevents two workers from owning the job. If the lease expires, another worker reclaims it.'],
     ['lease without ownership relation', 'A lease has a duration, but ownership is assigned by a separate system. A worker retries a failed job. If the lease expires, another worker reclaims it.'],
-    ['worker without lease', 'A worker retries a failed job. Two workers own different jobs. If the job expires, another worker reclaims it.'],
-    ['no reclaim-after-expiry', 'A worker retries a failed job. A lease prevents two workers from owning the same job.'],
+    ['exclusivity without lease', 'A worker has exclusive ownership of a job and retries failed jobs. After expiry another worker reclaims the job.'],
+    ['reclaim without expiry', 'A worker retries a failed job. A lease prevents two workers from owning the same job. Another worker reclaims it.'],
+    ['expiry without reclaim', 'A worker retries a failed job. A lease prevents two workers from owning the same job, and the lease expires. Ownership is released.'],
     ['irrelevant retry and failure', 'A worker retries a failed email while the job lease protects ownership. When the lease expires, another worker reclaims the job.'],
     ['keyword stuffing in separate statements', 'Retry logic exists. Failure reporting exists. Lease exists. Worker exists. Reclaim happens after expiry.'],
-    ['negated ownership/reclaim', 'A worker retries a failed job, but a lease does not prevent workers from owning the same job and an expired lease cannot be reclaimed.'],
+    ['negated ownership semantics', 'A worker retries a failed job, but a lease does not prevent workers from owning the same job. If the lease expires, another worker reclaims it.'],
+    ['negated retry semantics', 'A worker does not retry a failed job. A lease prevents two workers from owning the same job. If the lease expires, another worker reclaims it.'],
+    ['reversed reclaim timing', 'A worker retries a failed job. Another worker reclaims the job before the lease expires.'],
     ['substring traps', 'A leaseholder owns the job; a retrial and a failure report are unrelated words, and reclamation is discussed without expiry.'],
   ];
+  assert.equal(adversarialNegatives.length, 12);
   for (const [label, answer] of adversarialNegatives) {
     assert.equal(hasSummarySemantics(answer), false, `${label}: ${JSON.stringify(summarySemantics(answer))}`);
   }
@@ -137,6 +150,45 @@ test('negation, reversed relation, wrong entity/value, wrong numeric, and keywor
   assert.equal(numeric.factuality.passed, false, 'a wrong numeric value must not pass by nearby digits');
 });
 
+test('photosynthesis factuality rejects broad light-energy claims and wrong-pigment claims', () => {
+  const photosynthesis = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
+  const falseClaims = [
+    'Photosynthesis is the process by which plants convert light energy into chemical energy stored as sugar.',
+    'Photosynthesis: plants use melanin to capture light energy, and chlorophyll plays no role at all.',
+    'Plants use melanin rather than chlorophyll to capture light energy.',
+    'Chlorophyll is unrelated to photosynthesis.',
+    'Plants do not use chlorophyll during photosynthesis.',
+  ];
+  assert.equal(falseClaims.length, 5);
+  for (const answer of falseClaims) {
+    const result = gradeCase(photosynthesis, observation(answer, { id: photosynthesis.id }));
+    assert.equal(result.factuality.passed, false, answer);
+  }
+});
+
+test('idempotency factuality requires a meaningful repeat/effect/no-duplicate relation', () => {
+  const idempotency = v2.cases.find(({ id }) => id === 'timeless-definition-idempotency');
+  const trueParaphrases = [
+    factualityAnswers[idempotency.id],
+    'Repeating an idempotent API request leaves the system in the same state and does not add a duplicate side effect.',
+    'Idempotency means performing an operation again produces the same result without creating an additional effect.',
+    'An idempotent operation gives the same result when repeated, with no extra duplicate effect.',
+  ];
+  for (const answer of trueParaphrases) {
+    assert.equal(gradeCase(idempotency, observation(answer, { id: idempotency.id })).factuality.passed, true, answer);
+  }
+
+  const falseClaims = [
+    'idempotent idempotency request operation api same effect unchanged without duplicate repeat again',
+    'Repeated idempotent requests create duplicate effects.',
+    'An idempotent API behaves differently each time it is repeated.',
+    'Idempotency means retries always add another side effect.',
+  ];
+  for (const answer of falseClaims) {
+    assert.equal(gradeCase(idempotency, observation(answer, { id: idempotency.id })).factuality.passed, false, answer);
+  }
+});
+
 test('a broad keyword pass can still fail the separate factuality result', () => {
   const testCase = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
   const answer = 'Plants, chlorophyll, and light are keywords, but plants do not use chlorophyll and release no oxygen during photosynthesis.';
@@ -195,4 +247,28 @@ test('factuality metadata refuses wildcard-only and unknown assertion fields', (
   });
   assert.ok(problems.some((problem) => problem.includes('unknown factuality assertion key')));
   assert.ok(problems.some((problem) => problem.includes('wildcard-only')));
+});
+
+test('derived replay diagnostics cannot change the completion grade verdict', () => {
+  const testCase = { id: 'completion-diagnostic-fixture', question: 'q', expect: {} };
+  const primary = observation('The answer is complete.', {
+    id: testCase.id,
+    provenance: { completion: { qualified: 'complete' } },
+  });
+  const withDiagnostics = {
+    ...primary,
+    diagnostics: {
+      answerLength: 24,
+      answerHash: 'bounded-digest',
+      completion: { status: 'incomplete', fields: ['diagnostics.completion.status'] },
+      execution: { completion: { qualified: 'incomplete' } },
+    },
+  };
+  const withoutDiagnostics = { ...primary };
+  const plainGrade = gradeCase(testCase, withoutDiagnostics);
+  const diagnosticGrade = gradeCase(testCase, withDiagnostics);
+  assert.equal(inspectCompletionMetadata(withDiagnostics).status, 'complete');
+  assert.deepEqual(diagnosticGrade.checks, plainGrade.checks);
+  assert.equal(diagnosticGrade.passed, plainGrade.passed);
+  assert.equal(diagnosticGrade.checks.find(({ name }) => name === 'completeness').ok, true);
 });

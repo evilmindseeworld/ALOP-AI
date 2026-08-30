@@ -64,3 +64,14 @@ test('diagnostic metadata remains small when the answer is empty or an error end
   assert.equal(diagnostics.completion.status, 'incomplete');
   assert.equal(diagnostics.execution.route, null);
 });
+
+test('the runner can persist the diagnostic block under an isolated namespace', () => {
+  const observation = { answer: 'A complete answer.', frames: [] };
+  const persisted = { ...observation, diagnostics: answerReplayDiagnostics(observation) };
+
+  assert.equal(persisted.diagnostics.answerLength, observation.answer.length);
+  assert.equal(typeof persisted.diagnostics.answerHash, 'string');
+  assert.equal(persisted.answerLength, undefined);
+  assert.equal(persisted.completion, undefined);
+  assert.equal(persisted.diagnostics.completion.status, 'unknown');
+});

@@ -322,9 +322,10 @@ function hasFailureRetryRelation(clause) {
     || !SUMMARY_WORKER_RE.test(text) || !SUMMARY_JOB_RE.test(text)) return false;
   const positive = [
     /\b(?:jobs?|tasks?)\b[^.!?;]{0,70}\bfail(?:s|ed|ing|ure|ures)?\b[^.!?;]{0,90}\bworkers?\b[^.!?;]{0,60}\bretr(?:y|ies|ied|ying)\b/i,
-    /\bworkers?\b[^.!?;]{0,60}\bretr(?:y|ies|ied|ying)\b[^.!?;]{0,80}\bfail(?:s|ed|ing|ure|ures)?\b[^.!?;]{0,40}\b(?:jobs?|tasks?)\b/i,
-    /\bworkers?\b[^.!?;]{0,60}\bretr(?:y|ies|ied|ying)\b[^.!?;]{0,80}\b(?:jobs?|tasks?)\b[^.!?;]{0,40}\bfail(?:s|ed|ing|ure|ures)?\b/i,
-    /\bfail(?:s|ed|ing|ure|ures)?\b[^.!?;]{0,40}\b(?:jobs?|tasks?)\b[^.!?;]{0,80}\bretr(?:y|ies|ied|ying)\b[^.!?;]{0,70}\bworkers?\b/i,
+    /\b(?:jobs?|tasks?)\b[^.!?;]{0,55}\bfail(?:s|ed|ing|ure|ures)?\b[^.!?;]{0,65}\bretr(?:y|ies|ied|ying)\b[^.!?;]{0,65}\bworkers?\b/i,
+    /\bfail(?:s|ed|ing|ure|ures)?\b[^.!?;]{0,35}\b(?:jobs?|tasks?)\b[^.!?;]{0,65}\bretr(?:y|ies|ied|ying)\b[^.!?;]{0,65}\bworkers?\b/i,
+    /\bworkers?\b[^.!?;]{0,60}\bretr(?:y|ies|ied|ying)\b[^.!?;]{0,35}\b(?:a\s+)?fail(?:s|ed|ing|ure|ures)?\s+(?:jobs?|tasks?)\b/i,
+    /\bworkers?\b[^.!?;]{0,60}\bretr(?:y|ies|ied|ying)\b[^.!?;]{0,55}\b(?:jobs?|tasks?)\b[^.!?;]{0,45}\bfail(?:s|ed|ing|ure|ures)?\b/i,
   ];
   if (!positive.some((pattern) => pattern.test(text))) return false;
   if (SUMMARY_NEGATION_RE.test(text.replace(/\bretr(?:y|ies|ied|ying)\b/i, ''))) return false;
@@ -334,11 +335,11 @@ function hasFailureRetryRelation(clause) {
 
 function hasLeaseOwnershipRelation(clause) {
   const text = normaliseUnicodeText(clause);
-  if (!SUMMARY_LEASE_RE.test(text) || !SUMMARY_WORKER_RE.test(text)
-    || !SUMMARY_OWNERSHIP_RE.test(text) || !SUMMARY_JOB_RE.test(text)) return false;
+  if (!SUMMARY_LEASE_RE.test(text) || !SUMMARY_OWNERSHIP_RE.test(text)) return false;
   const bounded = /\blease(?:s|d|ing)?\b[^.!?;]{0,120}\b(?:prevent|prevents|stop|stops|block|blocks|limit|limits|ensure|ensures|allow|allows)\b[^.!?;]{0,120}\b(?:workers?|one|single|two)\b[^.!?;]{0,70}\b(?:own|owns|owning|ownership)\b[^.!?;]{0,70}\b(?:same|one|single|exclusive)?\s*(?:jobs?|tasks?)\b/i;
+  const boundedExclusive = /\blease(?:s|d|ing)?\b[^.!?;]{0,120}\b(?:prevent|prevents|stop|stops|block|blocks|limit|limits|ensure|ensures|allow|allows)\b[^.!?;]{0,100}\b(?:duplicate|exclusive|single|same|one|two|multiple)\b[^.!?;]{0,50}\bownership\b/i;
   const reverse = /\b(?:workers?|one|single|two)\b[^.!?;]{0,70}\b(?:own|owns|owning|ownership)\b[^.!?;]{0,80}\b(?:same|one|single|exclusive)\b[^.!?;]{0,50}\b(?:jobs?|tasks?)\b[^.!?;]{0,100}\blease(?:s|d|ing)?\b/i;
-  if (!bounded.test(text) && !reverse.test(text)) return false;
+  if (!bounded.test(text) && !boundedExclusive.test(text) && !reverse.test(text)) return false;
   if (/\b(?:lease(?:s|d|ing)?|workers?|ownership|owning)\b[^.!?;]{0,100}\b(?:not|never|no|without|cannot|can't|doesn't|doesnt|isn't|isnt)\b[^.!?;]{0,80}\b(?:own|owns|owning|ownership|prevent|prevents|same|exclusive)\b/i.test(text)) return false;
   if (SUMMARY_SEPARATION_RE.test(text)) return false;
   return true;
@@ -348,7 +349,7 @@ function hasReclaimAfterExpiryRelation(clause) {
   const text = normaliseUnicodeText(clause);
   const positive = [
     /\b(?:if|when|once|after|upon|following)\b[^.!?;]{0,80}\blease(?:s|d|ing)?\b[^.!?;]{0,35}\bexpir(?:e|es|ed|ing|y|ation|ations)\b[^.!?;]{0,100}(?:an?\s+)?(?:another|different|new|other)?\s*workers?\b[^.!?;]{0,70}\breclaim(?:s|ed|ing)?\b/i,
-    /\blease(?:s|d|ing)?\b[^.!?;]{0,55}\bexpir(?:e|es|ed|ing|y|ation|ations)\b[^.!?;]{0,100}(?:an?\s+)?(?:another|different|new|other)?\s*workers?\b[^.!?;]{0,70}\breclaim(?:s|ed|ing)?\b/i,
+    /\blease(?:s|d|ing)?\b[^.!?;]{0,120}\bexpir(?:e|es|ed|ing|y|ation|ations)\b[^.!?;]{0,100}(?:an?\s+)?(?:another|different|new|other)?\s*workers?\b[^.!?;]{0,70}\breclaim(?:s|ed|ing)?\b/i,
     /\breclaim(?:s|ed|ing)?\b[^.!?;]{0,100}\b(?:after|when|once|upon|following)\b[^.!?;]{0,60}\b(?:the\s+)?lease(?:s|d|ing)?\b[^.!?;]{0,35}\bexpir(?:e|es|ed|ing|y|ation|ations)\b/i,
   ];
   if (!positive.some((pattern) => pattern.test(text))) return false;

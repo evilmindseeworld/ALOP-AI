@@ -61,6 +61,16 @@ test("factuality minimum sample uses the factuality denominator, not all cases",
   assert.equal(verdict.passed, false);
 });
 
+test("factuality gate is pinned at 0.95, independent of the other quality thresholds", () => {
+  assert.equal(evaluateGates({ ...GOOD, factualityPassRate: 0.95 }).passed, true);
+  const below = evaluateGates({ ...GOOD, factualityPassRate: 0.949 });
+  assert.ok(below.failed.includes("factuality"), JSON.stringify(below));
+  const loweredThresholdMutantResult = evaluateGates({ ...GOOD, factualityPassRate: 0.75 });
+  assert.ok(loweredThresholdMutantResult.failed.includes("factuality"));
+  assert.equal(DEFAULT_GATES.find((gate) => gate.name === "factuality").threshold, 0.95);
+  assert.equal(DEFAULT_GATES.find((gate) => gate.name === "factuality").minSample, 5);
+});
+
 test("a measured breach fails at ANY sample size, and --allow-inconclusive cannot rescue it", () => {
   // Found by running three cases against a live local server with a bad token:
   // every case failed, the sample was under ten, and the acceptance gate said

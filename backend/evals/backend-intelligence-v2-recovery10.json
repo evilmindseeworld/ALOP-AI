@@ -175,13 +175,17 @@
             "id": "idempotency-same-effect",
             "claim": "Repeating an idempotent API request or operation has the same effect without creating an additional side effect.",
             "patterns": [
-              "\\bidempot(?:ent|ency)\\b[^.!?;]{0,160}\\b(?:same\\s+(?:effect|result|state)|unchanged|without\\s+duplicat)\\b",
-              "\\b(?:repeat(?:ed|ing|s)?|again)\\b[^.!?;]{0,100}\\b(?:idempotent|idempotency)\\b[^.!?;]{0,100}\\b(?:same\\s+(?:effect|result|state)|unchanged|without\\s+duplicat)\\b",
-              "\\bidempot(?:ent|ency)\\b[^.!?;]{0,180}\\b(?:request|operation|api)\\b[^.!?;]{0,180}\\b(?:same\\s+(?:effect|result|state)|without\\s+duplicat|unchanged)\\b"
+              "\\bidempot(?:ent|ency)\\b[^.!?;]{0,45}\\b(?:api\\s+)?(?:operation|request)\\b[^.!?;]{0,45}\\b(?:has|gives|leaves|produces|yields)\\b[^.!?;]{0,35}\\bsame\\s+(?:effect|result|state)\\b[^.!?;]{0,60}\\b(?:repeat(?:ed|ing|s)?|again)\\b[^.!?;]{0,45}\\b(?:without|does\\s+not|doesn't|never|no)\\b[^.!?;]{0,45}\\b(?:creat\\w*\\s+(?:an?\\s+)?(?:duplicate|additional|extra)|(?:additional|duplicate|extra|another)\\s+(?:side\\s+)?effect)\\b",
+              "\\brepeat(?:ing|ed|s)?\\b[^.!?;]{0,50}\\bidempot(?:ent|ency)\\b[^.!?;]{0,45}\\b(?:api\\s+)?(?:request|operation)\\b[^.!?;]{0,45}\\bsame\\s+(?:effect|result|state)\\b[^.!?;]{0,50}\\b(?:without|does\\s+not|doesn't|never|no)\\b[^.!?;]{0,45}\\b(?:creat\\w*\\s+(?:an?\\s+)?(?:duplicate|additional|extra)|(?:additional|duplicate|extra|another)\\s+(?:side\\s+)?effect)\\b",
+              "\\bidempot(?:ent|ency)\\b[^.!?;]{0,35}\\b(?:means?|ensures?|describes?)\\b[^.!?;]{0,45}\\b(?:repeat(?:ing|ed|s)?|retry(?:ing|ies|ied)?|performing|executing)\\b[^.!?;]{0,50}\\b(?:same\\s+(?:effect|result|state)|unchanged)\\b[^.!?;]{0,50}\\b(?:without|does\\s+not|doesn't|never|no)\\b[^.!?;]{0,45}\\b(?:creat\\w*\\s+(?:an?\\s+)?(?:duplicate|additional|extra)|(?:additional|duplicate|extra|another)\\s+(?:side\\s+)?effect)\\b",
+              "\\bidempot(?:ent|ency)\\b[^.!?;]{0,35}\\bmeans?\\b[^.!?;]{0,45}\\bperforming\\b[^.!?;]{0,50}\\b(?:same\\s+)?operation\\b[^.!?;]{0,55}\\b(?:multiple\\s+times|repeatedly|again)\\b[^.!?;]{0,65}\\b(?:leaves?|keeps?|produces?|results?\\s+in)\\b[^.!?;]{0,45}\\b(?:same\\s+(?:state|result|effect)|unchanged)\\b[^.!?;]{0,70}\\b(?:safe|without\\s+(?:a\\s+)?duplicate|no\\s+(?:additional\\s+)?effect)\\b"
             ],
             "forbiddenPatterns": [
               "\\b(?:idempotent|idempotency)\\b[^.!?;]{0,160}\\b(?:does not|doesn't|not|never)\\b[^.!?;]{0,100}\\b(?:mean|ensure|produce)\\b[^.!?;]{0,100}\\b(?:same|unchanged)\\b",
-              "\\b(?:idempotent|idempotency)\\b[^.!?;]{0,150}\\b(?:creates|causes|produces|makes)\\b[^.!?;]{0,80}\\bduplicate(?:s|d)?\\b"
+              "\\b(?:idempotent|idempotency)\\b[^.!?;]{0,150}\\b(?:creates|causes|makes)\\b[^.!?;]{0,80}\\b(?:duplicate|another|additional)\\b",
+              "\\b(?:repeat(?:ed|ing|s)?|again)\\b[^.!?;]{0,70}\\b(?:idempotent|idempotency)\\b[^.!?;]{0,80}\\b(?:creates|causes|produces|makes)\\b[^.!?;]{0,60}\\bduplicate(?:s|d)?\\b",
+              "\\b(?:idempotent|idempotency)\\b[^.!?;]{0,100}\\b(?:api|operation|request)\\b[^.!?;]{0,60}\\bbehav\\w*\\b[^.!?;]{0,40}\\bdifferen\\w*\\b",
+              "\\b(?:idempotent|idempotency)\\b[^.!?;]{0,100}\\bmeans?\\b[^.!?;]{0,60}\\bretr(?:y|ies|ied|ying)\\b[^.!?;]{0,80}\\b(?:always|another|additional)\\b[^.!?;]{0,60}\\b(?:side\\s+effect|effect)\\b"
             ]
           }
         ]

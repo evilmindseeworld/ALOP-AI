@@ -412,7 +412,7 @@ async function runCase(testCase, {
   const firstUsefulStageAt = { value: null };
   const withDiagnostics = (observation) => ({
     ...observation,
-    ...answerReplayDiagnostics(observation),
+    diagnostics: answerReplayDiagnostics(observation),
   });
 
   try {

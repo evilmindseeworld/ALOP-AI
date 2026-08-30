@@ -55,6 +55,7 @@ import { randomUUID } from "node:crypto";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const { loadDataset, gradeCase, summarise } = require("../lib/evaluation");
+const { answerReplayDiagnostics } = require("../lib/evaluation-diagnostics");
 const { mergeGates, evaluateGates, formatGates } = require("../lib/release-gates");
 const { measurementFromFrames, metricMeasurementFlags } = require("../lib/turn-accounting-meta");
 const {
@@ -409,6 +410,10 @@ async function runCase(testCase, {
   const firstByteAt = { value: null };
   const firstAnswerTokenAt = { value: null };
   const firstUsefulStageAt = { value: null };
+  const withDiagnostics = (observation) => ({
+    ...observation,
+    ...answerReplayDiagnostics(observation),
+  });
 
   try {
     const res = await fetch(`${base}/api/council`, {
@@ -459,7 +464,7 @@ async function runCase(testCase, {
       const body = await res.text().catch(() => "");
       let parsed = {};
       try { parsed = JSON.parse(body); } catch { /* not an envelope */ }
-      return {
+      return withDiagnostics({
         id: testCase.id,
         answer: "",
         frames,
@@ -468,13 +473,13 @@ async function runCase(testCase, {
         textSource: null,
         error: { code: parsed.code || `http_${res.status}`, text: parsed.error || body.slice(0, 200) },
         cacheStatus: res.headers.get("x-alop-cache-status"),
-      };
+      });
     }
 
     cacheStatus = res.headers.get("x-alop-cache-status");
     if (useCacheBypass && cacheStatus !== "bypass") {
       await res.body.cancel().catch(() => {});
-      return {
+      return withDiagnostics({
         id: testCase.id,
         answer: "",
         frames: [],
@@ -489,7 +494,7 @@ async function runCase(testCase, {
           code: "cache_bypass_unconfirmed",
           text: `The server did not confirm X-ALOP-Cache-Status=bypass (saw ${cacheStatus || "no header"}).`,
         },
-      };
+      });
     }
 
     // Frames are `data: {json}\n\n`, so buffer until a blank line rather than
@@ -529,7 +534,7 @@ async function runCase(testCase, {
   }
 
   const measurement = measurementFromFrames(frames, cacheStatus);
-  return {
+  return withDiagnostics({
     id: testCase.id,
     answer,
     frames,
@@ -544,7 +549,7 @@ async function runCase(testCase, {
     provenance: measurement.provenance,
     accounting: measurement.accounting,
     error,
-  };
+  });
 }
 
 /* ---- the run --------------------------------------------------------- */

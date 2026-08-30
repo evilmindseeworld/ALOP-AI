@@ -16,6 +16,7 @@ const BACKEND_ROOT = join(__dirname, '..');
 const RUNNER = join(BACKEND_ROOT, 'scripts', 'run-evals.mjs');
 const RUNNER_FIXTURE_FILES = [
   'lib/evaluation.js',
+  'lib/evaluation-diagnostics.js',
   'lib/release-gates.js',
   'lib/turn-accounting-meta.js',
   'lib/cache-validation.js',
@@ -112,6 +113,12 @@ test('fresh evaluation requires both the explicit CLI mode and its secret', () =
   assert.match(SOURCE, /cacheBypass && !cacheBypassSecret/);
   assert.match(SOURCE, /X-ALOP-Benchmark-Cache-Bypass/);
   assert.match(SOURCE, /cache_bypass_unconfirmed/);
+});
+
+test('runner persists bounded replay diagnostics without changing the grader input', () => {
+  assert.match(SOURCE, /answerReplayDiagnostics/);
+  assert.match(SOURCE, /withDiagnostics/);
+  assert.match(SOURCE, /answer: observation\.answer\.slice\(0, 2000\)/);
 });
 
 test('a live gate requires a zero-price catalog freshness preflight before model calls', () => {

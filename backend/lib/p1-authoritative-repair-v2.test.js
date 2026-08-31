@@ -228,6 +228,15 @@ test('photosynthesis factuality rejects broad light-energy claims and wrong-pigm
   }
 });
 
+test('focused factuality repairs cover optional chlorophyll detail and negated melanin substitution', () => {
+  const photosynthesis = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
+  const evidenceAnswer = 'Photosynthesis is the process by which green plants, algae, and some bacteria convert light energy into chemical energy, storing it in glucose molecules. It uses carbon dioxide and water, releasing oxygen as a byproduct, and is driven by chlorophyll in the presence of sunlight.';
+  assert.equal(gradeCase(photosynthesis, observation(evidenceAnswer, { id: photosynthesis.id })).factuality.passed, true);
+
+  const falseControl = 'Photosynthesis uses melanin, not chlorophyll, to capture light energy.';
+  assert.equal(gradeCase(photosynthesis, observation(falseControl, { id: photosynthesis.id })).factuality.passed, false);
+});
+
 test('idempotency factuality requires a meaningful repeat/effect/no-duplicate relation', () => {
   const idempotency = v2.cases.find(({ id }) => id === 'timeless-definition-idempotency');
   const trueParaphrases = [
@@ -252,6 +261,12 @@ test('idempotency factuality requires a meaningful repeat/effect/no-duplicate re
   for (const answer of falseClaims) {
     assert.equal(gradeCase(idempotency, observation(answer, { id: idempotency.id })).factuality.passed, false, answer);
   }
+});
+
+test('idempotency factuality recognizes repeated-operation and no-additional-side-effects wording', () => {
+  const idempotency = v2.cases.find(({ id }) => id === 'timeless-definition-idempotency');
+  const evidenceAnswer = 'Idempotency means that performing the same operation multiple times yields the same result as performing it once, with no additional side effects.';
+  assert.equal(gradeCase(idempotency, observation(evidenceAnswer, { id: idempotency.id })).factuality.passed, true);
 });
 
 test('micro-hardening red-first controls cover valid idempotency, ownership, and subject-order phrasing', () => {

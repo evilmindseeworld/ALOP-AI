@@ -243,6 +243,25 @@ test('photosynthesis factuality accepts the pinned live two-sentence explanation
   assert.equal(result.factuality.passed, true, result.factuality.failures.join('|'));
 });
 
+test('photosynthesis factuality requires a positive light-energy relation before chlorophyll drives the process', () => {
+  const photosynthesis = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
+  const falseClaims = [
+    'Photosynthesis destroys light energy. It is driven by chlorophyll.',
+    'Photosynthesis wastes light energy. This process is powered by chlorophyll.',
+    'Photosynthesis ignores light energy completely. It is powered by chlorophyll.',
+    'Photosynthesis loses light energy. It is driven by chlorophyll.',
+    'Photosynthesis blocks light energy. This process is powered by chlorophyll.',
+    'Photosynthesis rejects light energy. It is driven by chlorophyll.',
+    'Photosynthesis eliminates light energy. This process is powered by chlorophyll.',
+    'Photosynthesis removes light energy. It is driven by chlorophyll.',
+  ];
+  assert.equal(falseClaims.length, 8);
+  for (const answer of falseClaims) {
+    const result = gradeCase(photosynthesis, observation(answer, { id: photosynthesis.id }));
+    assert.equal(result.factuality.passed, false, answer);
+  }
+});
+
 test('focused factuality repairs cover optional chlorophyll detail and negated melanin substitution', () => {
   const photosynthesis = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
   const evidenceAnswer = 'Photosynthesis is how plants use chlorophyll to capture light energy and make food.';

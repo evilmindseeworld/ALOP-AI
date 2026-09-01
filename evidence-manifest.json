@@ -1,7 +1,24 @@
 {
   "schemaVersion": 1,
-  "taskId": "alop-implementation-luna-be2a0207bdec",
+  "taskId": "alop-implementation-luna-e523537a4b08",
+  "baseSha": "e523537a4b0894866174724c43fd7bf19574f4f6",
   "entries": [
+    {
+      "path": "backend/lib/p1-authoritative-repair-v2.test.js",
+      "sha256": "4ec630ad488a3fa1202f9d705c4a7c993a74ca9d47ab231de2dc110e93b423d9"
+    },
+    {
+      "path": "backend/evals/backend-intelligence-v2.json",
+      "sha256": "59ea492451d76107d0c467b0bd894caf6d8b8739ff59f8f13762d9c2416b335f"
+    },
+    {
+      "path": "backend/evals/backend-intelligence-v2-recovery10.json",
+      "sha256": "55420a98b6ed23b2f91f4366ebbc7d2ec119ea1f173ec1bad5505efa2a926fc6"
+    },
+    {
+      "path": "docs/ALOP_BACKEND_P1_EVALUATION_V2.md",
+      "sha256": "1e72c1dddadb139529dcc40efd558841805fde81cb169c814b3f976c42b54274"
+    },
     {
       "path": "C:\\Users\\LENOVO\\Documents\\AI-Classroom\\eval-runs\\p1-v2-focused-be2a0207-2026-08-31\\factuality-report.json",
       "sha256": "afed2362e632fa65800b0d2387c1ca94e232a751ed6be03e8576113d40a78523"

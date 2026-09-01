@@ -228,9 +228,17 @@ test('photosynthesis factuality rejects broad light-energy claims and wrong-pigm
   }
 });
 
+test('photosynthesis factuality does not join chlorophyll and light across sentences', () => {
+  const photosynthesis = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
+  const crossSentenceClaim = 'Photosynthesis converts light energy into sugar. Chlorophyll is a pigment found in plants.';
+  const result = gradeCase(photosynthesis, observation(crossSentenceClaim, { id: photosynthesis.id }));
+  assert.equal(result.factuality.passed, false,
+    'separate sentences must not be stitched into a chlorophyll/light relation');
+});
+
 test('focused factuality repairs cover optional chlorophyll detail and negated melanin substitution', () => {
   const photosynthesis = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
-  const evidenceAnswer = 'Photosynthesis is the process by which green plants, algae, and some bacteria convert light energy into chemical energy, storing it in glucose molecules. It uses carbon dioxide and water, releasing oxygen as a byproduct, and is driven by chlorophyll in the presence of sunlight.';
+  const evidenceAnswer = 'Photosynthesis is how plants use chlorophyll to capture light energy and make food.';
   assert.equal(gradeCase(photosynthesis, observation(evidenceAnswer, { id: photosynthesis.id })).factuality.passed, true);
 
   const falseControl = 'Photosynthesis uses melanin, not chlorophyll, to capture light energy.';

@@ -48,7 +48,7 @@
             "id": "photosynthesis-chlorophyll-light",
             "claim": "Plants use chlorophyll to capture or use light energy in photosynthesis.",
             "patterns": [
-              "(?:\\bphotosynthesis\\b[\\s\\S]{0,260}\\bchlorophyll\\b[\\s\\S]{0,80}\\b(?:capture|captures|absorb|absorbs|use|uses|harness)\\b[\\s\\S]{0,80}\\b(?:light|sunlight|solar)\\b|\\bphotosynthesis\\b[\\s\\S]{0,260}\\b(?:light|sunlight|solar)\\s+energy\\b[\\s\\S]{0,220}\\bchlorophyll\\b)",
+            "(?:\\bphotosynthesis\\b[^.!?;]{0,260}\\bchlorophyll\\b[^.!?;]{0,80}\\b(?:capture|captures|absorb|absorbs|use|uses|harness)\\b[^.!?;]{0,80}\\b(?:light|sunlight|solar)\\b|\\bphotosynthesis\\b[^.!?;]{0,220}\\b(?:capture|captures|absorb|absorbs|use|uses|harness)\\b[^.!?;]{0,120}\\b(?:light|sunlight|solar)\\s+energy\\b[^.!?;]{0,120}\\bchlorophyll\\b)",
               "\\bplants?\\b[^.!?;]{0,60}\\b(?:use|uses|using)\\b[^.!?;]{0,50}\\bchlorophyll\\b[^.!?;]{0,100}\\b(?:capture|absorb|harness|convert)\\b[^.!?;]{0,60}\\b(?:light|solar)\\b",
               "\\bchlorophyll\\b[^.!?;]{0,80}\\b(?:capture|captures|absorb|absorbs|harness|harnesses|use|uses)\\b[^.!?;]{0,80}\\b(?:light|sunlight|solar)(?:\\s+energy)?\\b[^.!?;]{0,80}\\b(?:in|during|for)\\s+photosynthesis\\b"
             ],

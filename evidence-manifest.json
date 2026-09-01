@@ -1,15 +1,19 @@
 {
   "schemaVersion": 1,
-  "taskId": "alop-implementation-luna-e523537a4b08",
-  "baseSha": "e523537a4b0894866174724c43fd7bf19574f4f6",
+  "taskId": "alop-implementation-luna-c7164a4db822",
+  "baseSha": "c7164a4db82221d55f9a2e06adaa0bacf5fdb9cf",
   "entries": [
     {
       "path": "backend/lib/p1-authoritative-repair-v2.test.js",
-      "sha256": "4ec630ad488a3fa1202f9d705c4a7c993a74ca9d47ab231de2dc110e93b423d9"
+      "sha256": "f84ffb672bd9540da4b0b302079bbc1febc9222d9724d486e7b136907166cdc2"
     },
     {
       "path": "backend/evals/backend-intelligence-v2.json",
-      "sha256": "59ea492451d76107d0c467b0bd894caf6d8b8739ff59f8f13762d9c2416b335f"
+      "sha256": "4abd6d83690a81085f868dbb93492cbfd53324a179cec620160985c244cd9a32"
+    },
+    {
+      "path": "backend/lib/p1-authoritative-repair-v2-mutation.test.js",
+      "sha256": "cb705b9e6bf76bf2ccdf6507aad6fbcaf9b9b1232282a9dd6603b87a765b6194"
     },
     {
       "path": "backend/evals/backend-intelligence-v2-recovery10.json",
@@ -18,6 +22,10 @@
     {
       "path": "docs/ALOP_BACKEND_P1_EVALUATION_V2.md",
       "sha256": "1e72c1dddadb139529dcc40efd558841805fde81cb169c814b3f976c42b54274"
+    },
+    {
+      "path": "C:\\Users\\LENOVO\\Documents\\AI-Classroom\\eval-runs\\p1-v2-focused-be2a0207-2026-08-31\\factuality-simple-explanations.json",
+      "sha256": "1eaa24979dea5f85ce18c03e85986acf9dd618a5766eaa2b52465cca40c3791a"
     },
     {
       "path": "C:\\Users\\LENOVO\\Documents\\AI-Classroom\\eval-runs\\p1-v2-focused-be2a0207-2026-08-31\\factuality-report.json",
@@ -30,10 +38,6 @@
     {
       "path": "C:\\Users\\LENOVO\\Documents\\AI-Classroom\\eval-runs\\p1-v2-focused-be2a0207-2026-08-31\\factuality-tradeoff.json",
       "sha256": "fdb9908e29042f7d0f6212dbec5212bf5c7f4a21a485f809ac2e07394a1137a3"
-    },
-    {
-      "path": "C:\\Users\\LENOVO\\Documents\\AI-Classroom\\eval-runs\\p1-v2-focused-be2a0207-2026-08-31\\factuality-simple-explanations.json",
-      "sha256": "1eaa24979dea5f85ce18c03e85986acf9dd618a5766eaa2b52465cca40c3791a"
     }
   ]
 }

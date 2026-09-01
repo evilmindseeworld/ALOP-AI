@@ -236,6 +236,13 @@ test('photosynthesis factuality does not join chlorophyll and light across sente
     'separate sentences must not be stitched into a chlorophyll/light relation');
 });
 
+test('photosynthesis factuality accepts the pinned live two-sentence explanation', () => {
+  const photosynthesis = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
+  const liveAnswer = 'Photosynthesis is the process by which green plants, algae, and some bacteria convert light energy into chemical energy, storing it in glucose molecules. It uses carbon dioxide and water, releasing oxygen as a byproduct, and is driven by chlorophyll in the presence of sunlight.';
+  const result = gradeCase(photosynthesis, observation(liveAnswer, { id: photosynthesis.id }));
+  assert.equal(result.factuality.passed, true, result.factuality.failures.join('|'));
+});
+
 test('focused factuality repairs cover optional chlorophyll detail and negated melanin substitution', () => {
   const photosynthesis = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
   const evidenceAnswer = 'Photosynthesis is how plants use chlorophyll to capture light energy and make food.';

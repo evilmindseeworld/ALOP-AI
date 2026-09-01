@@ -59,7 +59,11 @@
               "\\b(?:photosynthesis|plants?)\\b[\\s\\S]{0,220}\\b(?:melanin|carotene|other\\s+pigment)\\b[\\s\\S]{0,80}\\b(?:rather\\s+than|instead\\s+of)\\b[\\s\\S]{0,60}\\bchlorophyll\\b",
               "\\b(?:photosynthesis|plants?)\\b[\\s\\S]{0,120}\\b(?:use|uses|using)\\b[\\s\\S]{0,60}\\b(?:melanin|carotene|other\\s+pigment)\\b[\\s\\S]{0,60}\\bnot\\b[\\s\\S]{0,60}\\bchlorophyll\\b",
               "\\b(?:photosynthesis|plants?)\\b[\\s\\S]{0,260}\\bchlorophyll\\b[\\s\\S]{0,80}\\b(?:plays?\\s+no\\s+role|is\\s+unrelated|not\\s+related|not\\s+involved)\\b",
-              "\\b(?:photosynthesis|plants?)\\b[\\s\\S]{0,260}\\b(?:convert|capture|use|uses|harness)\\b[\\s\\S]{0,120}\\b(?:light|sunlight|solar)\\s+energy\\b[\\s\\S]{0,120}\\b(?:without|no|not)\\s+(?:the\\s+)?chlorophyll\\b"
+              "\\b(?:photosynthesis|plants?)\\b[\\s\\S]{0,260}\\b(?:convert|capture|use|uses|harness)\\b[\\s\\S]{0,120}\\b(?:light|sunlight|solar)\\s+energy\\b[\\s\\S]{0,120}\\b(?:without|no|not)\\s+(?:the\\s+)?chlorophyll\\b",
+              "\\b(?:photosynthesis|plants?)\\b[^.!?;]{0,140}\\b(?:not|never|no|without|cannot|can't|does\\s+not|doesn't|do\\s+not|don't)\\b[^.!?;]{0,80}(?:\\bchlorophyll\\b[^.!?;]{0,80}\\b(?:capture|captures|absorb|absorbs|use|uses|harness|harnesses)\\b[^.!?;]{0,80}\\b(?:light|sunlight|solar)(?:\\s+energy)?\\b|\\b(?:capture|captures|absorb|absorbs|use|uses|harness|harnesses)\\b[^.!?;]{0,80}\\b(?:light|sunlight|solar)(?:\\s+energy)?\\b[^.!?;]{0,80}\\bchlorophyll\\b)",
+              "\\b(?:photosynthesis|plants?)\\b[^.!?;]{0,140}\\bchlorophyll\\b[^.!?;]{0,80}\\b(?:capture|captures|absorb|absorbs|use|uses|harness|harnesses)\\b[^.!?;]{0,60}\\b(?:not|never|no|without|cannot|can't|does\\s+not|doesn't|do\\s+not|don't)\\b[^.!?;]{0,80}\\b(?:light|sunlight|solar)(?:\\s+energy)?\\b",
+              "\\b(?:photosynthesis|plants?)\\b[^.!?;]{0,140}\\bchlorophyll\\b[^.!?;]{0,80}\\b(?:not|never|no|without|cannot|can't|does\\s+not|doesn't|do\\s+not|don't)\\b[^.!?;]{0,60}\\b(?:capture|captures|absorb|absorbs|use|uses|harness|harnesses)\\b[^.!?;]{0,80}\\b(?:light|sunlight|solar)(?:\\s+energy)?\\b",
+              "\\bchlorophyll\\b[^.!?;]{0,80}\\b(?:not|never|no|without|cannot|can't|does\\s+not|doesn't)\\b[^.!?;]{0,80}\\b(?:capture|captures|absorb|absorbs|use|uses|harness|harnesses)\\b[^.!?;]{0,80}\\b(?:light|sunlight|solar)(?:\\s+energy)?\\b[^.!?;]{0,80}\\b(?:in|during|for)\\s+photosynthesis\\b"
             ]
           }
         ]

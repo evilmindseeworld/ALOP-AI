@@ -271,6 +271,20 @@ test('focused factuality repairs cover optional chlorophyll detail and negated m
   assert.equal(gradeCase(photosynthesis, observation(falseControl, { id: photosynthesis.id })).factuality.passed, false);
 });
 
+test('photosynthesis factuality rejects expanded-pattern explicit negations', () => {
+  const photosynthesis = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
+  const falseClaims = [
+    'Photosynthesis does not capture light energy with chlorophyll.',
+    'Photosynthesis never uses chlorophyll to harness sunlight.',
+    'Photosynthesis is not driven by chlorophyll, but it captures light energy.',
+    'Photosynthesis cannot use chlorophyll to capture light energy.',
+    'Photosynthesis uses chlorophyll to not capture light energy.',
+  ];
+  for (const answer of falseClaims) {
+    assert.equal(gradeCase(photosynthesis, observation(answer, { id: photosynthesis.id })).factuality.passed, false, answer);
+  }
+});
+
 test('idempotency factuality requires a meaningful repeat/effect/no-duplicate relation', () => {
   const idempotency = v2.cases.find(({ id }) => id === 'timeless-definition-idempotency');
   const trueParaphrases = [

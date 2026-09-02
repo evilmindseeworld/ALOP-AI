@@ -5,7 +5,7 @@
   "designVersion": "photosynthesis-light-relation-v1",
   "designSha256": "70d5e9f2bff01bc85540726ce24e5cf481fb31dbc3a1fdb1ac6e034d46ed9a7e",
   "approvedBaseSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "redCommitSha": "2680e87e93a1a1e639c9ff3e551c559ac55296d0",
+  "redCommitSha": "2680e87540328e1eeb5da4a8212a6308e6c3d667",
   "generatedCaseCount": 823,
   "command": "cd backend && node --test lib/photosynthesis-relation-evaluator.test.js lib/p1-authoritative-repair-v2.test.js lib/p1-authoritative-repair-v2-mutation.test.js",
   "exitCode": 1,

@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "taskId": "alop-implementation-luna-photosynthesis-light-relation-v1",
+  "phase": "mutation",
+  "designVersion": "photosynthesis-light-relation-v1",
+  "designSha256": "70d5e9f2bff01bc85540726ce24e5cf481fb31dbc3a1fdb1ac6e034d46ed9a7e",
+  "approvedBaseSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
+  "implementationCommitSha": "96a9c6eb0ee6665125060b6d8926a55628f1a5a4",
+  "command": "cd backend && node --test lib/photosynthesis-relation-evaluator-mutation.test.js",
+  "exitCode": 0,
+  "requiredMutationIds": ["M1", "M2", "M3", "M4", "M5", "M6", "M7"],
+  "minimumFailureCounts": {"M1": 1, "M2": 1, "M3": 1, "M4": 1, "M5": 1, "M6": 1, "M7": 1},
+  "executedCounts": {"M1": 1, "M2": 1, "M3": 1, "M4": 1, "M5": 1, "M6": 1, "M7": 1},
+  "killedCounts": {"M1": 1, "M2": 1, "M3": 1, "M4": 1, "M5": 1, "M6": 1, "M7": 1},
+  "tests": 7,
+  "failures": 0,
+  "status": "PASS"
+}

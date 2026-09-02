@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "taskId": "alop-implementation-luna-photosynthesis-light-relation-v1",
+  "phase": "green",
+  "designVersion": "photosynthesis-light-relation-v1",
+  "designSha256": "70d5e9f2bff01bc85540726ce24e5cf481fb31dbc3a1fdb1ac6e034d46ed9a7e",
+  "approvedBaseSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
+  "implementationCommitSha": "96a9c6eb0ee6665125060b6d8926a55628f1a5a4",
+  "generatedCaseCount": 823,
+  "command": "cd backend && node --test lib/evaluation-runner-contract.test.js lib/photosynthesis-relation-evaluator.test.js lib/photosynthesis-relation-evaluator-mutation.test.js lib/p1-authoritative-repair-v2.test.js lib/p1-authoritative-repair-v2-mutation.test.js",
+  "exitCode": 0,
+  "tests": 66,
+  "failures": 0,
+  "checks": [
+    "The generated matrix contains exactly 823 unique stable cases and all expected decisions pass.",
+    "The evaluator is wired through the photosynthesis-light-relation-v1 factuality evaluator id.",
+    "Relation-local polarity and immutable registry tests pass.",
+    "Existing P1 integration and approved mutation controls pass."
+  ]
+}

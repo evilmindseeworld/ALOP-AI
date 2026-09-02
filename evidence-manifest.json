@@ -1,19 +1,51 @@
 {
   "schemaVersion": 1,
-  "taskId": "alop-implementation-luna-c199c89ab69e",
-  "baseSha": "c199c89ab69e053a7c96e06322427c46c7e9db15",
+  "taskId": "alop-implementation-luna-photosynthesis-light-relation-v1",
+  "baseSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
   "entries": [
     {
+      "path": "backend/lib/photosynthesis-relation-evaluator.js",
+      "sha256": "6415044c541aa1643e018a78144a025971cf69edb02ca4e174ffc6abb7d2d781"
+    },
+    {
+      "path": "backend/lib/photosynthesis-relation-cases.js",
+      "sha256": "c456e693390f7c6ecd675917de216573f6b29d5642dcf3e613b2a94d01fcf261"
+    },
+    {
+      "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
+      "sha256": "c48540a5e40a3abdc73d8f5c61376a8f6acb27b5f5bb967bb280f395bf6ad0e7"
+    },
+    {
+      "path": "backend/lib/photosynthesis-relation-evaluator-mutation.test.js",
+      "sha256": "bfb6c254715eca3a59200e7a86d3cfede399fc97a7009758604378606e40dc6f"
+    },
+    {
+      "path": "backend/lib/evaluation.js",
+      "sha256": "0db9fd85f409b0ef4481ffd41d589e8b97dcddcdb9480058ec36929e092a5a5c"
+    },
+    {
       "path": "backend/evals/backend-intelligence-v2.json",
-      "sha256": "249b84f1bf294c5e743101fdbaed2a34f20b7ecef8627e6335849d185ef831c0"
+      "sha256": "4b7049db983f012ee201b1082406ba4f2448366290349d3f3dddf32ab3cca42a"
     },
     {
       "path": "backend/lib/p1-authoritative-repair-v2.test.js",
-      "sha256": "4231e4ea692a96c2abd32920c0b21e4d9996c23cbc0d54a5232c1e38dbfb69f4"
+      "sha256": "d081afb312f31a0429f4bfa05aafa2f60ffe6bc145a948b6806708e165109186"
     },
     {
       "path": "backend/lib/p1-authoritative-repair-v2-mutation.test.js",
-      "sha256": "cb705b9e6bf76bf2ccdf6507aad6fbcaf9b9b1232282a9dd6603b87a765b6194"
+      "sha256": "4934baa005555528d57dbae8379f71d25318e0fbec2d0632d9d39b73b9321e05"
+    },
+    {
+      "path": "evidence/p1-photosynthesis-relation-v1/red-phase.json",
+      "sha256": "ef169491713ec4447c6a0c145064e1220cceb5955d37a4a2af8b1a9a6e3eb705"
+    },
+    {
+      "path": "evidence/p1-photosynthesis-relation-v1/green-phase.json",
+      "sha256": "b01df402fff8ed762ba4c4cd38f10c6df88b0131a466e0ec3b688a428251e71c"
+    },
+    {
+      "path": "evidence/p1-photosynthesis-relation-v1/mutation-phase.json",
+      "sha256": "cfb54ba8f9df95bcd1663a7aae6348c33f567a3006b28e138ce275387357625c"
     }
   ]
 }

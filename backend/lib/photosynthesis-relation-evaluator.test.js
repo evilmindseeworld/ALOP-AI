@@ -6,7 +6,10 @@ const {
   EXPECTED_GENERATED_CASE_COUNT,
   PHOTOSYNTHESIS_RELATION_CASES,
 } = require('./photosynthesis-relation-cases');
-const { evaluatePhotosynthesisRelations } = require('./photosynthesis-relation-evaluator');
+const {
+  evaluatePhotosynthesisRelations,
+  PHOTOSYNTHESIS_SEMANTIC_EVALUATOR_REGISTRY,
+} = require('./photosynthesis-relation-evaluator');
 
 test('photosynthesis-light-relation-v1 generated 823 cases with stable unique ids', () => {
   assert.equal(PHOTOSYNTHESIS_RELATION_CASES.length, 823);
@@ -26,4 +29,9 @@ test('relation-local-polarity exposes structured relationRecords', () => {
   assert.ok(Array.isArray(result.relationRecords));
   assert.ok(result.relationRecords.some((record) => record.polarity === 'positive'));
   assert.ok(result.relationRecords.every((record) => record.sentenceIndex >= 0));
+});
+
+test('the photosynthesis semantic evaluator registry is immutable', () => {
+  assert.equal(Object.isFrozen(PHOTOSYNTHESIS_SEMANTIC_EVALUATOR_REGISTRY), true);
+  assert.equal(PHOTOSYNTHESIS_SEMANTIC_EVALUATOR_REGISTRY['photosynthesis-light-relation-v1'], evaluatePhotosynthesisRelations);
 });

@@ -103,6 +103,7 @@ test('M37: reinserting the broad photosynthesis pattern is killed by false-claim
   assert.equal(currentGrade.factuality.passed, false);
 
   const mutantCase = clone(photoCase);
+  delete mutantCase.factualityChecks.evaluatorId;
   mutantCase.factualityChecks.assertions[0].patterns.unshift(
     '\\bphotosynthesis\\b[\\s\\S]{0,220}\\b(?:green\\s+)?plants?\\b[\\s\\S]{0,120}\\b(?:convert|capture|use|uses|harness)\\b[\\s\\S]{0,120}\\b(?:light|sunlight|solar)\\s+energy\\b',
   );
@@ -131,6 +132,7 @@ test('M39: removing chlorophyll from the photosynthesis relation is killed', () 
   assert.equal(currentGrade.factuality.passed, false);
 
   const mutantCase = clone(photoCase);
+  delete mutantCase.factualityChecks.evaluatorId;
   mutantCase.factualityChecks.assertions[0].patterns = [
     '\\bphotosynthesis\\b[\\s\\S]{0,260}\\b(?:convert|capture|use|uses|harness)\\b[\\s\\S]{0,120}\\b(?:light|sunlight|solar)\\s+energy\\b',
   ];
@@ -374,6 +376,7 @@ test('M53: removing the chlorophyll subject-order alternative is killed', () => 
   assert.equal(current.gradeCase(photoCase, observation(answer, { id: photoCase.id })).factuality.passed, true);
 
   const mutantCase = clone(photoCase);
+  delete mutantCase.factualityChecks.evaluatorId;
   assert.equal(mutantCase.factualityChecks.assertions[0].patterns.length, 3);
   mutantCase.factualityChecks.assertions[0].patterns = mutantCase.factualityChecks.assertions[0].patterns.slice(0, 2);
   const mutantGrade = current.gradeCase(mutantCase, observation(answer, { id: photoCase.id }));
@@ -386,6 +389,7 @@ test('M54: broadening chlorophyll factuality to keyword-only matching is killed'
   assert.equal(current.gradeCase(photoCase, observation(answer, { id: photoCase.id })).factuality.passed, false);
 
   const mutantCase = clone(photoCase);
+  delete mutantCase.factualityChecks.evaluatorId;
   mutantCase.factualityChecks.assertions[0].patterns = ['\\b(?:photosynthesis|chlorophyll|light)\\b'];
   mutantCase.factualityChecks.assertions[0].forbiddenPatterns = [];
   const mutantGrade = current.gradeCase(mutantCase, observation(answer, { id: photoCase.id }));
@@ -398,6 +402,7 @@ test('M55: permitting the existing melanin/no-role answer is killed', () => {
   assert.equal(current.gradeCase(photoCase, observation(answer, { id: photoCase.id })).factuality.passed, false);
 
   const mutantCase = clone(photoCase);
+  delete mutantCase.factualityChecks.evaluatorId;
   mutantCase.factualityChecks.assertions[0].patterns.unshift(
     '\\bphotosynthesis\\b[\\s\\S]{0,260}\\bchlorophyll\\b',
   );

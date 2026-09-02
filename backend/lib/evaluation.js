@@ -67,6 +67,10 @@
  *  looks like a citation but whose href is missing is not a citation, and the
  *  URL form is the one `lib/council-tools.js` actually appends. */
 const { URL_RE, extractUrls, canonicalUrl } = require('./citation-urls');
+const FACTUALITY_EVALUATOR_REGISTRY = Object.freeze({
+  // photosynthesis-light-relation-v1 is loaded only for cases that opt into it.
+  'photosynthesis-light-relation-v1': () => require('./photosynthesis-relation-evaluator').evaluatePhotosynthesisRelations,
+});
 
 const KNOWN_EXPECT_KEYS = new Set([
   'mustInclude', 'mustMatch', 'mustNotInclude', 'mustCite',
@@ -220,7 +224,9 @@ function normaliseUnicodeText(text) {
     .replace(/\s+%/g, '%');
 }
 
-const FACTUALITY_CHECK_KEYS = new Set(['modelInvolved', 'stableWhy', 'assertions']);
+const FACTUALITY_CHECK_KEYS = new Set([
+  'modelInvolved', 'stableWhy', 'assertions', 'evaluatorId', 'assertionEvaluatorId',
+]);
 const FACTUALITY_ASSERTION_KEYS = new Set(['id', 'claim', 'patterns', 'forbiddenPatterns']);
 
 function validateFactualityChecks(testCase) {
@@ -236,6 +242,12 @@ function validateFactualityChecks(testCase) {
     if (!FACTUALITY_CHECK_KEYS.has(key)) at(`unknown factualityChecks key "${key}"`);
   }
   if (typeof checks.modelInvolved !== 'boolean') at('factualityChecks.modelInvolved must be a boolean');
+  for (const key of ['evaluatorId', 'assertionEvaluatorId']) {
+    if (checks[key] !== undefined
+      && (typeof checks[key] !== 'string' || !FACTUALITY_EVALUATOR_REGISTRY[checks[key]])) {
+      at(`factualityChecks.${key} must identify a registered evaluator`);
+    }
+  }
   if (typeof checks.stableWhy !== 'string' || !checks.stableWhy.trim()) {
     at('factualityChecks.stableWhy must be a non-empty string');
   }
@@ -438,6 +450,35 @@ function evaluateFactuality(testCase, answer, observation = {}) {
         ok: null,
         detail: 'not measured because the model observation ended with an error',
       })),
+    };
+  }
+
+  const semanticEvaluatorId = spec.evaluatorId ?? spec.assertionEvaluatorId;
+  const evaluatorLoader = FACTUALITY_EVALUATOR_REGISTRY[semanticEvaluatorId];
+  const semanticEvaluator = evaluatorLoader ? evaluatorLoader() : null;
+  if (semanticEvaluator) {
+    const semanticResult = semanticEvaluator(answer);
+    const results = assertions.map((assertion) => ({
+      id: assertion.id,
+      claim: assertion.claim,
+      ok: semanticResult.passed,
+      positive: semanticResult.positiveLightEnergy && semanticResult.positiveChlorophyllBinding,
+      forbidden: semanticResult.invalidChlorophyllClaims.map((record) => record.relationType),
+      detail: semanticResult.passed
+        ? 'structured photosynthesis relation records satisfy the approved evaluator'
+        : `structured relation decision rejected: light=${semanticResult.positiveLightEnergy}; chlorophyll=${semanticResult.positiveChlorophyllBinding}; invalid=${semanticResult.invalidChlorophyllClaims.length}`,
+    }));
+    const failures = results.filter((assertion) => assertion.ok !== true);
+    return {
+      eligible: true,
+      modelInvolved: true,
+      measured: true,
+      inconclusive: false,
+      passed: semanticResult.passed && failures.length === 0,
+      evaluatorId: semanticEvaluatorId,
+      relationRecords: semanticResult.relationRecords,
+      assertions: results,
+      failures: failures.map((assertion) => `${assertion.id} (${assertion.detail})`),
     };
   }
 
@@ -1076,4 +1117,5 @@ module.exports = {
   SUMMARY_SEMANTICS_ID, validateCase, loadDataset, gradeCase, summarise, percentile, citationsIn,
   sourceUrlsIn, citationReceiptCoverage, isLikelyComplete, inspectCompletionMetadata,
   hasDiminishingValueReasoning, summarySemantics, hasSummarySemantics, evaluateFactuality,
+  FACTUALITY_EVALUATOR_REGISTRY,
 };

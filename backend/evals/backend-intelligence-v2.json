@@ -42,6 +42,7 @@
       "expect": { "mustMatch": ["plant|chlorophyll|light|energy"], "expectNoTools": true, "minChars": 60, "maxLatencyMs": 30000 },
       "factualityChecks": {
         "modelInvolved": true,
+        "evaluatorId": "photosynthesis-light-relation-v1",
         "stableWhy": "The role of chlorophyll and light energy in plant photosynthesis is an established biology fact.",
         "assertions": [
           {

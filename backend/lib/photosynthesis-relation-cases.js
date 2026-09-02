@@ -9,12 +9,13 @@
 const POSITIVE_TEMPLATES = [
   (verb, light) => `Photosynthesis is how plants use chlorophyll to ${verb} ${light} and make food.`,
   (verb, light) => `Plants use chlorophyll to ${verb} ${light} during photosynthesis.`,
-  (verb, light) => `During photosynthesis, chlorophyll ${verb}s ${light}.`,
-  (verb, light) => `Chlorophyll ${verb}s ${light} for photosynthesis.`,
-  (verb, light) => `Photosynthesis ${verb}s ${light}. It is driven by chlorophyll.`,
+  (verb, light, thirdPerson) => `During photosynthesis, chlorophyll ${thirdPerson} ${light}.`,
+  (verb, light, thirdPerson) => `Chlorophyll ${thirdPerson} ${light} for photosynthesis.`,
+  (verb, light, thirdPerson) => `Photosynthesis ${thirdPerson} ${light}. It is driven by chlorophyll.`,
 ];
 
 const POSITIVE_VERBS = ['capture', 'absorb', 'harness', 'convert'];
+const POSITIVE_THIRD_PERSON = { capture: 'captures', absorb: 'absorbs', harness: 'harnesses', convert: 'converts' };
 const LIGHT_OBJECTS = ['light energy', 'sunlight', 'solar energy', 'solar light'];
 
 const NEGATIVE_TEMPLATES = [
@@ -51,7 +52,7 @@ for (const template of POSITIVE_TEMPLATES) {
     for (const light of LIGHT_OBJECTS) {
       for (let variant = 0; variant < 5; variant += 1) {
         positiveIndex += 1;
-        generatedCases.push(makeCase('positive', positiveIndex, template(verb, light), true));
+        generatedCases.push(makeCase('positive', positiveIndex, template(verb, light, POSITIVE_THIRD_PERSON[verb]), true));
       }
     }
   }

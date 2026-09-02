@@ -406,3 +406,27 @@ test('M55: permitting the existing melanin/no-role answer is killed', () => {
   assert.equal(mutantGrade.factuality.passed, true,
     'permitting the known melanin/no-role false claim must be observable as a killed mutant');
 });
+
+test('photosynthesis M1 integration remains red until the semantic evaluator is wired', () => {
+  const testCase = {
+    id: 'photosynthesis-m1-integration',
+    question: 'Explain photosynthesis.',
+    factualityChecks: {
+      modelInvolved: true,
+      evaluatorId: 'photosynthesis-light-relation-v1',
+      stableWhy: 'The relation is a stable biology fact.',
+      assertions: [{
+        id: 'photosynthesis-relation',
+        claim: 'Plants use chlorophyll to capture light energy.',
+        patterns: ['photosynthesis'],
+        forbiddenPatterns: [],
+      }],
+    },
+    expect: {},
+  };
+  const result = current.gradeCase(testCase, observation(
+    'Photosynthesis uses melanin to capture light energy; chlorophyll plays no role.',
+    { id: testCase.id },
+  ));
+  assert.equal(result.factuality.passed, false);
+});

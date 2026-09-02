@@ -243,6 +243,29 @@ test('photosynthesis factuality accepts the pinned live two-sentence explanation
   assert.equal(result.factuality.passed, true, result.factuality.failures.join('|'));
 });
 
+test('photosynthesis evaluator integration uses the approved semantic evaluator', () => {
+  const result = gradeCase({
+    id: 'photosynthesis-evaluator-integration',
+    question: 'Explain photosynthesis.',
+    factualityChecks: {
+      modelInvolved: true,
+      evaluatorId: 'photosynthesis-light-relation-v1',
+      stableWhy: 'The relation is a stable biology fact.',
+      assertions: [{
+        id: 'photosynthesis-relation',
+        claim: 'Plants use chlorophyll to capture light energy.',
+        patterns: ['photosynthesis'],
+        forbiddenPatterns: [],
+      }],
+    },
+    expect: {},
+  }, observation('Photosynthesis uses melanin to capture light energy; chlorophyll plays no role.', {
+    id: 'photosynthesis-evaluator-integration',
+  }));
+  assert.equal(result.factuality.passed, false,
+    'the evaluator integration must reject the semantically false answer');
+});
+
 test('photosynthesis factuality requires a positive light-energy relation before chlorophyll drives the process', () => {
   const photosynthesis = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
   const falseClaims = [

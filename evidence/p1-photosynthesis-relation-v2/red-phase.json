@@ -16,7 +16,14 @@
     "source": "supervisor-owned photosynthesis-clause-relation-v2.json canonicalCases",
     "designArtifactSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
     "membershipExact": true,
-    "caseIds": ["ADV001", "ADV002", "ADV003", "ADV004", "ADV005", "ADV006"]
+    "caseIds": [
+      "ADV001",
+      "ADV002",
+      "ADV003",
+      "ADV004",
+      "ADV005",
+      "ADV006"
+    ]
   },
   "testRun": {
     "command": "C:\\Users\\LENOVO\\Documents\\Codex-Control\\toolchains\\node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe --test --test-reporter=spec backend/lib/photosynthesis-relation-evaluator.test.js",
@@ -61,11 +68,56 @@
     }
   },
   "rootReproductions": [
-    {"id": "ADV001", "expectedDecision": "FAIL", "observedDecision": "PASS", "expectedPolarity": "UNCERTAIN", "observedPassed": true, "behavioralMismatch": true},
-    {"id": "ADV002", "expectedDecision": "FAIL", "observedDecision": "PASS", "expectedPolarity": "UNRESOLVED", "observedPassed": true, "behavioralMismatch": true},
-    {"id": "ADV003", "expectedDecision": "FAIL", "observedDecision": "PASS", "expectedPolarity": "UNRESOLVED", "observedPassed": true, "behavioralMismatch": true},
-    {"id": "ADV004", "expectedDecision": "PASS", "observedDecision": "FAIL", "expectedPolarity": "AFFIRMED", "observedPassed": false, "behavioralMismatch": true},
-    {"id": "ADV005", "expectedDecision": "PASS", "observedDecision": "FAIL", "expectedPolarity": "AFFIRMED", "observedPassed": false, "behavioralMismatch": true},
-    {"id": "ADV006", "expectedDecision": "FAIL", "observedDecision": "PASS", "expectedPolarity": "MIXED_INVALID", "observedPassed": true, "behavioralMismatch": true}
-  ]
+    {
+      "id": "ADV001",
+      "expectedDecision": "FAIL",
+      "observedDecision": "PASS",
+      "expectedPolarity": "UNCERTAIN",
+      "observedPassed": true,
+      "behavioralMismatch": true
+    },
+    {
+      "id": "ADV002",
+      "expectedDecision": "FAIL",
+      "observedDecision": "PASS",
+      "expectedPolarity": "UNRESOLVED",
+      "observedPassed": true,
+      "behavioralMismatch": true
+    },
+    {
+      "id": "ADV003",
+      "expectedDecision": "FAIL",
+      "observedDecision": "PASS",
+      "expectedPolarity": "UNRESOLVED",
+      "observedPassed": true,
+      "behavioralMismatch": true
+    },
+    {
+      "id": "ADV004",
+      "expectedDecision": "PASS",
+      "observedDecision": "FAIL",
+      "expectedPolarity": "AFFIRMED",
+      "observedPassed": false,
+      "behavioralMismatch": true
+    },
+    {
+      "id": "ADV005",
+      "expectedDecision": "PASS",
+      "observedDecision": "FAIL",
+      "expectedPolarity": "AFFIRMED",
+      "observedPassed": false,
+      "behavioralMismatch": true
+    },
+    {
+      "id": "ADV006",
+      "expectedDecision": "FAIL",
+      "observedDecision": "PASS",
+      "expectedPolarity": "MIXED_INVALID",
+      "observedPassed": true,
+      "behavioralMismatch": true
+    }
+  ],
+  "redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb",
+  "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe",
+  "provenanceSource": "SUPERVISOR_GIT_DERIVED"
 }

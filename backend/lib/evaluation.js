@@ -70,6 +70,7 @@ const { URL_RE, extractUrls, canonicalUrl } = require('./citation-urls');
 const FACTUALITY_EVALUATOR_REGISTRY = Object.freeze({
   // photosynthesis-light-relation-v1 is loaded only for cases that opt into it.
   'photosynthesis-light-relation-v1': () => require('./photosynthesis-relation-evaluator').evaluatePhotosynthesisRelations,
+  'photosynthesis-light-relation-v2': () => require('./photosynthesis-relation-evaluator').evaluatePhotosynthesisRelationsV2,
 });
 
 const KNOWN_EXPECT_KEYS = new Set([

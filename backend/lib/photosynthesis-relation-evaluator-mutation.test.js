@@ -21,6 +21,41 @@ const loadMutant = (source) => {
   return module.exports;
 };
 
+const V2_CASES = [
+  ...require('./photosynthesis-relation-cases').canonicalCases,
+  ...require('./photosynthesis-relation-cases').generatedV2Cases,
+  ...require('./photosynthesis-relation-cases').b5SemanticSupplementCases,
+];
+
+const v2CaseFails = (item, evaluator) => {
+  const result = evaluator(item.text);
+  if ((result.passed ? 'PASS' : 'FAIL') !== item.expectedDecision) return true;
+  if (item.expectedPolarity && result.polarity !== item.expectedPolarity) return true;
+  const observed = [
+    ...result.diagnostics,
+    ...result.relationRecords.flatMap((record) => [
+      record.grammarShape,
+      record.subjectValidity,
+      record.polarity,
+      record.polarityReason,
+      record.controlChain?.type,
+      record.lightObject?.binding,
+      ...record.rejectionReasons,
+    ]),
+  ].filter(Boolean);
+  return (item.requiredDiagnostics || []).some((required) => !observed.some(
+    (actual) => String(actual).toLowerCase().includes(required.toLowerCase()),
+  ));
+};
+
+const assertMutationKilledAcrossClasses = (id, evaluator, thresholds) => {
+  for (const [classId, minimum] of Object.entries(thresholds)) {
+    const failures = V2_CASES.filter((item) => item.classIds?.includes(classId)
+      && v2CaseFails(item, evaluator)).length;
+    assert.ok(failures >= minimum, `${id} ${classId}: ${failures}/${minimum} frozen cases killed`);
+  }
+};
+
 test('M1: removing normalization is killed by compatibility-form input', () => {
   const answer = 'Ｐｈｏｔｏｓｙｎｔｈｅｓｉｓ uses chlorophyll to capture light energy.';
   assert.equal(current.evaluatePhotosynthesisRelations(answer).passed, true);
@@ -103,4 +138,52 @@ test('M7: removing continuation resolution is killed by the approved pronoun for
     'M7 continuation resolution',
   ));
   assert.equal(mutant.evaluatePhotosynthesisRelations(answer).passed, false);
+});
+
+test('M8: accepting unsupported subjects is killed across invalid-subject classes', () => {
+  const source = replaceOnce(
+    SOURCE,
+    'valid:V2_SUBJECTS.has(surface)',
+    'valid:true',
+    'M8 unsupported subject acceptance',
+  );
+  const mutant = loadMutant(source).evaluatePhotosynthesisRelationsV2;
+  assertMutationKilledAcrossClasses('M8', mutant, {
+    COORDINATED_SUBJECTS_MIXED_INVALID: 4,
+    INVALID_SUBJECT: 4,
+  });
+});
+
+test('M9: accepting arbitrary direct objects as light is killed across object controls', () => {
+  let source = replaceOnce(
+    SOURCE,
+    "let end=i+1,light=['light','sunlight'].includes(ts[i].form);",
+    'let end=i+1,light=true;',
+    'M9 direct-object role',
+  );
+  source = replaceOnce(
+    source,
+    "const allowed = (!pronoun?.valid || pronoun.grammarValid)\n        && tail.every((form, index) => allowedTail.has(form)\n          || Boolean(pronoun?.valid && pronoun.grammarValid\n            && index === pronoun.continuationTailOffset && form === pronoun.continuationVerb));",
+    'const allowed = true;',
+    'M9 unrestricted object tail',
+  );
+  const mutant = loadMutant(source).evaluatePhotosynthesisRelationsV2;
+  assertMutationKilledAcrossClasses('M9', mutant, {
+    DETACHED_OBJECT_DECOYS: 4,
+    INVALID_OBJECT: 4,
+  });
+});
+
+test('M10: suppressing all positive qualification is killed across positive classes', () => {
+  const source = replaceOnce(
+    SOURCE,
+    "qualifies: valid && light && allowed && !destructive && !barrier\n          && !coordinatedPredicates.invalid && polarity === 'AFFIRMED',",
+    'qualifies: false,',
+    'M10 positive relation qualification',
+  );
+  const mutant = loadMutant(source).evaluatePhotosynthesisRelationsV2;
+  assertMutationKilledAcrossClasses('M10', mutant, {
+    AFFIRMATIVE_ACTIVE: 2,
+    KNOWN_REGRESSIONS: 2,
+  });
 });

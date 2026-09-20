@@ -134,7 +134,14 @@ test('baseline-callable structured V2 composition RED cases', async (t) => {
   });
   await t.test('negated wrong pigment retains local negation', () => {
     const result = evaluateV2OrApprovedBase(negatedWrongPigment);
-    assert.ok(result.invalidChlorophyllClaims?.some((record) => record.relationType === 'WRONG_PIGMENT_RELATION' && record.polarity === 'NEGATED'));
+    const record = result.relationRecords?.find((entry) => entry.relationType === 'WRONG_PIGMENT_RELATION');
+    assert.ok(record);
+    assert.equal(record.polarity, 'NEGATED');
+    assert.equal(record.polarityReason, 'LOCAL_NEGATION');
+    assert.equal(record.qualifies, false);
+    assert.equal(result.passed, true);
+    assert.equal(result.polarity, 'AFFIRMED');
+    assert.equal(result.invalidChlorophyllClaims?.some((entry) => entry.polarity === 'NEGATED'), false);
   });
   for (const [index, text] of contradictions.entries()) {
     await t.test(`contradiction order ${index + 1}`, () => {

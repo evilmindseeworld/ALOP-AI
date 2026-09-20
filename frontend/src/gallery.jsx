@@ -1,3 +1,4 @@
+/** Visual catalog of the app's components and states. */
 import React, { useEffect, useRef } from "react";
 import ReactDOM from "react-dom/client";
 import "./tailwind.css";
@@ -15,29 +16,12 @@ import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, Dialog
 import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import MagneticButton from "@/components/ui/MagneticButton";
 import Earring from "./components/Earring";
-import CouncilExemplar from "./components/CouncilExemplar";
-import CouncilRosette from "./components/CouncilRosette";
 import { SakuraBaseCorners, Seal } from "./components/SakuraFrame";
 import { COUNCIL, FREE_COUNT } from "./constants/council";
 import Icon, { ICON_NAMES } from "./components/Icon";
 import MessageList from "./components/MessageList";
 import InputBar from "./components/InputBar";
 import ChatSidebar from "./components/ChatSidebar";
-
-/**
- * A visual index of everything the stylesheet and the component layer render.
- *
- * Its own Vite entry, so none of this reaches the app bundle. Two jobs:
- *
- *   1. Before/after screenshots. The cascade snapshot proves which declaration
- *      wins; it cannot show you that a panel is 4px too narrow. This can.
- *   2. A place to see every state at once — hover, active, disabled, empty,
- *      both themes — without clicking through the running app to reach them.
- *
- * The chrome markup comes from the SAME fixture the cascade snapshot walks, so
- * the gallery and the guard cannot drift apart. If a component is missing
- * here, it is missing from the snapshot too.
- */
 
 const Section = ({ title, note, children }) => (
   <section style={{ margin: "0 0 40px" }}>
@@ -126,7 +110,7 @@ const Primitives = () => (
       ))}
     </Section>
 
-    <Section title="Ornament" note="The real Crescent and chain — the pair, mirrored, as they hang in the app.">
+    <Section title="Ornament" note="The real Crescent and chain — the pair as they hang in the app. Not mirrored: two phases of one moon, hung from one wire.">
       <div style={{ position: "relative", height: 190, width: 280 }}>
         <Earring side="left" active />
         <Earring side="right" active />
@@ -155,15 +139,7 @@ const Primitives = () => (
       </div>
     </Section>
 
-    <Section title="Council rosette" note={`${COUNCIL.length} traces, one per model in the pro council, superimposed until they resolve into one figure. Shown at full strength; it renders at 0.16 in the app.`}>
-      <div className="app-root dark" style={{ position: "relative", height: 300, display: "grid", placeItems: "center", borderRadius: 12, border: "1px solid rgba(255,255,255,0.12)" }}>
-        <div style={{ position: "relative", width: 300, height: 300, color: "var(--primary)", opacity: 0.5 }}>
-          <CouncilRosette />
-        </div>
-      </div>
-    </Section>
-
-    {/* The header buttons are MagneticButton, not <button> — they lean toward the
+{/* The header buttons are MagneticButton, not <button> — they lean toward the
      * cursor. It is the one motion primitive in components/ui/ the app actually
      * mounts, and it was missing here, so its rest state was the only one any
      * screenshot had ever shown. Hover these. */}
@@ -229,24 +205,6 @@ const Primitives = () => (
   </div>
 );
 
-/**
- * One framed copy of the fixture.
- *
- * `transform` creates a containing block, so the fixture's position:fixed
- * elements — camera overlay, command palette, side panel, toast — are boxed
- * inside this frame instead of covering the whole page.
- *
- * `hide` is what makes the gallery usable at all. The fixture deliberately
- * renders EVERY state at once, including four overlays, so a single frame
- * showed a blurred scrim with a command palette on top and none of the chrome
- * underneath — which is exactly the thing the gallery exists to let you look
- * at. Each frame now removes the layers it is not about.
- *
- * dangerouslySetInnerHTML is safe here and cannot become unsafe: APP_MARKUP is
- * a string literal checked into this repo, never user input, and this entry is
- * not part of the app bundle. The fixture is plain HTML by design so the
- * snapshot harness can walk it under bare jsdom without React.
- */
 const Frame = ({ markup, hide = [], height = "100vh", label }) => {
   const ref = useRef(null);
 
@@ -447,15 +405,7 @@ const LiveChrome = ({ theme, empty = false, streaming = false, loaded = false, c
             </Badge>
           </div>
           <div className="header-actions">
-            {/* `desktop-only` was missing here and the note four lines above —
-                "these classes are copied from App.jsx and must stay copied" —
-                was written about the Badge on the element immediately before
-                it. The very next element drifted anyway.
-                The consequence was not cosmetic: this frame showed a 142px
-                search box with a "Ctrl K" hint in a 390px header, so the
-                gallery reported a crowded phone header that the real app does
-                not have, and a phone fix aimed at it would have been aimed at
-                nothing. The real trigger is hidden below 768px. */}
+
             <button className="cmdk-trigger desktop-only">
               <Icon name="search" size={14} /> <span>Search</span> <kbd>Ctrl K</kbd>
             </button>
@@ -632,15 +582,6 @@ const SIGNIN_SHELL = ({ signUp, loading, theme }) => (
           <span className="signin-logo-text">ALOP-AI</span>
         </div>
 
-        {/* INTRO, CARD, PROOF — the same DOM order as SignInPage.jsx, and the
-            order matters more here than anywhere else in this file.
-            `.signin-thesis` was one block with the tagline after the ladder;
-            splitting it is what stopped the form from preceding the product's
-            first sentence on a phone. A gallery frame that keeps the old
-            structure would document a layout the app no longer has, and would
-            be consulted as if it were current — the same failure as the test
-            that agreed with a comment about Clerk instead of checking the
-            page. If SignInPage's structure changes again, change this too. */}
         <div className="signin-grid">
           <section className="signin-intro">
             <h1 className="signin-title">Ask once. Several models answer.</h1>
@@ -700,7 +641,6 @@ const SIGNIN_SHELL = ({ signUp, loading, theme }) => (
             </p>
           </section>
         </div>
-        <CouncilExemplar />
       </div>
     </div>
   </div>

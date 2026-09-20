@@ -1,61 +1,5 @@
 /* Ornament and loading states: the hanging crescents, skeletons, the splash. */
 
-/* ===== HANGING CRESCENTS =====
- *
- * Layering, low to high: background wash 0, chat 3, earrings 4, sidebar 10,
- * mobile sidebar 50, panel overlay 60, side panel 70, camera 100, toast 200,
- * palette 300. The ornament is decorative and must sit above the background
- * but below every interactive surface. tokens.css is the source of truth —
- * do not re-declare it inline in JSX.
- *
- * Three things changed here, all of them visible:
- *
- *   - SIZE. It rendered at its intrinsic 110x150 — as wide as the avatar
- *     column — so decoration competed with the transcript. It is 68px on a
- *     wide screen now, and the ornament reads as a mark rather than an object.
- *   - THE SEAM. The chain met nothing: the old drawing put its stud 30px below
- *     the top of the viewBox. Crescent.jsx moved the stud to the top edge, so
- *     the chain's bottom and the stud's top are the same point at every size.
- *   - WHERE IT DISAPPEARS. It used to hide below 560px, which meant that from
- *     560px to 1200px it hung directly over the text — and only above 1200px
- *     did .scroll-wrapper add the 120px of padding that got out of its way.
- *     The transcript is centred and capped now, so the ornament lives in the
- *     margin that creates, and hides as soon as that margin is gone.
- */
-/* Anchored to the transcript panel, not to the window.
- *
- * `position: fixed` put them at the window's edges, which is where the sidebar
- * and the header are — so the ornament hung over the app's own chrome, and at
- * some widths over the text as well. They are children of .chat-main now and
- * hang in the margin the centred transcript column creates: at 1600px the chat
- * panel is ~1290px wide holding an 860px column, so there is a genuine ~200px
- * of empty surface on each side for them to live in.
- *
- * That also means they cannot escape .chat-main's stacking context or its
- * overflow, so no z-index guessing is involved — the containment does it. */
-/* ===== THE BASE BAND =====
- *
- * THE FOUR CORNER SPRIGS AND `.sakura-frame` ARE GONE, cut on the owner's
- * instruction (2026-08-11): "leave the earrings, just delete the branches."
- * With them went `.sakura-corner`, its four per-corner positions, the mobile
- * width overrides, and the frame element itself. `SakuraFrame.jsx` records why
- * the drawing is not coming back — it took four hand-authored variants to stop
- * reading as a CSS frame and still only decorated.
- *
- * What survives here is the line work: the keystone above the composer, the
- * seal, the crescents, and the asanoha lattice further down this file.
- *
- * `.sakura-base` remains as the keystone's positioning box, and it must stay a
- * SIBLING OF THE SCROLLER rather than a child of it. `.scroll-wrapper` has
- * `overflow: auto`, so nothing inside it can paint past its edge whatever the
- * inset says; anchored there, a mark meant for the bottom of the chat surface
- * lands at the bottom of the scrolling box instead, floating in the margin
- * beside the starter cards. In `.chat-content` `bottom` means what it says.
- *
- * It deliberately OVERLAPS the composer's top edge — that is what makes the
- * mark read as framing the prompt rather than sitting above it — so
- * `pointer-events: none` is not optional. Without it the decoration would
- * swallow clicks aimed at the prompt bar. */
 .sakura-base {
   position: absolute;
   inset: auto 0 0 0;
@@ -63,38 +7,9 @@
   pointer-events: none;
   color: var(--ornament-ink);
   z-index: var(--z-empty-decor);
-  /* THE BAND IS GONE, AND THE SKYLINE IS WHY.
-   *
-   * This carried `background: var(--ornament-band)` and a 1px
-   * `--ornament-band-edge` top rule: a filled block up to 180px tall across the
-   * full width of the chat surface. In Bamboo Day that fill is #ecdde0 — a
-   * dusty rose — so the bottom sixth of the page was pink, which is exactly
-   * what it was reported as. It is the same mistake the town made at the foot
-   * of the composer, one element out: a MASS painted in a brand hue reads as a
-   * band of that hue, however carefully the hue was chosen.
-   *
-   * Its stated job was to be the one hard edge in an app of washes, so the
-   * prompt bar did not read as the point where the decorated page stops. The
-   * skyline does that job now, and does it better — a horizon IS an edge, and
-   * it is drawn where the eye already is instead of 180px below it. Two
-   * competing bands at the bottom of the same screen was the real defect.
-   *
-   * The element stays as the keystone's positioning box. It paints nothing
-   * itself. --ornament-band and --ornament-band-edge have no consumers left
-   * and are deleted from tokens.css with it. */
+
 }
 
-/* The keystone sits at the TOP of the base band, which is the one anchor here
- * that does not move.
- *
- * The obvious placement — a fixed distance above the composer — is wrong,
- * because the composer grows: it is a textarea that adds rows as you type, and
- * a mark pinned to its edge would walk up the screen while someone writes a
- * long question. The band's top edge is set by `.sakura-base`'s own height, so
- * the mark stays put no matter what the composer does underneath it.
- *
- * It stays at the middle alpha step because it sits close to the centre of the
- * screen, where a stronger mark reads as a UI affordance rather than ornament. */
 .sakura-keystone {
   position: absolute;
   top: 0;
@@ -105,100 +20,18 @@
   opacity: var(--ornament-a-mid);
 }
 
-/* The rosette sits BEHIND THE LOGO MARK, not behind the prose, and the first
- * attempt got that wrong in a way worth recording.
- *
- * Centred on the panel it landed under the title and subtitle — a lattice of
- * 0.6px curves directly beneath 17px body text. Two things were wrong at once:
- * it was too faint to read as a figure, and raising the opacity to fix that
- * would have put visible linework under the words. Decoration under body copy
- * has no good opacity; the answer is to move it, not to tune it.
- *
- * Behind the mark it has a job: the council's seal, sitting where the identity
- * already is. The type below it stays on a clean surface, so the alpha can go
- * up far enough to actually be seen.
- *
- * 0.16 because this is LINEWORK. A 0.6px stroke at the torii's old 0.06 is
- * invisible on a dim screen where a filled silhouette at the same value still
- * reads. Sized in `min()` against the viewport height too — a width percentage
- * alone overflows a short landscape window, which is where centred ornaments
- * fail first. */
-.council-rosette {
-  position: absolute;
-  left: 50%;
-  height: auto;
-  opacity: var(--ornament-a-faint);
-}
-
-
-/* THE EMPTY STATE'S SEAL IS POSITIONED AGAINST THE MARK, NOT THE PANEL.
- *
- * It used to be the frame's centre ornament here too, at the same `top: 0`
- * and -46%, and it was concentric with nothing. `.empty-state` centres its
- * whole column, so the mark's y is a function of how tall the title, subtitle
- * and starter grid come out at that viewport — a percentage measured from the
- * top of the panel cannot track it. Measured on the live site it sat 42px high
- * with its top third clipped off the scroller, which reads as a stray arc
- * rather than a ring.
- *
- * Wrapped round the mark it is concentric by construction, at every viewport
- * and both mark sizes, with no number to keep in sync.
- *
- * THE WIDTH IS THE ONE NUMBER HERE, and it is derived, not chosen. Every trace
- * runs from R=96 down to 86.4 with d=34 on a 320 viewBox, so the innermost
- * point any trace reaches is 86.4 - 34 = 52.4 units from centre: a clear disc
- * of 104.8/320 of whatever width this is set to. At 260px that disc is 85px
- * across, which holds the 76px mark with 4px of air a side. Change the trace
- * radii or `d` in CouncilRosette.jsx and this stops being true — the ring will
- * either cut the mark's corners or float away from it. */
-.empty-mark {
-  position: relative;
-  display: inline-flex;
-  margin-bottom: var(--space-2);
-  /* No line box of its own: the mark's own margin-bottom is what spaces the
-   * column below it, and an inline wrapper would add leading on top of that. */
-  line-height: 0;
-}
-
-.empty-mark .council-rosette {
-  top: 50%;
-  width: 260px;
-  transform: translate(-50%, -50%);
-  /* The mark is draggable. The ring must never be what the pointer grabs. */
-  pointer-events: none;
-}
-
-/* The empty state is the only place this renders. It used to hang at the top
- * of .sakura-frame as well, which put a copy on the sign-in page — where
- * signin.css had been hiding it with `display: none` for long enough that the
- * frame-mounted rosette was drawing nothing on either screen. Both the second
- * copy and the rule hiding it are gone. */
+/* The empty-state logo and ring were removed with their motion. */
 
 /* No grain layer here on purpose: the app already has one. `.grain` lives in
  * base.css, driven by --grain-image and --grain-opacity, and signin.css reuses
  * the same two tokens so the two surfaces cannot drift. A second layer would
  * have doubled the effective opacity and been invisible as a cause. */
 
-/* A rosette behind six starter cards is clutter rather than atmosphere, so it
- * comes off. The base band shortens with the viewport, which keeps the keystone
- * tucked above the composer instead of climbing into the starter grid. */
+/* The base band shortens with the viewport, which keeps the keystone tucked
+ * above the composer instead of climbing into the starter grid. */
 @media (max-width: 640px) {
-  .council-rosette { display: none; }
   .sakura-base { height: clamp(72px, 12vh, 110px); }
 
-  /* THE LATTICE COMES OFF ENTIRELY BELOW THIS WIDTH.
-   *
-   * It lives in the gutters either side of the reading column, and it is kept
-   * off the prose by a radial mask that clears the middle 42%. That works
-   * while there ARE gutters. Measured at 320px: the transcript is 87% of the
-   * chat surface, so the mask's clear zone no longer covers the text and the
-   * pattern lands underneath it — which is the one thing this decoration must
-   * never do.
-   *
-   * A percentage mask cannot be tuned out of this, because the problem is that
-   * the column and the surface have converged. There is nowhere for the
-   * pattern to be except behind the words, so on a phone it is simply absent.
-   * The crescents and composer marks still carry the identity at this size. */
   .chat-main::after { display: none; }
 }
 
@@ -210,61 +43,18 @@
  * over a gradient is the banding problem from base.css again — a REGULAR
  * pattern gives the gradient's steps an edge to align to. The grain layer sits
  * above this and breaks up what little it contributes. */
-/* IT NOW SPANS THE WHOLE TRANSCRIPT SURFACE, not just the empty state.
- *
- * This was `.empty-state::after`, so the lattice existed on the welcome screen
- * and vanished the moment a conversation started — reported as "when there's a
- * conversation all design goes away". The composer then sat on a plain band at
- * the bottom of a decorated page, which read as the surface being cut off
- * rather than continuing behind it.
- *
- * Moving it to `.chat-main` fixes both with one rule: the ground is continuous
- * from the header to the bottom edge, the composer sits ON that ground instead
- * of ending it, and a conversation keeps the texture the empty state had.
- *
- * `.chat-main` is already positioned (it is the --z-chat stacking context), so
- * this needs no new positioning and cannot escape it. The mask below is what
- * keeps it off the reading column, and it matters more here than it did on the
- * empty state, because now there is prose in the middle at all times. */
+
 .chat-main::after {
   content: "";
   position: absolute;
   inset: 0;
   pointer-events: none;
   z-index: var(--z-empty-decor);
-  /* --ornament-ink like the rest of the family. The percentages stay where they
-   * are: they are tuned against the banding problem described above, not chosen
-   * for weight, and they are a colour mix rather than an opacity so the alpha
-   * ladder does not apply to them.
-   *
-   * THE REPORTED FAULT WAS "VERY THIN AND HARD TO SEE", AND THE ANSWER IS NOT
-   * ALPHA. This machine is Windows at 125% display scale — `AppliedDPI = 120`,
-   * `devicePixelRatio = 1.25`, measured, not assumed. A 1 CSS px band is then
-   * 1.25 device pixels, and an angled gradient spreads that fractional coverage
-   * across two rows of pixels at partial strength. The line does not get fainter
-   * because there is too little ink in it; it gets fainter because the ink is
-   * smeared over more pixels than it can fill.
-   *
-   * That distinction decides the fix, and the two were told apart by A/B rather
-   * than argued: doubling the mixes to 16%/12% at 1px made the smear darker and
-   * left it a smear, while holding the mixes and widening the band to 1.6px at
-   * 125% made it crisp. Alpha was the wrong variable. It is left alone here, and
-   * the banding tuning above survives untouched.
-   *
-   * So the band width is now a variable that lands on WHOLE DEVICE PIXELS at the
-   * common Windows scale factors, below. The starts are expressed as
-   * `calc(period - width)` so the 28px and 48px periods — the kasumi rhythm, and
-   * the thing not to change — hold whatever the width becomes.
-   *
-   * One peer measured DPR 1 here and concluded the opposite, that alpha was the
-   * whole story. That reading came from a Playwright browser launched at the
-   * default deviceScaleFactor of 1 rather than from the user's Chrome; the
-   * instrument reported its own configuration. Worth remembering as a shape:
-   * a headless default is not a measurement of the machine. */
+  /* Keep the 28px and 48px periods; fractional Windows scales get about 3px lines. */
   background-image:
-    repeating-linear-gradient(60deg, transparent 0 calc(28px - var(--lattice-line)), color-mix(in srgb, var(--ornament-ink) 8%, transparent) calc(28px - var(--lattice-line)) 28px),
-    repeating-linear-gradient(-60deg, transparent 0 calc(28px - var(--lattice-line)), color-mix(in srgb, var(--ornament-ink) 8%, transparent) calc(28px - var(--lattice-line)) 28px),
-    repeating-linear-gradient(0deg, transparent 0 calc(48px - var(--lattice-line)), color-mix(in srgb, var(--ornament-ink) 6%, transparent) calc(48px - var(--lattice-line)) 48px);
+    repeating-linear-gradient(60deg, transparent 0 calc(28px - var(--lattice-line)), color-mix(in srgb, var(--ornament-ink) 11%, transparent) calc(28px - var(--lattice-line)) 28px),
+    repeating-linear-gradient(-60deg, transparent 0 calc(28px - var(--lattice-line)), color-mix(in srgb, var(--ornament-ink) 11%, transparent) calc(28px - var(--lattice-line)) 28px),
+    repeating-linear-gradient(0deg, transparent 0 calc(48px - var(--lattice-line)), color-mix(in srgb, var(--ornament-ink) 9%, transparent) calc(48px - var(--lattice-line)) 48px);
   /* Cleared from the middle, so it is never behind the reading column.
    *
    * Widened from 72%/28% now that this covers the transcript: the reading
@@ -276,41 +66,16 @@
   mask-image: radial-gradient(86% 70% at 50% 50%, transparent 42%, #000 100%);
 }
 
-/* TWO DEVICE PIXELS AT EACH COMMON WINDOWS SCALE, which is the whole trick: a
- * band that lands on an integer number of device pixels is drawn as a line, and
- * one that does not is drawn as an average of a line and its background.
- *
- *   1.25 x 1.6   = 2      (Windows 125%, this machine)
- *   1.5  x 1.333 = 2      (Windows 150%)
- *   1.75 x 1.143 = 2      (Windows 175%)
- *
- * DPR 1 and DPR 2 need no entry and deliberately have none: 1px is already
- * exactly 1 and exactly 2 device pixels respectively. The ranges are windows
- * rather than equalities because browsers report these as floats and an
- * `=1.25dppx` query is a promise about a rounding mode nobody controls.
- *
- * A fractional DPR outside these windows — 1.1, a pinch zoom, a browser at 90% —
- * falls back to 1px and to exactly the behaviour reported as the fault. That is
- * a deliberate ceiling: the alternative is a rule per possible scale factor, and
- * the named scales are the ones Windows offers in its own display settings.
- * ponytail: if this needs to hold at arbitrary zoom, the honest fix is a single
- * device-pixel unit, and CSS has no such unit today.
- *
- * ON :root, NOT ON .chat-main::after, because the asanoha is drawn TWICE — here
- * and as `.signin-lattice` in signin.css, deliberately the same drawing so the
- * sign-in screen and the app share a ground. Two copies of one pattern get one
- * definition of how thick its line is; scoping this to the transcript would have
- * fixed the fault on one screen and left it on the other, which is how the two
- * drift apart. */
-:root { --lattice-line: 1px; }
+/* Three device pixels at common Windows scales; the 28px and 48px periods are unchanged. */
+:root { --lattice-line: 2px; }
 @media (min-resolution: 1.20dppx) and (max-resolution: 1.30dppx) {
-  :root { --lattice-line: 1.6px; }
+  :root { --lattice-line: 2.4px; }
 }
 @media (min-resolution: 1.45dppx) and (max-resolution: 1.55dppx) {
-  :root { --lattice-line: 1.333px; }
+  :root { --lattice-line: 2px; }
 }
 @media (min-resolution: 1.70dppx) and (max-resolution: 1.80dppx) {
-  :root { --lattice-line: 1.143px; }
+  :root { --lattice-line: 1.714px; }
 }
 
 /* .empty-state is a flex column of STATIC children, so they paint in the same
@@ -336,15 +101,7 @@
 .earring-left { left: 22px; right: auto; }
 .earring-right { right: 22px; left: auto; }
 
-/* THE MIRROR IS GONE, and the pair is now two PHASES of one moon.
- *
- * `.earring-right .crescent { transform: scaleX(-1) }` used to live here. A
- * mirrored pair is bilaterally perfect, and that perfection is the loudest
- * signal an ornament was placed by a stylesheet rather than drawn. Crescent.jsx
- * moves the mask circle to the other side of the disc AND changes its radius
- * for the right-hand one, so that moon is genuinely thinner: the same object at
- * two moments instead of an object beside its reflection. Re-adding a transform
- * here would flip the drawn phase back and undo it. */
+/* Different masks create two crescent phases; do not mirror one with a transform. */
 
 .earring-chain {
   width: 1px;
@@ -377,14 +134,7 @@
  * something is happening without a second spinner in the middle of the page.
  * The chain brightens with it, because a chain that stays dim while the
  * ornament swings reads as the drawing coming apart. */
-/* The full shorthand, not `animation-name` plus `animation-duration`. The
- * cascade snapshot expands shorthands into longhands and only tracks a
- * longhand once something declares it, so introducing animation-name here made
- * it start recording animation-name for every animated element in the app —
- * the same bookkeeping blow-up border-style caused in composer.css. It also
- * resets animation-delay to 0, which is what we want: both ornaments swing in
- * step while the council works, and a synchronised pair reads as one system
- * doing something where an offset pair reads as two decorations. */
+
 .earring-wrap.is-active .earring-pivot {
   animation: earringSwingActive 1.9s ease-in-out infinite;
 }
@@ -489,4 +239,15 @@
 @keyframes logoPulse {
   0%, 100% { transform: scale(1); opacity: 0.85; box-shadow: 0 0 30px var(--primary-glow); }
   50% { transform: scale(1.06); opacity: 1; box-shadow: 0 0 60px var(--primary-glow); }
+}
+
+/* Use the tile-free white glyph on dark surfaces; keep the tiled mark in light mode. */
+.app-root.dark .header-logo,
+.app-root.dark .signin-logo-mark {
+  content: url("/logo-glyph.png");
+  /* CONTAIN, and it is not interchangeable with the `cover` these two
+   * declare for the tile. A tile is square and fills its box by definition;
+   * the bare glyph is 281x288 of mostly bird, so `cover` cropped the crown of
+   * its head and its feet off at 34px — seen, not predicted. */
+  object-fit: contain;
 }

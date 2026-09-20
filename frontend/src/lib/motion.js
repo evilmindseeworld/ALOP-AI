@@ -17,18 +17,3 @@ export const animateButtonPress = (element) => animate(element, {
     { to: 1, ease: spring({ bounce: 0.6 }) },
   ],
 });
-
-export const animateEmptyLogo = (element) => ({
-  pulse: animate(element, {
-    scale: [
-      { to: 1.08, ease: "inOut(3)", duration: 400 },
-      { to: 1, ease: spring({ bounce: 0.7 }) },
-    ],
-    loop: true,
-    loopDelay: 1200,
-  }),
-  drag: createDraggable(element, {
-    container: [0, 0, 0, 0],
-    releaseEase: spring({ bounce: 0.8 }),
-  }),
-});

@@ -1,20 +1,4 @@
-/**
- * Renders public/og.svg to public/og.png at 1200x630, the social card.
- *
- * This exists as a file rather than a `node -e` line for one reason: the card
- * carries the logo mark, and resvg does not fetch relative image hrefs. The
- * mark has to be read off disk and inlined as a data URI before the SVG is
- * handed over. Doing that on a command line means escaping base64 through two
- * shells, which is how the previous one-liner broke.
- *
- * The href in og.svg is left EMPTY on purpose. An empty href renders as
- * nothing rather than as a broken-image box, so the file stays viewable in a
- * browser, and there is no 46 KB of base64 committed into a file a human is
- * expected to read and edit.
- *
- *   npm i --no-save @resvg/resvg-js pngjs
- *   node scripts/render-og.mjs
- */
+/** Build the social card, icons, and app marks from the shared logo artwork. */
 import { readFileSync, writeFileSync } from "node:fs";
 import { Resvg } from "@resvg/resvg-js";
 import { PNG } from "pngjs";
@@ -133,24 +117,6 @@ const ICON = 144;
 writeFileSync("public/favicon.png", markTile(ICON));
 console.log(`favicon.png: ${ICON}x${ICON}`);
 
-/* AND /favicon.ico, because that path is requested whether it is declared or not.
- *
- * `<link rel="icon">` points at favicon.png and browsers honour it, so this is
- * not for them. It is for the callers that never read the HTML: Google's
- * favicon crawler probes /favicon.ico directly, and so do feed readers, chat
- * link unfurlers and monitoring tools. That path returned the SPA's 404 page —
- * served as text/html, which is a worse answer than nothing, because a client
- * expecting an image gets a document.
- *
- * Multi-size on purpose. An .ico is a container, and each consumer picks the
- * entry it wants: 16 and 32 for a tab strip and a bookmark bar, 48 because
- * that is the size Google's crawler asks for. Shipping one 144 and letting
- * every consumer downscale it is how a mark turns to mush at 16px.
- *
- * The ICO container is assembled by hand — six fields and a directory — rather
- * than by adding an image library to devDependencies for a file that changes
- * about once a year.
- */
 const ICO_SIZES = [16, 32, 48, 64, 128];
 function ico(sizes) {
   const images = sizes.map((s) => markTile(s));
@@ -196,3 +162,15 @@ console.log(`logo-mark.png: ${LOGO}x${LOGO}`);
 writeFileSync("public/logo.png", markTile(LOGO));
 console.log(`logo.png: ${LOGO}x${LOGO}`);
 console.log(`og.png: ${png.readUInt32BE(16)}x${png.readUInt32BE(20)}, ${(png.length / 1024).toFixed(0)} KB`);
+
+/* Tile-free white mark for dark app surfaces. */
+const GLYPH = 288;
+const glyphWidth = Math.round(GLYPH * (CROP.w / CROP.h));
+const glyphSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${glyphWidth}" height="${GLYPH}">
+  <image width="${glyphWidth}" height="${GLYPH}" href="${dataUri}"/>
+</svg>`;
+const glyph = new Resvg(glyphSvg, {
+  fitTo: { mode: "width", value: glyphWidth * SCALE },
+}).render().asPng();
+writeFileSync("public/logo-glyph.png", PNG.sync.write(downsample(PNG.sync.read(glyph), SCALE)));
+console.log(`logo-glyph.png: ${GLYPH}px tall`);

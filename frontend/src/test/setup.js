@@ -15,21 +15,7 @@ if (!Element.prototype.scrollTo) {
   Element.prototype.scrollTo = function scrollTo() {};
 }
 
-/* GEOMETRY, because animejs's Draggable needs it and jsdom has none of it.
- *
- * The empty state's logo is draggable, and that motion is now bound to the
- * element from inside EmptyState rather than to a `.empty-logo` selector from
- * App — the selector matched nothing on two real paths and threw
- * `this.animate[this.xProp] is not a function` on every signed-in first paint.
- * The consequence for tests is that mounting EmptyState now runs the REAL
- * Draggable constructor, which reads DOMPoint, DOMMatrix, ResizeObserver and
- * matchMedia before it does anything else.
- *
- * These live here rather than in the one test that introduced them because any
- * test that renders the empty state needs them, and three already did.
- * Deliberately dumb — an identity transform and a no-op observer. jsdom has no
- * layout, so no assertion about motion is possible or attempted; the only thing
- * these buy is that the code under test runs at all. */
+/* anime.js reads browser geometry APIs absent from jsdom; simple shims let it mount. */
 if (typeof globalThis.ResizeObserver === "undefined") {
   globalThis.ResizeObserver = class {
     observe() {}

@@ -18,6 +18,12 @@ things that cost someone an hour to find out.
 
 ## Traps
 
+**SVG gradients do not paint on zero-width lines.** Use a flat stroke or `gradientUnits="userSpaceOnUse"` for vertical stems; this fixed the crescent and sun fittings.
+
+**The dark app logo needs a tile-free image.** `mix-blend-mode` cannot remove the rounded tile inside the logo's stacking contexts. Use `logo-glyph.png` for `.header-logo` and `.signin-logo-mark` in dark mode; the white glyph is invisible on light surfaces.
+
+**The composer skyline has day and night profiles.** Keep the shifted weather disc clear: skyline details at x 80–190 must stay at local y >= 14.
+
 **`server.js` cannot be `require`d in a test.** It calls `process.exit(1)` at
 import time when env vars are missing, so anything defined in it is untestable
 by construction. That is why logic keeps getting moved to `lib/`, and why a few

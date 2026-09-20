@@ -164,6 +164,22 @@ test("resolves when every seat has settled, even below quorum", async () => {
   assert.ok(Date.now() - started < 1000, "held the room open after every seat had settled");
 });
 
+test("an all-provider failure is an empty council result, not a fabricated answer", async () => {
+  const results = await runCouncil(
+    [seat("a"), seat("b"), seat("c")],
+    [],
+    5000,
+    3,
+    500,
+    {
+      callModel: async () => {
+        throw Object.assign(new Error("mock provider unavailable"), { code: "EAI_AGAIN" });
+      },
+    },
+  );
+  assert.deepEqual(results, []);
+});
+
 test("a bare skip is neither an answer nor a failure", async () => {
   const seen = [];
   const results = await runCouncil([seat("a"), seat("skipper")], [], 5000, 5, 500, {
@@ -181,6 +197,22 @@ test("an answer that merely starts with skip is still an answer", () => {
   return runCouncil([seat("a")], [], 5000, 1, 500, {
     callModel: scripted({ a: { content: "Skipping the preamble, here is the answer." } }),
   }).then((results) => assert.equal(results.length, 1));
+});
+
+test("a structured seat reply preserves completion metadata for final-answer gates", async () => {
+  const results = await runCouncil([seat("a")], [], 5000, 1, 500, {
+    callModel: async () => ({
+      content: "A complete answer.",
+      textSource: "content",
+      finishReason: "stop",
+    }),
+  });
+  assert.deepEqual(results, [{
+    model: "a",
+    content: "A complete answer.",
+    textSource: "content",
+    finishReason: "stop",
+  }]);
 });
 
 test("an empty completion is failed, not skipped", async () => {

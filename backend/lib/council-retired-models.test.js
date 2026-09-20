@@ -49,6 +49,21 @@ const RETIRED = [
     retired: '2026-08-19',
     evidence: 'zero endpoints — checked as a same-family replacement for ling-3.0-tiny and rejected',
   },
+  {
+    id: 'openai/gpt-oss-20b:free',
+    retired: '2026-08-30',
+    evidence: 'missing from current official public and authenticated /models metadata; exact free route is not selectable',
+  },
+  {
+    id: 'nvidia/nemotron-3-nano-30b-a3b:free',
+    retired: '2026-08-30',
+    evidence: 'missing from current official public and authenticated /models metadata; exact free route is not selectable',
+  },
+];
+
+const REQUIRED_P1_HEADSTONES = [
+  'openai/gpt-oss-20b:free',
+  'nvidia/nemotron-3-nano-30b-a3b:free',
 ];
 
 /* The seat lines only, not the prose. A retired id may still be NAMED in a
@@ -56,6 +71,13 @@ const RETIRED = [
  * test that forbade the word would forbid the explanation with it. What must
  * not exist is a `model:` field carrying one. */
 const configuredIds = (src) => [...src.matchAll(/\bmodel:\s*['"]([^'"]+)['"]/g)].map((m) => m[1]);
+
+test('the two upstream-dead P1 routes have durable headstones', () => {
+  const retired = new Set(RETIRED.map(({ id }) => id));
+  for (const id of REQUIRED_P1_HEADSTONES) {
+    assert.ok(retired.has(id), `${id} is missing from the retired-model guard`);
+  }
+});
 
 test('no retired model id is configured as a seat in the backend roster', () => {
   const configured = configuredIds(BACKEND);
@@ -80,8 +102,8 @@ test('the guard can actually see a seat — it is parsing ids, not an empty list
    * zero seats, the two assertions above are vacuously true. */
   const backend = configuredIds(BACKEND);
   const frontend = configuredIds(FRONTEND);
-  assert.ok(backend.length >= 7, `parsed only ${backend.length} backend model ids`);
-  assert.ok(frontend.length >= 7, `parsed only ${frontend.length} frontend model ids`);
+  assert.ok(backend.length >= 5, `parsed only ${backend.length} backend model ids`);
+  assert.ok(frontend.length >= 5, `parsed only ${frontend.length} frontend model ids`);
   assert.ok(backend.includes('cohere/north-mini-code:free'), 'the seat that replaced ling is not in the roster');
 });
 

@@ -1,4 +1,5 @@
 const { deadlineSignal } = require('./stream-deadline');
+const { canRetryStream } = require('./stream-retry-policy');
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { readFileSync } = require("node:fs");
@@ -293,6 +294,32 @@ test("a one-seat roster inherits the synthesiser's rules", () => {
   assert.match(ROUTE, /\$\{soloRules\}/, "soloRules is computed but never reaches the prompt");
 });
 
+test('a one-seat draft must pass the general answer contract before it bypasses synthesis', () => {
+  const solo = ROUTE.indexOf('const soleDraft');
+  const synth = ROUTE.indexOf('// 6. SYNTHESIS', solo);
+  assert.ok(solo > 0 && synth > solo, 'one-seat branch not found');
+  const branch = ROUTE.slice(solo, synth);
+  assert.match(branch, /assessAnswer\(/,
+    'a non-empty draft is not enough to become a clean final answer');
+  assert.match(branch, /answerContract/,
+    'the direct path must inspect the question/context contract');
+  assert.match(branch, /finishReason/,
+    'provider truncation metadata must be available at the direct-answer boundary');
+  assert.match(branch, /soloAssessment\??\.ok/,
+    'the direct path must bypass synthesis only after the answer contract passes');
+});
+
+test('synthesis receives bounded context and a general completeness contract', () => {
+  const synth = ROUTE.indexOf('// 6. SYNTHESIS');
+  const call = ROUTE.slice(synth, synth + 7000);
+  assert.match(call, /COMPLETENESS_CONTRACT/);
+  assert.match(call, /\.\.\.contextMsgs/,
+    'the head cannot recover omitted context if only seat drafts are sent');
+  assert.match(call, /\.\.\.promptHistory/,
+    'the head must receive the same bounded transcript the seats saw');
+  assert.match(call, /every explicit part/i);
+});
+
 /**
  * THE ORCHESTRATOR'S FALLBACK. A throw at the streaming step is the most
  * expensive failure in the route: the council has already deliberated and the
@@ -380,12 +407,13 @@ const loadStreamPolicy = (fetchImpl) => {
      * stubbed: a stub here would let the deadline stop reaching the body again
      * without a single test noticing. See lib/stream-deadline.js. */
     "deadlineSignal",
+    "canRetryStream",
     `${policy}\nreturn { streamModel, normaliseResetEpoch };`,
   )(
     fetchImpl, stream, "https://openrouter.test", "secret", "primary:free", "smart:free",
     () => ({ skip: true }), () => false, (text) => ({ text, rejected: false }),
     false,
-    deadlineSignal,
+    deadlineSignal, canRetryStream,
   );
 };
 

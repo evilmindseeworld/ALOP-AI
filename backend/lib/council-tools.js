@@ -8,6 +8,8 @@
  * enough that "it looked right" is not good enough for it.
  */
 
+const { extractUrls } = require('./citation-urls');
+
 /**
  * The one line that separates data from instructions.
  *
@@ -415,8 +417,7 @@ function searchResultUrls(toolResults) {
   const seen = new Set();
   for (const { call, result } of Array.isArray(toolResults) ? toolResults : []) {
     if (call?.name !== "web_search" || !result?.ok) continue;
-    for (const match of String(result.content || "").matchAll(/https?:\/\/[^\s<>]+/gi)) {
-      const url = match[0].replace(/[),.;!?]+$/, "");
+    for (const url of extractUrls(result.content || "")) {
       if (!seen.has(url)) { seen.add(url); urls.push(url); }
     }
   }

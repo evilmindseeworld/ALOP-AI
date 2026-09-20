@@ -15,7 +15,7 @@
   the same pass.
 
   WHAT IS LEFT IS WHAT IS CHECKABLE. The temperature ladder is the product's
-  actual argument - seven models at seven temperatures, which is the reason a
+  actual argument - five models at five temperatures, which is the reason a
   council returns something one model does not. council-roster.test.js fails
   if the names here drift from the ones the server runs.
 
@@ -48,7 +48,7 @@
 
     <!-- Not "Seven answers. One reply." The count-then-contrast rhythm reads as
          generated, and the number was wrong for most readers anyway: the roster
-         is three seats free and seven on pro. This says what the product is
+         is two seats free and five on pro. This says what the product is
          instead of how it is built. -->
     <text x="80" y="272" fill="#f5f1ee" font-size="76" font-weight="700" letter-spacing="-2">All your AI</text>
     <text x="80" y="352" fill="#f08aa3" font-size="76" font-weight="700" letter-spacing="-2">in one place.</text>
@@ -62,17 +62,13 @@
       <text x="140" y="530" fill="#f5f1ee">The Architect</text>
       <text x="330" y="530" fill="#8d8880">0.3</text>
       <text x="390" y="530" fill="#f5f1ee">The Engineer</text>
-      <text x="580" y="530" fill="#8d8880">0.4</text>
-      <text x="640" y="530" fill="#f5f1ee">The Analyst</text>
-      <text x="830" y="530" fill="#8d8880">0.5</text>
-      <text x="890" y="530" fill="#f5f1ee">The Strategist</text>
+      <text x="580" y="530" fill="#8d8880">0.5</text>
+      <text x="640" y="530" fill="#f5f1ee">The Strategist</text>
 
       <text x="80"  y="572" fill="#8d8880">0.6</text>
       <text x="140" y="572" fill="#f5f1ee">The Scholar</text>
       <text x="330" y="572" fill="#8d8880">0.7</text>
       <text x="390" y="572" fill="#f5f1ee">The Alchemist</text>
-      <text x="580" y="572" fill="#8d8880">0.8</text>
-      <text x="640" y="572" fill="#f5f1ee">The Explorer</text>
     </g>
 
     <text x="1120" y="572" fill="#8d8880" font-size="22" text-anchor="end" letter-spacing="1">alop-ai.com</text>

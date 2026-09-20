@@ -1,6 +1,8 @@
 'use strict';
 
 const { normaliseCompletion, emptyReply, normaliseUsage } = require('./model-reply');
+const { unknownUsage } = require('./turn-accounting-meta');
+const { assertAllowedOpenRouterModel } = require('./openrouter-policy');
 
 const RETRY_DELAYS_MS = [400, 1200];
 const RATE_LIMIT_RESET_SAFETY_MS = 50;
@@ -94,6 +96,9 @@ const streamHttpError = (response, errorBody, payload, rateLimit) => {
   const detail = String(errorBody || '').replace(/\s+/g, ' ').trim().slice(0, 300);
   const error = new Error(`Stream HTTP ${response.status}${response.statusText ? ` ${response.statusText}` : ''}${detail ? `: ${detail}` : ''}`);
   error.status = response.status;
+  error.code = response.status === 429
+    ? rateLimit?.kind === 'daily' ? 'OPENROUTER_DAILY_LIMIT' : 'OPENROUTER_RATE_LIMIT'
+    : 'OPENROUTER_HTTP_ERROR';
   error.limitSource = payload?.error?.metadata?.limit_source
     || payload?.error?.limit_source
     || payload?.limit_source
@@ -130,12 +135,19 @@ const abortableDelay = (ms, signal) => new Promise((resolve) => {
  *        every caller had before this existed. `0` means one request and no
  *        more — see the council's use of it in lib/council-run.js, and the
  *        matching option on `fetchOpenRouterStream`, which has always had one.
+ * @param {(usage: object) => void} [options.onUsage]  called once for every
+ *        completed provider response; an all-null receipt means the provider
+ *        returned no usable usage numbers.
  */
 async function callModel(host, apiKey, modelName, messages, temperature, timeoutMs, maxTokens, parentSignal, options = {}) {
+  assertAllowedOpenRouterModel(modelName, { source: 'callModel' });
   const structured = Boolean(options && options.structured);
   /* Every early exit below used to be the bare string ''. In structured mode it
    * has to be an object or each caller grows a type check it will forget. */
   const blank = (reason) => (structured ? emptyReply(reason) : '');
+  const reportUsage = (reply) => {
+    try { options?.onUsage?.(reply?.usage || unknownUsage()); } catch { /* telemetry must never break a model call */ }
+  };
   if (parentSignal?.aborted) return blank('aborted');
   const deadline = Date.now() + Math.max(0, Number(timeoutMs) || 0);
   const tools = Array.isArray(options?.tools) && options.tools.length ? options.tools : null;
@@ -211,8 +223,10 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
           reportAttempt('bad_body', response.status);
           throw parseError;
         }
+        const reply = normaliseCompletion(payload);
         reportAttempt('ok', response.status);
-        return structured ? normaliseCompletion(payload) : completionText(payload);
+        reportUsage(reply);
+        return structured ? reply : reply.content;
       }
       const errorBody = await response.text().catch(() => '');
       reportAttempt('http_error', response.status);
@@ -237,7 +251,10 @@ async function callModel(host, apiKey, modelName, messages, temperature, timeout
         retryable = response.status >= 500;
       }
       if (!retryable || attempt >= retryLimit) {
-        throw new Error(`OpenRouter ${response.status}: ${errorBody.slice(0, 500)}`);
+        const error = new Error(`OpenRouter ${response.status}: ${errorBody.slice(0, 500)}`);
+        error.status = response.status;
+        error.code = response.status === 429 ? 'OPENROUTER_RATE_LIMIT' : 'OPENROUTER_HTTP_ERROR';
+        throw error;
       }
     } catch (error) {
       if (controller.signal.aborted || parentSignal?.aborted || Date.now() >= deadline) {
@@ -293,6 +310,7 @@ async function fetchOpenRouterStream(
   maxTokens = null,
   { deadlineAt = null, timeoutMs = 30_000, maxRetries = 1, includeUsage = false, reasoning, onAttempt } = {},
 ) {
+  assertAllowedOpenRouterModel(modelName, { source: 'fetchOpenRouterStream' });
   if (parentSignal?.aborted) throw parentSignal.reason || new DOMException('Aborted', 'AbortError');
   const suppliedDeadline = deadlineAt == null ? null : Number(deadlineAt);
   const fallbackTimeout = Number(timeoutMs);

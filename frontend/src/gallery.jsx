@@ -139,7 +139,7 @@ const Primitives = () => (
       </div>
     </Section>
 
-    {/* The header buttons are MagneticButton, not <button> — they lean toward the
+{/* The header buttons are MagneticButton, not <button> — they lean toward the
      * cursor. It is the one motion primitive in components/ui/ the app actually
      * mounts, and it was missing here, so its rest state was the only one any
      * screenshot had ever shown. Hover these. */}
@@ -401,7 +401,7 @@ const LiveChrome = ({ theme, empty = false, streaming = false, loaded = false, c
                 actually have. A fixture that differs from the app stops
                 guarding the thing it differs on. */}
             <Badge variant="secondary" data-ui-scope="" className="hidden shrink-0 sm:inline-flex">
-              7 models
+              {COUNCIL.length} models
             </Badge>
           </div>
           <div className="header-actions">
@@ -616,9 +616,9 @@ const SIGNIN_SHELL = ({ signUp, loading, theme }) => (
               How the council is composed
             </h2>
             <p id={`gallery-council-scale-${theme}-${signUp ? "up" : "in"}`} className="sr-only">
-              Seven seats, ordered from the most literal to the most lateral.
+              Five seats, ordered from the most literal to the most lateral.
               Each row begins with that seat&rsquo;s sampling temperature, from
-              0.2 to 0.8.
+              0.2 to 0.7.
             </p>
             <ol
               className="council-ladder"

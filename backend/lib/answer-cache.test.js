@@ -764,6 +764,8 @@ test('the semantic lookup is given the identity-bearing branch, not a bare mode'
   const src = fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8');
   const call = src.indexOf('answerCache.getSemantic({');
   assert.ok(call > 0, 'the semantic lookup is gone');
-  assert.match(src.slice(call, call + 400), /branch:\s*ANSWER_CACHE_BRANCH/,
-    'the semantic tier must be scoped by the same branch the literal tier writes');
+  assert.match(src.slice(call, call + 400), /branch:\s*cacheBranch/,
+    'the semantic tier must be scoped by the same ordinary or evaluator branch the literal tier writes');
+  assert.match(src, /const cacheBranch = cacheValidation\.enabled[\s\S]*ANSWER_CACHE_BRANCH/,
+    'the evaluator namespace must fall back to the ordinary identity-bearing branch');
 });

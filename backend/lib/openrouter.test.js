@@ -116,6 +116,50 @@ test('maxRetries is clamped, so a caller cannot invent delays the ladder does no
   assert.equal(calls, 3, 'the ladder is two retries and 99 must not mean 99 requests');
 });
 
+test('a completed provider response exposes its normalized usage receipt once', async () => {
+  const seen = [];
+  global.fetch = async () => response(200, {
+    id: 'response-1',
+    model: 'model:free',
+    usage: { prompt_tokens: 2, completion_tokens: 3, cost: 0 },
+    choices: [{ message: { content: 'measured' } }],
+  });
+
+  const answer = await callModel(
+    'https://openrouter.ai/api/v1',
+    'key',
+    'model:free',
+    [],
+    0,
+    1000,
+    20,
+    undefined,
+    { onUsage: (receipt) => seen.push(receipt) },
+  );
+  assert.equal(answer, 'measured');
+  assert.deepEqual(seen, [{ promptTokens: 2, completionTokens: 3, totalTokens: 5, costUsd: 0 }]);
+});
+
+test('a completed provider response without usage emits an explicit unknown receipt', async () => {
+  const seen = [];
+  global.fetch = async () => response(200, {
+    choices: [{ message: { content: 'unpriced' } }],
+  });
+
+  await callModel(
+    'https://openrouter.ai/api/v1',
+    'key',
+    'model:free',
+    [],
+    0,
+    1000,
+    20,
+    undefined,
+    { onUsage: (receipt) => seen.push(receipt) },
+  );
+  assert.deepEqual(seen, [{ promptTokens: null, completionTokens: null, totalTokens: null, costUsd: null }]);
+});
+
 test('an unroutable model id is not retried into three requests', async () => {
   /* `inclusionai/ling-3.0-tiny:free` answered a council turn with HTTP 404 in
    * 38ms: OpenRouter still holds the model's record but no provider serves it,
@@ -130,7 +174,9 @@ test('an unroutable model id is not retried into three requests', async () => {
 
   await assert.rejects(
     callModel('https://openrouter.ai/api/v1', 'key', 'inclusionai/ling-3.0-tiny:free', [], 0, 3000, 20),
-    /OpenRouter 404/,
+    (error) => /OpenRouter 404/.test(error.message)
+      && error.status === 404
+      && error.code === 'OPENROUTER_HTTP_ERROR',
   );
   assert.equal(calls, 1);
 });
@@ -286,10 +332,10 @@ test('structured mode returns the whole reply; default mode still returns a stri
   };
   global.fetch = async () => response(200, body);
 
-  const asString = await callModel('https://openrouter.ai/api/v1', 'key', 'm', [], 0, 1000, 100);
+  const asString = await callModel('https://openrouter.ai/api/v1', 'key', 'test/model:free', [], 0, 1000, 100);
   assert.equal(asString, '', 'the legacy contract is unchanged');
 
-  const reply = await callModel('https://openrouter.ai/api/v1', 'key', 'm', [], 0, 1000, 100, undefined, { structured: true });
+  const reply = await callModel('https://openrouter.ai/api/v1', 'key', 'test/model:free', [], 0, 1000, 100, undefined, { structured: true });
   assert.equal(reply.toolCalls.length, 1, 'the native tool call reached the caller');
   assert.equal(reply.toolCalls[0].id, 'call_7');
   assert.equal(reply.finishReason, 'tool_calls');
@@ -301,11 +347,11 @@ test('structured mode returns an empty reply rather than a string on abort', asy
   controller.abort(new Error('gone'));
   global.fetch = async () => { throw new Error('should not be called'); };
 
-  const reply = await callModel('https://openrouter.ai/api/v1', 'key', 'm', [], 0, 1000, 100, controller.signal, { structured: true });
+  const reply = await callModel('https://openrouter.ai/api/v1', 'key', 'test/model:free', [], 0, 1000, 100, controller.signal, { structured: true });
   assert.equal(typeof reply, 'object');
   assert.equal(reply.content, '');
   assert.equal(reply.finishReason, 'aborted');
-  assert.equal(await callModel('https://openrouter.ai/api/v1', 'key', 'm', [], 0, 1000, 100, controller.signal), '');
+  assert.equal(await callModel('https://openrouter.ai/api/v1', 'key', 'test/model:free', [], 0, 1000, 100, controller.signal), '');
 });
 
 test('a stream asks the gateway for usage accounting ONLY when told to', async () => {
@@ -315,21 +361,21 @@ test('a stream asks the gateway for usage accounting ONLY when told to', async (
   // Default OFF. This field goes in the body of the request that writes every
   // answer, and it could not be measured against the live gateway from a
   // machine with no key — see the comment on the request body.
-  await fetchOpenRouterStream('https://openrouter.ai/api/v1', 'key', 'm', [], 0, undefined);
+  await fetchOpenRouterStream('https://openrouter.ai/api/v1', 'key', 'test/model:free', [], 0, undefined);
   assert.equal('usage' in sent, false, 'the default request body must be byte-identical to what shipped before');
 
-  await fetchOpenRouterStream('https://openrouter.ai/api/v1', 'key', 'm', [], 0, undefined, null, { includeUsage: true });
+  await fetchOpenRouterStream('https://openrouter.ai/api/v1', 'key', 'test/model:free', [], 0, undefined, null, { includeUsage: true });
   assert.deepEqual(sent.usage, { include: true });
 });
 
-test('a streamed head synthesis can request high reasoning effort without exposing it', async () => {
+test('a free streamed head synthesis can request high reasoning effort without exposing it', async () => {
   let sent = null;
   global.fetch = async (_url, init) => { sent = JSON.parse(init.body); return response(200, {}); };
 
   await fetchOpenRouterStream(
     'https://openrouter.ai/api/v1',
     'key',
-    'openai/gpt-5.6-luna',
+    'test/model:free',
     [],
     0,
     undefined,
@@ -376,7 +422,7 @@ test('one POST is reported exactly once, even when it also throws', async () => 
   const attempts = [];
   global.fetch = async () => response(400, { error: 'bad request' });
   await assert.rejects(
-    callModel('https://openrouter.ai/api/v1', 'key', 'm', [], 0, 1000, 20, undefined,
+    callModel('https://openrouter.ai/api/v1', 'key', 'test/model:free', [], 0, 1000, 20, undefined,
       { onAttempt: (row) => attempts.push(row) }),
   );
   assert.equal(attempts.length, 1, 'the http_error report must not be followed by a network_error one');
@@ -389,7 +435,7 @@ test('a request refused before it is sent is not charged as an attempt', async (
   global.fetch = async () => { fetched += 1; return response(200, {}); };
   const controller = new AbortController();
   controller.abort();
-  await callModel('https://openrouter.ai/api/v1', 'key', 'm', [], 0, 1000, 20, controller.signal,
+  await callModel('https://openrouter.ai/api/v1', 'key', 'test/model:free', [], 0, 1000, 20, controller.signal,
     { onAttempt: (row) => attempts.push(row) });
   assert.equal(fetched, 0);
   assert.deepEqual(attempts, [], 'nothing reached the gateway, so nothing may be counted');
@@ -397,7 +443,7 @@ test('a request refused before it is sent is not charged as an attempt', async (
 
 test('a recorder that throws cannot break the model call', async () => {
   global.fetch = async () => response(200, { choices: [{ message: { content: 'fine' } }] });
-  const text = await callModel('https://openrouter.ai/api/v1', 'key', 'm', [], 0, 1000, 20, undefined,
+  const text = await callModel('https://openrouter.ai/api/v1', 'key', 'test/model:free', [], 0, 1000, 20, undefined,
     { onAttempt: () => { throw new Error('telemetry exploded'); } });
   assert.equal(text, 'fine');
 });
@@ -413,7 +459,7 @@ test('the streaming path reports its own POSTs, including the pre-body 429 retry
   };
 
   const res = await fetchOpenRouterStream(
-    'https://openrouter.ai/api/v1', 'key', 'm', [], 0, undefined, null,
+    'https://openrouter.ai/api/v1', 'key', 'test/model:free', [], 0, undefined, null,
     { timeoutMs: 5000, maxRetries: 1, onAttempt: (row) => attempts.push(row) },
   );
 
@@ -481,7 +527,7 @@ test('a 200 with an unparseable body keeps its status and is not called a networ
 
   const attempts = [];
   await assert.rejects(
-    callModel('https://openrouter.ai/api/v1', 'key', 'm', [], 0, 1000, 20, null, {
+    callModel('https://openrouter.ai/api/v1', 'key', 'test/model:free', [], 0, 1000, 20, null, {
       onAttempt: (row) => attempts.push(row),
     }),
   );

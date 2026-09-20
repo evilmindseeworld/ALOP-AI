@@ -5,7 +5,8 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 
-const { degradeAnswer, looksInternal, isSafeDraft } = require('./synthesis-degrade');
+const { degradeAnswer, looksInternal, isSafeDraft, resolveSafeRefusal } = require('./synthesis-degrade');
+const { assessAnswer, buildAnswerContract } = require('./answer-contract');
 const { deadlineSignal } = require('./stream-deadline');
 
 /**
@@ -109,6 +110,45 @@ test('isSafeDraft is the single predicate, so the solo branch cannot drift from 
   assert.equal(isSafeDraft(undefined), false);
 });
 
+test('a provider-truncated draft is not safe for direct degradation', () => {
+  const truncated = { content: 'The rollout should begin with a baseline', textSource: 'content', finishReason: 'length' };
+  const complete = { content: 'The rollout should begin with a baseline.', textSource: 'content', finishReason: 'stop' };
+  assert.equal(isSafeDraft(truncated), false);
+  assert.equal(degradeAnswer({ wroteChars: 0, drafts: [truncated, complete] }), 'The rollout should begin with a baseline.');
+});
+
+test('uncertain context coverage does not disable a usable degraded draft', () => {
+  const contract = buildAnswerContract({
+    question: 'What datastore constraint did I mention earlier?',
+    history: [
+      { role: 'user', content: 'I need a cheap datastore for session state.' },
+      { role: 'user', content: 'The weather may change tomorrow.' },
+    ],
+  });
+  const draft = {
+    content: 'You wanted a budget-conscious database.',
+    textSource: 'content',
+    finishReason: 'stop',
+  };
+  const assessment = assessAnswer({
+    answer: draft.content,
+    contract,
+    finishReason: draft.finishReason,
+  });
+
+  assert.equal(assessment.status, 'UNKNOWN');
+  assert.equal(assessment.ok, true);
+  assert.equal(degradeAnswer({
+    wroteChars: 0,
+    drafts: [draft],
+    draftGuard: (candidate) => isSafeDraft(candidate) && assessAnswer({
+      answer: candidate.content,
+      contract,
+      finishReason: candidate.finishReason,
+    }).ok,
+  }), draft.content);
+});
+
 /**
  * ROWS 2 AND 3, REPRODUCED AT THE SEAM THAT DECIDES THEM.
  *
@@ -199,6 +239,18 @@ test('ordinary English about councils and experts is NOT refused', () => {
 test('a roster of nothing but internal framing lands on the error frame, not on a blank answer', () => {
   const drafts = [{ content: 'SKIP.', textSource: 'content' }, { content: 'As a member of the ALOP-AI Council, I abstain.', textSource: 'content' }];
   assert.equal(degradeAnswer({ wroteChars: 0, drafts }), null);
+});
+
+test('safe refusal remains fail-closed for partial, mixed, and evidence-backed councils', () => {
+  const refusal = { content: "I'm sorry, but I can't help with that.", textSource: 'content', finishReason: 'stop' };
+  const substantive = { content: 'Here is a substantive answer instead.', textSource: 'content', finishReason: 'stop' };
+  assert.equal(resolveSafeRefusal([refusal, refusal], { expectedSeats: 3 }), null,
+    'quorum is not unanimous refusal');
+  assert.equal(resolveSafeRefusal([refusal, refusal, substantive], { expectedSeats: 3 }), null,
+    'a contradictory substantive seat must not be bypassed');
+  assert.equal(resolveSafeRefusal([refusal, refusal, refusal], { expectedSeats: 3, blockedByEvidence: true }), null,
+    'evidence-backed paths must still synthesize');
+  assert.equal(resolveSafeRefusal([refusal, refusal, refusal], { expectedSeats: 3 }), refusal.content);
 });
 
 /**

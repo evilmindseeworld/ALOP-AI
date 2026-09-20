@@ -7,8 +7,9 @@
  * than user, so one account rotating addresses collected a fresh allowance per
  * address. That half is fixed — the limiters key on `u:<userId>` now — but a
  * request rate is not a spend ceiling: a single account inside 30 turns/minute
- * can still run the bill up, and a council turn is seven paid model calls plus
- * search plus a possible fallback whip. This is the missing half.
+ * can still run the bill up, and a council turn is seven model calls plus search
+ * plus a possible fallback whip. This is the missing half for non-model work;
+ * the OpenRouter request boundary separately enforces permanent FREE_ONLY use.
  *
  * EVERYTHING HERE IS INTEGER CENTS. No floats anywhere near money: 0.1 + 0.2
  * is not 0.3 in binary floating point, and a ceiling that drifts is a ceiling
@@ -19,9 +20,9 @@
  * OpenRouter reports `usage.prompt_tokens`, `usage.completion_tokens`, and
  * `usage.cost` on responses. The current `:free` model calls cost $0; search
  * and page-fetch calls still cost real money. This ceiling deliberately keeps
- * pricing model calls by operation so it remains protective if any seat is
- * swapped to a paid model, and every rate is overridable by environment
- * variable without a deploy.
+ * pricing model calls by operation so it remains protective if telemetry or
+ * policy changes, and every rate is overridable by environment variable without
+ * a deploy. FREE_ONLY still rejects paid/unknown model IDs before inference.
  *
  * Read the numbers as "roughly right and deliberately conservative", not as a
  * bill. They should be compared against the provider dashboards and corrected;
@@ -45,16 +46,12 @@ const PRICES = {
   /* A council seat answering, or any other non-streaming model call at the
    * council's token ceiling. Seven of these is the bulk of a turn. */
   seatTenths: int(process.env.SPEND_SEAT_TENTHS, 4),
-  /* The synthesis pass. Complex/tool turns now default to high-effort Luna, so
-   * the conservative default is aligned with the native tool-seat estimate.
-   * Override this when COUNCIL_SYNTHESIS_MODEL points at a cheaper model. */
+  /* The synthesis pass. Complex/tool turns now default to the free head, while
+   * this conservative estimate remains for defensive accounting. */
   synthesisTenths: int(process.env.SPEND_SYNTHESIS_TENTHS, 8),
-  /* THE NATIVE TOOL SEAT, WHICH IS THE FIRST SEAT ON THIS COUNCIL THAT COSTS
-   * REAL MONEY. Everything else is a `:free` id billed at $0, which is why the
-   * dollar ceiling has not bound on a model call since 2026-08-12. The header
-   * above says the per-operation pricing exists so this ceiling "remains
-   * protective the moment any seat is swapped to a paid model". This is that
-   * moment; do not let it be the moment the sentence turned out to be untrue.
+  /* THE NATIVE TOOL SEAT, retained here for defensive/historical accounting.
+   * Every current OpenRouter model path is FREE_ONLY, so this estimate does not
+   * authorize paid inference and the dollar ceiling is not a routing switch.
    *
    * MEASURED, and the distinction from "reasoned" matters here because the
    * first number written into this line was reasoned and was ~40x too high.
@@ -95,7 +92,7 @@ const PRICES = {
 /**
  * SYNTHESIS IS NO LONGER ONE PRICE, BECAUSE THE HEAD IS NO LONGER ONE MODEL.
  *
- * `lib/model-ladder.js` gave the head a five-rung fallback chain so one
+ * `lib/model-ladder.js` gave the head a fallback chain so one
  * provider outage cannot lose a turn. It also wrote down the hole it left:
  * `synthesisTenths` is calibrated for Luna, and rung 2 is Sonnet 5 at roughly
  * 20x Luna's prompt rate and 17x its completion rate. A turn that falls that
@@ -116,7 +113,8 @@ const PRICES = {
  * is the safe direction. Listing them at 0 would mean a typo'd or retired id
  * priced at nothing.
  *
- * Overridable without a deploy, same as every rate here:
+ * Retained for defensive accounting and overridable without a deploy, same as
+ * every rate here:
  * `SPEND_SYNTHESIS_MODEL_TENTHS="anthropic/claude-sonnet-5=100,x/y=30"`.
  */
 const parseModelTenths = (raw, base) => {
@@ -384,7 +382,7 @@ function reservationCents(seatCount, maxToolCalls, maxRounds, toolSeatCount = 0,
  * $5/day ceiling can never bind on a model call. It is not dead code and must
  * not be deleted: search and page-fetch calls still cost real money, and the
  * per-operation pricing above is what keeps the ceiling protective the moment
- * any seat is swapped back to a paid model.
+ * any model-accounting policy changes.
  *
  * What binds instead is OpenRouter's free-model REQUEST cap, and three of its
  * properties make it a different kind of limit from the one above:

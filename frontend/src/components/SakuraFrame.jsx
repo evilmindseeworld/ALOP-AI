@@ -78,8 +78,7 @@ export const ComposerSkyline = memo(() => (
           <circle cx="99.4" cy="8.8" r="8.2" fill="#000" />
         </mask>
       </defs>
-
-      <circle className="composer-sun composer-sun-corona" cx="96" cy="11" r="9" />
+<circle className="composer-sun composer-sun-corona" cx="96" cy="11" r="9" />
       <circle className="composer-sun composer-sun-core" cx="96" cy="11" r="6.4" />
       <circle className="composer-moon" cx="96" cy="11" r="9" mask="url(#composer-moon-bite)" />
 

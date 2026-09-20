@@ -1,5 +1,8 @@
 import SidePanel from "../SidePanel";
 import { formatPrice } from "../../lib/format";
+import { COUNCIL, FREE_COUNT } from "../../constants/council";
+
+const COUNCIL_COMPANIES = [...new Set(COUNCIL.map(({ company }) => company))].join(", ");
 
 /**
  * The upgrade path.
@@ -82,7 +85,7 @@ export default function UpgradePanel({
         <div className="plan-col">
           <div className="plan-name">Free</div>
           <ul className="plan-feats">
-            <li>4 models in the council</li>
+            <li>{FREE_COUNT} models in the council</li>
             <li>Image generation</li>
             <li>Voice input</li>
             <li>Vision &amp; screen analysis</li>
@@ -95,7 +98,7 @@ export default function UpgradePanel({
           </div>
           <ul className="plan-feats">
             <li>
-              <strong>All 7 models</strong>, including DeepSeek, Nemotron and MiniMax
+              <strong>All {COUNCIL.length} models</strong>, including {COUNCIL_COMPANIES}
             </li>
             <li>Higher-quality vision model</li>
             <li>Everything in Free</li>

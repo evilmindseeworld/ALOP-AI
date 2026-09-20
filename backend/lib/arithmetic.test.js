@@ -128,6 +128,7 @@ test('the traps — arithmetic-shaped messages that are NOT sums', async (t) => 
     'the log of a negative': 'ln -1',
     'a bare constant': 'what is pi',
     'a constant with no operation': 'tau',
+    'a word problem belongs to the model': 'A box has 17 apples and 3 are removed. How many remain?',
   };
 
   /* `'a fractional exponent': '80^0.5'` and `'a square root request': 'square
@@ -278,6 +279,16 @@ test('punctuation and phrasing around a genuine sum', async (t) => {
   await t.test('a trailing equals sign', () => assert.equal(answer('80 * 2 ='), '80 × 2 = 160'));
   await t.test('a polite opener', () => assert.equal(answer('please calculate 80 squared'), '80² = 6400'));
   await t.test('percent spelled out', () => assert.equal(answer('what is 15 percent of 80'), '15% of 80 = 12'));
+  await t.test('constrained answer-format suffixes still use the zero-seat path', () => {
+    for (const input of [
+      'What is 17% of 340? Answer with the number.',
+      'What is 17% of 340? Give only result',
+      'What is 17% of 340? Respond with only number',
+      'What is 17% of 340? Number only.',
+    ]) {
+      assert.equal(answer(input), '17% of 340 = 57.8', input);
+    }
+  });
   await t.test('to the power of', () => assert.equal(answer('2 to the power of 10'), '2^10 = 1024'));
   await t.test('a trailing pleasantry still falls through', () =>
     assert.equal(tryArithmetic('80 squared for me please'), null));

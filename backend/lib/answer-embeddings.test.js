@@ -25,3 +25,17 @@ test('the one-time backfill is paced, resumable, null-only, and dry by default',
   assert.match(src, /if \(!apply\) continue/);
   assert.doesNotMatch(src, /console\.log\([^\n]*question_text/);
 });
+
+test('every direct OpenRouter embedding POST is behind the centralized free-only guard', () => {
+  const sources = [
+    fs.readFileSync(path.join(__dirname, '..', 'server.js'), 'utf8'),
+    fs.readFileSync(path.join(__dirname, '..', 'scripts', 'backfill-answer-cache-embeddings.mjs'), 'utf8'),
+  ];
+  const marker = "fetch('https://openrouter.ai/api/v1/embeddings'";
+  for (const source of sources) {
+    const post = source.indexOf(marker);
+    const guard = source.lastIndexOf('assertAllowedOpenRouterModel', post);
+    assert.ok(post > 0, 'the direct embedding POST is missing');
+    assert.ok(guard > 0 && post - guard < 400, 'a direct embedding POST is not free-only guarded');
+  }
+});

@@ -73,12 +73,19 @@ const READ_BY_DEPENDENCIES = new Set([
   "CLERK_SECRET_KEY", // @clerk/express, read by clerkMiddleware
 ]);
 
+/* Dynamic configuration names cannot be found by the source regex above. Keep
+ * the exception explicit rather than weakening the scan to match arbitrary
+ * bracket access, which would also accept user-controlled environment names. */
+const DYNAMIC_REFERENCES = new Set([
+  "ALOP_BENCHMARK_CACHE_BYPASS_SECRET", // lib/benchmark-cache-bypass.js
+]);
+
 test("no variable is documented that nothing reads", () => {
   // The other direction matters too: a stale entry sends someone to configure
   // something that does nothing, which is worse than silence because it looks
   // like a working feature.
   const orphans = [...documented]
-    .filter((k) => !referenced.has(k) && !READ_BY_DEPENDENCIES.has(k))
+    .filter((k) => !referenced.has(k) && !READ_BY_DEPENDENCIES.has(k) && !DYNAMIC_REFERENCES.has(k))
     .sort();
   assert.deepEqual(orphans, [], `in .env.example but read nowhere: ${orphans.join(", ")}`);
 });

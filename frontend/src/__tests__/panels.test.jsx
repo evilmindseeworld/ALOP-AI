@@ -123,8 +123,8 @@ describe("UpgradePanel while the prices are still coming", () => {
 
   it("shows the plan comparison rather than a loading message", () => {
     waiting();
-    expect(screen.getByText(/All 7 models/)).toBeInTheDocument();
-    expect(screen.getByText("4 models in the council")).toBeInTheDocument();
+    expect(screen.getByText(/All 5 models/)).toBeInTheDocument();
+    expect(screen.getByText("2 models in the council")).toBeInTheDocument();
     expect(screen.queryByText(/Loading plans/)).not.toBeInTheDocument();
   });
 

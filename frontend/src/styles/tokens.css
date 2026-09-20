@@ -210,8 +210,8 @@
    *
    * MEASURED: JetBrains Mono is 30.7 KB and it was being fetched on the
    * SIGN-IN page — the one page a signed-out visitor sees — to render
-   * seven strings: the council temperatures 0.2 through 0.8. Eleven
-   * glyphs, one webfont, on the public surface. Its nine other consumers
+   * five strings: the council temperatures from 0.2 through 0.7. Its nine
+   * other consumers
    * (code blocks, the palette, the composer's counter) are all behind
    * authentication, where the font is genuinely earning its bytes.
    *

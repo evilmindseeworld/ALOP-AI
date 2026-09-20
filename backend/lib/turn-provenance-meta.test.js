@@ -88,3 +88,65 @@ test('partial, aborted, and fallback outcomes never become assembled', () => {
   assert.equal(aborted.provenance.completion.assembled, false);
   assert.equal(fallback.provenance.completion.assembled, false);
 });
+
+test('a complete answer with intentionally skipped synthesis is assembled', () => {
+  const result = buildTurnProvenanceMeta({
+    requestState: 'complete',
+    answerProduced: true,
+    route: 'solo',
+    stageKeys: ['council'],
+    council: { used: true, seatCount: 1, answered: 1, completed: true, partial: false },
+    synthesis: { skipped: true, completed: false },
+  });
+  assert.equal(result.provenance.completion.assembled, true);
+});
+
+test('a complete multi-seat council can skip synthesis for a resolved refusal', () => {
+  const result = buildTurnProvenanceMeta({
+    requestState: 'complete',
+    answerProduced: true,
+    route: 'council',
+    stageKeys: ['context', 'council'],
+    council: { used: true, seatCount: 3, answered: 3, completed: true, partial: false },
+    synthesis: { skipped: true, completed: false, failed: false },
+  });
+  assert.equal(result.provenance.completion.assembled, true);
+  assert.equal(result.provenance.synthesis.started, false);
+  assert.equal(result.provenance.synthesis.skipped, true);
+  assert.equal(result.provenance.failure.occurred, false);
+});
+
+test('an explicit incomplete quality result cannot become an assembled answer', () => {
+  const result = buildTurnProvenanceMeta({
+    requestState: 'complete',
+    answerProduced: true,
+    route: 'solo',
+    stageKeys: ['council'],
+    council: { used: true, seatCount: 1, answered: 1, completed: true },
+    synthesis: { skipped: true, completed: false },
+    completion: { qualified: 'incomplete' },
+  });
+  assert.equal(result.provenance.completion.assembled, false);
+  assert.equal(result.provenance.completion.qualified, 'incomplete');
+});
+
+test('a substituted buffered answer uses the existing degraded provenance shape', () => {
+  const result = buildTurnProvenanceMeta({
+    requestState: 'failed',
+    route: 'degraded',
+    answerProduced: true,
+    stageKeys: ['council', 'synthesis'],
+    council: { used: true, seatCount: 3, answered: 3, completed: true },
+    synthesis: { started: true, completed: false, skipped: true, failed: true, fallback: true },
+    completion: { qualified: 'incomplete' },
+    failure: { occurred: true, kind: 'output_contract_substitution' },
+  });
+
+  assert.equal(result.provenance.route, 'degraded');
+  assert.equal(result.provenance.synthesis.completed, false);
+  assert.equal(result.provenance.synthesis.failed, true);
+  assert.equal(result.provenance.synthesis.fallback, true);
+  assert.equal(result.provenance.completion.assembled, false);
+  assert.equal(result.provenance.completion.qualified, 'incomplete');
+  assert.equal(result.provenance.failure.kind, 'output_contract_substitution');
+});

@@ -1,5 +1,7 @@
 'use strict';
 
+const { assessAnswer } = require('./answer-contract');
+
 /**
  * WHAT A TURN ANSWERS WITH WHEN THE SYNTHESISER NEVER WROTE A WORD.
  *
@@ -98,6 +100,64 @@ const looksInternal = (text) => INTERNAL_FRAMING.some((re) => re.test(text));
 const SAFE_TEXT_SOURCES = new Set(['content']);
 
 /**
+ * A refusal is a complete answer to a disallowed request, but only when it is
+ * still a refusal rather than a refusal followed by a substantive payload.
+ * Keep this deliberately narrow: the lifecycle may skip synthesis only for a
+ * short, refusal-only sentence that every completed seat independently gave.
+ */
+const REFUSAL_ONLY_RE = /^(?:(?:i am sorry|i'm sorry|sorry)[,;:]?\s+)?(?:but\s+)?i\s+(?:can't|cannot|can not|won't|will not|am unable to|am not able to)\s+(?:comply|assist|help|provide|share|reveal|fulfill|answer|do)(?:\s+(?:with|about))?\s+(?:that|this|the|your)(?:\s+request)?[.!]?$/i;
+
+const normaliseRefusalText = (text) => String(text ?? '')
+  .normalize('NFKC')
+  .replace(/[’‘]/gu, "'")
+  .replace(/\s+/gu, ' ')
+  .trim();
+
+/** @param {string} text @returns {boolean} */
+const isSafeRefusalText = (text) => {
+  const normalised = normaliseRefusalText(text);
+  return normalised.length <= 180 && REFUSAL_ONLY_RE.test(normalised);
+};
+
+/**
+ * Resolve a unanimous refusal before a synthesis request is made.
+ *
+ * The caller supplies the configured roster size so quorum is not mistaken for
+ * completion. `blockedByEvidence` prevents a refusal from bypassing research
+ * or a truncated tool round, and `isCandidate` lets the route retain its
+ * stronger output-contract checks.
+ *
+ * @param {Array<object>} drafts
+ * @param {object} opts
+ * @param {number} [opts.expectedSeats]
+ * @param {boolean} [opts.blockedByEvidence]
+ * @param {(draft: object) => boolean} [opts.isCandidate]
+ * @returns {string|null}
+ */
+function resolveSafeRefusal(drafts, {
+  expectedSeats,
+  blockedByEvidence = false,
+  isCandidate = isSafeDraft,
+} = {}) {
+  if (!Array.isArray(drafts) || drafts.length === 0 || blockedByEvidence) return null;
+  if (Number.isInteger(expectedSeats) && drafts.length !== expectedSeats) return null;
+
+  const candidates = [];
+  for (const draft of drafts) {
+    let accepted = false;
+    try { accepted = isCandidate(draft); } catch { accepted = false; }
+    if (!accepted) return null;
+    const original = String(draft.content ?? '').trim();
+    const normalised = normaliseRefusalText(original);
+    if (!isSafeRefusalText(normalised)) return null;
+    candidates.push({ original, normalised });
+  }
+
+  if (new Set(candidates.map(({ normalised }) => normalised)).size !== 1) return null;
+  return candidates[0].original;
+}
+
+/**
  * May this council draft be shown to a reader as it stands?
  *
  * Shared with the one-seat solo branch in `server.js`, which streams a draft
@@ -105,17 +165,18 @@ const SAFE_TEXT_SOURCES = new Set(['content']);
  * would drift, and the drift would be invisible until someone read a model's
  * inner monologue.
  *
- * @param {{content?: string, textSource?: string}} draft
+ * @param {{content?: string, textSource?: string, finishReason?: string}} draft
  */
 function isSafeDraft(draft) {
   if (!draft || typeof draft !== 'object') return false;
   const text = String(draft.content ?? '').trim();
   if (!text) return false;
   if (!SAFE_TEXT_SOURCES.has(draft.textSource)) return false;
+  if (!assessAnswer({ answer: text, finishReason: draft.finishReason }).ok) return false;
   return !looksInternal(text);
 }
 
-function degradeAnswer({ aborted = false, wroteChars = 0, drafts = [] } = {}) {
+function degradeAnswer({ aborted = false, wroteChars = 0, drafts = [], draftGuard = isSafeDraft } = {}) {
   /* A cancelled turn is not a failed one. Writing into a socket the user has
    * left reports a completed turn to the ledger and reaches nobody. */
   if (aborted) return null;
@@ -128,10 +189,21 @@ function degradeAnswer({ aborted = false, wroteChars = 0, drafts = [] } = {}) {
    * one sourced from reasoning is a scratchpad — each is skipped rather than
    * repaired, and running out of drafts lands on the error frame, which is
    * where this turn was going anyway. */
+  const guard = typeof draftGuard === 'function' ? draftGuard : isSafeDraft;
   for (const draft of Array.isArray(drafts) ? drafts : []) {
-    if (isSafeDraft(draft)) return String(draft.content).trim();
+    try {
+      if (guard(draft)) return String(draft.content).trim();
+    } catch {
+      /* A guard is safety policy; a broken policy must refuse the draft. */
+    }
   }
   return null;
 }
 
-module.exports = { degradeAnswer, looksInternal, isSafeDraft };
+module.exports = {
+  degradeAnswer,
+  looksInternal,
+  isSafeDraft,
+  isSafeRefusalText,
+  resolveSafeRefusal,
+};

@@ -14,7 +14,6 @@ const wantsSignUp = () => {
   return p === "/sign-up" || p.startsWith("/sign-up/");
 };
 
-// Let slow loads resolve before showing the retry screen.
 const CLERK_LOAD_TIMEOUT_MS = 10_000;
 
 /** Signed-out sign-in and sign-up entry screen. */
@@ -70,7 +69,7 @@ export default function SignInPage() {
 
         <div className="signin-grid">
           <section className="signin-intro">
-            <h1 className="signin-title">
+<h1 className="signin-title">
               Ask once. Several models answer.
             </h1>
 
@@ -121,13 +120,13 @@ export default function SignInPage() {
             <h2 id="council-proof-title" className="sr-only">
               How the council is composed
             </h2>
-            <p id="council-scale" className="sr-only">
-              Seven seats, ordered from the most literal to the most lateral.
+<p id="council-scale" className="sr-only">
+              Five seats, ordered from the most literal to the most lateral.
               Each row begins with that seat&rsquo;s sampling temperature, from
-              0.2 to 0.8.
+              0.2 to 0.7.
             </p>
 
-            <ol className="council-ladder" aria-describedby="council-scale">
+<ol className="council-ladder" aria-describedby="council-scale">
               {COUNCIL.map((m) => (
                 <li key={m.model} className={`council-row ${m.free ? "" : "is-pro"}`}>
                   <span className="council-temp">{m.temperature.toFixed(1)}</span>
@@ -140,7 +139,7 @@ export default function SignInPage() {
               ))}
             </ol>
 
-            <p className="council-resolve">
+<p className="council-resolve">
               One reply, reconciled.
               <Seal className="sakura-seal signin-seal" id="signin-seal" />
             </p>

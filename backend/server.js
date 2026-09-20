@@ -43,12 +43,28 @@ const { timeoutSignal, childAbortController } = require('./lib/abort');
 const { describeImage, visionModels } = require('./lib/vision');
 const { generateImage } = require('./lib/image-gen');
 const { deadlineSignal } = require('./lib/stream-deadline');
+const { canRetryStream } = require('./lib/stream-retry-policy');
 const { createTurnTelemetry } = require('./lib/turn-telemetry');
+const { buildTurnAccountingMeta, unknownUsage } = require('./lib/turn-accounting-meta');
+const {
+  benchmarkCacheBypass,
+  benchmarkCacheValidation,
+  benchmarkZeroPricePreflight,
+} = require('./lib/benchmark-cache-bypass');
+const { preflightZeroPriceCatalog } = require('./lib/openrouter-zero-price-preflight');
 const { rescueReasoning } = require('./lib/reasoning-rescue');
 const { createTurnContext } = require('./lib/turn-context');
 const { createTurnLedger } = require('./lib/turn-ledger');
 const { buildTurnReliabilityMeta } = require('./lib/turn-reliability-meta');
 const { buildTurnProvenanceMeta, safeSourceRecords } = require('./lib/turn-provenance-meta');
+const { classifyFailureKind } = require('./lib/failure-kind');
+const { COMPLETENESS_CONTRACT, assessAnswer, buildAnswerContract } = require('./lib/answer-contract');
+const {
+  buildOutputContract,
+  assessOutputObligations,
+  selectObligationPreservingDraft,
+  outputObligationPrompt,
+} = require('./lib/answer-obligations');
 const {
   fingerprint: cacheFingerprint, retrievalMode, sourceFreshness, short: cacheIdentityShort,
 } = require('./lib/cache-identity');
@@ -59,6 +75,7 @@ const { chooseHead } = require('./lib/head-selection');
 const { runProgressiveCouncil } = require('./lib/progressive-council');
 const { createEvidenceLedger } = require('./lib/evidence-ledger');
 const { resolveConflicts, verifyAnswer } = require('./lib/contradiction');
+const { verifyAnswerForDisplay } = require('./lib/answer-evidence');
 const { classifyFact, ttlFor: memoryTtlFor, conflictsWith, recallPlan } = require('./lib/memory-kinds');
 const { fuse, lexicalQuery } = require('./lib/hybrid-retrieval');
 const { pendingSpans, selectSummaries, spanTurns } = require('./lib/episodic-summary');
@@ -86,6 +103,7 @@ const {
   configuredSynthesisModel,
   chooseSynthesis,
 } = require('./lib/synthesis-policy');
+const { cacheValidationBranch } = require('./lib/cache-validation');
 /* Required here rather than beside the ladder constants below, because the tool
  * seat resolves its effort from `effortFor` and is declared first. */
 const { parseLadder, fallbacksAfter, asStreamFallbacks, effortFor } = require('./lib/model-ladder');
@@ -167,7 +185,7 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 // step with nothing to reconcile. The determinism that matters — extracting
 // facts from search results — is unaffected; those paths still run at 0.0.
 // ---------------------------------------------------------------------------
-// OPENROUTER FREE MODELS, AND WHY THESE SEVEN. Migrated 2026-08-12.
+// OPENROUTER FREE MODELS, AND WHY THESE FIVE CURRENT COUNCIL SEATS. Migrated 2026-08-12.
 //
 // Every id ends in `:free` and that suffix is part of the id — drop it and the
 // call 404s. `free: true` keeps its existing meaning: the seat a FREE-TIER USER
@@ -285,13 +303,6 @@ const COUNCIL = [
   // tokens and is a floor; this one was measured at the real ceiling, so it is
   // the only value here that is not, and it still ranks the same.
   { model: 'cohere/north-mini-code:free',           temperature: 0.3, free: true,  medianMs: 600 },
-  // 429 on the paced sample and healthy on an earlier one at 2.5s. Kept rather
-  // than dropped: a 429 here is contention, not absence, and this is the only
-  // OpenAI-lineage seat on the board. It is no longer RETRIED, though — that
-  // sentence used to say lib/openrouter.js retries it, and as of 2026-08-19 a
-  // council seat gets one request and the council's own redundancy is the
-  // retry. See the comment at the seat call in lib/council-run.js.
-  { model: 'openai/gpt-oss-20b:free',               temperature: 0.4, free: false, medianMs: 2500 },
   { model: 'poolside/laguna-s-2.1:free',            temperature: 0.5, free: false, medianMs: 8900 },
   // 31B dense, and it has NEVER ONCE ANSWERED A PACED CALL. Two provider 429s
   // on 2026-08-12, nine more on 2026-08-19, plus a real council turn that spent
@@ -317,7 +328,6 @@ const COUNCIL = [
   // still pickable, so this seat stays eligible without being preferred.
   { model: 'google/gemma-4-31b-it:free',            temperature: 0.6, free: false },
   { model: 'google/gemma-4-26b-a4b-it:free',        temperature: 0.7, free: true,  medianMs: 2400 },
-  { model: 'nvidia/nemotron-3-nano-30b-a3b:free',   temperature: 0.8, free: true,  medianMs: 2100 },
 ];
 
 /**
@@ -326,12 +336,13 @@ const COUNCIL = [
  *
  * It is NOT in the COUNCIL array above, and that is deliberate. Every seat in
  * that array is a `:free` id billed at $0 and eligible for narrowing by
- * temperature band; this one is METERED, is added by policy rather than by the
- * ladder, and must never be picked as a substitute for a free seat. It joins a
- * turn through `withToolSeat` and only when the turn earns it — see the policy
- * comment in lib/router.js.
+ * temperature band; this one is the native-tools seat, added by policy rather
+ * than by the ladder, and only when the turn earns it — see the policy comment
+ * in lib/router.js. FREE_ONLY applies to it at the shared request boundary too.
  *
- * `openai/gpt-5.6-luna` is the default because it is what was measured: the
+ * `openai/gpt-5.6-luna` entry below is historical measurement data, not a
+ * permitted default. The current default is free; the old Luna path was
+ * measured because the
  * catalogue reports `tools`, `tool_choice` and `reasoning_effort` among its
  * supported parameters, and a live round trip on 2026-08-14 confirmed all
  * three — it emitted `tool_calls` with `finish_reason: "tool_calls"`, accepted
@@ -345,10 +356,11 @@ const COUNCIL = [
  *
  * THAT PARAGRAPH WAS ALREADY HERE AND THE DEFAULT UNDERNEATH IT WAS METERED
  * ANYWAY, which is the whole failure: the reasoning was written down and then
- * not applied. The owner's instruction, 2026-08-16, is that this product runs
- * on OpenRouter's free models and that the subscriptions belong to the people
- * building it. So the default is the strongest free rung the catalogue says can
- * call tools, and paying is an explicit COUNCIL_TOOL_SEAT_MODEL.
+ * not applied. The owner's instruction is that this product runs on OpenRouter's
+ * free models and that subscriptions belong to the people building it. The
+ * default is now the strongest free rung the catalogue says can call tools, and
+ * any non-free override is refused before inference rather than treated as a
+ * paid opt-in.
  *
  * The effort follows the MODEL rather than being pinned high: `high` was
  * written for Luna, and sending an unestablished reasoning parameter to a free
@@ -359,12 +371,9 @@ const TOOL_SEAT_MODEL = (process.env.COUNCIL_TOOL_SEAT_MODEL || 'nvidia/nemotron
 const TOOL_SEAT_EFFORT = (process.env.COUNCIL_TOOL_SEAT_EFFORT || '').trim()
   || effortFor(TOOL_SEAT_MODEL)
   || '';
-/* PRO ONLY BY DEFAULT, and this is a spend boundary rather than a product one.
- * Every other seat costs $0, so `rosterForPlan` has never had money riding on
- * it. Handing a metered model to an unbounded free tier is how a $20/month
- * ceiling becomes a surprise, and the per-user spend ceiling is the only thing
- * that would catch it — after the fact. Set COUNCIL_TOOL_SEAT_FREE_PLAN=1 to
- * extend it, deliberately, once the numbers are known. */
+/* PRO ONLY BY DEFAULT. This is a product entitlement, not a billing override:
+ * every OpenRouter model still has to pass FREE_ONLY. Set
+ * COUNCIL_TOOL_SEAT_FREE_PLAN=1 to extend the native-tools feature deliberately. */
 const TOOL_SEAT_FREE_PLAN = /^(1|true)$/i.test(process.env.COUNCIL_TOOL_SEAT_FREE_PLAN || '');
 const TOOL_SEAT_ENABLED = Boolean(TOOL_SEAT_MODEL) && !/^(off|none|0|false)$/i.test(TOOL_SEAT_MODEL);
 const TOOL_SEAT = TOOL_SEAT_ENABLED
@@ -373,9 +382,9 @@ const TOOL_SEAT = TOOL_SEAT_ENABLED
       /* Low, like the 120B seat above: this member's job is to hold to what the
        * evidence literally says. The lateral seats are already on the board. */
       temperature: 0.2,
-      /* `free` means "included in the FREE PLAN", not "costs nothing" — see
-       * rosterForPlan. This seat is the first place those two readings come
-       * apart, and reading it the other way is a metered model on a free tier. */
+      /* `free` means "included in the FREE PLAN" — see rosterForPlan. The
+       * model's actual OpenRouter billing status is enforced separately by
+       * FREE_ONLY at request time. */
       free: TOOL_SEAT_FREE_PLAN,
       nativeTools: true,
       effort: TOOL_SEAT_EFFORT,
@@ -486,6 +495,18 @@ const SYNTHESIS_MODEL_CANDIDATES = [
   ...new Set([SYNTHESIS_MODEL, PRIMARY_MODEL, SMART_MODEL, ...HEAD_FALLBACKS.map((rung) => rung.model)]),
 ];
 
+const activeOpenRouterRouteIds = () => [...new Set([
+  ...COUNCIL.map((seat) => seat.model),
+  TOOL_SEAT?.model,
+  PRIMARY_MODEL,
+  FAST_MODEL,
+  SYNTHESIS_MODEL,
+  SMART_MODEL,
+  ...HEAD_CANDIDATES,
+  ...SYNTHESIS_MODEL_CANDIDATES,
+].filter((model) => typeof model === 'string' && model.trim()
+  && !/^(off|none|0|false)$/i.test(model.trim())))];
+
 /**
  * THE SAME LADDER FOR THE NON-STREAMING CALL, which is what the native tool
  * seat makes. `streamModel` recovers the answer the user is watching; this
@@ -517,6 +538,7 @@ const callModelWithLadder = async (model, call, { label = 'model', signal = null
  * process.exit(1) at import time on a missing env var, so nothing defined here
  * is reachable from a test. Only the socket and the telemetry stay here. */
 const { callModel: orCallModel, parseOpenRouterSseLine, fetchOpenRouterStream } = require('./lib/openrouter');
+const { assertAllowedOpenRouterModel } = require('./lib/openrouter-policy');
 
 /**
  * THE ACCOUNT-WIDE DAILY CAP, LATCHED.
@@ -721,6 +743,13 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     firstContentAt: null,
     endedAt: null,
     completed: false,
+    finishReason: null,
+  };
+  meta.usageReported = false;
+  const reportMissingUsage = () => {
+    if (meta.usageReported) return;
+    meta.usageReported = true;
+    try { answerOptions.onUsage?.(unknownUsage()); } catch { /* telemetry must never fail a stream */ }
   };
   const noteFirstContent = () => {
     if (firstContentAt !== null) return;
@@ -754,10 +783,40 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
   /* Handed back to the caller BY REFERENCE, so that a throw halfway through
    * a stream can still be asked how much of the answer reached the socket.
    * `streamModel` needs that to decide whether a retry is safe, and a thrown
-   * error carries no return value to put it in. */
-  meta.emitted = emitted;
+   * error carries no return value to put it in. A guarded answer is assembled
+   * in `emitted` but remains retryable until its final shape and evidence have
+   * passed; `delivered` is the socket truth. */
+  const delivered = [];
+  const deferOutput = Boolean(answerOptions?.deferOutput);
+  const commitChunk = (text) => {
+    if (!text || res.writableEnded) return;
+    if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
+    try { answerOptions.onChunk?.(text); } catch { /* a recorder must never fail a stream */ }
+    res.write(`data: ${JSON.stringify({ type: 'chunk', text })}\n\n`);
+    delivered.push(text);
+  };
+  const appendChunk = (text) => {
+    if (!text) return;
+    emitted.push(text);
+    if (!deferOutput) commitChunk(text);
+  };
+  meta.emitted = delivered;
+  const readChunk = async () => {
+    try {
+      return await reader.read();
+    } catch (error) {
+      /* Some fetch implementations surface an abort as a generic
+       * `AbortError`, even when the composed signal carries the typed turn
+       * deadline. Preserve that cause so the fallback ladder cannot mistake a
+       * spent turn budget for a transient provider failure. */
+      if (streamSignal.aborted && streamSignal.reason?.code === 'OPENROUTER_DEADLINE') {
+        throw streamSignal.reason;
+      }
+      throw error;
+    }
+  };
   while (true) {
-    const { done, value } = await reader.read();
+    const { done, value } = await readChunk();
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
     const lines = buffer.split('\n');
@@ -778,6 +837,7 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
        * on its own frame after finish_reason, so this sits above the text and
        * done branches rather than inside either. */
       if (frame.usage) {
+        meta.usageReported = true;
         try { answerOptions.onUsage?.(frame.usage); } catch { /* telemetry must never fail a stream */ }
       }
       if (frame.reasoning) reasoningParts.push(frame.reasoning);
@@ -795,15 +855,15 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
          * at openStream would have made this feature look like a 15-second
          * improvement while the user waited exactly as long. */
         noteFirstContent();
-        if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
-        emitted.push(frame.text);
-        try { answerOptions.onChunk?.(frame.text); } catch { /* a recorder must never fail a stream */ }
-        res.write(`data: ${JSON.stringify({ type: 'chunk', text: frame.text })}\n\n`);
+        appendChunk(frame.text);
       }
       /* Completion arrives TWICE in this protocol — a delta carrying
        * finish_reason, then the `[DONE]` terminator — so the sentinel is
        * written once and only once. The client treats a second [DONE] as a
        * second turn ending. */
+      if (typeof frame.finishReason === 'string' && frame.finishReason) {
+        meta.stream.finishReason = frame.finishReason;
+      }
       if (frame.done && !completed) { completed = true; meta.stream.completed = true; }
     }
   }
@@ -813,16 +873,17 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
    * store the half of it that arrived and serve that to everybody for the next
    * six hours. Returning after the throw is unreachable and that is the point:
    * there is no path by which an incomplete answer becomes a cached one. */
+  reportMissingUsage();
   if (!completed) throw new Error('Stream ended before provider completion');
   if (held.length) {
     const sanitised = sanitizeAnswerText(held.join(''), answerOptions);
-    if (sanitised.rejected) throw new Error('Model returned protocol instead of an answer');
+    if (sanitised.rejected) {
+      reportMissingUsage();
+      throw new Error('Model returned protocol instead of an answer');
+    }
     if (sanitised.text) {
       noteFirstContent();
-      if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
-      emitted.push(sanitised.text);
-      try { answerOptions.onChunk?.(sanitised.text); } catch { /* never fail a stream */ }
-      res.write(`data: ${JSON.stringify({ type: 'chunk', text: sanitised.text })}\n\n`);
+      appendChunk(sanitised.text);
     }
   }
   /* THE RESCUE, AND IT FIRES ONCE, AT THE END, OR NOT AT ALL.
@@ -843,19 +904,51 @@ const streamOnce = async (res, modelName, messages, temperature = 0.0, signal, m
     meta.textSource = 'reasoning';
     try { answerOptions.onTextSource?.('reasoning'); } catch { /* telemetry must never fail a stream */ }
     noteFirstContent();
-    if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
-    emitted.push(rescued.text);
-    try { answerOptions.onChunk?.(rescued.text); } catch { /* never fail a stream */ }
-    res.write(`data: ${JSON.stringify({ type: 'chunk', text: rescued.text })}\n\n`);
+    appendChunk(rescued.text);
   }
-  if (!emitted.length) throw new Error('Model returned no usable answer');
+  if (!emitted.length) {
+    reportMissingUsage();
+    throw new Error('Model returned no usable answer');
+  }
+  const answerGuard = typeof answerOptions?.answerGuard === 'function'
+    ? answerOptions.answerGuard
+    : null;
+  const initialAnswer = emitted.join('');
+  const initialVerdict = answerGuard ? answerGuard(initialAnswer) : true;
+  const initialOk = initialVerdict === true || initialVerdict?.ok === true;
+  let substitution = null;
+  if (!initialOk) {
+    const fallback = String(answerOptions?.outputFallback || '').trim();
+    const fallbackVerdict = fallback && answerGuard ? answerGuard(fallback) : Boolean(fallback);
+    const fallbackOk = fallbackVerdict === true || fallbackVerdict?.ok === true;
+    if (!deferOutput || !fallbackOk) {
+      const error = new Error('Model answer did not satisfy the output or evidence contract');
+      error.code = 'ANSWER_OUTPUT_CONTRACT';
+      reportMissingUsage();
+      throw error;
+    }
+    emitted.length = 0;
+    appendChunk(fallback);
+    /* The fallback text is not the stream that just completed. Keep this fact
+     * attached to the completion so callers cannot pair the replacement with
+     * the discarded model's finish reason or clean provenance. */
+    substitution = { used: true, reason: 'answer_contract' };
+  }
   const citationSuffix = requiredCitationSuffix(emitted.join(''), answerOptions.requiredSourceUrls);
   if (citationSuffix && !res.writableEnded) {
-    emitted.push(citationSuffix);
-    try { answerOptions.onChunk?.(citationSuffix); } catch { /* never fail a stream */ }
-    res.write(`data: ${JSON.stringify({ type: 'chunk', text: citationSuffix })}\n\n`);
+    appendChunk(citationSuffix);
   }
-  try { answerOptions.onComplete?.({ answer: emitted.join('') }); } catch { /* provenance must never fail a turn */ }
+  if (deferOutput && emitted.length) {
+    commitChunk(emitted.join(''));
+  }
+  reportMissingUsage();
+  try {
+    answerOptions.onComplete?.({
+      answer: emitted.join(''),
+      finishReason: substitution ? null : meta.stream.finishReason,
+      substitution,
+    });
+  } catch { /* provenance must never fail a turn */ }
   if (!res.writableEnded) res.write('data: [DONE]\n\n');
   meta.stream.endedAt = Date.now();
   return emitted.join('');
@@ -960,6 +1053,10 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
     try { streamMeta?.releaseDeadline?.(); } catch { /* cleanup must never fail a turn */ }
     const st = streamMeta?.stream;
     if (!st) return;
+    if (!streamMeta.usageReported) {
+      streamMeta.usageReported = true;
+      try { answerOptions.onUsage?.(unknownUsage()); } catch { /* telemetry must never fail a stream */ }
+    }
     /* THREE OUTCOMES, NOT TWO. The turn deadline aborts the BODY through the
      * composed signal, so the turn signal is untouched and the error arrives
      * carrying `OPENROUTER_DEADLINE` — which the old test (`signal.aborted ||
@@ -994,7 +1091,8 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
     recordStream(modelName, headStartedAt, err);
     reportStream(meta, modelName, err);
     const wrote = (meta.emitted || []).join('').length;
-    if (!fallbackModel || fallbackModel === modelName || signal?.aborted || wrote > 0) throw err;
+    if (!fallbackModel || signal?.aborted || wrote > 0
+      || !canRetryStream({ fallbackModel, error: err, signal, wroteChars: wrote })) throw err;
     if (err.status === 429 && err.limitSource === 'openrouter_free_tier_per_minute') {
       const resetAt = Number(err.resetAt);
       /* No reset means there is no evidence for a safe wait. A reset at or
@@ -1063,7 +1161,12 @@ const streamModel = async (res, modelName, messages, temperature = 0.0, signal, 
         /* The same two refusals as above, re-checked per attempt: a recovery
          * that wrote half an answer cannot be followed by another one, and a
          * cancelled turn is not a failed one. */
-        if (signal?.aborted || (attemptMeta.emitted || []).join('').length > 0) throw fallbackErr;
+        if (!canRetryStream({
+          fallbackModel: true,
+          error: fallbackErr,
+          signal,
+          wroteChars: (attemptMeta.emitted || []).join('').length,
+        })) throw fallbackErr;
       }
     }
     throw lastError;
@@ -1150,7 +1253,8 @@ const SOURCE_TRUTH_RULES = `\n\nSOURCE AND FACT DISCIPLINE:\n- For product speci
 // is reachable from a test file. It is the most intricate concurrency in the
 // product and it had no coverage at all until it moved.
 const { runCouncil, isUsableAnswer } = require('./lib/council-run');
-const { degradeAnswer, isSafeDraft } = require('./lib/synthesis-degrade');
+const { degradeAnswer, isSafeDraft, resolveSafeRefusal } = require('./lib/synthesis-degrade');
+const { TRADEOFF_GUIDANCE } = require('./lib/synthesis-guidance');
 
 /**
  * `members` is a list of { model, temperature } seats. Each speaks at its own
@@ -1226,7 +1330,7 @@ const { normaliseForRouting } = require('./lib/spelling');
 // Only where it helps: a query about tax law or a person is not improved by a
 // country appended to it, so the model is told to use it when the answer is
 // local and to leave it alone otherwise.
-const planTurn = async (text, convSummary, region, signal, onAttempt) => {
+const planTurn = async (text, convSummary, region, signal, onAttempt, onUsage) => {
   const userContent = convSummary ? `Context: ${convSummary}\n\nQuestion: ${text}` : text;
   const locale = region
     ? ` The user appears to be in ${region.place}. If — and only if — the answer depends on where they are (prices, availability, retailers, local services, regulations), include that country in the query. Otherwise ignore it.`
@@ -1312,7 +1416,11 @@ openai ceo ${new Date().getUTCFullYear()}${locale}`;
   // 120 tokens rather than 50: two queries plus a stray word of preamble did
   // not fit in 50, and the ceiling truncated the SECOND query mid-word, which
   // parses as a valid short query and searches for half a phrase.
-  const response = await callModel(FAST_MODEL, [{ role: 'system', content: sys }, { role: 'user', content: userContent }], 0.0, 4000, 120, signal, onAttempt ? { onAttempt } : undefined);
+  const response = await callModel(FAST_MODEL, [{ role: 'system', content: sys }, { role: 'user', content: userContent }], 0.0, 4000, 120, signal, {
+    maxRetries: 0,
+    ...(onAttempt ? { onAttempt } : {}),
+    ...(onUsage ? { onUsage } : {}),
+  });
   /* A ROUTER THAT NEVER ANSWERED IS NOT A ROUTER THAT SAID NO. `callModel`
    * returns '' for a deadline, an abort and an empty reply alike, and that
    * parsed to the same object a deliberate NO produces — so a third of routed
@@ -2652,10 +2760,12 @@ const embedAnswerText = async (text) => {
   if (!OPENROUTER_API_KEY || !text) return null;
   const timed = timeoutSignal(undefined, 30000);
   try {
+    const requestBody = answerEmbeddingRequest(text);
+    assertAllowedOpenRouterModel(requestBody.model, { source: 'answer-cache-embedding' });
     const res = await fetch('https://openrouter.ai/api/v1/embeddings', {
       method: 'POST',
       headers: { Authorization: `Bearer ${OPENROUTER_API_KEY}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(answerEmbeddingRequest(text)),
+      body: JSON.stringify(requestBody),
       signal: timed.signal,
     });
     if (!res.ok) { console.error(`[ANSWERS] EMBEDDING ERROR status=${res.status}`); return null; }
@@ -3190,7 +3300,7 @@ const createLimiter = (windowMs, max, msg, name) => {
  *
  * Sol found it by reading the mount order rather than the function, 2026-08-12.
  * The consequence is economic and it is the one that matters on this product: a
- * council turn is seven paid model calls plus search plus a possible fallback
+ * council turn is seven model calls plus search plus a possible fallback
  * whip, so one valid account rotating source addresses collected a fresh
  * 30-per-minute allowance per address, and the owner collected the bill.
  *
@@ -3396,7 +3506,7 @@ const CACHE_IDENTITY = cacheFingerprint({
   /* ROUTING_POLICY is here because the cache lookup sits ABOVE the router, so
    * a routing change is invisible to every question already in the cache — see
    * its header in lib/router.js, and the evaluation re-run that measured it. */
-  policies: [SOURCE_TRUTH_RULES, LENGTH_RULE.simple, LENGTH_RULE.moderate, LENGTH_RULE.complex, ...ROUTING_POLICY],
+  policies: [SOURCE_TRUTH_RULES, TRADEOFF_GUIDANCE, LENGTH_RULE.simple, LENGTH_RULE.moderate, LENGTH_RULE.complex, ...ROUTING_POLICY],
   models: [PRIMARY_MODEL, SYNTHESIS_MODEL, SMART_MODEL],
   /* The registry is built per turn from whichever provider keys are present, so
    * this is the WIDEST schema set this deployment can offer. A turn that ran
@@ -3796,9 +3906,9 @@ const turnLedger = createTurnLedger({ supabase });
  *
  * WHY BOTH EXIST. The cost ledger meters MONEY, per USER. Every model on the
  * roster is a `:free` id costing exactly $0, so that ceiling can no longer bind
- * on a model call — it now guards search and page fetches, and it stays exactly
- * as it was so that it becomes protective again the moment a seat is swapped to
- * a paid model. What binds today is OpenRouter's free-model REQUEST cap: 50 per
+ * on a model call — it now guards search and page fetches, and it remains as
+ * defensive accounting under the permanent FREE_ONLY policy. Paid/unknown model
+ * swaps are refused before inference. What binds today is OpenRouter's free-model REQUEST cap: 50 per
  * UTC day on a zero-credit account, 1000 after $10 of credits. Two ceilings,
  * counting disjoint things.
  *
@@ -3930,6 +4040,21 @@ app.get('/health', (req, res) => res.json({
   limitsMultiplied: instanceCensus.unsafe,
   rateLimitStore: USE_PG_RATE_LIMIT ? 'postgres' : 'memory',
 }));
+
+/* Metadata-only evaluator preflight. It is authenticated and separately
+ * secret-gated, returns no provider credentials, and must pass before a live
+ * quality run is allowed to send a model request. */
+app.get('/api/benchmark/zero-price-preflight', requireAuth, checkSuspended, async (req, res) => {
+  const authorization = benchmarkZeroPricePreflight({ headers: req.headers });
+  if (!authorization.enabled) return fail(res, 403, 'Benchmark preflight is not authorised.', 'benchmark_preflight_unauthorized');
+  const result = await preflightZeroPriceCatalog({
+    routeIds: activeOpenRouterRouteIds(),
+    host: OPENROUTER_HOST,
+    apiKey: OPENROUTER_API_KEY,
+  });
+  res.set('Cache-Control', 'no-store');
+  return res.status(result.pass ? 200 : 503).json(result);
+});
 
 // ===== COUNCIL =====
 /* THE COUNCIL TURN, NAMED so a background job can call it in process.
@@ -4130,6 +4255,21 @@ async function handleCouncilTurn(req, res) {
     deadlineAt: t0 + STREAM_TURN_BUDGET_MS,
   });
   const telemetry = createTurnTelemetry({ startedAt: t0, context: turnContext });
+  /* The evaluator may request a fresh execution, but only with a secret that
+   * is configured outside the repository. A valid bypass is observable on the
+   * response so a benchmark cannot silently grade a cache hit as fresh. */
+  const cacheBypass = benchmarkCacheBypass({ headers: req.headers });
+  const cacheValidation = benchmarkCacheValidation({ headers: req.headers });
+  const cacheBranch = cacheValidation.enabled
+    ? cacheValidationBranch(ANSWER_CACHE_BRANCH, cacheValidation.runId)
+    : ANSWER_CACHE_BRANCH;
+  if (cacheValidation.enabled) {
+    console.log(`[ANSWERS] BENCHMARK cache validation namespace run=${cacheValidation.runId} case=${cacheValidation.caseId} phase=${cacheValidation.phase}`);
+  }
+  if (cacheBypass.enabled) {
+    res.set('X-ALOP-Cache-Status', 'bypass');
+    console.log('[ANSWERS] BENCHMARK cache bypass authorised');
+  }
   /* EVERY PHYSICAL POST TO THE GATEWAY IS RECORDED, RETRIES INCLUDED.
    *
    * `recordAttempt(phase)` is the sink lib/openrouter.js calls once per request
@@ -4193,6 +4333,15 @@ async function handleCouncilTurn(req, res) {
   let provenanceSynthesisCompleted = false;
   let provenanceSynthesisSkipped = false;
   let provenanceSynthesisFailed = false;
+  let provenanceFailureKind = null;
+  let provenanceCompletionQuality = null;
+  let answerContract = null;
+  let lastAnswerAssessment = null;
+  /* A buffered stream can replace its discarded draft with a caller-provided
+   * answer. Keep that state beside the answer assessment so every downstream
+   * projection—provenance, telemetry and cache qualification—describes the
+   * text that actually reached the socket. */
+  let streamSubstitution = null;
   let provenanceToolCount = 0;
   let provenanceFailedTools = 0;
   let provenanceSearchUsed = false;
@@ -4201,6 +4350,8 @@ async function handleCouncilTurn(req, res) {
   let provenanceSent = false;
   let lastCheckpointAt = 0;
   let checkpointedChars = 0;
+  let outputContract = null;
+  let displayAnswerGuard = () => ({ ok: true, problems: [] });
   const CHECKPOINT_EVERY_MS = 1_500;
   const CHECKPOINT_EVERY_CHARS = 1_200;
   const turnAnswerText = () => answerParts.join('');
@@ -4263,6 +4414,16 @@ async function handleCouncilTurn(req, res) {
     sendStage(res, key, text);
   };
 
+  /* The immediate SSE provenance frame and the final ledger row are built at
+   * different times. Keep the classified terminal failure beside the other
+   * route facts so `finally` cannot replace a known provider/deadline failure
+   * with a fresh null argument. Unknown and local policy failures stay null. */
+  const noteTerminalFailure = (error) => {
+    const kind = classifyFailureKind(error);
+    if (kind) provenanceFailureKind = kind;
+    return kind;
+  };
+
   const makeProvenance = (answer, state, failureKind = null) => {
     const snapshot = telemetry.snapshot({});
     const cancellationReason = snapshot.cancellation?.reason || null;
@@ -4271,7 +4432,9 @@ async function handleCouncilTurn(req, res) {
      * user decision. A deadline is a failure even when a partial answer exists. */
     const userAborted = state === 'aborted'
       && ['client_disconnected', 'client_abort', null].includes(cancellationReason);
-    return buildTurnProvenanceMeta({
+    const effectiveFailureKind = failureKind
+      || (state === 'aborted' ? cancellationReason : provenanceFailureKind);
+    const provenanceMeta = buildTurnProvenanceMeta({
       messageId: typeof req.body?.messageId === 'string' ? req.body.messageId : null,
       requestState: state,
       route: provenanceRoute,
@@ -4300,10 +4463,13 @@ async function handleCouncilTurn(req, res) {
         truncated: provenanceToolTruncated,
       },
       verification: provenanceVerification,
+      ...(provenanceCompletionQuality ? { completion: { qualified: provenanceCompletionQuality } } : {}),
       failure: {
-        occurred: state === 'failed' || provenanceSynthesisFailed || (state === 'aborted' && !userAborted),
+        occurred: state === 'failed' || provenanceSynthesisFailed
+          || (state !== 'aborted' && Boolean(provenanceFailureKind))
+          || (state === 'aborted' && !userAborted),
         userAborted,
-        kind: failureKind || cancellationReason,
+        kind: effectiveFailureKind,
       },
       timing: {
         turnMs: Date.now() - t0,
@@ -4311,6 +4477,24 @@ async function handleCouncilTurn(req, res) {
       },
       sources: provenanceSources,
     });
+    /* The evaluator needs the provider receipt and cache decision, but not the
+     * full internal telemetry snapshot. Keep the public frame bounded and put
+     * the projection inside the already-public provenance object so the strict
+     * top-level turn-ledger schema remains unchanged. */
+    return {
+      ...provenanceMeta,
+      provenance: {
+        ...provenanceMeta.provenance,
+        accounting: buildTurnAccountingMeta(snapshot, {
+          route: provenanceRoute,
+          cacheBypassRequested: cacheBypass.requested,
+          cacheBypassAccepted: cacheBypass.enabled,
+          cacheValidationRunId: cacheValidation.enabled ? cacheValidation.runId : null,
+          cacheValidationCaseId: cacheValidation.enabled ? cacheValidation.caseId : null,
+          cacheValidationPhase: cacheValidation.enabled ? cacheValidation.phase : null,
+        }),
+      },
+    };
   };
 
   const sendProvenance = (answer, state = 'complete', failureKind = null) => {
@@ -4442,6 +4626,7 @@ async function handleCouncilTurn(req, res) {
        * with no latency recorded. */
       if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
       sendEvent(res, { type: 'chunk', text: noteWholeAnswer(sum.answer) });
+      sendProvenance(sum.answer, 'complete');
       if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
       /* NOT `rememberTurn`. It runs a summary and a fact-extraction call, which
        * would spend two model requests to record that 80 squared is 6400 —
@@ -4494,6 +4679,7 @@ async function handleCouncilTurn(req, res) {
       openStream(res);
       if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
       sendEvent(res, { type: 'chunk', text: noteWholeAnswer(greeting) });
+      sendProvenance(greeting, 'complete');
       if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
       await auditBranch({
         category: 'greeting',
@@ -4518,11 +4704,11 @@ async function handleCouncilTurn(req, res) {
      * null as "no seat" rather than as "use the default". */
     const toolSeat = TOOL_SEAT && (userPlan === 'pro' || TOOL_SEAT_FREE_PLAN) ? TOOL_SEAT : null;
     let selection = classifyRequest(routingText, planRoster, isDetailed);
-    /* COMPLEXITY DOES NOT ARM THE METERED TOOL SEAT. Complex turns use the free
+    /* COMPLEXITY DOES NOT ARM THE NATIVE TOOL SEAT. Complex turns use the free
      * council for parallel drafts, then the configured head model synthesises
-     * them. The router's later search decision is the only thing that adds Luna
-     * as a native tool operator; the reservation below still covers that
-     * possible widening before the router has run. */
+     * them. The router's later search decision is the only thing that adds the
+     * native tool operator; FREE_ONLY still guards its request, and the
+     * reservation below covers that possible widening before the router runs. */
     /* `let`, because a turn the router later sends to live research is re-selected
      * onto the full roster below — see escalateForResearch. The reservation two
      * blocks down covers that roster, not this one, so the widening cannot spend
@@ -4703,7 +4889,16 @@ async function handleCouncilTurn(req, res) {
      * counted at dispatch by `recordFastCalls` instead, because they settle
      * after this turn's row has been written. */
     const meteredCallModel = async (model, messages, temperature, timeoutMs, maxTokens, signal, options = {}) => {
-      const { phase, ...rest } = options || {};
+      const { phase, onUsage: downstreamOnUsage, ...rest } = options || {};
+      /* The provider adapter reports one usage receipt for every completed
+       * non-streaming response, including an explicit all-null receipt when the
+       * provider omitted usage. Keep the historical `tools` bucket in the
+       * aggregate so this is an additive accounting path rather than a phase
+       * rename in existing telemetry. */
+      const onUsage = (usage) => {
+        telemetry.recordUsage(usage, { phase: phase === 'tools' ? 'council' : phase || 'council' });
+        try { downstreamOnUsage?.(usage); } catch { /* telemetry must never fail a model call */ }
+      };
       const startedAt = Date.now();
       let offeredTools = Array.isArray(rest.tools) && rest.tools.length > 0;
       try {
@@ -4713,7 +4908,7 @@ async function handleCouncilTurn(req, res) {
          * deadline before the council could conclude it had failed. */
         const reply = await modelPacer.run(model, () => callModel(
           model, messages, temperature, timeoutMs, maxTokens, signal,
-          { ...rest, onAttempt: recordAttempt(phase || 'council') },
+          { ...rest, onAttempt: recordAttempt(phase || 'council'), onUsage },
         ), {
           signal,
           /* OUR OWN QUOTA SAYS NOTHING ABOUT THE PROVIDER. Opening a breaker on
@@ -4753,6 +4948,7 @@ async function handleCouncilTurn(req, res) {
     };
 
     const truncatedPrompt = truncatePrompt(pv.value);
+    answerContract = buildAnswerContract({ question: pv.value });
     /* `onUsage` reaches streamOnce unchanged through every streamModel call on
      * this route, which is why it lives here rather than being threaded as a
      * ninth positional argument through four call sites. */
@@ -4769,9 +4965,39 @@ async function handleCouncilTurn(req, res) {
       /* The provenance frame travels immediately before the stream terminator
        * whenever a provider completed a streamed answer. It is a safe process
        * receipt, not a transcript of the model's private work. */
-      onComplete: ({ answer }) => {
-        if (provenanceSynthesisStarted) provenanceSynthesisCompleted = true;
-        sendProvenance(answer, 'complete');
+      onComplete: ({ answer, finishReason, substitution = null }) => {
+        const substituted = substitution?.used === true;
+        streamSubstitution = substituted ? { ...substitution } : null;
+        if (substituted) {
+          /* This answer is real text, but it was not produced by the stream that
+           * just failed its local contract. Mark the turn degraded before the
+           * provenance frame is built; otherwise the frame says "complete" and
+           * the cache sees a clean synthesis. */
+          provenanceSynthesisFailed = true;
+          provenanceSynthesisSkipped = true;
+          provenanceSynthesisCompleted = false;
+          provenanceRoute = 'degraded';
+          provenanceCompletionQuality = 'incomplete';
+        }
+        /* A provider finish reason belongs only to the provider's own text.
+         * The substituted draft has no provider completion reason. */
+        const actualFinishReason = substituted ? null : finishReason;
+        const assessment = assessAnswer({ answer, finishReason: actualFinishReason, contract: answerContract });
+        /* Keep the existing assessment sink as the cache gate, but make a
+         * substitution explicitly ineligible even when its text is otherwise
+         * structurally complete. */
+        lastAnswerAssessment = substituted
+          ? { ...assessment, ok: false, reason: 'output_contract_substitution' }
+          : assessment;
+        if (!substituted) {
+          provenanceCompletionQuality = assessment.ok ? null : 'incomplete';
+          if (provenanceSynthesisStarted) provenanceSynthesisCompleted = true;
+        }
+        sendProvenance(
+          answer,
+          substituted || !assessment.ok ? 'failed' : 'complete',
+          substituted ? 'output_contract_substitution' : assessment.ok ? null : `incomplete_${assessment.reason}`,
+        );
       },
     };
     /* THE CLIENT'S COPY IS THE FALLBACK NOW, NOT THE SOURCE.
@@ -4898,7 +5124,7 @@ async function handleCouncilTurn(req, res) {
        * facts and feedback steps below re-decide it against the real answer,
        * which is why they are DAG nodes rather than entries in a Promise.all. */
       hasConversationHistory: true,
-      cacheEligible: !clientHistory.length && !parsedImages.length,
+      cacheEligible: !clientHistory.length && !parsedImages.length && !cacheBypass.enabled,
       semanticCacheEnabled: SEMANTIC_CACHE_ENABLED,
       userHasFacts: true,
       category: selection.category,
@@ -5007,6 +5233,8 @@ async function handleCouncilTurn(req, res) {
       complexity: selection.complexity,
     });
     const promptHistory = compressedContext.messages;
+    answerContract = buildAnswerContract({ question: pv.value, history: promptHistory });
+    outputContract = buildOutputContract({ question: pv.value });
     telemetry.recordContextCompression(compressedContext.stats);
     if (compressedContext.stats.compressed) {
       console.log(`[CONTEXT] history ${compressedContext.stats.retainedMessages}/${compressedContext.stats.originalMessages} messages, ${compressedContext.stats.retainedChars}/${compressedContext.stats.originalChars} chars, relevantTurns=${compressedContext.stats.relevantTurns}`);
@@ -5118,7 +5346,7 @@ async function handleCouncilTurn(req, res) {
     /* Feature flags change how the SAME words are answered. Keep that
      * provenance in the durable key so enabling seeded tools cannot replay a
      * Wikipedia/plain-council answer written before the flag changed. */
-    const cacheKey = personalised || hasUncacheableAttachment
+    const cacheKey = cacheBypass.enabled || personalised || hasUncacheableAttachment
       ? null
       : answerCache.keyFor({
         question: pv.value,
@@ -5126,7 +5354,7 @@ async function handleCouncilTurn(req, res) {
         country: region?.country || '',
         plan: userPlan,
         detailed: isDetailed,
-        branch: ANSWER_CACHE_BRANCH,
+        branch: cacheBranch,
         /* WHAT ANSWERED, not just what was asked. Without these an answer
          * written by the old synthesis prompt kept being served for up to
          * ninety days with nothing anywhere marking it stale — the prompt
@@ -5166,6 +5394,7 @@ async function handleCouncilTurn(req, res) {
          * unknown type is silently dropped there, which is a blank answer. */
         if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
         sendEvent(res, { type: 'chunk', text: noteWholeAnswer(hit.answer) });
+        sendProvenance(hit.answer, 'complete');
         if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
         /* NOT `rememberTurn`, on the same argument the arithmetic branch makes:
          * it spends a summary call and a fact-extraction call, which is two
@@ -5193,7 +5422,7 @@ async function handleCouncilTurn(req, res) {
           country: region?.country || '',
           plan: userPlan,
           detailed: isDetailed,
-          branch: ANSWER_CACHE_BRANCH,
+          branch: cacheBranch,
           threshold: SEMANTIC_CACHE_THRESHOLD,
         }));
         if (semanticHit?.answer && !turnSignal.aborted) {
@@ -5203,6 +5432,7 @@ async function handleCouncilTurn(req, res) {
           openStream(res);
           if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
           sendEvent(res, { type: 'chunk', text: noteWholeAnswer(semanticHit.answer) });
+          sendProvenance(semanticHit.answer, 'complete');
           if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
           await auditBranch({
             category: 'answer_cache_semantic', models: 0, seatCount: 0,
@@ -5216,6 +5446,8 @@ async function handleCouncilTurn(req, res) {
         console.log(`[ANSWERS] SEMANTIC SKIP embedding=unavailable deadlineMs=${SEMANTIC_EMBED_DEADLINE_MS}`);
       }
       console.log('[ANSWERS] MISS');
+    } else if (cacheBypass.enabled) {
+      console.log('[ANSWERS] BYPASS benchmark-authorized');
     } else {
       console.log('[ANSWERS] BYPASS personalised-context');
     }
@@ -5258,23 +5490,55 @@ async function handleCouncilTurn(req, res) {
       freshnessWindowMs: turnFreshness ? turnFreshness.days * 24 * 3600 * 1000 : null,
     });
     let verification = null;
+    displayAnswerGuard = (text) => verifyAnswerForDisplay({
+      answer: text,
+      evidence,
+      searched: usedLiveWeb,
+    });
+    const recordToolEvidence = (toolResults) => {
+      for (const entry of Array.isArray(toolResults) ? toolResults : []) {
+        const result = entry?.result;
+        if (!result?.ok || !Array.isArray(result.sources)) continue;
+        const rendered = String(result.content || '');
+        for (const source of result.sources) {
+          if (!source?.url) continue;
+          const sourceBlock = rendered
+            .split(/\n\s*\n/)
+            .find((block) => block.includes(String(source.url))) || '';
+          evidence.record({
+            text: source.text || source.content || sourceBlock || source.title,
+            url: source.url,
+            title: source.title,
+            date: source.date || source.publishedDate || null,
+            via: source.via || entry.call?.name || 'tool',
+            confidence: Number.isFinite(Number(source.confidence)) ? Number(source.confidence) : entry.call?.name === 'read_url' ? 0.8 : 0.6,
+          });
+        }
+      }
+    };
 
     const verifyBeforeCache = (text, { searched = false } = {}) => {
       if (!evidence.size && !searched) return true;
       const audit = evidence.audit(text);
       const { conflicts, unresolved } = resolveConflicts(evidence.all());
-      const verdict = verifyAnswer({ answer: text, audit, conflicts, searched });
+      /* Search answers use the same split authority as display: lexical
+       * support and unknown evidence remain cache concerns, while hard source
+       * identity/contradiction failures remain invalid. Keeping this path on
+       * the display verifier prevents the two projections from disagreeing. */
+      const verdict = searched
+        ? verifyAnswerForDisplay({ answer: text, evidence, searched })
+        : verifyAnswer({ answer: text, audit, conflicts, searched });
       verification = {
-        claims: audit.claims.length,
-        grounded: audit.supported,
-        coverage: Number(audit.coverage.toFixed(2)),
+        claims: (verdict.audit || audit).claims.length,
+        grounded: (verdict.audit || audit).supported,
+        coverage: Number((verdict.audit || audit).coverage.toFixed(2)),
         sources: evidence.size,
-        conflicts: conflicts.length,
-        unresolved: unresolved.length,
+        conflicts: (verdict.conflicts || conflicts).length,
+        unresolved: (verdict.unresolved || unresolved).length,
         problems: verdict.problems.map((p) => p.kind),
       };
       provenanceVerification = verification;
-      if (!verdict.ok) {
+      if (verdict.problems.length) {
         console.log(`[VERIFY] ${verdict.problems.map((p) => p.kind).join(',')} — coverage=${verification.coverage} sources=${evidence.size} unresolved=${unresolved.length}${ANSWER_VERIFICATION ? ' — NOT CACHED' : ' (measuring only)'}`);
       }
       return ANSWER_VERIFICATION ? verdict.cacheable : true;
@@ -5282,6 +5546,10 @@ async function handleCouncilTurn(req, res) {
 
     const cacheAnswer = (text, { searched = false, fresh = false } = {}) => {
       if (!cacheKey) return;
+      if (lastAnswerAssessment && !lastAnswerAssessment.ok) {
+        console.warn(`[ANSWERS] incomplete answer not cached reason=${lastAnswerAssessment.reason}`);
+        return;
+      }
       if (!verifyBeforeCache(text, { searched })) return;
       const persist = (embedding) => {
         const method = selection.complexity === 'simple' && !searched ? 'setBrief' : 'set';
@@ -5293,11 +5561,11 @@ async function handleCouncilTurn(req, res) {
             country: region?.country || '',
             plan: userPlan,
             detailed: isDetailed,
-            branch: ANSWER_CACHE_BRANCH,
+            branch: cacheBranch,
             usedLiveWeb: searched,
           },
           provenance: {
-            branch: ANSWER_CACHE_BRANCH,
+            branch: cacheBranch,
             searched,
             fresh,
             source_count: evidence.size,
@@ -5357,8 +5625,11 @@ async function handleCouncilTurn(req, res) {
              * indistinguishable from a member that answered nothing. The
              * verdict it printed was therefore an undercount of exactly the
              * models the feature most wants to find. */
-            const reply = await meteredCallModel(model, toolMessages(probeMsgs, probeRegistry, { round: 1, isFinalRound: false }), 0.0, selection.whipMs, selection.tokenLimit, turnSignal, { structured: true, phase: 'probe' });
-            telemetry.recordUsage(reply.usage, { phase: 'probe' });
+            const reply = await meteredCallModel(model, toolMessages(probeMsgs, probeRegistry, { round: 1, isFinalRound: false }), 0.0, selection.whipMs, selection.tokenLimit, turnSignal, {
+              structured: true,
+              phase: 'probe',
+              maxRetries: 0,
+            });
             return { member: model, ...parseToolRequests(reply) };
           } catch (err) {
             return { member: model, calls: [], text: '', error: err.message };
@@ -5441,7 +5712,8 @@ async function handleCouncilTurn(req, res) {
     }
     const routeP = skipRouter || ruleRoute
       ? Promise.resolve(ruleRoute || NO_ROUTE)
-      : telemetry.measureRouter('route', () => planTurn(routingText, convSummary, region, turnSignal, recordAttempt('router'))).catch(() => NO_ROUTE);
+      : telemetry.measureRouter('route', () => planTurn(routingText, convSummary, region, turnSignal, recordAttempt('router'),
+        (usage) => telemetry.recordUsage(usage, { phase: 'router' }))).catch(() => NO_ROUTE);
 
     if ((await routeP).memory) {
       provenanceRoute = 'memory';
@@ -5545,6 +5817,19 @@ async function handleCouncilTurn(req, res) {
      * "council" answer and kept it for ninety days. The router's own decision is
      * the honest signal, and it is the one the owner asked to key this on. */
     const usedLiveWeb = Boolean(searchQueries?.length);
+    const answerOutputGuard = (text) => {
+      const shape = assessOutputObligations({ text, contract: outputContract });
+      if (!shape.ok) return shape;
+      return displayAnswerGuard(text);
+    };
+    const answerNeedsBuffer = Boolean(
+      usedLiveWeb
+      || outputContract?.code?.required
+      || outputContract?.json?.required
+      || outputContract?.table?.required
+      || outputContract?.list?.required
+      || outputContract?.performance?.required,
+    );
     /* Reported to whoever called this handler. A background refresh needs to
      * know whether the answer it just produced was search-backed, and deriving
      * that a second time from the text would be a second copy of the router's
@@ -5673,6 +5958,8 @@ async function handleCouncilTurn(req, res) {
         selection.tokenLimit, ({ state }) => {
           if (state === 'thinking') return;
           searchSeatsAnswered += 1;
+          provenanceCouncilAnswered = Math.max(provenanceCouncilAnswered, searchSeatsAnswered);
+          provenanceCouncilSeats = Math.max(provenanceCouncilSeats, selection.members.length);
           emitStage(res, 'council', `${searchSeatsAnswered} of ${selection.members.length} answered`);
         }, {
           signal: turnSignal,
@@ -5685,9 +5972,13 @@ async function handleCouncilTurn(req, res) {
       if (turnSignal.aborted) return;
       const usableSearchDrafts = searchDrafts.filter((r) => r?.content?.trim());
       if (!usableSearchDrafts.length) throw new Error('Search council returned no usable answers');
-      provenanceCouncilPartial = searchSeatsAnswered < selection.members.length;
+      /* A council is complete when its configured quorum released the answer.
+       * Waiting for every roster seat mislabels the normal early-release path
+       * as partial even though the policy threshold was satisfied. */
+      provenanceCouncilComplete = searchSeatsAnswered >= selection.quorum && selection.quorum > 0;
+      provenanceCouncilPartial = !provenanceCouncilComplete;
       emitStage(res, 'synthesis', usableSearchDrafts.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
-      const searchSynthSys = `${todayLine()}\n\nReconcile these independent answers into one precise response. Use only facts present in the answers and their cited search data. Preserve Markdown source links, note material disagreements, and do not mention the council.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+      const searchSynthSys = `${todayLine()}\n${TRADEOFF_GUIDANCE}\n\nReconcile these independent answers into one precise response. Use only facts present in the answers and their cited search data. Preserve Markdown source links, note material disagreements, and do not mention the council.${outputObligationPrompt(outputContract)}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
       const searchSynthSysForAnswer = `${searchSynthSys}${SOURCE_TRUTH_RULES}`;
       const searchSynthMsgs = [{ role: 'system', content: identityPrompt(searchSynthSysForAnswer, 'search_synthesis') }, {
         role: 'user',
@@ -5706,9 +5997,13 @@ async function handleCouncilTurn(req, res) {
       searchSynthesisOptions.onStreamTiming = (row) => telemetry.recordStreamTiming({ ...row, phase: 'search_synthesis' });
       console.log(`[SYNTHESIS] requested=${searchSynthesis.model} effort=${searchSynthesis.effortLabel} complexity=${selection.complexity} tools=true`);
       const searchSynthesisStartedAt = Date.now();
-      const searchAnswer = await streamModel(res, searchSynthesis.model, searchSynthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, answerOptions, turnDeadlineAt, searchSynthesisOptions);
+      const searchAnswer = await streamModel(res, searchSynthesis.model, searchSynthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, answerGuard: answerOutputGuard, deferOutput: answerNeedsBuffer }, turnDeadlineAt, searchSynthesisOptions);
+      const searchSubstituted = streamSubstitution?.used === true;
+      if (searchSubstituted) searchSynthesisModelUsed = null;
       telemetry.recordSynthesis(Date.now() - searchSynthesisStartedAt, searchSynthesisModelUsed);
-      const searchSynthesisEffort = searchSynthesisModelUsed === searchSynthesis.model ? searchSynthesis.effortLabel : 'default';
+      const searchSynthesisEffort = searchSubstituted
+        ? 'substituted'
+        : searchSynthesisModelUsed === searchSynthesis.model ? searchSynthesis.effortLabel : 'default';
       console.log(`[SYNTHESIS] model=${searchSynthesisModelUsed} effort=${searchSynthesisEffort} complexity=${selection.complexity} tools=true`);
       if (!res.writableEnded) res.end();
       /* A SHORTER SHELF LIFE WHEN THE QUESTION ASKED FOR NOW. `fresh` is the
@@ -5738,9 +6033,9 @@ async function handleCouncilTurn(req, res) {
       provenanceSynthesisSkipped = true;
       const wiki = await searchWikipedia(pv.value, turnSignal);
       if (wiki) {
-        const wikiSys = `${todayLine()}
+        const wikiSys = `${todayLine()}\n\n${TRADEOFF_GUIDANCE}
 
-You are a data extraction engine. Use ONLY the Wikipedia content. No training data. If the article does not cover what was asked, say what the article DOES cover and invite the user to ask again — never end on "I couldn't find this". Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+You are a data extraction engine. Use ONLY the Wikipedia content. No training data. If the article does not cover what was asked, say what the article DOES cover and invite the user to ask again — never end on "I couldn't find this". Use Markdown.${outputObligationPrompt(outputContract)}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
         // Its own fetch, not searchWeb's, so it needs its own label. Wikipedia is
         // world-editable: this is the one source where an attacker does not even
         // need a site of their own.
@@ -5759,9 +6054,13 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
         console.log(`[SYNTHESIS] requested=${wikiSynthesis.model} effort=${wikiSynthesis.effortLabel} complexity=${selection.complexity} tools=true`);
         openStream(res);
         const wikiSynthesisStartedAt = Date.now();
-        const wikiAnswer = await streamModel(res, wikiSynthesis.model, wikiMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt, wikiSynthesisOptions);
+        const wikiAnswer = await streamModel(res, wikiSynthesis.model, wikiMsgs, 0.0, turnSignal, null, { ...answerOptions, answerGuard: answerOutputGuard, deferOutput: answerNeedsBuffer }, turnDeadlineAt, wikiSynthesisOptions);
+        const wikiSubstituted = streamSubstitution?.used === true;
+        if (wikiSubstituted) wikiSynthesisModelUsed = null;
         telemetry.recordSynthesis(Date.now() - wikiSynthesisStartedAt, wikiSynthesisModelUsed);
-        const wikiSynthesisEffort = wikiSynthesisModelUsed === wikiSynthesis.model ? wikiSynthesis.effortLabel : 'default';
+        const wikiSynthesisEffort = wikiSubstituted
+          ? 'substituted'
+          : wikiSynthesisModelUsed === wikiSynthesis.model ? wikiSynthesis.effortLabel : 'default';
         console.log(`[SYNTHESIS] model=${wikiSynthesisModelUsed} effort=${wikiSynthesisEffort} complexity=${selection.complexity} tools=true`);
         if (!res.writableEnded) res.end();
         // An encyclopedia answer is still good next week.
@@ -5808,7 +6107,9 @@ You are a data extraction engine. Use ONLY the Wikipedia content. No training da
       : '';
     const councilSys = `${todayLine()}
 
-You are an elite AI expert in the ALOP-AI Council. If outside your expertise, reply ONLY "SKIP". If you answer, be direct. Match response length to question complexity. Use Markdown. Write maths in plain Unicode (x², √2, ½, π, ≈), never LaTeX. If context/history provided, use for continuity. ${isDetailed ? 'Be thorough.' : 'Be concise.'}${lang !== 'English' ? ` Respond in ${lang}.` : ''}${soloRules}`;
+${TRADEOFF_GUIDANCE}
+
+You are an elite AI expert in the ALOP-AI Council. If outside your expertise, reply ONLY "SKIP". If you answer, be direct. Match response length to question complexity. Use Markdown. Write maths in plain Unicode (x², √2, ½, π, ≈), never LaTeX. If context/history provided, use for continuity. ${isDetailed ? 'Be thorough.' : 'Be concise.'}${outputObligationPrompt(outputContract)}${lang !== 'English' ? ` Respond in ${lang}.` : ''}${soloRules}`;
     const councilMsgs = [{ role: 'system', content: identityPrompt(councilSys, 'plain_council') }, ...contextMsgs, ...promptHistory, { role: 'user', content: truncatedPrompt }];
 
     // The agent loop, when enabled, replaces the single-shot council with
@@ -5849,6 +6150,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
     const withSeatSources = (responses) => (Array.isArray(responses) ? responses : []).map((row) => ({
       ...row,
       textSource: seatTextSource.get(row?.model) || 'unknown',
+      ...(typeof row?.textSource === 'string' ? { textSource: row.textSource } : {}),
     }));
     let telemetryExtra = {};
     let toolPlainFallback = { used: false, durationMs: null };
@@ -5966,12 +6268,11 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
             callModel: (m, msgs, temp, ms, tokens, sig, opts) =>
               callModelWithLadder(
                 m,
-                (model) => meteredCallModel(model, msgs, temp, ms, tokens, sig, { ...opts, phase: 'tool_seat' }),
+                (model) => meteredCallModel(model, msgs, temp, ms, tokens, sig, { ...opts, maxRetries: 0, phase: 'tool_seat' }),
                 { label: 'TOOLS', signal: sig },
               ),
             registry,
             effort: TOOL_SEAT_EFFORT,
-            onUsage: (usage) => telemetry.recordUsage(usage, { phase: 'tool_seat' }),
           })
         : null;
       if (nativeSeat) {
@@ -6060,9 +6361,8 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
             selection.whipMs,
             selection.tokenLimit,
             signal,
-            { structured: true, phase: 'tools' },
+            { structured: true, phase: 'tools', maxRetries: 0 },
           );
-          telemetry.recordUsage(reply.usage, { phase: 'council' });
           noteSeatSource(model, reply);
           const parsed = parseToolRequests(reply, answerOptions);
           /* A whole-protocol reply is rejected by the parser, which leaves both
@@ -6080,6 +6380,7 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       toolTruncated = loop.truncated;
       provenanceToolTruncated = Boolean(loop.truncated);
       toolSourceUrls = searchResultUrls(loop.toolResults);
+      recordToolEvidence(loop.toolResults);
       console.log(`[TOOLS] ${loop.rounds} round(s), ${loop.uniqueCallsUsed} unique call(s), ${Object.keys(loop.answers).length} answer(s)${loop.truncated ? ` — ${loop.truncated}` : ''}`);
       /* THE ADOPTION LINE. Printed whenever a tool call ran at all, including
        * on turns with no native seat — a turn where the native seat was armed
@@ -6119,14 +6420,22 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
          * this fallback text-only, but apply the same fence sanitiser before a
          * reply can count toward quorum or reach synthesis. A JSON-looking
          * tool block is deliberately stripped, never executed. */
-        const sanitisedFallbackCallModel = async (model, messages, temperature, whipMs, tokenLimit, signal) => {
+        const sanitisedFallbackCallModel = async (model, messages, temperature, whipMs, tokenLimit, signal, callOptions = {}) => {
           /* STRUCTURED, for the label rather than for the shape. `.content` is
            * the same string the default contract returned; what the reply also
            * carries is `textSource`, which is the only way to know later that
            * this seat's words were its reasoning and not its answer. */
-          const reply = await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, { structured: true, phase: 'tool_plain_fallback' });
+          const reply = await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, {
+            ...callOptions,
+            structured: true,
+            phase: 'tool_plain_fallback',
+          });
           noteSeatSource(model, reply);
-          return sanitizeAnswerText(reply.content, answerOptions).text;
+          return {
+            content: sanitizeAnswerText(reply.content, answerOptions).text,
+            textSource: reply.textSource,
+            finishReason: reply.finishReason,
+          };
         };
         validResponses = withSeatSources(await runCouncilWithWhip(
           selection.members,
@@ -6178,10 +6487,19 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
           /* Structured for the same reason the tool fallback above is: the
            * text is unchanged, and the reply carries the `textSource` label
            * that a draft going straight to a reader has to be judged on. */
-          callModel: async (model, messages, temperature, whipMs, tokenLimit, signal) => {
-            const reply = await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, { structured: true, phase: 'council' });
+          callModel: async (model, messages, temperature, whipMs, tokenLimit, signal, callOptions = {}) => {
+            const reply = await meteredCallModel(model, messages, temperature, whipMs, tokenLimit, signal, {
+              ...callOptions,
+              structured: true,
+              phase: 'council',
+            });
             noteSeatSource(model, reply);
-            return sanitizeAnswerText(reply.content, answerOptions).text;
+            const callModelAnswerText = sanitizeAnswerText(reply.content, answerOptions).text;
+            return {
+              content: callModelAnswerText,
+              textSource: reply.textSource,
+              finishReason: reply.finishReason,
+            };
           },
         },
       );
@@ -6221,10 +6539,28 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       }
     }
 
+    const safeDisplayDraft = (candidate) => {
+      if (!isSafeDraft(candidate)) return false;
+      const text = String(candidate.content).trim();
+      const quality = assessAnswer({
+        answer: text,
+        finishReason: candidate.finishReason,
+        contract: answerContract,
+      });
+      return quality.ok && answerOutputGuard(text).ok;
+    };
+    const obligationFallback = selectObligationPreservingDraft({
+      contract: outputContract,
+      drafts: validResponses,
+      isCandidate: safeDisplayDraft,
+    });
+
     if (provenanceToolUsed) {
       /* The agent loop has no public seat callback, so its honest bounded
        * participation signal is the number of usable answers it returned. */
-      provenanceCouncilComplete = validResponses.length >= selection.members.length && selection.members.length > 0;
+      provenanceCouncilAnswered = Math.max(provenanceCouncilAnswered, validResponses.length);
+      provenanceCouncilSeats = Math.max(provenanceCouncilSeats, selection.members.length);
+      provenanceCouncilComplete = validResponses.length >= selection.quorum && selection.quorum > 0;
       provenanceCouncilPartial = !provenanceCouncilComplete;
     } else {
       provenanceCouncilPartial = !provenanceCouncilComplete;
@@ -6237,11 +6573,20 @@ You are an elite AI expert in the ALOP-AI Council. If outside your expertise, re
       console.log('[COUNCIL] Fallback.');
       const fbSys = `${todayLine()}
 
-You are a helpful AI assistant. Answer directly. Match length to question. If you don't know, say "I don't have enough information." Don't guess. Use context if provided. Use Markdown.${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
+You are a helpful AI assistant. Answer directly. Match length to question. If you don't know, say "I don't have enough information." Don't guess. Use context if provided. Use Markdown.${outputObligationPrompt(outputContract)}${lang !== 'English' ? ` Respond in ${lang}.` : ''}`;
       const fbMsgs = [{ role: 'system', content: identityPrompt(fbSys, 'fallback') }, ...contextMsgs, ...promptHistory, { role: 'user', content: truncatedPrompt }];
       openStream(res);
       const fallbackStartedAt = Date.now();
-      const fallbackAnswer = await streamModel(res, PRIMARY_MODEL, fbMsgs, 0.0, turnSignal, null, answerOptions, turnDeadlineAt);
+      const fallbackAnswer = await streamModel(
+        res,
+        PRIMARY_MODEL,
+        fbMsgs,
+        0.0,
+        turnSignal,
+        null,
+        { ...answerOptions, answerGuard: answerOutputGuard, deferOutput: answerNeedsBuffer, outputFallback: obligationFallback },
+        turnDeadlineAt,
+      );
       telemetry.recordFallback(Date.now() - fallbackStartedAt, 'post_council');
       if (turnSignal.aborted) return;
       if (!res.writableEnded) res.end();
@@ -6302,10 +6647,24 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
     const soleDraft = validResponses.length === 1 && isSafeDraft(validResponses[0])
       ? String(validResponses[0].content).trim()
       : '';
+    const soloAssessment = soleDraft
+      ? assessAnswer({
+        answer: soleDraft,
+        finishReason: validResponses[0]?.finishReason,
+        contract: answerContract,
+      })
+      : null;
+    const soloOutputAssessment = soleDraft
+      ? assessOutputObligations({ text: soleDraft, contract: outputContract })
+      : null;
+    if (soloAssessment) lastAnswerAssessment = soloAssessment;
     if (
       selection.members.length === 1 &&
       validResponses.length === 1 &&
       soleDraft &&
+      soloAssessment?.ok &&
+      soloOutputAssessment?.ok &&
+      displayAnswerGuard(soleDraft).ok &&
       !toolResearch &&
       !toolTruncated
     ) {
@@ -6326,6 +6685,7 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
        * moment synthesis would have STARTED. */
       if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
       sendEvent(res, { type: 'chunk', text: noteWholeAnswer(soleDraft) });
+      sendProvenance(soleDraft, 'complete');
       if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
       if (turnSignal.aborted) return;
       const lastSolo = histArr.filter((m) => m.role === 'assistant').slice(-1)[0]?.content || '';
@@ -6346,8 +6706,69 @@ You are a helpful AI assistant. Answer directly. Match length to question. If yo
       return;
     }
 
+    /* 5a. COMPLETE, UNANIMOUS SAFE REFUSAL.
+     *
+     * A refusal is already the final answer to a disallowed request. Sending
+     * it through another model adds latency without adding judgement, and the
+     * live safety case showed the failure mode: synthesis timed out, then the
+     * same refusal was recovered as a degraded draft after the 30s budget.
+     *
+     * This is deliberately stricter than quorum. Every configured seat must
+     * have returned the same refusal-only answer, the council must be complete,
+     * and no research/tool path may be waiting for a synthesis step to reconcile
+     * evidence. `safeDisplayDraft` keeps the existing provenance, completion,
+     * and output-obligation gates in force. Anything less falls through to the
+     * ordinary synthesis path, so refusal semantics and fallback safety stay
+     * unchanged for mixed or partial councils. */
+    const resolvedRefusal = resolveSafeRefusal(validResponses, {
+      expectedSeats: selection.members.length,
+      blockedByEvidence: Boolean(
+        provenanceToolUsed
+        || toolResearch
+        || toolTruncated
+        || toolSourceUrls.length
+        || usedLiveWeb,
+      ),
+      isCandidate: safeDisplayDraft,
+    });
+    if (selection.members.length > 1 && resolvedRefusal && provenanceCouncilComplete && !turnSignal.aborted) {
+      provenanceRoute = 'council';
+      provenanceSynthesisSkipped = true;
+      lastAnswerAssessment = assessAnswer({
+        answer: resolvedRefusal,
+        finishReason: validResponses[0]?.finishReason,
+        contract: answerContract,
+      });
+      console.log(`[COUNCIL] Complete unanimous safe refusal. Synthesis skipped; no extra model request.`);
+      console.log(`[SYNTHESIS] skipped reason=safe_refusal complexity=${selection.complexity}`);
+      openStream(res);
+      if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
+      sendEvent(res, { type: 'chunk', text: noteWholeAnswer(resolvedRefusal) });
+      sendProvenance(resolvedRefusal, 'complete');
+      if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
+      if (turnSignal.aborted) return;
+      const lastRefusal = histArr.filter((m) => m.role === 'assistant').slice(-1)[0]?.content || '';
+      rememberTurn(chatId, user.id, pv.value, lastRefusal || resolvedRefusal, telemetry, turnContext.turnId);
+      cacheAnswer(resolvedRefusal, { searched: usedLiveWeb });
+      await auditTelemetry('council', 'council_refusal', {
+        ...telemetryExtra,
+        ...(verification ? { verification } : {}),
+        models: validResponses.length,
+        seatCount: selection.members.length,
+        quorum: selection.quorum,
+        tokenLimit: selection.tokenLimit,
+        complexity: selection.complexity,
+        councilRelease,
+        synthesisSkipped: true,
+        refusalResolved: true,
+      });
+      return;
+    }
+
     // 6. SYNTHESIS
     const synthSys = `${todayLine()}
+
+${TRADEOFF_GUIDANCE}
 
 You are the Chief Synthesiser for a panel of independent experts who answered the same question separately. Reconcile them — do not average them.
 
@@ -6355,12 +6776,12 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
 2. Where they disagree on a FACT, say so and give the competing claims. Do not silently pick one.
 3. Where they disagree on JUDGEMENT or approach, give the strongest version of each and say what would decide between them.
 4. Prefer the more specific, better-supported answer — but never invent a justification for preferring it.
-5. Introduce no fact that appears in none of the responses.
+5. Introduce no fact that appears in none of the responses or supplied context.
 6. Never mention the panel, the experts, how many there were, or that synthesis happened. Write as a single voice.
 7. ${LENGTH_RULE[selection.complexity] || LENGTH_RULE.moderate}
 8. Use Markdown. Write mathematics in plain Unicode, never LaTeX: x², √2, ½, π, ≈, ≤, →, Fe₂O₃. Never $…$, never \\frac, never \\sin. The reader's screen renders Markdown and nothing else, so LaTeX reaches them as literal dollar signs and backslashes.
 9. End on the answer. No "Would you like help with anything else?", no "Let me know if...", no closing offer of further assistance. The user knows they can ask again.
-10. If you are inferring rather than reporting — a price you did not see, a spec you are reasoning to, a substitute product — say so IN THE SAME SENTENCE. "Likely higher" without "I did not find a listed price" reads as a fact.${lang !== 'English' ? `\n11. Respond in ${lang}.` : ''}`;
+10. If you are inferring rather than reporting — a price you did not see, a spec you are reasoning to, a substitute product — say so IN THE SAME SENTENCE. "Likely higher" without "I did not find a listed price" reads as a fact.${COMPLETENESS_CONTRACT}${outputObligationPrompt(outputContract)}${lang !== 'English' ? `\n11. Respond in ${lang}.` : ''}`;
     // Research and truncation reach the synthesiser, because the design's rule
     // is that a cut-short answer must be able to hedge rather than assert. A
     // truncated answer presented as a complete one is worse than a slow one.
@@ -6396,8 +6817,15 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
       synthesisEffort: synthesis.effortLabel,
       ...(progressiveOutcome ? { progressive: progressiveOutcome } : {}),
     };
+    // COMPLETENESS_CONTRACT requires every explicit part of the question,
+    // including each condition, measurement, caveat, argument and counterargument.
     const synthSysForAnswer = `${synthSys}${SOURCE_TRUTH_RULES}`;
-    const synthMsgs = [{ role: 'system', content: identityPrompt(synthSysForAnswer, 'synthesis') }, { role: 'user', content: `Question: ${truncatedPrompt}\n\nResponses:\n${validResponses.map((r,i) => `[Expert ${i+1}]: ${r.content}`).join('\n\n')}${researchBlock}${truncationBlock}` }];
+    const synthMsgs = [
+      { role: 'system', content: identityPrompt(synthSysForAnswer, 'synthesis') },
+      ...contextMsgs,
+      ...promptHistory,
+      { role: 'user', content: `Question: ${truncatedPrompt}\n\nResponses:\n${validResponses.map((r,i) => `[Expert ${i+1}]: ${r.content}`).join('\n\n')}${researchBlock}${truncationBlock}` },
+    ];
     // The last thing that happens before words appear, and the longest single
     // step on a turn where the seats came back quickly.
     emitStage(res, 'synthesis', validResponses.length === 1 ? 'Writing the reply' : 'Reconciling the answers');
@@ -6421,8 +6849,9 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
      * are testable; `server.js` cannot be required in a test. */
     let synthAnswer;
     try {
-      synthAnswer = await streamModel(res, synthesis.model, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, requiredSourceUrls: toolSourceUrls }, turnDeadlineAt, synthesisOptions);
+      synthAnswer = await streamModel(res, synthesis.model, synthMsgs, 0.0, turnSignal, SYNTH_MAX_TOKENS[selection.complexity] || SYNTH_MAX_TOKENS.moderate, { ...answerOptions, requiredSourceUrls: toolSourceUrls, answerGuard: answerOutputGuard, deferOutput: answerNeedsBuffer, outputFallback: obligationFallback }, turnDeadlineAt, synthesisOptions);
     } catch (err) {
+      const terminalFailureKind = noteTerminalFailure(err);
       provenanceSynthesisFailed = true;
       provenanceSynthesisSkipped = true;
       provenanceRoute = 'degraded';
@@ -6430,6 +6859,15 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
         aborted: turnSignal.aborted,
         wroteChars: turnAnswerText().length,
         drafts: validResponses,
+        draftGuard: (candidate) => {
+          if (!isSafeDraft(candidate)) return false;
+          const text = String(candidate.content).trim();
+          return assessAnswer({
+            answer: text,
+            finishReason: candidate.finishReason,
+            contract: answerContract,
+          }).ok && answerOutputGuard(text).ok;
+        },
       });
       /* Nothing to fall back on, or nowhere to write it: the error frame the
        * handler writes is still the honest answer, and rethrowing is how it
@@ -6449,6 +6887,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
        * A recovery that lies in the telemetry is a recovery nobody can measure. */
       if (res.locals && !res.locals.firstChunkAt) res.locals.firstChunkAt = Date.now();
       sendEvent(res, { type: 'chunk', text: noteWholeAnswer(draft) });
+      sendProvenance(draft, 'complete', terminalFailureKind);
       if (!res.writableEnded) { res.write('data: [DONE]\n\n'); res.end(); }
       if (turnSignal.aborted) return;
       /* NOT CACHED. `cacheAnswer` writes a shelf shared by every user; a draft
@@ -6474,8 +6913,12 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
       );
       return;
     }
+    const synthesisSubstituted = streamSubstitution?.used === true;
+    if (synthesisSubstituted) synthesisModelUsed = null;
     telemetry.recordSynthesis(Date.now() - synthesisStartedAt, synthesisModelUsed);
-    const synthesisEffort = synthesisModelUsed === synthesis.model ? synthesis.effortLabel : 'default';
+    const synthesisEffort = synthesisSubstituted
+      ? 'substituted'
+      : synthesisModelUsed === synthesis.model ? synthesis.effortLabel : 'default';
     console.log(`[SYNTHESIS] model=${synthesisModelUsed} effort=${synthesisEffort} complexity=${selection.complexity} tools=${toolQuestion}`);
     telemetryExtra.synthesisModel = synthesisModelUsed;
     telemetryExtra.synthesisEffort = synthesisEffort;
@@ -6528,6 +6971,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     );
   } catch (err) {
     if (turnSignal.aborted) return;
+    noteTerminalFailure(err);
     console.error('Council error:', err.message);
     Sentry.captureException(err);
     if (!res.headersSent) return sendError(res, err);
@@ -6562,7 +7006,7 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
     if (turnBegun) {
       const finalAnswer = turnAnswerText();
       const state = turnSignal.aborted ? 'aborted' : finalAnswer ? 'complete' : 'failed';
-      const provenanceMeta = makeProvenance(finalAnswer, state, state === 'aborted' ? telemetry.snapshot({}).cancellation?.reason : null);
+      const provenanceMeta = makeProvenance(finalAnswer, state);
       turnLedger.finish({
         turnId: turnContext.turnId,
         state,
@@ -6614,11 +7058,11 @@ You are the Chief Synthesiser for a panel of independent experts who answered th
      * `.catch` because an unhandled rejection in a `finally` ends the process
      * under Node's default policy. */
     if (spendReserved > 0 && auditUserId) {
-      /* PRICED AGAINST THE TOOL SEAT'S MODEL ID, or the settlement refunds the
-       * difference between a metered seat and a free one straight back to the
-       * user. The reservation above already held the metered figure, so getting
-       * this wrong does not overcharge — it silently UNDER-charges, and the
-       * ceiling stops seeing the only seat that can reach it. */
+       /* PRICED AGAINST THE TOOL SEAT'S MODEL ID for defensive settlement. The
+        * historical table distinguishes metered and free records, but FREE_ONLY
+        * blocks a metered request before inference. The reservation above still
+        * holds the conservative figure, so getting this wrong cannot overcharge
+        * a current model call. */
       const settleSnapshot = telemetry.snapshot({ category: 'settle' });
       const actual = priceTurn(settleSnapshot, { toolSeatModel: TOOL_SEAT_MODEL });
       reservationLedger.settle({

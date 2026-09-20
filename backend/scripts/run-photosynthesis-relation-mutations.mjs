@@ -1,323 +1,134 @@
-import { spawnSync } from 'node:child_process';
-import { createHash } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, isAbsolute, resolve } from 'node:path';
-import { fileURLToPath, pathToFileURL } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { createRequire, Module } from 'node:module';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const RECIPE_VERSION = 'p1-static-compose-v1';
-const ENTRY_POINT = 'backend/scripts/run-photosynthesis-relation-mutations.mjs';
-const EVALUATOR_PATH = 'backend/lib/photosynthesis-relation-evaluator.js';
-const RUNNER_IMPORTS = /^import \{ readFileSync \} from 'node:fs';\r?\nimport \{ createRequire, Module \} from 'node:module';\r?\nimport \{ dirname, resolve \} from 'node:path';\r?\nimport \{ fileURLToPath \} from 'node:url';\r?\n\r?\n/;
-const RECIPE_BYTES = readFileSync(fileURLToPath(import.meta.url));
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
+const evaluatorPath = resolve(root, 'backend/lib/photosynthesis-relation-evaluator.js');
+const source = readFileSync(evaluatorPath, 'utf8');
+const require = createRequire(import.meta.url);
+const { canonicalCases, generatedV2Cases, b5SemanticSupplementCases } = require('../lib/photosynthesis-relation-cases.js');
+const cases = [...canonicalCases, ...generatedV2Cases, ...b5SemanticSupplementCases];
+const thresholds = {
+  M1: { NEGATED_MODALITY: 4, UNCERTAIN_MODALITY: 4 },
+  M2: { DETACHED_OBJECT_DECOYS: 4, DIRECT_OBJECT_BARRIERS: 4, FINITE_PREDICATE_BARRIERS: 4 },
+  M3: { MALFORMED_SYNTAX: 6 },
+  M4: { AFFIRMATIVE_PASSIVE: 4 },
+  M5: { COORDINATED_SUBJECTS_MIXED_INVALID: 6 },
+  M6: { DOUBLE_NEGATION: 4, NESTED_CONTROL: 6, UNRELATED_NEGATION: 4 },
+  M7: { CLAUSE_BOUNDARY: 4, NO_STITCHING: 4 },
+  M8: { COORDINATED_SUBJECTS_MIXED_INVALID: 4, INVALID_SUBJECT: 4 },
+  M9: { DETACHED_OBJECT_DECOYS: 4, INVALID_OBJECT: 4 },
+  M10: { AFFIRMATIVE_ACTIVE: 2, KNOWN_REGRESSIONS: 2 },
+};
 
-function sha256(bytes) {
-  return createHash('sha256').update(bytes).digest('hex');
+function replaceFunction(text, name, replacement) {
+  const start = text.indexOf(`function ${name}(`);
+  if (start < 0) throw new Error(`mutation target missing: ${name}`);
+  const end = text.indexOf('\n', start);
+  if (end < 0) throw new Error(`mutation target is not line bounded: ${name}`);
+  return text.slice(0, start) + replacement + text.slice(end);
 }
 
-function gitBlobOid(bytes) {
-  return createHash('sha1').update(Buffer.concat([Buffer.from(`blob ${bytes.length}\0`), bytes])).digest('hex');
-}
-
-function decodeUtf8(bytes, label) {
-  const text = bytes.toString('utf8');
-  if (!Buffer.from(text, 'utf8').equals(bytes)) throw new Error(`${label} is not valid UTF-8`);
-  return text;
-}
-
-function assertEvaluatorClosure(evaluatorBytes) {
-  const source = decodeUtf8(evaluatorBytes, 'evaluator blob');
-  const callCount = source.match(/\brequire\s*\(/g)?.length ?? 0;
-  const literalCalls = [...source.matchAll(/\brequire\s*\(\s*(['"])([^'"]+)\1\s*\)/g)];
-  if (literalCalls.length !== callCount || literalCalls.some((match) => match[2] !== 'node:crypto')) {
-    throw new Error('evaluator runtime closure changed; only literal require(node:crypto) is reviewed');
+function replaceOnce(text, search, replacement, label) {
+  const start = text.indexOf(search);
+  if (start < 0 || text.indexOf(search, start + search.length) >= 0) {
+    throw new Error(`mutation target missing or ambiguous: ${label}`);
   }
-  if (/\brequire\s*\.\s*(?:resolve|cache|extensions|main)\b|\bimport\s*\(|\beval\s*\(/.test(source)) {
-    throw new Error('evaluator runtime closure changed; dynamic loading is not reviewed');
-  }
+  return text.slice(0, start) + replacement + text.slice(start + search.length);
 }
 
-function splitRunner(runnerBytes) {
-  const source = decodeUtf8(runnerBytes, 'runner blob');
-  const match = RUNNER_IMPORTS.exec(source);
-  if (!match) throw new Error('pinned mutation runner import header changed; normal-mode adapter needs re-review');
-  const bodyOffset = Buffer.byteLength(match[0], 'utf8');
-  const body = runnerBytes.subarray(bodyOffset);
-  if (body.length === 0) throw new Error('pinned mutation runner has an empty body');
-  return body;
-}
-
-// The adapter reports Node permission policy; the reviewed verifier remains authoritative for OS-level network isolation.
-function qualificationAndNormalModePrefix() {
-  return String.raw`
-}
-
-export function createDerivedEvaluator() {
-  const module = { exports: {} };
-  const exports = module.exports;
-  const require = (specifier) => {
-    if (specifier !== 'node:crypto') throw new Error('unreviewed evaluator dependency: ' + specifier);
-    return __p1Crypto;
-  };
-  __p1CjsFactory.call(module.exports, exports, require, module, '/work/input/candidate.mjs', '/work/input');
-  return module.exports;
-}
-
-function __p1RunIdValid(runId) {
-  return typeof runId === 'string' && /^[A-Za-z0-9._-]{1,128}$/.test(runId);
-}
-
-function __p1ScratchWritable(runId) {
-  const scratchPath = '/tmp/p1-candidate-' + runId + '.tmp';
-  let descriptor;
-  let created = false;
-  let writable = false;
-  try {
-    descriptor = openSync(scratchPath, 'wx', 0o600);
-    created = true;
-    writable = writeSync(descriptor, 'p1') === 2;
-  } catch {}
-  try { if (descriptor !== undefined) closeSync(descriptor); } catch { writable = false; }
-  try { if (created) unlinkSync(scratchPath); } catch { writable = false; }
-  return writable;
-}
-
-async function __p1RunQualification() {
-  const runId = process.argv[2];
-  if (process.argv.length !== 3 || !__p1RunIdValid(runId)) {
-    process.stderr.write('invalid CandidateQualification runId\n');
-    process.exitCode = 2;
-    return;
-  }
-  const observations = {
-    snapshotReadable: false,
-    scratchWritable: false,
-    networkDenied: false,
-    sensitiveEnvAbsent: false,
-    processCreationDenied: false,
-    processErrorCode: 'NOT_ATTEMPTED',
-    resultSerialized: false,
-  };
-  let semanticPass = false;
-  try {
-    const evaluator = createDerivedEvaluator().evaluatePhotosynthesisRelationsV2;
-    if (typeof evaluator !== 'function') throw new Error('selected V2 evaluator export is not callable');
-    const positive = evaluator('Photosynthesis converts light energy into chemical energy.');
-    const negative = evaluator('Photosynthesis does not capture light energy.');
-    semanticPass = positive.passed === true
-      && positive.polarity === 'AFFIRMED'
-      && positive.relationRecords.some((record) => record.qualifies && record.polarity === 'AFFIRMED')
-      && negative.passed === false
-      && negative.polarity === 'NEGATED'
-      && negative.relationRecords.some((record) => record.polarity === 'NEGATED');
-  } catch (error) {
-    process.stderr.write('CandidateQualification evaluator sentinel failed: ' + (error?.name || 'Error') + '\n');
-  }
-  try { observations.snapshotReadable = readFileSync(process.argv[1]).length > 0; } catch {}
-  observations.scratchWritable = __p1ScratchWritable(runId);
-  const permission = process.permission;
-  try { observations.networkDenied = typeof permission?.has === 'function' && permission.has('net') === false; } catch {}
-  try { observations.processCreationDenied = typeof permission?.has === 'function' && permission.has('child') === false; } catch {}
-  const sensitiveNames = ['OPENROUTER_API_KEY', 'GITHUB_TOKEN', 'CODEX_AUTH'];
-  observations.sensitiveEnvAbsent = sensitiveNames.every((name) => process.env[name] === undefined);
-
-  const result = { schemaVersion: 1, kind: 'p1-verifier-candidate-observation', runId, mode: 'CandidateQualification', observations };
-  let serialized;
-  try {
-    serialized = JSON.stringify(result);
-    observations.resultSerialized = typeof serialized === 'string';
-    serialized = JSON.stringify(result);
-    process.stdout.write(serialized + '\n');
-  } catch {
-    process.stderr.write('CandidateQualification result serialization failed\n');
-    process.exitCode = 1;
-    return;
-  }
-  const observationPass = observations.snapshotReadable
-    && observations.scratchWritable
-    && observations.networkDenied
-    && observations.sensitiveEnvAbsent
-    && observations.processCreationDenied
-    && observations.resultSerialized;
-  if (!semanticPass || !observationPass) process.exitCode = 1;
-}
-
-const __p1IsMain = process.argv[1] !== undefined
-  && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
-const __p1EntryPath = process.argv[1]?.replace(/\\/g, '/');
-if (__p1IsMain && __p1EntryPath?.endsWith('/candidate.mjs')) {
-  await __p1RunQualification();
-} else if (__p1IsMain) {
-`;
-}
-
-function composeArtifact(evaluatorBytes, runnerBytes) {
-  if (!Buffer.isBuffer(evaluatorBytes) || !Buffer.isBuffer(runnerBytes)) throw new TypeError('raw Git blob buffers are required');
-  assertEvaluatorClosure(evaluatorBytes);
-  const runnerBody = splitRunner(runnerBytes);
-  const evaluatorBlob = gitBlobOid(evaluatorBytes);
-  const runnerBlob = gitBlobOid(runnerBytes);
-  const recipeBlob = gitBlobOid(RECIPE_BYTES);
-
-  const prefix = Buffer.from([
-    `// ${RECIPE_VERSION}; evaluator-blob=${evaluatorBlob}; runner-blob=${runnerBlob}; recipe-blob=${recipeBlob}`,
-    "import * as __p1Crypto from 'node:crypto';",
-    "import { closeSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs';",
-    "import { createRequire, Module } from 'node:module';",
-    "import { dirname, resolve } from 'node:path';",
-    "import { fileURLToPath, pathToFileURL } from 'node:url';",
-    '',
-    'function __p1CjsFactory(exports, require, module, __filename, __dirname) {',
-    '',
-  ].join('\n'), 'utf8');
-  const evaluatorEnd = prefix.length + evaluatorBytes.length;
-  const middle = Buffer.from(qualificationAndNormalModePrefix(), 'utf8');
-  const suffix = Buffer.from('\n}\n', 'utf8');
-  const artifact = Buffer.concat([prefix, evaluatorBytes, middle, runnerBody, suffix]);
-  return {
-    artifact,
-    metadata: {
-      recipeVersion: RECIPE_VERSION,
-      recipeBlob,
-      evaluatorBlob,
-      evaluatorSha256: sha256(evaluatorBytes),
-      runnerBlob,
-      runnerSha256: sha256(runnerBytes),
-      selectedExport: 'evaluatePhotosynthesisRelationsV2',
-      entryPoint: ENTRY_POINT,
-      evaluatorStart: prefix.length,
-      evaluatorEnd,
-      embeddedEvaluatorSha256: sha256(artifact.subarray(prefix.length, evaluatorEnd)),
-      artifactSha256: sha256(artifact),
-      artifactBytes: artifact.length,
-    },
-  };
-}
-
-function parseOptions(argv) {
-  const result = {};
-  const allowed = new Set(['repo', 'git-exe', 'expected-git-version', 'expected-node-sha256', 'expected-git-sha256', 'green-commit', 'evaluator-blob', 'runner-blob', 'output']);
-  for (let index = 0; index < argv.length; index += 2) {
-    const key = argv[index];
-    const value = argv[index + 1];
-    if (!key?.startsWith('--') || value === undefined || result[key.slice(2)] !== undefined) {
-      throw new Error('expected unique --name value arguments');
+function mutate(id) {
+  let text = source;
+  if (id === 'M1') text = replaceFunction(text, 'resolveModalState', "function resolveModalState(a){return{polarity:'AFFIRMED',reason:'DIRECT_ASSERTION'};}");
+  if (id === 'M2' || id === 'M7' || id === 'M9') {
+    if (!text.includes('function bindDirectObject(ts,i){')) throw new Error('mutation target missing: bindDirectObject');
+    if (id === 'M2' || id === 'M7') {
+      text = replaceOnce(text,
+        "  if(ts[i]?.form==='the')i++;",
+        "  if(ts[i]?.form==='the')i++;\n  const bound=ts.findIndex((t,n)=>n>=i&&['light','sunlight'].includes(t.form));\n  if(bound>=0)i=bound;",
+        id + ' detached-object rebinding');
     }
-    if (!allowed.has(key.slice(2))) throw new Error(`unknown derivation input ${key}`);
-    result[key.slice(2)] = value;
+    if (id === 'M9') {
+      text = replaceOnce(text,
+        "let end=i+1,light=['light','sunlight'].includes(ts[i].form);",
+        "let end=i+1,light=true;",
+        'M9 arbitrary object as light');
+    }
+    const tailAcceptance = /const allowed = \(!pronoun\?\.valid \|\| pronoun\.grammarValid\)\s*&& tail\.every\([\s\S]*?\);/;
+    const tailAcceptanceAnchors = text.match(/const allowed = \(!pronoun\?\.valid \|\| pronoun\.grammarValid\)/g) || [];
+    if (tailAcceptanceAnchors.length !== 1 || !tailAcceptance.test(text)) {
+      throw new Error(`mutation target missing or ambiguous: ${id} tail acceptance`);
+    }
+    text = text.replace(tailAcceptance, 'const allowed = true;');
+    if (id === 'M2') text = replaceFunction(text, 'detectObjectBarrier', 'function detectObjectBarrier(){return null;}');
   }
-  const required = ['repo', 'git-exe', 'expected-git-version', 'expected-node-sha256', 'expected-git-sha256', 'green-commit', 'evaluator-blob', 'runner-blob', 'output'];
-  for (const key of required) if (!result[key]) throw new Error(`missing --${key}`);
-  return result;
+  if (id === 'M3') {
+    text = replaceOnce(text,
+      'passed:relationRecords.some((record)=>record.qualifies)&&!contradictions.length&&!invalidChlorophyllClaims.length&&!affirmedDestructive,',
+      'passed:(relationRecords.some((record)=>record.qualifies)||result.hasMalformed)&&!contradictions.length&&!invalidChlorophyllClaims.length&&!affirmedDestructive,',
+      'malformed-answer acceptance');
+  }
+  if (id === 'M4') {
+    const start = text.indexOf('function bindLocalPassiveAgent(ts){');
+    const end = text.indexOf('\nfunction resolveCoordinatedPredicates(', start);
+    if (start < 0 || end < 0) throw new Error('mutation target missing: bindLocalPassiveAgent');
+    text = text.slice(0, start) + 'function bindLocalPassiveAgent(ts){return null;}' + text.slice(end);
+  }
+  if (id === 'M5') {
+    text = replaceOnce(text,
+      'members.forEach((member)=>{member.coordinator=coordinator;});',
+      'const first=members.find((member)=>member.valid);if(first)members.splice(0,members.length,first);members.forEach((member)=>{member.coordinator=coordinator;});',
+      'mixed subject truncation');
+  }
+  if (id === 'M6') {
+    text = replaceFunction(text, 'resolveControlChain', 'function resolveControlChain(){return null;}');
+    const old = text.split('\n').find((line) => line.startsWith('const segmentClausesV2 ='));
+    if (!old) throw new Error('mutation target missing: segmentClausesV2');
+    text = text.replace(old, "const segmentClausesV2 = (x) => [{index:0,text:String(typeof x==='string'?x:x.text)}];");
+  }
+  if (id === 'M7') {
+    const old = text.split('\n').find((line) => line.startsWith('const segmentClausesV2 ='));
+    if (!old) throw new Error('mutation target missing: segmentClausesV2');
+    text = text.replace(old, "const segmentClausesV2 = (x) => [{index:0,text:String(typeof x==='string'?x:x.text)}];");
+    text = replaceFunction(text, 'detectObjectBarrier', 'function detectObjectBarrier(){return null;}');
+  }
+  if (id === 'M8') {
+    text = replaceOnce(text, 'valid:V2_SUBJECTS.has(surface)', 'valid:true', 'unsupported subject acceptance');
+  }
+  if (id === 'M10') {
+    const positiveQualification = /qualifies: valid && light && allowed && !destructive && !barrier\s*&& !coordinatedPredicates\.invalid && polarity === 'AFFIRMED',/g;
+    if ((text.match(positiveQualification) || []).length !== 1) throw new Error('mutation target missing or ambiguous: positive relation qualification');
+    text = text.replace(positiveQualification, 'qualifies:false,');
+  }
+  const mutant = new Module(evaluatorPath);
+  mutant.filename = evaluatorPath;
+  mutant.paths = Module._nodeModulePaths(dirname(evaluatorPath));
+  mutant._compile(text, evaluatorPath);
+  return mutant.exports.evaluatePhotosynthesisRelationsV2;
 }
 
-function controlledGitEnvironment(gitExecutable) {
-  const root = dirname(gitExecutable);
-  const pathEntries = process.platform === 'win32'
-    ? [root, resolve(root, '..', 'bin'), resolve(root, '..', 'mingw64', 'bin'), `${process.env.SystemRoot}\\System32`]
-    : [root, '/usr/bin', '/bin'];
-  const env = {
-    PATH: pathEntries.join(process.platform === 'win32' ? ';' : ':'),
-    GIT_CONFIG_NOSYSTEM: '1',
-    GIT_CONFIG_GLOBAL: process.platform === 'win32' ? 'NUL' : '/dev/null',
-    GIT_NO_REPLACE_OBJECTS: '1',
-    GIT_OPTIONAL_LOCKS: '0',
-    GIT_TERMINAL_PROMPT: '0',
-    LANG: 'C',
-    LC_ALL: 'C',
-    TZ: 'UTC',
-  };
-  if (process.platform === 'win32') {
-    env.SystemRoot = process.env.SystemRoot;
-    env.WINDIR = process.env.WINDIR;
-  }
-  return env;
+function failed(item, evaluator) {
+  const result = evaluator(item.text);
+  if ((result.passed ? 'PASS' : 'FAIL') !== item.expectedDecision) return true;
+  if (item.expectedPolarity && result.polarity !== item.expectedPolarity) return true;
+  return (item.requiredDiagnostics || []).some((required) => ![
+    ...result.diagnostics,
+    ...result.relationRecords.flatMap((record) => [record.grammarShape, record.subjectValidity, record.polarity,
+      record.polarityReason, record.controlChain?.type, record.lightObject?.binding, ...record.rejectionReasons]),
+  ].filter(Boolean).some((actual) => String(actual).toLowerCase().includes(required.toLowerCase())));
 }
 
-function runGit(gitExecutable, repo, args, env, input) {
-  const result = spawnSync(gitExecutable, ['-C', repo, ...args], { env, input, encoding: null, maxBuffer: 4 * 1024 * 1024 });
-  if (result.error || result.status !== 0) {
-    const detail = result.stderr?.toString('utf8').trim() || result.error?.message || `exit ${result.status}`;
-    throw new Error(`pinned Git command failed: ${detail}`);
+const rows = [];
+for (const [id, byClass] of Object.entries(thresholds)) {
+  const evaluator = mutate(id);
+  const failuresByClass = {};
+  for (const classId of Object.keys(byClass)) {
+    failuresByClass[classId] = cases.filter((item) => item.classIds?.includes(classId) && failed(item, evaluator)).length;
   }
-  return result.stdout;
+  const killed = Object.entries(byClass).every(([classId, minimum]) => failuresByClass[classId] >= minimum);
+  rows.push({ id, killed, failuresByClass, minimumFailuresByClass: byClass });
 }
-
-function immutableBlob(gitExecutable, repo, oid, env) {
-  if (!/^[a-f0-9]{40}$/.test(oid)) throw new Error('input is not a full SHA-1 Git blob id');
-  const type = runGit(gitExecutable, repo, ['cat-file', '-t', oid], env).toString('ascii').trim();
-  if (type !== 'blob') throw new Error(`input ${oid} is not a Git blob`);
-  const bytes = runGit(gitExecutable, repo, ['cat-file', 'blob', oid], env);
-  const computed = runGit(gitExecutable, repo, ['hash-object', '--no-filters', '--stdin'], env, bytes).toString('ascii').trim();
-  if (computed !== oid || gitBlobOid(bytes) !== oid) throw new Error(`raw Git blob identity mismatch for ${oid}`);
-  return bytes;
-}
-
-function buildFromGit(options) {
-  if (process.version !== 'v26.7.0') throw new Error(`Node v26.7.0 required; got ${process.version}`);
-  if (!isAbsolute(options.repo) || !isAbsolute(options['git-exe']) || !isAbsolute(options.output)) {
-    throw new Error('repository, Git executable, and output paths must be absolute');
-  }
-  const gitExecutable = resolve(options['git-exe']);
-  const repo = resolve(options.repo);
-  const output = resolve(options.output);
-  if (!existsSync(gitExecutable) || !existsSync(repo)) throw new Error('pinned Git executable or repository path is missing');
-  if (existsSync(output)) throw new Error('refusing to overwrite an existing output path');
-  if (!/^[a-f0-9]{64}$/.test(options['expected-node-sha256']) || !/^[a-f0-9]{64}$/.test(options['expected-git-sha256'])) {
-    throw new Error('full SHA-256 toolchain identities are required');
-  }
-  const nodeExecutableSha256 = sha256(readFileSync(process.execPath));
-  const gitExecutableSha256 = sha256(readFileSync(gitExecutable));
-  if (nodeExecutableSha256 !== options['expected-node-sha256']) throw new Error('pinned Node executable SHA-256 mismatch');
-  if (gitExecutableSha256 !== options['expected-git-sha256']) throw new Error('pinned Git executable SHA-256 mismatch');
-  if (!/^[a-f0-9]{40}$/.test(options['green-commit'])) throw new Error('full immutable GREEN commit SHA is required');
-  const env = controlledGitEnvironment(gitExecutable);
-  const gitVersion = runGit(gitExecutable, repo, ['--version'], env).toString('utf8').trim();
-  if (gitVersion !== options['expected-git-version']) throw new Error(`pinned Git version mismatch: ${gitVersion}`);
-  const objectFormat = runGit(gitExecutable, repo, ['rev-parse', '--show-object-format=storage'], env).toString('ascii').trim();
-  if (objectFormat !== 'sha1') throw new Error(`unsupported Git object format: ${objectFormat}`);
-  const greenCommit = runGit(gitExecutable, repo, ['rev-parse', '--verify', `${options['green-commit']}^{commit}`], env).toString('ascii').trim();
-  const greenTree = runGit(gitExecutable, repo, ['rev-parse', `${greenCommit}^{tree}`], env).toString('ascii').trim();
-  const evaluatorBlob = runGit(gitExecutable, repo, ['rev-parse', `${greenCommit}:${EVALUATOR_PATH}`], env).toString('ascii').trim();
-  const runnerBlob = runGit(gitExecutable, repo, ['rev-parse', `${greenCommit}:${ENTRY_POINT}`], env).toString('ascii').trim();
-  if (evaluatorBlob !== options['evaluator-blob'] || runnerBlob !== options['runner-blob']) {
-    throw new Error('GREEN commit does not contain the requested evaluator and runner blobs');
-  }
-  const evaluatorBytes = immutableBlob(gitExecutable, repo, evaluatorBlob, env);
-  const runnerBytes = immutableBlob(gitExecutable, repo, runnerBlob, env);
-  const recipeOid = runGit(gitExecutable, repo, ['hash-object', '-w', '--no-filters', '--stdin'], env, RECIPE_BYTES).toString('ascii').trim();
-  if (recipeOid !== gitBlobOid(RECIPE_BYTES)) throw new Error('derivation recipe Git identity mismatch');
-  const recipeBytes = immutableBlob(gitExecutable, repo, recipeOid, env);
-  if (!recipeBytes.equals(RECIPE_BYTES)) throw new Error('executing recipe differs from its immutable Git blob');
-
-  const built = composeArtifact(evaluatorBytes, runnerBytes);
-  const outputDirectory = dirname(output);
-  mkdirSync(outputDirectory, { recursive: true });
-  writeFileSync(output, built.artifact, { flag: 'wx' });
-  const emitted = readFileSync(output);
-  if (!emitted.equals(built.artifact)) throw new Error('written package differs from derived bytes');
-  process.stdout.write(`${JSON.stringify({
-    ...built.metadata,
-    greenCommit,
-    greenTree,
-    nodeVersion: process.version,
-    nodeExecutable: process.execPath,
-    nodeExecutableSha256,
-    gitVersion,
-    gitExecutable,
-    gitExecutableSha256,
-    gitObjectFormat: objectFormat,
-  })}\n`);
-}
-
-const isMain = process.argv[1] !== undefined
-  && import.meta.url === pathToFileURL(resolve(process.argv[1])).href;
-if (isMain) {
-  try {
-    buildFromGit(parseOptions(process.argv.slice(2)));
-  } catch (error) {
-    process.stderr.write(`p1-static-compose-v1 failed: ${error.message}\n`);
-    process.exitCode = 1;
-  }
-}
-
-export { composeArtifact, gitBlobOid };
+const result = { schemaVersion: 1, cases: cases.length, mutations: rows, killed: rows.filter((row) => row.killed).length, total: rows.length };
+process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+if (result.killed !== result.total) process.exitCode = 1;

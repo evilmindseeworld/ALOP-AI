@@ -58,25 +58,6 @@
     box-shadow var(--dur) var(--ease-out);
 }
 
-/* ===== THE INNER RULE =====
- *
- * The botanical posters this ornament family comes from never draw a single
- * edge. There is an outer rule at the trim and a second hairline a few
- * millimetres inside it, and everything — the plate, the vertical text rail,
- * the specimen card — sits between the two. That doubled edge is what makes a
- * printed sheet read as composed rather than as content stopping at a border.
- *
- * The composer already carries the branch and the seal from that reference and
- * still had one plain 1px border, so it was the one place the family was
- * quoted in ornament but not in structure.
- *
- * It lives in the padding gutter, not over the text: inset 4px against the
- * card's 12px padding leaves 8px of clear space before the first glyph. Drawn
- * in --ornament-ink at the faint step, so it belongs to the drawing rather than
- * to the border ramp — a second --border here would read as a rendering bug.
- *
- * pointer-events: none for the same reason .composer-sprigs has it. A rule
- * covering the whole card must never eat a click meant for the prompt. */
 .input-wrapper::after {
   content: "";
   position: absolute;
@@ -105,22 +86,6 @@
   transform: translateY(-1px);
 }
 
-/* ===== THE ORNAMENT ON THE PROMPT BAR =====
- *
- * The branch reached every surface in this app except the one the user
- * actually touches, and the only one that is always on screen.
- *
- * IT USED TO HANG ABOVE THE TOP EDGE. Half over the transcript, at the faint
- * step, on the reasoning that anything drawn inside the card would be over the
- * words someone is typing. The reasoning held and the conclusion did not: an
- * ornament that overlaps live text has no good opacity, so the branch was
- * turned down until it read as a smudge BEHIND the bar rather than a drawing
- * on it, which is exactly what it looked like.
- *
- * The town does not overlap anything. It has a strip of its own at the foot of
- * the card — see the padding above — so it can be drawn at a weight that reads.
- * The rule for this surface is now: on the bar, or not on the bar. Nothing
- * hangs off it. */
 .composer-sprigs {
   position: absolute;
   inset: 0;
@@ -170,137 +135,64 @@
   display: block;
 }
 
-/* SOLID, AND NOT PINK.
- *
- * This was --ornament-ink at the mid step, which is what the alpha ladder is
- * for and was the wrong instrument. At 262px it read as a small pink drawing;
- * once it ran the full width of the card it read as a pink BAND along the
- * bottom of the composer, because that is what an 850px mass of brand hue is at
- * any alpha. Ink is for line work. A silhouette is a mass.
- *
- * So it is --ornament-silhouette at full opacity: darker than the surface in
- * both themes, no alpha at all. It also removes the seam problem that group
- * opacity existed to solve — overlapping opaque shapes have no seams — and it
- * is what lets the sun read, because a disc only glows against something dark.
- *
- * The second hard-edged fill in the app, after the band in tokens.css, and for
- * the same reason: an edge the eye can land on. */
 .composer-town {
   fill: var(--ornament-silhouette);
 }
 
-/* THE ONLY SATURATED THING IN THE STRIP, at full opacity like the hanko. It had
- * the strong step and was losing to the town it was meant to rise behind — two
- * marks at similar weight in similar hues merge into one shape at 20px. Now the
- * town is dark and this is the one colour: the round thing among straight
- * edges, and the only lit thing among dark ones.
- *
- * Drawn before the town in document order, though the high disc is now fully
- * clear of the roofline rather than occluded by it. */
+/* Show one skyline profile per theme. */
+
+.composer-town-city,
+.composer-town-far,
+.composer-windows { display: none; }
+
+.app-root.dark .composer-town-village { display: none; }
+
+.app-root.dark .composer-town-city,
+.app-root.dark .composer-town-far,
+.app-root.dark .composer-windows { display: block; }
+
+/* A paler back rank adds depth; group opacity hides path overlaps. */
+.composer-town-far { opacity: var(--ornament-a-strong); }
+
+/* Sparse windows use the existing seal color at restrained opacity. */
+.composer-windows {
+  fill: var(--ornament-seal);
+  opacity: var(--ornament-a-strong);
+}
+
+/* Keep the sun and moon legible above the skyline. */
 .composer-sun,
 .composer-moon {
   fill: var(--ornament-seal);
   transition: transform var(--dur-slow) var(--ease-spring);
 }
 
-/* ONE DISC IS SHOWN AT A TIME, and which one is the only thing the theme
- * changes here. Both are drawn at the same centre and radius, so nothing about
- * the sky's measured clearances depends on which is visible.
- *
- * `display` rather than `opacity`, deliberately: an invisible disc at opacity 0
- * still takes the focus-within transform and still sits in the accessibility
- * tree, and two suns transitioning past each other on a theme switch is a
- * flicker nobody asked for. Display removes it from both.
- *
- * DEFAULT IS THE SUN, and the night rule is the override. The app root always
- * carries one of `.light` or `.dark` (App.jsx), but if it ever carried neither
- * the drawing should still show a disc rather than an empty sky — a missing
- * class must not produce a blank ornament. */
+/* The day disc is a core inside a detached ring — a sun that cannot afford
+ * rays, because the strip clips anything past r=9 when the composer takes
+ * focus. Both halves carry `.composer-sun`, so the theme switch and the focus
+ * lift above keep working on one selector and the two can never separate. */
+.composer-sun-corona {
+  fill: none;
+  stroke: var(--ornament-seal);
+  stroke-width: 1.2;
+}
+
+/* Show one weather disc per theme; both share position and size. */
 .composer-moon { display: none; }
 .app-root.dark .composer-sun { display: none; }
 .app-root.dark .composer-moon { display: block; }
 
-/* MIST, NOT INK, AND THAT IS A MATERIAL CHANGE RATHER THAN A WEIGHT ONE.
- *
- * These were `--ornament-ink` at the faint step, then ink at the mid step when
- * both peers found them impossible to spot. At mid they read as highlighter —
- * the owner's word, and the right one. Kasumi is grey mist; the ink is a brand
- * pink. The bars had not become too loud, they had become the wrong substance,
- * and no point on the alpha ladder is grey. Measured both ends of it before
- * accepting that: half a step back left +0.045 chroma over the card, a full step
- * back left +0.030 and put them back to invisible.
- *
- * `--ornament-mist` holds the weight and drops the colour — same lightness gap
- * to within a rounding error, about a twentieth of the chroma. The derivation
- * and the numbers are in tokens.css.
- *
- * The step stays MID, which is what "more visible" asked for. The town keeps its
- * solid silhouette fill for the reason recorded above it: a mass and line work
- * are different jobs. Three materials in one strip now, which is the point —
- * the sun is the only saturated thing, the town is the only solid one, and the
- * cloud is the only grey one. */
+/* Quiet grey bars soften the skyline without competing with the disc. */
 .composer-clouds {
   fill: var(--ornament-mist);
-  /* MID, NOT FAINT, AND STILL MID AFTER THE MATERIAL CHANGE. Both peers landed
-   * on this step independently — the strongest signal either of them gave — each
-   * having found the bars present in every screenshot and needing to be hunted
-   * for. Faint is the right step for a rule nobody is meant to look at; these sit
-   * beside the one mark in the strip that IS meant to be looked at, and a cloud
-   * you cannot find is not weather, it is noise at a lower alpha.
-   *
-   * An existing rung, not a new value: the ladder is three steps and no rule may
-   * invent a fourth. It is also why this needs no per-theme handling — light is
-   * about 1.4x dark at every rung, and the mist token is declared per theme for
-   * the separate reason that "pale enough to see" points opposite ways on
-   * near-black and on paper. */
+
   opacity: var(--ornament-a-mid);
 }
 
-/* THE BOUNDED SHIFT THAT PUTS THE WEATHER IN THE MIDDLE-LEFT.
- *
- * The owner asked for the sun at middle-left. It was already middle-left on a
- * phone and hard-left on a desktop, because the strip is a fixed-scale window
- * onto a 1040-unit drawing: the number of units you can see grows with the card
- * while every coordinate stays put. One new fixed x fixes one width and breaks
- * the other, so this is a shift with a floor and a ceiling instead.
- *
- * THE UNITS HERE ARE SVG USER UNITS, NOT CSS PIXELS. `px` on a transform applied
- * to an SVG child resolves in the viewBox's coordinate system — measured in
- * Chrome at this drawing, `translateX(74px)` moves the disc 60.3 CSS px. The
- * `20vw` term is the one exception in spirit: it is resolved as a viewport
- * length and then consumed as user units. That is legal and it is what makes the
- * clamp track window width, but it means the endpoints below are not readable as
- * pixels and must not be "corrected" into them.
- *
- * What it does: below a ~480px window the term is negative and the floor holds
- * the sun at its original 96, which is the composition that already worked on a
- * phone. It then tracks the window until it caps at +74 — an effective centre of
- * 170 — from about 850px up. At 170 the disc sits roughly a quarter into the
- * visible strip with the town's gable line 8 units below it.
- *
- * It tracks the VIEWPORT, not the card, so opening the sidebar narrows the strip
- * without moving the sun. The cap is what makes that acceptable: the error is
- * bounded by design, and a container query here would tie an ornament's geometry
- * to a layout that is still being changed.
- *
- * No transition. This responds to resize, and an ornament that slides on every
- * window drag is a distraction; the sun's own 2px focus lift is a separate
- * transform on a separate element and is untouched by this. */
 .composer-weather {
   transform: translateX(clamp(0px, calc(20vw - 96px), 74px));
 }
 
-/* THE RIGHT END IS A SEAL NOW, NOT A SECOND BRANCH.
- *
- * `.composer-sprig-r` was the same drawing under scaleX(-1), so the prompt bar
- * was a symmetrical pair — the mirroring problem recorded in decoration.css, at
- * the one place on the screen the eye is always pointed at. A hanko is what the
- * reference puts at the end of a composition, and it is the only mark in this
- * app drawn at full opacity: no alpha-ladder step here on purpose, because a
- * seal that hedges is not a seal.
- *
- * It sits ON the card rather than above its edge, which is where a stamp goes,
- * and inside the padding so it never lands under the send button. */
 .composer-seal {
   position: absolute;
   right: 12px;
@@ -310,22 +202,6 @@
   transition: transform var(--dur) var(--ease-spring);
 }
 
-/* THE SUN ANSWERS THE CARET, and it is the only thing on this card that can
- * make that gesture mean something: it rises 2px. The card lifts 1px and
- * changes border colour, the inner rule brightens a step, and the sun comes up
- * behind the town on the slow spring — three different answers to one event
- * rather than three copies of it.
- *
- * 2px against a 21px disc is a tenth of it — a move you notice at the edge of
- * vision without ever catching it happening, which is the only kind of motion
- * that survives being this quiet.
- *
- * THIS 2px IS A CEILING ON HOW HIGH THE SUN CAN BE DRAWN, which is not obvious
- * from either file alone. The strip is `overflow: hidden`, so the lift clips
- * the crown off the disc if the circle's top is nearer the top of the viewBox
- * than 2px — about 1.73 units at 44px per 38. SakuraFrame.jsx's sun sits at
- * y=2 for that reason and says so. Raise this value and you move that limit
- * with it. */
 .input-wrapper:focus-within .composer-sun,
 .input-wrapper:focus-within .composer-moon {
   transform: translateY(-2px);
@@ -489,7 +365,6 @@
  * so it reads as one without needing the tooltip. Colour is not carrying this
  * alone — the leading icon changes to a pin and the button is aria-pressed. */
 .file-chip-keep[aria-pressed="true"] { color: var(--accent); }
-
 
 .input-text {
   background: transparent;

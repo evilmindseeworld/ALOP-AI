@@ -18,9 +18,16 @@ const SRC = readFileSync(
 );
 const CSS = readFileSync(join(__dirname, "..", "styles", "composer.css"), "utf8");
 
-/** `<circle className="composer-sun" cx="96" cy="11" r="9" />` → the numbers. */
+/** `<circle className="composer-sun …" cx="96" cy="11" r="9" />` → the numbers.
+ *
+ * Matched on a class TOKEN rather than on the whole attribute: the day disc is
+ * two circles now, `composer-sun composer-sun-corona` (the r=9 outer ring) and
+ * `composer-sun composer-sun-core` inside it, so an exact-attribute match found
+ * neither. The first match in source order is the corona, which is the disc
+ * every clearance in ComposerSkyline is measured against and the one the moon
+ * has to agree with. */
 const discOf = (name) => {
-  const re = new RegExp(`className="${name}"([^/]*)/`);
+  const re = new RegExp(`className="[^"]*${name}[^"]*"([^/]*)/`);
   const attrs = re.exec(SRC)?.[1] ?? "";
   return {
     cx: /cx="([\d.]+)"/.exec(attrs)?.[1],

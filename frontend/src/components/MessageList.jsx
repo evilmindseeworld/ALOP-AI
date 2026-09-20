@@ -1,5 +1,4 @@
 import { memo, lazy, Suspense, useState, useRef, useEffect } from "react";
-import CouncilRosette from "./CouncilRosette";
 /**
  * THE MARKDOWN STACK IS 160.92 kB RAW / 49.11 kB GZIP AND IS NEEDED BY NO
  * MESSAGE UNTIL ONE HAS FINISHED ARRIVING.
@@ -173,81 +172,14 @@ MessageActions.displayName = "MessageActions";
  * off rather than described.
  */
 export const EmptyState = memo(({ onPick }) => {
-  const logoRef = useRef(null);
-
-  /* THE LOGO'S MOTION IS OWNED BY THE LOGO, and bound to the element rather
-   * than to `.empty-logo`.
-   *
-   * This ran in App.jsx from an effect keyed on the message list, which is not
-   * the same thing as "the empty state is on screen". It fired twice when the
-   * element did not exist: once on mount, because MessageList is a lazy chunk
-   * and Suspense was still showing the fallback, and again the instant a
-   * message was sent, because `status` leaves "idle" before the list has a
-   * message in it and this component unmounts. Both times the selector matched
-   * nothing.
-   *
-   * animejs resolves a selector that matches nothing to `undefined`, and
-   * `new Animatable(undefined, ...)` returns early with no property methods
-   * defined. Draggable then calls the one it expects and throws
-   *
-   *   this.animate[this.xProp] is not a function
-   *
-   * which is why the crash named no element and no file. A ref cannot miss:
-   * this effect runs after the element it points at is in the document. */
-  useEffect(() => {
-    const el = logoRef.current;
-    if (!el) return;
-    let disposed = false;
-    let pulse;
-    let drag;
-    import("../lib/motion")
-      .then(({ animateEmptyLogo }) => {
-        if (disposed) return;
-        ({ pulse, drag } = animateEmptyLogo(el));
-      })
-      .catch(() => {});
-    return () => {
-      disposed = true;
-      pulse?.revert();
-      drag?.revert();
-    };
-  }, []);
-
+  // The former logo, ring, and motion are intentionally omitted.
   return (
   <div className="empty-state">
-    {/* THE BRANCHES ARE GONE, on the owner's instruction (2026-08-11): "leave
-        the earrings, just delete the branches." The top pair went first as a
-        declutter and the rest followed — all four corner sprigs, and the bough
-        and falling petals that were on sign-in.
-
-        What stays is the family's harder half: the crescents, the keystone
-        above the composer, the seal, the skyline on the prompt bar and the
-        asanoha lattice. The centred hero and the 2x2 starter grid below are
-        untouched and remain the specification. See SakuraFrame.jsx. */}
-    {/* The seal goes round the mark, not round the panel.
-        The rosette's traces all pass through one centre and leave a clear disc
-        there — the figure is a ring, and the mark is exactly what that ring is
-        the right size to hold. Sitting in the frame it was concentric with
-        nothing: .empty-state centres its whole column, so the mark's y moves
-        with the height of the title, subtitle and starter grid, and the ring
-        floated 42px above it with its top half clipped off the panel. Inside
-        the mark's own box it cannot come apart, at any viewport. */}
-    <span className="empty-mark">
-      <CouncilRosette />
-      <img ref={logoRef} src="/logo-mark.png" alt="" className="empty-logo" />
-    </span>
-    {/* No eyebrow. "The AI Council" sat between the mark and the title,
-        saying nothing the title and subtitle below do not — see SignInPage
-        for the same removal. */}
-    {/* An empty screen is an invitation to act, so it asks rather than
-        announces. "ALOP-AI Assembled." named the product and its own machinery
-        to somebody who had just opened the product and can see its name in the
-        header — and it carried both the italic-serif accent and the animated
-        gradient shimmer, which were the two most decorative things in the app.
-        All three are gone; the subtitle below already explains the mechanic. */}
-    <h2 className="empty-title">What do you want to ask?</h2>
+    <h2 className="empty-title text-shimmer">
+      ALOP-AI<span className="empty-title-accent">Assembled.</span>
+    </h2>
     <p className="empty-subtitle">
-      Several models answer separately, read each other, then agree on one reply. Tell it when it is wrong and it remembers.
+      Several models answer separately, read each other, then agree on one reply. Tell it when it is wrong, and it remembers.
     </p>
     <div className="starter-grid">
       {STARTERS.map((s) => (

@@ -1,0 +1,71 @@
+{
+  "schemaVersion": 1,
+  "designVersion": "photosynthesis-light-relation-v2",
+  "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
+  "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
+  "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
+  "phase": "RED",
+  "expectedRed": true,
+  "capturedAtUtc": "2026-09-20T22:10:28Z",
+  "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
+  "authorityEpoch": 2,
+  "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
+  "redSourceCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb",
+  "redSourceTreeSha": "d8611391d48933b842477d8c6af270eb11c1aada",
+  "frozenCorpus": {
+    "source": "supervisor-owned photosynthesis-clause-relation-v2.json canonicalCases",
+    "designArtifactSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
+    "membershipExact": true,
+    "caseIds": ["ADV001", "ADV002", "ADV003", "ADV004", "ADV005", "ADV006"]
+  },
+  "testRun": {
+    "command": "C:\\Users\\LENOVO\\Documents\\Codex-Control\\toolchains\\node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe --test --test-reporter=spec backend/lib/photosynthesis-relation-evaluator.test.js",
+    "runtime": {
+      "version": "v26.7.0",
+      "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
+    },
+    "result": {
+      "tests": 35,
+      "passed": 3,
+      "failed": 32,
+      "exitCode": 1,
+      "behavioralRed": true
+    },
+    "testSource": {
+      "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
+      "gitBlobSha": "1ca5e274b0ef3fc0059933c2d9a2c15966d2a3ed",
+      "sha256": "3fe35c21e2428a61e5aa8b26cf0934abe9aaa0652d2b75ea854a80c1f4665016"
+    },
+    "approvedBaseEvaluator": {
+      "path": "backend/lib/photosynthesis-relation-evaluator.js",
+      "gitBlobSha": "ef12ad1758081524cbae3cad3f184be6fddaebc2",
+      "sha256": "6415044c541aa1643e018a78144a025971cf69edb02ca4e174ffc6abb7d2d781"
+    },
+    "datasetSeam": {
+      "path": "backend/evals/backend-intelligence-v2.json",
+      "gitBlobSha": "c42b1250dbd5ec0020b4eff652a5aaf4b3c6d228",
+      "sha256": "66969864e31bd17ab2050878e46e465dcc7fe2afc25259f1c6715823af5d35cb",
+      "caseId": "simple-explanation-photosynthesis",
+      "expectedEvaluatorId": "photosynthesis-light-relation-v2",
+      "observedEvaluatorId": "photosynthesis-light-relation-v1",
+      "result": "RED_BEHAVIORAL_DISPATCH_MISMATCH"
+    },
+    "canonicalTargetedCommand": "C:\\Users\\LENOVO\\Documents\\Codex-Control\\toolchains\\node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe --test --test-reporter=spec --test-name-pattern='frozen V2 canonical ADV001-ADV006' backend/lib/photosynthesis-relation-evaluator.test.js",
+    "canonicalTargetedResult": {
+      "tests": 7,
+      "passed": 0,
+      "failed": 7,
+      "rootCaseFailures": 6,
+      "exitCode": 1,
+      "failureShape": "expected-decision-mismatch-before-polarity-or-version-assertions"
+    }
+  },
+  "rootReproductions": [
+    {"id": "ADV001", "expectedDecision": "FAIL", "observedDecision": "PASS", "expectedPolarity": "UNCERTAIN", "observedPassed": true, "behavioralMismatch": true},
+    {"id": "ADV002", "expectedDecision": "FAIL", "observedDecision": "PASS", "expectedPolarity": "UNRESOLVED", "observedPassed": true, "behavioralMismatch": true},
+    {"id": "ADV003", "expectedDecision": "FAIL", "observedDecision": "PASS", "expectedPolarity": "UNRESOLVED", "observedPassed": true, "behavioralMismatch": true},
+    {"id": "ADV004", "expectedDecision": "PASS", "observedDecision": "FAIL", "expectedPolarity": "AFFIRMED", "observedPassed": false, "behavioralMismatch": true},
+    {"id": "ADV005", "expectedDecision": "PASS", "observedDecision": "FAIL", "expectedPolarity": "AFFIRMED", "observedPassed": false, "behavioralMismatch": true},
+    {"id": "ADV006", "expectedDecision": "FAIL", "observedDecision": "PASS", "expectedPolarity": "MIXED_INVALID", "observedPassed": true, "behavioralMismatch": true}
+  ]
+}

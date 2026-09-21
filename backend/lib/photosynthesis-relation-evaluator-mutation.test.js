@@ -163,8 +163,8 @@ test('M9: accepting arbitrary direct objects as light is killed across object co
   );
   source = replaceOnce(
     source,
-    "const allowed = (!pronoun?.valid || pronoun.grammarValid)\n        && tail.every((form, index) => allowedTail.has(form)\n          || Boolean(pronoun?.valid && pronoun.grammarValid\n            && index === pronoun.continuationTailOffset && form === pronoun.continuationVerb));",
-    'const allowed = true;',
+    '&& validateActiveTailV2(tokens, object.tokenEnd, pronoun);',
+    '&& true;',
     'M9 unrestricted object tail',
   );
   const mutant = loadMutant(source).evaluatePhotosynthesisRelationsV2;

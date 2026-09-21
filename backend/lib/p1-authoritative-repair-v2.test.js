@@ -652,7 +652,7 @@ test('V2 corpus identity and expected membership are frozen independently of imp
     .map(stableFields)
     .sort(([leftId], [rightId]) => leftId.localeCompare(rightId));
   const identity = createHash('sha256').update(JSON.stringify(corpus)).digest('hex');
-  assert.equal(identity, '263692679a675ccd27e5551d0de188662d8daa9d9c098a4a91f622b5f6adf6b9');
+  assert.equal(identity, '3f4bf7084a0c6eddc1e8d4d4697e968ab99ac05f8181599c35726946e77c4d9c');
   assert.deepEqual(b5SemanticSupplementCases.map(stableFields), [[
     'B5-PUNCTUATION_ABUSE-001',
     'Photosynthesis captures carbon dioxide!?! Light energy exists.',
@@ -1092,9 +1092,10 @@ test('V2 semantic corpus meets every frozen class minimum with unique fingerprin
   const fingerprints = all.map((item) => semanticCaseFingerprint(item.text, item.expectedDecision));
   const fingerprintGroups = new Map();
   all.forEach((item, index) => fingerprintGroups.set(fingerprints[index], [...(fingerprintGroups.get(fingerprints[index]) || []), item.id]));
-  assert.equal(fingerprints.length, 205);
-  assert.equal(new Set(fingerprints).size, 204, 'repeated punctuation is one semantic case');
+  assert.equal(fingerprints.length, 206);
+  assert.equal(new Set(fingerprints).size, 204, 'cosmetic punctuation is not semantic diversity');
   assert.deepEqual([...fingerprintGroups.values()].filter((ids) => ids.length > 1).map((ids) => ids.sort()), [
+    ['SB-001', 'V2-SENTENCE_BOUNDARY-005'],
     ['PUN-001', 'V2-PUNCTUATION_ABUSE-002'],
   ]);
   const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
@@ -1134,7 +1135,7 @@ test('V2 parameter dimensions match parsed semantic differences and class allowa
     if (dimensions.has('LO')) assert.notDeepEqual(before.relationRecords.map((x) => [x.directObject?.role,x.directObject?.normalized,x.directObject?.surface]), after.relationRecords.map((x) => [x.directObject?.role,x.directObject?.normalized,x.directObject?.surface]), `${item.id}: LO`);
     if (dimensions.has('BD')) assert.ok(!same(before.topology, after.topology) || !same(before.relationRecords.map((x) => x.objectBarriers?.marker), after.relationRecords.map((x) => x.objectBarriers?.marker)), `${item.id}: BD`);
     if (dimensions.has('PU')) {
-      if (item.id === 'V2-PUNCTUATION_ABUSE-002') {
+      if (['V2-PUNCTUATION_ABUSE-002', 'V2-SENTENCE_BOUNDARY-005'].includes(item.id)) {
         assert.equal(semanticCaseFingerprint(seed.text, seed.expectedDecision), semanticCaseFingerprint(item.text, item.expectedDecision), `${item.id}: cosmetic punctuation count`);
       } else assert.notDeepEqual(before.punctuationTopology, after.punctuationTopology, `${item.id}: PU`);
     }
@@ -1260,4 +1261,109 @@ test('V2 classes exercise their required relation diagnostics across semantic ca
       )), `${row.classId}: ${property}`);
     }
   }
+});
+
+test('Astra defect 1: malformed trailing frames cannot pass factuality', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  const photoCase = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
+  for (const answer of [
+    'Photosynthesis captures light energy chlorophyll glucose.',
+    'Photosynthesis captures light energy in for during chlorophyll.',
+  ]) {
+    const result = evaluatePhotosynthesisRelationsV2(answer);
+    const grade = gradeCase(photoCase, observation(answer, { id: photoCase.id }));
+    assert.equal(result.passed, false, answer);
+    assert.equal(result.hasMalformed, true, answer);
+    assert.equal(grade.factuality.passed, false, answer);
+  }
+});
+
+test('malformed trailing content is rejected by complete-frame shape, not token membership', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  const photoCase = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
+  for (const answer of [
+    'Photosynthesis captures light energy.',
+    'Photosynthesis captures light energy during photosynthesis.',
+    'Photosynthesis converts light energy into chemical energy.',
+    'Photosynthesis is how plants use chlorophyll to capture light energy and make food.',
+    'Photosynthesis converts light energy into chemical energy, storing it in glucose molecules.',
+  ]) assert.equal(evaluatePhotosynthesisRelationsV2(answer).passed, true, answer);
+  for (const answer of [
+    'Photosynthesis captures light energy chlorophyll.',
+    'Photosynthesis captures light energy chlorophyll glucose.',
+    'Photosynthesis captures light energy in.',
+    'Photosynthesis captures light energy in for during chlorophyll.',
+    'Photosynthesis captures light energy during photosynthesis chlorophyll.',
+    'Photosynthesis captures light energy into chemical energy glucose.',
+    'Photosynthesis captures light energy into chemical energy into chemical energy.',
+    'Photosynthesis captures light energy storing.',
+    'Photosynthesis captures light energy, chlorophyll.',
+  ]) {
+    const result = evaluatePhotosynthesisRelationsV2(answer);
+    assert.equal(result.passed, false, answer);
+    assert.equal(result.hasMalformed, true, answer);
+    assert.equal(gradeCase(photoCase, observation(answer, { id: photoCase.id })).factuality.passed, false, answer);
+  }
+});
+
+test('Astra defect 2: affirmative do-support reaches the finite target grammar', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  const photoCase = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
+  for (const answer of [
+    'Photosynthesis does capture light energy.',
+    'Photosynthesis did capture light energy.',
+  ]) {
+    const result = evaluatePhotosynthesisRelationsV2(answer);
+    const grade = gradeCase(photoCase, observation(answer, { id: photoCase.id }));
+    assert.equal(result.passed, true, answer);
+    assert.equal(result.polarity, 'AFFIRMED', answer);
+    assert.equal(grade.factuality.passed, true, answer);
+  }
+});
+
+test('do-support keeps agreement, negation, and adjacent auxiliary chains bounded', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  for (const answer of [
+    'Photosynthesis does capture light energy.',
+    'Photosynthesis did capture light energy.',
+    'Plants do capture light energy.',
+  ]) {
+    const result = evaluatePhotosynthesisRelationsV2(answer);
+    assert.equal(result.passed, true, answer);
+    assert.equal(result.relationRecords[0].auxiliaryChain?.function, 'DO', answer);
+  }
+  const negated = evaluatePhotosynthesisRelationsV2('Photosynthesis does not capture light energy.');
+  assert.equal(negated.passed, false);
+  assert.equal(negated.relationRecords[0]?.polarity, 'NEGATED');
+  for (const answer of [
+    'Photosynthesis does captures light energy.',
+    'Photosynthesis did captured light energy.',
+    'Photosynthesis does captured light energy.',
+    'Photosynthesis did captures light energy.',
+    'Photosynthesis do capture light energy.',
+    'Plants does capture light energy.',
+    'Photosynthesis does does capture light energy.',
+    'Photosynthesis can does capture light energy.',
+  ]) {
+    const result = evaluatePhotosynthesisRelationsV2(answer);
+    assert.equal(result.passed, false, answer);
+    assert.equal(result.diagnostics.includes('GRAMMAR_SHAPE_NOT_ACCEPTED'), true, answer);
+  }
+});
+
+test('Astra defect 3: cosmetic sentence-boundary differences share a fingerprint', () => {
+  const { semanticCaseFingerprint } = require('./photosynthesis-relation-evaluator');
+  const first = 'Photosynthesis converts chemicals. Light energy exists.';
+  const cosmetic = 'PHOTOSYNTHESIS converts chemicals... light energy exists.';
+  assert.equal(semanticCaseFingerprint(first), semanticCaseFingerprint(cosmetic));
+  assert.equal(semanticCaseFingerprint(first), semanticCaseFingerprint(
+    '  photosynthesis   converts chemicals. light energy exists.  ',
+  ));
+  assert.notEqual(semanticCaseFingerprint(first), semanticCaseFingerprint(
+    'Photosynthesis converts chemicals. Light energy exists; plants capture carbon dioxide.',
+  ));
+  assert.notEqual(
+    semanticCaseFingerprint('Photosynthesis captures light energy.'),
+    semanticCaseFingerprint('Photosynthesis does not capture light energy.'),
+  );
 });

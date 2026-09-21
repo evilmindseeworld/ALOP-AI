@@ -1371,7 +1371,11 @@ const structuralVariants = {
   INVALID_SUBJECT: [['Rocks capture light energy during photosynthesis.',['SL']]],
   INVALID_OBJECT: ['water','carbon dioxide','oxygen','nutrients','starch','sugar','mineral salts'].map((object) => [`Photosynthesis captures ${object}.`,['LO']]),
   CLAUSE_BOUNDARY: ['while','although','because','whereas','if','unless','when','since'].map((marker) => [`Photosynthesis captures carbon dioxide ${marker} light energy is present.`,['BD']]),
-  SENTENCE_BOUNDARY: [['; ',['BD','PU']],[': ',['BD','PU']],['? ',['PU']],['! ',['PU']],['... ',['PU']]].map(([separator,dimensions]) => [`Photosynthesis converts chemicals${separator}light energy exists.`,dimensions]),
+  SENTENCE_BOUNDARY: [
+    ...[['; ',['BD','PU']],[': ',['BD','PU']],['? ',['PU']],['! ',['PU']],['... ',['PU']]]
+      .map(([separator,dimensions]) => [`Photosynthesis converts chemicals${separator}light energy exists.`,dimensions]),
+    ['Photosynthesis converts chemicals. Light energy exists; plants capture carbon dioxide.',['BD','PU']],
+  ],
   PUNCTUATION_ABUSE: [['??',['PU']],['!!!!',['PU']],['?!?',['PU']],[':',['PU','BD']],[';',['PU','BD']],['...',['PU']],['?!',['PU']]].map(([punctuation,dimensions]) => [`Photosynthesis captures carbon dioxide${punctuation} Light energy exists.`,dimensions]),
   NO_STITCHING: [
     ['Chlorophyll is present; rocks capture light energy.',['SL']],
@@ -1394,7 +1398,9 @@ for (const row of requiredTestClasses) {
   if (!seed) continue;
   const canonicalForClass = canonicalCases.filter((item) => item.classIds.includes(row.classId));
   const needed = row.classId === 'PRONOUN_CONTINUATION' ? semanticVerbs.length
-    : Math.max(0, row.minimumUniqueSemanticCases - canonicalForClass.length) + (row.classId === 'AFFIRMATIVE_ACTIVE' ? 9 : 0);
+    : Math.max(0, row.minimumUniqueSemanticCases - canonicalForClass.length)
+      + (row.classId === 'AFFIRMATIVE_ACTIVE' ? 9 : 0)
+      + (row.classId === 'SENTENCE_BOUNDARY' ? 1 : 0);
   let serial = 0;
   const expectedDecision = row.classId === 'PRONOUN_CONTINUATION' ? 'PASS'
     : row.expectedDecision === 'PASS_OR_FAIL_BY_CASE' ? seed.expectedDecision : row.expectedDecision;
@@ -1435,7 +1441,7 @@ const b5SemanticSupplementCases = [
 
 module.exports = {
   EXPECTED_GENERATED_CASE_COUNT: 823,
-  EXPECTED_V2_GENERATED_CASE_COUNT: 150,
+  EXPECTED_V2_GENERATED_CASE_COUNT: 151,
   PHOTOSYNTHESIS_RELATION_CASES,
   generatedCases: PHOTOSYNTHESIS_RELATION_CASES,
   canonicalCases,

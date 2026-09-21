@@ -1,5 +1,4 @@
-// p1-static-compose-v1; evaluator-blob=6378c108ff82aa43c46ad1f238e6ba13caa8eb09; runner-blob=d883b6f970bd0dd8ec7a050fd3f16310d4067c9e; recipe-blob=d5a84e74ed8a22eb2fcb8a85303335fa820826a9
-import * as __p1Crypto from 'node:crypto';
+// p1-static-compose-v1; evaluator-blob=8cc4558977e64f5b57ed731756e28b1fa733b0ec; runner-blob=9b5c90183402c98e21f1a78b21db17f12e94874e; recipe-blob=d5a84e74ed8a22eb2fcb8a85303335fa820826a9
 import { closeSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs';
 import { createRequire, Module } from 'node:module';
 import { dirname, resolve } from 'node:path';
@@ -511,7 +510,7 @@ const normalizePunctuationRunV2 = (run) => {
   }
   return run;
 };
-const normalizeInputV2 = (x) => normalizeInput(x).toLowerCase().replace(/’/g, "'").replace(/[!?;:]+/g, normalizePunctuationRunV2);
+const normalizeInputV2 = (x) => normalizeInput(x).toLowerCase().replace(/’/g, "'").replace(/[.!?;:]+/g, normalizePunctuationRunV2);
 const segmentSentencesV2 = (x) => segmentSentences(normalizeInputV2(x));
 const segmentClausesV2 = (x) => {const text=String(typeof x==='string'?x:x.text);return text.split(/[;:]+/).flatMap(part=>{const match=part.match(/,\s+and\s+/i);if(!match)return[part];const before=part.slice(0,match.index);return /\b(?:move|moves|moved|run|runs|do|does|did)\b/i.test(before)?part.split(/,\s+and\s+/i):[part];}).map((text,index)=>({index,text:text.trim()})).filter(x=>x.text);};
 const tokenizeV2 = (x) => tokenize(x).map(t=>({...t,form:t.form.toLowerCase()}));
@@ -606,6 +605,35 @@ function bindDirectObject(ts,i){
     while(end<ts.length&&!phraseBoundaries.has(ts[end].form)&&!V2_VERBS.has(ts[end].form))end++;
   }
   return{start:ts[i].start,end:ts[end-1].end,tokenEnd:end,surface:ts.slice(i,end).map(t=>t.form).join(' '),normalized:light?'light-energy':'',role:light?'LIGHT_OBJECT':ts[i].form==='chlorophyll'?'CHLOROPHYLL':'NON_LIGHT_OBJECT'};
+}
+function validateActiveTailV2(tokens, objectEnd, pronoun) {
+  const tail = tokens.slice(objectEnd);
+  const butIndex = tail.findIndex((token) => token.form === 'but');
+  const frame = (butIndex >= 0 ? tail.slice(0, butIndex) : tail)
+    .map((token) => token.form)
+    .filter((form) => form !== ',');
+  while (['.', '!', '?'].includes(frame.at(-1))) frame.pop();
+  while (frame.at(-1) === ',') frame.pop();
+  while (frame[0] === ',') frame.shift();
+  if (pronoun?.valid && pronoun.grammarValid) {
+    const continuation = ['and', pronoun.continuationVerb, 'it'];
+    if (frame.slice(0, continuation.length).every((form, index) => form === continuation[index])) {
+      frame.splice(0, continuation.length);
+    }
+  }
+  if (!frame.length) return true;
+  const text = frame.join(' ');
+  return [
+    'and make food',
+    'into chemical energy',
+    'into chemical energy storing it in glucose molecules',
+    'storing it in glucose molecules',
+    'releasing oxygen as a byproduct',
+    'driven by chlorophyll in the presence of sunlight',
+    'during photosynthesis',
+    'in photosynthesis',
+    'for photosynthesis',
+  ].includes(text);
 }
 function bindLocalPassiveAgent(ts){
   const object=bindDirectObject(ts,0);
@@ -873,6 +901,7 @@ function parseMinimalRelationGrammar(input) {
           || auxiliary.modal
           || auxiliary.negators.length
           || control
+          || ['do', 'does', 'did'].includes(auxiliary.chain[0])
           || tokens[index - 1]?.form === 'to')) {
           predicateIndex = index;
           predicate = candidatePredicate;
@@ -891,6 +920,7 @@ function parseMinimalRelationGrammar(input) {
         && !auxiliary.modal
         && !auxiliary.negators.length
         && !control
+        && !['do', 'does', 'did'].includes(auxiliary.chain[0])
         && tokens[predicateIndex - 1]?.form !== 'to'
         && !(subjectSet.members.length > 1 || recognizedSubjectSurface))) {
         malformed = true;
@@ -926,19 +956,8 @@ function parseMinimalRelationGrammar(input) {
 
       const valid = validateSubjectSet(subjectSet);
       const light = object.normalized === 'light-energy';
-      const tailTokens = tokens.slice(object.tokenEnd);
-      const butIndex = tailTokens.findIndex((token) => token.form === 'but');
-      const tail = (butIndex >= 0 ? tailTokens.slice(0, butIndex) : tailTokens).map((token) => token.form);
-      const allowedTail = new Set([
-        'into', 'chemical', 'energy', 'during', 'in', 'for', 'photosynthesis', 'the',
-        'glucose', 'molecules', 'it', 'nearby', 'and', 'oxygen', 'as', 'a', 'byproduct',
-        'storing', 'releasing', 'of', 'sunlight', 'driven', 'by', 'presence',
-        'chlorophyll', 'but', 'does', 'not', 'light', 'make', 'food', ',', '.', '!', '?',
-      ]);
       const allowed = (!pronoun?.valid || pronoun.grammarValid)
-        && tail.every((form, index) => allowedTail.has(form)
-          || Boolean(pronoun?.valid && pronoun.grammarValid
-            && index === pronoun.continuationTailOffset && form === pronoun.continuationVerb));
+        && validateActiveTailV2(tokens, object.tokenEnd, pronoun);
       if (!allowed) {
         malformed = true;
         diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
@@ -1226,6 +1245,7 @@ module.exports = {
   detectInvalidChlorophyllClaimsV2,
 };
 
+
 }
 
 export function createDerivedEvaluator() {
@@ -1376,7 +1396,7 @@ function mutate(id) {
         "let end=i+1,light=true;",
         'M9 arbitrary object as light');
     }
-    const tailAcceptance = /const allowed = \(!pronoun\?\.valid \|\| pronoun\.grammarValid\)\s*&& tail\.every\([\s\S]*?\);/;
+    const tailAcceptance = /const allowed = \(!pronoun\?\.valid \|\| pronoun\.grammarValid\)\s*&& validateActiveTailV2\(tokens, object\.tokenEnd, pronoun\);/;
     const tailAcceptanceAnchors = text.match(/const allowed = \(!pronoun\?\.valid \|\| pronoun\.grammarValid\)/g) || [];
     if (tailAcceptanceAnchors.length !== 1 || !tailAcceptance.test(text)) {
       throw new Error(`mutation target missing or ambiguous: ${id} tail acceptance`);

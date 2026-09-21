@@ -7,13 +7,13 @@
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "capturedAtUtc": "2026-09-21T20:42:15.300Z",
-  "implementationCommitSha": "a691cd0a02521d3df5dfcc0d9248b2953f7c2614",
-  "candidateHeadAtCapture": "2f274fcc6078ed8f44a9d3af98563cd799f25c02",
-  "candidateTreeAtCapture": "f95bd9f0714906e1a62a10108deffa9eeeff3d62",
+  "capturedAtUtc": "2026-09-22T00:00:00Z",
+  "implementationCommitSha": "7a94a93c72937a3150f54f79da2be0540e1108ea",
+  "candidateHeadAtCapture": "fe01cd9af76df5fcb3d75d387532747d4209372f",
+  "candidateTreeAtCapture": "4a835374c75caefd33e210a39a6b1f3aa4d036e8",
   "runtime": {
     "version": "v26.7.0",
-    "executablePath": "C:\\Users\\LENOVO\\Documents\\Codex-Control\\toolchains\\node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe",
+    "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
     "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
   },
   "phase": "GREEN",
@@ -25,22 +25,22 @@
   "skipped": 0,
   "focusedTestRuns": [
     {
-      "command": "C:\\Users\\LENOVO\\Documents\\Codex-Control\\toolchains\\node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe --test --test-reporter=tap lib/photosynthesis-relation-evaluator.test.js lib/p1-authoritative-repair-v2.test.js lib/photosynthesis-relation-evaluator-mutation.test.js",
+      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/p1-authoritative-repair-v2.test.js lib/p1-authoritative-repair-v2-mutation.test.js lib/photosynthesis-relation-evaluator-mutation.test.js lib/photosynthesis-relation-evaluator.test.js",
       "exitCode": 0,
-      "tests": 108,
-      "passed": 108,
+      "tests": 133,
+      "passed": 133,
       "failed": 0,
-      "stdoutSha256": "2db8d7fdf447960f0dcf6a74507c9d5fa040bdd6e035216f3d464895cd7fb4a0",
+      "stdoutSha256": "f54b56eb22bfee9baba35ec3b94ff68b1901bd68d5b25876371f9309faa1af4e",
       "failures": [],
       "error": null
     },
     {
-      "command": "C:\\Users\\LENOVO\\Documents\\Codex-Control\\toolchains\\node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe --test --test-reporter=tap lib/evaluation.test.js",
+      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/evaluation.test.js",
       "exitCode": 0,
       "tests": 41,
       "passed": 41,
       "failed": 0,
-      "stdoutSha256": "d84ce2fd1f3f928d69dbc4cff7880428af0dcc4f66031336f96c50c0fcb96436",
+      "stdoutSha256": "96efe0c806065f46f46b3501e684181fb910a68aebbd351418ce8dbea0d3edac",
       "failures": [],
       "error": null
     }
@@ -48,13 +48,13 @@
   "mutationKilled": {
     "killed": 10,
     "total": 10,
-    "cases": 205,
-    "stdoutSha256": "3ddea21cacc4a5f9c515d11c89cea1a6bf212c7994743f56f55461d78f54edc4"
+    "cases": 206,
+    "stdoutSha256": "e1c793a042df9ec1161edba784daa79b492e77147ea25d9927ba70af54602c9b"
   },
   "matchedFullSuiteComparison": {
     "runtime": {
       "version": "v26.7.0",
-      "executablePath": "C:\\Users\\LENOVO\\Documents\\Codex-Control\\toolchains\\node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe",
+      "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
       "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
     },
     "candidateCausedFailureCount": 0,
@@ -62,41 +62,42 @@
     "packageLockSha256": "939370cd71896ccaeef4b3d4c4dffaa43840273e014fae5386c46f0cdf11bfa8",
     "installedLockSha256": "6cc858f62453578be841234939ba0041643436e0c0b1400bfab5cde7a2d73796",
     "approvedBase": {
-      "head": "03c01ce23ead82762437286ebdab94d3485e0519",
-      "total": 2439,
-      "passed": 2438,
+      "head": "a2651ea0c48812bb0393d1985fb36f5ae5ac5df9",
+      "tree": "69d46f0920f0a748b7fa3440bd9392d0190ee23a",
+      "total": 2516,
+      "passed": 2515,
       "failed": 1,
-      "stdoutSha256": "e980006d327d4977ea154133e8112ef2f528a300e4fb402216538d20e0647a8f",
+      "stdoutSha256": "2116f2a3dd3da446997df6f2e5f877213527f40221ce53c2cddcd3a38d57e672",
       "failure": "every declared Node major is the one deploy/targets.json names",
       "failureDetail": "package.json engines is 26.7.0"
     },
     "candidate": {
-      "head": "2f274fcc6078ed8f44a9d3af98563cd799f25c02",
-      "tree": "f95bd9f0714906e1a62a10108deffa9eeeff3d62",
-      "total": 2516,
-      "passed": 2515,
+      "head": "fe01cd9af76df5fcb3d75d387532747d4209372f",
+      "tree": "4a835374c75caefd33e210a39a6b1f3aa4d036e8",
+      "total": 2521,
+      "passed": 2520,
       "failed": 1,
-      "stdoutSha256": "436618adbb95bb8c43575cb5afa9d5e0c907b4f6ca684b35dec0eaafb935073d",
+      "stdoutSha256": "f173e07b56d2aa5335b18f6fa210006c3fb5f056ec4ba7db22ce8b6eb04ad182",
       "failure": "every declared Node major is the one deploy/targets.json names",
       "failureDetail": "package.json engines is 26.7.0"
     },
     "sameBaselineOnlyFailure": "every declared Node major is the one deploy/targets.json names: package.json engines is 26.7.0"
   },
   "implementationAndPackage": {
-    "implementationCommitSha": "a691cd0a02521d3df5dfcc0d9248b2953f7c2614",
+    "implementationCommitSha": "7a94a93c72937a3150f54f79da2be0540e1108ea",
     "recipeInputCommitSha": "3ae0f283461f304f2778a4dc463a85c8f7d86adf",
-    "runnerInputCommitSha": "a10ea47cbdd35c5cfb9db95769ea44dbb8dceb6d",
-    "packageCommitSha": "2f274fcc6078ed8f44a9d3af98563cd799f25c02",
-    "packageTreeSha": "f95bd9f0714906e1a62a10108deffa9eeeff3d62",
+    "runnerInputCommitSha": "fe01cd9af76df5fcb3d75d387532747d4209372f",
+    "packageCommitSha": "fe01cd9af76df5fcb3d75d387532747d4209372f",
+    "packageTreeSha": "4a835374c75caefd33e210a39a6b1f3aa4d036e8",
     "entryPoint": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-    "packageBlob": "ac996aa539bbbd63ba7936ff9a3d94840ceb4c5b",
-    "packageSha256": "82faa3f08287e6db7d985cd2305f4dce3dcccd539e105f06a4b08c7016c26f92",
-    "packageBytes": 81596,
-    "evaluatorBlob": "6378c108ff82aa43c46ad1f238e6ba13caa8eb09",
-    "runnerBlob": "d883b6f970bd0dd8ec7a050fd3f16310d4067c9e",
+    "packageBlob": "9b5930bb9a060a6f05195d9cb75eea459bf24f92",
+    "packageSha256": "8987004af9aad6706ee7b0aed27d2052f35bd3ae38d47eea7c25eb2db28c9892",
+    "packageBytes": 82076,
+    "evaluatorBlob": "8cc4558977e64f5b57ed731756e28b1fa733b0ec",
+    "runnerBlob": "9b5c90183402c98e21f1a78b21db17f12e94874e",
     "recipeBlob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
     "independentByteReproduction": "PASS",
-    "packageDirectMutationMode": "PASS 205 cases; M1-M10 killed 10/10"
+    "packageDirectMutationMode": "PASS 206 cases; M1-M10 killed 10/10"
   },
   "modelInferenceTraffic": {
     "performed": false,

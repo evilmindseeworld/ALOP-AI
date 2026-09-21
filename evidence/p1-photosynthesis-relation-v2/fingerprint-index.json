@@ -7,22 +7,22 @@
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "capturedAtUtc": "2026-09-21T20:42:15.300Z",
-  "implementationCommitSha": "a691cd0a02521d3df5dfcc0d9248b2953f7c2614",
-  "candidateHeadAtCapture": "2f274fcc6078ed8f44a9d3af98563cd799f25c02",
-  "candidateTreeAtCapture": "f95bd9f0714906e1a62a10108deffa9eeeff3d62",
+  "capturedAtUtc": "2026-09-22T00:00:00Z",
+  "implementationCommitSha": "7a94a93c72937a3150f54f79da2be0540e1108ea",
+  "candidateHeadAtCapture": "fe01cd9af76df5fcb3d75d387532747d4209372f",
+  "candidateTreeAtCapture": "4a835374c75caefd33e210a39a6b1f3aa4d036e8",
   "runtime": {
     "version": "v26.7.0",
-    "executablePath": "C:\\Users\\LENOVO\\Documents\\Codex-Control\\toolchains\\node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe",
+    "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
     "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
   },
   "phase": "FINGERPRINT_INDEX",
   "uniqueCount": 204,
-  "totalCaseCount": 205,
+  "totalCaseCount": 206,
   "canonicalCaseBytesEncoding": "UTF-8 text bytes encoded as lowercase hex",
   "reproducedBy": {
     "evaluatorPath": "backend/lib/photosynthesis-relation-evaluator.js",
-    "evaluatorBlob": "6378c108ff82aa43c46ad1f238e6ba13caa8eb09",
+    "evaluatorBlob": "8cc4558977e64f5b57ed731756e28b1fa733b0ec",
     "function": "semanticCaseFingerprint(text, expectedDecision)"
   },
   "entries": [
@@ -1404,15 +1404,6 @@
       ]
     },
     {
-      "caseId": "V2-SENTENCE_BOUNDARY-005",
-      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c732e2e2e206c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "fc4c76a1fd49b2c2ba64df51f07cf66d7ea11dd729c83544298a6477052829d5",
-      "expectedDecision": "FAIL",
-      "classIds": [
-        "SENTENCE_BOUNDARY"
-      ]
-    },
-    {
       "caseId": "V2-PRONOUN_CONTINUATION-001",
       "canonicalCaseBytes": "50686f746f73796e746865736973206361707475726573206c6967687420656e6572677920616e642063617074757265732069742e",
       "semanticFingerprint": "a2ff878099377ede560f6bc1d574973b70ce47432897ad3886a0b8a60120c502",
@@ -1775,7 +1766,7 @@
     {
       "caseId": "V2-PUNCTUATION_ABUSE-006",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964652e2e2e204c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "92bea527179d6c000ae31059e0bebb5a0a6f90184bffeece4b59376693f1ded9",
+      "semanticFingerprint": "cb1c97d1e4ca6540cef352f82fb71e606f136a037c6ef1c9a4e4c9433bf3f09e",
       "expectedDecision": "FAIL",
       "classIds": [
         "PUNCTUATION_ABUSE"
@@ -1869,6 +1860,15 @@
       "expectedDecision": "FAIL",
       "classIds": [
         "PUNCTUATION_ABUSE"
+      ]
+    },
+    {
+      "caseId": "V2-SENTENCE_BOUNDARY-006",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c732e204c6967687420656e65726779206578697374733b20706c616e7473206361707475726520636172626f6e2064696f786964652e",
+      "semanticFingerprint": "13690ae2268029bee233d8cc757998cb8d91a955d473895060d8f7481d5ab459",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "SENTENCE_BOUNDARY"
       ]
     }
   ]

@@ -1,0 +1,168 @@
+{
+  "schemaVersion": 1,
+  "designVersion": "photosynthesis-light-relation-v2",
+  "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
+  "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
+  "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
+  "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
+  "authorityEpoch": 2,
+  "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
+  "capturedAtUtc": "2026-09-21T20:42:15.300Z",
+  "implementationCommitSha": "a691cd0a02521d3df5dfcc0d9248b2953f7c2614",
+  "candidateHeadAtCapture": "2f274fcc6078ed8f44a9d3af98563cd799f25c02",
+  "candidateTreeAtCapture": "f95bd9f0714906e1a62a10108deffa9eeeff3d62",
+  "runtime": {
+    "version": "v26.7.0",
+    "executablePath": "C:\\Users\\LENOVO\\Documents\\Codex-Control\\toolchains\\node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe",
+    "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
+  },
+  "phase": "MUTATION",
+  "status": "PASS",
+  "cases": 205,
+  "mutationIds": [
+    "M1",
+    "M2",
+    "M3",
+    "M4",
+    "M5",
+    "M6",
+    "M7",
+    "M8",
+    "M9",
+    "M10"
+  ],
+  "killed": 10,
+  "total": 10,
+  "command": "C:\\Users\\LENOVO\\Documents\\Codex-Control\\toolchains\\node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe scripts/run-photosynthesis-relation-mutations.mjs",
+  "stdoutSha256": "3ddea21cacc4a5f9c515d11c89cea1a6bf212c7994743f56f55461d78f54edc4",
+  "evaluatorBlob": "6378c108ff82aa43c46ad1f238e6ba13caa8eb09",
+  "runnerBlob": "d883b6f970bd0dd8ec7a050fd3f16310d4067c9e",
+  "recipeBlob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
+  "recipeInputCommitSha": "3ae0f283461f304f2778a4dc463a85c8f7d86adf",
+  "runnerInputCommitSha": "a10ea47cbdd35c5cfb9db95769ea44dbb8dceb6d",
+  "packageCommitSha": "2f274fcc6078ed8f44a9d3af98563cd799f25c02",
+  "packageTreeSha": "f95bd9f0714906e1a62a10108deffa9eeeff3d62",
+  "packageGitBlob": "ac996aa539bbbd63ba7936ff9a3d94840ceb4c5b",
+  "packageSha256": "82faa3f08287e6db7d985cd2305f4dce3dcccd539e105f06a4b08c7016c26f92",
+  "qualificationMode": "NOT_RUN",
+  "mutations": [
+    {
+      "id": "M1",
+      "killed": true,
+      "failuresByClass": {
+        "NEGATED_MODALITY": 8,
+        "UNCERTAIN_MODALITY": 12
+      },
+      "minimumFailuresByClass": {
+        "NEGATED_MODALITY": 4,
+        "UNCERTAIN_MODALITY": 4
+      }
+    },
+    {
+      "id": "M2",
+      "killed": true,
+      "failuresByClass": {
+        "DETACHED_OBJECT_DECOYS": 8,
+        "DIRECT_OBJECT_BARRIERS": 6,
+        "FINITE_PREDICATE_BARRIERS": 6
+      },
+      "minimumFailuresByClass": {
+        "DETACHED_OBJECT_DECOYS": 4,
+        "DIRECT_OBJECT_BARRIERS": 4,
+        "FINITE_PREDICATE_BARRIERS": 4
+      }
+    },
+    {
+      "id": "M3",
+      "killed": true,
+      "failuresByClass": {
+        "MALFORMED_SYNTAX": 9
+      },
+      "minimumFailuresByClass": {
+        "MALFORMED_SYNTAX": 6
+      }
+    },
+    {
+      "id": "M4",
+      "killed": true,
+      "failuresByClass": {
+        "AFFIRMATIVE_PASSIVE": 6
+      },
+      "minimumFailuresByClass": {
+        "AFFIRMATIVE_PASSIVE": 4
+      }
+    },
+    {
+      "id": "M5",
+      "killed": true,
+      "failuresByClass": {
+        "COORDINATED_SUBJECTS_MIXED_INVALID": 6
+      },
+      "minimumFailuresByClass": {
+        "COORDINATED_SUBJECTS_MIXED_INVALID": 6
+      }
+    },
+    {
+      "id": "M6",
+      "killed": true,
+      "failuresByClass": {
+        "DOUBLE_NEGATION": 6,
+        "NESTED_CONTROL": 7,
+        "UNRELATED_NEGATION": 6
+      },
+      "minimumFailuresByClass": {
+        "DOUBLE_NEGATION": 4,
+        "NESTED_CONTROL": 6,
+        "UNRELATED_NEGATION": 4
+      }
+    },
+    {
+      "id": "M7",
+      "killed": true,
+      "failuresByClass": {
+        "CLAUSE_BOUNDARY": 8,
+        "NO_STITCHING": 8
+      },
+      "minimumFailuresByClass": {
+        "CLAUSE_BOUNDARY": 4,
+        "NO_STITCHING": 4
+      }
+    },
+    {
+      "id": "M8",
+      "killed": true,
+      "failuresByClass": {
+        "COORDINATED_SUBJECTS_MIXED_INVALID": 8,
+        "INVALID_SUBJECT": 8
+      },
+      "minimumFailuresByClass": {
+        "COORDINATED_SUBJECTS_MIXED_INVALID": 4,
+        "INVALID_SUBJECT": 4
+      }
+    },
+    {
+      "id": "M9",
+      "killed": true,
+      "failuresByClass": {
+        "DETACHED_OBJECT_DECOYS": 8,
+        "INVALID_OBJECT": 8
+      },
+      "minimumFailuresByClass": {
+        "DETACHED_OBJECT_DECOYS": 4,
+        "INVALID_OBJECT": 4
+      }
+    },
+    {
+      "id": "M10",
+      "killed": true,
+      "failuresByClass": {
+        "AFFIRMATIVE_ACTIVE": 17,
+        "KNOWN_REGRESSIONS": 4
+      },
+      "minimumFailuresByClass": {
+        "AFFIRMATIVE_ACTIVE": 2,
+        "KNOWN_REGRESSIONS": 2
+      }
+    }
+  ]
+}

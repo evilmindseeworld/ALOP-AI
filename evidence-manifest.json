@@ -1,51 +1,60 @@
 {
   "schemaVersion": 1,
-  "taskId": "alop-implementation-luna-photosynthesis-light-relation-v1",
-  "baseSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
+  "taskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
+  "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
+  "implementationCommitSha": "a691cd0a02521d3df5dfcc0d9248b2953f7c2614",
   "entries": [
     {
-      "path": "backend/lib/photosynthesis-relation-evaluator.js",
-      "sha256": "6415044c541aa1643e018a78144a025971cf69edb02ca4e174ffc6abb7d2d781"
-    },
-    {
-      "path": "backend/lib/photosynthesis-relation-cases.js",
-      "sha256": "c456e693390f7c6ecd675917de216573f6b29d5642dcf3e613b2a94d01fcf261"
-    },
-    {
-      "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
-      "sha256": "c48540a5e40a3abdc73d8f5c61376a8f6acb27b5f5bb967bb280f395bf6ad0e7"
-    },
-    {
-      "path": "backend/lib/photosynthesis-relation-evaluator-mutation.test.js",
-      "sha256": "bfb6c254715eca3a59200e7a86d3cfede399fc97a7009758604378606e40dc6f"
+      "path": "backend/evals/backend-intelligence-v2.json",
+      "sha256": "7c887a0d8ece5a75b9dd1a43b2a285aa9f6ebea7e95ece49b1e753ceea57a4bc"
     },
     {
       "path": "backend/lib/evaluation.js",
-      "sha256": "0db9fd85f409b0ef4481ffd41d589e8b97dcddcdb9480058ec36929e092a5a5c"
-    },
-    {
-      "path": "backend/evals/backend-intelligence-v2.json",
-      "sha256": "4b7049db983f012ee201b1082406ba4f2448366290349d3f3dddf32ab3cca42a"
+      "sha256": "fce2b17505e9f64ebc0e390e92841576012f3492dc120be6955a0651f0031446"
     },
     {
       "path": "backend/lib/p1-authoritative-repair-v2.test.js",
-      "sha256": "d081afb312f31a0429f4bfa05aafa2f60ffe6bc145a948b6806708e165109186"
+      "sha256": "3efe316ed6b9d2321ce496ac6c4d0c1ac27610ca5e8d0e0e88b441751681132e"
     },
     {
-      "path": "backend/lib/p1-authoritative-repair-v2-mutation.test.js",
-      "sha256": "4934baa005555528d57dbae8379f71d25318e0fbec2d0632d9d39b73b9321e05"
+      "path": "backend/lib/photosynthesis-relation-cases.js",
+      "sha256": "fdf126815a5304bc19b5b399ece52a96f7702a38c3002606e44d92433aaf3837"
     },
     {
-      "path": "evidence/p1-photosynthesis-relation-v1/red-phase.json",
-      "sha256": "cff698d76f6f61146f5cc442a77e46ec3443ac4c7cd4dc4aed6913010bb34479"
+      "path": "backend/lib/photosynthesis-relation-evaluator-mutation.test.js",
+      "sha256": "a292d2fa39de1f241452abe21e87c0883daeed8aaddb9fb02201d5d908d97720"
     },
     {
-      "path": "evidence/p1-photosynthesis-relation-v1/green-phase.json",
-      "sha256": "b01df402fff8ed762ba4c4cd38f10c6df88b0131a466e0ec3b688a428251e71c"
+      "path": "backend/lib/photosynthesis-relation-evaluator.js",
+      "sha256": "9a6424bbcc2360796847169acf5e39d5dcefe3adcc4dd984633d889724651333"
     },
     {
-      "path": "evidence/p1-photosynthesis-relation-v1/mutation-phase.json",
-      "sha256": "cfb54ba8f9df95bcd1663a7aae6348c33f567a3006b28e138ce275387357625c"
+      "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
+      "sha256": "9cb84c7b66b0bf90742b9d083ef71ebfbbc437d63dd7072e25936617044ba1d8"
+    },
+    {
+      "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+      "sha256": "82faa3f08287e6db7d985cd2305f4dce3dcccd539e105f06a4b08c7016c26f92"
+    },
+    {
+      "path": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
+      "sha256": "6225bba789064169947d74728ea127fc524cbb580c2bb6211567abceddc33854"
+    },
+    {
+      "path": "evidence/p1-photosynthesis-relation-v2/green-phase.json",
+      "sha256": "aa2f664319f6519c75381453c9bc8a8ea4893fb31f8c6e0d844c3d63dfce61d6"
+    },
+    {
+      "path": "evidence/p1-photosynthesis-relation-v2/mutation-phase.json",
+      "sha256": "4e22420e05e569dd7a45670015b9d5277fb06266ba1eb95bbcd4c800a5df3040"
+    },
+    {
+      "path": "evidence/p1-photosynthesis-relation-v2/red-phase.json",
+      "sha256": "72bd9c50ec4797b6355eab94317cf6453dfcb116b33a8ea1113a0e7f9926b25d"
+    },
+    {
+      "path": "evidence/p1-photosynthesis-relation-v2/semantic-coverage.json",
+      "sha256": "23569e98317eafc2d104c514c71a62e1dad97605648d0ff3b21380ea70cdd2cd"
     }
   ]
 }

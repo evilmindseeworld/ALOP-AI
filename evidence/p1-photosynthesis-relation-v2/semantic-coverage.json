@@ -1,0 +1,575 @@
+{
+  "schemaVersion": 1,
+  "designVersion": "photosynthesis-light-relation-v2",
+  "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
+  "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
+  "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
+  "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
+  "authorityEpoch": 2,
+  "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
+  "capturedAtUtc": "2026-09-21T20:42:15.300Z",
+  "implementationCommitSha": "a691cd0a02521d3df5dfcc0d9248b2953f7c2614",
+  "candidateHeadAtCapture": "2f274fcc6078ed8f44a9d3af98563cd799f25c02",
+  "candidateTreeAtCapture": "f95bd9f0714906e1a62a10108deffa9eeeff3d62",
+  "runtime": {
+    "version": "v26.7.0",
+    "executablePath": "C:\\Users\\LENOVO\\Documents\\Codex-Control\\toolchains\\node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe",
+    "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
+  },
+  "phase": "SEMANTIC_COVERAGE",
+  "status": "PASS",
+  "canonicalCaseCount": 54,
+  "canonicalCasesMatchFrozenDesign": true,
+  "totalCaseCount": 205,
+  "uniqueSemanticFingerprintCount": 204,
+  "informationalFloor": 201,
+  "duplicateSemanticFingerprints": [
+    {
+      "semanticFingerprint": "85c2a1a32a36d7b8c57154c668a0e1c476fecbdb1e6375e238b9127856b5c05c",
+      "retainedCaseId": "PUN-001",
+      "duplicateCaseId": "V2-PUNCTUATION_ABUSE-002",
+      "reason": "same fingerprint under frozen semanticFingerprintRules"
+    }
+  ],
+  "classCounts": [
+    {
+      "classId": "AFFIRMATIVE_ACTIVE",
+      "required": 8,
+      "observed": 17,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "AFFIRMATIVE_PASSIVE",
+      "required": 6,
+      "observed": 6,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "INFINITIVAL_CHLOROPHYLL_MEDIATED",
+      "required": 6,
+      "observed": 6,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "COORDINATED_PREDICATES",
+      "required": 6,
+      "observed": 6,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "COORDINATED_SUBJECTS_VALID",
+      "required": 6,
+      "observed": 6,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "COORDINATED_SUBJECTS_MIXED_INVALID",
+      "required": 8,
+      "observed": 8,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "DETACHED_OBJECT_DECOYS",
+      "required": 8,
+      "observed": 8,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "DIRECT_OBJECT_BARRIERS",
+      "required": 6,
+      "observed": 6,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "FINITE_PREDICATE_BARRIERS",
+      "required": 6,
+      "observed": 6,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "MALFORMED_SYNTAX",
+      "required": 9,
+      "observed": 9,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "LOCAL_NEGATION",
+      "required": 8,
+      "observed": 8,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "UNCERTAIN_MODALITY",
+      "required": 12,
+      "observed": 12,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "NEGATED_MODALITY",
+      "required": 8,
+      "observed": 8,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "AFFIRMED_MODALITY",
+      "required": 4,
+      "observed": 4,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "NESTED_CONTROL",
+      "required": 10,
+      "observed": 10,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "DOUBLE_NEGATION",
+      "required": 6,
+      "observed": 6,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "UNRELATED_NEGATION",
+      "required": 6,
+      "observed": 6,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "CLAUSE_BOUNDARY",
+      "required": 8,
+      "observed": 8,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "SENTENCE_BOUNDARY",
+      "required": 6,
+      "observed": 6,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "PRONOUN_CONTINUATION",
+      "required": 6,
+      "observed": 9,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "INVALID_SUBJECT",
+      "required": 8,
+      "observed": 8,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "INVALID_OBJECT",
+      "required": 8,
+      "observed": 8,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "DESTRUCTIVE_RELATION",
+      "required": 6,
+      "observed": 6,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "WRONG_PIGMENT",
+      "required": 6,
+      "observed": 6,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "CONTRADICTION",
+      "required": 6,
+      "observed": 6,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "PUNCTUATION_ABUSE",
+      "required": 8,
+      "observed": 8,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "NO_STITCHING",
+      "required": 8,
+      "observed": 8,
+      "canonicalIdsPresent": true,
+      "pass": true
+    },
+    {
+      "classId": "KNOWN_REGRESSIONS",
+      "required": 8,
+      "observed": 8,
+      "canonicalIdsPresent": true,
+      "pass": true
+    }
+  ],
+  "structuralMarkers": [
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "normalize-input",
+      "marker": "normalizeInput",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "sentence-segmentation",
+      "marker": "segmentSentences",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "clause-segmentation",
+      "marker": "segmentClauses",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "tokenization",
+      "marker": "tokenize",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "exact-form-lemma",
+      "marker": "normalizeExactFormLemma",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "minimal-grammar",
+      "marker": "parseMinimalRelationGrammar",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "auxiliary-chain",
+      "marker": "parseAuxiliaryChain",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "finite-predicate",
+      "marker": "validateFinitePredicate",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "subject-extraction",
+      "marker": "extractSubjectSet",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "subject-agreement",
+      "marker": "validateSubjectAgreement",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "subject-validity",
+      "marker": "validateSubjectSet",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "direct-object-binding",
+      "marker": "bindDirectObject",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "object-barrier",
+      "marker": "detectObjectBarrier",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "coordinated-predicates",
+      "marker": "resolveCoordinatedPredicates",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "passive-agent",
+      "marker": "bindLocalPassiveAgent",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "modality-state",
+      "marker": "resolveModalState",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "control-state",
+      "marker": "resolveControlChain",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "polarity-composition",
+      "marker": "composePredicatePolarity",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "pronoun-continuation",
+      "marker": "resolvePronounContinuation",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "relation-record-v2",
+      "marker": "buildRelationRecordV2",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "semantic-fingerprint",
+      "marker": "semanticCaseFingerprint",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "contradiction-detection",
+      "marker": "detectContradictions",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "invalid-chlorophyll-claims",
+      "marker": "detectInvalidChlorophyllClaims",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "top-level-evaluation",
+      "marker": "evaluatePhotosynthesisRelations",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "structured-record-array",
+      "marker": "relationRecords",
+      "present": true
+    },
+    {
+      "file": "backend/lib/photosynthesis-relation-evaluator.js",
+      "id": "immutable-registry",
+      "marker": "PHOTOSYNTHESIS_SEMANTIC_EVALUATOR_REGISTRY",
+      "present": true
+    },
+    {
+      "file": "backend/lib/evaluation.js",
+      "id": "evaluation-wiring",
+      "marker": "photosynthesis-light-relation-v2",
+      "present": true
+    }
+  ],
+  "structuralMarkerCount": 27,
+  "datasetValidation": {
+    "status": "PASS",
+    "mode": "validate-only",
+    "validationOnly": true,
+    "networkCalls": 0,
+    "providerCalls": 0,
+    "liveAuth": false,
+    "noMutations": true,
+    "datasets": [
+      {
+        "dataset": "backend-intelligence-v2",
+        "cases": 21,
+        "selected": 21,
+        "exitCode": 0,
+        "stdoutSha256": "cc48462d9a41c721f476b431ca5b5cbbaa8ee65ef65956c374f4483878908bee",
+        "result": "PASS"
+      },
+      {
+        "dataset": "backend-intelligence-v2-recovery10",
+        "cases": 10,
+        "selected": 10,
+        "exitCode": 0,
+        "stdoutSha256": "70f498a027d773f0aff07c4630e629ecfd274a995d15458a3ce74a8e634865d3",
+        "result": "PASS"
+      }
+    ]
+  },
+  "testRuns": [
+    {
+      "command": "C:\\Users\\LENOVO\\Documents\\Codex-Control\\toolchains\\node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe --test --test-reporter=tap lib/photosynthesis-relation-evaluator.test.js lib/p1-authoritative-repair-v2.test.js lib/photosynthesis-relation-evaluator-mutation.test.js",
+      "exitCode": 0,
+      "tests": 108,
+      "passed": 108,
+      "failed": 0,
+      "stdoutSha256": "2db8d7fdf447960f0dcf6a74507c9d5fa040bdd6e035216f3d464895cd7fb4a0",
+      "failures": [],
+      "error": null
+    },
+    {
+      "command": "C:\\Users\\LENOVO\\Documents\\Codex-Control\\toolchains\\node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe --test --test-reporter=tap lib/evaluation.test.js",
+      "exitCode": 0,
+      "tests": 41,
+      "passed": 41,
+      "failed": 0,
+      "stdoutSha256": "d84ce2fd1f3f928d69dbc4cff7880428af0dcc4f66031336f96c50c0fcb96436",
+      "failures": [],
+      "error": null
+    }
+  ],
+  "antiGamingTextScan": {
+    "status": "PASS_TEXT_SCAN",
+    "canonicalIdsInProduction": [],
+    "exactCanonicalSentenceLiteralsInProduction": [],
+    "fixtureModuleImportsInProduction": [],
+    "scannedFiles": [
+      "backend/lib/abort.js",
+      "backend/lib/adaptive-routing.js",
+      "backend/lib/admin-commands.js",
+      "backend/lib/agent-loop.js",
+      "backend/lib/answer-cache.js",
+      "backend/lib/answer-contract.js",
+      "backend/lib/answer-embeddings.js",
+      "backend/lib/answer-evidence.js",
+      "backend/lib/answer-obligations.js",
+      "backend/lib/arithmetic.js",
+      "backend/lib/attached-images.js",
+      "backend/lib/benchmark-cache-bypass.js",
+      "backend/lib/billing-read-model.js",
+      "backend/lib/brain-questions.js",
+      "backend/lib/brain.js",
+      "backend/lib/cache-identity.js",
+      "backend/lib/cache-validation.js",
+      "backend/lib/chat-title.js",
+      "backend/lib/chat-update.js",
+      "backend/lib/citation-urls.js",
+      "backend/lib/context-compression.js",
+      "backend/lib/contradiction.js",
+      "backend/lib/council-run.js",
+      "backend/lib/council-tools.js",
+      "backend/lib/data-url.js",
+      "backend/lib/deadline.js",
+      "backend/lib/doc-extract.js",
+      "backend/lib/doc-passages.js",
+      "backend/lib/embedding-lifecycle.js",
+      "backend/lib/embeddings.js",
+      "backend/lib/episodic-summary.js",
+      "backend/lib/error-envelope.js",
+      "backend/lib/evaluation-diagnostics.js",
+      "backend/lib/evaluation.js",
+      "backend/lib/evidence-ledger.js",
+      "backend/lib/execution-dag.js",
+      "backend/lib/failure-kind.js",
+      "backend/lib/file-intake.js",
+      "backend/lib/greeting-cache.js",
+      "backend/lib/head-selection.js",
+      "backend/lib/history.js",
+      "backend/lib/http-cache.js",
+      "backend/lib/hybrid-retrieval.js",
+      "backend/lib/image-gen.js",
+      "backend/lib/instance-census.js",
+      "backend/lib/job-queue.js",
+      "backend/lib/job-worker.js",
+      "backend/lib/link-check.js",
+      "backend/lib/memory-kinds.js",
+      "backend/lib/migration-lineage.js",
+      "backend/lib/model-ladder.js",
+      "backend/lib/model-reply.js",
+      "backend/lib/native-tool-seat.js",
+      "backend/lib/openrouter-policy.js",
+      "backend/lib/openrouter-zero-price-catalog.js",
+      "backend/lib/openrouter-zero-price-preflight.js",
+      "backend/lib/openrouter.js",
+      "backend/lib/origin-guard.js",
+      "backend/lib/pacer.js",
+      "backend/lib/page-extract.js",
+      "backend/lib/pagination.js",
+      "backend/lib/perplexity.js",
+      "backend/lib/pg-rate-limit-store.js",
+      "backend/lib/photosynthesis-relation-evaluator.js",
+      "backend/lib/pinned-fetch.js",
+      "backend/lib/platform-identity.js",
+      "backend/lib/progressive-council.js",
+      "backend/lib/provider-health.js",
+      "backend/lib/rate-limit-key.js",
+      "backend/lib/read-url.js",
+      "backend/lib/reasoning-rescue.js",
+      "backend/lib/recency.js",
+      "backend/lib/region.js",
+      "backend/lib/release-gates.js",
+      "backend/lib/request-budget.js",
+      "backend/lib/reservation-ledger.js",
+      "backend/lib/router.js",
+      "backend/lib/schemas.js",
+      "backend/lib/search-cache.js",
+      "backend/lib/search-plan.js",
+      "backend/lib/security-headers.js",
+      "backend/lib/serpapi.js",
+      "backend/lib/shopping.js",
+      "backend/lib/single-flight.js",
+      "backend/lib/sink-response.js",
+      "backend/lib/spelling.js",
+      "backend/lib/spend.js",
+      "backend/lib/sse-compression.js",
+      "backend/lib/storage-keys.js",
+      "backend/lib/stream-deadline.js",
+      "backend/lib/stream-retry-policy.js",
+      "backend/lib/stripe-apply.js",
+      "backend/lib/stripe-event-ledger.js",
+      "backend/lib/stripe-identity.js",
+      "backend/lib/synthesis-degrade.js",
+      "backend/lib/synthesis-guidance.js",
+      "backend/lib/synthesis-policy.js",
+      "backend/lib/terminal-access.js",
+      "backend/lib/text-similarity.js",
+      "backend/lib/tool-dedupe.js",
+      "backend/lib/tool-protocol.js",
+      "backend/lib/tool-registry.js",
+      "backend/lib/ttl-cache.js",
+      "backend/lib/tts.js",
+      "backend/lib/turn-accounting-meta.js",
+      "backend/lib/turn-context.js",
+      "backend/lib/turn-ledger.js",
+      "backend/lib/turn-provenance-meta.js",
+      "backend/lib/turn-reliability-meta.js",
+      "backend/lib/turn-telemetry.js",
+      "backend/lib/untrusted-content.js",
+      "backend/lib/url-guard.js",
+      "backend/lib/usage-prefetch.js",
+      "backend/lib/user-facts.js",
+      "backend/lib/vision.js",
+      "backend/lib/wiki-relevance.js",
+      "backend/lib/work-plan.js",
+      "backend/server.js"
+    ],
+    "scopeLimit": "bounded source-text scan of backend/lib production JavaScript and backend/server.js; not a formal proof of all possible fixture-shaped behavior"
+  },
+  "fingerprintIndexPath": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
+  "corpusDecisionFailures": []
+}

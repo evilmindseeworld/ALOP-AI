@@ -1434,7 +1434,7 @@ function mutate(id) {
         "let end=i+1,light=true;",
         'M9 arbitrary object as light');
     }
-    const tailAcceptance = /const allowed = \(!pronoun\?\.valid \|\| pronoun\.grammarValid\)\s*&& validateActiveTailV2\(tokens, object\.tokenEnd, pronoun\);/;
+    const tailAcceptance = /const allowed = \(!pronoun\?\.valid \|\| pronoun\.grammarValid\)\s*&& validateActiveTailV2\(tokens, object\.tokenEnd, pronoun, subjectSet\);/;
     const tailAcceptanceAnchors = text.match(/const allowed = \(!pronoun\?\.valid \|\| pronoun\.grammarValid\)/g) || [];
     if (tailAcceptanceAnchors.length !== 1 || !tailAcceptance.test(text)) {
       throw new Error(`mutation target missing or ambiguous: ${id} tail acceptance`);

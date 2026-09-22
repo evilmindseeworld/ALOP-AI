@@ -498,10 +498,7 @@ const V2_SUBJECTS = new Set(['photosynthesis','plant','plants','green plant','gr
 const V2_PIGMENT_TERMS = new Set(['chlorophyll','melanin','carotene','xanthophyll']);
 const V2_MODALS = new Map([['can',['UNCERTAIN','CAPABILITY_NOT_ACTUALITY']],['cannot',['NEGATED','ASSERTED_INABILITY']],['can\'t',['NEGATED','ASSERTED_INABILITY']],['may',['UNCERTAIN','POSSIBILITY']],['might',['UNCERTAIN','WEAK_POSSIBILITY']],['could',['UNCERTAIN','POSSIBILITY_OR_CAPABILITY']],['couldn\'t',['NEGATED','ASSERTED_INABILITY']],['must',['AFFIRMED','ASSERTED_NECESSITY']],['should',['UNRESOLVED','NORMATIVE_OR_EXPECTED']],['would',['UNRESOLVED','CONDITIONAL_OR_COUNTERFACTUAL']]]);
 const normalizePunctuationRunV2 = (run) => {
-  for (let size = 1; size <= run.length; size += 1) {
-    if (run.length % size === 0 && run === run.slice(0, size).repeat(run.length / size)) return run.slice(0, size);
-  }
-  return run;
+  return [...new Set(run)].join('');
 };
 const normalizeInputV2 = (x) => normalizeInput(x).toLowerCase().replace(/’/g, "'").replace(/[.!?;:]+/g, normalizePunctuationRunV2);
 const segmentSentencesV2 = (x) => segmentSentences(normalizeInputV2(x));
@@ -599,34 +596,68 @@ function bindDirectObject(ts,i){
   }
   return{start:ts[i].start,end:ts[end-1].end,tokenEnd:end,surface:ts.slice(i,end).map(t=>t.form).join(' '),normalized:light?'light-energy':'',role:light?'LIGHT_OBJECT':ts[i].form==='chlorophyll'?'CHLOROPHYLL':'NON_LIGHT_OBJECT'};
 }
+function trimActiveTailForms(tokens) {
+  const forms = tokens.map((token) => token.form).filter((form) => form !== ',');
+  while (['.', '!', '?'].includes(forms.at(-1))) forms.pop();
+  return forms;
+}
+
+function isCompleteContrastContinuationV2(forms) {
+  if (!forms.length || forms.includes('but')) return false;
+  if (['do', 'does', 'did'].includes(forms[0])
+    && ['not', 'never'].includes(forms[1])
+    && V2_VERBS.has(forms[2])
+    && forms[3] === 'it'
+    && forms.length === 4) return true;
+  const first = forms[0];
+  const needsSubject = ['do', 'does', 'did', 'not', 'never', 'can', 'cannot', "can't", 'may', 'might', 'could', 'must', 'should', 'would'].includes(first);
+  const continuation = `${needsSubject ? 'photosynthesis ' : ''}${forms.join(' ')}`;
+  const parsed = parseMinimalRelationGrammar(continuation);
+  return !parsed.hasMalformed && parsed.relationRecords.some((record) =>
+    record.subjectValidity === 'ALL_VALID' && record.directObject?.role === 'LIGHT_OBJECT');
+}
+
+function validateActiveComponentsV2(forms) {
+  if (!forms.length) return true;
+  let index = 0;
+  const consume = (...expected) => expected.every((form, offset) => forms[index + offset] === form)
+    ? (index += expected.length, true)
+    : false;
+  const consumeContextAdjunct = () => consume('during', 'photosynthesis')
+    || consume('in', 'photosynthesis')
+    || consume('for', 'photosynthesis');
+  if (consume('and', 'make', 'food')) return index === forms.length;
+  if (consume('into', 'chemical', 'energy')) {
+    consume('storing', 'it', 'in', 'glucose', 'molecules');
+    consumeContextAdjunct();
+  } else if (consume('storing', 'it', 'in', 'glucose', 'molecules')) {
+    return index === forms.length;
+  } else if (consume('releasing', 'oxygen', 'as', 'a', 'byproduct')) {
+    return index === forms.length;
+  } else if (consume('driven', 'by', 'chlorophyll', 'in', 'the', 'presence', 'of', 'sunlight')) {
+    return index === forms.length;
+  } else if (consumeContextAdjunct()) {
+    return index === forms.length;
+  } else {
+    return false;
+  }
+  return index === forms.length;
+}
+
 function validateActiveTailV2(tokens, objectEnd, pronoun) {
   const tail = tokens.slice(objectEnd);
   const butIndex = tail.findIndex((token) => token.form === 'but');
-  const frame = (butIndex >= 0 ? tail.slice(0, butIndex) : tail)
-    .map((token) => token.form)
-    .filter((form) => form !== ',');
-  while (['.', '!', '?'].includes(frame.at(-1))) frame.pop();
-  while (frame.at(-1) === ',') frame.pop();
-  while (frame[0] === ',') frame.shift();
+  const frame = trimActiveTailForms(butIndex >= 0 ? tail.slice(0, butIndex) : tail);
   if (pronoun?.valid && pronoun.grammarValid) {
     const continuation = ['and', pronoun.continuationVerb, 'it'];
     if (frame.slice(0, continuation.length).every((form, index) => form === continuation[index])) {
       frame.splice(0, continuation.length);
     }
   }
-  if (!frame.length) return true;
-  const text = frame.join(' ');
-  return [
-    'and make food',
-    'into chemical energy',
-    'into chemical energy storing it in glucose molecules',
-    'storing it in glucose molecules',
-    'releasing oxygen as a byproduct',
-    'driven by chlorophyll in the presence of sunlight',
-    'during photosynthesis',
-    'in photosynthesis',
-    'for photosynthesis',
-  ].includes(text);
+  const frameValid = validateActiveComponentsV2(frame);
+  if (butIndex < 0) return frameValid;
+  const continuation = trimActiveTailForms(tail.slice(butIndex + 1));
+  return frameValid && isCompleteContrastContinuationV2(continuation);
 }
 function bindLocalPassiveAgent(ts){
   const object=bindDirectObject(ts,0);

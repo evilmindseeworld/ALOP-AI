@@ -67,6 +67,53 @@
       "failureShape": "expected-decision-mismatch-before-polarity-or-version-assertions"
     }
   },
+  "secondAstraBlockers": {
+    "captureCommitSha": "fa20d97e90bcb6907f2a570400a827069a8adc84",
+    "captureTreeSha": "90b01e20395cbf3ebc45396a9126d06cf91ea7f1",
+    "blocker1": [
+      {
+        "text": "Photosynthesis captures light energy but chlorophyll glucose.",
+        "expected": { "passed": false, "hasMalformed": true, "gradeCaseFactualityPassed": false },
+        "observed": { "passed": true, "hasMalformed": false, "gradeCaseFactualityPassed": true }
+      },
+      {
+        "text": "Photosynthesis captures light energy but captures.",
+        "expected": { "passed": false, "hasMalformed": true, "gradeCaseFactualityPassed": false },
+        "observed": { "passed": true, "hasMalformed": false, "gradeCaseFactualityPassed": true }
+      }
+    ],
+    "blocker2": {
+      "text": "Photosynthesis converts light energy into chemical energy during photosynthesis.",
+      "expected": { "passed": true, "gradeCaseFactualityPassed": true },
+      "observed": { "passed": false, "hasMalformed": true, "gradeCaseFactualityPassed": false }
+    },
+    "blocker3": {
+      "caseIds": ["V2-PUNCTUATION_ABUSE-003", "V2-PUNCTUATION_ABUSE-007"],
+      "texts": [
+        "Photosynthesis captures carbon dioxide?!? Light energy exists.",
+        "Photosynthesis captures carbon dioxide?! Light energy exists."
+      ],
+      "expected": "identical fingerprint",
+      "observedFingerprints": [
+        "a30f7f6a13f96585f031b39ba52cd15d46e91868049ea2a970dfc59d63f0bd79",
+        "3919501f4a34a587870dc2d44e1b4de7f19dd1eafdd1c61a457fb1ff91fc013f"
+      ]
+    },
+    "blocker4": {
+      "recipeVersion": "p1-static-compose-v1",
+      "recipeBlob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
+      "runnerInputCommitSha": "a10ea47cbdd35c5cfb9db95769ea44dbb8dceb6d",
+      "runnerInputBlob": "d883b6f970bd0dd8ec7a050fd3f16310d4067c9e",
+      "evaluatorInputCommitSha": "fe01cd9af76df5fcb3d75d387532747d4209372f",
+      "evaluatorInputBlob": "8cc4558977e64f5b57ed731756e28b1fa733b0ec",
+      "reproducedPackageLength": 82084,
+      "reproducedPackageSha256": "cc419263741ab9b3d9f89087e294e49979845b824c04f822404177afebcb0272",
+      "committedPackageLength": 82076,
+      "committedPackageSha256": "8987004af9aad6706ee7b0aed27d2052f35bd3ae38d47eea7c25eb2db28c9892",
+      "byteEqual": false,
+      "packagedFingerprintExport": { "pass": false, "error": "ReferenceError: __p1Crypto is not defined" }
+    }
+  },
   "rootReproductions": [
     {
       "id": "ADV001",

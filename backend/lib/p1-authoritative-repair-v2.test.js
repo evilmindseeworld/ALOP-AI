@@ -652,7 +652,7 @@ test('V2 corpus identity and expected membership are frozen independently of imp
     .map(stableFields)
     .sort(([leftId], [rightId]) => leftId.localeCompare(rightId));
   const identity = createHash('sha256').update(JSON.stringify(corpus)).digest('hex');
-  assert.equal(identity, '3f4bf7084a0c6eddc1e8d4d4697e968ab99ac05f8181599c35726946e77c4d9c');
+  assert.equal(identity, '4e5d0b50f3d1f3da65d3cbd8f28630d418d749e20221c28006edcaddae7ef9df');
   assert.deepEqual(b5SemanticSupplementCases.map(stableFields), [[
     'B5-PUNCTUATION_ABUSE-001',
     'Photosynthesis captures carbon dioxide!?! Light energy exists.',
@@ -1096,7 +1096,7 @@ test('V2 semantic corpus meets every frozen class minimum with unique fingerprin
   assert.equal(new Set(fingerprints).size, 204, 'cosmetic punctuation is not semantic diversity');
   assert.deepEqual([...fingerprintGroups.values()].filter((ids) => ids.length > 1).map((ids) => ids.sort()), [
     ['SB-001', 'V2-SENTENCE_BOUNDARY-005'],
-    ['PUN-001', 'V2-PUNCTUATION_ABUSE-002'],
+    ['V2-PUNCTUATION_ABUSE-003', 'V2-PUNCTUATION_ABUSE-007'],
   ]);
   const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
   for (const item of [...generatedV2Cases, ...b5SemanticSupplementCases]) {
@@ -1135,7 +1135,7 @@ test('V2 parameter dimensions match parsed semantic differences and class allowa
     if (dimensions.has('LO')) assert.notDeepEqual(before.relationRecords.map((x) => [x.directObject?.role,x.directObject?.normalized,x.directObject?.surface]), after.relationRecords.map((x) => [x.directObject?.role,x.directObject?.normalized,x.directObject?.surface]), `${item.id}: LO`);
     if (dimensions.has('BD')) assert.ok(!same(before.topology, after.topology) || !same(before.relationRecords.map((x) => x.objectBarriers?.marker), after.relationRecords.map((x) => x.objectBarriers?.marker)), `${item.id}: BD`);
     if (dimensions.has('PU')) {
-      if (['V2-PUNCTUATION_ABUSE-002', 'V2-SENTENCE_BOUNDARY-005'].includes(item.id)) {
+      if (['V2-SENTENCE_BOUNDARY-005'].includes(item.id)) {
         assert.equal(semanticCaseFingerprint(seed.text, seed.expectedDecision), semanticCaseFingerprint(item.text, item.expectedDecision), `${item.id}: cosmetic punctuation count`);
       } else assert.notDeepEqual(before.punctuationTopology, after.punctuationTopology, `${item.id}: PU`);
     }
@@ -1365,5 +1365,44 @@ test('Astra defect 3: cosmetic sentence-boundary differences share a fingerprint
   assert.notEqual(
     semanticCaseFingerprint('Photosynthesis captures light energy.'),
     semanticCaseFingerprint('Photosynthesis does not capture light energy.'),
+  );
+});
+
+test('second Astra blocker reproductions expose incomplete contrast tails through gradeCase', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  const photoCase = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
+  for (const answer of [
+    'Photosynthesis captures light energy but chlorophyll glucose.',
+    'Photosynthesis captures light energy but captures.',
+  ]) {
+    const result = evaluatePhotosynthesisRelationsV2(answer);
+    const grade = gradeCase(photoCase, observation(answer, { id: photoCase.id }));
+    assert.equal(result.passed, false, answer);
+    assert.equal(result.hasMalformed, true, answer);
+    assert.equal(grade.factuality.passed, false, answer);
+  }
+});
+
+test('second Astra blocker reproduction accepts the frozen complement-plus-adjunct composition', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  const answer = 'Photosynthesis converts light energy into chemical energy during photosynthesis.';
+  const result = evaluatePhotosynthesisRelationsV2(answer);
+  const grade = gradeCase(v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis'), observation(answer, { id: 'simple-explanation-photosynthesis' }));
+  assert.equal(result.passed, true, answer);
+  assert.equal(grade.factuality.passed, true, answer);
+});
+
+test('second Astra blocker reproduction collapses partial mixed-punctuation duplication', () => {
+  const { semanticCaseFingerprint } = require('./photosynthesis-relation-evaluator');
+  const first = 'Photosynthesis captures carbon dioxide?!? Light energy exists.';
+  const second = 'Photosynthesis captures carbon dioxide?! Light energy exists.';
+  assert.equal(semanticCaseFingerprint(first), semanticCaseFingerprint(second));
+});
+
+test('second Astra blocker reproduction finds the packaged fingerprint export broken', async () => {
+  const packaged = await import('../scripts/run-photosynthesis-relation-mutations.mjs');
+  assert.throws(
+    () => packaged.createDerivedEvaluator().semanticCaseFingerprint('Photosynthesis captures light energy.'),
+    ReferenceError,
   );
 });

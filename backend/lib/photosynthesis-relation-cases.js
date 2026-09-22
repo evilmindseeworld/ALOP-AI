@@ -1376,7 +1376,7 @@ const structuralVariants = {
       .map(([separator,dimensions]) => [`Photosynthesis converts chemicals${separator}light energy exists.`,dimensions]),
     ['Photosynthesis converts chemicals. Light energy exists; plants capture carbon dioxide.',['BD','PU']],
   ],
-  PUNCTUATION_ABUSE: [['??',['PU']],['!!!!',['PU']],['?!?',['PU']],[':',['PU','BD']],[';',['PU','BD']],['...',['PU']],['?!',['PU']]].map(([punctuation,dimensions]) => [`Photosynthesis captures carbon dioxide${punctuation} Light energy exists.`,dimensions]),
+  PUNCTUATION_ABUSE: [['??',['PU']],[':!',['PU','BD']],['?!?',['PU']],[':',['PU','BD']],[';',['PU','BD']],['...',['PU']],['?!',['PU']]].map(([punctuation,dimensions]) => [`Photosynthesis captures carbon dioxide${punctuation} Light energy exists.`,dimensions]),
   NO_STITCHING: [
     ['Chlorophyll is present; rocks capture light energy.',['SL']],
     ['Chlorophyll is present; animals capture solar energy.',['LO']],

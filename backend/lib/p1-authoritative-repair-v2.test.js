@@ -1404,3 +1404,55 @@ test('second Astra blocker reproduction confirms the packaged fingerprint export
   const fingerprint = packaged.createDerivedEvaluator().semanticCaseFingerprint('Photosynthesis captures light energy.');
   assert.match(fingerprint, /^[0-9a-f]{64}$/);
 });
+
+test('Astra PREQ-004 rejects malformed continuation morphology and agreement', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  for (const answer of [
+    'Photosynthesis captures light energy but does not captures it.',
+    'Photosynthesis captures light energy but did not storing it.',
+    'Photosynthesis do not store light energy.',
+    'Photosynthesis does not stores light energy.',
+  ]) {
+    const result = evaluatePhotosynthesisRelationsV2(answer);
+    assert.equal(result.passed, false, answer);
+    assert.equal(result.hasMalformed, true, answer);
+    assert.ok(result.diagnostics.includes('GRAMMAR_SHAPE_NOT_ACCEPTED'), answer);
+  }
+});
+
+test('Astra PREQ-005 retains explicit new propositions for contradiction detection', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  const result = evaluatePhotosynthesisRelationsV2(
+    'Photosynthesis captures light energy but photosynthesis does not capture light energy.',
+  );
+  assert.equal(result.relationRecords.length, 2);
+  assert.equal(result.contradictions.length, 1);
+  assert.equal(result.passed, false);
+});
+
+test('Astra PREQ-006 supports shared NOT_FAIL_TO control across coordinated predicates', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  const result = evaluatePhotosynthesisRelationsV2(
+    'Photosynthesis does not fail to capture and store light energy.',
+  );
+  assert.equal(result.passed, true);
+  assert.equal(result.relationRecords.length, 2);
+  assert.deepEqual(result.relationRecords.map((record) => [
+    record.verbLemma, record.controlChain?.type, record.polarity, record.qualifies,
+  ]), [
+    ['capture', 'NOT_FAIL_TO', 'AFFIRMED', true],
+    ['store', 'NOT_FAIL_TO', 'AFFIRMED', true],
+  ]);
+});
+
+test('Astra PREQ-007 treats contracted could not as asserted inability', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  const result = evaluatePhotosynthesisRelationsV2("Photosynthesis couldn't capture light energy.");
+  const record = result.relationRecords[0];
+  assert.equal(record.subjectSet?.lemma, 'photosynthesis');
+  assert.equal(record.modal, 'could');
+  assert.equal(record.polarity, 'NEGATED');
+  assert.equal(record.polarityReason, 'ASSERTED_INABILITY');
+  assert.equal(record.qualifies, false);
+  assert.equal(result.passed, false);
+});

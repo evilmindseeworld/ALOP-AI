@@ -2,15 +2,16 @@
   "schemaVersion": 1,
   "designVersion": "photosynthesis-light-relation-v2",
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
-  "approvedBaseSha": "e26639fe8e1db2503a8f13133f0a2bc586fa1bd4",
+  "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "capturedAtUtc": "2026-09-22T02:42:05.060Z",
-  "implementationCommitSha": "d1e9df784dcbfa9b83d33945f2955c0f0be337da",
-  "candidateHeadAtCapture": "163d1a3e08cb781fec0c1360bbec3d0bb5ac8716",
-  "candidateTreeAtCapture": "10c86799bb637806fc486a4f73d1f2c8c1cf3ba5",
+  "repairAttemptId": "ASTRA-PREQ-REPAIR-20260922",
+  "capturedAtUtc": "2026-09-22T16:56:32.022Z",
+  "implementationCommitSha": "8830f115f5d4a4deedab65a75fe8623bf589be73",
+  "candidateHeadAtCapture": "ce51c6075da2390997b965ea263a67669fa93788",
+  "candidateTreeAtCapture": "72f7ab4884e129679cc045eac4e3d6a7b4501b9d",
   "runtime": {
     "version": "v26.7.0",
     "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
@@ -22,168 +23,194 @@
   "indexedCaseCount": 204,
   "uniqueCount": 204,
   "totalCaseCount": 206,
-  "canonicalCaseBytesEncoding": "UTF-8 text bytes encoded as lowercase hex",
+  "canonicalCaseBytesEncoding": "utf8-hex",
   "reproducedBy": {
-    "evaluatorPath": "backend/lib/photosynthesis-relation-evaluator.js",
-    "evaluatorBlob": "d92184b640ada8b03c1eb90e1682c7cf54a39d80",
-    "function": "semanticCaseFingerprint(text, expectedDecision)"
+    "path": "backend/lib/photosynthesis-relation-evaluator.js",
+    "export": "semanticCaseFingerprint",
+    "implementationCommitSha": "8830f115f5d4a4deedab65a75fe8623bf589be73"
   },
   "rejectedDuplicates": [
     {
       "semanticFingerprint": "24287ae5fe899355fe07bc3984ca3dfb18923dde5a8527b2cc1e86eceb72d242",
       "retainedCaseId": "SB-001",
       "rejectedCaseId": "V2-SENTENCE_BOUNDARY-005",
-      "expectedDecision": "FAIL",
       "reason": "same fingerprint under frozen semanticFingerprintRules"
     },
     {
       "semanticFingerprint": "3919501f4a34a587870dc2d44e1b4de7f19dd1eafdd1c61a457fb1ff91fc013f",
       "retainedCaseId": "V2-PUNCTUATION_ABUSE-003",
       "rejectedCaseId": "V2-PUNCTUATION_ABUSE-007",
-      "expectedDecision": "FAIL",
       "reason": "same fingerprint under frozen semanticFingerprintRules"
     }
   ],
   "classMinima": [
     {
       "classId": "AFFIRMATIVE_ACTIVE",
-      "required": 8,
-      "observed": 17
+      "minimumUniqueSemanticCases": 8,
+      "observed": 17,
+      "pass": true
     },
     {
       "classId": "AFFIRMATIVE_PASSIVE",
-      "required": 6,
-      "observed": 6
+      "minimumUniqueSemanticCases": 6,
+      "observed": 6,
+      "pass": true
     },
     {
       "classId": "INFINITIVAL_CHLOROPHYLL_MEDIATED",
-      "required": 6,
-      "observed": 6
+      "minimumUniqueSemanticCases": 6,
+      "observed": 6,
+      "pass": true
     },
     {
       "classId": "COORDINATED_PREDICATES",
-      "required": 6,
-      "observed": 6
+      "minimumUniqueSemanticCases": 6,
+      "observed": 6,
+      "pass": true
     },
     {
       "classId": "COORDINATED_SUBJECTS_VALID",
-      "required": 6,
-      "observed": 6
+      "minimumUniqueSemanticCases": 6,
+      "observed": 6,
+      "pass": true
     },
     {
       "classId": "COORDINATED_SUBJECTS_MIXED_INVALID",
-      "required": 8,
-      "observed": 8
+      "minimumUniqueSemanticCases": 8,
+      "observed": 8,
+      "pass": true
     },
     {
       "classId": "DETACHED_OBJECT_DECOYS",
-      "required": 8,
-      "observed": 8
+      "minimumUniqueSemanticCases": 8,
+      "observed": 8,
+      "pass": true
     },
     {
       "classId": "DIRECT_OBJECT_BARRIERS",
-      "required": 6,
-      "observed": 6
+      "minimumUniqueSemanticCases": 6,
+      "observed": 6,
+      "pass": true
     },
     {
       "classId": "FINITE_PREDICATE_BARRIERS",
-      "required": 6,
-      "observed": 6
+      "minimumUniqueSemanticCases": 6,
+      "observed": 6,
+      "pass": true
     },
     {
       "classId": "MALFORMED_SYNTAX",
-      "required": 9,
-      "observed": 9
+      "minimumUniqueSemanticCases": 9,
+      "observed": 9,
+      "pass": true
     },
     {
       "classId": "LOCAL_NEGATION",
-      "required": 8,
-      "observed": 8
+      "minimumUniqueSemanticCases": 8,
+      "observed": 8,
+      "pass": true
     },
     {
       "classId": "UNCERTAIN_MODALITY",
-      "required": 12,
-      "observed": 12
+      "minimumUniqueSemanticCases": 12,
+      "observed": 12,
+      "pass": true
     },
     {
       "classId": "NEGATED_MODALITY",
-      "required": 8,
-      "observed": 8
+      "minimumUniqueSemanticCases": 8,
+      "observed": 8,
+      "pass": true
     },
     {
       "classId": "AFFIRMED_MODALITY",
-      "required": 4,
-      "observed": 4
+      "minimumUniqueSemanticCases": 4,
+      "observed": 4,
+      "pass": true
     },
     {
       "classId": "NESTED_CONTROL",
-      "required": 10,
-      "observed": 10
+      "minimumUniqueSemanticCases": 10,
+      "observed": 10,
+      "pass": true
     },
     {
       "classId": "DOUBLE_NEGATION",
-      "required": 6,
-      "observed": 6
+      "minimumUniqueSemanticCases": 6,
+      "observed": 6,
+      "pass": true
     },
     {
       "classId": "UNRELATED_NEGATION",
-      "required": 6,
-      "observed": 6
+      "minimumUniqueSemanticCases": 6,
+      "observed": 6,
+      "pass": true
     },
     {
       "classId": "CLAUSE_BOUNDARY",
-      "required": 8,
-      "observed": 8
+      "minimumUniqueSemanticCases": 8,
+      "observed": 8,
+      "pass": true
     },
     {
       "classId": "SENTENCE_BOUNDARY",
-      "required": 6,
-      "observed": 6
+      "minimumUniqueSemanticCases": 6,
+      "observed": 6,
+      "pass": true
     },
     {
       "classId": "PRONOUN_CONTINUATION",
-      "required": 6,
-      "observed": 9
+      "minimumUniqueSemanticCases": 6,
+      "observed": 9,
+      "pass": true
     },
     {
       "classId": "INVALID_SUBJECT",
-      "required": 8,
-      "observed": 8
+      "minimumUniqueSemanticCases": 8,
+      "observed": 8,
+      "pass": true
     },
     {
       "classId": "INVALID_OBJECT",
-      "required": 8,
-      "observed": 8
+      "minimumUniqueSemanticCases": 8,
+      "observed": 8,
+      "pass": true
     },
     {
       "classId": "DESTRUCTIVE_RELATION",
-      "required": 6,
-      "observed": 6
+      "minimumUniqueSemanticCases": 6,
+      "observed": 6,
+      "pass": true
     },
     {
       "classId": "WRONG_PIGMENT",
-      "required": 6,
-      "observed": 6
+      "minimumUniqueSemanticCases": 6,
+      "observed": 6,
+      "pass": true
     },
     {
       "classId": "CONTRADICTION",
-      "required": 6,
-      "observed": 6
+      "minimumUniqueSemanticCases": 6,
+      "observed": 6,
+      "pass": true
     },
     {
       "classId": "PUNCTUATION_ABUSE",
-      "required": 8,
-      "observed": 8
+      "minimumUniqueSemanticCases": 8,
+      "observed": 8,
+      "pass": true
     },
     {
       "classId": "NO_STITCHING",
-      "required": 8,
-      "observed": 8
+      "minimumUniqueSemanticCases": 8,
+      "observed": 8,
+      "pass": true
     },
     {
       "classId": "KNOWN_REGRESSIONS",
-      "required": 8,
-      "observed": 8
+      "minimumUniqueSemanticCases": 8,
+      "observed": 8,
+      "pass": true
     }
   ],
   "entries": [

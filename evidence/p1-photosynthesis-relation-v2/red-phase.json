@@ -2,90 +2,138 @@
   "schemaVersion": 1,
   "designVersion": "photosynthesis-light-relation-v2",
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
-  "approvedBaseSha": "e26639fe8e1db2503a8f13133f0a2bc586fa1bd4",
+  "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
   "repairAttemptId": "ASTRA-PREQ-REPAIR-20260922",
-  "capturedAtUtc": "2026-09-22T02:48:01.761Z",
+  "capturedAtUtc": "2026-09-22T16:56:32.022Z",
   "phase": "RED",
   "expectedRed": true,
-  "redSourceCommitSha": "e26639fe8e1db2503a8f13133f0a2bc586fa1bd4",
-  "redSourceTreeSha": "319a6ff5d0e6fd11b24e7894617e0103d4a727a4",
+  "redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb",
+  "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe",
+  "redSourceCommitSha": "ba8dcd9645f8a6ba0ba58bf991d28a49e502004b",
+  "redSourceTreeSha": "82e1b1b84e2f0ded5315355a97fa2588b2e426df",
   "frozenCorpus": {
     "source": "supervisor-owned photosynthesis-clause-relation-v2.json canonicalCases",
     "designArtifactSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
     "membershipExact": true,
     "caseIds": [
+      "ACT-001",
+      "INF-001",
+      "CP-001",
+      "CSV-001",
       "ADV001",
       "ADV002",
       "ADV003",
       "ADV004",
       "ADV005",
-      "ADV006"
+      "ADV006",
+      "CSI-002",
+      "CSI-003",
+      "SEP-001",
+      "DOB-001",
+      "FPB-001",
+      "SB-001",
+      "MAL-002",
+      "MAL-003",
+      "NEG-001",
+      "MOD-CAN",
+      "MOD-CANNOT",
+      "MOD-CANT",
+      "MOD-MAY",
+      "MOD-MAYNOT",
+      "MOD-MIGHT",
+      "MOD-MIGHTNOT",
+      "MOD-COULD",
+      "MOD-COULDNOT",
+      "MOD-MUST",
+      "MOD-MUSTNOT",
+      "MOD-SHOULD",
+      "MOD-SHOULDNOT",
+      "MOD-WOULD",
+      "MOD-WOULDNOT",
+      "CTRL-FAIL",
+      "CTRL-FAILED",
+      "CTRL-DIDNOTFAIL",
+      "CTRL-NEVERFAIL",
+      "CTRL-NOTAPPEAR",
+      "CTRL-APPEARNOT",
+      "CTRL-NOTSEEM",
+      "CTRL-SEEMNOT",
+      "UNN-001",
+      "CB-001",
+      "PRON-001",
+      "PRON-002",
+      "IS-001",
+      "IO-001",
+      "DEST-001",
+      "WP-001",
+      "CON-001",
+      "PUN-001",
+      "NS-001",
+      "KREG-001"
     ]
   },
   "testRun": {
-    "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe -e <exact-base PREQ reproduction>",
+    "command": "pinned Node 26.7.0 inline readback of immutable pre-repair candidate",
     "runtime": {
       "version": "v26.7.0",
       "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
       "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
     },
     "result": {
-      "tests": 5,
+      "tests": 4,
       "passed": 0,
-      "failed": 5,
+      "failed": 4,
       "exitCode": 0,
       "behavioralRed": true,
-      "stdoutSha256": "fb6e1419b139ab274ee73acd911a5cbbfc8212131729c057ee5266c0c3b55563"
+      "stdoutSha256": "96c019291d5010bb6087d108202fef0dc10e4f5ee2691c300915cfaddef52de7"
     },
     "source": {
-      "evaluatorCommitSha": "e26639fe8e1db2503a8f13133f0a2bc586fa1bd4",
-      "evaluatorTreeSha": "319a6ff5d0e6fd11b24e7894617e0103d4a727a4",
+      "evaluatorCommitSha": "ba8dcd9645f8a6ba0ba58bf991d28a49e502004b",
+      "evaluatorTreeSha": "82e1b1b84e2f0ded5315355a97fa2588b2e426df",
       "path": "backend/lib/photosynthesis-relation-evaluator.js"
     }
   },
   "rootReproductions": [
     {
-      "id": "PREQ-004-a",
-      "text": "Photosynthesis captures light energy but does not captures it.",
-      "expectedPassed": false,
-      "observedPassed": true,
-      "hasMalformed": false
+      "id": "PREQ-004",
+      "text": "Plants capture light energy but do not store it.",
+      "expectedPassed": true,
+      "observedPassed": false,
+      "recordCount": 1,
+      "contradictions": 0,
+      "hasMalformed": true
     },
     {
-      "id": "PREQ-004-b",
-      "text": "Photosynthesis captures light energy but did not storing it.",
-      "expectedPassed": false,
-      "observedPassed": true,
-      "hasMalformed": false
-    },
-    {
-      "id": "PREQ-005",
-      "text": "Photosynthesis captures light energy but photosynthesis does not capture light energy.",
+      "id": "PREQ-005-Plant",
+      "text": "Plant captures light energy but plant does not capture light energy.",
       "expectedPassed": false,
       "observedPassed": true,
       "recordCount": 1,
-      "contradictions": 0
+      "contradictions": 0,
+      "hasMalformed": false
     },
     {
-      "id": "PREQ-006",
-      "text": "Photosynthesis does not fail to capture and store light energy.",
+      "id": "PREQ-005-Alga",
+      "text": "Alga captures light energy but alga does not capture light energy.",
+      "expectedPassed": false,
+      "observedPassed": true,
+      "recordCount": 1,
+      "contradictions": 0,
+      "hasMalformed": false
+    },
+    {
+      "id": "PREQ-009",
+      "text": "Light energy is captured by plants and algae.",
       "expectedPassed": true,
       "observedPassed": false,
-      "hasMalformed": true,
-      "recordCount": 2
-    },
-    {
-      "id": "PREQ-007",
-      "text": "Photosynthesis couldn't capture light energy.",
-      "expectedPassed": false,
-      "observedPassed": false,
-      "observedPolarity": "UNRESOLVED",
-      "hasMalformed": true
+      "recordCount": 2,
+      "contradictions": 0,
+      "hasMalformed": false
     }
   ],
-  "provenanceSource": "FRESH_EXACT_BASE_REPRODUCTION"
+  "provenanceSource": "FRESH_EXACT_PRE_REPAIR_CANDIDATE_READBACK"
 }

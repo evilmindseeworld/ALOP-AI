@@ -2,16 +2,16 @@
   "schemaVersion": 1,
   "designVersion": "photosynthesis-light-relation-v2",
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
-  "approvedBaseSha": "e26639fe8e1db2503a8f13133f0a2bc586fa1bd4",
+  "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
   "repairAttemptId": "ASTRA-PREQ-REPAIR-20260922",
-  "capturedAtUtc": "2026-09-22T02:48:01.761Z",
-  "implementationCommitSha": "d1e9df784dcbfa9b83d33945f2955c0f0be337da",
-  "candidateHeadAtCapture": "163d1a3e08cb781fec0c1360bbec3d0bb5ac8716",
-  "candidateTreeAtCapture": "10c86799bb637806fc486a4f73d1f2c8c1cf3ba5",
+  "capturedAtUtc": "2026-09-22T16:56:32.022Z",
+  "implementationCommitSha": "8830f115f5d4a4deedab65a75fe8623bf589be73",
+  "candidateHeadAtCapture": "ce51c6075da2390997b965ea263a67669fa93788",
+  "candidateTreeAtCapture": "72f7ab4884e129679cc045eac4e3d6a7b4501b9d",
   "runtime": {
     "version": "v26.7.0",
     "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
@@ -26,31 +26,33 @@
   "skipped": 0,
   "focusedTestRuns": [
     {
-      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap backend/lib/p1-authoritative-repair-v2.test.js backend/lib/p1-authoritative-repair-v2-mutation.test.js backend/lib/photosynthesis-relation-evaluator-mutation.test.js backend/lib/photosynthesis-relation-evaluator.test.js",
+      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/evaluation-runner-contract.test.js lib/photosynthesis-relation-evaluator.test.js lib/photosynthesis-relation-evaluator-mutation.test.js lib/evaluation.test.js",
       "exitCode": 0,
-      "tests": 142,
-      "passed": 142,
+      "tests": 104,
+      "passed": 104,
       "failed": 0,
-      "stdoutSha256": "ef2dae1ad2cbb5dd6730cb4dc80808c0a9b69de13bb1e016a44ee1e3d14459f8",
-      "failures": [],
-      "error": null
-    },
-    {
-      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap backend/lib/evaluation.test.js",
-      "exitCode": 0,
-      "tests": 41,
-      "passed": 41,
-      "failed": 0,
-      "stdoutSha256": "3f19d2485702c93b15e77f08869dbfcf2adff7a3bcafe453bec861f23bab7b7c",
+      "stdoutSha256": "2a07799b3efdda4d929c375c343c156fb34559bd7380b7dd704368ad10699363",
+      "bytes": 20005,
       "failures": [],
       "error": null
     }
   ],
+  "evaluationTestRun": {
+    "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/evaluation.test.js",
+    "exitCode": 0,
+    "tests": 41,
+    "passed": 41,
+    "failed": 0,
+    "stdoutSha256": "fadb3827b23c01f89cf3e3f230b14609ba6e7fc3c5bf2e1dedb48e10528068ca",
+    "bytes": 8488,
+    "failures": [],
+    "error": null
+  },
   "mutationKilled": {
     "killed": 10,
     "total": 10,
     "cases": 206,
-    "stdoutSha256": "d6623f425806f3ef417ec9d89c99d0c5031fb6735a726bb1fc2ac97589f9d494"
+    "stdoutSha256": "e1c793a042df9ec1161edba784daa79b492e77147ea25d9927ba70af54602c9b"
   },
   "datasetValidation": {
     "status": "PASS",
@@ -60,21 +62,16 @@
     "providerCalls": 0,
     "liveAuth": false,
     "noMutations": true,
+    "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe scripts/run-evals.mjs --validate-only",
+    "exitCode": 0,
+    "stdoutSha256": "8d078d04db663a3bcb05bdd565b464cf3dbd12b9629f48b9ea904d5b48387e25",
+    "outputBytes": 77,
     "datasets": [
       {
-        "dataset": "backend-intelligence-v2",
-        "cases": 21,
-        "selected": 21,
+        "dataset": "core-v1",
+        "cases": 22,
+        "selected": 22,
         "exitCode": 0,
-        "stdoutSha256": "11a887e42686af89b2f9c04ce71a808ad91a8a776eb334234a2e6893788ee27e",
-        "result": "PASS"
-      },
-      {
-        "dataset": "backend-intelligence-v2-recovery10",
-        "cases": 10,
-        "selected": 10,
-        "exitCode": 0,
-        "stdoutSha256": "80a58ed86c6fe547392586e19e88916638d0f5ebec3f29a77c2a41cd91711b20",
         "result": "PASS"
       }
     ]
@@ -85,48 +82,78 @@
       "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
       "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
     },
-    "candidateCausedFailureCount": 0,
-    "dependencyHashesEqual": true,
     "approvedBase": {
-      "head": "e26639fe8e1db2503a8f13133f0a2bc586fa1bd4",
-      "tree": "319a6ff5d0e6fd11b24e7894617e0103d4a727a4",
-      "total": 2525,
-      "passed": 2524,
+      "head": "03c01ce23ead82762437286ebdab94d3485e0519",
+      "total": 2439,
+      "passed": 2438,
       "failed": 1,
       "exitCode": 1,
-      "stdoutSha256": "ec362a7a3f9281c99f2a94ff1dcfa1c4a25c469ce20f92a11f14ce7bee68589e",
-      "failure": "every declared Node major is the one deploy/targets.json names",
-      "failureDetail": "package.json engines is 26.7.0"
+      "stdoutSha256": "120d64f5df573857af9e1ec0429fceabe8c23fab5437881fa2f88f9ea3f52a37",
+      "failures": [
+        "every declared Node major is the one deploy/targets.json names"
+      ]
+    },
+    "preRepairCandidate": {
+      "head": "ba8dcd9645f8a6ba0ba58bf991d28a49e502004b",
+      "tree": "82e1b1b84e2f0ded5315355a97fa2588b2e426df",
+      "total": 2467,
+      "passed": 2462,
+      "failed": 5,
+      "exitCode": 1,
+      "stdoutSha256": "7f0db453a89e012a18fb1630c0ca9dab254fa67d5d23ea12eb324217883ad93b",
+      "failures": [
+        "every declared Node major is the one deploy/targets.json names",
+        "the installed Clerk really does assign a FUNCTION to req.auth",
+        "lib\\security-headers.test.js",
+        "lib\\sse-compression.test.js",
+        "lib\\tool-registry.test.js"
+      ]
     },
     "candidate": {
-      "head": "163d1a3e08cb781fec0c1360bbec3d0bb5ac8716",
-      "tree": "10c86799bb637806fc486a4f73d1f2c8c1cf3ba5",
-      "total": 2530,
-      "passed": 2529,
-      "failed": 1,
+      "head": "ce51c6075da2390997b965ea263a67669fa93788",
+      "tree": "72f7ab4884e129679cc045eac4e3d6a7b4501b9d",
+      "total": 2470,
+      "passed": 2465,
+      "failed": 5,
       "exitCode": 1,
-      "stdoutSha256": "d9622dd9dd3f8743801fcd76abf96aaa16e9664efd39e0af26f7dbfe293cd398",
-      "failure": "every declared Node major is the one deploy/targets.json names",
-      "failureDetail": "package.json engines is 26.7.0"
+      "stdoutSha256": "6e1a1fb9e900234d1e810b07c21e437be29a3610c22f27eea98ede6d10308c86",
+      "failures": [
+        "every declared Node major is the one deploy/targets.json names",
+        "the installed Clerk really does assign a FUNCTION to req.auth",
+        "lib\\security-headers.test.js",
+        "lib\\sse-compression.test.js",
+        "lib\\tool-registry.test.js"
+      ]
     },
-    "sameBaselineOnlyFailure": "every declared Node major is the one deploy/targets.json names"
+    "candidateCausedFailureCount": 0,
+    "preRepairDelta": {
+      "tests": 3,
+      "failures": 0
+    },
+    "sameFailureSet": true
+  },
+  "preRepairCandidate": {
+    "head": "ba8dcd9645f8a6ba0ba58bf991d28a49e502004b",
+    "tree": "82e1b1b84e2f0ded5315355a97fa2588b2e426df",
+    "focusedRed": true
   },
   "implementationAndPackage": {
-    "implementationCommitSha": "d1e9df784dcbfa9b83d33945f2955c0f0be337da",
-    "implementationParentSha": "e26639fe8e1db2503a8f13133f0a2bc586fa1bd4",
-    "packageCommitSha": "163d1a3e08cb781fec0c1360bbec3d0bb5ac8716",
-    "packageTreeSha": "10c86799bb637806fc486a4f73d1f2c8c1cf3ba5",
+    "implementationCommitSha": "8830f115f5d4a4deedab65a75fe8623bf589be73",
+    "implementationTreeSha": "d899bd34fa6d1b931d1b3fee1cdcf834c05db4a4",
+    "implementationParentSha": "ba8dcd9645f8a6ba0ba58bf991d28a49e502004b",
+    "packageCommitSha": "5a83970412c2a048146f755e365ebf07cd8eed86",
+    "packageTreeSha": "b2724e7be9b94b631c55722a1c3d516d93080446",
     "entryPoint": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-    "packageBlob": "82e57e9f76c1c11a6a644df64c55ed58d4bf498e",
-    "packageSha256": "0af7d640cacfccca59f3a19384785f6019c6004423ff0a7ba24091ad39627eea",
-    "packageBytes": 84601,
-    "evaluatorBlob": "d92184b640ada8b03c1eb90e1682c7cf54a39d80",
-    "runnerBlob": "82e57e9f76c1c11a6a644df64c55ed58d4bf498e",
+    "packageBlob": "35b71f1ff91fbf730b5bd8af8a3a2bfb2c303da1",
+    "packageSha256": "2c8c04a53ac86e174caaad842a6f97377c699a3abefb2f04a98f9a71e43f6d5d",
+    "packageBytes": 85088,
+    "evaluatorBlob": "57d8ff3e21f8e1c5027b449af787a5ffcb3bd807",
+    "runnerBlob": "46a7b35b1d1c36648eb900261f9c4725c8662639",
     "recipeBlob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
     "independentByteReproduction": "PASS",
     "packageDirectMutationMode": "PASS 206 cases; M1-M10 killed 10/10",
     "sourcePackageApiEquivalence": "PASS",
-    "packageByteEquality": "PASS; committed current source/package bytes"
+    "packageByteEquality": "PASS; current committed bytes equal independent reproduction"
   },
   "modelInferenceTraffic": {
     "performed": false,

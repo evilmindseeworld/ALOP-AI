@@ -1,8 +1,22 @@
 {
   "schemaVersion": 1,
+  "kind": "alop-p1-authoritative-evidence-manifest",
   "taskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
+  "repairAttemptId": "ASTRA-PREQ-REPAIR-20260922",
+  "designVersion": "photosynthesis-light-relation-v2",
+  "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
-  "implementationCommitSha": "7a94a93c72937a3150f54f79da2be0540e1108ea",
+  "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
+  "implementationCommitSha": "8830f115f5d4a4deedab65a75fe8623bf589be73",
+  "implementationTreeSha": "d899bd34fa6d1b931d1b3fee1cdcf834c05db4a4",
+  "candidateHeadAtCapture": "ce51c6075da2390997b965ea263a67669fa93788",
+  "candidateTreeAtCapture": "72f7ab4884e129679cc045eac4e3d6a7b4501b9d",
+  "packageCommitSha": "5a83970412c2a048146f755e365ebf07cd8eed86",
+  "packageTreeSha": "b2724e7be9b94b631c55722a1c3d516d93080446",
+  "packageSha256": "2c8c04a53ac86e174caaad842a6f97377c699a3abefb2f04a98f9a71e43f6d5d",
+  "phase": "FINAL_EVIDENCE",
+  "status": "PASS",
+  "nestedManifest": "ABSENT",
   "entries": [
     {
       "path": "backend/evals/backend-intelligence-v2.json",
@@ -14,47 +28,47 @@
     },
     {
       "path": "backend/lib/p1-authoritative-repair-v2.test.js",
-      "sha256": "61b8ee323574843c7139f260f673eb937aeb1974e0dad81203946f2606946dc2"
+      "sha256": "57f98956f4decd5f114cc5fc5e59de689bf9100bdb3e9ff734713d137f49b72b"
     },
     {
       "path": "backend/lib/photosynthesis-relation-cases.js",
-      "sha256": "61566868cdd984a56c19776184d1ba749ebdb3ce61d2a0798a086e54a0479646"
+      "sha256": "9ced4ccbf77076f71a26a9b4d2ba248fb83c370811c3a38abfcb69a834d0877a"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator-mutation.test.js",
-      "sha256": "fda8a1f6f2b98f1ea2767f133316fb814b23014623cc95bf5e34ad31c7cd19b7"
+      "sha256": "256f601284be05b01f18481cec0fc9678657e3f3ea6468ff448da8b9ff45e057"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.js",
-      "sha256": "c219c1399c5ccd8af8a0ae0f1aa8e5702a3e7b34e2a1eed8de7c48221138f6a0"
+      "sha256": "aa011812a37970f474313bb4098c53f6e0f8f8c3efadb8fecc6e72c546c693cb"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
-      "sha256": "9cb84c7b66b0bf90742b9d083ef71ebfbbc437d63dd7072e25936617044ba1d8"
+      "sha256": "5d1b861a260b6c32eb78fb2e1807efb2f955fba5c8e6e9be683d2672e2df3791"
     },
     {
       "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-      "sha256": "8987004af9aad6706ee7b0aed27d2052f35bd3ae38d47eea7c25eb2db28c9892"
+      "sha256": "2c8c04a53ac86e174caaad842a6f97377c699a3abefb2f04a98f9a71e43f6d5d"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
-      "sha256": "863b50d1f7c30b4a1e25599255281817ae1fbdd9be4faea748ca2c066ec1fb22"
+      "sha256": "8bef3effef55f376daf9e11656fd1e900d600189192ee017fbbee305d2f959c7"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/green-phase.json",
-      "sha256": "bfb9a4f2351d18b3696b35ea1e4bfe584d82e2da3ca4f5dbd6fbb2ce89ec9f9e"
+      "sha256": "df1d4df6e171abeec3d2ddc0abec3fb4f8007a8cf2e813df63abb95423238e10"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/mutation-phase.json",
-      "sha256": "1ba108de156d7f1209098829cb8c6aacd9d8b014240c7c96b7ccd17e1ce70e7f"
+      "sha256": "73d3a71df6b1ddc2749f783ddae5d8ffc32a2e110a5150cc98f430a459e30ff1"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/red-phase.json",
-      "sha256": "72bd9c50ec4797b6355eab94317cf6453dfcb116b33a8ea1113a0e7f9926b25d"
+      "sha256": "97724fa7e2e7e81064b9724998103c3ce52f2bf0bc5c0cf75d8e6470e501f7b8"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/semantic-coverage.json",
-      "sha256": "735c7132cfc9556e3f2228fd6daccdb7b2db1d72d0c61bc7ed23fe42ce85ad9b"
+      "sha256": "6772a7806321246a7ab54be6c380c1602fa18759894e7db157fbc82814bd3c0d"
     }
   ]
 }

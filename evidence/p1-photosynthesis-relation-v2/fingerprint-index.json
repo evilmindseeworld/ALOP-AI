@@ -2,29 +2,190 @@
   "schemaVersion": 1,
   "designVersion": "photosynthesis-light-relation-v2",
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
-  "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
+  "approvedBaseSha": "e26639fe8e1db2503a8f13133f0a2bc586fa1bd4",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "capturedAtUtc": "2026-09-22T00:00:00Z",
-  "implementationCommitSha": "23f41a6b8855f1fba8b1189a17c1cecaa405de11",
-  "candidateHeadAtCapture": "4d0cf0d2ff213c8afd72fb3726913ffa68d7b339",
-  "candidateTreeAtCapture": "06af70bf1810fe0b7e186b8709a5712206650d09",
+  "capturedAtUtc": "2026-09-22T02:42:05.060Z",
+  "implementationCommitSha": "d1e9df784dcbfa9b83d33945f2955c0f0be337da",
+  "candidateHeadAtCapture": "163d1a3e08cb781fec0c1360bbec3d0bb5ac8716",
+  "candidateTreeAtCapture": "10c86799bb637806fc486a4f73d1f2c8c1cf3ba5",
   "runtime": {
     "version": "v26.7.0",
     "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
     "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
   },
   "phase": "FINGERPRINT_INDEX",
+  "duplicatePolicy": "reject-global-duplicate",
+  "sourceCaseCount": 206,
+  "indexedCaseCount": 204,
   "uniqueCount": 204,
   "totalCaseCount": 206,
   "canonicalCaseBytesEncoding": "UTF-8 text bytes encoded as lowercase hex",
   "reproducedBy": {
     "evaluatorPath": "backend/lib/photosynthesis-relation-evaluator.js",
-    "evaluatorBlob": "36f758e617c55c5950225ea2187feb47ed526e3e",
+    "evaluatorBlob": "d92184b640ada8b03c1eb90e1682c7cf54a39d80",
     "function": "semanticCaseFingerprint(text, expectedDecision)"
   },
+  "rejectedDuplicates": [
+    {
+      "semanticFingerprint": "24287ae5fe899355fe07bc3984ca3dfb18923dde5a8527b2cc1e86eceb72d242",
+      "retainedCaseId": "SB-001",
+      "rejectedCaseId": "V2-SENTENCE_BOUNDARY-005",
+      "expectedDecision": "FAIL",
+      "reason": "same fingerprint under frozen semanticFingerprintRules"
+    },
+    {
+      "semanticFingerprint": "3919501f4a34a587870dc2d44e1b4de7f19dd1eafdd1c61a457fb1ff91fc013f",
+      "retainedCaseId": "V2-PUNCTUATION_ABUSE-003",
+      "rejectedCaseId": "V2-PUNCTUATION_ABUSE-007",
+      "expectedDecision": "FAIL",
+      "reason": "same fingerprint under frozen semanticFingerprintRules"
+    }
+  ],
+  "classMinima": [
+    {
+      "classId": "AFFIRMATIVE_ACTIVE",
+      "required": 8,
+      "observed": 17
+    },
+    {
+      "classId": "AFFIRMATIVE_PASSIVE",
+      "required": 6,
+      "observed": 6
+    },
+    {
+      "classId": "INFINITIVAL_CHLOROPHYLL_MEDIATED",
+      "required": 6,
+      "observed": 6
+    },
+    {
+      "classId": "COORDINATED_PREDICATES",
+      "required": 6,
+      "observed": 6
+    },
+    {
+      "classId": "COORDINATED_SUBJECTS_VALID",
+      "required": 6,
+      "observed": 6
+    },
+    {
+      "classId": "COORDINATED_SUBJECTS_MIXED_INVALID",
+      "required": 8,
+      "observed": 8
+    },
+    {
+      "classId": "DETACHED_OBJECT_DECOYS",
+      "required": 8,
+      "observed": 8
+    },
+    {
+      "classId": "DIRECT_OBJECT_BARRIERS",
+      "required": 6,
+      "observed": 6
+    },
+    {
+      "classId": "FINITE_PREDICATE_BARRIERS",
+      "required": 6,
+      "observed": 6
+    },
+    {
+      "classId": "MALFORMED_SYNTAX",
+      "required": 9,
+      "observed": 9
+    },
+    {
+      "classId": "LOCAL_NEGATION",
+      "required": 8,
+      "observed": 8
+    },
+    {
+      "classId": "UNCERTAIN_MODALITY",
+      "required": 12,
+      "observed": 12
+    },
+    {
+      "classId": "NEGATED_MODALITY",
+      "required": 8,
+      "observed": 8
+    },
+    {
+      "classId": "AFFIRMED_MODALITY",
+      "required": 4,
+      "observed": 4
+    },
+    {
+      "classId": "NESTED_CONTROL",
+      "required": 10,
+      "observed": 10
+    },
+    {
+      "classId": "DOUBLE_NEGATION",
+      "required": 6,
+      "observed": 6
+    },
+    {
+      "classId": "UNRELATED_NEGATION",
+      "required": 6,
+      "observed": 6
+    },
+    {
+      "classId": "CLAUSE_BOUNDARY",
+      "required": 8,
+      "observed": 8
+    },
+    {
+      "classId": "SENTENCE_BOUNDARY",
+      "required": 6,
+      "observed": 6
+    },
+    {
+      "classId": "PRONOUN_CONTINUATION",
+      "required": 6,
+      "observed": 9
+    },
+    {
+      "classId": "INVALID_SUBJECT",
+      "required": 8,
+      "observed": 8
+    },
+    {
+      "classId": "INVALID_OBJECT",
+      "required": 8,
+      "observed": 8
+    },
+    {
+      "classId": "DESTRUCTIVE_RELATION",
+      "required": 6,
+      "observed": 6
+    },
+    {
+      "classId": "WRONG_PIGMENT",
+      "required": 6,
+      "observed": 6
+    },
+    {
+      "classId": "CONTRADICTION",
+      "required": 6,
+      "observed": 6
+    },
+    {
+      "classId": "PUNCTUATION_ABUSE",
+      "required": 8,
+      "observed": 8
+    },
+    {
+      "classId": "NO_STITCHING",
+      "required": 8,
+      "observed": 8
+    },
+    {
+      "classId": "KNOWN_REGRESSIONS",
+      "required": 8,
+      "observed": 8
+    }
+  ],
   "entries": [
     {
       "caseId": "ACT-001",
@@ -1404,15 +1565,6 @@
       ]
     },
     {
-      "caseId": "V2-SENTENCE_BOUNDARY-005",
-      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c732e2e2e206c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "24287ae5fe899355fe07bc3984ca3dfb18923dde5a8527b2cc1e86eceb72d242",
-      "expectedDecision": "FAIL",
-      "classIds": [
-        "SENTENCE_BOUNDARY"
-      ]
-    },
-    {
       "caseId": "V2-SENTENCE_BOUNDARY-006",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c732e204c6967687420656e65726779206578697374733b20706c616e7473206361707475726520636172626f6e2064696f786964652e",
       "semanticFingerprint": "13690ae2268029bee233d8cc757998cb8d91a955d473895060d8f7481d5ab459",
@@ -1794,15 +1946,6 @@
       "caseId": "V2-PUNCTUATION_ABUSE-006",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964652e2e2e204c6967687420656e65726779206578697374732e",
       "semanticFingerprint": "cb1c97d1e4ca6540cef352f82fb71e606f136a037c6ef1c9a4e4c9433bf3f09e",
-      "expectedDecision": "FAIL",
-      "classIds": [
-        "PUNCTUATION_ABUSE"
-      ]
-    },
-    {
-      "caseId": "V2-PUNCTUATION_ABUSE-007",
-      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653f21204c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "3919501f4a34a587870dc2d44e1b4de7f19dd1eafdd1c61a457fb1ff91fc013f",
       "expectedDecision": "FAIL",
       "classIds": [
         "PUNCTUATION_ABUSE"

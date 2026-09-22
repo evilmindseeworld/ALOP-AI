@@ -2,15 +2,15 @@
   "schemaVersion": 1,
   "designVersion": "photosynthesis-light-relation-v2",
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
-  "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
+  "approvedBaseSha": "e26639fe8e1db2503a8f13133f0a2bc586fa1bd4",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "capturedAtUtc": "2026-09-22T00:00:00Z",
-  "implementationCommitSha": "23f41a6b8855f1fba8b1189a17c1cecaa405de11",
-  "candidateHeadAtCapture": "4d0cf0d2ff213c8afd72fb3726913ffa68d7b339",
-  "candidateTreeAtCapture": "06af70bf1810fe0b7e186b8709a5712206650d09",
+  "capturedAtUtc": "2026-09-22T02:48:01.761Z",
+  "implementationCommitSha": "d1e9df784dcbfa9b83d33945f2955c0f0be337da",
+  "candidateHeadAtCapture": "163d1a3e08cb781fec0c1360bbec3d0bb5ac8716",
+  "candidateTreeAtCapture": "10c86799bb637806fc486a4f73d1f2c8c1cf3ba5",
   "runtime": {
     "version": "v26.7.0",
     "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
@@ -22,7 +22,7 @@
   "canonicalCasesMatchFrozenDesign": true,
   "totalCaseCount": 206,
   "uniqueSemanticFingerprintCount": 204,
-  "informationalFloor": 201,
+  "informationalFloor": 204,
   "duplicateSemanticFingerprints": [
     {
       "semanticFingerprint": "24287ae5fe899355fe07bc3984ca3dfb18923dde5a8527b2cc1e86eceb72d242",
@@ -414,7 +414,7 @@
         "cases": 21,
         "selected": 21,
         "exitCode": 0,
-        "stdoutSha256": "cc48462d9a41c721f476b431ca5b5cbbaa8ee65ef65956c374f4483878908bee",
+        "stdoutSha256": "11a887e42686af89b2f9c04ce71a808ad91a8a776eb334234a2e6893788ee27e",
         "result": "PASS"
       },
       {
@@ -422,29 +422,29 @@
         "cases": 10,
         "selected": 10,
         "exitCode": 0,
-        "stdoutSha256": "70f498a027d773f0aff07c4630e629ecfd274a995d15458a3ce74a8e634865d3",
+        "stdoutSha256": "80a58ed86c6fe547392586e19e88916638d0f5ebec3f29a77c2a41cd91711b20",
         "result": "PASS"
       }
     ]
   },
   "testRuns": [
     {
-      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/p1-authoritative-repair-v2.test.js lib/p1-authoritative-repair-v2-mutation.test.js lib/photosynthesis-relation-evaluator-mutation.test.js lib/photosynthesis-relation-evaluator.test.js",
+      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap backend/lib/p1-authoritative-repair-v2.test.js backend/lib/p1-authoritative-repair-v2-mutation.test.js backend/lib/photosynthesis-relation-evaluator-mutation.test.js backend/lib/photosynthesis-relation-evaluator.test.js",
       "exitCode": 0,
-      "tests": 133,
-      "passed": 133,
+      "tests": 142,
+      "passed": 142,
       "failed": 0,
-      "stdoutSha256": "f54b56eb22bfee9baba35ec3b94ff68b1901bd68d5b25876371f9309faa1af4e",
+      "stdoutSha256": "ef2dae1ad2cbb5dd6730cb4dc80808c0a9b69de13bb1e016a44ee1e3d14459f8",
       "failures": [],
       "error": null
     },
     {
-      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/evaluation.test.js",
+      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap backend/lib/evaluation.test.js",
       "exitCode": 0,
       "tests": 41,
       "passed": 41,
       "failed": 0,
-      "stdoutSha256": "96efe0c806065f46f46b3501e684181fb910a68aebbd351418ce8dbea0d3edac",
+      "stdoutSha256": "3f19d2485702c93b15e77f08869dbfcf2adff7a3bcafe453bec861f23bab7b7c",
       "failures": [],
       "error": null
     }
@@ -577,5 +577,6 @@
     "scopeLimit": "bounded source-text scan of backend/lib production JavaScript and backend/server.js; not a formal proof of all possible fixture-shaped behavior"
   },
   "fingerprintIndexPath": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
-  "corpusDecisionFailures": []
+  "corpusDecisionFailures": [],
+  "repairAttemptId": "ASTRA-PREQ-REPAIR-20260922"
 }

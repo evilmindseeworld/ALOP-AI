@@ -8,9 +8,9 @@
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
   "capturedAtUtc": "2026-09-22T00:00:00Z",
-  "implementationCommitSha": "7a94a93c72937a3150f54f79da2be0540e1108ea",
-  "candidateHeadAtCapture": "fe01cd9af76df5fcb3d75d387532747d4209372f",
-  "candidateTreeAtCapture": "4a835374c75caefd33e210a39a6b1f3aa4d036e8",
+  "implementationCommitSha": "23f41a6b8855f1fba8b1189a17c1cecaa405de11",
+  "candidateHeadAtCapture": "4d0cf0d2ff213c8afd72fb3726913ffa68d7b339",
+  "candidateTreeAtCapture": "06af70bf1810fe0b7e186b8709a5712206650d09",
   "runtime": {
     "version": "v26.7.0",
     "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
@@ -22,7 +22,7 @@
   "canonicalCaseBytesEncoding": "UTF-8 text bytes encoded as lowercase hex",
   "reproducedBy": {
     "evaluatorPath": "backend/lib/photosynthesis-relation-evaluator.js",
-    "evaluatorBlob": "8cc4558977e64f5b57ed731756e28b1fa733b0ec",
+    "evaluatorBlob": "36f758e617c55c5950225ea2187feb47ed526e3e",
     "function": "semanticCaseFingerprint(text, expectedDecision)"
   },
   "entries": [
@@ -1404,6 +1404,24 @@
       ]
     },
     {
+      "caseId": "V2-SENTENCE_BOUNDARY-005",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c732e2e2e206c6967687420656e65726779206578697374732e",
+      "semanticFingerprint": "24287ae5fe899355fe07bc3984ca3dfb18923dde5a8527b2cc1e86eceb72d242",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "SENTENCE_BOUNDARY"
+      ]
+    },
+    {
+      "caseId": "V2-SENTENCE_BOUNDARY-006",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c732e204c6967687420656e65726779206578697374733b20706c616e7473206361707475726520636172626f6e2064696f786964652e",
+      "semanticFingerprint": "13690ae2268029bee233d8cc757998cb8d91a955d473895060d8f7481d5ab459",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "SENTENCE_BOUNDARY"
+      ]
+    },
+    {
       "caseId": "V2-PRONOUN_CONTINUATION-001",
       "canonicalCaseBytes": "50686f746f73796e746865736973206361707475726573206c6967687420656e6572677920616e642063617074757265732069742e",
       "semanticFingerprint": "a2ff878099377ede560f6bc1d574973b70ce47432897ad3886a0b8a60120c502",
@@ -1737,9 +1755,18 @@
       ]
     },
     {
+      "caseId": "V2-PUNCTUATION_ABUSE-002",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653a21204c6967687420656e65726779206578697374732e",
+      "semanticFingerprint": "54d082ab4bdaf1b2a06f9c9c0546547595b27aca5087d4d44c3789d5f8c115e5",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "PUNCTUATION_ABUSE"
+      ]
+    },
+    {
       "caseId": "V2-PUNCTUATION_ABUSE-003",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653f213f204c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "a30f7f6a13f96585f031b39ba52cd15d46e91868049ea2a970dfc59d63f0bd79",
+      "semanticFingerprint": "3919501f4a34a587870dc2d44e1b4de7f19dd1eafdd1c61a457fb1ff91fc013f",
       "expectedDecision": "FAIL",
       "classIds": [
         "PUNCTUATION_ABUSE"
@@ -1856,19 +1883,10 @@
     {
       "caseId": "B5-PUNCTUATION_ABUSE-001",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f78696465213f21204c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "2b1548d4d6c1d1d982f36d9031be9866db991cf71a0162fafa637cd4df35d091",
+      "semanticFingerprint": "ee17fb9c4dc21f51e25e7c594bdbb6d3a5b126f170a381c598c5375aea0ed15c",
       "expectedDecision": "FAIL",
       "classIds": [
         "PUNCTUATION_ABUSE"
-      ]
-    },
-    {
-      "caseId": "V2-SENTENCE_BOUNDARY-006",
-      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c732e204c6967687420656e65726779206578697374733b20706c616e7473206361707475726520636172626f6e2064696f786964652e",
-      "semanticFingerprint": "13690ae2268029bee233d8cc757998cb8d91a955d473895060d8f7481d5ab459",
-      "expectedDecision": "FAIL",
-      "classIds": [
-        "SENTENCE_BOUNDARY"
       ]
     }
   ]

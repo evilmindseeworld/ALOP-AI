@@ -8,9 +8,9 @@
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
   "capturedAtUtc": "2026-09-22T00:00:00Z",
-  "implementationCommitSha": "7a94a93c72937a3150f54f79da2be0540e1108ea",
-  "candidateHeadAtCapture": "fe01cd9af76df5fcb3d75d387532747d4209372f",
-  "candidateTreeAtCapture": "4a835374c75caefd33e210a39a6b1f3aa4d036e8",
+  "implementationCommitSha": "23f41a6b8855f1fba8b1189a17c1cecaa405de11",
+  "candidateHeadAtCapture": "4d0cf0d2ff213c8afd72fb3726913ffa68d7b339",
+  "candidateTreeAtCapture": "06af70bf1810fe0b7e186b8709a5712206650d09",
   "runtime": {
     "version": "v26.7.0",
     "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
@@ -31,9 +31,9 @@
       "reason": "same fingerprint under frozen semanticFingerprintRules"
     },
     {
-      "semanticFingerprint": "85c2a1a32a36d7b8c57154c668a0e1c476fecbdb1e6375e238b9127856b5c05c",
-      "retainedCaseId": "PUN-001",
-      "duplicateCaseId": "V2-PUNCTUATION_ABUSE-002",
+      "semanticFingerprint": "3919501f4a34a587870dc2d44e1b4de7f19dd1eafdd1c61a457fb1ff91fc013f",
+      "retainedCaseId": "V2-PUNCTUATION_ABUSE-003",
+      "duplicateCaseId": "V2-PUNCTUATION_ABUSE-007",
       "reason": "same fingerprint under frozen semanticFingerprintRules"
     }
   ],

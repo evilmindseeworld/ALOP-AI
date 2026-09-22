@@ -1,0 +1,40 @@
+{
+  "schemaVersion": 1,
+  "kind": "p1-photosynthesis-relation-v2-evidence-manifest",
+  "designVersion": "photosynthesis-light-relation-v2",
+  "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
+  "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
+  "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
+  "candidateHeadAtCapture": "4d0cf0d2ff213c8afd72fb3726913ffa68d7b339",
+  "candidateTreeAtCapture": "06af70bf1810fe0b7e186b8709a5712206650d09",
+  "runtime": {
+    "version": "v26.7.0",
+    "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
+  },
+  "package": {
+    "recipeVersion": "p1-static-compose-v1",
+    "recipeBlob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
+    "packageCommitSha": "16325266172bd91f60ac3048739aa361db0acdd7",
+    "packageTreeSha": "843c03bc44fa0ccf1d9ae894f668022ee8db65a4",
+    "packageGitBlob": "e7be6cc6d4fecb3228148f30af346003ae072522",
+    "packageSha256": "bf808edede7a2c2f063e8d4cdc0e3b2eeae4c10a630b8cc6bc1c675d8caff501",
+    "packageBytes": 83675,
+    "byteReproduction": "PASS",
+    "apiEquivalence": "PASS"
+  },
+  "files": {
+    "backend/lib/photosynthesis-relation-evaluator.js": "13e26010e41da14a9accc492ed42d7a0fabe61ccb8b8a6212f6d963b935c1246",
+    "backend/lib/photosynthesis-relation-cases.js": "9ced4ccbf77076f71a26a9b4d2ba248fb83c370811c3a38abfcb69a834d0877a",
+    "backend/lib/p1-authoritative-repair-v2.test.js": "c438e9e1b76472aa657395f4e318bc1781844a74b1aede4538aee91958f90e9e",
+    "backend/lib/p1-authoritative-repair-v2-mutation.test.js": "825923e263ba7af2734733ac70252faf68bb71492351795952afa59bdc8f3090",
+    "backend/lib/photosynthesis-relation-evaluator-mutation.test.js": "fda8a1f6f2b98f1ea2767f133316fb814b23014623cc95bf5e34ad31c7cd19b7",
+    "backend/lib/photosynthesis-relation-evaluator.test.js": "9cb84c7b66b0bf90742b9d083ef71ebfbbc437d63dd7072e25936617044ba1d8",
+    "backend/lib/evaluation.test.js": "27f4e383f5ed77706f575211d90727e0c68d524e22e4b164199d35d2ddf6180c",
+    "backend/scripts/run-photosynthesis-relation-mutations.mjs": "bf808edede7a2c2f063e8d4cdc0e3b2eeae4c10a630b8cc6bc1c675d8caff501",
+    "evidence/p1-photosynthesis-relation-v2/red-phase.json": "72fcdae425a0be2aa71c74db74121a82eb5ce6973fba22ac4c9d1eef6398e726",
+    "evidence/p1-photosynthesis-relation-v2/green-phase.json": "75f6c5c4af69a76702296ef7a786fd2dc50cef1931f7bc26cc6f73b80a5b0b39",
+    "evidence/p1-photosynthesis-relation-v2/mutation-phase.json": "3172c06b5e51029ef2658a95b83980f491787e1f611cd9ca33bb8fe97090bafa",
+    "evidence/p1-photosynthesis-relation-v2/semantic-coverage.json": "99153eb6bc1fbdfe46b0aac51c471e8d9445fee658f77aead1d089036852b30f",
+    "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json": "a0630a502cd8ea19798e4c880b078d3b19935eca8aa63a5c939aca4ef6b74c37"
+  }
+}

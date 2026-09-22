@@ -1456,3 +1456,23 @@ test('Astra PREQ-007 treats contracted could not as asserted inability', () => {
   assert.equal(record.qualifies, false);
   assert.equal(result.passed, false);
 });
+
+test('Astra PREQ-002 release fingerprint index rejects global duplicates without dropping canonical coverage', () => {
+  const index = JSON.parse(readFileSync(join(EVAL_ROOT, '..', '..', 'evidence', 'p1-photosynthesis-relation-v2', 'fingerprint-index.json'), 'utf8'));
+  const { canonicalCases, requiredTestClasses } = require('./photosynthesis-relation-cases');
+  assert.equal(index.duplicatePolicy, 'reject-global-duplicate');
+  assert.equal(index.entries.length, index.uniqueCount);
+  assert.equal(new Set(index.entries.map((entry) => entry.semanticFingerprint)).size, index.entries.length);
+  assert.equal(index.sourceCaseCount, 206);
+  assert.deepEqual(index.rejectedDuplicates.map((entry) => [entry.retainedCaseId, entry.rejectedCaseId]), [
+    ['SB-001', 'V2-SENTENCE_BOUNDARY-005'],
+    ['V2-PUNCTUATION_ABUSE-003', 'V2-PUNCTUATION_ABUSE-007'],
+  ]);
+  for (const item of canonicalCases) assert.ok(index.entries.some((entry) => entry.caseId === item.id), item.id);
+  for (const row of requiredTestClasses) {
+    const count = new Set(index.entries
+      .filter((entry) => entry.classIds.includes(row.classId))
+      .map((entry) => entry.semanticFingerprint)).size;
+    assert.ok(count >= row.minimumUniqueSemanticCases, `${row.classId}: ${count}/${row.minimumUniqueSemanticCases}`);
+  }
+});

@@ -1,4 +1,4 @@
-// p1-static-compose-v1; evaluator-blob=36f758e617c55c5950225ea2187feb47ed526e3e; runner-blob=bc95a34e1aa91791f4615d0f61df4baee29f61a3; recipe-blob=d5a84e74ed8a22eb2fcb8a85303335fa820826a9
+// p1-static-compose-v1; evaluator-blob=d92184b640ada8b03c1eb90e1682c7cf54a39d80; runner-blob=bc95a34e1aa91791f4615d0f61df4baee29f61a3; recipe-blob=d5a84e74ed8a22eb2fcb8a85303335fa820826a9
 import * as __p1Crypto from 'node:crypto';
 import { closeSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs';
 import { createRequire, Module } from 'node:module';
@@ -510,11 +510,11 @@ const normalizePunctuationRunV2 = (run) => {
 };
 const normalizeInputV2 = (x) => normalizeInput(x).toLowerCase().replace(/’/g, "'").replace(/[.!?;:]+/g, normalizePunctuationRunV2);
 const segmentSentencesV2 = (x) => segmentSentences(normalizeInputV2(x));
-const segmentClausesV2 = (x) => {const text=String(typeof x==='string'?x:x.text);return text.split(/[;:]+/).flatMap(part=>{const match=part.match(/,\s+and\s+/i);if(!match)return[part];const before=part.slice(0,match.index);return /\b(?:move|moves|moved|run|runs|do|does|did)\b/i.test(before)?part.split(/,\s+and\s+/i):[part];}).map((text,index)=>({index,text:text.trim()})).filter(x=>x.text);};
+const segmentClausesV2 = (x) => {const text=String(typeof x==='string'?x:x.text);return text.split(/[;:]+/).flatMap(part=>{const match=part.match(/,\s+and\s+/i);const pieces=match&&/\b(?:move|moves|moved|run|runs|do|does|did)\b/i.test(part.slice(0,match.index))?part.split(/,\s+and\s+/i):[part];return pieces.flatMap(piece=>{const explicitBut=piece.match(/\s+but\s+/i);if(!explicitBut)return[piece];const after=piece.slice(explicitBut.index+explicitBut[0].length).trim(),afterTokens=tokenizeV2(after),startsSupportedSubject=/^(?:photosynthesis|plants|algae|chlorophyll|green\s+plants|some\s+bacteria|photosynthetic\s+bacteria)\b/i.test(after),hasPredicate=afterTokens.slice(1).some((token)=>V2_VERBS.has(token.form));return startsSupportedSubject&&hasPredicate?[piece.slice(0,explicitBut.index),after]:[piece];});}).map((text,index)=>({index,text:text.trim()})).filter(x=>x.text);};
 const tokenizeV2 = (x) => tokenize(x).map(t=>({...t,form:t.form.toLowerCase()}));
 const normalizeExactFormLemmaV2 = normalizeExactFormLemma;
 function extractSubjectSet(ts,end){
-  const stop=new Set(['does','do','did','is','are','was','were','has','have','had','can','cannot',"can't",'may','might','could','must','should','would','not','never','to','during','while','although','because','whereas','if','unless','when','fail','fails','failed','appear','appears','seem','seems',';','.','!','?']);
+  const stop=new Set(['does','do','did','is','are','was','were','has','have','had','can','cannot',"can't",'may','might','could',"couldn't",'must','should','would','not','never','to','during','while','although','because','whereas','if','unless','when','fail','fails','failed','appear','appears','seem','seems',';','.','!','?']);
   const howStart=ts[0]?.lemma==='photosynthesis'&&ts[1]?.form==='is'&&ts[2]?.form==='how'?3:0;
   const adjunctStart=ts[0]?.lemma==='during'&&ts[1]?.lemma==='photosynthesis'&&ts[2]?.form===','?3:0;
   const subjectStart=Math.max(howStart,adjunctStart);
@@ -563,7 +563,10 @@ function validateActiveFinitePredicateV2(ts,index,verb,subject,auxiliary,control
   if(control){
     const remainder=prefix.slice(controlPrefix.length);
     return verb.form==='BASE'&&prefix.slice(0,controlPrefix.length).every((form,i)=>form===controlPrefix[i])
-      &&(remainder.length===0||/^(?:use|uses|used) chlorophyll to$/.test(remainder.join(' ')));
+      &&(remainder.length===0
+        || /^(?:use|uses|used) chlorophyll to$/.test(remainder.join(' '))
+        || (remainder.length===2 && remainder[1]==='and'
+          && validateFinitePredicate([{ form: remainder[0] }], 0)?.form === 'BASE'));
   }
   if(prefix.at(-1)==='to'){
     const mediated=prefix.slice(-3),outer=prefix.slice(0,-3);
@@ -616,7 +619,11 @@ function isCompleteContrastContinuationV2(forms) {
     && ['not', 'never'].includes(forms[1])
     && V2_VERBS.has(forms[2])
     && forms[3] === 'it'
-    && forms.length === 4) return true;
+    && forms.length === 4) {
+    const verb = validateFinitePredicate([{ form: forms[2] }], 0);
+    const subject = { members: [{ surface: 'photosynthesis', lemma: 'photosynthesis', valid: true }], validity: 'ALL_VALID' };
+    return Boolean(verb && validateAuxiliaryPrefixV2(forms.slice(0, 2), verb, subject));
+  }
   const first = forms[0];
   const needsSubject = ['do', 'does', 'did', 'not', 'never', 'can', 'cannot', "can't", 'may', 'might', 'could', 'must', 'should', 'would'].includes(first);
   const continuation = `${needsSubject ? 'photosynthesis ' : ''}${forms.join(' ')}`;

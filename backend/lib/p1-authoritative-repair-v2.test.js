@@ -1399,10 +1399,8 @@ test('second Astra blocker reproduction collapses partial mixed-punctuation dupl
   assert.equal(semanticCaseFingerprint(first), semanticCaseFingerprint(second));
 });
 
-test('second Astra blocker reproduction finds the packaged fingerprint export broken', async () => {
+test('second Astra blocker reproduction confirms the packaged fingerprint export is repaired', async () => {
   const packaged = await import('../scripts/run-photosynthesis-relation-mutations.mjs');
-  assert.throws(
-    () => packaged.createDerivedEvaluator().semanticCaseFingerprint('Photosynthesis captures light energy.'),
-    ReferenceError,
-  );
+  const fingerprint = packaged.createDerivedEvaluator().semanticCaseFingerprint('Photosynthesis captures light energy.');
+  assert.match(fingerprint, /^[0-9a-f]{64}$/);
 });

@@ -1614,3 +1614,161 @@ test('Astra PREQ-002 release fingerprint index rejects global duplicates without
     assert.ok(count >= row.minimumUniqueSemanticCases, `${row.classId}: ${count}/${row.minimumUniqueSemanticCases}`);
   }
 });
+
+test('CONVERGED-RED A1 malformed pronoun continuations cannot rescue a malformed frame', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  const photoCase = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
+  for (const answer of [
+    'Photosynthesis captures light energy and stores it garbage.',
+    'Photosynthesis captures light energy and stores it in.',
+    'Photosynthesis captures light energy and stores it but.',
+    'Photosynthesis captures light energy and stores it, garbage.',
+  ]) {
+    const result = evaluatePhotosynthesisRelationsV2(answer);
+    assert.equal(result.hasMalformed, true, answer);
+    assert.equal(result.passed, false, answer);
+    assert.equal(result.relationRecords.some((record) => record.qualifies), false, answer);
+    assert.equal(gradeCase(photoCase, observation(answer, { id: photoCase.id })).factuality.passed, false, answer);
+  }
+  assert.equal(evaluatePhotosynthesisRelationsV2(
+    'Photosynthesis captures light energy and stores it during photosynthesis.',
+  ).passed, true);
+});
+
+test('CONVERGED-RED A2 pronoun objects share antecedent identity for contradiction checks', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  const result = evaluatePhotosynthesisRelationsV2(
+    'Photosynthesis captures light energy but photosynthesis does not capture it.',
+  );
+  assert.equal(result.relationRecords.length, 2);
+  assert.equal(result.relationRecords[1].directObject.surface, 'it');
+  assert.equal(result.relationRecords[1].directObject.role, 'LIGHT_OBJECT');
+  assert.equal(result.relationRecords[1].directObject.normalized, 'light-energy');
+  assert.equal(result.relationRecords[1].lightObject.binding, 'PRONOUN_ANTECEDENT');
+  assert.equal(result.contradictions.length, 1);
+  assert.equal(result.polarity, 'CONTRADICTED');
+  assert.equal(result.passed, false);
+});
+
+test('CONVERGED-RED A3 accepted but-continuations emit their own predicate and polarity', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  const examples = [
+    'Plants capture light energy but do not store light energy.',
+    'Photosynthesis captures light energy but never stores light energy.',
+    'Photosynthesis captures light energy but cannot store light energy.',
+    "Photosynthesis captures light energy but can't store it.",
+    'Photosynthesis captures light energy but could not store light energy.',
+    'Photosynthesis captures light energy but must not store light energy.',
+  ];
+  for (const answer of examples) {
+    const result = evaluatePhotosynthesisRelationsV2(answer);
+    const continuation = result.relationRecords.find((record) => record.verbLemma === 'store');
+    assert.ok(continuation, answer);
+    assert.equal(continuation.polarity, 'NEGATED', answer);
+    assert.equal(continuation.qualifies, false, answer);
+    assert.equal(result.relationRecords.some((record) => record.verbLemma === 'capture' && record.qualifies), true, answer);
+  }
+});
+
+test('CONVERGED-RED A4 malformed arbitrary names do not alter the frozen fingerprint', () => {
+  const { evaluatePhotosynthesisRelationsV2, semanticCaseFingerprint } = require('./photosynthesis-relation-evaluator');
+  const arbitrary = [
+    'Photosynthesis captures light energy but Alice.',
+    'Photosynthesis captures light energy but David.',
+    'Photosynthesis captures light energy but case 101.',
+    'Photosynthesis captures light energy but case 102.',
+  ];
+  for (const text of arbitrary) assert.equal(evaluatePhotosynthesisRelationsV2(text).hasMalformed, true, text);
+  assert.equal(semanticCaseFingerprint(arbitrary[0]), semanticCaseFingerprint(arbitrary[1]));
+  assert.equal(semanticCaseFingerprint(arbitrary[2]), semanticCaseFingerprint(arbitrary[3]));
+  assert.notEqual(
+    semanticCaseFingerprint('Photosynthesis captures light energy.'),
+    semanticCaseFingerprint('Photosynthesis stores light energy.'),
+  );
+});
+
+test('CONVERGED-RED O1 coordinated predicates classify each predicate independently', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  for (const answer of [
+    'Photosynthesis captures and destroys light energy.',
+    'Photosynthesis captures and wastes light energy.',
+    'Plants capture and block light energy during photosynthesis.',
+    'Photosynthesis does not fail to capture and destroy light energy.',
+  ]) {
+    const result = evaluatePhotosynthesisRelationsV2(answer);
+    assert.equal(result.passed, false, answer);
+    const destructive = result.relationRecords.find((record) => ['destroy', 'waste', 'block'].includes(record.verbLemma));
+    assert.ok(destructive, answer);
+    assert.equal(destructive.relationType, 'DESTRUCTIVE_RELATION', answer);
+    assert.equal(destructive.qualifies, false, answer);
+  }
+  for (const answer of [
+    'Photosynthesis captures and stores light energy.',
+    'Photosynthesis does not fail to capture and store light energy.',
+  ]) {
+    assert.equal(evaluatePhotosynthesisRelationsV2(answer).passed, true, answer);
+  }
+});
+
+test('CONVERGED-RED O2 subjectless inputs fail closed through evaluator, gradeCase, and package', async () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  const { createDerivedEvaluator } = await import('../scripts/run-photosynthesis-relation-mutations.mjs');
+  const packagedEvaluator = createDerivedEvaluator().evaluatePhotosynthesisRelationsV2;
+  const photoCase = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
+  const examples = [
+    'Fails to capture light energy.',
+    'Photosynthesis captures light energy but fails to capture light energy.',
+    'Photosynthesis captures light energy but seems not to capture it.',
+    'Photosynthesis captures light energy but failed to store it.',
+  ];
+  const outcomes = [];
+  const record = (surface, answer, run) => {
+    try {
+      const value = run(answer);
+      outcomes.push({ surface, answer, error: null, passed: value.passed, hasMalformed: value.hasMalformed });
+    } catch (error) {
+      outcomes.push({ surface, answer, error: `${error.name}: ${error.message}` });
+    }
+  };
+  for (const answer of examples) record('direct', answer, evaluatePhotosynthesisRelationsV2);
+  record('gradeCase', examples[0], (answer) => ({
+    passed: gradeCase(photoCase, observation(answer, { id: photoCase.id })).factuality.passed,
+    hasMalformed: true,
+  }));
+  record('package', examples[0], packagedEvaluator);
+  assert.equal(outcomes.some((outcome) => outcome.error !== null), false, JSON.stringify(outcomes));
+  assert.equal(outcomes.every((outcome) => outcome.passed === false && outcome.hasMalformed === true), true, JSON.stringify(outcomes));
+});
+
+test('CONVERGED-RED O3 explicit subject after comma-and begins an independent proposition', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  for (const answer of [
+    'Animals walk nearby, and plants capture light energy during photosynthesis.',
+    'Photosynthesis captures carbon dioxide, and plants capture light energy during photosynthesis.',
+  ]) {
+    const result = evaluatePhotosynthesisRelationsV2(answer);
+    assert.equal(result.passed, true, answer);
+    assert.equal(result.relationRecords.some((record) => record.subjectSet?.lemma === 'plant'
+      && record.verbLemma === 'capture' && record.qualifies), true, answer);
+  }
+  assert.equal(evaluatePhotosynthesisRelationsV2('Animals and plants capture light energy.').passed, false);
+});
+
+test('CONVERGED-RED O4 pronoun continuation rejects auxiliary, modal, and control prefixes', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  for (const answer of [
+    'Photosynthesis does not capture light energy and stores it.',
+    'Photosynthesis may capture light energy and stores it.',
+    'Photosynthesis fails to capture light energy and stores it.',
+    'Photosynthesis captures light energy and does not store it.',
+  ]) {
+    const result = evaluatePhotosynthesisRelationsV2(answer);
+    assert.equal(result.passed, false, answer);
+    assert.equal(result.hasMalformed, true, answer);
+    assert.equal(result.relationRecords.some((record) => record.grammarShape === 'PRONOUN_CONTINUATION'
+      && record.qualifies), false, answer);
+  }
+  const accepted = evaluatePhotosynthesisRelationsV2('Photosynthesis captures light energy and stores it.');
+  assert.equal(accepted.passed, true);
+  assert.equal(accepted.relationRecords.length, 2);
+});

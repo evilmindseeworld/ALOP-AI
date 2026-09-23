@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "kind": "alop-p1-authoritative-evidence-manifest",
   "taskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
-  "repairAttemptId": "P1-CONVERGED-OPUS55-ASTRA-20260923-01A09D9F",
+  "repairAttemptId": "P1-FINAL-SEVEN-ASTRA-20260923-01A0CBA4",
   "designVersion": "photosynthesis-light-relation-v2",
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
@@ -10,25 +10,27 @@
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "implementationCommitSha": "3880eedf52594250a54a26fae6c7da5ef17fd0d9",
-  "implementationCommitShas": ["3880eedf52594250a54a26fae6c7da5ef17fd0d9"],
-  "implementationTreeSha": "167e2c872cf8f250b46c2f1529c6597f38fd2f9f",
-  "implementationParentSha": "c17c52faf67b1ef8b3f6d0b14aaf264804092316",
-  "candidateHeadAtCapture": "4f922e0378df07a8bb236b3d552fe1b22cc772ac",
-  "candidateTreeAtCapture": "e4e544c4364503a472a296a6238b482ba815eb82",
-  "packageCommitSha": "4f922e0378df07a8bb236b3d552fe1b22cc772ac",
-  "packageTreeSha": "e4e544c4364503a472a296a6238b482ba815eb82",
-  "packageGitBlob": "f09db90db63478558a7294bfaad09488a342283d",
-  "packageSha256": "8bc48d67e33677f42c2939093d322068f7e215279b16d79c8d2ff13c1d4ce727",
-  "evaluatorInputCommitSha": "3880eedf52594250a54a26fae6c7da5ef17fd0d9",
-  "evaluatorInputBlob": "fcee3a51319a4c7de10a70c81e1ceaf23886bd0c",
-  "runnerInputCommitSha": "ff65b1e8c640a4eb6eb4cb9858e92665ffea0576",
-  "runnerInputBlob": "669e4cf3fee4dfa3d41b7ad7bd4118e289d64623",
+  "implementationCommitSha": "aaa4620ceff54cedaa930f1d6148680b1ef43d1d",
+  "implementationCommitShas": [
+    "aaa4620ceff54cedaa930f1d6148680b1ef43d1d"
+  ],
+  "implementationTreeSha": "c565660363acf27876847114c0e6295552ac34d5",
+  "implementationParentSha": "fa375642c2b31944515e67bbfe9f7b473c5cc9c9",
+  "candidateHeadAtCapture": "d67515c53d33c918f900da8d5720e60dc258f83c",
+  "candidateTreeAtCapture": "4df2c1fb8249eec6201d82049d3b5e0dba95ff10",
+  "packageCommitSha": "599a17f4c73e994287cc1b9e1c13387ba9f54809",
+  "packageTreeSha": "41218383454dc00bdc861d121128b30aef4d691e",
+  "packageGitBlob": "d938a78c6a21ea60342a6ebc2009b8211e13275e",
+  "packageSha256": "7f6c46ae228eb0f77cbfa612a391990c5134d699fd6972ce0e4a481a67256414",
+  "evaluatorInputCommitSha": "aaa4620ceff54cedaa930f1d6148680b1ef43d1d",
+  "evaluatorInputBlob": "5c4435d6495e09bf93ab584508c33de93a7cbeab",
+  "runnerInputCommitSha": "c896bde68a8352af3fd997ac0d1d031fc4427149",
+  "runnerInputBlob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
   "recipeInputCommitSha": "3ae0f283461f304f2778a4dc463a85c8f7d86adf",
   "recipeInputTreeSha": "8ed002b01702ae842ea9e7c054fd91071eeb6792",
   "recipeInputBlobSha": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
   "phase": "FINAL_EVIDENCE",
-  "status": "PASS_FOR_AUTHORIZED_FINDINGS_PRE_ASTRA",
+  "status": "EVIDENCE_HASHES_VERIFIED_CANDIDATE_BLOCKED_FINAL001",
   "nestedManifest": "ABSENT",
   "verified": true,
   "entryCount": 13,
@@ -45,7 +47,7 @@
     },
     {
       "path": "backend/lib/p1-authoritative-repair-v2.test.js",
-      "sha256": "1cbdbce8baa34805f97b9729ee030dc1968adc47c7eb7022e7ec1f453060c6ba"
+      "sha256": "e389626880907d6a386e7917957a63bea3879d37124a14b0b6d3667558d37358"
     },
     {
       "path": "backend/lib/photosynthesis-relation-cases.js",
@@ -53,11 +55,11 @@
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator-mutation.test.js",
-      "sha256": "b12617c2ce6fdcec6bfef38efae501ba550ceae17bc8b0b4bb35c565f6a7515d"
+      "sha256": "705da08a17caa683a01480b7f44c1be95a082412f9c83849f6ca9092260fe28d"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.js",
-      "sha256": "77d1a1838b9eaf83ec3aef06f1d3d8dafaaa4b9fa0028d0f0a8f579b9cf943c4"
+      "sha256": "4610d769eb54d81e390c704045de48383d002fff4ec28d2e07470188db51a8ee"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
@@ -65,34 +67,40 @@
     },
     {
       "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-      "sha256": "8bc48d67e33677f42c2939093d322068f7e215279b16d79c8d2ff13c1d4ce727"
+      "sha256": "7f6c46ae228eb0f77cbfa612a391990c5134d699fd6972ce0e4a481a67256414"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
-      "sha256": "69b212ef64b156b0032521c5845573e6e7e498fb8d056260598d75c499615526"
+      "sha256": "423807eedd3c09f1beac113784141fc2a83313f97819150221b02e65323522e0"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/green-phase.json",
-      "sha256": "a3d0e60a95653ebd6c8815321d267d8175a29fe4500db1229435c1291b168f75"
+      "sha256": "98950c05c4c8cb9934048a5654855f166c14aaa910762b69468070d0ab4fba6d"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/mutation-phase.json",
-      "sha256": "b0e7ce3d0197f7964fe39dc6e313f445cb258324109bf8aa5244e4402eeb16c7"
+      "sha256": "02adaf21b06004ee974da4df5ac5f75935490306225a384f19e52d3d5e249efa"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/red-phase.json",
-      "sha256": "3edb24440a6ba122f08f5512071923cd41148751007ec7701664f3f1f02c0f6a"
+      "sha256": "90afbcbaf046cdccfa371908aa7b558f0d1d2ced4772304cdc75ac932715dfe7"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/semantic-coverage.json",
-      "sha256": "3147604eb047dcfce24d91310afe2cfecd7e0832debe9fbf13ea1bdd7efbfdcc"
+      "sha256": "697b256de1be0ced3324e3b5c17e5d09a3836e31e624476d2d2f35462cd3a311"
     }
   ],
   "implementationTaskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
-  "repairBaseSha": "7bec4e3cbc98b096d3b7538c5b45fe70db89e9f9",
-  "repairBaseTreeSha": "6e668a1b7a91b0d88d01b789b40e8f05a11806ff",
-  "packageBytes": 89676,
+  "repairBaseSha": "fee44f4d2f3a46458b4b79277363585f78695ecc",
+  "repairBaseTreeSha": "6bff90f3a379d192e30c01f9111cef65c31d9c55",
+  "packageBytes": 98876,
   "workerModelReportedByOwner": "GPT-6 Luna",
   "workerEffortReportedByOwner": "Max",
-  "capturedAtUtc": "2026-09-23T13:05:37.000Z"
+  "capturedAtUtc": "2026-09-23T19:09:02Z",
+  "implementationSessionId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
+  "redCommitSha": "fc072ccd935d3cf6028e9efd9e805f03ec7d251f",
+  "redEvidenceCommitSha": "3eeacfce68895db97236e8568154fefb8457b161",
+  "candidateBlockers": [
+    "FINAL-001 remains unresolved: frozen design ignores arbitrary-name but does not enumerate the recognized NON_LIGHT_OBJECT identity vocabulary; collapsing to one class lowers the current 204 unique fingerprints to 185 and violates the frozen floor/class minima. No frozen-design change is authorized."
+  ]
 }

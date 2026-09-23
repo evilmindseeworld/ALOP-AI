@@ -12,12 +12,12 @@
   "capturedAtUtc": "2026-09-23T15:07:57.824Z",
   "phase": "RED",
   "expectedRed": true,
-  "redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb",
-  "redTreeSha": "d8611391d48933b842477d8c6af270eb11c1aada",
-  "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe",
-  "redEvidenceTreeSha": "e8e74ca08e64bef005f888c84c2177037226ce51",
-  "redSourceCommitSha": "7bec4e3cbc98b096d3b7538c5b45fe70db89e9f9",
-  "redSourceTreeSha": "6e668a1b7a91b0d88d01b789b40e8f05a11806ff",
+  "redCommitSha": "fc072ccd935d3cf6028e9efd9e805f03ec7d251f",
+  "redTreeSha": "4ff332cee010ec57d520d9b0f5c108d7d6260e19",
+  "redEvidenceCommitSha": "3eeacfce68895db97236e8568154fefb8457b161",
+  "redEvidenceTreeSha": "d8265fd750e71715aa57a5f6d9ece4b669faddc5",
+  "redSourceCommitSha": "fee44f4d2f3a46458b4b79277363585f78695ecc",
+  "redSourceTreeSha": "6bff90f3a379d192e30c01f9111cef65c31d9c55",
   "testSourceCommitSha": "fc072ccd935d3cf6028e9efd9e805f03ec7d251f",
   "testSourceTreeSha": "4ff332cee010ec57d520d9b0f5c108d7d6260e19",
   "testSourceBlobs": {
@@ -108,7 +108,62 @@
       "failureTest": "FINAL-004 RED: active and passive forms of one proposition contradict"
     }
   ],
-  "rootCases": [],
+  "rootCases": [
+    {
+      "id": "ADV001",
+      "expectedDecision": "FAIL",
+      "observedDecision": "PASS",
+      "expectedPolarity": "UNCERTAIN",
+      "observedPassed": true,
+      "behavioralMismatch": true,
+      "evidenceSource": {"redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb", "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe", "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"}
+    },
+    {
+      "id": "ADV002",
+      "expectedDecision": "FAIL",
+      "observedDecision": "PASS",
+      "expectedPolarity": "UNRESOLVED",
+      "observedPassed": true,
+      "behavioralMismatch": true,
+      "evidenceSource": {"redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb", "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe", "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"}
+    },
+    {
+      "id": "ADV003",
+      "expectedDecision": "FAIL",
+      "observedDecision": "PASS",
+      "expectedPolarity": "UNRESOLVED",
+      "observedPassed": true,
+      "behavioralMismatch": true,
+      "evidenceSource": {"redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb", "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe", "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"}
+    },
+    {
+      "id": "ADV004",
+      "expectedDecision": "PASS",
+      "observedDecision": "FAIL",
+      "expectedPolarity": "AFFIRMED",
+      "observedPassed": false,
+      "behavioralMismatch": true,
+      "evidenceSource": {"redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb", "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe", "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"}
+    },
+    {
+      "id": "ADV005",
+      "expectedDecision": "PASS",
+      "observedDecision": "FAIL",
+      "expectedPolarity": "AFFIRMED",
+      "observedPassed": false,
+      "behavioralMismatch": true,
+      "evidenceSource": {"redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb", "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe", "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"}
+    },
+    {
+      "id": "ADV006",
+      "expectedDecision": "FAIL",
+      "observedDecision": "PASS",
+      "expectedPolarity": "MIXED_INVALID",
+      "observedPassed": true,
+      "behavioralMismatch": true,
+      "evidenceSource": {"redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb", "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe", "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"}
+    }
+  ],
   "historicalOriginalRed": {
     "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8",
     "redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb",

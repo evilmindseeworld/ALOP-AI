@@ -7,11 +7,16 @@
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "repairAttemptId": "P1-CONVERGED-OPUS55-ASTRA-20260923-01A09D9F",
-  "capturedAtUtc": "2026-09-23T12:55:10.000Z",
-  "implementationCommitSha": "3880eedf52594250a54a26fae6c7da5ef17fd0d9",
-  "candidateHeadAtCapture": "4f922e0378df07a8bb236b3d552fe1b22cc772ac",
-  "candidateTreeAtCapture": "e4e544c4364503a472a296a6238b482ba815eb82",
+  "implementationTaskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
+  "repairAttemptId": "P1-FINAL-SEVEN-ASTRA-20260923-01A0CBA4",
+  "capturedAtUtc": "2026-09-23T16:03:07.619Z",
+  "implementationCommitSha": "aaa4620ceff54cedaa930f1d6148680b1ef43d1d",
+  "implementationTreeSha": "c565660363acf27876847114c0e6295552ac34d5",
+  "implementationParentSha": "fa375642c2b31944515e67bbfe9f7b473c5cc9c9",
+  "candidateHeadAtCapture": "d67515c53d33c918f900da8d5720e60dc258f83c",
+  "candidateTreeAtCapture": "4df2c1fb8249eec6201d82049d3b5e0dba95ff10",
+  "repairBaseSha": "fee44f4d2f3a46458b4b79277363585f78695ecc",
+  "repairBaseTreeSha": "6bff90f3a379d192e30c01f9111cef65c31d9c55",
   "runtime": {
     "version": "v26.7.0",
     "executablePath": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
@@ -19,23 +24,25 @@
   },
   "phase": "SEMANTIC_COVERAGE",
   "status": "PASS",
+  "scope": "CURRENT_INDEX_PROJECTION_ONLY",
+  "sourceCaseCount": 206,
   "canonicalCaseCount": 54,
   "canonicalCasesMatchFrozenDesign": true,
-  "totalCaseCount": 206,
+  "indexedCaseCount": 204,
   "uniqueSemanticFingerprintCount": 204,
   "informationalFloor": 201,
   "duplicateSemanticFingerprints": [
     {
-      "semanticFingerprint": "20f5abd957618db29146b8920cc63f3142c72deac77d0d7d4accf47ebe8424e4",
+      "semanticFingerprint": "7f23b9432ac066bbc2c632317688d35b45fa1a674533234f4123e9b9a962a128",
       "retainedCaseId": "SB-001",
       "rejectedCaseId": "V2-SENTENCE_BOUNDARY-005",
-      "reason": "same fingerprint under frozen semanticFingerprintRules"
+      "extraCount": 1
     },
     {
-      "semanticFingerprint": "15ad7a146914c2119f146f90242e0a766f1b0cec5777138227bc1a32f060116a",
+      "semanticFingerprint": "b1c4c9401669f8d2b12a3d2425087f86fa3a4acc05882bcc44a9e75bfb56cf73",
       "retainedCaseId": "V2-PUNCTUATION_ABUSE-003",
       "rejectedCaseId": "V2-PUNCTUATION_ABUSE-007",
-      "reason": "same fingerprint under frozen semanticFingerprintRules"
+      "extraCount": 1
     }
   ],
   "classCounts": [
@@ -43,199 +50,200 @@
       "classId": "AFFIRMATIVE_ACTIVE",
       "required": 8,
       "observed": 17,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "AFFIRMATIVE_PASSIVE",
       "required": 6,
       "observed": 6,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "INFINITIVAL_CHLOROPHYLL_MEDIATED",
       "required": 6,
       "observed": 6,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "COORDINATED_PREDICATES",
       "required": 6,
       "observed": 6,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "COORDINATED_SUBJECTS_VALID",
       "required": 6,
       "observed": 6,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "COORDINATED_SUBJECTS_MIXED_INVALID",
       "required": 8,
       "observed": 8,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "DETACHED_OBJECT_DECOYS",
       "required": 8,
       "observed": 8,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "DIRECT_OBJECT_BARRIERS",
       "required": 6,
       "observed": 6,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "FINITE_PREDICATE_BARRIERS",
       "required": 6,
       "observed": 6,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "MALFORMED_SYNTAX",
       "required": 9,
       "observed": 9,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "LOCAL_NEGATION",
       "required": 8,
       "observed": 8,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "UNCERTAIN_MODALITY",
       "required": 12,
       "observed": 12,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "NEGATED_MODALITY",
       "required": 8,
       "observed": 8,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "AFFIRMED_MODALITY",
       "required": 4,
       "observed": 4,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "NESTED_CONTROL",
       "required": 10,
       "observed": 10,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "DOUBLE_NEGATION",
       "required": 6,
       "observed": 6,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "UNRELATED_NEGATION",
       "required": 6,
       "observed": 6,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "CLAUSE_BOUNDARY",
       "required": 8,
       "observed": 8,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "SENTENCE_BOUNDARY",
       "required": 6,
       "observed": 6,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "PRONOUN_CONTINUATION",
       "required": 6,
       "observed": 9,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "INVALID_SUBJECT",
       "required": 8,
       "observed": 8,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "INVALID_OBJECT",
       "required": 8,
       "observed": 8,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "DESTRUCTIVE_RELATION",
       "required": 6,
       "observed": 6,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "WRONG_PIGMENT",
       "required": 6,
       "observed": 6,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "CONTRADICTION",
       "required": 6,
       "observed": 6,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "PUNCTUATION_ABUSE",
       "required": 8,
       "observed": 8,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "NO_STITCHING",
       "required": 8,
       "observed": 8,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     },
     {
       "classId": "KNOWN_REGRESSIONS",
       "required": 8,
       "observed": 8,
-      "canonicalIdsPresent": true,
-      "pass": true
+      "pass": true,
+      "canonicalIdsPresent": true
     }
   ],
+  "structuralMarkerCount": 27,
   "structuralMarkers": [
     {
       "file": "backend/lib/photosynthesis-relation-evaluator.js",
@@ -400,7 +408,6 @@
       "present": true
     }
   ],
-  "structuralMarkerCount": 27,
   "datasetValidation": {
     "status": "PASS",
     "mode": "validate-only",
@@ -409,439 +416,438 @@
     "providerCalls": 0,
     "liveAuth": false,
     "noMutations": true,
-    "command": "node.exe scripts/run-evals.mjs --validate-only",
-    "exitCode": 0,
-    "stdoutSha256": "8d078d04db663a3bcb05bdd565b464cf3dbd12b9629f48b9ea904d5b48387e25",
-    "outputBytes": 77,
     "datasets": [
       {
-        "dataset": "core-v1",
-        "cases": 22,
-        "selected": 22,
-        "exitCode": 0,
-        "result": "PASS"
+        "dataset": "backend-intelligence-v1.json",
+        "name": "backend-intelligence-v1",
+        "cases": 21,
+        "problemCount": 0,
+        "problems": []
+      },
+      {
+        "dataset": "backend-intelligence-v2.json",
+        "name": "backend-intelligence-v2",
+        "cases": 21,
+        "problemCount": 0,
+        "problems": []
       }
     ]
   },
-  "testRuns": [
-    {
-      "command": "node.exe --test --test-reporter=tap lib/photosynthesis-relation-evaluator.test.js",
-      "exitCode": 0,
-      "tests": 39,
-      "passed": 39,
-      "failed": 0,
-      "stdoutSha256": "6d840003aca2292c34c6273fb388421daf82fb40c2f6ce659969c0278d9d2251",
-      "bytes": 6659,
-      "failures": [],
-      "error": null
-    },
-    {
-      "command": "node.exe --test --test-reporter=tap lib/evaluation.test.js",
-      "exitCode": 0,
-      "tests": 41,
-      "passed": 41,
-      "failed": 0,
-      "stdoutSha256": "08da5e8a0b1f777c930caeb8a60dc2e97520445ecf6cb48a65ec892ea9e9a772",
-      "bytes": 8488,
-      "failures": [],
-      "error": null
-    }
-  ],
-  "antiGamingTextScan": {
-    "status": "FAIL_TEXT_SCAN",
-    "canonicalIdsInProduction": [
-      "ACT-001",
-      "INF-001",
-      "CP-001",
-      "CSV-001",
-      "ADV001",
-      "ADV002",
-      "ADV003",
-      "ADV004",
-      "ADV005",
-      "ADV006",
-      "CSI-002",
-      "CSI-003",
-      "SEP-001",
-      "DOB-001",
-      "FPB-001",
-      "SB-001",
-      "MAL-002",
-      "MAL-003",
-      "NEG-001",
-      "MOD-CAN",
-      "MOD-CANNOT",
-      "MOD-CANT",
-      "MOD-MAY",
-      "MOD-MAYNOT",
-      "MOD-MIGHT",
-      "MOD-MIGHTNOT",
-      "MOD-COULD",
-      "MOD-COULDNOT",
-      "MOD-MUST",
-      "MOD-MUSTNOT",
-      "MOD-SHOULD",
-      "MOD-SHOULDNOT",
-      "MOD-WOULD",
-      "MOD-WOULDNOT",
-      "CTRL-FAIL",
-      "CTRL-FAILED",
-      "CTRL-DIDNOTFAIL",
-      "CTRL-NEVERFAIL",
-      "CTRL-NOTAPPEAR",
-      "CTRL-APPEARNOT",
-      "CTRL-NOTSEEM",
-      "CTRL-SEEMNOT",
-      "UNN-001",
-      "CB-001",
-      "PRON-001",
-      "PRON-002",
-      "IS-001",
-      "IO-001",
-      "DEST-001",
-      "WP-001",
-      "CON-001",
-      "PUN-001",
-      "NS-001",
-      "KREG-001"
-    ],
-    "exactCanonicalSentenceLiteralsInProduction": [],
-    "fixtureModuleImportsInProduction": [
-      "backend/lib/p1-authoritative-repair-v2.test.js",
-      "backend/lib/photosynthesis-relation-evaluator-mutation.test.js",
-      "backend/lib/photosynthesis-relation-evaluator.test.js"
-    ],
-    "scannedFiles": [
-      "backend/lib/abort.js",
-      "backend/lib/adaptive-routing.js",
-      "backend/lib/adaptive-routing.test.js",
-      "backend/lib/admin-commands.js",
-      "backend/lib/admin-commands.test.js",
-      "backend/lib/agent-loop.js",
-      "backend/lib/agent-loop.test.js",
-      "backend/lib/answer-cache.js",
-      "backend/lib/answer-cache.test.js",
-      "backend/lib/answer-contract.js",
-      "backend/lib/answer-contract.test.js",
-      "backend/lib/answer-embeddings.js",
-      "backend/lib/answer-embeddings.test.js",
-      "backend/lib/answer-evidence.js",
-      "backend/lib/answer-evidence.test.js",
-      "backend/lib/answer-obligations.js",
-      "backend/lib/answer-obligations.test.js",
-      "backend/lib/arithmetic.js",
-      "backend/lib/arithmetic.test.js",
-      "backend/lib/attached-images.js",
-      "backend/lib/attached-images.test.js",
-      "backend/lib/benchmark-cache-bypass.js",
-      "backend/lib/benchmark-cache-bypass.test.js",
-      "backend/lib/billing-read-model.js",
-      "backend/lib/billing-read-model.test.js",
-      "backend/lib/brain-questions.js",
-      "backend/lib/brain.js",
-      "backend/lib/brain.test.js",
-      "backend/lib/cache-identity.js",
-      "backend/lib/cache-identity.test.js",
-      "backend/lib/cache-validation.js",
-      "backend/lib/cache-validation.test.js",
-      "backend/lib/census-wiring.test.js",
-      "backend/lib/chat-title.js",
-      "backend/lib/chat-title.test.js",
-      "backend/lib/chat-update.js",
-      "backend/lib/chat-update.test.js",
-      "backend/lib/chats-payload.test.js",
-      "backend/lib/citation-urls.js",
-      "backend/lib/citation-urls.test.js",
-      "backend/lib/context-compression-wiring.test.js",
-      "backend/lib/context-compression.js",
-      "backend/lib/context-compression.test.js",
-      "backend/lib/contradiction.js",
-      "backend/lib/contradiction.test.js",
-      "backend/lib/cors-wiring.test.js",
-      "backend/lib/council-retired-models.test.js",
-      "backend/lib/council-roster.test.js",
-      "backend/lib/council-route-drift.test.js",
-      "backend/lib/council-run.js",
-      "backend/lib/council-run.test.js",
-      "backend/lib/council-runtime-contract.test.js",
-      "backend/lib/council-tools.js",
-      "backend/lib/council-tools.test.js",
-      "backend/lib/data-url.js",
-      "backend/lib/data-url.test.js",
-      "backend/lib/deadline.js",
-      "backend/lib/deadline.test.js",
-      "backend/lib/deployment-config.test.js",
-      "backend/lib/doc-extract.js",
-      "backend/lib/doc-extract.test.js",
-      "backend/lib/doc-passages.js",
-      "backend/lib/doc-passages.test.js",
-      "backend/lib/embedding-lifecycle.js",
-      "backend/lib/embedding-lifecycle.test.js",
-      "backend/lib/embeddings.js",
-      "backend/lib/embeddings.test.js",
-      "backend/lib/ensure-user-cache.test.js",
-      "backend/lib/env-example.test.js",
-      "backend/lib/episodic-summary.js",
-      "backend/lib/episodic-summary.test.js",
-      "backend/lib/error-envelope-wiring.test.js",
-      "backend/lib/error-envelope.js",
-      "backend/lib/error-envelope.test.js",
-      "backend/lib/evaluation-diagnostics.js",
-      "backend/lib/evaluation-diagnostics.test.js",
-      "backend/lib/evaluation-mutation.test.js",
-      "backend/lib/evaluation-runner-contract.test.js",
-      "backend/lib/evaluation.js",
-      "backend/lib/evaluation.test.js",
-      "backend/lib/evidence-ledger.js",
-      "backend/lib/evidence-ledger.test.js",
-      "backend/lib/execution-dag.js",
-      "backend/lib/execution-dag.test.js",
-      "backend/lib/failure-kind.js",
-      "backend/lib/failure-kind.test.js",
-      "backend/lib/file-download-wiring.test.js",
-      "backend/lib/file-intake.js",
-      "backend/lib/file-intake.test.js",
-      "backend/lib/greeting-cache.js",
-      "backend/lib/greeting-cache.test.js",
-      "backend/lib/greeting-fast-path.test.js",
-      "backend/lib/head-selection-wiring.test.js",
-      "backend/lib/head-selection.js",
-      "backend/lib/head-selection.test.js",
-      "backend/lib/history.js",
-      "backend/lib/history.test.js",
-      "backend/lib/http-cache.js",
-      "backend/lib/http-cache.test.js",
-      "backend/lib/hybrid-retrieval.js",
-      "backend/lib/hybrid-retrieval.test.js",
-      "backend/lib/image-gen.js",
-      "backend/lib/image-gen.test.js",
-      "backend/lib/instance-census.js",
-      "backend/lib/instance-census.test.js",
-      "backend/lib/job-queue.js",
-      "backend/lib/job-queue.test.js",
-      "backend/lib/job-worker.js",
-      "backend/lib/job-worker.test.js",
-      "backend/lib/link-check.js",
-      "backend/lib/link-check.test.js",
-      "backend/lib/memory-kinds.js",
-      "backend/lib/memory-kinds.test.js",
-      "backend/lib/middleware-order.test.js",
-      "backend/lib/migration-lineage.js",
-      "backend/lib/migration-lineage.test.js",
-      "backend/lib/model-ladder.js",
-      "backend/lib/model-ladder.test.js",
-      "backend/lib/model-reply.js",
-      "backend/lib/model-reply.test.js",
-      "backend/lib/native-tool-seat-wiring.test.js",
-      "backend/lib/native-tool-seat.js",
-      "backend/lib/native-tool-seat.test.js",
-      "backend/lib/openrouter-policy.js",
-      "backend/lib/openrouter-policy.test.js",
-      "backend/lib/openrouter-zero-price-catalog.js",
-      "backend/lib/openrouter-zero-price-preflight.js",
-      "backend/lib/openrouter-zero-price-preflight.test.js",
-      "backend/lib/openrouter.js",
-      "backend/lib/openrouter.test.js",
-      "backend/lib/origin-guard.js",
-      "backend/lib/origin-guard.test.js",
-      "backend/lib/p1-authoritative-repair-v2-mutation.test.js",
-      "backend/lib/p1-authoritative-repair-v2.test.js",
-      "backend/lib/pacer.js",
-      "backend/lib/pacer.test.js",
-      "backend/lib/page-extract.js",
-      "backend/lib/page-extract.test.js",
-      "backend/lib/pagination.js",
-      "backend/lib/pagination.test.js",
-      "backend/lib/perplexity.js",
-      "backend/lib/perplexity.test.js",
-      "backend/lib/pg-rate-limit-store.js",
-      "backend/lib/pg-rate-limit-store.test.js",
-      "backend/lib/photosynthesis-relation-cases.js",
-      "backend/lib/photosynthesis-relation-evaluator-mutation.test.js",
-      "backend/lib/photosynthesis-relation-evaluator.js",
-      "backend/lib/photosynthesis-relation-evaluator.test.js",
-      "backend/lib/pinned-fetch.js",
-      "backend/lib/pinned-fetch.test.js",
-      "backend/lib/platform-identity.js",
-      "backend/lib/platform-identity.test.js",
-      "backend/lib/progressive-council.js",
-      "backend/lib/progressive-council.test.js",
-      "backend/lib/prompt-recency.test.js",
-      "backend/lib/provider-health.js",
-      "backend/lib/provider-health.test.js",
-      "backend/lib/publish-buffer.test.js",
-      "backend/lib/publish-commit.test.js",
-      "backend/lib/publish-dryrun.test.js",
-      "backend/lib/publish-ledger.test.js",
-      "backend/lib/publish-queue.test.js",
-      "backend/lib/publish-tutorial-batch.test.js",
-      "backend/lib/query-bounds.test.js",
-      "backend/lib/rate-limit-key.js",
-      "backend/lib/rate-limit-key.test.js",
-      "backend/lib/read-url.js",
-      "backend/lib/read-url.test.js",
-      "backend/lib/reasoning-rescue.js",
-      "backend/lib/reasoning-rescue.test.js",
-      "backend/lib/recency.js",
-      "backend/lib/recency.test.js",
-      "backend/lib/recovery-manifest.test.js",
-      "backend/lib/redirect-guard.test.js",
-      "backend/lib/region.js",
-      "backend/lib/region.test.js",
-      "backend/lib/release-gates.js",
-      "backend/lib/release-gates.test.js",
-      "backend/lib/reliability-meta-wiring.test.js",
-      "backend/lib/request-budget.js",
-      "backend/lib/request-budget.test.js",
-      "backend/lib/reservation-ledger.js",
-      "backend/lib/reservation-ledger.test.js",
-      "backend/lib/resilience-wiring.test.js",
-      "backend/lib/retry-bound.test.js",
-      "backend/lib/route-config.test.js",
-      "backend/lib/router.js",
-      "backend/lib/router.test.js",
-      "backend/lib/rpc-lineage.test.js",
-      "backend/lib/rule-router-wiring.test.js",
-      "backend/lib/safety-boundary.test.js",
-      "backend/lib/schemas.js",
-      "backend/lib/schemas.test.js",
-      "backend/lib/search-cache.js",
-      "backend/lib/search-cache.test.js",
-      "backend/lib/search-council-wiring.test.js",
-      "backend/lib/search-latency.test.js",
-      "backend/lib/search-plan.js",
-      "backend/lib/search-plan.test.js",
-      "backend/lib/seat-audit-wiring.test.js",
-      "backend/lib/security-headers.js",
-      "backend/lib/security-headers.test.js",
-      "backend/lib/serpapi.js",
-      "backend/lib/serpapi.test.js",
-      "backend/lib/shopping.js",
-      "backend/lib/shopping.test.js",
-      "backend/lib/single-flight.js",
-      "backend/lib/single-flight.test.js",
-      "backend/lib/sink-response.js",
-      "backend/lib/sink-response.test.js",
-      "backend/lib/source-is-text.test.js",
-      "backend/lib/spelling.js",
-      "backend/lib/spelling.test.js",
-      "backend/lib/spend.js",
-      "backend/lib/spend.test.js",
-      "backend/lib/sse-compression.js",
-      "backend/lib/sse-compression.test.js",
-      "backend/lib/storage-keys.js",
-      "backend/lib/storage-keys.test.js",
-      "backend/lib/stream-deadline.js",
-      "backend/lib/stream-deadline.test.js",
-      "backend/lib/stream-lifecycle.test.js",
-      "backend/lib/stream-open-order.test.js",
-      "backend/lib/stream-retry-policy.js",
-      "backend/lib/stream-retry-policy.test.js",
-      "backend/lib/stripe-apply.js",
-      "backend/lib/stripe-apply.test.js",
-      "backend/lib/stripe-event-ledger.js",
-      "backend/lib/stripe-event-ledger.test.js",
-      "backend/lib/stripe-identity.js",
-      "backend/lib/stripe-identity.test.js",
-      "backend/lib/stripe-webhook-wiring.test.js",
-      "backend/lib/synthesis-degrade.js",
-      "backend/lib/synthesis-degrade.test.js",
-      "backend/lib/synthesis-guidance.js",
-      "backend/lib/synthesis-guidance.test.js",
-      "backend/lib/synthesis-policy.js",
-      "backend/lib/synthesis-policy.test.js",
-      "backend/lib/synthesis-telemetry-wiring.test.js",
-      "backend/lib/telemetry-after-audit-latch.test.js",
-      "backend/lib/tenant-scope.test.js",
-      "backend/lib/terminal-access.js",
-      "backend/lib/terminal-access.test.js",
-      "backend/lib/text-similarity.js",
-      "backend/lib/tool-dedupe.js",
-      "backend/lib/tool-dedupe.test.js",
-      "backend/lib/tool-protocol.js",
-      "backend/lib/tool-protocol.test.js",
-      "backend/lib/tool-registry.js",
-      "backend/lib/tool-registry.test.js",
-      "backend/lib/ttl-cache.js",
-      "backend/lib/ttl-cache.test.js",
-      "backend/lib/tts.js",
-      "backend/lib/tts.test.js",
-      "backend/lib/turn-accounting-meta.js",
-      "backend/lib/turn-accounting-meta.test.js",
-      "backend/lib/turn-context.js",
-      "backend/lib/turn-context.test.js",
-      "backend/lib/turn-ledger.js",
-      "backend/lib/turn-ledger.test.js",
-      "backend/lib/turn-provenance-meta.js",
-      "backend/lib/turn-provenance-meta.test.js",
-      "backend/lib/turn-reliability-meta.js",
-      "backend/lib/turn-reliability-meta.test.js",
-      "backend/lib/turn-telemetry.js",
-      "backend/lib/turn-telemetry.test.js",
-      "backend/lib/untrusted-content.js",
-      "backend/lib/untrusted-content.test.js",
-      "backend/lib/upload-wiring.test.js",
-      "backend/lib/url-guard.js",
-      "backend/lib/url-guard.test.js",
-      "backend/lib/usage-prefetch.js",
-      "backend/lib/usage-prefetch.test.js",
-      "backend/lib/user-facts.js",
-      "backend/lib/user-facts.test.js",
-      "backend/lib/vision.js",
-      "backend/lib/vision.test.js",
-      "backend/lib/wiki-relevance.js",
-      "backend/lib/wiki-relevance.test.js",
-      "backend/lib/work-plan.js",
-      "backend/lib/work-plan.test.js",
-      "backend/lib/workspace-files-wiring.test.js",
-      "backend/server.js"
-    ],
-    "scopeLimit": "bounded source-text scan of backend/lib production JavaScript and backend/server.js; not a formal proof of all possible fixture-shaped behavior",
-    "interpretation": "Recorded bounded scanner includes *.test.js in its production file set and reports fixture imports there; exact canonical sentence literals in production are absent. Preserve this scoped warning; do not alter frozen cases or evaluator to game the scan."
-  },
-  "keySemanticProbeRun": {
-    "command": "pinned-node.exe -e <24 exact mission probe sentences; evaluator.evaluatePhotosynthesisRelationsV2 plus evaluation.gradeCase>",
-    "runtimeVersion": "v26.7.0",
-    "runtimeExecutableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9",
-    "evaluatorCommitSha": "3880eedf52594250a54a26fae6c7da5ef17fd0d9",
-    "evaluatorBlob": "fcee3a51319a4c7de10a70c81e1ceaf23886bd0c",
-    "gradeCasePath": "backend/lib/evaluation.js",
-    "count": 24,
-    "payloadBytes": 8206,
-    "payloadSha256": "64d2e96bc223f216b2e49f7004edcfbfaa534b68c928986b8cad11d4289b8b11",
-    "projectionFields": ["caseId", "sentence", "passed", "hasMalformed", "aggregatePolarity", "gradeCaseFactuality", "relationRecords(subject,predicate,object,binding,relationType,polarity,qualifies,rejectionReasons)", "contradictionCount"],
-    "cases": [
-      {"id":1,"text":"Photosynthesis captures light energy and stores it chlorophyll glucose.","outcome":[false,true,"UNRESOLVED",false],"relations":[["photosynthesis","capture","light-energy","PRONOUN_ANTECEDENT","CORE_LIGHT_RELATION","AFFIRMED",false,["GRAMMAR_SHAPE_NOT_ACCEPTED"]]],"contradictionCount":0},
-      {"id":2,"text":"Photosynthesis captures light energy and stores it in for during chlorophyll.","outcome":[false,true,"UNRESOLVED",false],"relations":[["photosynthesis","capture","light-energy","PRONOUN_ANTECEDENT","CORE_LIGHT_RELATION","AFFIRMED",false,["GRAMMAR_SHAPE_NOT_ACCEPTED"]]],"contradictionCount":0},
-      {"id":3,"text":"Photosynthesis captures light energy and stores it but captures.","outcome":[false,true,"UNRESOLVED",false],"relations":[["photosynthesis","capture","light-energy","PRONOUN_ANTECEDENT","CORE_LIGHT_RELATION","AFFIRMED",false,["GRAMMAR_SHAPE_NOT_ACCEPTED"]]],"contradictionCount":0},
-      {"id":4,"text":"Photosynthesis captures light energy and stores it while carbon dioxide is present.","outcome":[false,true,"UNRESOLVED",false],"relations":[["photosynthesis","capture","light-energy","PRONOUN_ANTECEDENT","CORE_LIGHT_RELATION","UNRESOLVED",false,["GRAMMAR_SHAPE_NOT_ACCEPTED","CLAUSE"]]],"contradictionCount":0},
-      {"id":5,"text":"Plants capture light energy but do not capture it.","outcome":[false,false,"CONTRADICTED",false],"relations":[["plants","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]],["plants","capture","light-energy","PRONOUN_ANTECEDENT","CORE_LIGHT_RELATION","NEGATED",false,[]]],"contradictionCount":1},
-      {"id":6,"text":"Plants capture light energy but do not store light energy.","outcome":[true,false,"AFFIRMED",true],"relations":[["plants","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]],["plants","store","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","NEGATED",false,[]]],"contradictionCount":0},
-      {"id":7,"text":"Plants capture light energy but do not store it.","outcome":[true,false,"AFFIRMED",true],"relations":[["plants","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]],["plants","store","light-energy","PRONOUN_ANTECEDENT","CORE_LIGHT_RELATION","NEGATED",false,[]]],"contradictionCount":0},
-      {"id":8,"text":"Photosynthesis captures light energy but cannot capture light energy.","outcome":[false,false,"CONTRADICTED",false],"relations":[["photosynthesis","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]],["photosynthesis","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","NEGATED",false,[]]],"contradictionCount":1},
-      {"id":9,"text":"Photosynthesis captures light energy but can't capture light energy.","outcome":[false,false,"CONTRADICTED",false],"relations":[["photosynthesis","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]],["photosynthesis","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","NEGATED",false,[]]],"contradictionCount":1},
-      {"id":10,"text":"Photosynthesis captures light energy but could not capture light energy.","outcome":[false,false,"CONTRADICTED",false],"relations":[["photosynthesis","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]],["photosynthesis","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","NEGATED",false,[]]],"contradictionCount":1},
-      {"id":11,"text":"Photosynthesis captures light energy but must not capture light energy.","outcome":[false,false,"CONTRADICTED",false],"relations":[["photosynthesis","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]],["photosynthesis","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","NEGATED",false,[]]],"contradictionCount":1},
-      {"id":12,"text":"Photosynthesis captures light energy but never captures light energy.","outcome":[false,false,"CONTRADICTED",false],"relations":[["photosynthesis","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]],["photosynthesis","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","NEGATED",false,[]]],"contradictionCount":1},
-      {"id":13,"text":"Photosynthesis captures and stores light energy but does not store light energy.","outcome":[false,false,"CONTRADICTED",false],"relations":[["photosynthesis","capture","light-energy","SHARED_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]],["photosynthesis","store","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","NEGATED",false,[]],["photosynthesis","store","light-energy","SHARED_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]]],"contradictionCount":1},
-      {"id":14,"text":"Photosynthesis captures and destroys light energy.","outcome":[false,false,"AFFIRMED",false],"relations":[["photosynthesis","capture","light-energy","SHARED_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]],["photosynthesis","destroy","light-energy","SHARED_OBJECT","DESTRUCTIVE_RELATION","AFFIRMED",false,["DESTRUCTIVE_RELATION"]]],"contradictionCount":0},
-      {"id":15,"text":"Photosynthesis captures and wastes light energy.","outcome":[false,false,"AFFIRMED",false],"relations":[["photosynthesis","capture","light-energy","SHARED_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]],["photosynthesis","waste","light-energy","SHARED_OBJECT","DESTRUCTIVE_RELATION","AFFIRMED",false,["DESTRUCTIVE_RELATION"]]],"contradictionCount":0},
-      {"id":16,"text":"Plants capture and block light energy during photosynthesis.","outcome":[false,false,"AFFIRMED",false],"relations":[["plants","capture","light-energy","SHARED_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]],["plants","block","light-energy","SHARED_OBJECT","DESTRUCTIVE_RELATION","AFFIRMED",false,["DESTRUCTIVE_RELATION"]]],"contradictionCount":0},
-      {"id":17,"text":"Photosynthesis does not fail to capture and destroy light energy.","outcome":[false,false,"AFFIRMED",false],"relations":[["photosynthesis","capture","light-energy","SHARED_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]],["photosynthesis","destroy","light-energy","SHARED_OBJECT","DESTRUCTIVE_RELATION","AFFIRMED",false,["DESTRUCTIVE_RELATION"]]],"contradictionCount":0},
-      {"id":18,"text":"Fails to capture light energy.","outcome":[false,true,"UNRESOLVED",false],"relations":[],"contradictionCount":0},
-      {"id":19,"text":"Photosynthesis captures light energy but fails to capture light energy.","outcome":[false,false,"CONTRADICTED",false],"relations":[["photosynthesis","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]],["photosynthesis","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","NEGATED",false,[]]],"contradictionCount":1},
-      {"id":20,"text":"Photosynthesis captures light energy but seems not to capture it.","outcome":[true,false,"AFFIRMED",true],"relations":[["photosynthesis","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]],["photosynthesis","capture","light-energy","PRONOUN_ANTECEDENT","CORE_LIGHT_RELATION","UNCERTAIN",false,[]]],"contradictionCount":0},
-      {"id":21,"text":"Photosynthesis captures light energy but failed to store it.","outcome":[true,false,"AFFIRMED",true],"relations":[["photosynthesis","capture","light-energy","DIRECT_OBJECT","CORE_LIGHT_RELATION","AFFIRMED",true,[]],["photosynthesis","store","light-energy","PRONOUN_ANTECEDENT","CORE_LIGHT_RELATION","NEGATED",false,[]]],"contradictionCount":0},
-      {"id":22,"text":"Photosynthesis does not capture light energy and stores it.","outcome":[false,true,"UNRESOLVED",false],"relations":[["photosynthesis","capture","light-energy","PRONOUN_ANTECEDENT","CORE_LIGHT_RELATION","NEGATED",false,["GRAMMAR_SHAPE_NOT_ACCEPTED"]]],"contradictionCount":0},
-      {"id":23,"text":"Photosynthesis may capture light energy and stores it.","outcome":[false,true,"UNRESOLVED",false],"relations":[["photosynthesis","capture","light-energy","PRONOUN_ANTECEDENT","CORE_LIGHT_RELATION","UNCERTAIN",false,["GRAMMAR_SHAPE_NOT_ACCEPTED"]]],"contradictionCount":0},
-      {"id":24,"text":"Photosynthesis fails to capture light energy and stores it.","outcome":[false,true,"UNRESOLVED",false],"relations":[["photosynthesis","capture","light-energy","PRONOUN_ANTECEDENT","CORE_LIGHT_RELATION","NEGATED",false,["GRAMMAR_SHAPE_NOT_ACCEPTED"]]],"contradictionCount":0}
-    ]
-  },
   "fingerprintIndexPath": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
-  "corpusDecisionFailures": [],
-  "implementationTaskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
-  "repairBaseSha": "7bec4e3cbc98b096d3b7538c5b45fe70db89e9f9",
-  "repairBaseTreeSha": "6e668a1b7a91b0d88d01b789b40e8f05a11806ff",
-  "implementationTreeSha": "167e2c872cf8f250b46c2f1529c6597f38fd2f9f",
-  "implementationParentSha": "c17c52faf67b1ef8b3f6d0b14aaf264804092316"
+  "validationOutputBytes": 10466,
+  "validationOutputSha256": "d25cca7370dd463e18369f9f30d2043c506c89ccb99deb490d48178c1534700e",
+  "validationOutput": {
+    "schemaVersion": 1,
+    "phase": "D675_SEMANTIC_COVERAGE_VALIDATION",
+    "testedCommit": "d67515c53d33c918f900da8d5720e60dc258f83c",
+    "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
+    "canonicalCaseCount": 54,
+    "canonicalCasesMatchFrozenDesign": true,
+    "sourceCaseCount": 206,
+    "indexedCaseCount": 204,
+    "uniqueSemanticFingerprintCount": 204,
+    "duplicateSemanticFingerprints": [
+      {
+        "semanticFingerprint": "7f23b9432ac066bbc2c632317688d35b45fa1a674533234f4123e9b9a962a128",
+        "retainedCaseId": "SB-001",
+        "rejectedCaseId": "V2-SENTENCE_BOUNDARY-005",
+        "extraCount": 1
+      },
+      {
+        "semanticFingerprint": "b1c4c9401669f8d2b12a3d2425087f86fa3a4acc05882bcc44a9e75bfb56cf73",
+        "retainedCaseId": "V2-PUNCTUATION_ABUSE-003",
+        "rejectedCaseId": "V2-PUNCTUATION_ABUSE-007",
+        "extraCount": 1
+      }
+    ],
+    "classCounts": [
+      {
+        "classId": "AFFIRMATIVE_ACTIVE",
+        "required": 8,
+        "observed": 17,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "AFFIRMATIVE_PASSIVE",
+        "required": 6,
+        "observed": 6,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "INFINITIVAL_CHLOROPHYLL_MEDIATED",
+        "required": 6,
+        "observed": 6,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "COORDINATED_PREDICATES",
+        "required": 6,
+        "observed": 6,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "COORDINATED_SUBJECTS_VALID",
+        "required": 6,
+        "observed": 6,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "COORDINATED_SUBJECTS_MIXED_INVALID",
+        "required": 8,
+        "observed": 8,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "DETACHED_OBJECT_DECOYS",
+        "required": 8,
+        "observed": 8,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "DIRECT_OBJECT_BARRIERS",
+        "required": 6,
+        "observed": 6,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "FINITE_PREDICATE_BARRIERS",
+        "required": 6,
+        "observed": 6,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "MALFORMED_SYNTAX",
+        "required": 9,
+        "observed": 9,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "LOCAL_NEGATION",
+        "required": 8,
+        "observed": 8,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "UNCERTAIN_MODALITY",
+        "required": 12,
+        "observed": 12,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "NEGATED_MODALITY",
+        "required": 8,
+        "observed": 8,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "AFFIRMED_MODALITY",
+        "required": 4,
+        "observed": 4,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "NESTED_CONTROL",
+        "required": 10,
+        "observed": 10,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "DOUBLE_NEGATION",
+        "required": 6,
+        "observed": 6,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "UNRELATED_NEGATION",
+        "required": 6,
+        "observed": 6,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "CLAUSE_BOUNDARY",
+        "required": 8,
+        "observed": 8,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "SENTENCE_BOUNDARY",
+        "required": 6,
+        "observed": 6,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "PRONOUN_CONTINUATION",
+        "required": 6,
+        "observed": 9,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "INVALID_SUBJECT",
+        "required": 8,
+        "observed": 8,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "INVALID_OBJECT",
+        "required": 8,
+        "observed": 8,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "DESTRUCTIVE_RELATION",
+        "required": 6,
+        "observed": 6,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "WRONG_PIGMENT",
+        "required": 6,
+        "observed": 6,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "CONTRADICTION",
+        "required": 6,
+        "observed": 6,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "PUNCTUATION_ABUSE",
+        "required": 8,
+        "observed": 8,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "NO_STITCHING",
+        "required": 8,
+        "observed": 8,
+        "pass": true,
+        "canonicalIdsPresent": true
+      },
+      {
+        "classId": "KNOWN_REGRESSIONS",
+        "required": 8,
+        "observed": 8,
+        "pass": true,
+        "canonicalIdsPresent": true
+      }
+    ],
+    "structuralMarkerCount": 27,
+    "structuralMarkers": [
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "normalize-input",
+        "marker": "normalizeInput",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "sentence-segmentation",
+        "marker": "segmentSentences",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "clause-segmentation",
+        "marker": "segmentClauses",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "tokenization",
+        "marker": "tokenize",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "exact-form-lemma",
+        "marker": "normalizeExactFormLemma",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "minimal-grammar",
+        "marker": "parseMinimalRelationGrammar",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "auxiliary-chain",
+        "marker": "parseAuxiliaryChain",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "finite-predicate",
+        "marker": "validateFinitePredicate",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "subject-extraction",
+        "marker": "extractSubjectSet",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "subject-agreement",
+        "marker": "validateSubjectAgreement",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "subject-validity",
+        "marker": "validateSubjectSet",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "direct-object-binding",
+        "marker": "bindDirectObject",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "object-barrier",
+        "marker": "detectObjectBarrier",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "coordinated-predicates",
+        "marker": "resolveCoordinatedPredicates",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "passive-agent",
+        "marker": "bindLocalPassiveAgent",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "modality-state",
+        "marker": "resolveModalState",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "control-state",
+        "marker": "resolveControlChain",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "polarity-composition",
+        "marker": "composePredicatePolarity",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "pronoun-continuation",
+        "marker": "resolvePronounContinuation",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "relation-record-v2",
+        "marker": "buildRelationRecordV2",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "semantic-fingerprint",
+        "marker": "semanticCaseFingerprint",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "contradiction-detection",
+        "marker": "detectContradictions",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "invalid-chlorophyll-claims",
+        "marker": "detectInvalidChlorophyllClaims",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "top-level-evaluation",
+        "marker": "evaluatePhotosynthesisRelations",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "structured-record-array",
+        "marker": "relationRecords",
+        "present": true
+      },
+      {
+        "file": "backend/lib/photosynthesis-relation-evaluator.js",
+        "id": "immutable-registry",
+        "marker": "PHOTOSYNTHESIS_SEMANTIC_EVALUATOR_REGISTRY",
+        "present": true
+      },
+      {
+        "file": "backend/lib/evaluation.js",
+        "id": "evaluation-wiring",
+        "marker": "photosynthesis-light-relation-v2",
+        "present": true
+      }
+    ],
+    "datasetValidation": {
+      "status": "PASS",
+      "mode": "validate-only",
+      "validationOnly": true,
+      "networkCalls": 0,
+      "providerCalls": 0,
+      "liveAuth": false,
+      "noMutations": true,
+      "datasets": [
+        {
+          "dataset": "backend-intelligence-v1.json",
+          "name": "backend-intelligence-v1",
+          "cases": 21,
+          "problemCount": 0,
+          "problems": []
+        },
+        {
+          "dataset": "backend-intelligence-v2.json",
+          "name": "backend-intelligence-v2",
+          "cases": 21,
+          "problemCount": 0,
+          "problems": []
+        }
+      ]
+    }
+  },
+  "final001Boundary": "This receipt validates current projection counts only; it does not resolve whether each recognized NON_LIGHT_OBJECT identity is explicitly authorized by the frozen design."
 }

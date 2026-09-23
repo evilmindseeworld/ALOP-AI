@@ -1656,7 +1656,7 @@ test('CONVERGED-RED A3 accepted but-continuations emit their own predicate and p
     'Plants capture light energy but do not store light energy.',
     'Photosynthesis captures light energy but never stores light energy.',
     'Photosynthesis captures light energy but cannot store light energy.',
-    "Photosynthesis captures light energy but can't store it.",
+    "Photosynthesis captures light energy but can't store light energy.",
     'Photosynthesis captures light energy but could not store light energy.',
     'Photosynthesis captures light energy but must not store light energy.',
   ];
@@ -1725,19 +1725,25 @@ test('CONVERGED-RED O2 subjectless inputs fail closed through evaluator, gradeCa
   const record = (surface, answer, run) => {
     try {
       const value = run(answer);
-      outcomes.push({ surface, answer, error: null, passed: value.passed, hasMalformed: value.hasMalformed });
+      const gradeSurface = surface === 'gradeCase';
+      outcomes.push({
+        surface,
+        answer,
+        error: null,
+        passed: gradeSurface ? value.factuality.passed : value.passed,
+        structured: gradeSurface
+          ? Array.isArray(value.checks) && Boolean(value.factuality)
+          : Boolean(value.evaluatorId) && Array.isArray(value.relationRecords) && Array.isArray(value.diagnostics),
+      });
     } catch (error) {
       outcomes.push({ surface, answer, error: `${error.name}: ${error.message}` });
     }
   };
   for (const answer of examples) record('direct', answer, evaluatePhotosynthesisRelationsV2);
-  record('gradeCase', examples[0], (answer) => ({
-    passed: gradeCase(photoCase, observation(answer, { id: photoCase.id })).factuality.passed,
-    hasMalformed: true,
-  }));
+  record('gradeCase', examples[0], (answer) => gradeCase(photoCase, observation(answer, { id: photoCase.id })));
   record('package', examples[0], packagedEvaluator);
   assert.equal(outcomes.some((outcome) => outcome.error !== null), false, JSON.stringify(outcomes));
-  assert.equal(outcomes.every((outcome) => outcome.passed === false && outcome.hasMalformed === true), true, JSON.stringify(outcomes));
+  assert.equal(outcomes.every((outcome) => outcome.structured && outcome.passed === false), true, JSON.stringify(outcomes));
 });
 
 test('CONVERGED-RED O3 explicit subject after comma-and begins an independent proposition', () => {

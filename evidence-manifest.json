@@ -10,27 +10,28 @@
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "implementationCommitSha": "aaa4620ceff54cedaa930f1d6148680b1ef43d1d",
+  "implementationCommitSha": "73732dc8979cddc623a669a615536516754e716e",
   "implementationCommitShas": [
-    "aaa4620ceff54cedaa930f1d6148680b1ef43d1d"
+    "aaa4620ceff54cedaa930f1d6148680b1ef43d1d",
+    "73732dc8979cddc623a669a615536516754e716e"
   ],
-  "implementationTreeSha": "c565660363acf27876847114c0e6295552ac34d5",
-  "implementationParentSha": "fa375642c2b31944515e67bbfe9f7b473c5cc9c9",
-  "candidateHeadAtCapture": "d67515c53d33c918f900da8d5720e60dc258f83c",
-  "candidateTreeAtCapture": "4df2c1fb8249eec6201d82049d3b5e0dba95ff10",
-  "packageCommitSha": "599a17f4c73e994287cc1b9e1c13387ba9f54809",
-  "packageTreeSha": "41218383454dc00bdc861d121128b30aef4d691e",
-  "packageGitBlob": "d938a78c6a21ea60342a6ebc2009b8211e13275e",
-  "packageSha256": "7f6c46ae228eb0f77cbfa612a391990c5134d699fd6972ce0e4a481a67256414",
-  "evaluatorInputCommitSha": "aaa4620ceff54cedaa930f1d6148680b1ef43d1d",
-  "evaluatorInputBlob": "5c4435d6495e09bf93ab584508c33de93a7cbeab",
-  "runnerInputCommitSha": "c896bde68a8352af3fd997ac0d1d031fc4427149",
+  "implementationTreeSha": "b2b1ac538634f1ffbbaeefcb15774c4544347344",
+  "implementationParentSha": "937a1477c178d44c62c66a2c0d32d74a5810db48",
+  "candidateHeadAtCapture": "12d89158f7d3c598866154507d076074a99be0c8",
+  "candidateTreeAtCapture": "c75b54a77e1f11ab78d1fb96f6db266ab3650559",
+  "packageCommitSha": "12d89158f7d3c598866154507d076074a99be0c8",
+  "packageTreeSha": "c75b54a77e1f11ab78d1fb96f6db266ab3650559",
+  "packageGitBlob": "b28062d70feb8bd96bd9432cf644211cbf660e87",
+  "packageSha256": "418851eac29fab0c488e904ffab466fcea4e6b32b293b5579d0edc9766f42833",
+  "evaluatorInputCommitSha": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
+  "evaluatorInputBlob": "c7cc47587b6b49020b4814ace57793d9f8bbc0af",
+  "runnerInputCommitSha": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
   "runnerInputBlob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
   "recipeInputCommitSha": "3ae0f283461f304f2778a4dc463a85c8f7d86adf",
   "recipeInputTreeSha": "8ed002b01702ae842ea9e7c054fd91071eeb6792",
   "recipeInputBlobSha": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
   "phase": "FINAL_EVIDENCE",
-  "status": "EVIDENCE_HASHES_VERIFIED_CANDIDATE_BLOCKED_FINAL001",
+  "status": "EVIDENCE_HASHES_VERIFIED",
   "nestedManifest": "ABSENT",
   "verified": true,
   "entryCount": 13,
@@ -47,11 +48,11 @@
     },
     {
       "path": "backend/lib/p1-authoritative-repair-v2.test.js",
-      "sha256": "e389626880907d6a386e7917957a63bea3879d37124a14b0b6d3667558d37358"
+      "sha256": "5244baabbb3c3c9e86d4ab96f435903240e3abd846043549e13c146637d14563"
     },
     {
       "path": "backend/lib/photosynthesis-relation-cases.js",
-      "sha256": "9ced4ccbf77076f71a26a9b4d2ba248fb83c370811c3a38abfcb69a834d0877a"
+      "sha256": "b6dd046093041e2efcb2d0ce718929ccd4b3552e64367c14a051e7c8bbeb393e"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator-mutation.test.js",
@@ -59,7 +60,7 @@
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.js",
-      "sha256": "4610d769eb54d81e390c704045de48383d002fff4ec28d2e07470188db51a8ee"
+      "sha256": "16863d27fd4d6e6dc5bc06774a2a6808835e1b7759ffb95c0d45744e430be39f"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
@@ -67,19 +68,19 @@
     },
     {
       "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-      "sha256": "7f6c46ae228eb0f77cbfa612a391990c5134d699fd6972ce0e4a481a67256414"
+      "sha256": "418851eac29fab0c488e904ffab466fcea4e6b32b293b5579d0edc9766f42833"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
-      "sha256": "423807eedd3c09f1beac113784141fc2a83313f97819150221b02e65323522e0"
+      "sha256": "abdca9c3a27aaba81fb0b8cc47512909003e6e5b4dd52b311fe21f3f944d3242"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/green-phase.json",
-      "sha256": "98950c05c4c8cb9934048a5654855f166c14aaa910762b69468070d0ab4fba6d"
+      "sha256": "33c617138397890d5e414b3841249e8b7f0897de84a114f051a2ac3fa702c0a4"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/mutation-phase.json",
-      "sha256": "02adaf21b06004ee974da4df5ac5f75935490306225a384f19e52d3d5e249efa"
+      "sha256": "5d056b90c8d6bb0dc1be08a3f636c4bf85f932e885110c8e01d4a20cadd1c3e9"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/red-phase.json",
@@ -87,20 +88,18 @@
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/semantic-coverage.json",
-      "sha256": "697b256de1be0ced3324e3b5c17e5d09a3836e31e624476d2d2f35462cd3a311"
+      "sha256": "16242f434bc32c5e357c3a497fb74acd2372fcd5b12650da0137d0165a400986"
     }
   ],
   "implementationTaskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
   "repairBaseSha": "fee44f4d2f3a46458b4b79277363585f78695ecc",
   "repairBaseTreeSha": "6bff90f3a379d192e30c01f9111cef65c31d9c55",
-  "packageBytes": 98876,
+  "packageBytes": 98158,
   "workerModelReportedByOwner": "GPT-6 Luna",
   "workerEffortReportedByOwner": "Max",
-  "capturedAtUtc": "2026-09-23T19:09:02Z",
+  "capturedAtUtc": "2026-09-23T22:13:29Z",
   "implementationSessionId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
   "redCommitSha": "fc072ccd935d3cf6028e9efd9e805f03ec7d251f",
   "redEvidenceCommitSha": "3eeacfce68895db97236e8568154fefb8457b161",
-  "candidateBlockers": [
-    "FINAL-001 remains unresolved: frozen design ignores arbitrary-name but does not enumerate the recognized NON_LIGHT_OBJECT identity vocabulary; collapsing to one class lowers the current 204 unique fingerprints to 185 and violates the frozen floor/class minima. No frozen-design change is authorized."
-  ]
+  "candidateBlockers": []
 }

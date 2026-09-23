@@ -8,10 +8,10 @@
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
   "repairAttemptId": "P1-FINAL-SEVEN-ASTRA-20260923-01A0CBA4",
-  "capturedAtUtc": "2026-09-23T15:52:49.878Z",
-  "implementationCommitSha": "aaa4620ceff54cedaa930f1d6148680b1ef43d1d",
-  "candidateHeadAtCapture": "d67515c53d33c918f900da8d5720e60dc258f83c",
-  "candidateTreeAtCapture": "4df2c1fb8249eec6201d82049d3b5e0dba95ff10",
+  "capturedAtUtc": "2026-09-23T21:46:28.214Z",
+  "implementationCommitSha": "73732dc8979cddc623a669a615536516754e716e",
+  "candidateHeadAtCapture": "12d89158f7d3c598866154507d076074a99be0c8",
+  "candidateTreeAtCapture": "c75b54a77e1f11ab78d1fb96f6db266ab3650559",
   "runtime": {
     "version": "v26.7.0",
     "executablePath": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
@@ -24,7 +24,8 @@
   "baseline": {
     "passed": 206,
     "failed": 0,
-    "failureCountCreditedAsKills": 0
+    "failureCountCreditedAsKills": 0,
+    "failures": []
   },
   "mutationIds": [
     "M1",
@@ -41,27 +42,27 @@
   "killed": 10,
   "total": 10,
   "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe scripts/run-photosynthesis-relation-mutations.mjs (cwd=backend)",
-  "stdoutSha256": "f0eb0470bd5d928f85fef4fffaf4368bfa904bc4a974fc2cb52aacab73265dd0",
-  "evaluatorInputCommitSha": "aaa4620ceff54cedaa930f1d6148680b1ef43d1d",
-  "evaluatorInputTreeSha": "c565660363acf27876847114c0e6295552ac34d5",
+  "stdoutSha256": "3be23cf5c51b7ecbf5a397c001ab4eea6f8368888e26c8a3087314b5e713a7ea",
+  "evaluatorInputCommitSha": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
+  "evaluatorInputTreeSha": "f4f8b30f73448c34f7652f86a32a606d3dc8a739",
   "evaluatorInputPath": "backend/lib/photosynthesis-relation-evaluator.js",
-  "evaluatorBlob": "5c4435d6495e09bf93ab584508c33de93a7cbeab",
-  "runnerInputCommitSha": "c896bde68a8352af3fd997ac0d1d031fc4427149",
-  "runnerInputTreeSha": "9a2e20245a25d9511705ebecf5aa6dcd3c4f0eb0",
+  "evaluatorBlob": "c7cc47587b6b49020b4814ace57793d9f8bbc0af",
+  "runnerInputCommitSha": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
+  "runnerInputTreeSha": "f4f8b30f73448c34f7652f86a32a606d3dc8a739",
   "runnerInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
   "runnerBlob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
   "recipeVersion": "p1-static-compose-v1",
   "recipeGitBlob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
   "recipeInputCommitSha": "3ae0f283461f304f2778a4dc463a85c8f7d86adf",
-  "packageCommitSha": "599a17f4c73e994287cc1b9e1c13387ba9f54809",
-  "packageTreeSha": "41218383454dc00bdc861d121128b30aef4d691e",
-  "packageGitBlob": "d938a78c6a21ea60342a6ebc2009b8211e13275e",
-  "packageSha256": "7f6c46ae228eb0f77cbfa612a391990c5134d699fd6972ce0e4a481a67256414",
-  "packageBytes": 98876,
+  "packageCommitSha": "12d89158f7d3c598866154507d076074a99be0c8",
+  "packageTreeSha": "c75b54a77e1f11ab78d1fb96f6db266ab3650559",
+  "packageGitBlob": "b28062d70feb8bd96bd9432cf644211cbf660e87",
+  "packageSha256": "418851eac29fab0c488e904ffab466fcea4e6b32b293b5579d0edc9766f42833",
+  "packageBytes": 98158,
   "independentByteReproduction": "PASS",
-  "reproducedPackageSha256": "7f6c46ae228eb0f77cbfa612a391990c5134d699fd6972ce0e4a481a67256414",
-  "sourcePackageApiEquivalence": "PASS",
-  "packageByteEquality": "PASS; two independent deterministic compositions matched the committed 98876-byte package and SHA-256 7f6c46ae228eb0f77cbfa612a391990c5134d699fd6972ce0e4a481a67256414",
+  "reproducedPackageSha256": "418851eac29fab0c488e904ffab466fcea4e6b32b293b5579d0edc9766f42833",
+  "sourcePackageApiEquivalence": "PASS; 39/39 exports, 236 unique inputs, exact V1/V2 outputs and fingerprints",
+  "packageByteEquality": "PASS; Build A and B byte-match committed package (98158 bytes, 418851eac29fab0c488e904ffab466fcea4e6b32b293b5579d0edc9766f42833)",
   "qualificationMode": "NOT_RUN",
   "dependencyIdentity": {
     "backendPackageJsonPath": "backend/package.json",
@@ -76,18 +77,206 @@
     "sharedBaselineAndMutantFailures": 0,
     "allCreditedKillsAreMutantOnly": true,
     "sourceCaseCount": 206,
-    "requiredMutationIds": ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10"],
+    "requiredMutationIds": [
+      "M1",
+      "M2",
+      "M3",
+      "M4",
+      "M5",
+      "M6",
+      "M7",
+      "M8",
+      "M9",
+      "M10"
+    ],
     "rows": [
-      {"id":"M1","requiredClassThresholds":{"NEGATED_MODALITY":4,"UNCERTAIN_MODALITY":4},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"NEGATED_MODALITY":8,"UNCERTAIN_MODALITY":12},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"NEGATED_MODALITY":8,"UNCERTAIN_MODALITY":12},"qualifyingKill":true},
-      {"id":"M2","requiredClassThresholds":{"DETACHED_OBJECT_DECOYS":4,"DIRECT_OBJECT_BARRIERS":4,"FINITE_PREDICATE_BARRIERS":4},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"DETACHED_OBJECT_DECOYS":8,"DIRECT_OBJECT_BARRIERS":6,"FINITE_PREDICATE_BARRIERS":6},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"DETACHED_OBJECT_DECOYS":8,"DIRECT_OBJECT_BARRIERS":6,"FINITE_PREDICATE_BARRIERS":6},"qualifyingKill":true},
-      {"id":"M3","requiredClassThresholds":{"MALFORMED_SYNTAX":6},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"MALFORMED_SYNTAX":9},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"MALFORMED_SYNTAX":9},"qualifyingKill":true},
-      {"id":"M4","requiredClassThresholds":{"AFFIRMATIVE_PASSIVE":4},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"AFFIRMATIVE_PASSIVE":6},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"AFFIRMATIVE_PASSIVE":6},"qualifyingKill":true},
-      {"id":"M5","requiredClassThresholds":{"COORDINATED_SUBJECTS_MIXED_INVALID":6},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"COORDINATED_SUBJECTS_MIXED_INVALID":6},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"COORDINATED_SUBJECTS_MIXED_INVALID":6},"qualifyingKill":true},
-      {"id":"M6","requiredClassThresholds":{"DOUBLE_NEGATION":4,"NESTED_CONTROL":6,"UNRELATED_NEGATION":4},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"DOUBLE_NEGATION":6,"NESTED_CONTROL":7,"UNRELATED_NEGATION":6},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"DOUBLE_NEGATION":6,"NESTED_CONTROL":7,"UNRELATED_NEGATION":6},"qualifyingKill":true},
-      {"id":"M7","requiredClassThresholds":{"CLAUSE_BOUNDARY":4,"NO_STITCHING":4},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"CLAUSE_BOUNDARY":8,"NO_STITCHING":7},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"CLAUSE_BOUNDARY":8,"NO_STITCHING":7},"qualifyingKill":true},
-      {"id":"M8","requiredClassThresholds":{"COORDINATED_SUBJECTS_MIXED_INVALID":4,"INVALID_SUBJECT":4},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"COORDINATED_SUBJECTS_MIXED_INVALID":8,"INVALID_SUBJECT":8},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"COORDINATED_SUBJECTS_MIXED_INVALID":8,"INVALID_SUBJECT":8},"qualifyingKill":true},
-      {"id":"M9","requiredClassThresholds":{"DETACHED_OBJECT_DECOYS":4,"INVALID_OBJECT":4},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"DETACHED_OBJECT_DECOYS":8,"INVALID_OBJECT":8},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"DETACHED_OBJECT_DECOYS":8,"INVALID_OBJECT":8},"qualifyingKill":true},
-      {"id":"M10","requiredClassThresholds":{"AFFIRMATIVE_ACTIVE":2,"KNOWN_REGRESSIONS":2},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"AFFIRMATIVE_ACTIVE":17,"KNOWN_REGRESSIONS":2},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"AFFIRMATIVE_ACTIVE":17,"KNOWN_REGRESSIONS":2},"qualifyingKill":true}
+      {
+        "id": "M1",
+        "requiredClassThresholds": {
+          "NEGATED_MODALITY": 4,
+          "UNCERTAIN_MODALITY": 4
+        },
+        "baselineFailuresInRelevantClasses": 0,
+        "mutantFailuresByClass": {
+          "NEGATED_MODALITY": 8,
+          "UNCERTAIN_MODALITY": 12
+        },
+        "baselineOnlyFailures": 0,
+        "sharedBaselineAndMutantFailures": 0,
+        "mutantOnlyFailuresByClass": {
+          "NEGATED_MODALITY": 8,
+          "UNCERTAIN_MODALITY": 12
+        },
+        "qualifyingKill": true
+      },
+      {
+        "id": "M2",
+        "requiredClassThresholds": {
+          "DETACHED_OBJECT_DECOYS": 4,
+          "DIRECT_OBJECT_BARRIERS": 4,
+          "FINITE_PREDICATE_BARRIERS": 4
+        },
+        "baselineFailuresInRelevantClasses": 0,
+        "mutantFailuresByClass": {
+          "DETACHED_OBJECT_DECOYS": 7,
+          "DIRECT_OBJECT_BARRIERS": 6,
+          "FINITE_PREDICATE_BARRIERS": 6
+        },
+        "baselineOnlyFailures": 0,
+        "sharedBaselineAndMutantFailures": 0,
+        "mutantOnlyFailuresByClass": {
+          "DETACHED_OBJECT_DECOYS": 7,
+          "DIRECT_OBJECT_BARRIERS": 6,
+          "FINITE_PREDICATE_BARRIERS": 6
+        },
+        "qualifyingKill": true
+      },
+      {
+        "id": "M3",
+        "requiredClassThresholds": {
+          "MALFORMED_SYNTAX": 6
+        },
+        "baselineFailuresInRelevantClasses": 0,
+        "mutantFailuresByClass": {
+          "MALFORMED_SYNTAX": 9
+        },
+        "baselineOnlyFailures": 0,
+        "sharedBaselineAndMutantFailures": 0,
+        "mutantOnlyFailuresByClass": {
+          "MALFORMED_SYNTAX": 9
+        },
+        "qualifyingKill": true
+      },
+      {
+        "id": "M4",
+        "requiredClassThresholds": {
+          "AFFIRMATIVE_PASSIVE": 4
+        },
+        "baselineFailuresInRelevantClasses": 0,
+        "mutantFailuresByClass": {
+          "AFFIRMATIVE_PASSIVE": 6
+        },
+        "baselineOnlyFailures": 0,
+        "sharedBaselineAndMutantFailures": 0,
+        "mutantOnlyFailuresByClass": {
+          "AFFIRMATIVE_PASSIVE": 6
+        },
+        "qualifyingKill": true
+      },
+      {
+        "id": "M5",
+        "requiredClassThresholds": {
+          "COORDINATED_SUBJECTS_MIXED_INVALID": 6
+        },
+        "baselineFailuresInRelevantClasses": 0,
+        "mutantFailuresByClass": {
+          "COORDINATED_SUBJECTS_MIXED_INVALID": 6
+        },
+        "baselineOnlyFailures": 0,
+        "sharedBaselineAndMutantFailures": 0,
+        "mutantOnlyFailuresByClass": {
+          "COORDINATED_SUBJECTS_MIXED_INVALID": 6
+        },
+        "qualifyingKill": true
+      },
+      {
+        "id": "M6",
+        "requiredClassThresholds": {
+          "DOUBLE_NEGATION": 4,
+          "NESTED_CONTROL": 6,
+          "UNRELATED_NEGATION": 4
+        },
+        "baselineFailuresInRelevantClasses": 0,
+        "mutantFailuresByClass": {
+          "DOUBLE_NEGATION": 6,
+          "NESTED_CONTROL": 7,
+          "UNRELATED_NEGATION": 6
+        },
+        "baselineOnlyFailures": 0,
+        "sharedBaselineAndMutantFailures": 0,
+        "mutantOnlyFailuresByClass": {
+          "DOUBLE_NEGATION": 6,
+          "NESTED_CONTROL": 7,
+          "UNRELATED_NEGATION": 6
+        },
+        "qualifyingKill": true
+      },
+      {
+        "id": "M7",
+        "requiredClassThresholds": {
+          "CLAUSE_BOUNDARY": 4,
+          "NO_STITCHING": 4
+        },
+        "baselineFailuresInRelevantClasses": 0,
+        "mutantFailuresByClass": {
+          "CLAUSE_BOUNDARY": 8,
+          "NO_STITCHING": 7
+        },
+        "baselineOnlyFailures": 0,
+        "sharedBaselineAndMutantFailures": 0,
+        "mutantOnlyFailuresByClass": {
+          "CLAUSE_BOUNDARY": 8,
+          "NO_STITCHING": 7
+        },
+        "qualifyingKill": true
+      },
+      {
+        "id": "M8",
+        "requiredClassThresholds": {
+          "COORDINATED_SUBJECTS_MIXED_INVALID": 4,
+          "INVALID_SUBJECT": 4
+        },
+        "baselineFailuresInRelevantClasses": 0,
+        "mutantFailuresByClass": {
+          "COORDINATED_SUBJECTS_MIXED_INVALID": 8,
+          "INVALID_SUBJECT": 8
+        },
+        "baselineOnlyFailures": 0,
+        "sharedBaselineAndMutantFailures": 0,
+        "mutantOnlyFailuresByClass": {
+          "COORDINATED_SUBJECTS_MIXED_INVALID": 8,
+          "INVALID_SUBJECT": 8
+        },
+        "qualifyingKill": true
+      },
+      {
+        "id": "M9",
+        "requiredClassThresholds": {
+          "DETACHED_OBJECT_DECOYS": 4,
+          "INVALID_OBJECT": 4
+        },
+        "baselineFailuresInRelevantClasses": 0,
+        "mutantFailuresByClass": {
+          "DETACHED_OBJECT_DECOYS": 8,
+          "INVALID_OBJECT": 7
+        },
+        "baselineOnlyFailures": 0,
+        "sharedBaselineAndMutantFailures": 0,
+        "mutantOnlyFailuresByClass": {
+          "DETACHED_OBJECT_DECOYS": 8,
+          "INVALID_OBJECT": 7
+        },
+        "qualifyingKill": true
+      },
+      {
+        "id": "M10",
+        "requiredClassThresholds": {
+          "AFFIRMATIVE_ACTIVE": 2,
+          "KNOWN_REGRESSIONS": 2
+        },
+        "baselineFailuresInRelevantClasses": 0,
+        "mutantFailuresByClass": {
+          "AFFIRMATIVE_ACTIVE": 17,
+          "KNOWN_REGRESSIONS": 2
+        },
+        "baselineOnlyFailures": 0,
+        "sharedBaselineAndMutantFailures": 0,
+        "mutantOnlyFailuresByClass": {
+          "AFFIRMATIVE_ACTIVE": 17,
+          "KNOWN_REGRESSIONS": 2
+        },
+        "qualifyingKill": true
+      }
     ]
   },
   "mutations": [
@@ -107,7 +296,7 @@
       "id": "M2",
       "killed": true,
       "failuresByClass": {
-        "DETACHED_OBJECT_DECOYS": 8,
+        "DETACHED_OBJECT_DECOYS": 7,
         "DIRECT_OBJECT_BARRIERS": 6,
         "FINITE_PREDICATE_BARRIERS": 6
       },
@@ -190,7 +379,7 @@
       "killed": true,
       "failuresByClass": {
         "DETACHED_OBJECT_DECOYS": 8,
-        "INVALID_OBJECT": 8
+        "INVALID_OBJECT": 7
       },
       "minimumFailuresByClass": {
         "DETACHED_OBJECT_DECOYS": 4,
@@ -213,10 +402,35 @@
   "implementationTaskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
   "repairBaseSha": "fee44f4d2f3a46458b4b79277363585f78695ecc",
   "repairBaseTreeSha": "6bff90f3a379d192e30c01f9111cef65c31d9c55",
-  "implementationTreeSha": "c565660363acf27876847114c0e6295552ac34d5",
-  "implementationParentSha": "fa375642c2b31944515e67bbfe9f7b473c5cc9c9",
+  "implementationTreeSha": "b2b1ac538634f1ffbbaeefcb15774c4544347344",
+  "implementationParentSha": "937a1477c178d44c62c66a2c0d32d74a5810db48",
   "stdoutBytes": 2830,
   "recipeInputTreeSha": "8ed002b01702ae842ea9e7c054fd91071eeb6792",
   "recipeInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-  "recipeInputBlobSha": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9"
+  "recipeInputBlobSha": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
+  "sourcePackageApiEquivalenceReceipt": {
+    "status": "PASS",
+    "publicExports": 39,
+    "matchedPublicExports": 39,
+    "uniqueInputs": 236,
+    "currentCorpusCases": 206,
+    "priorCorpusUniqueTextCount": 206,
+    "comparedExports": [
+      "evaluatePhotosynthesisRelations",
+      "evaluatePhotosynthesisRelationsV2",
+      "semanticCaseFingerprint"
+    ],
+    "comparedResults": "Exact V1/V2 structured outputs and semantic fingerprints for current/prior corpus texts and owner-ruling controls.",
+    "sourceAndPackageIdentical": true
+  },
+  "packageReproductionReceipt": {
+    "status": "PASS",
+    "buildABytes": 98158,
+    "buildASha256": "418851eac29fab0c488e904ffab466fcea4e6b32b293b5579d0edc9766f42833",
+    "buildBBytes": 98158,
+    "buildBSha256": "418851eac29fab0c488e904ffab466fcea4e6b32b293b5579d0edc9766f42833",
+    "committedGitBlob": "b28062d70feb8bd96bd9432cf644211cbf660e87",
+    "committedSha256": "418851eac29fab0c488e904ffab466fcea4e6b32b293b5579d0edc9766f42833",
+    "byteForByteEqual": true
+  }
 }

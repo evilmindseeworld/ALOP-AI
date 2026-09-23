@@ -8,10 +8,10 @@
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
   "repairAttemptId": "P1-FINAL-SEVEN-ASTRA-20260923-01A0CBA4",
-  "capturedAtUtc": "2026-09-23T15:53:38.000Z",
-  "implementationCommitSha": "aaa4620ceff54cedaa930f1d6148680b1ef43d1d",
-  "candidateHeadAtCapture": "d67515c53d33c918f900da8d5720e60dc258f83c",
-  "candidateTreeAtCapture": "4df2c1fb8249eec6201d82049d3b5e0dba95ff10",
+  "capturedAtUtc": "2026-09-23T21:46:28.173Z",
+  "implementationCommitSha": "73732dc8979cddc623a669a615536516754e716e",
+  "candidateHeadAtCapture": "12d89158f7d3c598866154507d076074a99be0c8",
+  "candidateTreeAtCapture": "c75b54a77e1f11ab78d1fb96f6db266ab3650559",
   "runtime": {
     "version": "v26.7.0",
     "executablePath": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
@@ -36,10 +36,8 @@
       "tests": 39,
       "passed": 39,
       "failed": 0,
-      "stdoutSha256": "c12d8063f3bf525cba9ab0a3f2a805e4b1e14a7f9cffc9079a08dae0c6bcae37",
-      "bytes": 6659,
-      "failures": [],
-      "error": null
+      "stdoutSha256": "0f71f22b2de4f9415c2b546c00f9a0b7cf47e910c1381931a397ec6e414d38af",
+      "bytes": 6658
     },
     {
       "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/photosynthesis-relation-evaluator-mutation.test.js (cwd=backend)",
@@ -47,33 +45,48 @@
       "tests": 11,
       "passed": 11,
       "failed": 0,
-      "stdoutSha256": "fa98a3a5ddfebd6b3f32a17755f9dc68b5200c4041ee433b33c710eb50bb0918",
-      "bytes": 2500,
-      "failures": [],
-      "error": null
+      "stdoutSha256": "1560e9aeb030ecccdfe35accedb1abb78d8c3f21b5b5a44af5b806b61e9a9110",
+      "bytes": 2502
+    },
+    {
+      "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/evaluation.test.js (cwd=backend)",
+      "exitCode": 0,
+      "tests": 41,
+      "passed": 41,
+      "failed": 0,
+      "stdoutSha256": "30a96fc8ee1555156708cd4deb5727959e14cabbc26ac689f3cb75225232bd9f",
+      "bytes": 8490
+    },
+    {
+      "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/p1-authoritative-repair-v2.test.js (cwd=backend)",
+      "exitCode": 0,
+      "tests": 91,
+      "passed": 91,
+      "failed": 0,
+      "stdoutSha256": "b5cd7d765e10ce523e44fbd76381a59c07d6ec98ebdee2f75a536d473ba3b697",
+      "bytes": 20357
+    },
+    {
+      "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/p1-authoritative-repair-v2-mutation.test.js (cwd=backend)",
+      "exitCode": 0,
+      "tests": 20,
+      "passed": 20,
+      "failed": 0,
+      "stdoutSha256": "18e840f9752b963cc83996a06b1d2fc715d2d6c7a4ee4c3e369fa1f239e7f8e3",
+      "bytes": 4576
     }
   ],
   "evaluationTestRun": {
+    "id": "evaluation",
     "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/evaluation.test.js (cwd=backend)",
     "exitCode": 0,
     "tests": 41,
     "passed": 41,
     "failed": 0,
-    "stdoutSha256": "6235a25d15744a8c697381f4d2e6e7eb35b8b2b951dff2b07245281cba9551fd",
-    "bytes": 8488,
-    "failures": [],
-    "error": null
+    "stdoutSha256": "30a96fc8ee1555156708cd4deb5727959e14cabbc26ac689f3cb75225232bd9f",
+    "bytes": 8490
   },
-  "mutationKilled": {
-    "killed": 10,
-    "total": 10,
-    "cases": 206,
-    "stdoutSha256": "f0eb0470bd5d928f85fef4fffaf4368bfa904bc4a974fc2cb52aacab73265dd0",
-    "stdoutBytes": 2830,
-    "baseline": {"passed": 206, "failed": 0, "failureCountCreditedAsKills": 0},
-    "baselineFirst": true,
-    "failureThresholdsMet": true
-  },
+  "mutationKilled": 10,
   "datasetValidation": {
     "status": "PASS",
     "mode": "validate-only",
@@ -82,33 +95,32 @@
     "providerCalls": 0,
     "liveAuth": false,
     "noMutations": true,
-    "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe scripts/run-evals.mjs --validate-only",
-    "exitCode": 0,
-    "stdoutSha256": "8d078d04db663a3bcb05bdd565b464cf3dbd12b9629f48b9ea904d5b48387e25",
-    "outputBytes": 77,
     "datasets": [
       {
-        "dataset": "core-v1",
-        "cases": 22,
-        "selected": 22,
-        "exitCode": 0,
-        "result": "PASS"
+        "name": "backend-intelligence-v1",
+        "cases": 21,
+        "selected": 21,
+        "status": "PASS",
+        "stdoutBytes": 93,
+        "stdoutSha256": "4a6555f72fd596798047904687ff9f8cce513b89aab2830811e9882fd9c337cc"
+      },
+      {
+        "name": "backend-intelligence-v2",
+        "cases": 21,
+        "selected": 21,
+        "status": "PASS",
+        "stdoutBytes": 93,
+        "stdoutSha256": "cc48462d9a41c721f476b431ca5b5cbbaa8ee65ef65956c374f4483878908bee"
       }
     ]
   },
   "matchedFullSuiteComparison": {
     "status": "PASS_NO_CANDIDATE_REGRESSIONS_WITH_SHARED_BASELINE_FAILURE",
-    "capturedAtUtc": "2026-09-23T15:53:38.000Z",
-    "command": "Node v26.7.0 --test --test-reporter=tap lib/**/*.test.js (cwd=backend in isolated base and candidate worktrees)",
+    "capturedAtUtc": "2026-09-23T21:46:28.172Z",
     "runtime": {
       "version": "v26.7.0",
       "executablePath": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
       "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
-    },
-    "approvedBaseIdentity": {
-      "head": "03c01ce23ead82762437286ebdab94d3485e0519",
-      "tree": "8acf7ac3826780c3e7950080284c4333dd33a795",
-      "role": "canonical design-approved base; not the repair comparison base"
     },
     "repairComparisonBase": {
       "head": "fee44f4d2f3a46458b4b79277363585f78695ecc",
@@ -117,32 +129,41 @@
       "passed": 2543,
       "failed": 1,
       "exitCode": 1,
-      "stdoutBytes": 471621,
-      "stdoutSha256": "1142e43c6327941b077e074a4739c2de7e2351e315f83d3306793ba8d35f3486",
-      "failures": ["every declared Node major is the one deploy/targets.json names"],
+      "stdoutBytes": 186201,
+      "stdoutSha256": "0afcd694ff06f0eac90794e12d6a2f3ec9f6a4b0db5493f9e02273b70a496587",
+      "failures": [
+        "every declared Node major is the one deploy/targets.json names"
+      ],
       "baselineFailure": {
         "file": "backend/lib/deployment-config.test.js",
         "line": 361,
-        "detail": "package.json engines is 26.7.0; assertion expects a >=26 string"
+        "detail": "package.json engines is 26.7.0; assertion expects >=26 string"
       }
     },
     "candidate": {
-      "head": "d67515c53d33c918f900da8d5720e60dc258f83c",
-      "tree": "4df2c1fb8249eec6201d82049d3b5e0dba95ff10",
+      "head": "12d89158f7d3c598866154507d076074a99be0c8",
+      "tree": "c75b54a77e1f11ab78d1fb96f6db266ab3650559",
       "total": 2549,
       "passed": 2548,
       "failed": 1,
       "exitCode": 1,
-      "stdoutBytes": 472649,
-      "stdoutSha256": "a21d5005c271dc3bc1a8f863f958ed7b373d9f4c5d3a43e348fda14e85dfd419",
-      "failures": ["every declared Node major is the one deploy/targets.json names"],
+      "stdoutBytes": 186610,
+      "stdoutSha256": "533f7462a22bd8b06bc784eb3643469b8a894559179208ce1fcdbeef456ec58d",
+      "failures": [
+        "every declared Node major is the one deploy/targets.json names"
+      ],
       "sameBaselineFailure": true
     },
     "candidateCausedFailureCount": 0,
     "candidateCausedFailureIds": [],
-    "testedWorktreeDeltaFromPackageCommit": "Evidence-only commit d67515c on top of package commit 599a17f; test code, backend source, package bytes, lockfile, and source corpus are identical.",
-    "preRepairDelta": { "tests": 5, "failures": 0 },
-    "sameFailureSet": true
+    "sameFailureSet": true,
+    "preRepairDelta": {
+      "tests": 5,
+      "failures": 0
+    },
+    "candidateHeadTested": "12d89158f7d3c598866154507d076074a99be0c8",
+    "candidateTreeTested": "c75b54a77e1f11ab78d1fb96f6db266ab3650559",
+    "comparisonNote": "Both isolated worktrees used pinned Node 26.7.0/npm 11.19.0; the same deployment-config Node-engine assertion failed."
   },
   "preRepairCandidate": {
     "head": "fee44f4d2f3a46458b4b79277363585f78695ecc",
@@ -151,29 +172,29 @@
     "role": "exact repair comparison base"
   },
   "implementationAndPackage": {
-    "implementationCommitSha": "aaa4620ceff54cedaa930f1d6148680b1ef43d1d",
-    "implementationTreeSha": "c565660363acf27876847114c0e6295552ac34d5",
-    "implementationParentSha": "fa375642c2b31944515e67bbfe9f7b473c5cc9c9",
-    "evaluatorInputCommitSha": "aaa4620ceff54cedaa930f1d6148680b1ef43d1d",
+    "implementationCommitSha": "73732dc8979cddc623a669a615536516754e716e",
+    "implementationTreeSha": "b2b1ac538634f1ffbbaeefcb15774c4544347344",
+    "implementationParentSha": "937a1477c178d44c62c66a2c0d32d74a5810db48",
+    "evaluatorInputCommitSha": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
     "evaluatorInputPath": "backend/lib/photosynthesis-relation-evaluator.js",
-    "evaluatorBlob": "5c4435d6495e09bf93ab584508c33de93a7cbeab",
-    "runnerInputCommitSha": "c896bde68a8352af3fd997ac0d1d031fc4427149",
+    "evaluatorBlob": "c7cc47587b6b49020b4814ace57793d9f8bbc0af",
+    "runnerInputCommitSha": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
     "runnerInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-    "packageCommitSha": "599a17f4c73e994287cc1b9e1c13387ba9f54809",
-    "packageTreeSha": "41218383454dc00bdc861d121128b30aef4d691e",
+    "packageCommitSha": "12d89158f7d3c598866154507d076074a99be0c8",
+    "packageTreeSha": "c75b54a77e1f11ab78d1fb96f6db266ab3650559",
     "entryPoint": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-    "packageBlob": "d938a78c6a21ea60342a6ebc2009b8211e13275e",
-    "packageSha256": "7f6c46ae228eb0f77cbfa612a391990c5134d699fd6972ce0e4a481a67256414",
-    "packageBytes": 98876,
-    "evaluatorBlob": "5c4435d6495e09bf93ab584508c33de93a7cbeab",
+    "packageBlob": "b28062d70feb8bd96bd9432cf644211cbf660e87",
+    "packageSha256": "418851eac29fab0c488e904ffab466fcea4e6b32b293b5579d0edc9766f42833",
+    "packageBytes": 98158,
     "runnerBlob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
     "recipeInputCommitSha": "3ae0f283461f304f2778a4dc463a85c8f7d86adf",
     "recipeInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
     "recipeBlob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
     "independentByteReproduction": "PASS",
-    "packageDirectMutationMode": "PASS 206 baseline cases; M1-M10 killed 10/10 with zero baseline credits",
-    "sourcePackageApiEquivalence": "PASS; 39/39 public keys; 206 corpus cases plus 40 exact/near-neighbor probes (241 unique inputs total); zero result or fingerprint diffs",
-    "packageByteEquality": "PASS; two independent compositions matched the committed 98876-byte artifact with SHA-256 7f6c46ae228eb0f77cbfa612a391990c5134d699fd6972ce0e4a481a67256414"
+    "packageDirectMutationMode": "PASS 206 baseline cases; M1-M10 killed 10/10 with zero baseline credits and all class thresholds",
+    "sourcePackageApiEquivalence": "PASS; 39/39 exports and exact V1/V2 outputs plus semantic fingerprints across 236 unique current/prior/control inputs",
+    "packageByteEquality": "PASS; two independent 98158-byte builds match committed package SHA-256 418851eac29fab0c488e904ffab466fcea4e6b32b293b5579d0edc9766f42833",
+    "recipeVersion": "p1-static-compose-v1"
   },
   "modelInferenceTraffic": {
     "performed": false,
@@ -191,29 +212,28 @@
   "implementationTaskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
   "repairBaseSha": "fee44f4d2f3a46458b4b79277363585f78695ecc",
   "repairBaseTreeSha": "6bff90f3a379d192e30c01f9111cef65c31d9c55",
-  "implementationTreeSha": "c565660363acf27876847114c0e6295552ac34d5",
-  "implementationParentSha": "fa375642c2b31944515e67bbfe9f7b473c5cc9c9",
+  "implementationTreeSha": "b2b1ac538634f1ffbbaeefcb15774c4544347344",
+  "implementationParentSha": "937a1477c178d44c62c66a2c0d32d74a5810db48",
   "authoritativeRepairTestRun": {
+    "id": "authoritative-repair",
     "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/p1-authoritative-repair-v2.test.js (cwd=backend)",
     "exitCode": 0,
     "tests": 91,
     "passed": 91,
     "failed": 0,
-    "stdoutSha256": "3821ab7b0ba542bd88de12a55db2d4f777ea9531190e9e4d40f0a022f3070fe8",
-    "bytes": 20333,
-    "failures": [],
-    "error": null
+    "stdoutSha256": "b5cd7d765e10ce523e44fbd76381a59c07d6ec98ebdee2f75a536d473ba3b697",
+    "bytes": 20357
   },
   "branch": "codex/p1-final-seven-astra-repair-20260923",
-  "worktreePath": "C:/Users/LENOVO/Documents/AI-Classroom-p1-final-seven",
+  "worktreePath": "C:\\Users\\LENOVO\\Documents\\AI-Classroom-p1-final-seven",
   "findingDisposition": {
-    "FINAL-001": "BLOCKED_OWNER_INTERPRETATION; exact Alice/David substitutions pass, but the frozen design does not enumerate identity categories for recognized NON_LIGHT_OBJECT nouns; collapsing them to the single frozen class reduces the projection from 204 to 185 unique fingerprints and violates frozen coverage minima.",
-    "FINAL-002": "PASS; exact Astra residue examples and malformed near-neighbors fail, allowed context adjuncts pass, and the malformed continuation cannot qualify",
-    "FINAL-003": "PASS; exact semicolon probes cannot bind antecedents or create contradictions; supported local and/but continuations remain",
-    "FINAL-004": "PASS; active/passive exact pair and reverse both contradict; voice remains relation metadata and is excluded only from proposition identity",
-    "FINAL-005": "PASS; authoritative repair tests and matched full suite freshly replayed on committed tested tree d67515c with exact output receipts",
-    "FINAL-006": "PASS; clean 206/206 baseline precedes M1-M10; each credited failure is mutant-only and frozen class thresholds pass",
-    "FINAL-007": "PASS; backend package and lock hashes independently recomputed, exact 64-hex values recorded",
+    "FINAL-001": "PASS; owner ruling reconciled all 20 replacements with full 18-field projections, prior collisions, and frozen-field distinctions; 206 cases, 204 unique, floor 201, all 28 minima. Design unchanged.",
+    "FINAL-002": "PASS; exact Astra residue examples and malformed near-neighbors fail, allowed context adjuncts pass, and the malformed continuation cannot qualify; fresh current-candidate authoritative 91/91 and evaluator 39/39 runs.",
+    "FINAL-003": "PASS; exact semicolon probes cannot bind antecedents or create contradictions; supported local and/but continuations remain; fresh current-candidate authoritative run 91/91.",
+    "FINAL-004": "PASS; active/passive exact pair and reverse both contradict; voice remains relation metadata and is excluded only from proposition identity; fresh current-candidate authoritative run 91/91.",
+    "FINAL-005": "PASS; matched Node 26.7 suites show zero candidate-caused failures and the same one pre-existing deployment-config assertion.",
+    "FINAL-006": "PASS; package baseline 206/206, M1-M10 10/10 with all floors; focused mutation suite 20/20.",
+    "FINAL-007": "PASS; package bytes/blob verified, two builds byte-identical, 39/39 exports and 236 equivalence inputs.",
     "ASTRA-AUDIT-002": "PRESERVED PASS; local pronoun binding and canonical contradiction identity retained",
     "ASTRA-AUDIT-003": "PRESERVED PASS; coordinated continuation records and polarity retained",
     "ASTRA-AUDIT-005": "PRESERVED PASS; historical RED provenance retained",
@@ -225,10 +245,37 @@
     "OPUS55-P1-009": "PRESERVED PASS; unsupported auxiliary/modal/control pronoun continuation remains rejected"
   },
   "knownBoundaries": [
-    "Matched repair-base/candidate suites share one deployment-config assertion failure: package engines is 26.7.0 while the test expects a >=26 string; candidate-caused failure count is zero.",
+    "FINAL-001 resolved under explicit owner ruling without modifying/versioning the frozen design; see semantic-coverage.json.",
+    "Matched suites share one deployment-config assertion: package engines is 26.7.0 while assertion expects >=26; candidate-caused failures: 0.",
     "Exactly eight frozen expected-PASS corpus cases also set hasMalformed because a separate proposition or sentence independently qualifies; malformed material itself remains nonqualifying. No global veto was added.",
-    "FINAL-001 semantic closure remains blocked: the frozen design does not authorize the current finite NON_LIGHT_OBJECT identity vocabulary, while collapsing it violates the 201 unique-case floor and class minimums.",
     "The broad FAIL_TEXT_SCAN remains a disclosed non-gating warning from fixture-bearing test paths; no cosmetic suppression was attempted.",
     "Astra, CandidateQualification, Sol, release, deploy, merge, and P2 were not run."
-  ]
+  ],
+  "authoritativeMutationTestRun": {
+    "id": "authoritative-mutation",
+    "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/p1-authoritative-repair-v2-mutation.test.js (cwd=backend)",
+    "exitCode": 0,
+    "tests": 20,
+    "passed": 20,
+    "failed": 0,
+    "stdoutSha256": "18e840f9752b963cc83996a06b1d2fc715d2d6c7a4ee4c3e369fa1f239e7f8e3",
+    "bytes": 4576
+  },
+  "packageApiEquivalence": {
+    "status": "PASS",
+    "publicExports": 39,
+    "matchedPublicExports": 39,
+    "uniqueInputs": 236,
+    "currentCorpusCases": 206,
+    "priorCorpusUniqueTextCount": 206,
+    "comparedExports": [
+      "evaluatePhotosynthesisRelations",
+      "evaluatePhotosynthesisRelationsV2",
+      "semanticCaseFingerprint"
+    ],
+    "comparedResults": "Exact V1/V2 structured outputs and semantic fingerprints for current/prior corpus texts and owner-ruling controls.",
+    "sourceAndPackageIdentical": true
+  },
+  "final001RedReproductionReference": "semantic-coverage.json#validationOutput.final001RedReproduction",
+  "verifierAndLifecycle": "NOT_RUN: Astra, CandidateQualification, Sol, release, deploy, merge, live evaluation, and P2."
 }

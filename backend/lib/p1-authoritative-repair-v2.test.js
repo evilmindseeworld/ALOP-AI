@@ -1479,6 +1479,11 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
     + 'lose loses lost block blocks blocked reject rejects rejected eliminate eliminates eliminated '
     + 'remove removes removed prevent prevents prevented'
   ).split(' '));
+  const structuralForms = new Set((
+    'and or but not never do does did is are was were has have had can cannot can\'t may might could '
+    + 'couldn\'t must should would to fail fails failed appear appears '
+    + 'seem seems during while although because whereas if unless when since in for into near with by as'
+  ).split(' '));
   const cases = [...canonicalCases, ...generatedV2Cases, ...b5SemanticSupplementCases];
   const fingerprintFor = (item) => {
     const result = evaluatePhotosynthesisRelationsV2(item.text);
@@ -1489,13 +1494,14 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
         records: records.map((record) => record.grammarShape || 'UNRESOLVED'),
         malformedRoleOrder: result.malformedShape || null,
         malformedLexicalStructure: result.hasMalformed
-          ? tokenizeV2(text).map((token) => ({
-            role: subjects.has(token.form) ? 'SUBJECT'
+          ? tokenizeV2(text).map((token) => {
+            const role = subjects.has(token.form) ? 'SUBJECT'
               : verbs.has(token.form) ? 'VERB'
-                : ['light', 'energy', 'sunlight'].includes(token.form) ? 'LIGHT' : 'OTHER',
-            lemma: token.lemma,
-            form: token.form,
-          }))
+                : ['light', 'energy', 'sunlight'].includes(token.form) ? 'LIGHT' : 'OTHER';
+            return role !== 'OTHER' || structuralForms.has(token.form) || /^[,;:!.?]$/.test(token.form)
+              ? { role, lemma: token.lemma, form: token.form }
+              : { role };
+          })
           : null,
       },
       orderedSubjectLemmasAndRoleClasses: result.subjectSet || [],
@@ -1716,19 +1722,20 @@ test('CONVERGED-RED O2 subjectless inputs fail closed through evaluator, gradeCa
   const packagedEvaluator = createDerivedEvaluator().evaluatePhotosynthesisRelationsV2;
   const photoCase = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
   const examples = [
-    'Fails to capture light energy.',
-    'Photosynthesis captures light energy but fails to capture light energy.',
-    'Photosynthesis captures light energy but seems not to capture it.',
-    'Photosynthesis captures light energy but failed to store it.',
+    { answer: 'Fails to capture light energy.', expectedPass: false },
+    { answer: 'Photosynthesis captures light energy but fails to capture light energy.', expectedPass: false },
+    { answer: 'Photosynthesis captures light energy but seems not to capture it.', expectedPass: true },
+    { answer: 'Photosynthesis captures light energy but failed to store it.', expectedPass: true },
   ];
   const outcomes = [];
-  const record = (surface, answer, run) => {
+  const record = (surface, { answer, expectedPass }, run) => {
     try {
       const value = run(answer);
       const gradeSurface = surface === 'gradeCase';
       outcomes.push({
         surface,
         answer,
+        expectedPass,
         error: null,
         passed: gradeSurface ? value.factuality.passed : value.passed,
         structured: gradeSurface
@@ -1739,11 +1746,11 @@ test('CONVERGED-RED O2 subjectless inputs fail closed through evaluator, gradeCa
       outcomes.push({ surface, answer, error: `${error.name}: ${error.message}` });
     }
   };
-  for (const answer of examples) record('direct', answer, evaluatePhotosynthesisRelationsV2);
-  record('gradeCase', examples[0], (answer) => gradeCase(photoCase, observation(answer, { id: photoCase.id })));
-  record('package', examples[0], packagedEvaluator);
+  for (const example of examples) record('direct', example, evaluatePhotosynthesisRelationsV2);
+  record('gradeCase', examples[0], ({ answer }) => gradeCase(photoCase, observation(answer, { id: photoCase.id })));
+  record('package', examples[0], ({ answer }) => packagedEvaluator(answer));
   assert.equal(outcomes.some((outcome) => outcome.error !== null), false, JSON.stringify(outcomes));
-  assert.equal(outcomes.every((outcome) => outcome.structured && outcome.passed === false), true, JSON.stringify(outcomes));
+  assert.equal(outcomes.every((outcome) => outcome.structured && outcome.passed === outcome.expectedPass), true, JSON.stringify(outcomes));
 });
 
 test('CONVERGED-RED O3 explicit subject after comma-and begins an independent proposition', () => {

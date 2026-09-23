@@ -163,7 +163,7 @@ test('M9: accepting arbitrary direct objects as light is killed across object co
   );
   source = replaceOnce(
     source,
-    '&& validateActiveTailV2(tokens, object.tokenEnd, pronoun, subjectSet);',
+    '&& validateActiveTailV2(tokens, object.tokenEnd, pronoun, subjectSet, object);',
     '&& true;',
     'M9 unrestricted object tail',
   );

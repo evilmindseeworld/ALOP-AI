@@ -850,14 +850,6 @@ const V2_FINGERPRINT_KNOWN_UNSUPPORTED_SUBJECTS = new Map([
   ['animal', 'ANIMAL'], ['animals', 'ANIMAL'], ['bacteria', 'BACTERIA'],
   ['bacterium', 'BACTERIA'], ['rock', 'ROCK'], ['rocks', 'ROCK'],
 ]);
-// Canonical concept IDs preserve frozen domain distinctions; unrecognized object strings never add fingerprint uniqueness.
-const V2_FINGERPRINT_NON_LIGHT_OBJECTS = new Map([
-  ['carbon dioxide', 'CARBON_DIOXIDE'], ['chemicals', 'CHEMICALS'], ['energy', 'ENERGY'],
-  ['heat energy', 'HEAT_ENERGY'], ['leaf tissue', 'LEAF_TISSUE'], ['mineral salts', 'MINERAL_SALTS'],
-  ['nitrogen', 'NITROGEN'], ['nutrients', 'NUTRIENTS'], ['oxygen', 'OXYGEN'],
-  ['starch', 'STARCH'], ['sugar', 'SUGAR'], ['sugar molecules', 'SUGAR'],
-  ['ultraviolet radiation', 'ULTRAVIOLET_RADIATION'], ['water', 'WATER'], ['water vapor', 'WATER_VAPOR'],
-]);
 const fingerprintSubjectMembers = (members) => (members || []).map(([lemma, role]) => [
   role === 'UNSUPPORTED'
     ? V2_FINGERPRINT_KNOWN_UNSUPPORTED_SUBJECTS.get(lemma) || 'UNSUPPORTED_SUBJECT' : lemma,
@@ -1383,16 +1375,14 @@ const evaluatePhotosynthesisRelationsV2 = (input)=>{
 };
 function semanticCaseFingerprint(input,decision=null){
   const r=typeof input==='string'?evaluatePhotosynthesisRelationsV2(input):input,records=r.relationRecords||[],text=typeof input==='string'?normalizeInputV2(input):r.normalized||'',coordination=r.coordinationTopology||[];
-  const normalizeDirectObject = (object) => object?.role === 'NON_LIGHT_OBJECT'
-    ? V2_FINGERPRINT_NON_LIGHT_OBJECTS.get(object.normalized) || 'UNCLASSIFIED_NON_LIGHT_OBJECT'
-    : object?.normalized;
+  const normalizeDirectObject = (object) => object?.role === 'NON_LIGHT_OBJECT' ? null : object?.normalized;
   const f={
     grammarShape:{records:records.map(x=>x.grammarShape||'UNRESOLVED'),malformedRoleOrder:r.malformedShape||null,malformedLexicalStructure:r.hasMalformed?tokenizeV2(text).map(t=>{const role=V2_SUBJECTS.has(t.form)?'SUBJECT':V2_VERBS.has(t.form)?'VERB':['light','energy','sunlight'].includes(t.form)?'LIGHT':'OTHER';const structural=role!=='OTHER'||V2_MODALS.has(t.form)||['and','or','but','not','never','do','does','did','is','are','was','were','has','have','had','to','fail','fails','failed','appear','appears','seem','seems','during','while','although','because','whereas','if','unless','when','since','in','for','into','near','with','by','as',',',';',';',':','.','!','?'].includes(t.form);return structural?{role,lemma:t.lemma,form:t.form}:{role};}):null},
     orderedSubjectLemmasAndRoleClasses:(r.subjectSet||[]).map(fingerprintSubjectMembers),coordinationTypeAndCardinality:coordination.map((group)=>({...group,orderedMembers:fingerprintSubjectMembers(group.orderedMembers)})),voice:records.map(x=>x.voice||'ACTIVE'),verbLemmaAndMorphology:records.map(x=>[x.verbLemma,x.verbForm]),
     directObjectRoleAndNormalizedLightForm:records.map(x=>x.directObject?[x.directObject.role,normalizeDirectObject(x.directObject)]:null),objectBindingOrigin:records.map(x=>x.lightObject?.binding||null),
     auxiliaryChain:records.map(x=>x.auxiliaryChain?.chain||[]),modal:records.map(x=>x.modal||null),controlChain:records.map(x=>x.controlChain?[x.controlChain.type,x.controlChain.surface]:null),
     polarityStructure:records.map(x=>[x.polarity||'UNRESOLVED',x.polarityReason||'']),orderedBarrierTypes:r.barriers||[],clauseSentenceTopology:r.topology||[],
-    contextBindingType:records.map(x=>x.processContext||null),pronounAntecedentTopology:records.map((x,i)=>({recordIndex:i,shape:x.grammarShape,binding:x.lightObject?.binding||null,antecedentObject:x.lightObject?.binding==='PRONOUN_ANTECEDENT'?x.directObject?.normalized||null:null})),
+    contextBindingType:records.map(x=>x.processContext||null),pronounAntecedentTopology:records.map((x,i)=>({recordIndex:i,shape:x.grammarShape,binding:x.lightObject?.binding||null,antecedentObject:x.lightObject?.binding==='PRONOUN_ANTECEDENT'?normalizeDirectObject(x.directObject):null})),
     pigmentIdentity:[...new Set((text.match(/\b(?:chlorophyll|melanin|carotene|xanthophyll)\b/gi)||[]).map(x=>x.toLowerCase()))],invalidClaimType:records.map(x=>x.relationType||null),expectedDecision:decision||(r.passed?'PASS':'FAIL'),
   };
   return require('node:crypto').createHash('sha256').update(JSON.stringify(Object.fromEntries(Object.entries(f).sort(([a],[b])=>a.localeCompare(b))))).digest('hex');

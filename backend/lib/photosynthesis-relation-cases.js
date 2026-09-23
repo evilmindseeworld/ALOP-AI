@@ -1366,10 +1366,34 @@ const caseVerbReplacement = (text, lemma, replaceAll = false) => {
 };
 const replaceInitialSubject = (text, subject) => text.replace(/^(?:Photosynthesis|Green plants|Some bacteria|Photosynthetic bacteria|Plants|Algae|Animals|Rocks|Bacteria)(?:\s+(?:and|or)\s+(?:green plants|some bacteria|photosynthetic bacteria|plants|algae|animals|rocks|bacteria))*\b/i, subject);
 const structuralVariants = {
-  DETACHED_OBJECT_DECOYS: ['starch','water vapor','mineral salts','ultraviolet radiation','leaf tissue','sugar molecules','nitrogen'].map((object) => [`Photosynthesis uses chlorophyll to capture ${object} and light is nearby.`,['LO']]),
-  LOCAL_NEGATION: ['water','heat energy','carbon dioxide','oxygen','sugar','nutrients','starch'].map((object) => [`Photosynthesis does not capture ${object}.`,['LO']]),
+  DETACHED_OBJECT_DECOYS: [
+    ['Photosynthesis uses chlorophyll to absorb starch and light is nearby.',['VL']],
+    ['Photosynthesis uses chlorophyll to harness water vapor and light is nearby.',['VL']],
+    ['Photosynthesis uses chlorophyll to use mineral salts and light is nearby.',['VL']],
+    ['Photosynthesis uses chlorophyll to convert ultraviolet radiation and light is nearby.',['VL']],
+    ['Photosynthesis uses chlorophyll to transform leaf tissue and light is nearby.',['VL']],
+    ['Photosynthesis uses chlorophyll to store sugar molecules and light is nearby.',['VL']],
+    ['Photosynthesis uses chlorophyll to capture nitrogen; light energy is nearby.',['BD']],
+  ],
+  LOCAL_NEGATION: [
+    ['Photosynthesis does not capture water.',['LO']],
+    ['Photosynthesis does not absorb heat energy.',['VL','LO']],
+    ['Photosynthesis does not harness carbon dioxide.',['VL','LO']],
+    ['Photosynthesis does not use oxygen.',['VL','LO']],
+    ['Photosynthesis does not convert sugar.',['VL','LO']],
+    ['Photosynthesis does not transform nutrients.',['VL','LO']],
+    ['Photosynthesis does not store starch.',['VL','LO']],
+  ],
   INVALID_SUBJECT: [['Rocks capture light energy during photosynthesis.',['SL']]],
-  INVALID_OBJECT: ['water','carbon dioxide','oxygen','nutrients','starch','sugar','mineral salts'].map((object) => [`Photosynthesis captures ${object}.`,['LO']]),
+  INVALID_OBJECT: [
+    ['Photosynthesis absorbs water.',['VL']],
+    ['Photosynthesis harnesses carbon dioxide.',['VL']],
+    ['Photosynthesis uses oxygen.',['VL']],
+    ['Photosynthesis converts nutrients.',['VL']],
+    ['Photosynthesis transforms starch.',['VL']],
+    ['Photosynthesis stores sugar.',['VL']],
+    ['Photosynthesis captures water while light energy is present.',['OB']],
+  ],
   CLAUSE_BOUNDARY: ['while','although','because','whereas','if','unless','when','since'].map((marker) => [`Photosynthesis captures carbon dioxide ${marker} light energy is present.`,['BD']]),
   SENTENCE_BOUNDARY: [
     ...[['; ',['BD','PU']],[': ',['BD','PU']],['? ',['PU']],['! ',['PU']],['... ',['PU']]]

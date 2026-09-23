@@ -7,11 +7,11 @@
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "repairAttemptId": "P1-CONVERGED-OPUS55-ASTRA-20260923-01A09D9F",
-  "capturedAtUtc": "2026-09-23T12:55:10.000Z",
-  "implementationCommitSha": "3880eedf52594250a54a26fae6c7da5ef17fd0d9",
-  "candidateHeadAtCapture": "4f922e0378df07a8bb236b3d552fe1b22cc772ac",
-  "candidateTreeAtCapture": "e4e544c4364503a472a296a6238b482ba815eb82",
+  "repairAttemptId": "P1-FINAL-SEVEN-ASTRA-20260923-01A0CBA4",
+  "capturedAtUtc": "2026-09-23T15:39:27.000Z",
+  "implementationCommitSha": "aaa4620ceff54cedaa930f1d6148680b1ef43d1d",
+  "candidateHeadAtCapture": "d562f2b6f28a49b1ef5399a9912c1a5e9fa3a2d0",
+  "candidateTreeAtCapture": "e05c6502c7a746ee0d1bdbca71963e4e6bce7577",
   "runtime": {
     "version": "v26.7.0",
     "executablePath": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
@@ -20,6 +20,12 @@
   "phase": "MUTATION",
   "status": "PASS",
   "cases": 206,
+  "baselineFirst": true,
+  "baseline": {
+    "passed": 206,
+    "failed": 0,
+    "failureCountCreditedAsKills": 0
+  },
   "mutationIds": [
     "M1",
     "M2",
@@ -34,29 +40,56 @@
   ],
   "killed": 10,
   "total": 10,
-  "command": "node.exe backend/scripts/run-photosynthesis-relation-mutations.mjs",
-  "stdoutSha256": "e1c793a042df9ec1161edba784daa79b492e77147ea25d9927ba70af54602c9b",
-  "evaluatorInputCommitSha": "3880eedf52594250a54a26fae6c7da5ef17fd0d9",
-  "evaluatorInputTreeSha": "167e2c872cf8f250b46c2f1529c6597f38fd2f9f",
+  "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe scripts/run-photosynthesis-relation-mutations.mjs (cwd=backend)",
+  "stdoutSha256": "f0eb0470bd5d928f85fef4fffaf4368bfa904bc4a974fc2cb52aacab73265dd0",
+  "evaluatorInputCommitSha": "aaa4620ceff54cedaa930f1d6148680b1ef43d1d",
+  "evaluatorInputTreeSha": "c565660363acf27876847114c0e6295552ac34d5",
   "evaluatorInputPath": "backend/lib/photosynthesis-relation-evaluator.js",
-  "evaluatorBlob": "fcee3a51319a4c7de10a70c81e1ceaf23886bd0c",
-  "runnerInputCommitSha": "ff65b1e8c640a4eb6eb4cb9858e92665ffea0576",
-  "runnerInputTreeSha": "d405892d976e350b6d66b8fce7f621a421f131c5",
+  "evaluatorBlob": "5c4435d6495e09bf93ab584508c33de93a7cbeab",
+  "runnerInputCommitSha": "c896bde68a8352af3fd997ac0d1d031fc4427149",
+  "runnerInputTreeSha": "9a2e20245a25d9511705ebecf5aa6dcd3c4f0eb0",
   "runnerInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-  "runnerBlob": "669e4cf3fee4dfa3d41b7ad7bd4118e289d64623",
+  "runnerBlob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
   "recipeVersion": "p1-static-compose-v1",
   "recipeGitBlob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
   "recipeInputCommitSha": "3ae0f283461f304f2778a4dc463a85c8f7d86adf",
-  "packageCommitSha": "4f922e0378df07a8bb236b3d552fe1b22cc772ac",
-  "packageTreeSha": "e4e544c4364503a472a296a6238b482ba815eb82",
-  "packageGitBlob": "f09db90db63478558a7294bfaad09488a342283d",
-  "packageSha256": "8bc48d67e33677f42c2939093d322068f7e215279b16d79c8d2ff13c1d4ce727",
-  "packageBytes": 89676,
+  "packageCommitSha": "599a17f4c73e994287cc1b9e1c13387ba9f54809",
+  "packageTreeSha": "41218383454dc00bdc861d121128b30aef4d691e",
+  "packageGitBlob": "d938a78c6a21ea60342a6ebc2009b8211e13275e",
+  "packageSha256": "7f6c46ae228eb0f77cbfa612a391990c5134d699fd6972ce0e4a481a67256414",
+  "packageBytes": 98876,
   "independentByteReproduction": "PASS",
-  "reproducedPackageSha256": "8bc48d67e33677f42c2939093d322068f7e215279b16d79c8d2ff13c1d4ce727",
+  "reproducedPackageSha256": "7f6c46ae228eb0f77cbfa612a391990c5134d699fd6972ce0e4a481a67256414",
   "sourcePackageApiEquivalence": "PASS",
-  "packageByteEquality": "PASS; two independent deterministic compositions matched the committed 89676-byte package and SHA-256 8bc48d67e33677f42c2939093d322068f7e215279b16d79c8d2ff13c1d4ce727",
+  "packageByteEquality": "PASS; two independent deterministic compositions matched the committed 98876-byte package and SHA-256 7f6c46ae228eb0f77cbfa612a391990c5134d699fd6972ce0e4a481a67256414",
   "qualificationMode": "NOT_RUN",
+  "dependencyIdentity": {
+    "backendPackageJsonPath": "backend/package.json",
+    "backendPackageJsonSha256": "90467537d4de957dbe49c1722ecb1767344dd7237b1dfd0179484c3bceba2159",
+    "backendPackageLockPath": "backend/package-lock.json",
+    "backendPackageLockSha256": "939370cd71896ccaefb4f3d4c4dffaa43840273e014fae5386c46f0cdf11bfa8",
+    "allSha256FieldsAre64Hex": true
+  },
+  "mutationDeltaAccounting": {
+    "baselineFailuresInEveryRelevantClass": 0,
+    "baselineOnlyFailures": 0,
+    "sharedBaselineAndMutantFailures": 0,
+    "allCreditedKillsAreMutantOnly": true,
+    "sourceCaseCount": 206,
+    "requiredMutationIds": ["M1", "M2", "M3", "M4", "M5", "M6", "M7", "M8", "M9", "M10"],
+    "rows": [
+      {"id":"M1","requiredClassThresholds":{"NEGATED_MODALITY":4,"UNCERTAIN_MODALITY":4},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"NEGATED_MODALITY":8,"UNCERTAIN_MODALITY":12},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"NEGATED_MODALITY":8,"UNCERTAIN_MODALITY":12},"qualifyingKill":true},
+      {"id":"M2","requiredClassThresholds":{"DETACHED_OBJECT_DECOYS":4,"DIRECT_OBJECT_BARRIERS":4,"FINITE_PREDICATE_BARRIERS":4},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"DETACHED_OBJECT_DECOYS":8,"DIRECT_OBJECT_BARRIERS":6,"FINITE_PREDICATE_BARRIERS":6},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"DETACHED_OBJECT_DECOYS":8,"DIRECT_OBJECT_BARRIERS":6,"FINITE_PREDICATE_BARRIERS":6},"qualifyingKill":true},
+      {"id":"M3","requiredClassThresholds":{"MALFORMED_SYNTAX":6},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"MALFORMED_SYNTAX":9},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"MALFORMED_SYNTAX":9},"qualifyingKill":true},
+      {"id":"M4","requiredClassThresholds":{"AFFIRMATIVE_PASSIVE":4},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"AFFIRMATIVE_PASSIVE":6},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"AFFIRMATIVE_PASSIVE":6},"qualifyingKill":true},
+      {"id":"M5","requiredClassThresholds":{"COORDINATED_SUBJECTS_MIXED_INVALID":6},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"COORDINATED_SUBJECTS_MIXED_INVALID":6},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"COORDINATED_SUBJECTS_MIXED_INVALID":6},"qualifyingKill":true},
+      {"id":"M6","requiredClassThresholds":{"DOUBLE_NEGATION":4,"NESTED_CONTROL":6,"UNRELATED_NEGATION":4},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"DOUBLE_NEGATION":6,"NESTED_CONTROL":7,"UNRELATED_NEGATION":6},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"DOUBLE_NEGATION":6,"NESTED_CONTROL":7,"UNRELATED_NEGATION":6},"qualifyingKill":true},
+      {"id":"M7","requiredClassThresholds":{"CLAUSE_BOUNDARY":4,"NO_STITCHING":4},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"CLAUSE_BOUNDARY":8,"NO_STITCHING":7},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"CLAUSE_BOUNDARY":8,"NO_STITCHING":7},"qualifyingKill":true},
+      {"id":"M8","requiredClassThresholds":{"COORDINATED_SUBJECTS_MIXED_INVALID":4,"INVALID_SUBJECT":4},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"COORDINATED_SUBJECTS_MIXED_INVALID":8,"INVALID_SUBJECT":8},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"COORDINATED_SUBJECTS_MIXED_INVALID":8,"INVALID_SUBJECT":8},"qualifyingKill":true},
+      {"id":"M9","requiredClassThresholds":{"DETACHED_OBJECT_DECOYS":4,"INVALID_OBJECT":4},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"DETACHED_OBJECT_DECOYS":8,"INVALID_OBJECT":8},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"DETACHED_OBJECT_DECOYS":8,"INVALID_OBJECT":8},"qualifyingKill":true},
+      {"id":"M10","requiredClassThresholds":{"AFFIRMATIVE_ACTIVE":2,"KNOWN_REGRESSIONS":2},"baselineFailuresInRelevantClasses":0,"mutantFailuresByClass":{"AFFIRMATIVE_ACTIVE":17,"KNOWN_REGRESSIONS":2},"baselineOnlyFailures":0,"sharedBaselineAndMutantFailures":0,"mutantOnlyFailuresByClass":{"AFFIRMATIVE_ACTIVE":17,"KNOWN_REGRESSIONS":2},"qualifyingKill":true}
+    ]
+  },
   "mutations": [
     {
       "id": "M1",
@@ -133,7 +166,7 @@
       "killed": true,
       "failuresByClass": {
         "CLAUSE_BOUNDARY": 8,
-        "NO_STITCHING": 8
+        "NO_STITCHING": 7
       },
       "minimumFailuresByClass": {
         "CLAUSE_BOUNDARY": 4,
@@ -169,7 +202,7 @@
       "killed": true,
       "failuresByClass": {
         "AFFIRMATIVE_ACTIVE": 17,
-        "KNOWN_REGRESSIONS": 4
+        "KNOWN_REGRESSIONS": 2
       },
       "minimumFailuresByClass": {
         "AFFIRMATIVE_ACTIVE": 2,
@@ -178,11 +211,11 @@
     }
   ],
   "implementationTaskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
-  "repairBaseSha": "7bec4e3cbc98b096d3b7538c5b45fe70db89e9f9",
-  "repairBaseTreeSha": "6e668a1b7a91b0d88d01b789b40e8f05a11806ff",
-  "implementationTreeSha": "167e2c872cf8f250b46c2f1529c6597f38fd2f9f",
-  "implementationParentSha": "c17c52faf67b1ef8b3f6d0b14aaf264804092316",
-  "stdoutBytes": 2688,
+  "repairBaseSha": "fee44f4d2f3a46458b4b79277363585f78695ecc",
+  "repairBaseTreeSha": "6bff90f3a379d192e30c01f9111cef65c31d9c55",
+  "implementationTreeSha": "c565660363acf27876847114c0e6295552ac34d5",
+  "implementationParentSha": "fa375642c2b31944515e67bbfe9f7b473c5cc9c9",
+  "stdoutBytes": 2830,
   "recipeInputTreeSha": "8ed002b01702ae842ea9e7c054fd91071eeb6792",
   "recipeInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
   "recipeInputBlobSha": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9"

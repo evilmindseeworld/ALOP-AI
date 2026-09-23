@@ -1785,3 +1785,50 @@ test('CONVERGED-RED O4 pronoun continuation rejects auxiliary, modal, and contro
   assert.equal(accepted.passed, true);
   assert.equal(accepted.relationRecords.length, 2);
 });
+
+test('FINAL-001 RED: arbitrary identities do not change the frozen semantic fingerprint', () => {
+  const { semanticCaseFingerprint } = require('./photosynthesis-relation-evaluator');
+  assert.equal(
+    semanticCaseFingerprint('Alice captures light energy.'),
+    semanticCaseFingerprint('David captures light energy.'),
+  );
+  assert.equal(
+    semanticCaseFingerprint('Photosynthesis captures Alice.'),
+    semanticCaseFingerprint('Photosynthesis captures David.'),
+  );
+});
+
+test('FINAL-002 RED: malformed residue rejects an incomplete but-continuation frame', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  for (const answer of [
+    'Photosynthesis captures light energy but stores light energy photosynthesis.',
+    'Photosynthesis captures light energy but stores it in photosynthesis photosynthesis.',
+  ]) {
+    const result = evaluatePhotosynthesisRelationsV2(answer);
+    assert.equal(result.hasMalformed, true, answer);
+    assert.equal(result.passed, false, answer);
+    assert.equal(result.relationRecords.some((record) => record.verbLemma === 'store' && record.qualifies), false, answer);
+  }
+});
+
+test('FINAL-003 RED: semicolon clauses cannot share a pronoun antecedent', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  for (const answer of [
+    'Photosynthesis captures light energy; photosynthesis stores it.',
+    'Photosynthesis captures light energy; photosynthesis does not capture it.',
+  ]) {
+    const result = evaluatePhotosynthesisRelationsV2(answer);
+    const laterClauseRecords = result.relationRecords.filter((record) => record.evidenceSpan?.text?.toLowerCase().startsWith('photosynthesis'));
+    assert.equal(laterClauseRecords.some((record) => record.lightObject?.binding === 'PRONOUN_ANTECEDENT'), false, answer);
+    assert.equal(result.contradictions.length, 0, answer);
+  }
+});
+
+test('FINAL-004 RED: active and passive forms of one proposition contradict', () => {
+  const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  const answer = 'Plants capture light energy. Light energy is not captured by plants.';
+  const result = evaluatePhotosynthesisRelationsV2(answer);
+  assert.equal(result.contradictions.length, 1, answer);
+  assert.equal(result.polarity, 'CONTRADICTED', answer);
+  assert.equal(result.passed, false, answer);
+});

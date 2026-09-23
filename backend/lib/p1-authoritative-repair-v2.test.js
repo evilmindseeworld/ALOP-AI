@@ -1472,6 +1472,24 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
     'photosynthesis', 'plant', 'plants', 'green plant', 'green plants', 'alga', 'algae',
     'some bacteria', 'photosynthetic bacterium', 'photosynthetic bacteria', 'chlorophyll',
   ]);
+  const knownUnsupportedSubjects = new Map([
+    ['animal', 'ANIMAL'], ['animals', 'ANIMAL'], ['bacteria', 'BACTERIA'],
+    ['bacterium', 'BACTERIA'], ['rock', 'ROCK'], ['rocks', 'ROCK'],
+  ]);
+  const fingerprintSubjectMembers = (members) => (members || []).map(([lemma, role]) => [
+    role === 'UNSUPPORTED' ? knownUnsupportedSubjects.get(lemma) || 'UNSUPPORTED_SUBJECT' : lemma,
+    role,
+  ]);
+  const nonLightObjectConcepts = new Map([
+    ['carbon dioxide', 'CARBON_DIOXIDE'], ['chemicals', 'CHEMICALS'], ['energy', 'ENERGY'],
+    ['heat energy', 'HEAT_ENERGY'], ['leaf tissue', 'LEAF_TISSUE'], ['mineral salts', 'MINERAL_SALTS'],
+    ['nitrogen', 'NITROGEN'], ['nutrients', 'NUTRIENTS'], ['oxygen', 'OXYGEN'],
+    ['starch', 'STARCH'], ['sugar', 'SUGAR'], ['sugar molecules', 'SUGAR'],
+    ['ultraviolet radiation', 'ULTRAVIOLET_RADIATION'], ['water', 'WATER'], ['water vapor', 'WATER_VAPOR'],
+  ]);
+  const normalizedDirectObject = (object) => object?.role === 'NON_LIGHT_OBJECT'
+    ? nonLightObjectConcepts.get(object.normalized) || 'UNCLASSIFIED_NON_LIGHT_OBJECT'
+    : object?.normalized;
   const verbs = new Set((
     'capture captures captured capturing absorb absorbs absorbed absorbing harness harnesses harnessed harnessing '
     + 'use uses used using convert converts converted converting transform transforms transformed transforming '
@@ -1504,12 +1522,15 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
           })
           : null,
       },
-      orderedSubjectLemmasAndRoleClasses: result.subjectSet || [],
-      coordinationTypeAndCardinality: result.coordinationTopology || [],
+      orderedSubjectLemmasAndRoleClasses: (result.subjectSet || []).map(fingerprintSubjectMembers),
+      coordinationTypeAndCardinality: (result.coordinationTopology || []).map((group) => ({
+        ...group,
+        orderedMembers: fingerprintSubjectMembers(group.orderedMembers),
+      })),
       voice: records.map((record) => record.voice || 'ACTIVE'),
       verbLemmaAndMorphology: records.map((record) => [record.verbLemma, record.verbForm]),
       directObjectRoleAndNormalizedLightForm: records.map((record) => record.directObject
-        ? [record.directObject.role, record.directObject.normalized] : null),
+        ? [record.directObject.role, normalizedDirectObject(record.directObject)] : null),
       objectBindingOrigin: records.map((record) => record.lightObject?.binding || null),
       auxiliaryChain: records.map((record) => record.auxiliaryChain?.chain || []),
       modal: records.map((record) => record.modal || null),
@@ -1796,10 +1817,23 @@ test('FINAL-001 RED: arbitrary identities do not change the frozen semantic fing
     semanticCaseFingerprint('Photosynthesis captures Alice.'),
     semanticCaseFingerprint('Photosynthesis captures David.'),
   );
+  assert.equal(
+    semanticCaseFingerprint('Alice and David capture light energy.'),
+    semanticCaseFingerprint('Mina and Omar capture light energy.'),
+  );
+  assert.notEqual(
+    semanticCaseFingerprint('Photosynthesis captures water.'),
+    semanticCaseFingerprint('Photosynthesis captures oxygen.'),
+  );
+  assert.notEqual(
+    semanticCaseFingerprint('Animals capture light energy.'),
+    semanticCaseFingerprint('Rocks capture light energy.'),
+  );
 });
 
 test('FINAL-002 RED: malformed residue rejects an incomplete but-continuation frame', () => {
   const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  const photoCase = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
   for (const answer of [
     'Photosynthesis captures light energy but stores light energy photosynthesis.',
     'Photosynthesis captures light energy but stores it in photosynthesis photosynthesis.',
@@ -1808,6 +1842,7 @@ test('FINAL-002 RED: malformed residue rejects an incomplete but-continuation fr
     assert.equal(result.hasMalformed, true, answer);
     assert.equal(result.passed, false, answer);
     assert.equal(result.relationRecords.some((record) => record.verbLemma === 'store' && record.qualifies), false, answer);
+    assert.equal(gradeCase(photoCase, observation(answer, { id: photoCase.id })).factuality.passed, false, answer);
   }
 });
 
@@ -1826,9 +1861,11 @@ test('FINAL-003 RED: semicolon clauses cannot share a pronoun antecedent', () =>
 
 test('FINAL-004 RED: active and passive forms of one proposition contradict', () => {
   const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
+  const photoCase = v2.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
   const answer = 'Plants capture light energy. Light energy is not captured by plants.';
   const result = evaluatePhotosynthesisRelationsV2(answer);
   assert.equal(result.contradictions.length, 1, answer);
   assert.equal(result.polarity, 'CONTRADICTED', answer);
   assert.equal(result.passed, false, answer);
+  assert.equal(gradeCase(photoCase, observation(answer, { id: photoCase.id })).factuality.passed, false, answer);
 });

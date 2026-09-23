@@ -642,6 +642,10 @@ function isCompleteContrastContinuationV2(forms, subject, antecedentObject) {
     && parseButContinuationV2(tokenizeV2(forms.join(' ')), subject, antecedentObject));
 }
 
+const V2_CONTEXT_ADJUNCT_TAILS = new Set([
+  'during photosynthesis', 'in photosynthesis', 'for photosynthesis',
+]);
+
 function parseButContinuationV2(tokens, subject, antecedentObject = null) {
   for (let predicateIndex = 0; predicateIndex < tokens.length; predicateIndex += 1) {
     const predicate = validateFinitePredicate(tokens, predicateIndex);
@@ -657,9 +661,7 @@ function parseButContinuationV2(tokens, subject, antecedentObject = null) {
     if (pronoun) object = { ...object, normalized: 'light-energy', role: 'LIGHT_OBJECT' };
     if (object?.role !== 'LIGHT_OBJECT' || object.normalized !== 'light-energy') continue;
     const tail = trimActiveTailForms(tokens.slice(object.tokenEnd));
-    if (!tail.every((form) => ['during', 'in', 'for', 'photosynthesis'].includes(form))
-      || tail.join(' ').split(/\s+/).some((form, index, forms) =>
-        ['during', 'in', 'for'].includes(form) && forms[index + 1] !== 'photosynthesis')) continue;
+    if (tail.length && !V2_CONTEXT_ADJUNCT_TAILS.has(tail.join(' '))) continue;
     const state = composePredicatePolarity(auxiliary.modal, control, auxiliary);
     return { predicate, predicateIndex, predicateToken: tokens[predicateIndex], auxiliary, control, object, pronoun, state };
   }
@@ -807,7 +809,6 @@ function detectContradictions(records){
   const propositionKey = (record) => JSON.stringify([
     record.subjectSet?.lemma || '', record.subjectSet?.role || '', record.verbLemma || '',
     record.directObject?.role || '', record.directObject?.normalized || '',
-    record.processContext || '', record.voice || '',
   ]);
   const pairs = [];
   records.forEach((left, leftIndex) => {
@@ -832,6 +833,23 @@ function detectInvalidChlorophyllClaimsV2(records){
     || (record.subjectSet?.role === 'PIGMENT_AGENT' && record.subjectSet?.lemma === 'chlorophyll'
       && record.polarity === 'NEGATED' && record.polarityReason === 'LOCAL_NEGATION'));
 }
+const V2_FINGERPRINT_KNOWN_UNSUPPORTED_SUBJECTS = new Map([
+  ['animal', 'ANIMAL'], ['animals', 'ANIMAL'], ['bacteria', 'BACTERIA'],
+  ['bacterium', 'BACTERIA'], ['rock', 'ROCK'], ['rocks', 'ROCK'],
+]);
+// Canonical concept IDs preserve frozen domain distinctions; unrecognized object strings never add fingerprint uniqueness.
+const V2_FINGERPRINT_NON_LIGHT_OBJECTS = new Map([
+  ['carbon dioxide', 'CARBON_DIOXIDE'], ['chemicals', 'CHEMICALS'], ['energy', 'ENERGY'],
+  ['heat energy', 'HEAT_ENERGY'], ['leaf tissue', 'LEAF_TISSUE'], ['mineral salts', 'MINERAL_SALTS'],
+  ['nitrogen', 'NITROGEN'], ['nutrients', 'NUTRIENTS'], ['oxygen', 'OXYGEN'],
+  ['starch', 'STARCH'], ['sugar', 'SUGAR'], ['sugar molecules', 'SUGAR'],
+  ['ultraviolet radiation', 'ULTRAVIOLET_RADIATION'], ['water', 'WATER'], ['water vapor', 'WATER_VAPOR'],
+]);
+const fingerprintSubjectMembers = (members) => (members || []).map(([lemma, role]) => [
+  role === 'UNSUPPORTED'
+    ? V2_FINGERPRINT_KNOWN_UNSUPPORTED_SUBJECTS.get(lemma) || 'UNSUPPORTED_SUBJECT' : lemma,
+  role,
+]);
 function resolveButNegatedRelation(ts,verb,subject,object,sentenceText,primaryRecord){
   const butIndex=ts.findIndex((token,index)=>index>=object.tokenEnd&&token.form==='but');
   if(butIndex<0)return null;
@@ -919,8 +937,8 @@ function parseMinimalRelationGrammar(input) {
   let malformed = false;
 
   for (const [sentenceIndex, sentence] of sentences.entries()) {
-    const sentenceRecordStart = relationRecords.length;
     for (const clause of segmentClausesV2(sentence)) {
+      const clauseRecordStart = relationRecords.length;
       const tokens = tokenizeV2(clause.text);
       if (!tokens.length) continue;
       topology.push([sentenceIndex, clause.index]);
@@ -1058,7 +1076,7 @@ function parseMinimalRelationGrammar(input) {
       }
 
       const subjectIdentity = subjectSet.members[0];
-      const priorSubjectRecords = relationRecords.slice(sentenceRecordStart).filter((record) =>
+      const priorSubjectRecords = relationRecords.slice(clauseRecordStart).filter((record) =>
         record.subjectSet?.lemma === subjectIdentity.lemma
         && record.subjectSet?.role === subjectIdentity.role
         && record.directObject);
@@ -1347,10 +1365,13 @@ const evaluatePhotosynthesisRelationsV2 = (input)=>{
 };
 function semanticCaseFingerprint(input,decision=null){
   const r=typeof input==='string'?evaluatePhotosynthesisRelationsV2(input):input,records=r.relationRecords||[],text=typeof input==='string'?normalizeInputV2(input):r.normalized||'',coordination=r.coordinationTopology||[];
+  const normalizeDirectObject = (object) => object?.role === 'NON_LIGHT_OBJECT'
+    ? V2_FINGERPRINT_NON_LIGHT_OBJECTS.get(object.normalized) || 'UNCLASSIFIED_NON_LIGHT_OBJECT'
+    : object?.normalized;
   const f={
     grammarShape:{records:records.map(x=>x.grammarShape||'UNRESOLVED'),malformedRoleOrder:r.malformedShape||null,malformedLexicalStructure:r.hasMalformed?tokenizeV2(text).map(t=>{const role=V2_SUBJECTS.has(t.form)?'SUBJECT':V2_VERBS.has(t.form)?'VERB':['light','energy','sunlight'].includes(t.form)?'LIGHT':'OTHER';const structural=role!=='OTHER'||V2_MODALS.has(t.form)||['and','or','but','not','never','do','does','did','is','are','was','were','has','have','had','to','fail','fails','failed','appear','appears','seem','seems','during','while','although','because','whereas','if','unless','when','since','in','for','into','near','with','by','as',',',';',';',':','.','!','?'].includes(t.form);return structural?{role,lemma:t.lemma,form:t.form}:{role};}):null},
-    orderedSubjectLemmasAndRoleClasses:r.subjectSet||[],coordinationTypeAndCardinality:coordination,voice:records.map(x=>x.voice||'ACTIVE'),verbLemmaAndMorphology:records.map(x=>[x.verbLemma,x.verbForm]),
-    directObjectRoleAndNormalizedLightForm:records.map(x=>x.directObject?[x.directObject.role,x.directObject.normalized]:null),objectBindingOrigin:records.map(x=>x.lightObject?.binding||null),
+    orderedSubjectLemmasAndRoleClasses:(r.subjectSet||[]).map(fingerprintSubjectMembers),coordinationTypeAndCardinality:coordination.map((group)=>({...group,orderedMembers:fingerprintSubjectMembers(group.orderedMembers)})),voice:records.map(x=>x.voice||'ACTIVE'),verbLemmaAndMorphology:records.map(x=>[x.verbLemma,x.verbForm]),
+    directObjectRoleAndNormalizedLightForm:records.map(x=>x.directObject?[x.directObject.role,normalizeDirectObject(x.directObject)]:null),objectBindingOrigin:records.map(x=>x.lightObject?.binding||null),
     auxiliaryChain:records.map(x=>x.auxiliaryChain?.chain||[]),modal:records.map(x=>x.modal||null),controlChain:records.map(x=>x.controlChain?[x.controlChain.type,x.controlChain.surface]:null),
     polarityStructure:records.map(x=>[x.polarity||'UNRESOLVED',x.polarityReason||'']),orderedBarrierTypes:r.barriers||[],clauseSentenceTopology:r.topology||[],
     contextBindingType:records.map(x=>x.processContext||null),pronounAntecedentTopology:records.map((x,i)=>({recordIndex:i,shape:x.grammarShape,binding:x.lightObject?.binding||null,antecedentObject:x.lightObject?.binding==='PRONOUN_ANTECEDENT'?x.directObject?.normalized||null:null})),

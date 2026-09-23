@@ -2,6 +2,7 @@
 
 const test = require('node:test');
 const assert = require('node:assert/strict');
+const { execFileSync } = require('node:child_process');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const current = require('./photosynthesis-relation-evaluator');
@@ -28,33 +29,37 @@ const V2_CASES = [
 ];
 
 const v2CaseFails = (item, evaluator) => {
-  const result = evaluator(item.text);
-  if ((result.passed ? 'PASS' : 'FAIL') !== item.expectedDecision) return true;
-  if (item.expectedPolarity && result.polarity !== item.expectedPolarity) return true;
-  const observed = [
-    ...result.diagnostics,
-    ...result.relationRecords.flatMap((record) => [
-      record.grammarShape,
-      record.subjectValidity,
-      record.polarity,
-      record.polarityReason,
-      record.controlChain?.type,
-      record.lightObject?.binding,
-      ...record.rejectionReasons,
-    ]),
-  ].filter(Boolean);
-  return (item.requiredDiagnostics || []).some((required) => !observed.some(
-    (actual) => String(actual).toLowerCase().includes(required.toLowerCase()),
-  ));
+  try {
+    const result = evaluator(item.text);
+    return (result.passed ? 'PASS' : 'FAIL') !== item.expectedDecision
+      || Boolean(item.expectedPolarity && result.polarity !== item.expectedPolarity);
+  } catch {
+    return true;
+  }
 };
 
 const assertMutationKilledAcrossClasses = (id, evaluator, thresholds) => {
+  const baselineFailures = V2_CASES.filter((item) => v2CaseFails(item, current.evaluatePhotosynthesisRelationsV2));
+  assert.deepEqual(baselineFailures.map((item) => item.id), [], `${id}: baseline must satisfy every frozen decision/polarity`);
   for (const [classId, minimum] of Object.entries(thresholds)) {
     const failures = V2_CASES.filter((item) => item.classIds?.includes(classId)
+      && !v2CaseFails(item, current.evaluatePhotosynthesisRelationsV2)
       && v2CaseFails(item, evaluator)).length;
     assert.ok(failures >= minimum, `${id} ${classId}: ${failures}/${minimum} frozen cases killed`);
   }
 };
+
+test('M1-M10 runner requires a green semantic baseline and counts only new frozen-behavior failures', () => {
+  const runnerPath = join(__dirname, '..', 'scripts', 'run-photosynthesis-relation-mutations.mjs');
+  const result = JSON.parse(execFileSync(process.execPath, [runnerPath], { encoding: 'utf8' }));
+  assert.equal(result.oracle, 'explicit-frozen-semantics-baseline-differential-v1');
+  assert.equal(result.cases, 206);
+  assert.equal(result.baseline.passed, 206);
+  assert.equal(result.baseline.failed, 0);
+  assert.equal(result.mutations.length, 10);
+  assert.ok(result.mutations.every((mutation) => mutation.killed));
+  assert.equal(result.killed, 10);
+});
 
 test('M1: removing normalization is killed by compatibility-form input', () => {
   const answer = 'Ｐｈｏｔｏｓｙｎｔｈｅｓｉｓ uses chlorophyll to capture light energy.';

@@ -7,15 +7,20 @@
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "repairAttemptId": "ASTRA-PREQ-002-004-008-REPAIR-20260923-V3",
-  "capturedAtUtc": "2026-09-23T02:30:13.000Z",
-  "implementationCommitSha": "dc6222b6f607aaf20bf6370d29c91dfbf02415d9",
-  "candidateHeadAtCapture": "6d205731bbd5a144f1a318fd488d3e4e76372ade",
-  "candidateTreeAtCapture": "be7e942a48fd16338804123d5d07be553a348a2e",
+  "repairAttemptId": "P1-CONVERGED-OPUS55-ASTRA-20260923-01A09D9F",
+  "capturedAtUtc": "2026-09-23T13:05:37.000Z",
+  "implementationCommitSha": "3880eedf52594250a54a26fae6c7da5ef17fd0d9",
+  "candidateHeadAtCapture": "4f922e0378df07a8bb236b3d552fe1b22cc772ac",
+  "candidateTreeAtCapture": "e4e544c4364503a472a296a6238b482ba815eb82",
   "runtime": {
     "version": "v26.7.0",
-    "executablePath": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node.exe",
+    "executablePath": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
     "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
+  },
+  "dependencyIdentity": {
+    "backendPackageJsonSha256": "90467537d4de957db49c1722ecb1767344dd7237b1dfd0179484c3bceba2159",
+    "backendPackageLockSha256": "939370cd71896ccaebe4f3d4c4dffaa43840273e014fae5386c46f0cdf11bfa8",
+    "backendNodeModulesPresent": true
   },
   "phase": "GREEN",
   "status": "PASS",
@@ -26,25 +31,36 @@
   "skipped": 0,
   "focusedTestRuns": [
     {
-      "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/evaluation-runner-contract.test.js lib/photosynthesis-relation-evaluator.test.js lib/photosynthesis-relation-evaluator-mutation.test.js lib/evaluation.test.js",
+      "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/photosynthesis-relation-evaluator.test.js",
       "exitCode": 0,
-      "tests": 105,
-      "passed": 105,
+      "tests": 39,
+      "passed": 39,
       "failed": 0,
-      "stdoutSha256": "5c21e669a5475ce9d83d4078120b6c79a94ec22ce05edc45bc3318eac9a9662e",
-      "bytes": 20221,
+      "stdoutSha256": "6d840003aca2292c34c6273fb388421daf82fb40c2f6ce659969c0278d9d2251",
+      "bytes": 6659,
+      "failures": [],
+      "error": null
+    },
+    {
+      "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/p1-authoritative-repair-v2-mutation.test.js lib/photosynthesis-relation-evaluator-mutation.test.js",
+      "exitCode": 0,
+      "tests": 30,
+      "passed": 30,
+      "failed": 0,
+      "stdoutSha256": "3dac6128e5ec5a062bae653459b3c84ce30256732203a4dd38dac2f2e3314bf3",
+      "bytes": 6703,
       "failures": [],
       "error": null
     }
   ],
   "evaluationTestRun": {
-    "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/evaluation.test.js",
+    "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/evaluation.test.js",
     "exitCode": 0,
     "tests": 41,
     "passed": 41,
     "failed": 0,
-    "stdoutSha256": "e0f2ca1bf63bc929b65637fc3a9bde19240cc7583454a722ec21fa568c5836fb",
-    "bytes": 8484,
+    "stdoutSha256": "08da5e8a0b1f777c930caeb8a60dc2e97520445ecf6cb48a65ec892ea9e9a772",
+    "bytes": 8488,
     "failures": [],
     "error": null
   },
@@ -52,7 +68,9 @@
     "killed": 10,
     "total": 10,
     "cases": 206,
-    "stdoutSha256": "e1c793a042df9ec1161edba784daa79b492e77147ea25d9927ba70af54602c9b"
+    "stdoutSha256": "e1c793a042df9ec1161edba784daa79b492e77147ea25d9927ba70af54602c9b",
+    "stdoutBytes": 2688,
+    "failureThresholdsMet": true
   },
   "datasetValidation": {
     "status": "PASS",
@@ -62,7 +80,7 @@
     "providerCalls": 0,
     "liveAuth": false,
     "noMutations": true,
-    "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node.exe scripts/run-evals.mjs --validate-only",
+    "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe scripts/run-evals.mjs --validate-only",
     "exitCode": 0,
     "stdoutSha256": "8d078d04db663a3bcb05bdd565b464cf3dbd12b9629f48b9ea904d5b48387e25",
     "outputBytes": 77,
@@ -77,24 +95,28 @@
     ]
   },
   "matchedFullSuiteComparison": {
-    "status": "PASS_NO_CANDIDATE_REGRESSIONS",
-    "capturedAtUtc": "2026-09-23T02:30:13.000Z",
-    "command": "portable Node 26.7.0 running npm-cli.js test --no-audit --no-fund; PATH prepended with pinned Node directory",
-    "npmCliPath": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node_modules/npm/bin/npm-cli.js",
+    "status": "PASS_NO_CANDIDATE_REGRESSIONS_WITH_SHARED_BASELINE_FAILURE",
+    "capturedAtUtc": "2026-09-23T13:05:37.000Z",
+    "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/**/*.test.js; executed from each backend worktree",
     "runtime": {
       "version": "v26.7.0",
-      "executablePath": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node.exe",
+    "executablePath": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
       "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
     },
-    "approvedBase": {
-      "head": "69525e3ec464c07fbd79b978ab4cdb67d87e8032",
-      "tree": "67aa807749ac73789bc693abfaaff78d3a1f5c44",
-      "total": 2533,
-      "passed": 2532,
+    "approvedBaseIdentity": {
+      "head": "03c01ce23ead82762437286ebdab94d3485e0519",
+      "tree": "8acf7ac3826780c3e7950080284c4333dd33a795",
+      "role": "canonical design-approved base; not the repair comparison base"
+    },
+    "repairComparisonBase": {
+      "head": "7bec4e3cbc98b096d3b7538c5b45fe70db89e9f9",
+      "tree": "6e668a1b7a91b0d88d01b789b40e8f05a11806ff",
+      "total": 2536,
+      "passed": 2535,
       "failed": 1,
       "exitCode": 1,
-      "stdoutBytes": 185095,
-      "stdoutSha256": "33564ad6f0b78a8ef7d52ffd94d668f18ff12a7fc60c1516bd9365a81bf2acf0",
+      "stdoutBytes": 469787,
+      "stdoutSha256": "0c13ea1f75b9d8706dd587bdb5e2d0e19aa0218b13ce1269907d9faa2bf2e862",
       "failures": [
         "every declared Node major is the one deploy/targets.json names"
       ],
@@ -105,24 +127,22 @@
       }
     },
     "candidate": {
-      "head": "6d205731bbd5a144f1a318fd488d3e4e76372ade",
-      "tree": "be7e942a48fd16338804123d5d07be553a348a2e",
-      "total": 2536,
-      "passed": 2535,
+      "head": "4f922e0378df07a8bb236b3d552fe1b22cc772ac",
+      "tree": "e4e544c4364503a472a296a6238b482ba815eb82",
+      "total": 2544,
+      "passed": 2543,
       "failed": 1,
       "exitCode": 1,
-      "stdoutBytes": 185294,
-      "stdoutSha256": "f1b724ba03b8aac3e3de82572d215af72f2c15a960e37fa339c38b20f6ae7829",
+      "stdoutBytes": 471645,
+      "stdoutSha256": "a1cd70c303433a605e5536835379379a9ef7740fb78e66b7e9bb9bcec9f33bf9",
       "failures": [
         "every declared Node major is the one deploy/targets.json names"
       ],
       "sameBaselineFailure": true
     },
     "candidateCausedFailureCount": 0,
-    "preRepairDelta": {
-      "tests": 3,
-      "failures": 0
-    },
+    "testedWorktreeDeltaFromPackageCommit": "Only the five P1 phase evidence files plus root evidence-manifest.json; backend source, tests, package bytes, and dependency lock are unchanged from the tested package commit.",
+    "preRepairDelta": { "tests": 8, "failures": 0 },
     "sameFailureSet": true
   },
   "preRepairCandidate": {
@@ -131,22 +151,29 @@
     "focusedRed": true
   },
   "implementationAndPackage": {
-    "implementationCommitSha": "dc6222b6f607aaf20bf6370d29c91dfbf02415d9",
-    "implementationTreeSha": "5ea03e94acbb68d0301826065a2d6b2c1feac00c",
-    "implementationParentSha": "69525e3ec464c07fbd79b978ab4cdb67d87e8032",
-    "packageCommitSha": "7f4c9e8002fa71ea633a428147c4c978ae7f863c",
-    "packageTreeSha": "61f69ce94c2b2d654eda69f5f7c56d7441e5e56f",
+    "implementationCommitSha": "3880eedf52594250a54a26fae6c7da5ef17fd0d9",
+    "implementationTreeSha": "167e2c872cf8f250b46c2f1529c6597f38fd2f9f",
+    "implementationParentSha": "c17c52faf67b1ef8b3f6d0b14aaf264804092316",
+    "evaluatorInputCommitSha": "3880eedf52594250a54a26fae6c7da5ef17fd0d9",
+    "evaluatorInputPath": "backend/lib/photosynthesis-relation-evaluator.js",
+    "evaluatorBlob": "fcee3a51319a4c7de10a70c81e1ceaf23886bd0c",
+    "runnerInputCommitSha": "ff65b1e8c640a4eb6eb4cb9858e92665ffea0576",
+    "runnerInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+    "packageCommitSha": "4f922e0378df07a8bb236b3d552fe1b22cc772ac",
+    "packageTreeSha": "e4e544c4364503a472a296a6238b482ba815eb82",
     "entryPoint": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-    "packageBlob": "576ff2994951d5f14aae7cdf23abd5f7c9a265bd",
-    "packageSha256": "989637efb3ce90fae2db99fefda8d4e1536f29aaac7fa9038993b0bd3b08399b",
-    "packageBytes": 87027,
-    "evaluatorBlob": "5757ac06e97da9018f5053b475daef1429d85b03",
-    "runnerBlob": "46a7b35b1d1c36648eb900261f9c4725c8662639",
+    "packageBlob": "f09db90db63478558a7294bfaad09488a342283d",
+    "packageSha256": "8bc48d67e33677f42c2939093d322068f7e215279b16d79c8d2ff13c1d4ce727",
+    "packageBytes": 89676,
+    "evaluatorBlob": "fcee3a51319a4c7de10a70c81e1ceaf23886bd0c",
+    "runnerBlob": "669e4cf3fee4dfa3d41b7ad7bd4118e289d64623",
+    "recipeInputCommitSha": "3ae0f283461f304f2778a4dc463a85c8f7d86adf",
+    "recipeInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
     "recipeBlob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
     "independentByteReproduction": "PASS",
     "packageDirectMutationMode": "PASS 206 cases; M1-M10 killed 10/10",
     "sourcePackageApiEquivalence": "PASS",
-    "packageByteEquality": "PASS; committed bytes equal independent reproduction"
+    "packageByteEquality": "PASS; two independent compositions produced identical 89676-byte artifact with SHA-256 8bc48d67e33677f42c2939093d322068f7e215279b16d79c8d2ff13c1d4ce727"
   },
   "modelInferenceTraffic": {
     "performed": false,
@@ -162,30 +189,40 @@
     "merged": false
   },
   "implementationTaskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
-  "repairBaseSha": "69525e3ec464c07fbd79b978ab4cdb67d87e8032",
-  "repairBaseTreeSha": "67aa807749ac73789bc693abfaaff78d3a1f5c44",
-  "implementationTreeSha": "5ea03e94acbb68d0301826065a2d6b2c1feac00c",
-  "implementationParentSha": "69525e3ec464c07fbd79b978ab4cdb67d87e8032",
+  "repairBaseSha": "7bec4e3cbc98b096d3b7538c5b45fe70db89e9f9",
+  "repairBaseTreeSha": "6e668a1b7a91b0d88d01b789b40e8f05a11806ff",
+  "implementationTreeSha": "167e2c872cf8f250b46c2f1529c6597f38fd2f9f",
+  "implementationParentSha": "c17c52faf67b1ef8b3f6d0b14aaf264804092316",
   "authoritativeRepairTestRun": {
-    "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/p1-authoritative-repair-v2.test.js",
+    "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap lib/p1-authoritative-repair-v2.test.js",
     "exitCode": 0,
-    "tests": 79,
-    "passed": 79,
+    "tests": 87,
+    "passed": 87,
     "failed": 0,
-    "stdoutSha256": "9ec9ad8d7db4dd8d386ec3e12eae6d9ee1775eeccf071fbf801a328dd486793a",
-    "bytes": 17597,
+    "stdoutSha256": "7c00629d684767f62a9baf8ce33f61a6f73c9ad61f77c48835dab49fd507a1bd",
+    "bytes": 19468,
     "failures": [],
     "error": null
   },
-  "branch": "codex/p1-final-three-astra-repair-v3-20260923",
-  "worktreePath": "C:/Users/LENOVO/Documents/AI-Classroom-p1-final-three-v3",
+  "branch": "codex/p1-opus55-astra-converged-repair-20260923",
+  "worktreePath": "C:/Users/LENOVO/Documents/AI-Classroom-p1-opus55-astra-converged-repair-20260923",
   "findingDisposition": {
-    "ASTRA-PREQ-002": "PASS; independent frozen 18-field projection, global duplicate rejection, 204 unique of 206 cases, only two sanctioned duplicate pairs, all class minima met",
-    "ASTRA-PREQ-004": "PASS; fresh focused relation-record/factuality tests pass, preserving the negated pronoun continuation without malformed grammar",
-    "ASTRA-PREQ-008": "PASS; receipt binds pinned recipe commit/path/blob; fresh byte reproduction equals committed package SHA-256 and length"
+    "ASTRA-AUDIT-001": "PASS; repair-base RED 8/8; current malformed-continuation regressions and all focused suites pass",
+    "ASTRA-AUDIT-002": "PASS; canonical object identity retains pronoun and explicit-subject contradictions; fresh evaluator and gradeCase tests pass",
+    "ASTRA-AUDIT-003": "PASS; accepted but-continuations retain their own predicate, object, and polarity",
+    "ASTRA-AUDIT-004": "PASS; frozen 18-field fingerprints ignore arbitrary malformed lexical names and case IDs",
+    "ASTRA-AUDIT-005": "PASS; ADV001-ADV006 restored from immutable original RED receipt commit 1ee4ddc823dc712756839fa4c341473e7de915b8",
+    "ASTRA-AUDIT-006": "PASS; focused, evaluation, mutation, dataset, semantic, and matched-suite receipts regenerated in this repair cycle",
+    "ASTRA-AUDIT-007": "PASS; canonical approved base 03c01ce23ead82762437286ebdab94d3485e0519 is separate from repair comparison base 7bec4e3cbc98b096d3b7538c5b45fe70db89e9f9",
+    "ASTRA-AUDIT-008": "PASS; currentAttemptRed binds committed test tree 76854c85dd853ebbb1ad02599cd7cee8b21fe8d3 to repair base 7bec and records 8/8 expected failures",
+    "OPUS55-P1-002": "PASS; each coordinated predicate has independent destructive classification",
+    "OPUS55-P1-004": "PASS; subjectless relation probes fail structurally through evaluator, gradeCase, and package",
+    "OPUS55-P1-008": "PASS; explicit-subject comma-and splitting no longer depends on fixture verbs",
+    "OPUS55-P1-009": "PASS; unsupported auxiliary/modal/control-prefixed pronoun continuation is rejected",
+    "CONTRADICTION_VOICE_EQUIVALENCE": "UNCHANGED; frozen policy does not explicitly establish active/passive proposition equivalence; report for Astra ruling"
   },
   "knownBoundaries": [
-    "One exact-base full-suite failure remains unchanged on the candidate: deployment-config Node-target assertion expects >=26 although package engine is pinned to 26.7.0; zero candidate-caused failures.",
+    "Matched repair-base/candidate suites have the same single deployment-config Node-target assertion failure (package engine 26.7.0 vs the test expecting a >=26 string); candidate-caused regression count is zero.",
     "The semantic-coverage text scanner remains FAIL_TEXT_SCAN because its recorded scan set includes test modules with fixture imports; exact canonical sentence literals in production are absent. It is disclosed, not worked around.",
     "Astra/CandidateQualification/Sol/release/deploy/P2 were not run."
   ]

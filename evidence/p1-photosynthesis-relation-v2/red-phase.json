@@ -140,6 +140,75 @@
       "failureTest": "CONVERGED-RED O4 pronoun continuation rejects auxiliary, modal, and control prefixes"
     }
   ],
+  "rootCases": [
+    {
+      "id": "ADV001",
+      "expectedDecision": "FAIL",
+      "observedDecision": "PASS",
+      "expectedPolarity": "UNCERTAIN",
+      "observedPassed": true,
+      "behavioralMismatch": true
+    },
+    {
+      "id": "ADV002",
+      "expectedDecision": "FAIL",
+      "observedDecision": "PASS",
+      "expectedPolarity": "UNRESOLVED",
+      "observedPassed": true,
+      "behavioralMismatch": true
+    },
+    {
+      "id": "ADV003",
+      "expectedDecision": "FAIL",
+      "observedDecision": "PASS",
+      "expectedPolarity": "UNRESOLVED",
+      "observedPassed": true,
+      "behavioralMismatch": true
+    },
+    {
+      "id": "ADV004",
+      "expectedDecision": "PASS",
+      "observedDecision": "FAIL",
+      "expectedPolarity": "AFFIRMED",
+      "observedPassed": false,
+      "behavioralMismatch": true
+    },
+    {
+      "id": "ADV005",
+      "expectedDecision": "PASS",
+      "observedDecision": "FAIL",
+      "expectedPolarity": "AFFIRMED",
+      "observedPassed": false,
+      "behavioralMismatch": true
+    },
+    {
+      "id": "ADV006",
+      "expectedDecision": "FAIL",
+      "observedDecision": "PASS",
+      "expectedPolarity": "MIXED_INVALID",
+      "observedPassed": true,
+      "behavioralMismatch": true
+    }
+  ],
+  "historicalOriginalRed": {
+    "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8",
+    "redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb",
+    "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe",
+    "testRun": {
+      "tests": 35,
+      "passed": 3,
+      "failed": 32,
+      "exitCode": 1,
+      "behavioralRed": true,
+      "canonicalTargeted": {
+        "tests": 7,
+        "passed": 0,
+        "failed": 7,
+        "rootCaseFailures": 6,
+        "exitCode": 1
+      }
+    }
+  },
   "supersededPriorRepairCycle": {
     "repairAttemptId": "ASTRA-PREQ-002-004-008-REPAIR-20260923-V3",
     "redSourceCommitSha": "69525e3ec464c07fbd79b978ab4cdb67d87e8032",

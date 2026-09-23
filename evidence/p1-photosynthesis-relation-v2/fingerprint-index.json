@@ -7,11 +7,11 @@
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "repairAttemptId": "P1-CONVERGED-OPUS55-ASTRA-20260923-01A09D9F",
-  "capturedAtUtc": "2026-09-23T13:03:53.000Z",
-  "implementationCommitSha": "3880eedf52594250a54a26fae6c7da5ef17fd0d9",
-  "candidateHeadAtCapture": "4f922e0378df07a8bb236b3d552fe1b22cc772ac",
-  "candidateTreeAtCapture": "e4e544c4364503a472a296a6238b482ba815eb82",
+  "repairAttemptId": "P1-FINAL-SEVEN-ASTRA-20260923-01A0CBA4",
+  "capturedAtUtc": "2026-09-23T15:03:15.319Z",
+  "implementationCommitSha": "133201b339eb4dd7dac6158db99c93d385db80b2",
+  "candidateHeadAtCapture": "d7227cf6130cf52fb5b40c990c854d693a8a2d33",
+  "candidateTreeAtCapture": "485bb34a04bf7ed885e56240f3d5f5db585b0638",
   "runtime": {
     "version": "v26.7.0",
     "executablePath": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
@@ -27,17 +27,17 @@
   "reproducedBy": {
     "path": "backend/lib/photosynthesis-relation-evaluator.js",
     "export": "semanticCaseFingerprint",
-    "implementationCommitSha": "3880eedf52594250a54a26fae6c7da5ef17fd0d9"
+    "implementationCommitSha": "133201b339eb4dd7dac6158db99c93d385db80b2"
   },
   "rejectedDuplicates": [
     {
-      "semanticFingerprint": "20f5abd957618db29146b8920cc63f3142c72deac77d0d7d4accf47ebe8424e4",
+      "semanticFingerprint": "7f23b9432ac066bbc2c632317688d35b45fa1a674533234f4123e9b9a962a128",
       "retainedCaseId": "SB-001",
       "rejectedCaseId": "V2-SENTENCE_BOUNDARY-005",
       "reason": "same fingerprint under frozen semanticFingerprintRules"
     },
     {
-      "semanticFingerprint": "15ad7a146914c2119f146f90242e0a766f1b0cec5777138227bc1a32f060116a",
+      "semanticFingerprint": "b1c4c9401669f8d2b12a3d2425087f86fa3a4acc05882bcc44a9e75bfb56cf73",
       "retainedCaseId": "V2-PUNCTUATION_ABUSE-003",
       "rejectedCaseId": "V2-PUNCTUATION_ABUSE-007",
       "reason": "same fingerprint under frozen semanticFingerprintRules"
@@ -263,7 +263,7 @@
     {
       "caseId": "ADV002",
       "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f206361707475726520636172626f6e2064696f7869646520616e64206c69676874206973206e65617262792e",
-      "semanticFingerprint": "89be634aec7fb5f0ead414fcb7eb50b55fbaf18b74b715a96fcecc7a6c9cc6ad",
+      "semanticFingerprint": "d6c8e0bc5f962ec0a92a9c507ff97a6cb8b762b60f0de5a1cfad5fb0364d2b94",
       "expectedDecision": "FAIL",
       "classIds": [
         "DETACHED_OBJECT_DECOYS",
@@ -305,7 +305,7 @@
     {
       "caseId": "ADV006",
       "canonicalCaseBytes": "416e696d616c7320616e6420706c616e7473207573652063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
-      "semanticFingerprint": "eb95ca8a7f677ba2d9e9e79224bbaf470ff43c003b79ef080433583aec5a33a4",
+      "semanticFingerprint": "0b0bfad5c9e70c82c2e9bca6e083555bea6d64d4e37704e8fd5e35bf26142862",
       "expectedDecision": "FAIL",
       "classIds": [
         "COORDINATED_SUBJECTS_MIXED_INVALID",
@@ -315,7 +315,7 @@
     {
       "caseId": "CSI-002",
       "canonicalCaseBytes": "506c616e747320616e6420616e696d616c73207573652063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
-      "semanticFingerprint": "b44d7d9837d6240cd093752af1d4718825273428a454e405573454ffe3a4a47f",
+      "semanticFingerprint": "06d2cb3a4c90d9776fd6f08c55503bfed12a539d3fb77b3e952fa4a2f8917dd1",
       "expectedDecision": "FAIL",
       "classIds": [
         "COORDINATED_SUBJECTS_MIXED_INVALID"
@@ -324,7 +324,7 @@
     {
       "caseId": "CSI-003",
       "canonicalCaseBytes": "506c616e74732c20616c6761652c20616e6420616e696d616c732063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
-      "semanticFingerprint": "85ba115a2fd8cd69d35d04d54ad5a5fb98becb3baa8e01943b117c7321d0541d",
+      "semanticFingerprint": "741d66c1c3993442e0e0ed520669a0cc6b807620c94af7a83826ce0fbe16cbb2",
       "expectedDecision": "FAIL",
       "classIds": [
         "COORDINATED_SUBJECTS_MIXED_INVALID"
@@ -342,7 +342,7 @@
     {
       "caseId": "DOB-001",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f78696465206e656172206c6967687420656e657267792e",
-      "semanticFingerprint": "c5bfed3a94468de646d55f0b3bdeac841b98b8225c1df09d8a571994a693335a",
+      "semanticFingerprint": "02102493748430fc7e2dbee6cd011ae8939f94d02f0bc75c1540b76f6c5e3b03",
       "expectedDecision": "FAIL",
       "classIds": [
         "DIRECT_OBJECT_BARRIERS"
@@ -351,7 +351,7 @@
     {
       "caseId": "FPB-001",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f78696465207768696c65206c6967687420656e657267792069732070726573656e742e",
-      "semanticFingerprint": "f02fa7836f6a5f0b4547252122e48b5feb8e6f48f4d4a98b604012a7390c4443",
+      "semanticFingerprint": "1092628c97647a1eeba384870897ac244a32241b2f893bc2692953c84fa47e89",
       "expectedDecision": "FAIL",
       "classIds": [
         "FINITE_PREDICATE_BARRIERS"
@@ -360,7 +360,7 @@
     {
       "caseId": "SB-001",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c732e204c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "20f5abd957618db29146b8920cc63f3142c72deac77d0d7d4accf47ebe8424e4",
+      "semanticFingerprint": "7f23b9432ac066bbc2c632317688d35b45fa1a674533234f4123e9b9a962a128",
       "expectedDecision": "FAIL",
       "classIds": [
         "SENTENCE_BOUNDARY"
@@ -378,7 +378,7 @@
     {
       "caseId": "MAL-003",
       "canonicalCaseBytes": "43686c6f726f7068796c6c206c696768742070686f746f73796e74686573697320636170747572657320656e657267792e",
-      "semanticFingerprint": "aefaf70b6b39336acbd5d6bdd5861f4d66507d4d1b2f78e50ff0e6e4ed1d2c68",
+      "semanticFingerprint": "31bc9532dc934ec1efaf280f788ed13dc325fadfe3a34ed5642b2564ce7066a8",
       "expectedDecision": "FAIL",
       "classIds": [
         "MALFORMED_SYNTAX"
@@ -612,7 +612,7 @@
     {
       "caseId": "CB-001",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653b206c6967687420656e657267792069732070726573656e742e",
-      "semanticFingerprint": "746efdba7693f82cb7cc8d1fcb89d83ff4f44e17d13c9c8c539166809b0c702f",
+      "semanticFingerprint": "405f1a385ab3319c70c05f6df1d2ab8f615c620b9b543d2aef2a251aab1607c1",
       "expectedDecision": "FAIL",
       "classIds": [
         "CLAUSE_BOUNDARY"
@@ -630,7 +630,7 @@
     {
       "caseId": "PRON-002",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f7869646520616e642073746f726573206974206e656172206c6967687420656e657267792e",
-      "semanticFingerprint": "ee7eea09571d9ce0b2c6eba91e1a9c41d5320b064aa0fd13742ac7c0499fa76d",
+      "semanticFingerprint": "a2c0970c35fcdc83e37fc1a590924adcd0b8fe5799d91833dc8bda92796e0106",
       "expectedDecision": "FAIL",
       "classIds": [
         "PRONOUN_CONTINUATION"
@@ -639,7 +639,7 @@
     {
       "caseId": "IS-001",
       "canonicalCaseBytes": "416e696d616c732063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
-      "semanticFingerprint": "4b2e8a1928efceb9a724d803b77fa16f644eb6645f11a2eae648ae017b823444",
+      "semanticFingerprint": "d783aaac5c9cd11c5106eba611b16e68da39d57d33c822a6e2d17d9f93bacfc5",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_SUBJECT"
@@ -648,7 +648,7 @@
     {
       "caseId": "IO-001",
       "canonicalCaseBytes": "50686f746f73796e746865736973206361707475726573206865617420656e657267792e",
-      "semanticFingerprint": "7739ea59e5f995595f33a1477111f8339d8294d8d517ef00e30c7496d2f8db3b",
+      "semanticFingerprint": "14d4717fba20a2cc7b231f5a852a910b80d61d85cfa0a05144c03f25f2469b3c",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_OBJECT"
@@ -684,7 +684,7 @@
     {
       "caseId": "PUN-001",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f78696465212121204c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "f2b77df947ed308efa05fc20c9bfce73bcea1d2b044d53989c304c9d84b44c96",
+      "semanticFingerprint": "409f07601a193c5e70be7730db5176547dca531af522a9c945d6634a8a840dc4",
       "expectedDecision": "FAIL",
       "classIds": [
         "PUNCTUATION_ABUSE"
@@ -693,7 +693,7 @@
     {
       "caseId": "NS-001",
       "canonicalCaseBytes": "43686c6f726f7068796c6c2069732070726573656e743b20616e696d616c732063617074757265206c6967687420656e657267792e",
-      "semanticFingerprint": "84a94a6b5fd58690350786d51e40a99706580f8719d51c7312d928583a018ab3",
+      "semanticFingerprint": "dec195f1c3f4844d1057bb4a2dc05be34cb5f6c73d6a87a633a9c3fb5d221c60",
       "expectedDecision": "FAIL",
       "classIds": [
         "NO_STITCHING"
@@ -702,7 +702,7 @@
     {
       "caseId": "KREG-001",
       "canonicalCaseBytes": "50686f746f73796e746865736973206973207468652070726f6365737320627920776869636820677265656e20706c616e74732c20616c6761652c20616e6420736f6d6520626163746572696120636f6e76657274206c6967687420656e6572677920696e746f206368656d6963616c20656e657267792c2073746f72696e6720697420696e20676c75636f7365206d6f6c6563756c65732e204974207573657320636172626f6e2064696f7869646520616e642077617465722c2072656c656173696e67206f787967656e206173206120627970726f647563742c20616e642069732064726976656e2062792063686c6f726f7068796c6c20696e207468652070726573656e6365206f662073756e6c696768742e",
-      "semanticFingerprint": "7cd4737f89d4c16c14f05710842d22f65cad384150f04771d21c2c6036cfa65d",
+      "semanticFingerprint": "a12de7c9cfe2470836fd00f7604b3bf30833adc54fec0c9f7eea954d4a52688d",
       "expectedDecision": "PASS",
       "classIds": [
         "AFFIRMATIVE_ACTIVE",
@@ -1018,7 +1018,7 @@
     {
       "caseId": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-001",
       "canonicalCaseBytes": "416e696d616c7320616e6420616c676165207573652063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
-      "semanticFingerprint": "91f9e29a4ab0780b54b2ec0b270caf01e78087bbf66e9d6c2194a3790265e10c",
+      "semanticFingerprint": "c4054e7eec0da0d3832db5c7ddc86d937f7ba4abbab984cbb97d638bb4ba2e11",
       "expectedDecision": "FAIL",
       "classIds": [
         "COORDINATED_SUBJECTS_MIXED_INVALID"
@@ -1027,7 +1027,7 @@
     {
       "caseId": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-002",
       "canonicalCaseBytes": "416c67616520616e6420726f636b73207573652063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
-      "semanticFingerprint": "2f84a54b0533cea19b45b5f8acf7e9c7a1bc2fa7755b394a121ef832405c348c",
+      "semanticFingerprint": "34252e4c4fb3e64950642d90135f714c8c2ee81d785bb8cddcfbef276d2e4e59",
       "expectedDecision": "FAIL",
       "classIds": [
         "COORDINATED_SUBJECTS_MIXED_INVALID"
@@ -1036,7 +1036,7 @@
     {
       "caseId": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-003",
       "canonicalCaseBytes": "526f636b7320616e6420706c616e7473207573652063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
-      "semanticFingerprint": "36c8f119cc706c27ba9fdb73fdd194b69c48e62b08623beed07ad8717af989ed",
+      "semanticFingerprint": "3bead898bf672ea3554c9e9dada40536d774388789ee8f8e44509c69d40c15e4",
       "expectedDecision": "FAIL",
       "classIds": [
         "COORDINATED_SUBJECTS_MIXED_INVALID"
@@ -1045,7 +1045,7 @@
     {
       "caseId": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-004",
       "canonicalCaseBytes": "506c616e74732c20616c6761652c20616e6420616e696d616c73207573652063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
-      "semanticFingerprint": "36ffc001bf74baa0c0a5d5415311dbf3c5e0cd05845ccde2c482baf583435358",
+      "semanticFingerprint": "0218eb3e7c84fbeefc79695c2dd92da6a15d1ae2f7b73051fbe46fefe04423cd",
       "expectedDecision": "FAIL",
       "classIds": [
         "COORDINATED_SUBJECTS_MIXED_INVALID"
@@ -1054,7 +1054,7 @@
     {
       "caseId": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-005",
       "canonicalCaseBytes": "416c67616520616e6420616e696d616c73207573652063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
-      "semanticFingerprint": "8493c2fb79c025b818e1fbbed3733731180390e17ec0db8e3a02b1fc34959448",
+      "semanticFingerprint": "b91b617247489cd764074cf9c4e395b50fe23bd1e21286ff6fee501e90af2dc8",
       "expectedDecision": "FAIL",
       "classIds": [
         "COORDINATED_SUBJECTS_MIXED_INVALID"
@@ -1063,7 +1063,7 @@
     {
       "caseId": "V2-DETACHED_OBJECT_DECOYS-001",
       "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f20636170747572652073746172636820616e64206c69676874206973206e65617262792e",
-      "semanticFingerprint": "d7b245e7102be5e1914a0a80bd9c7fbd9934a3c028285887d3c6d8ae4c1741d7",
+      "semanticFingerprint": "5fd6059edd1b84ec216a2d0afcba438ce518edeab2d42291d9fa4c1536e304c0",
       "expectedDecision": "FAIL",
       "classIds": [
         "DETACHED_OBJECT_DECOYS"
@@ -1072,7 +1072,7 @@
     {
       "caseId": "V2-DETACHED_OBJECT_DECOYS-002",
       "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f2063617074757265207761746572207661706f7220616e64206c69676874206973206e65617262792e",
-      "semanticFingerprint": "08c08e42dd2639e0dea481ea9084f6f41506adf96e38e3918be9ac376736baab",
+      "semanticFingerprint": "252b59230b1127152fca0a0b757091d62b1cf7b9472424cab174df2c18dd0173",
       "expectedDecision": "FAIL",
       "classIds": [
         "DETACHED_OBJECT_DECOYS"
@@ -1081,7 +1081,7 @@
     {
       "caseId": "V2-DETACHED_OBJECT_DECOYS-003",
       "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f2063617074757265206d696e6572616c2073616c747320616e64206c69676874206973206e65617262792e",
-      "semanticFingerprint": "240c80ba031300fd4a6b1aa8006dd604e1f5cf302c765e37cc4d8e8639f7f494",
+      "semanticFingerprint": "e2997f0fda4f4933cf65bf65c09f1ebc5fbe83603a986783b0b94555146caa93",
       "expectedDecision": "FAIL",
       "classIds": [
         "DETACHED_OBJECT_DECOYS"
@@ -1090,7 +1090,7 @@
     {
       "caseId": "V2-DETACHED_OBJECT_DECOYS-004",
       "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f206361707475726520756c74726176696f6c657420726164696174696f6e20616e64206c69676874206973206e65617262792e",
-      "semanticFingerprint": "485194c6a27f9d82613a4c1ba5b42eb5383ac0cdb22b5c35f3cc7362c539b63c",
+      "semanticFingerprint": "fb58e199d6dbf6877b0a60e0f2a4c5d6c262d20b7e9a54cf39f4ad3005743b92",
       "expectedDecision": "FAIL",
       "classIds": [
         "DETACHED_OBJECT_DECOYS"
@@ -1099,7 +1099,7 @@
     {
       "caseId": "V2-DETACHED_OBJECT_DECOYS-005",
       "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f2063617074757265206c6561662074697373756520616e64206c69676874206973206e65617262792e",
-      "semanticFingerprint": "dfc044370bcfa8ceda740a5689ba6b3cf863ea1ca74a4af587c69c2f927bdfb3",
+      "semanticFingerprint": "d0fced506de0b5d166b4fdf5cae3f7a48d535769d1544e06cc0565ed04e95f0b",
       "expectedDecision": "FAIL",
       "classIds": [
         "DETACHED_OBJECT_DECOYS"
@@ -1108,7 +1108,7 @@
     {
       "caseId": "V2-DETACHED_OBJECT_DECOYS-006",
       "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f2063617074757265207375676172206d6f6c6563756c657320616e64206c69676874206973206e65617262792e",
-      "semanticFingerprint": "0dcdcca684fbce7e5bba75f7ef712ff76e7dc705a67c02722715b2026bacfe0b",
+      "semanticFingerprint": "5fdb07d52465c2b1ae34c21cca2a7b3d86510f9537a1a133033f5b4a36fe4515",
       "expectedDecision": "FAIL",
       "classIds": [
         "DETACHED_OBJECT_DECOYS"
@@ -1117,7 +1117,7 @@
     {
       "caseId": "V2-DETACHED_OBJECT_DECOYS-007",
       "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f2063617074757265206e6974726f67656e20616e64206c69676874206973206e65617262792e",
-      "semanticFingerprint": "a435fb671d15d6061efa10f39aaebbe50b85054e8543ecd6874fef2c174cbe81",
+      "semanticFingerprint": "a1ebc6265712aa6e4a981c77f3076360b6b5720a9c6a72d57aaa31463fb3584f",
       "expectedDecision": "FAIL",
       "classIds": [
         "DETACHED_OBJECT_DECOYS"
@@ -1126,7 +1126,7 @@
     {
       "caseId": "V2-DIRECT_OBJECT_BARRIERS-001",
       "canonicalCaseBytes": "50686f746f73796e746865736973206162736f72627320636172626f6e2064696f78696465206e656172206c6967687420656e657267792e",
-      "semanticFingerprint": "33187518499e3f4bd707e8894da8182f8fe0ccd7fd92352fc88bc03cf6c6ccbb",
+      "semanticFingerprint": "3099ef4d08520501428456e050036165a17b1d4189d33e8adb3ede8beda2d99a",
       "expectedDecision": "FAIL",
       "classIds": [
         "DIRECT_OBJECT_BARRIERS"
@@ -1135,7 +1135,7 @@
     {
       "caseId": "V2-DIRECT_OBJECT_BARRIERS-002",
       "canonicalCaseBytes": "50686f746f73796e746865736973206861726e657373657320636172626f6e2064696f78696465206e656172206c6967687420656e657267792e",
-      "semanticFingerprint": "fe3335fd16b10bc1527694df38e3fd3c991b704c0204bc623e0b970d30b839cb",
+      "semanticFingerprint": "9305eee43544465ad0b2e48b213199c4c882d1cf71760eba6a748ab6919ccff0",
       "expectedDecision": "FAIL",
       "classIds": [
         "DIRECT_OBJECT_BARRIERS"
@@ -1144,7 +1144,7 @@
     {
       "caseId": "V2-DIRECT_OBJECT_BARRIERS-003",
       "canonicalCaseBytes": "50686f746f73796e746865736973207573657320636172626f6e2064696f78696465206e656172206c6967687420656e657267792e",
-      "semanticFingerprint": "ef068a478a346a14ce53b1e9817d671911e4aded6ec52cb161a2751abdd058bb",
+      "semanticFingerprint": "ee9b4ce0db0a46a32dce0d364753251fc0d10d948594649d049ad2e243f24d1e",
       "expectedDecision": "FAIL",
       "classIds": [
         "DIRECT_OBJECT_BARRIERS"
@@ -1153,7 +1153,7 @@
     {
       "caseId": "V2-DIRECT_OBJECT_BARRIERS-004",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e766572747320636172626f6e2064696f78696465206e656172206c6967687420656e657267792e",
-      "semanticFingerprint": "d26e9e8bb9522d3369527e4668f6719a7e3f083857e567293b88ca533ca3e7a5",
+      "semanticFingerprint": "f7a2e0b7776f192b37557d830bf2e77a0df08d2d1e93a441b585c3b3b71935f7",
       "expectedDecision": "FAIL",
       "classIds": [
         "DIRECT_OBJECT_BARRIERS"
@@ -1162,7 +1162,7 @@
     {
       "caseId": "V2-FINITE_PREDICATE_BARRIERS-001",
       "canonicalCaseBytes": "50686f746f73796e746865736973206162736f72627320636172626f6e2064696f78696465207768696c65206c6967687420656e657267792069732070726573656e742e",
-      "semanticFingerprint": "8b839e7ded535337bcccb022a9819f2fede52b96cd20a45c6b487ebd91a814b3",
+      "semanticFingerprint": "3b879edf55197bf1e336bec5a4ec6e0a6919409b8c4221d121c234276a244b93",
       "expectedDecision": "FAIL",
       "classIds": [
         "FINITE_PREDICATE_BARRIERS"
@@ -1171,7 +1171,7 @@
     {
       "caseId": "V2-FINITE_PREDICATE_BARRIERS-002",
       "canonicalCaseBytes": "50686f746f73796e746865736973206861726e657373657320636172626f6e2064696f78696465207768696c65206c6967687420656e657267792069732070726573656e742e",
-      "semanticFingerprint": "e4e002993d8d587804706522f2997f2a6f7b50b94a1b7c3416e160569325ffda",
+      "semanticFingerprint": "5437b3ee2e0db56a39691bb888cb3ffbba1aebf807355841e57bb537a3d3650c",
       "expectedDecision": "FAIL",
       "classIds": [
         "FINITE_PREDICATE_BARRIERS"
@@ -1180,7 +1180,7 @@
     {
       "caseId": "V2-FINITE_PREDICATE_BARRIERS-003",
       "canonicalCaseBytes": "50686f746f73796e746865736973207573657320636172626f6e2064696f78696465207768696c65206c6967687420656e657267792069732070726573656e742e",
-      "semanticFingerprint": "ca9adaf996132a0ab4980fd745c5e4c0382c63b89437764f45e2c4aaa320ab81",
+      "semanticFingerprint": "f3711a9de314c4becf94738bb49a1ddcef0109e00453a6e71e46ec5006baceac",
       "expectedDecision": "FAIL",
       "classIds": [
         "FINITE_PREDICATE_BARRIERS"
@@ -1189,7 +1189,7 @@
     {
       "caseId": "V2-FINITE_PREDICATE_BARRIERS-004",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e766572747320636172626f6e2064696f78696465207768696c65206c6967687420656e657267792069732070726573656e742e",
-      "semanticFingerprint": "bec22d58a224a1f194ec156a54db78bc7c8626295ade6e0d44cbc77eafaabc45",
+      "semanticFingerprint": "6bf0138094e64b424060eb3bc50cd6414f1cc0bbfb410ca3167143bb4c42f483",
       "expectedDecision": "FAIL",
       "classIds": [
         "FINITE_PREDICATE_BARRIERS"
@@ -1198,7 +1198,7 @@
     {
       "caseId": "V2-FINITE_PREDICATE_BARRIERS-005",
       "canonicalCaseBytes": "50686f746f73796e746865736973207472616e73666f726d7320636172626f6e2064696f78696465207768696c65206c6967687420656e657267792069732070726573656e742e",
-      "semanticFingerprint": "b68a3bff52a0053a708dc8c44548450ac4b5b39196e0c03c23fb67cc8aeae4b5",
+      "semanticFingerprint": "cf9897597c1a34b7dbd45d54e742baa65330aa77ed462a3dbe0d321f2f182c6a",
       "expectedDecision": "FAIL",
       "classIds": [
         "FINITE_PREDICATE_BARRIERS"
@@ -1261,7 +1261,7 @@
     {
       "caseId": "V2-LOCAL_NEGATION-001",
       "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f7420636170747572652077617465722e",
-      "semanticFingerprint": "ee9c70e3e88caba923e1fe8fbafba8662795d7197c4e30ea6578e81423ff4795",
+      "semanticFingerprint": "12d40e0481272095a4589cb7ab8f713984a2981f7c0816223bbde9578f6a5d53",
       "expectedDecision": "FAIL",
       "classIds": [
         "LOCAL_NEGATION"
@@ -1270,7 +1270,7 @@
     {
       "caseId": "V2-LOCAL_NEGATION-002",
       "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f742063617074757265206865617420656e657267792e",
-      "semanticFingerprint": "277341270203580862ce38b575bc03e4fa414be3b2c411a890257a84f682b6f4",
+      "semanticFingerprint": "4f9ff7e137dba56e51e67301a61f4d4158d86480c98dd95f953bf9425153903e",
       "expectedDecision": "FAIL",
       "classIds": [
         "LOCAL_NEGATION"
@@ -1279,7 +1279,7 @@
     {
       "caseId": "V2-LOCAL_NEGATION-003",
       "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f74206361707475726520636172626f6e2064696f786964652e",
-      "semanticFingerprint": "7817faad00f9b748557bd2fbeb791f7b472a72b2d40bf5d5bdde6507113166c3",
+      "semanticFingerprint": "a7f6354a3a7c4bc31da43663a167cdd660393623273333eb32e08420c35b3be5",
       "expectedDecision": "FAIL",
       "classIds": [
         "LOCAL_NEGATION"
@@ -1288,7 +1288,7 @@
     {
       "caseId": "V2-LOCAL_NEGATION-004",
       "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f742063617074757265206f787967656e2e",
-      "semanticFingerprint": "9bc9aaca967bb055aa112e1af1a354424db6cd5c327b57df0c4cfbf7194907ff",
+      "semanticFingerprint": "9d5c913c2df42782044f7fa6f9c21c12cd024de71872c852b5aa474ed1c176c7",
       "expectedDecision": "FAIL",
       "classIds": [
         "LOCAL_NEGATION"
@@ -1297,7 +1297,7 @@
     {
       "caseId": "V2-LOCAL_NEGATION-005",
       "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f7420636170747572652073756761722e",
-      "semanticFingerprint": "80844eae401f5c3b177691963f3e9678ec7ddce229609bcf784377307a749c31",
+      "semanticFingerprint": "e21fc407c94584f7340af448760bec497d9ff7751cac7446384c0f5588a60fe9",
       "expectedDecision": "FAIL",
       "classIds": [
         "LOCAL_NEGATION"
@@ -1306,7 +1306,7 @@
     {
       "caseId": "V2-LOCAL_NEGATION-006",
       "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f742063617074757265206e75747269656e74732e",
-      "semanticFingerprint": "42bec06e4afd2c727a372e2c08b43689074680eb9d92b654b572c3732a4609af",
+      "semanticFingerprint": "a21debed3deb9c08f49d85eb58de3740d9b06591a2c77e7e6289a2f75ed0e29f",
       "expectedDecision": "FAIL",
       "classIds": [
         "LOCAL_NEGATION"
@@ -1315,7 +1315,7 @@
     {
       "caseId": "V2-LOCAL_NEGATION-007",
       "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f742063617074757265207374617263682e",
-      "semanticFingerprint": "884cc032ee1d0c13153e2c7793a1eddf303b56203fed059e6638fece95f55a4e",
+      "semanticFingerprint": "6935eb7802ec853d96458c9dde5dd9396dd3359beea508f5703290ae8dbf41be",
       "expectedDecision": "FAIL",
       "classIds": [
         "LOCAL_NEGATION"
@@ -1495,7 +1495,7 @@
     {
       "caseId": "V2-CLAUSE_BOUNDARY-001",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f7869646520616c74686f756768206c6967687420656e657267792069732070726573656e742e",
-      "semanticFingerprint": "7667912a12e1a34ba5fc05b87aab06e90099aaf5caa6f35149b8c1aa14bfad85",
+      "semanticFingerprint": "781134368e7cf0c3c9df97607ed1feb65e26d7e5f8afd1db6d69335cee4be59e",
       "expectedDecision": "FAIL",
       "classIds": [
         "CLAUSE_BOUNDARY"
@@ -1504,7 +1504,7 @@
     {
       "caseId": "V2-CLAUSE_BOUNDARY-002",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964652062656361757365206c6967687420656e657267792069732070726573656e742e",
-      "semanticFingerprint": "e6912b557f9021e35b90c327df30ab2bfc0144c91e4ee61158636a8498f871cc",
+      "semanticFingerprint": "34f8f8cd20cdbe5b11dfe4564075a1291ea395f41daa7877d3bf92a7c0c9cf12",
       "expectedDecision": "FAIL",
       "classIds": [
         "CLAUSE_BOUNDARY"
@@ -1513,7 +1513,7 @@
     {
       "caseId": "V2-CLAUSE_BOUNDARY-003",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964652077686572656173206c6967687420656e657267792069732070726573656e742e",
-      "semanticFingerprint": "a7c10ddae6dcd64cafefc60211bf82c8cc3ab66005f04a0cbd15f4ff8d17703b",
+      "semanticFingerprint": "f2d3b400139797d156ff4172b7bc91e326a2b85ec039d3de1be820132d572559",
       "expectedDecision": "FAIL",
       "classIds": [
         "CLAUSE_BOUNDARY"
@@ -1522,7 +1522,7 @@
     {
       "caseId": "V2-CLAUSE_BOUNDARY-004",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f78696465206966206c6967687420656e657267792069732070726573656e742e",
-      "semanticFingerprint": "f367c9333c5fdcebf9782c1258cb03e9db36d83568950a0892c59bdf64b65b1e",
+      "semanticFingerprint": "68847d0dc976469291e41bd3569355c77f60bdfec8cd69f569812ab026ac808d",
       "expectedDecision": "FAIL",
       "classIds": [
         "CLAUSE_BOUNDARY"
@@ -1531,7 +1531,7 @@
     {
       "caseId": "V2-CLAUSE_BOUNDARY-005",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f7869646520756e6c657373206c6967687420656e657267792069732070726573656e742e",
-      "semanticFingerprint": "182f0d65c9d78286bdcd21da3d7e6b1fabc86fa54dbd21b00ef0e4fdfa802666",
+      "semanticFingerprint": "3cb3049294d26a93d3a170571edeedca550bd679eb484c1d6749775cacfedc91",
       "expectedDecision": "FAIL",
       "classIds": [
         "CLAUSE_BOUNDARY"
@@ -1540,7 +1540,7 @@
     {
       "caseId": "V2-CLAUSE_BOUNDARY-006",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f78696465207768656e206c6967687420656e657267792069732070726573656e742e",
-      "semanticFingerprint": "37af6c08699165b551f20a46764814e0b7d4102d8af167195612042991c07e73",
+      "semanticFingerprint": "ea00902eff6e29b076f29a935c7daed368e7859fc4851b59f88107e9ad7c52b2",
       "expectedDecision": "FAIL",
       "classIds": [
         "CLAUSE_BOUNDARY"
@@ -1549,7 +1549,7 @@
     {
       "caseId": "V2-CLAUSE_BOUNDARY-007",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964652073696e6365206c6967687420656e657267792069732070726573656e742e",
-      "semanticFingerprint": "5c67b1e65168d559d545fa6339d51eaf4ff925dd8fc17396b95e059f4b68e971",
+      "semanticFingerprint": "f8f6cd30e5583c8301197ba887fe656f5845ecb1320ac41f11a1e07a1ce788a0",
       "expectedDecision": "FAIL",
       "classIds": [
         "CLAUSE_BOUNDARY"
@@ -1558,7 +1558,7 @@
     {
       "caseId": "V2-SENTENCE_BOUNDARY-001",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c733b206c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "93ca59a9d2e0a3aadc078a5f6bb963e3b62296140ac014ec51638fad17385a25",
+      "semanticFingerprint": "8417f9e552c2dbca0388c1eb325f3db78bd545dd75da5c4a19fa8e243d42bf94",
       "expectedDecision": "FAIL",
       "classIds": [
         "SENTENCE_BOUNDARY"
@@ -1567,7 +1567,7 @@
     {
       "caseId": "V2-SENTENCE_BOUNDARY-002",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c733a206c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "7b45e37d525166e4e89f271c9391ea6fc71d109332472cd0a5825ae3c45d2f6b",
+      "semanticFingerprint": "449c87486c3f034329e1b48aa5c3d25c4a11a11926c3370ffacb2e73f480af88",
       "expectedDecision": "FAIL",
       "classIds": [
         "SENTENCE_BOUNDARY"
@@ -1576,7 +1576,7 @@
     {
       "caseId": "V2-SENTENCE_BOUNDARY-003",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c733f206c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "d18b49489948855f723e5041329ed98aa74063f8567835ba0da0308b23318c4e",
+      "semanticFingerprint": "29ff595e743b862bdefd08ce609ed30c10ef1d66cf80837137235547f7606043",
       "expectedDecision": "FAIL",
       "classIds": [
         "SENTENCE_BOUNDARY"
@@ -1585,7 +1585,7 @@
     {
       "caseId": "V2-SENTENCE_BOUNDARY-004",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c7321206c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "c9e15e1853c17f0083a84dbd4df910434e6da506d7a5ecbde91e072b2d448b1f",
+      "semanticFingerprint": "55f538c03c27465092da682735003cc644bb6b0008300542ee496b66de56049a",
       "expectedDecision": "FAIL",
       "classIds": [
         "SENTENCE_BOUNDARY"
@@ -1594,7 +1594,7 @@
     {
       "caseId": "V2-SENTENCE_BOUNDARY-006",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c732e204c6967687420656e65726779206578697374733b20706c616e7473206361707475726520636172626f6e2064696f786964652e",
-      "semanticFingerprint": "f6dcc8b03ccddbf5ccaad23332eac412988309aec003b8a4bb2dc147bf4fc744",
+      "semanticFingerprint": "539d04a1a800840791f75d58474226b89a6c0bc8683bbeca5909a88b1090b42e",
       "expectedDecision": "FAIL",
       "classIds": [
         "SENTENCE_BOUNDARY"
@@ -1666,7 +1666,7 @@
     {
       "caseId": "V2-INVALID_SUBJECT-001",
       "canonicalCaseBytes": "526f636b732063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
-      "semanticFingerprint": "b2a9d65b0acf9e44c8ed1e5789ae82393ee48e63f1673e37ed2bf94659daf913",
+      "semanticFingerprint": "1732d4b27e72cc47d507bdcd4c3c8c85dd61d64e1c0cec803f051c8b3341d454",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_SUBJECT"
@@ -1675,7 +1675,7 @@
     {
       "caseId": "V2-INVALID_SUBJECT-002",
       "canonicalCaseBytes": "416e696d616c73206162736f7262206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
-      "semanticFingerprint": "a4586c9867cc39c8a96342583cf945c1dde19a46da702983c1f0a6b23cad8750",
+      "semanticFingerprint": "499750c8fe9855284695117fa45cea526dce8a183d1a6c7c76200ac36d7e35ae",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_SUBJECT"
@@ -1684,7 +1684,7 @@
     {
       "caseId": "V2-INVALID_SUBJECT-003",
       "canonicalCaseBytes": "416e696d616c73206861726e657373206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
-      "semanticFingerprint": "11db128cf9dd52ebe6976ba7c1c27c2cb58b184114ad5898d6dd1f9686d666bc",
+      "semanticFingerprint": "9684e19fca447591b94503dbd4aada17225cb3360af02bd7ff7f404d854b550b",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_SUBJECT"
@@ -1693,7 +1693,7 @@
     {
       "caseId": "V2-INVALID_SUBJECT-004",
       "canonicalCaseBytes": "416e696d616c7320757365206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
-      "semanticFingerprint": "39d22b83d62ccb61e9a7883010734f8a2b9608292b9fa54f72a97826dc201924",
+      "semanticFingerprint": "6354408e235e6211bcc7b42ea37ca84b1da112044546a8a03113a95f3b349119",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_SUBJECT"
@@ -1702,7 +1702,7 @@
     {
       "caseId": "V2-INVALID_SUBJECT-005",
       "canonicalCaseBytes": "416e696d616c7320636f6e76657274206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
-      "semanticFingerprint": "2d44fd03b23f25f1857ac63f1d19c76437456bef7fa23afbe8e7c77ae31bdc47",
+      "semanticFingerprint": "30fc6d3c7edada910d1fdc65eb2f183dddf233c1f020c1dc0ee57b1a23c5e8bf",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_SUBJECT"
@@ -1711,7 +1711,7 @@
     {
       "caseId": "V2-INVALID_SUBJECT-006",
       "canonicalCaseBytes": "416e696d616c73207472616e73666f726d206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
-      "semanticFingerprint": "57f58d052ce947f4422f142d7242c0c7ba19bdf8bcbaab235cc958a1a6842007",
+      "semanticFingerprint": "7b8c8327d6b09f76e8ae9cf4b9f6c6ec0ce348b0f0136f7b072b828b1803caac",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_SUBJECT"
@@ -1720,7 +1720,7 @@
     {
       "caseId": "V2-INVALID_SUBJECT-007",
       "canonicalCaseBytes": "416e696d616c732073746f7265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
-      "semanticFingerprint": "319741cfd873bad5ee8d54c8672247e36bf941d6f3346a546159c12055421c37",
+      "semanticFingerprint": "35f3b2a654f3ee082793e1adea39204990b88be275f759b5e665ac5dfc302179",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_SUBJECT"
@@ -1729,7 +1729,7 @@
     {
       "caseId": "V2-INVALID_OBJECT-001",
       "canonicalCaseBytes": "50686f746f73796e7468657369732063617074757265732077617465722e",
-      "semanticFingerprint": "c24f9be99c36b88e2d94e935d3a949d46c437c1b81f834164d745a1c740a56d0",
+      "semanticFingerprint": "453cad9bdeb37ecfa911454b1a3d75ab1487b2dc806658605828c811edec10b9",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_OBJECT"
@@ -1738,7 +1738,7 @@
     {
       "caseId": "V2-INVALID_OBJECT-002",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964652e",
-      "semanticFingerprint": "b8e750f68e84ab91d124229737803b5a88b814809c1b7e0574e25ffd2d393ed1",
+      "semanticFingerprint": "353bfa6203674f9f95037e09ef308a720bc5325539e98f14f1b96a6ea0a77e83",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_OBJECT"
@@ -1747,7 +1747,7 @@
     {
       "caseId": "V2-INVALID_OBJECT-003",
       "canonicalCaseBytes": "50686f746f73796e746865736973206361707475726573206f787967656e2e",
-      "semanticFingerprint": "fe8c71fc623bbc154aa802e2a7ff9bb18ece508e3ea4b0bf781e6a21ba14ab69",
+      "semanticFingerprint": "bb563ea7677ed1bc0785d1b6dff598567477c945ad04f541103c5a5532b94072",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_OBJECT"
@@ -1756,7 +1756,7 @@
     {
       "caseId": "V2-INVALID_OBJECT-004",
       "canonicalCaseBytes": "50686f746f73796e746865736973206361707475726573206e75747269656e74732e",
-      "semanticFingerprint": "df13f5e82793bb65dcccab9d578a3c383ff65afe3868b14dc7831b3249e7260e",
+      "semanticFingerprint": "b36ac96a76f35cb16924c4d87f12f46efb6fc043f28d92c73765f49b618710d1",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_OBJECT"
@@ -1765,7 +1765,7 @@
     {
       "caseId": "V2-INVALID_OBJECT-005",
       "canonicalCaseBytes": "50686f746f73796e746865736973206361707475726573207374617263682e",
-      "semanticFingerprint": "83810e0e00d2d18c9ccd693348c4d853f0fe8c598625e929c7b6091b9da148ec",
+      "semanticFingerprint": "aad80ef541aa1edaea7d987f53be3a956d306f735af5749325f8cc7df3a7a3d7",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_OBJECT"
@@ -1774,7 +1774,7 @@
     {
       "caseId": "V2-INVALID_OBJECT-006",
       "canonicalCaseBytes": "50686f746f73796e7468657369732063617074757265732073756761722e",
-      "semanticFingerprint": "8ecfab6c7e141a284fd1f355d0b32ca31099088f20fb96340008e29d3f67fc8b",
+      "semanticFingerprint": "63ade02a94518bc777c7a9367d04b9603003e89c002789997771af5b3e8743ae",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_OBJECT"
@@ -1783,7 +1783,7 @@
     {
       "caseId": "V2-INVALID_OBJECT-007",
       "canonicalCaseBytes": "50686f746f73796e746865736973206361707475726573206d696e6572616c2073616c74732e",
-      "semanticFingerprint": "3537665d3d8af8c4a6cd391afecac2bce1209dc3ea163e85de268b248b648901",
+      "semanticFingerprint": "12a83162ae667d632fbf6a70381ba6d50a02ab522b25d0da8a58aa2504806ee0",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_OBJECT"
@@ -1927,7 +1927,7 @@
     {
       "caseId": "V2-PUNCTUATION_ABUSE-001",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653f3f204c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "6ed4dfe74594b005ceabb0f3f7a744f29ce62f82a0676220d91e5e82fb9443ac",
+      "semanticFingerprint": "67356db0bf00c38008d113faa5a4cceab124f098a7a8300aad97de3fd4333104",
       "expectedDecision": "FAIL",
       "classIds": [
         "PUNCTUATION_ABUSE"
@@ -1936,7 +1936,7 @@
     {
       "caseId": "V2-PUNCTUATION_ABUSE-002",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653a21204c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "27a656b90276f48040e477b3a9e97a9e83d02926cc710bf21592ea47c0dad391",
+      "semanticFingerprint": "a3e229d3867ec0288371b6bfb8403cf1b6cb34d698534079e713cdeec3f072ac",
       "expectedDecision": "FAIL",
       "classIds": [
         "PUNCTUATION_ABUSE"
@@ -1945,7 +1945,7 @@
     {
       "caseId": "V2-PUNCTUATION_ABUSE-003",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653f213f204c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "15ad7a146914c2119f146f90242e0a766f1b0cec5777138227bc1a32f060116a",
+      "semanticFingerprint": "b1c4c9401669f8d2b12a3d2425087f86fa3a4acc05882bcc44a9e75bfb56cf73",
       "expectedDecision": "FAIL",
       "classIds": [
         "PUNCTUATION_ABUSE"
@@ -1954,7 +1954,7 @@
     {
       "caseId": "V2-PUNCTUATION_ABUSE-004",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653a204c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "384dce228b2b0b1b247c6583d206ded60ef818b4688d41eef7eb59546e591ed3",
+      "semanticFingerprint": "395a60aec64674b4bb289656188d0cfc548ea21581e7f7591a19d5aca86410a0",
       "expectedDecision": "FAIL",
       "classIds": [
         "PUNCTUATION_ABUSE"
@@ -1963,7 +1963,7 @@
     {
       "caseId": "V2-PUNCTUATION_ABUSE-005",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653b204c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "4b9c026293063d639524708d02261c7ed68d8a0bf0dee0e3f9c88fc3f363594b",
+      "semanticFingerprint": "08b778095e6d90d044cebd69ed1b3de24847dd17ef2c6668d730f4300200af6e",
       "expectedDecision": "FAIL",
       "classIds": [
         "PUNCTUATION_ABUSE"
@@ -1972,7 +1972,7 @@
     {
       "caseId": "V2-PUNCTUATION_ABUSE-006",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964652e2e2e204c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "98d8f01f822a9a80384386a1141f35e4889c9c05b7e7a80da7713ace7802feb0",
+      "semanticFingerprint": "802905374a0b89307875d48ffb7e0d7482af07610a5ace90882c1d45cbddcf52",
       "expectedDecision": "FAIL",
       "classIds": [
         "PUNCTUATION_ABUSE"
@@ -1981,7 +1981,7 @@
     {
       "caseId": "V2-NO_STITCHING-001",
       "canonicalCaseBytes": "43686c6f726f7068796c6c2069732070726573656e743b20726f636b732063617074757265206c6967687420656e657267792e",
-      "semanticFingerprint": "af80b1a321f17587cbe6b95a2b8f08bf7790a2f89628f2666fe0ec2adaff9c0f",
+      "semanticFingerprint": "be27e6a16ae6392e932d539e503b37955831f91c848a92ff85b9f1e58bdba687",
       "expectedDecision": "FAIL",
       "classIds": [
         "NO_STITCHING"
@@ -1990,7 +1990,7 @@
     {
       "caseId": "V2-NO_STITCHING-002",
       "canonicalCaseBytes": "43686c6f726f7068796c6c2069732070726573656e743b20616e696d616c73206361707475726520736f6c617220656e657267792e",
-      "semanticFingerprint": "0841c656aa632dc8d27baf11851e9bd29ca991eb91a794d49aed7a5b83e960de",
+      "semanticFingerprint": "49dc019bf23977852a4c1338a52038a49822565ff68a3d8f0713814b45b306bc",
       "expectedDecision": "FAIL",
       "classIds": [
         "NO_STITCHING"
@@ -1999,7 +1999,7 @@
     {
       "caseId": "V2-NO_STITCHING-003",
       "canonicalCaseBytes": "43686c6f726f7068796c6c2069732070726573656e743b20726f636b73206361707475726520736f6c617220656e657267792e",
-      "semanticFingerprint": "1d8c292b390ade51858d7ef1a5d5edd910e99e6e095931a4ccd62236b910ce5d",
+      "semanticFingerprint": "471bc41e619857395cf6a5b9b9d42a25e748f576229bed444299667130f2ab60",
       "expectedDecision": "FAIL",
       "classIds": [
         "NO_STITCHING"
@@ -2008,7 +2008,7 @@
     {
       "caseId": "V2-NO_STITCHING-004",
       "canonicalCaseBytes": "43686c6f726f7068796c6c2069732070726573656e743b20616e696d616c7320636170747572652073756e6c696768742e",
-      "semanticFingerprint": "df08325f721f7265574375ca57bdae196676a795341a0991794ffc068d9e556e",
+      "semanticFingerprint": "eca52e0e511fbd677ad229b26d734bc3dd9140fa44609ec1eddef6da980bbb2a",
       "expectedDecision": "FAIL",
       "classIds": [
         "NO_STITCHING"
@@ -2017,7 +2017,7 @@
     {
       "caseId": "V2-NO_STITCHING-005",
       "canonicalCaseBytes": "43686c6f726f7068796c6c2069732070726573656e743b20726f636b7320636170747572652073756e6c696768742e",
-      "semanticFingerprint": "ffdf6040aa1832b7f49268bccb8762e2cc1c11229071f79bf836803fcf70b676",
+      "semanticFingerprint": "0f106ad4db5e6aefd008e84ddbe66afb1b9cce224267a385a48e51e7d472a5b1",
       "expectedDecision": "FAIL",
       "classIds": [
         "NO_STITCHING"
@@ -2035,7 +2035,7 @@
     {
       "caseId": "V2-NO_STITCHING-007",
       "canonicalCaseBytes": "43686c6f726f7068796c6c2069732070726573656e743b20726f636b7320636170747572652077617465722e",
-      "semanticFingerprint": "6fffd31b24745b60d1770c5199405e9ea589d89ca206e3f48098c3dda92fa256",
+      "semanticFingerprint": "f17778ee9872efbd4b93523b0d2207a110273f1a528f11a523835b4972711250",
       "expectedDecision": "FAIL",
       "classIds": [
         "NO_STITCHING"
@@ -2053,20 +2053,20 @@
     {
       "caseId": "B5-PUNCTUATION_ABUSE-001",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f78696465213f21204c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "279b68704e5c16fbb75400e3ad222a6e267f52a2a061a5ead09324f1ada9c1b4",
+      "semanticFingerprint": "14f2fcc12ce0d9939fb070d1e6e2198fa13466be29c42deaa9d4f1592290faed",
       "expectedDecision": "FAIL",
       "classIds": [
         "PUNCTUATION_ABUSE"
       ]
     }
   ],
-  "implementationTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "repairBaseSha": "7bec4e3cbc98b096d3b7538c5b45fe70db89e9f9",
-  "repairBaseTreeSha": "6e668a1b7a91b0d88d01b789b40e8f05a11806ff",
-  "implementationTreeSha": "167e2c872cf8f250b46c2f1529c6597f38fd2f9f",
-  "implementationParentSha": "c17c52faf67b1ef8b3f6d0b14aaf264804092316",
-  "branch": "codex/p1-opus55-astra-converged-repair-20260923",
-  "redSourceCommitSha": "7bec4e3cbc98b096d3b7538c5b45fe70db89e9f9",
-  "redTestSourceCommitSha": "76854c85dd853ebbb1ad02599cd7cee8b21fe8d3",
-  "redEvidenceCommitSha": "c17c52faf67b1ef8b3f6d0b14aaf264804092316"
+  "implementationTaskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
+  "repairBaseSha": "fee44f4d2f3a46458b4b79277363585f78695ecc",
+  "repairBaseTreeSha": "6bff90f3a379d192e30c01f9111cef65c31d9c55",
+  "implementationTreeSha": "9b3e439162f641998cadfba2e0d64e74b277e084",
+  "implementationParentSha": "fc072ccd935d3cf6028e9efd9e805f03ec7d251f",
+  "branch": "codex/p1-final-seven-astra-repair-20260923",
+  "redSourceCommitSha": "fee44f4d2f3a46458b4b79277363585f78695ecc",
+  "redTestSourceCommitSha": "fc072ccd935d3cf6028e9efd9e805f03ec7d251f",
+  "redEvidenceCommitSha": "3eeacfce68895db97236e8568154fefb8457b161"
 }

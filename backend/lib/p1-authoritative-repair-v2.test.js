@@ -1568,7 +1568,7 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
   }
 
   const indexById = new Map(index.entries.map((entry) => [entry.caseId, entry]));
-  const rejectedIds = new Set(sanctionedDuplicates.flat());
+  const rejectedIds = new Set(sanctionedDuplicates.map(([, rejectedId]) => rejectedId));
   for (const item of cases) {
     const entry = indexById.get(item.id);
     if (rejectedIds.has(item.id)) assert.equal(entry, undefined, item.id);

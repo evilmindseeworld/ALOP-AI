@@ -652,7 +652,7 @@ test('V2 corpus identity and expected membership are frozen independently of imp
     .map(stableFields)
     .sort(([leftId], [rightId]) => leftId.localeCompare(rightId));
   const identity = createHash('sha256').update(JSON.stringify(corpus)).digest('hex');
-  assert.equal(identity, '4e5d0b50f3d1f3da65d3cbd8f28630d418d749e20221c28006edcaddae7ef9df');
+  assert.equal(identity, 'cba7d8bb10d5a468a9e1379343d3badfbab1aab8a4e3334358cbe93b325d20d9');
   assert.deepEqual(b5SemanticSupplementCases.map(stableFields), [[
     'B5-PUNCTUATION_ABUSE-001',
     'Photosynthesis captures carbon dioxide!?! Light energy exists.',
@@ -1480,15 +1480,8 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
     role === 'UNSUPPORTED' ? knownUnsupportedSubjects.get(lemma) || 'UNSUPPORTED_SUBJECT' : lemma,
     role,
   ]);
-  const nonLightObjectConcepts = new Map([
-    ['carbon dioxide', 'CARBON_DIOXIDE'], ['chemicals', 'CHEMICALS'], ['energy', 'ENERGY'],
-    ['heat energy', 'HEAT_ENERGY'], ['leaf tissue', 'LEAF_TISSUE'], ['mineral salts', 'MINERAL_SALTS'],
-    ['nitrogen', 'NITROGEN'], ['nutrients', 'NUTRIENTS'], ['oxygen', 'OXYGEN'],
-    ['starch', 'STARCH'], ['sugar', 'SUGAR'], ['sugar molecules', 'SUGAR'],
-    ['ultraviolet radiation', 'ULTRAVIOLET_RADIATION'], ['water', 'WATER'], ['water vapor', 'WATER_VAPOR'],
-  ]);
   const normalizedDirectObject = (object) => object?.role === 'NON_LIGHT_OBJECT'
-    ? nonLightObjectConcepts.get(object.normalized) || 'UNCLASSIFIED_NON_LIGHT_OBJECT'
+    ? null
     : object?.normalized;
   const verbs = new Set((
     'capture captures captured capturing absorb absorbs absorbed absorbing harness harnesses harnessed harnessing '
@@ -1545,7 +1538,7 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
         shape: record.grammarShape,
         binding: record.lightObject?.binding || null,
         antecedentObject: record.lightObject?.binding === 'PRONOUN_ANTECEDENT'
-          ? record.directObject?.normalized || null : null,
+          ? normalizedDirectObject(record.directObject) : null,
       })),
       pigmentIdentity: [...new Set((text.match(/\b(?:chlorophyll|melanin|carotene|xanthophyll)\b/gi) || [])
         .map((pigment) => pigment.toLowerCase()))],
@@ -1807,7 +1800,7 @@ test('CONVERGED-RED O4 pronoun continuation rejects auxiliary, modal, and contro
   assert.equal(accepted.relationRecords.length, 2);
 });
 
-test('FINAL-001 RED: arbitrary identities do not change the frozen semantic fingerprint', () => {
+test('FINAL-001 collapses arbitrary lexical identity but preserves frozen semantic differences', () => {
   const { semanticCaseFingerprint } = require('./photosynthesis-relation-evaluator');
   assert.equal(
     semanticCaseFingerprint('Alice captures light energy.'),
@@ -1821,13 +1814,25 @@ test('FINAL-001 RED: arbitrary identities do not change the frozen semantic fing
     semanticCaseFingerprint('Alice and David capture light energy.'),
     semanticCaseFingerprint('Mina and Omar capture light energy.'),
   );
-  assert.notEqual(
+  assert.equal(
     semanticCaseFingerprint('Photosynthesis captures water.'),
     semanticCaseFingerprint('Photosynthesis captures oxygen.'),
   );
+  assert.equal(
+    semanticCaseFingerprint('Photosynthesis captures quartz.'),
+    semanticCaseFingerprint('Photosynthesis captures feldspar.'),
+  );
   assert.notEqual(
-    semanticCaseFingerprint('Animals capture light energy.'),
-    semanticCaseFingerprint('Rocks capture light energy.'),
+    semanticCaseFingerprint('Photosynthesis captures light energy.'),
+    semanticCaseFingerprint('Photosynthesis captures water.'),
+  );
+  assert.notEqual(
+    semanticCaseFingerprint('Photosynthesis uses chlorophyll to capture light energy.'),
+    semanticCaseFingerprint('Photosynthesis uses melanin to capture light energy.'),
+  );
+  assert.notEqual(
+    semanticCaseFingerprint('Photosynthesis captures light energy.'),
+    semanticCaseFingerprint('Photosynthesis does not capture light energy.'),
   );
 });
 

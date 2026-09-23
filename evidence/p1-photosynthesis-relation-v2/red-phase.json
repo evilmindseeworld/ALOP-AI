@@ -7,59 +7,122 @@
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "implementationTaskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
-  "repairAttemptId": "ASTRA-PREQ-002-004-008-REPAIR-20260923-V3",
-  "capturedAtUtc": "2026-09-23T02:01:08.000Z",
+  "implementationTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
+  "repairAttemptId": "P1-CONVERGED-OPUS55-ASTRA-20260923-01A09D9F",
+  "capturedAtUtc": "2026-09-23T11:22:47Z",
   "phase": "RED",
   "expectedRed": true,
-  "redSourceCommitSha": "69525e3ec464c07fbd79b978ab4cdb67d87e8032",
-  "redSourceTreeSha": "67aa807749ac73789bc693abfaaff78d3a1f5c44",
-  "testSourceCommitSha": "dc6222b6f607aaf20bf6370d29c91dfbf02415d9",
-  "testSourceTreeSha": "5ea03e94acbb68d0301826065a2d6b2c1feac00c",
+  "redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb",
+  "redTreeSha": "d8611391d48933b842477d8c6af270eb11c1aada",
+  "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe",
+  "redEvidenceTreeSha": "e8e74ca08e64bef005f888c84c2177037226ce51",
+  "redSourceCommitSha": "7bec4e3cbc98b096d3b7538c5b45fe70db89e9f9",
+  "redSourceTreeSha": "6e668a1b7a91b0d88d01b789b40e8f05a11806ff",
+  "testSourceCommitSha": "7bec25f70c6ed98a20394d53c4b75fd8023bdae0",
+  "testSourceTreeSha": "121b91b48deda791fa9b3e3c8ff7a14df4140b95",
   "testSourceBlobs": {
-    "backend/lib/p1-authoritative-repair-v2.test.js": "b1def4863738972df90bdf34600deb950d31e3dd",
-    "backend/lib/photosynthesis-relation-evaluator.test.js": "fb4a570a36cdd41e7dcdba368ee18238f5c689f0"
+    "backend/lib/p1-authoritative-repair-v2.test.js": "ca924eab9ec4f8ab449d633d6e5cb9a229c5d0ad",
+    "backend/lib/evaluation.js": "8ab426423effc7d4a26e756cb4cec56ec9377921",
+    "backend/lib/photosynthesis-relation-evaluator.js": "5757ac06e97da9018f5053b475daef1429d85b03",
+    "backend/lib/photosynthesis-relation-cases.js": "af696714cb3280c631eda714abfa2f816c38c4a3",
+    "backend/evals/backend-intelligence-v1.json": "d39097bc1ae8271bde35e85cdbd5905a788f5b2d",
+    "backend/evals/backend-intelligence-v2.json": "5977d88701eea79199a84015c3b146b96553134a",
+    "backend/scripts/run-photosynthesis-relation-mutations.mjs": "576ff2994951d5f14aae7cdf23abd5f7c9a265bd"
   },
   "runtime": {
     "version": "v26.7.0",
-    "executablePath": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node.exe",
-    "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
+    "executablePath": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
+    "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9",
+    "archiveSha256": "d3bd72755141ed32bbcd841228ee81897c8a98d50dfa7dae2179399a0a7c90f8",
+    "officialChecksumManifest": "https://nodejs.org/dist/v26.7.0/SHASUMS256.txt"
   },
-  "command": "node --test --test-name-pattern \"PREQ-002|PREQ-008|PREQ-004\" backend/lib/p1-authoritative-repair-v2.test.js backend/lib/photosynthesis-relation-evaluator.test.js",
+  "repairComparisonBase": {
+    "commitSha": "7bec4e3cbc98b096d3b7538c5b45fe70db89e9f9",
+    "treeSha": "6e668a1b7a91b0d88d01b789b40e8f05a11806ff",
+    "priorRepairBaseSha": "69525e3ec464c07fbd79b978ab4cdb67d87e8032"
+  },
+  "command": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test --test-reporter=tap --test-name-pattern=CONVERGED-RED backend/lib/p1-authoritative-repair-v2.test.js",
   "testRun": {
-    "tests": 3,
+    "tests": 8,
     "passed": 0,
-    "failed": 3,
+    "failed": 8,
     "exitCode": 1,
     "behavioralRed": true,
-    "stdoutSha256": "ca3f9bcbab30855e39b586722166c60e6a58e009464d81358baa0a7f999a30e7",
-    "stdoutBytes": 4672,
+    "stdoutSha256": "62aa2f77122812377acb3644710e0001d468ee6cc9130bbd5dd9f8581f7c7d2f",
+    "stdoutBytes": 10351,
     "failureNames": [
-      "PREQ-002 reindexes all cases with exactly the frozen 18-field projection",
-      "PREQ-008 package receipt binds the recipe by committed commit, path, and blob",
-      "PREQ-004 retains a valid negated cross-lemma pronoun relation in factuality"
+      "CONVERGED-RED A1 malformed pronoun continuations cannot rescue a malformed frame",
+      "CONVERGED-RED A2 pronoun objects share antecedent identity for contradiction checks",
+      "CONVERGED-RED A3 accepted but-continuations emit their own predicate and polarity",
+      "CONVERGED-RED A4 malformed arbitrary names do not alter the frozen fingerprint",
+      "CONVERGED-RED O1 coordinated predicates classify each predicate independently",
+      "CONVERGED-RED O2 subjectless inputs fail closed through evaluator, gradeCase, and package",
+      "CONVERGED-RED O3 explicit subject after comma-and begins an independent proposition",
+      "CONVERGED-RED O4 pronoun continuation rejects auxiliary, modal, and control prefixes"
     ]
   },
   "rootReproductions": [
     {
-      "id": "ASTRA-PREQ-002",
-      "expected": "Only the two design-sanctioned duplicate groups; no cross-predicate pronoun duplicate group.",
-      "observed": "FAIL: PRON-001 and V2-PRONOUN_CONTINUATION-001 through -006 collapsed into one seven-ID fingerprint group.",
-      "failureTest": "PREQ-002 reindexes all cases with exactly the frozen 18-field projection"
+      "id": "ASTRA-A1",
+      "expected": "A malformed pronoun-continuation tail cannot qualify any derived relation or pass factuality.",
+      "observed": "FAIL: malformed trailing frames still pass through a derived PRONOUN_CONTINUATION record.",
+      "failureTest": "CONVERGED-RED A1 malformed pronoun continuations cannot rescue a malformed frame"
     },
     {
-      "id": "ASTRA-PREQ-004",
-      "expected": "Preserve affirmed capture and negated store relation records for the explicit pronoun continuation.",
-      "observed": "FAIL: only the affirmed capture relation remained; the negated store relation was absent.",
-      "failureTest": "PREQ-004 retains a valid negated cross-lemma pronoun relation in factuality"
+      "id": "ASTRA-A2",
+      "expected": "A pronoun object bound to the local light-energy antecedent uses canonical proposition identity for contradiction checks.",
+      "observed": "FAIL: the pronoun is retained as NON_LIGHT_OBJECT and the affirmed/negated pair is not detected.",
+      "failureTest": "CONVERGED-RED A2 pronoun objects share antecedent identity for contradiction checks"
     },
     {
-      "id": "ASTRA-PREQ-008",
-      "expected": "Bind package receipt to pinned committed recipe commit, path, and blob.",
-      "observed": "FAIL: recipeInputCommitSha was null instead of 3ae0f283461f304f2778a4dc463a85c8f7d86adf.",
-      "failureTest": "PREQ-008 package receipt binds the recipe by committed commit, path, and blob"
+      "id": "ASTRA-A3",
+      "expected": "An accepted but-continuation emits the second predicate, object, and polarity.",
+      "observed": "FAIL: do-not-store continuation is absent when its explicit light object differs from the first predicate lemma.",
+      "failureTest": "CONVERGED-RED A3 accepted but-continuations emit their own predicate and polarity"
+    },
+    {
+      "id": "ASTRA-A4",
+      "expected": "Arbitrary names/case IDs in malformed content do not change the frozen semantic fingerprint.",
+      "observed": "FAIL: unknown token lemma/form values are included in the frozen fingerprint projection.",
+      "failureTest": "CONVERGED-RED A4 malformed arbitrary names do not alter the frozen fingerprint"
+    },
+    {
+      "id": "OPUS55-P1-002",
+      "expected": "Each coordinated predicate independently retains destructive classification and qualification.",
+      "observed": "FAIL: capture-and-destroy qualifies because the second record copies CORE_LIGHT_RELATION/qualifies from capture.",
+      "failureTest": "CONVERGED-RED O1 coordinated predicates classify each predicate independently"
+    },
+    {
+      "id": "OPUS55-P1-004",
+      "expected": "Subjectless/malformed frames return structured failure through evaluator, gradeCase, and package.",
+      "observed": "FAIL: the four mandated forms throw TypeError reading undefined subject.valid.",
+      "failureTest": "CONVERGED-RED O2 subjectless inputs fail closed through evaluator, gradeCase, and package"
+    },
+    {
+      "id": "OPUS55-P1-008",
+      "expected": "Frozen SEP-001 explicit-subject proposition starts are not keyed to unrelated fixture verbs.",
+      "observed": "FAIL: a non-target first-clause verb prevents comma-and splitting and combines unrelated subjects.",
+      "failureTest": "CONVERGED-RED O3 explicit subject after comma-and begins an independent proposition"
+    },
+    {
+      "id": "OPUS55-P1-009",
+      "expected": "The frozen pronoun form excludes auxiliary/modal/control prefixes.",
+      "observed": "FAIL: a negated, modal, or control-prefixed first predicate still gets an affirmed qualifying continuation.",
+      "failureTest": "CONVERGED-RED O4 pronoun continuation rejects auxiliary, modal, and control prefixes"
     }
   ],
+  "supersededPriorRepairCycle": {
+    "repairAttemptId": "ASTRA-PREQ-002-004-008-REPAIR-20260923-V3",
+    "redSourceCommitSha": "69525e3ec464c07fbd79b978ab4cdb67d87e8032",
+    "testSourceCommitSha": "dc6222b6f607aaf20bf6370d29c91dfbf02415d9",
+    "historicalArtifactCommitSha": "7bec4e3cbc98b096d3b7538c5b45fe70db89e9f9",
+    "status": "SUPERSEDED_BY_CONVERGED_OPUS55_ASTRA_BLOCK"
+  },
+  "comparisonBaseUnmodified": true,
+  "testInputsCommittedAtTestedTree": true,
+  "nonInputEvidenceModifiedDuringReceiptCapture": [
+    "evidence/p1-photosynthesis-relation-v2/red-phase.json"
+  ],
   "baseWorktreeRestoredClean": true,
-  "provenanceSource": "FRESH_EXACT_69525_BASE_RED_RUN_WITH_TESTS_FROM_IMPLEMENTATION_COMMIT"
+  "provenanceSource": "FRESH_NODE_26_7_REPAIR_RED_RUN_ON_COMMITTED_TEST_TREE_WITH_CANONICAL_HISTORICAL_RED_BINDING"
 }

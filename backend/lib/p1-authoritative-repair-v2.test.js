@@ -1457,6 +1457,144 @@ test('Astra PREQ-007 treats contracted could not as asserted inability', () => {
   assert.equal(result.passed, false);
 });
 
+test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection', () => {
+  const { createHash } = require('node:crypto');
+  const { canonicalCases, generatedV2Cases, b5SemanticSupplementCases, requiredTestClasses } = require('./photosynthesis-relation-cases');
+  const { evaluatePhotosynthesisRelationsV2, tokenizeV2 } = require('./photosynthesis-relation-evaluator');
+  const index = JSON.parse(readFileSync(join(EVAL_ROOT, '..', '..', 'evidence', 'p1-photosynthesis-relation-v2', 'fingerprint-index.json'), 'utf8'));
+  const frozenFieldNames = [
+    'grammarShape', 'orderedSubjectLemmasAndRoleClasses', 'coordinationTypeAndCardinality', 'voice',
+    'verbLemmaAndMorphology', 'directObjectRoleAndNormalizedLightForm', 'objectBindingOrigin', 'auxiliaryChain',
+    'modal', 'controlChain', 'polarityStructure', 'orderedBarrierTypes', 'clauseSentenceTopology',
+    'contextBindingType', 'pronounAntecedentTopology', 'pigmentIdentity', 'invalidClaimType', 'expectedDecision',
+  ].sort();
+  const subjects = new Set([
+    'photosynthesis', 'plant', 'plants', 'green plant', 'green plants', 'alga', 'algae',
+    'some bacteria', 'photosynthetic bacterium', 'photosynthetic bacteria', 'chlorophyll',
+  ]);
+  const verbs = new Set((
+    'capture captures captured capturing absorb absorbs absorbed absorbing harness harnesses harnessed harnessing '
+    + 'use uses used using convert converts converted converting transform transforms transformed transforming '
+    + 'store stores stored storing destroy destroys destroyed waste wastes wasted ignore ignores ignored '
+    + 'lose loses lost block blocks blocked reject rejects rejected eliminate eliminates eliminated '
+    + 'remove removes removed prevent prevents prevented'
+  ).split(' '));
+  const cases = [...canonicalCases, ...generatedV2Cases, ...b5SemanticSupplementCases];
+  const fingerprintFor = (item) => {
+    const result = evaluatePhotosynthesisRelationsV2(item.text);
+    const records = result.relationRecords || [];
+    const text = result.normalized || '';
+    const projection = {
+      grammarShape: {
+        records: records.map((record) => record.grammarShape || 'UNRESOLVED'),
+        malformedRoleOrder: result.malformedShape || null,
+        malformedLexicalStructure: result.hasMalformed
+          ? tokenizeV2(text).map((token) => ({
+            role: subjects.has(token.form) ? 'SUBJECT'
+              : verbs.has(token.form) ? 'VERB'
+                : ['light', 'energy', 'sunlight'].includes(token.form) ? 'LIGHT' : 'OTHER',
+            lemma: token.lemma,
+            form: token.form,
+          }))
+          : null,
+      },
+      orderedSubjectLemmasAndRoleClasses: result.subjectSet || [],
+      coordinationTypeAndCardinality: result.coordinationTopology || [],
+      voice: records.map((record) => record.voice || 'ACTIVE'),
+      verbLemmaAndMorphology: records.map((record) => [record.verbLemma, record.verbForm]),
+      directObjectRoleAndNormalizedLightForm: records.map((record) => record.directObject
+        ? [record.directObject.role, record.directObject.normalized] : null),
+      objectBindingOrigin: records.map((record) => record.lightObject?.binding || null),
+      auxiliaryChain: records.map((record) => record.auxiliaryChain?.chain || []),
+      modal: records.map((record) => record.modal || null),
+      controlChain: records.map((record) => record.controlChain
+        ? [record.controlChain.type, record.controlChain.surface] : null),
+      polarityStructure: records.map((record) => [record.polarity || 'UNRESOLVED', record.polarityReason || '']),
+      orderedBarrierTypes: result.barriers || [],
+      clauseSentenceTopology: result.topology || [],
+      contextBindingType: records.map((record) => record.processContext || null),
+      pronounAntecedentTopology: records.map((record, recordIndex) => ({
+        recordIndex,
+        shape: record.grammarShape,
+        binding: record.lightObject?.binding || null,
+        antecedentObject: record.lightObject?.binding === 'PRONOUN_ANTECEDENT'
+          ? record.directObject?.normalized || null : null,
+      })),
+      pigmentIdentity: [...new Set((text.match(/\b(?:chlorophyll|melanin|carotene|xanthophyll)\b/gi) || [])
+        .map((pigment) => pigment.toLowerCase()))],
+      invalidClaimType: records.map((record) => record.relationType || null),
+      expectedDecision: item.expectedDecision,
+    };
+    assert.deepEqual(Object.keys(projection).sort(), frozenFieldNames);
+    const sorted = Object.fromEntries(Object.entries(projection).sort(([left], [right]) => left.localeCompare(right)));
+    return createHash('sha256').update(JSON.stringify(sorted)).digest('hex');
+  };
+
+  const fingerprintById = new Map(cases.map((item) => [item.id, fingerprintFor(item)]));
+  const groups = new Map();
+  for (const item of cases) {
+    const fingerprint = fingerprintById.get(item.id);
+    if (!groups.has(fingerprint)) groups.set(fingerprint, []);
+    groups.get(fingerprint).push(item.id);
+  }
+  const duplicateGroups = [...groups.values()].filter((ids) => ids.length > 1)
+    .map((ids) => ids.sort());
+  const sanctionedDuplicates = [
+    ['SB-001', 'V2-SENTENCE_BOUNDARY-005'],
+    ['V2-PUNCTUATION_ABUSE-003', 'V2-PUNCTUATION_ABUSE-007'],
+  ].map((ids) => ids.sort());
+  duplicateGroups.sort((left, right) => left[0].localeCompare(right[0]));
+  sanctionedDuplicates.sort((left, right) => left[0].localeCompare(right[0]));
+  assert.deepEqual(duplicateGroups, sanctionedDuplicates);
+
+  const pronounCases = cases.filter((item) => item.classIds?.includes('PRONOUN_CONTINUATION'));
+  assert.equal(pronounCases.length, 9);
+  assert.ok(new Set(pronounCases.map((item) => fingerprintById.get(item.id))).size >= 6);
+  for (const item of pronounCases.filter((item) => item.expectedDecision === 'PASS')) {
+    const result = evaluatePhotosynthesisRelationsV2(item.text);
+    assert.equal(result.passed, true, item.id);
+    assert.equal(result.relationRecords.length, 2, item.id);
+    assert.equal(result.relationRecords[0].lightObject?.binding, 'PRONOUN_ANTECEDENT', item.id);
+    assert.equal(result.relationRecords[1].directObject?.surface, 'it', item.id);
+    assert.equal(result.relationRecords[1].lightObject?.binding, 'PRONOUN_ANTECEDENT', item.id);
+    assert.equal(result.relationRecords[1].qualifies, true, item.id);
+  }
+  assert.equal(evaluatePhotosynthesisRelationsV2(pronounCases.find((item) => item.id === 'PRON-002').text).passed, false);
+
+  for (const row of requiredTestClasses) {
+    const unique = new Set(cases.filter((item) => item.classIds?.includes(row.classId))
+      .map((item) => fingerprintById.get(item.id))).size;
+    assert.ok(unique >= row.minimumUniqueSemanticCases, `${row.classId}: ${unique}/${row.minimumUniqueSemanticCases}`);
+  }
+
+  const indexById = new Map(index.entries.map((entry) => [entry.caseId, entry]));
+  const rejectedIds = new Set(sanctionedDuplicates.flat());
+  for (const item of cases) {
+    const entry = indexById.get(item.id);
+    if (rejectedIds.has(item.id)) assert.equal(entry, undefined, item.id);
+    else assert.equal(entry?.semanticFingerprint, fingerprintById.get(item.id), item.id);
+  }
+  assert.equal(cases.length, 206);
+  assert.equal(index.duplicatePolicy, 'reject-global-duplicate');
+  assert.equal(index.uniqueCount, index.entries.length);
+  assert.equal(new Set(index.entries.map((entry) => entry.semanticFingerprint)).size, index.entries.length);
+});
+
+test('PREQ-008 package receipt binds the recipe by committed commit, path, and blob', () => {
+  const receipt = JSON.parse(readFileSync(join(EVAL_ROOT, '..', '..', 'evidence', 'p1-photosynthesis-relation-v2', 'mutation-phase.json'), 'utf8'));
+  const recipeCommit = '3ae0f283461f304f2778a4dc463a85c8f7d86adf';
+  const recipePath = 'backend/scripts/run-photosynthesis-relation-mutations.mjs';
+  assert.equal(receipt.recipeInputCommitSha, recipeCommit);
+  assert.equal(receipt.recipeInputPath, recipePath);
+  assert.equal(receipt.recipeInputBlobSha, 'd5a84e74ed8a22eb2fcb8a85303335fa820826a9');
+  const resolvedBlob = execFileSync('git', ['rev-parse', `${recipeCommit}:${recipePath}`], {
+    cwd: join(__dirname, '..', '..'),
+    encoding: 'utf8',
+  }).trim();
+  assert.equal(receipt.recipeInputBlobSha, resolvedBlob);
+  assert.equal(receipt.recipeGitBlob, resolvedBlob);
+});
+
 test('Astra PREQ-002 release fingerprint index rejects global duplicates without dropping canonical coverage', () => {
   const index = JSON.parse(readFileSync(join(EVAL_ROOT, '..', '..', 'evidence', 'p1-photosynthesis-relation-v2', 'fingerprint-index.json'), 'utf8'));
   const { canonicalCases, requiredTestClasses } = require('./photosynthesis-relation-cases');

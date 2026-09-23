@@ -494,6 +494,7 @@ function evaluatePhotosynthesisRelations(input) {
 // V2 has its own bounded parse path; V1 remains frozen above.
 const V2_ID = 'photosynthesis-light-relation-v2';
 const V2_VERBS = new Map(Object.entries({capture:'capture',captures:'capture',captured:'capture',capturing:'capture',absorb:'absorb',absorbs:'absorb',absorbed:'absorb',absorbing:'absorb',harness:'harness',harnesses:'harness',harnessed:'harness',harnessing:'harness',use:'use',uses:'use',used:'use',using:'use',convert:'convert',converts:'convert',converted:'convert',converting:'convert',transform:'transform',transforms:'transform',transformed:'transform',transforming:'transform',store:'store',stores:'store',stored:'store',storing:'store',destroy:'destroy',destroys:'destroy',destroyed:'destroy',waste:'waste',wastes:'waste',ignore:'ignore',ignores:'ignore',lose:'lose',loses:'lose',block:'block',blocks:'block',reject:'reject',rejects:'reject',eliminate:'eliminate',eliminates:'eliminate',remove:'remove',removes:'remove',prevent:'prevent',prevents:'prevent'}));
+const V2_LIGHT_RELATION_LEMMAS = new Set(['capture','absorb','harness','use','convert','transform','store']);
 const V2_SUBJECTS = new Set(['photosynthesis','plant','plants','green plant','green plants','alga','algae','some bacteria','photosynthetic bacterium','photosynthetic bacteria','chlorophyll']);
 const V2_PIGMENT_TERMS = new Set(['chlorophyll','melanin','carotene','xanthophyll']);
 const V2_MODALS = new Map([['can',['UNCERTAIN','CAPABILITY_NOT_ACTUALITY']],['cannot',['NEGATED','ASSERTED_INABILITY']],['can\'t',['NEGATED','ASSERTED_INABILITY']],['may',['UNCERTAIN','POSSIBILITY']],['might',['UNCERTAIN','WEAK_POSSIBILITY']],['could',['UNCERTAIN','POSSIBILITY_OR_CAPABILITY']],['couldn\'t',['NEGATED','ASSERTED_INABILITY']],['must',['AFFIRMED','ASSERTED_NECESSITY']],['should',['UNRESOLVED','NORMATIVE_OR_EXPECTED']],['would',['UNRESOLVED','CONDITIONAL_OR_COUNTERFACTUAL']]]);
@@ -687,7 +688,7 @@ function bindLocalPassiveAgent(ts){
   return{light,lightEnd,by,verbIndex,verb,auxiliaryChain,agent,local:true};
 }
 function resolveCoordinatedPredicates(ts,i,end){const a=ts.findIndex((t,n)=>n>i&&n<end&&t.lemma==='and');if(a<0)return[];const subject=extractSubjectSet(ts,i),first=validateFinitePredicate(ts,i),firstAux=parseAuxiliaryChain(ts,i),firstControl=resolveControlChain(ts,i),secondIndex=a+1,second=validateFinitePredicate(ts,secondIndex),secondAux=parseAuxiliaryChain(ts,secondIndex),secondControl=resolveControlChain(ts,secondIndex),accepted=Boolean(first&&second&&validateActiveFinitePredicateV2(ts,i,first,subject,firstAux,firstControl)&&validateActiveFinitePredicateV2(ts,secondIndex,second,subject,secondAux,secondControl)),indices=[i,secondIndex];if(!accepted)indices.invalid=true;return indices;}
-function resolvePronounContinuation(ts,o){const a=ts.findIndex((t,n)=>n>=o.tokenEnd&&t.lemma==='and');if(a<0||a!==o.tokenEnd)return null;const firstIndex=ts.findIndex((t,n)=>n<o.tokenEnd&&validateFinitePredicate(ts,n)),first=validateFinitePredicate(ts,firstIndex),subject=extractSubjectSet(ts,firstIndex),firstAux=parseAuxiliaryChain(ts,firstIndex),firstControl=resolveControlChain(ts,firstIndex),secondIndex=a+1,second=validateFinitePredicate(ts,secondIndex),secondSubject={...subject,end:a+1},secondAux=parseAuxiliaryChain(ts,secondIndex,a+1),secondControl=resolveControlChain(ts.slice(a+1),secondIndex-a-1),supported=new Set(['capture','absorb','harness','use','convert','transform','store']);if(!first||!second||!supported.has(first.lemma)||!supported.has(second.lemma)||ts[secondIndex+1]?.lemma!=='it')return null;const grammarValid=validateActiveFinitePredicateV2(ts,firstIndex,first,subject,firstAux,firstControl)&&validateActiveFinitePredicateV2(ts,secondIndex,second,secondSubject,secondAux,secondControl);return{antecedent:o.normalized,valid:o.normalized==='light-energy',grammarValid,continuationTailOffset:secondIndex-o.tokenEnd,continuationVerb:second.surface};}
+function resolvePronounContinuation(ts,o){const a=ts.findIndex((t,n)=>n>=o.tokenEnd&&t.lemma==='and');if(a<0||a!==o.tokenEnd)return null;const firstIndex=ts.findIndex((t,n)=>n<o.tokenEnd&&validateFinitePredicate(ts,n)),first=validateFinitePredicate(ts,firstIndex),subject=extractSubjectSet(ts,firstIndex),firstAux=parseAuxiliaryChain(ts,firstIndex),firstControl=resolveControlChain(ts,firstIndex),secondIndex=a+1,second=validateFinitePredicate(ts,secondIndex),secondSubject={...subject,end:a+1},secondAux=parseAuxiliaryChain(ts,secondIndex,a+1),secondControl=resolveControlChain(ts.slice(a+1),secondIndex-a-1);if(!first||!second||!V2_LIGHT_RELATION_LEMMAS.has(first.lemma)||!V2_LIGHT_RELATION_LEMMAS.has(second.lemma)||ts[secondIndex+1]?.lemma!=='it')return null;const grammarValid=validateActiveFinitePredicateV2(ts,firstIndex,first,subject,firstAux,firstControl)&&validateActiveFinitePredicateV2(ts,secondIndex,second,secondSubject,secondAux,secondControl);return{antecedent:o.normalized,valid:o.normalized==='light-energy',grammarValid,continuationTailOffset:secondIndex-o.tokenEnd,continuationVerb:second.surface,second,secondIndex,secondSubject,secondAuxiliary:secondAux,secondControl};}
 const V2_DESTRUCTIVE_RELATION_LEMMAS = new Set(['destroy', 'waste', 'ignore', 'lose', 'block', 'reject', 'eliminate', 'remove', 'prevent']);
 function isSupportedPassiveAuxiliaryChain(chain) {
   const negators = chain.filter((form) => ['not', 'never'].includes(form));
@@ -796,8 +797,12 @@ function resolveButNegatedRelation(ts,verb,subject,object,sentenceText,primaryRe
   const auxiliaryIndex=butIndex+1;
   if(!['do','does','did'].includes(ts[auxiliaryIndex]?.form)||!['not','never'].includes(ts[auxiliaryIndex+1]?.form))return null;
   const predicateIndex=auxiliaryIndex+2,secondVerb=validateFinitePredicate(ts,predicateIndex),secondSubject={...subject,end:auxiliaryIndex},auxiliary=parseAuxiliaryChain(ts,predicateIndex,auxiliaryIndex),control=resolveControlChain(ts.slice(auxiliaryIndex),predicateIndex-auxiliaryIndex);
-  if(!secondVerb||secondVerb.lemma!==verb.lemma||!validateActiveFinitePredicateV2(ts,predicateIndex,secondVerb,secondSubject,auxiliary,control))return null;
-  const secondObject=bindDirectObject(ts,predicateIndex+1);
+  if(!secondVerb||(!V2_LIGHT_RELATION_LEMMAS.has(secondVerb.lemma)&&secondVerb.lemma!==verb.lemma)
+    ||secondVerb.lemma!==verb.lemma&&ts[predicateIndex+1]?.lemma!=='it'
+    ||!validateActiveFinitePredicateV2(ts,predicateIndex,secondVerb,secondSubject,auxiliary,control))return null;
+  const pronounObject=ts[predicateIndex+1]?.lemma==='it'&&object.role==='LIGHT_OBJECT'&&object.normalized==='light-energy';
+  const boundObject=pronounObject?{...object,start:ts[predicateIndex+1].start,end:ts[predicateIndex+1].end,tokenEnd:predicateIndex+2,surface:ts[predicateIndex+1].form}:null;
+  const secondObject=boundObject||bindDirectObject(ts,predicateIndex+1);
   if(!secondObject||secondObject.role!==object.role||secondObject.normalized!==object.normalized)return null;
   if(!ts.slice(secondObject.tokenEnd).every((token)=>['during','in','for','photosynthesis','.','!','?',','].includes(token.form)))return null;
   const state=composePredicatePolarity(auxiliary.modal,control,auxiliary);
@@ -814,9 +819,37 @@ function resolveButNegatedRelation(ts,verb,subject,object,sentenceText,primaryRe
     polarity:state.polarity,
     polarityReason:state.reason,
     directObject:{start:secondObject.start,end:secondObject.end,surface:secondObject.surface,normalized:secondObject.normalized,role:secondObject.role},
-    lightObject:secondObject.normalized==='light-energy'?{start:secondObject.start,end:secondObject.end,surface:secondObject.surface,normalized:'light-energy',binding:'DIRECT_OBJECT'}:null,
+    lightObject:secondObject.normalized==='light-energy'?{start:secondObject.start,end:secondObject.end,surface:secondObject.surface,normalized:'light-energy',binding:pronounObject?'PRONOUN_ANTECEDENT':'DIRECT_OBJECT'}:null,
     qualifies:false,
     rejectionReasons:[],
+    evidenceSpan:{start:ts[0].start,end:ts.at(-1).end,text:sentenceText},
+  });
+}
+function resolvePronounContinuationRelation(ts,object,sentenceText,primaryRecord,continuation){
+  if(!continuation?.valid||!continuation.grammarValid)return null;
+  const{second,secondIndex,secondSubject,secondAuxiliary:auxiliary,secondControl:control}=continuation;
+  const state=composePredicatePolarity(auxiliary.modal,control,auxiliary),pronoun=ts[secondIndex+1];
+  const validSubject=validateSubjectSet(secondSubject),directObject={start:pronoun.start,end:pronoun.end,surface:pronoun.form,normalized:'light-energy',role:'LIGHT_OBJECT'};
+  const activeAuxiliary=describeActiveAuxiliaryChainV2(auxiliary,ts,secondIndex);
+  return buildRelationRecordV2({
+    ...primaryRecord,
+    grammarShape:'PRONOUN_CONTINUATION',
+    verbLemma:second.lemma,
+    verbSurface:second.surface,
+    verbForm:second.form,
+    predicateStart:ts[secondIndex].start,
+    predicateEnd:ts[secondIndex].end,
+    auxiliaryChain:activeAuxiliary,
+    modal:auxiliary.modal,
+    controlChain:control?{type:control.type,surface:control.surface,effect:control.polarity==='AFFIRMED'?'AFFIRM':control.polarity==='NEGATED'?'NEGATE':control.polarity,start:ts[secondIndex-1]?.start||0,end:ts[secondIndex].start}:null,
+    polarity:state.polarity,
+    polarityReason:state.reason,
+    directObject,
+    lightObject:{start:pronoun.start,end:pronoun.end,surface:pronoun.form,normalized:'light-energy',binding:'PRONOUN_ANTECEDENT'},
+    objectBarriers:null,
+    relationType:V2_DESTRUCTIVE_RELATION_LEMMAS.has(second.lemma)?'DESTRUCTIVE_RELATION':'CORE_LIGHT_RELATION',
+    qualifies:validSubject&&state.polarity==='AFFIRMED',
+    rejectionReasons:validSubject?[]:['INVALID_SUBJECT'],
     evidenceSpan:{start:ts[0].start,end:ts.at(-1).end,text:sentenceText},
   });
 }
@@ -1056,7 +1089,7 @@ function parseMinimalRelationGrammar(input) {
         ...(destructive ? ['DESTRUCTIVE_RELATION'] : []),
       ];
 
-      relationRecords.push(buildRelationRecordV2({
+      const primaryRecord=buildRelationRecordV2({
         grammarShape: shape,
         subjectSet: subjectRecord,
         subjectValidity: subjectSet.validity,
@@ -1099,10 +1132,14 @@ function parseMinimalRelationGrammar(input) {
           && !coordinatedPredicates.invalid && polarity === 'AFFIRMED',
         rejectionReasons,
         evidenceSpan: { start: tokens[0].start, end: tokens.at(-1).end, text: clause.text },
-      }));
+      });
+      relationRecords.push(primaryRecord);
+
+      const pronounContinuation=resolvePronounContinuationRelation(tokens,object,clause.text,primaryRecord,pronoun);
+      if(pronounContinuation)relationRecords.push(pronounContinuation);
 
       const coordinatedNegative = resolveButNegatedRelation(
-        tokens, predicate, subjectSet, object, clause.text, relationRecords.at(-1),
+        tokens, predicate, subjectSet, object, clause.text, primaryRecord,
       );
       if (coordinatedNegative) relationRecords.push(coordinatedNegative);
 
@@ -1117,7 +1154,7 @@ function parseMinimalRelationGrammar(input) {
         const secondPredicate = validateFinitePredicate(tokens, secondPredicateIndex);
         if (secondPredicate) {
           relationRecords.push({
-            ...relationRecords.at(-1),
+            ...primaryRecord,
             verbLemma: secondPredicate.lemma,
             verbSurface: secondPredicate.surface,
             verbForm: secondPredicate.form,
@@ -1243,14 +1280,19 @@ const evaluatePhotosynthesisRelationsV2 = (input)=>{
     positiveChlorophyllBinding:relationRecords.some((record)=>record.qualifies&&record.relationType==='CHLOROPHYLL_SUPPORT'),
   };
 };
-function semanticCaseFingerprint(input,decision=null){const r=typeof input==='string'?evaluatePhotosynthesisRelationsV2(input):input,records=r.relationRecords||[],text=typeof input==='string'?normalizeInputV2(input):r.normalized||'',coordination=r.coordinationTopology||[],f={grammarShape:{records:records.map(x=>x.grammarShape||'UNRESOLVED'),malformedRoleOrder:r.malformedShape||null,malformedLexicalStructure:r.hasMalformed?tokenizeV2(text).map(t=>({role:V2_SUBJECTS.has(t.form)?'SUBJECT':V2_VERBS.has(t.form)?'VERB':['light','energy','sunlight'].includes(t.form)?'LIGHT':'OTHER',lemma:t.lemma,form:t.form})):null},orderedSubjectLemmasAndRoleClasses:r.subjectSet||[],coordinationTypeAndCardinality:coordination,voice:records.map(x=>x.voice||'ACTIVE'),verbLemmaAndMorphology:records.map(x=>[x.verbLemma,x.verbForm]),directObjectRoleAndNormalizedLightForm:records.map(x=>x.directObject?[x.directObject.role,x.directObject.normalized]:null),objectBindingOrigin:records.map(x=>x.lightObject?.binding||null),auxiliaryChain:records.map(x=>x.auxiliaryChain?.chain||[]),modal:records.map(x=>x.modal||null),controlChain:records.map(x=>x.controlChain?[x.controlChain.type,x.controlChain.surface]:null),polarityStructure:records.map(x=>[x.polarity||'UNRESOLVED',x.polarityReason||'']),orderedBarrierTypes:r.barriers||[],boundaryMarkers:records.map(x=>x.objectBarriers?.marker||null),pronounContinuationVerb:(text.match(/\band\s+(\w+)\s+it\b/)||[])[1]||null,clauseSentenceTopology:r.topology||[],punctuationTopology:r.punctuationTopology||[],contextBindingType:records.map(x=>x.processContext||null),pronounAntecedentTopology:records.map((x,i)=>({recordIndex:i,shape:x.grammarShape,binding:x.lightObject?.binding||null,antecedentObject:x.lightObject?.binding==='PRONOUN_ANTECEDENT'?x.directObject?.normalized||null:null})),pigmentIdentity:[...new Set((text.match(/\b(?:chlorophyll|melanin|carotene|xanthophyll)\b/gi)||[]).map(x=>x.toLowerCase()))],invalidClaimType:records.map(x=>x.relationType||null),expectedDecision:decision||(r.passed?'PASS':'FAIL')};return require('node:crypto').createHash('sha256').update(JSON.stringify(Object.fromEntries(Object.entries(f).sort(([a],[b])=>a.localeCompare(b))))).digest('hex');}
-const semanticCaseFingerprintWithSurfaceForms=(input,decision=null)=>{
-  const fingerprint=semanticCaseFingerprint(input,decision);
-  if(typeof input!=='string')return fingerprint;
-  const contractions=input.toLowerCase().replace(/’/g,"'").match(/\b(?:can't|couldn't)\b/g)||[];
-  return contractions.length?require('node:crypto').createHash('sha256').update(`${fingerprint}\0${contractions.join('|')}`).digest('hex'):fingerprint;
-};
-
+function semanticCaseFingerprint(input,decision=null){
+  const r=typeof input==='string'?evaluatePhotosynthesisRelationsV2(input):input,records=r.relationRecords||[],text=typeof input==='string'?normalizeInputV2(input):r.normalized||'',coordination=r.coordinationTopology||[];
+  const f={
+    grammarShape:{records:records.map(x=>x.grammarShape||'UNRESOLVED'),malformedRoleOrder:r.malformedShape||null,malformedLexicalStructure:r.hasMalformed?tokenizeV2(text).map(t=>({role:V2_SUBJECTS.has(t.form)?'SUBJECT':V2_VERBS.has(t.form)?'VERB':['light','energy','sunlight'].includes(t.form)?'LIGHT':'OTHER',lemma:t.lemma,form:t.form})):null},
+    orderedSubjectLemmasAndRoleClasses:r.subjectSet||[],coordinationTypeAndCardinality:coordination,voice:records.map(x=>x.voice||'ACTIVE'),verbLemmaAndMorphology:records.map(x=>[x.verbLemma,x.verbForm]),
+    directObjectRoleAndNormalizedLightForm:records.map(x=>x.directObject?[x.directObject.role,x.directObject.normalized]:null),objectBindingOrigin:records.map(x=>x.lightObject?.binding||null),
+    auxiliaryChain:records.map(x=>x.auxiliaryChain?.chain||[]),modal:records.map(x=>x.modal||null),controlChain:records.map(x=>x.controlChain?[x.controlChain.type,x.controlChain.surface]:null),
+    polarityStructure:records.map(x=>[x.polarity||'UNRESOLVED',x.polarityReason||'']),orderedBarrierTypes:r.barriers||[],clauseSentenceTopology:r.topology||[],
+    contextBindingType:records.map(x=>x.processContext||null),pronounAntecedentTopology:records.map((x,i)=>({recordIndex:i,shape:x.grammarShape,binding:x.lightObject?.binding||null,antecedentObject:x.lightObject?.binding==='PRONOUN_ANTECEDENT'?x.directObject?.normalized||null:null})),
+    pigmentIdentity:[...new Set((text.match(/\b(?:chlorophyll|melanin|carotene|xanthophyll)\b/gi)||[]).map(x=>x.toLowerCase()))],invalidClaimType:records.map(x=>x.relationType||null),expectedDecision:decision||(r.passed?'PASS':'FAIL'),
+  };
+  return require('node:crypto').createHash('sha256').update(JSON.stringify(Object.fromEntries(Object.entries(f).sort(([a],[b])=>a.localeCompare(b))))).digest('hex');
+}
 const PHOTOSYNTHESIS_SEMANTIC_EVALUATOR_REGISTRY = Object.freeze({
   [PHOTOSYNTHESIS_EVALUATOR_ID]: evaluatePhotosynthesisRelations,
   [V2_ID]: evaluatePhotosynthesisRelationsV2,
@@ -1276,7 +1318,7 @@ module.exports = {
   parseMinimalRelationGrammar: evaluatePhotosynthesisRelationsV2, parseAuxiliaryChain, validateFinitePredicate, extractSubjectSet,
   validateSubjectAgreement, validateSubjectSet, bindDirectObject, detectObjectBarrier,
   resolveCoordinatedPredicates, bindLocalPassiveAgent, resolveModalState, resolveControlChain,
-  composePredicatePolarity, resolvePronounContinuation, buildRelationRecordV2, semanticCaseFingerprint: semanticCaseFingerprintWithSurfaceForms,
+  composePredicatePolarity, resolvePronounContinuation, buildRelationRecordV2, semanticCaseFingerprint,
   detectContradictions, evaluatePhotosynthesisRelationsV2,
   detectInvalidChlorophyllClaimsV2,
 };

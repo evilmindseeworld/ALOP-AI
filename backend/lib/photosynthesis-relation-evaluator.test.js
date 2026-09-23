@@ -194,6 +194,30 @@ test('PREQ-004 inherits subject agreement through contrast continuations', () =>
   for (const text of invalid) assert.equal(evaluateV2OrApprovedBase(text).passed, false, text);
 });
 
+test('PREQ-004 retains a valid negated cross-lemma pronoun relation in factuality', () => {
+  const text = 'Plants capture light energy but do not store it.';
+  const result = evaluateV2OrApprovedBase(text);
+  assert.equal(result.passed, true);
+  assert.equal(result.polarity, 'AFFIRMED');
+  assert.equal(result.hasMalformed, false);
+  assert.deepEqual(result.relationRecords.map((record) => ({
+    subject: record.subjectSet?.lemma,
+    predicate: record.verbLemma,
+    object: record.directObject?.normalized,
+    binding: record.lightObject?.binding,
+    polarity: record.polarity,
+    qualifies: record.qualifies,
+  })), [
+    { subject: 'plant', predicate: 'capture', object: 'light-energy', binding: 'DIRECT_OBJECT', polarity: 'AFFIRMED', qualifies: true },
+    { subject: 'plant', predicate: 'store', object: 'light-energy', binding: 'PRONOUN_ANTECEDENT', polarity: 'NEGATED', qualifies: false },
+  ]);
+
+  const dataset = JSON.parse(readFileSync(join(__dirname, '..', 'evals', 'backend-intelligence-v2.json'), 'utf8'));
+  const item = dataset.cases.find(({ id }) => id === 'simple-explanation-photosynthesis');
+  assert.ok(item);
+  assert.equal(gradeCase(item, { answer: text }).factuality.passed, true);
+});
+
 test('PREQ-005 preserves explicit propositions and scoped contradiction topology', () => {
   for (const subject of ['Plant', 'Alga']) {
     const text = `${subject} captures light energy but ${subject.toLowerCase()} does not capture light energy.`;

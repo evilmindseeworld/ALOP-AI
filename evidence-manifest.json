@@ -1,21 +1,21 @@
 {
   "schemaVersion": 1,
   "kind": "alop-p1-authoritative-evidence-manifest",
-  "taskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "repairAttemptId": "ASTRA-PREQ-REPAIR-20260922",
+  "taskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
+  "repairAttemptId": "ASTRA-PREQ-002-004-008-REPAIR-20260923-V3",
   "designVersion": "photosynthesis-light-relation-v2",
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "implementationCommitSha": "8830f115f5d4a4deedab65a75fe8623bf589be73",
-  "implementationTreeSha": "d899bd34fa6d1b931d1b3fee1cdcf834c05db4a4",
-  "candidateHeadAtCapture": "ce51c6075da2390997b965ea263a67669fa93788",
-  "candidateTreeAtCapture": "72f7ab4884e129679cc045eac4e3d6a7b4501b9d",
-  "packageCommitSha": "5a83970412c2a048146f755e365ebf07cd8eed86",
-  "packageTreeSha": "b2724e7be9b94b631c55722a1c3d516d93080446",
-  "packageSha256": "2c8c04a53ac86e174caaad842a6f97377c699a3abefb2f04a98f9a71e43f6d5d",
+  "implementationCommitSha": "dc6222b6f607aaf20bf6370d29c91dfbf02415d9",
+  "implementationTreeSha": "5ea03e94acbb68d0301826065a2d6b2c1feac00c",
+  "candidateHeadAtCapture": "6d205731bbd5a144f1a318fd488d3e4e76372ade",
+  "candidateTreeAtCapture": "be7e942a48fd16338804123d5d07be553a348a2e",
+  "packageCommitSha": "7f4c9e8002fa71ea633a428147c4c978ae7f863c",
+  "packageTreeSha": "61f69ce94c2b2d654eda69f5f7c56d7441e5e56f",
+  "packageSha256": "989637efb3ce90fae2db99fefda8d4e1536f29aaac7fa9038993b0bd3b08399b",
   "phase": "FINAL_EVIDENCE",
-  "status": "PASS",
+  "status": "PASS_FOR_AUTHORIZED_FINDINGS_PRE_ASTRA",
   "nestedManifest": "ABSENT",
   "entries": [
     {
@@ -28,7 +28,7 @@
     },
     {
       "path": "backend/lib/p1-authoritative-repair-v2.test.js",
-      "sha256": "57f98956f4decd5f114cc5fc5e59de689bf9100bdb3e9ff734713d137f49b72b"
+      "sha256": "90b651abba74ebed008f1c531c574a717e7807e57a1c05cd4038a3f9c6ac409f"
     },
     {
       "path": "backend/lib/photosynthesis-relation-cases.js",
@@ -40,35 +40,42 @@
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.js",
-      "sha256": "aa011812a37970f474313bb4098c53f6e0f8f8c3efadb8fecc6e72c546c693cb"
+      "sha256": "f0a76d2a299ce5de8b0efa3098b909a2fb87eb06817458a7381641731368fcbe"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
-      "sha256": "5d1b861a260b6c32eb78fb2e1807efb2f955fba5c8e6e9be683d2672e2df3791"
+      "sha256": "add5f9af78da6e8be31eb5b7bc65b67bbedcfc673c5999cd77886189f88b72e8"
     },
     {
       "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-      "sha256": "2c8c04a53ac86e174caaad842a6f97377c699a3abefb2f04a98f9a71e43f6d5d"
+      "sha256": "989637efb3ce90fae2db99fefda8d4e1536f29aaac7fa9038993b0bd3b08399b"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
-      "sha256": "8bef3effef55f376daf9e11656fd1e900d600189192ee017fbbee305d2f959c7"
+      "sha256": "77612bcd8c58da11bb14360e64f3095c9a5c7a690b5aae0e8b58df3d58f20ffc"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/green-phase.json",
-      "sha256": "df1d4df6e171abeec3d2ddc0abec3fb4f8007a8cf2e813df63abb95423238e10"
+      "sha256": "74c8b22b8768f6f1bff468781a77de1d3de3701adf606fc5ac087242b23e025c"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/mutation-phase.json",
-      "sha256": "73d3a71df6b1ddc2749f783ddae5d8ffc32a2e110a5150cc98f430a459e30ff1"
+      "sha256": "3e14b0b84013f94973d4f11f8d379fcb85be2d69a468ff123d45fba6179d8c6f"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/red-phase.json",
-      "sha256": "97724fa7e2e7e81064b9724998103c3ce52f2bf0bc5c0cf75d8e6470e501f7b8"
+      "sha256": "56fc0eb825c40afb891925c3ac0160cee1a6a08f9ec5b5e84fc99d00d36c605c"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/semantic-coverage.json",
-      "sha256": "6772a7806321246a7ab54be6c380c1602fa18759894e7db157fbc82814bd3c0d"
+      "sha256": "7e688c6c3a41457cd65daffc9d2713bd2266cfae9bca32d3039e5d69b33824f5"
     }
-  ]
+  ],
+  "implementationTaskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
+  "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
+  "implementationParentSha": "69525e3ec464c07fbd79b978ab4cdb67d87e8032",
+  "repairBaseSha": "69525e3ec464c07fbd79b978ab4cdb67d87e8032",
+  "repairBaseTreeSha": "67aa807749ac73789bc693abfaaff78d3a1f5c44",
+  "packageBytes": 87027,
+  "capturedAtUtc": "2026-09-23T02:30:13.000Z"
 }

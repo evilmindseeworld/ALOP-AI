@@ -7,14 +7,14 @@
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "repairAttemptId": "ASTRA-PREQ-REPAIR-20260922",
-  "capturedAtUtc": "2026-09-22T16:56:32.022Z",
-  "implementationCommitSha": "8830f115f5d4a4deedab65a75fe8623bf589be73",
-  "candidateHeadAtCapture": "ce51c6075da2390997b965ea263a67669fa93788",
-  "candidateTreeAtCapture": "72f7ab4884e129679cc045eac4e3d6a7b4501b9d",
+  "repairAttemptId": "ASTRA-PREQ-002-004-008-REPAIR-20260923-V3",
+  "capturedAtUtc": "2026-09-23T02:21:49.000Z",
+  "implementationCommitSha": "dc6222b6f607aaf20bf6370d29c91dfbf02415d9",
+  "candidateHeadAtCapture": "6d205731bbd5a144f1a318fd488d3e4e76372ade",
+  "candidateTreeAtCapture": "be7e942a48fd16338804123d5d07be553a348a2e",
   "runtime": {
     "version": "v26.7.0",
-    "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
+    "executablePath": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node.exe",
     "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
   },
   "phase": "SEMANTIC_COVERAGE",
@@ -26,13 +26,13 @@
   "informationalFloor": 201,
   "duplicateSemanticFingerprints": [
     {
-      "semanticFingerprint": "24287ae5fe899355fe07bc3984ca3dfb18923dde5a8527b2cc1e86eceb72d242",
+      "semanticFingerprint": "b983aa71f08e16958a4ecb75a66f409e8d34a718fd4f2bc0a99f784b667bc527",
       "retainedCaseId": "SB-001",
       "rejectedCaseId": "V2-SENTENCE_BOUNDARY-005",
       "reason": "same fingerprint under frozen semanticFingerprintRules"
     },
     {
-      "semanticFingerprint": "3919501f4a34a587870dc2d44e1b4de7f19dd1eafdd1c61a457fb1ff91fc013f",
+      "semanticFingerprint": "7a3cf1c3bd0834c8e450c11ae0d8bb20cd014d621585ccb8ca9dd893d6b4e58c",
       "retainedCaseId": "V2-PUNCTUATION_ABUSE-003",
       "rejectedCaseId": "V2-PUNCTUATION_ABUSE-007",
       "reason": "same fingerprint under frozen semanticFingerprintRules"
@@ -796,8 +796,14 @@
       "backend/lib/workspace-files-wiring.test.js",
       "backend/server.js"
     ],
-    "scopeLimit": "bounded source-text scan of backend/lib production JavaScript and backend/server.js; not a formal proof of all possible fixture-shaped behavior"
+    "scopeLimit": "bounded source-text scan of backend/lib production JavaScript and backend/server.js; not a formal proof of all possible fixture-shaped behavior",
+    "interpretation": "Recorded bounded scanner includes *.test.js in its production file set and reports fixture imports there; exact canonical sentence literals in production are absent. Preserve this scoped warning; do not alter frozen cases or evaluator to game the scan."
   },
   "fingerprintIndexPath": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
-  "corpusDecisionFailures": []
+  "corpusDecisionFailures": [],
+  "implementationTaskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
+  "repairBaseSha": "69525e3ec464c07fbd79b978ab4cdb67d87e8032",
+  "repairBaseTreeSha": "67aa807749ac73789bc693abfaaff78d3a1f5c44",
+  "implementationTreeSha": "5ea03e94acbb68d0301826065a2d6b2c1feac00c",
+  "implementationParentSha": "69525e3ec464c07fbd79b978ab4cdb67d87e8032"
 }

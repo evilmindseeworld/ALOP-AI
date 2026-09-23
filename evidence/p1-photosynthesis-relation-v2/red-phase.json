@@ -7,133 +7,59 @@
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "repairAttemptId": "ASTRA-PREQ-REPAIR-20260922",
-  "capturedAtUtc": "2026-09-22T16:56:32.022Z",
+  "implementationTaskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
+  "repairAttemptId": "ASTRA-PREQ-002-004-008-REPAIR-20260923-V3",
+  "capturedAtUtc": "2026-09-23T02:01:08.000Z",
   "phase": "RED",
   "expectedRed": true,
-  "redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb",
-  "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe",
-  "redSourceCommitSha": "ba8dcd9645f8a6ba0ba58bf991d28a49e502004b",
-  "redSourceTreeSha": "82e1b1b84e2f0ded5315355a97fa2588b2e426df",
-  "frozenCorpus": {
-    "source": "supervisor-owned photosynthesis-clause-relation-v2.json canonicalCases",
-    "designArtifactSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
-    "membershipExact": true,
-    "caseIds": [
-      "ACT-001",
-      "INF-001",
-      "CP-001",
-      "CSV-001",
-      "ADV001",
-      "ADV002",
-      "ADV003",
-      "ADV004",
-      "ADV005",
-      "ADV006",
-      "CSI-002",
-      "CSI-003",
-      "SEP-001",
-      "DOB-001",
-      "FPB-001",
-      "SB-001",
-      "MAL-002",
-      "MAL-003",
-      "NEG-001",
-      "MOD-CAN",
-      "MOD-CANNOT",
-      "MOD-CANT",
-      "MOD-MAY",
-      "MOD-MAYNOT",
-      "MOD-MIGHT",
-      "MOD-MIGHTNOT",
-      "MOD-COULD",
-      "MOD-COULDNOT",
-      "MOD-MUST",
-      "MOD-MUSTNOT",
-      "MOD-SHOULD",
-      "MOD-SHOULDNOT",
-      "MOD-WOULD",
-      "MOD-WOULDNOT",
-      "CTRL-FAIL",
-      "CTRL-FAILED",
-      "CTRL-DIDNOTFAIL",
-      "CTRL-NEVERFAIL",
-      "CTRL-NOTAPPEAR",
-      "CTRL-APPEARNOT",
-      "CTRL-NOTSEEM",
-      "CTRL-SEEMNOT",
-      "UNN-001",
-      "CB-001",
-      "PRON-001",
-      "PRON-002",
-      "IS-001",
-      "IO-001",
-      "DEST-001",
-      "WP-001",
-      "CON-001",
-      "PUN-001",
-      "NS-001",
-      "KREG-001"
-    ]
+  "redSourceCommitSha": "69525e3ec464c07fbd79b978ab4cdb67d87e8032",
+  "redSourceTreeSha": "67aa807749ac73789bc693abfaaff78d3a1f5c44",
+  "testSourceCommitSha": "dc6222b6f607aaf20bf6370d29c91dfbf02415d9",
+  "testSourceTreeSha": "5ea03e94acbb68d0301826065a2d6b2c1feac00c",
+  "testSourceBlobs": {
+    "backend/lib/p1-authoritative-repair-v2.test.js": "b1def4863738972df90bdf34600deb950d31e3dd",
+    "backend/lib/photosynthesis-relation-evaluator.test.js": "fb4a570a36cdd41e7dcdba368ee18238f5c689f0"
   },
+  "runtime": {
+    "version": "v26.7.0",
+    "executablePath": "C:/Users/LENOVO/AppData/Local/Temp/alop-p1-node-26.7.0-20260923-01a0cba4/node-v26.7.0-win-x64/node.exe",
+    "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
+  },
+  "command": "node --test --test-name-pattern \"PREQ-002|PREQ-008|PREQ-004\" backend/lib/p1-authoritative-repair-v2.test.js backend/lib/photosynthesis-relation-evaluator.test.js",
   "testRun": {
-    "command": "pinned Node 26.7.0 inline readback of immutable pre-repair candidate",
-    "runtime": {
-      "version": "v26.7.0",
-      "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
-      "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
-    },
-    "result": {
-      "tests": 4,
-      "passed": 0,
-      "failed": 4,
-      "exitCode": 0,
-      "behavioralRed": true,
-      "stdoutSha256": "96c019291d5010bb6087d108202fef0dc10e4f5ee2691c300915cfaddef52de7"
-    },
-    "source": {
-      "evaluatorCommitSha": "ba8dcd9645f8a6ba0ba58bf991d28a49e502004b",
-      "evaluatorTreeSha": "82e1b1b84e2f0ded5315355a97fa2588b2e426df",
-      "path": "backend/lib/photosynthesis-relation-evaluator.js"
-    }
+    "tests": 3,
+    "passed": 0,
+    "failed": 3,
+    "exitCode": 1,
+    "behavioralRed": true,
+    "stdoutSha256": "ca3f9bcbab30855e39b586722166c60e6a58e009464d81358baa0a7f999a30e7",
+    "stdoutBytes": 4672,
+    "failureNames": [
+      "PREQ-002 reindexes all cases with exactly the frozen 18-field projection",
+      "PREQ-008 package receipt binds the recipe by committed commit, path, and blob",
+      "PREQ-004 retains a valid negated cross-lemma pronoun relation in factuality"
+    ]
   },
   "rootReproductions": [
     {
-      "id": "PREQ-004",
-      "text": "Plants capture light energy but do not store it.",
-      "expectedPassed": true,
-      "observedPassed": false,
-      "recordCount": 1,
-      "contradictions": 0,
-      "hasMalformed": true
+      "id": "ASTRA-PREQ-002",
+      "expected": "Only the two design-sanctioned duplicate groups; no cross-predicate pronoun duplicate group.",
+      "observed": "FAIL: PRON-001 and V2-PRONOUN_CONTINUATION-001 through -006 collapsed into one seven-ID fingerprint group.",
+      "failureTest": "PREQ-002 reindexes all cases with exactly the frozen 18-field projection"
     },
     {
-      "id": "PREQ-005-Plant",
-      "text": "Plant captures light energy but plant does not capture light energy.",
-      "expectedPassed": false,
-      "observedPassed": true,
-      "recordCount": 1,
-      "contradictions": 0,
-      "hasMalformed": false
+      "id": "ASTRA-PREQ-004",
+      "expected": "Preserve affirmed capture and negated store relation records for the explicit pronoun continuation.",
+      "observed": "FAIL: only the affirmed capture relation remained; the negated store relation was absent.",
+      "failureTest": "PREQ-004 retains a valid negated cross-lemma pronoun relation in factuality"
     },
     {
-      "id": "PREQ-005-Alga",
-      "text": "Alga captures light energy but alga does not capture light energy.",
-      "expectedPassed": false,
-      "observedPassed": true,
-      "recordCount": 1,
-      "contradictions": 0,
-      "hasMalformed": false
-    },
-    {
-      "id": "PREQ-009",
-      "text": "Light energy is captured by plants and algae.",
-      "expectedPassed": true,
-      "observedPassed": false,
-      "recordCount": 2,
-      "contradictions": 0,
-      "hasMalformed": false
+      "id": "ASTRA-PREQ-008",
+      "expected": "Bind package receipt to pinned committed recipe commit, path, and blob.",
+      "observed": "FAIL: recipeInputCommitSha was null instead of 3ae0f283461f304f2778a4dc463a85c8f7d86adf.",
+      "failureTest": "PREQ-008 package receipt binds the recipe by committed commit, path, and blob"
     }
   ],
-  "provenanceSource": "FRESH_EXACT_PRE_REPAIR_CANDIDATE_READBACK"
+  "baseWorktreeRestoredClean": true,
+  "provenanceSource": "FRESH_EXACT_69525_BASE_RED_RUN_WITH_TESTS_FROM_IMPLEMENTATION_COMMIT"
 }

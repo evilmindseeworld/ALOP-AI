@@ -505,21 +505,26 @@ const normalizeInputV2 = (x) => normalizeInput(x).toLowerCase().replace(/’/g, 
 const segmentSentencesV2 = (x) => segmentSentences(normalizeInputV2(x));
 const segmentClausesV2 = (x) => {
   const text = String(typeof x === 'string' ? x : x.text);
-  return text.split(/[;:]+/).flatMap((part) => {
+  return text.split(/[;:]+/).flatMap((part, partIndex) => {
     const match = part.match(/,\s+and\s+/i);
     const pieces = match && !part.slice(0, match.index).includes(',')
       && startsIndependentSupportedClauseV2(part.slice(match.index + match[0].length))
       ? part.split(/,\s+and\s+/i)
       : [part];
-    return pieces.flatMap((piece) => {
+    return pieces.flatMap((piece, pieceIndex) => {
+      const boundaryBefore = pieceIndex > 0 ? 'comma-and' : partIndex > 0 ? 'hard' : 'start';
       const explicitBut = piece.match(/\s+but\s+/i);
-      if (!explicitBut) return [piece];
+      if (!explicitBut) return [{ text: piece, boundaryBefore }];
       const after = piece.slice(explicitBut.index + explicitBut[0].length).trim();
       return startsIndependentSupportedClauseV2(after)
-        ? [piece.slice(0, explicitBut.index), after]
-        : [piece];
+        ? [
+          { text: piece.slice(0, explicitBut.index), boundaryBefore },
+          { text: after, boundaryBefore: 'but' },
+        ]
+        : [{ text: piece, boundaryBefore }];
     });
-  }).map((text, index) => ({ index, text: text.trim() })).filter((clause) => clause.text);
+  }).map(({ text, boundaryBefore }, index) => ({ index, text: text.trim(), boundaryBefore }))
+    .filter((clause) => clause.text);
 };
 const tokenizeV2 = (x) => tokenize(x).map(t=>({...t,form:t.form.toLowerCase()}));
 const normalizeExactFormLemmaV2 = normalizeExactFormLemma;
@@ -937,8 +942,10 @@ function parseMinimalRelationGrammar(input) {
   let malformed = false;
 
   for (const [sentenceIndex, sentence] of sentences.entries()) {
+    let pronounAntecedentRecordStart = relationRecords.length;
     for (const clause of segmentClausesV2(sentence)) {
       const clauseRecordStart = relationRecords.length;
+      if (clause.boundaryBefore !== 'but') pronounAntecedentRecordStart = clauseRecordStart;
       const tokens = tokenizeV2(clause.text);
       if (!tokens.length) continue;
       topology.push([sentenceIndex, clause.index]);
@@ -1076,7 +1083,10 @@ function parseMinimalRelationGrammar(input) {
       }
 
       const subjectIdentity = subjectSet.members[0];
-      const priorSubjectRecords = relationRecords.slice(clauseRecordStart).filter((record) =>
+      const pronounRecordStart = clause.boundaryBefore === 'but'
+        ? pronounAntecedentRecordStart
+        : clauseRecordStart;
+      const priorSubjectRecords = relationRecords.slice(pronounRecordStart).filter((record) =>
         record.subjectSet?.lemma === subjectIdentity.lemma
         && record.subjectSet?.role === subjectIdentity.role
         && record.directObject);

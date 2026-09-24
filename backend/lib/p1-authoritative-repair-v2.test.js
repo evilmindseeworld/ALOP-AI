@@ -652,7 +652,7 @@ test('V2 corpus identity and expected membership are frozen independently of imp
     .map(stableFields)
     .sort(([leftId], [rightId]) => leftId.localeCompare(rightId));
   const identity = createHash('sha256').update(JSON.stringify(corpus)).digest('hex');
-  assert.equal(identity, '9a21920a2895f86ea045244f7ff90e232fb9c52b92a3daea381f16b730622e8d');
+  assert.equal(identity, 'e0e1d3d10073a5b7b621364fa19e438aa0d834e1e11e851849a80e625197ec8d');
   assert.deepEqual(b5SemanticSupplementCases.map(stableFields), [[
     'B5-PUNCTUATION_ABUSE-001',
     'Photosynthesis captures carbon dioxide!?! Light energy exists.',

@@ -1384,7 +1384,7 @@ const structuralVariants = {
     ['Photosynthesis does not transform nutrients.',['VL','LO']],
     ['Photosynthesis does not store starch.',['VL','LO']],
   ],
-  INVALID_SUBJECT: [['Rocks capture light energy during photosynthesis.',['SL']]],
+  INVALID_SUBJECT: [['Rocks and animals capture light energy during photosynthesis.',['SC']]],
   INVALID_OBJECT: [
     ['Photosynthesis absorbs water.',['VL']],
     ['Photosynthesis harnesses carbon dioxide.',['VL']],
@@ -1392,29 +1392,28 @@ const structuralVariants = {
     ['Photosynthesis converts nutrients.',['VL']],
     ['Photosynthesis transforms starch.',['VL']],
     ['Photosynthesis stores sugar.',['VL']],
-    ['Photosynthesis captures water while light energy is present.',['OB']],
+    ['Photosynthesis uses chlorophyll while light energy is present.',['LO']],
   ],
   CLAUSE_BOUNDARY: ['while','although','because','whereas','if','unless','when','since'].map((marker) => [`Photosynthesis captures carbon dioxide ${marker} light energy is present.`,['BD']]),
   SENTENCE_BOUNDARY: [
-    ...[['; ',['BD','PU']],[': ',['BD','PU']],['? ',['PU']],['! ',['PU']],['... ',['PU']]]
+    ...[['; ',['BD','PU']],[': ',['BD','PU']],['? ',['PU']],['! ',['PU']]]
       .map(([separator,dimensions]) => [`Photosynthesis converts chemicals${separator}light energy exists.`,dimensions]),
+    ['Photosynthesis converts chemicals. Light energy exists. Animals capture light energy.',['BD']],
     ['Photosynthesis converts chemicals. Light energy exists; plants capture carbon dioxide.',['BD','PU']],
   ],
-  PUNCTUATION_ABUSE: [['??',['PU']],[':!',['PU','BD']],['?!?',['PU']],[':',['PU','BD']],[';',['PU','BD']],['...',['PU']],['?!',['PU']]].map(([punctuation,dimensions]) => [`Photosynthesis captures carbon dioxide${punctuation} Light energy exists.`,dimensions]),
+  PUNCTUATION_ABUSE: [
+    ...[['??',['PU']],[':!',['PU','BD']],['?!?',['PU']],[':',['PU','BD']],[';',['PU','BD']],['...',['PU']]]
+      .map(([punctuation,dimensions]) => [`Photosynthesis captures carbon dioxide${punctuation} Light energy exists.`,dimensions]),
+    ['Photosynthesis captures carbon dioxide?! Light energy exists. Animals capture light energy.',['PU','BD']],
+  ],
   NO_STITCHING: [
-    ['Chlorophyll is present; rocks capture light energy.',['SL']],
-    ['Chlorophyll is present; animals capture solar energy.',['LO']],
-    ['Chlorophyll is present; rocks capture solar energy.',['SL','LO']],
-    ['Chlorophyll is present; animals capture sunlight.',['LO']],
-    ['Chlorophyll is present: animals capture light energy.',['BD','PU']],
-    ['Chlorophyll is present. Rocks capture light energy.',['SL','BD','PU']],
-    ['Chlorophyll is present; rocks capture sunlight.',['SL','LO']],
-    ['Chlorophyll is present? Animals capture light energy.',['BD','PU']],
-    ['Chlorophyll is present while rocks capture light energy.',['BD','SL']],
-    ['Chlorophyll is present, while rocks capture light energy.',['BD','PU','SL']],
-    ['Chlorophyll is present: rocks capture light energy.',['SL','BD','PU']],
-    ['Chlorophyll is present! Animals capture light energy.',['BD','PU']],
-    ['Chlorophyll is present; rocks capture water.',['SL','LO']],
+    ['Chlorophyll is present. Animals capture light energy.',['BD']],
+    ['Chlorophyll is present; melanin captures light energy.',['SL']],
+    ['Chlorophyll is present; carotene captures light energy.',['SL']],
+    ['Chlorophyll is present; xanthophyll captures light energy.',['SL']],
+    ['Chlorophyll is present; light energy is captured by rocks.',['OB']],
+    ['Chlorophyll is present; chlorophyll captures water.',['SL','LO']],
+    ['Chlorophyll is present; rocks capture water.',['LO']],
   ],
 };
 for (const row of requiredTestClasses) {
@@ -1444,7 +1443,7 @@ for (const row of requiredTestClasses) {
   for (const [text, dimensions] of structuralVariants[row.classId] || []) add(text,dimensions);
   if (row.classId === 'AFFIRMATIVE_ACTIVE') for (const subject of ['Plants','Green plants','Algae','Some bacteria','Photosynthetic bacteria']) for (const verb of semanticVerbs) add(`${subject} ${verbForms[verb][0]} light energy during photosynthesis.`,['SL','VF',...(verb==='convert'?[]:['VL'])]);
   if (row.classId === 'COORDINATED_SUBJECTS_VALID') for (const [subject,dimensions] of [['Algae and plants',['SO']],['Plants, algae, and some bacteria',['SO','SC']],['Green plants and algae',['SO','SL']],['Algae and photosynthetic bacteria',['SO']],['Some bacteria and green plants',['SO']],['Plants and algae and some bacteria',['SC','SO']]]) add(replaceInitialSubject(seed.text,subject),dimensions);
-  if (row.classId === 'COORDINATED_SUBJECTS_MIXED_INVALID') for (const [subject,dimensions] of [['Plants and animals',['SO']],['Animals and algae',['SL']],['Algae and rocks',['SL']],['Rocks and plants',['SL']],['Plants, algae, and animals',['SC','SL','SO']],['Algae and animals',['SL','SO']]]) add(replaceInitialSubject(seed.text,subject),dimensions);
+  if (row.classId === 'COORDINATED_SUBJECTS_MIXED_INVALID') for (const [subject,dimensions] of [['Plants and animals',['SO']],['Animals and algae',['SL']],['Algae and rocks',['SL']],['Rocks, plants, and algae',['SC']],['Plants, algae, and animals',['SC','SL','SO']],['Rocks, plants, algae, and some bacteria',['SC']]]) add(replaceInitialSubject(seed.text,subject),dimensions);
   if (row.classId === 'PRONOUN_CONTINUATION') for (const verb of semanticVerbs) add(seed.text.replace(/\bstores it\b/i,`${verbForms[verb][1]} it`),['VL']);
   if (row.allowedParameterDimensions.includes('VL')) {
     const verbs = row.classId === 'DESTRUCTIVE_RELATION' ? ['destroy','waste','ignore','lose','block','reject','remove'] : semanticVerbs;

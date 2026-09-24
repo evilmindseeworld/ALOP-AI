@@ -652,7 +652,7 @@ test('V2 corpus identity and expected membership are frozen independently of imp
     .map(stableFields)
     .sort(([leftId], [rightId]) => leftId.localeCompare(rightId));
   const identity = createHash('sha256').update(JSON.stringify(corpus)).digest('hex');
-  assert.equal(identity, 'cba7d8bb10d5a468a9e1379343d3badfbab1aab8a4e3334358cbe93b325d20d9');
+  assert.equal(identity, '9a21920a2895f86ea045244f7ff90e232fb9c52b92a3daea381f16b730622e8d');
   assert.deepEqual(b5SemanticSupplementCases.map(stableFields), [[
     'B5-PUNCTUATION_ABUSE-001',
     'Photosynthesis captures carbon dioxide!?! Light energy exists.',
@@ -1083,6 +1083,29 @@ test('V2 non-light direct objects stay local when a separate clause mentions lig
   }
 });
 
+test('V2 fingerprints ignore arbitrary lexical values within the same semantic roles', async (t) => {
+  const { semanticCaseFingerprint } = require('./photosynthesis-relation-evaluator');
+  for (const [label, left, right] of [
+    ['malformed NON_LIGHT_OBJECT values',
+      'Photosynthesis captures water while light energy is present.',
+      'Photosynthesis captures carbon dioxide while light energy is present.'],
+    ['arbitrary UNSUPPORTED subject values',
+      'Animals capture light energy during photosynthesis.',
+      'Rocks capture light energy during photosynthesis.'],
+    ['arbitrary UNSUPPORTED subjects in malformed boundary cases',
+      'Chlorophyll is present; animals capture light energy.',
+      'Chlorophyll is present; rocks capture light energy.'],
+    ['malformed LIGHT_OBJECT aliases',
+      'Photosynthesis captures solar energy while light energy is present.',
+      'Photosynthesis captures sunlight while light energy is present.'],
+    ['light aliases in malformed boundary cases',
+      'Chlorophyll is present; rocks capture light energy.',
+      'Chlorophyll is present; rocks capture solar energy.'],
+  ]) await t.test(label, () => {
+    assert.equal(semanticCaseFingerprint(left), semanticCaseFingerprint(right));
+  });
+});
+
 test('V2 semantic corpus meets every frozen class minimum with unique fingerprints', () => {
   const { canonicalCases, requiredTestClasses, generatedV2Cases, b5SemanticSupplementCases } = require('./photosynthesis-relation-cases');
   const { semanticCaseFingerprint } = require('./photosynthesis-relation-evaluator');
@@ -1093,16 +1116,16 @@ test('V2 semantic corpus meets every frozen class minimum with unique fingerprin
   const fingerprintGroups = new Map();
   all.forEach((item, index) => fingerprintGroups.set(fingerprints[index], [...(fingerprintGroups.get(fingerprints[index]) || []), item.id]));
   assert.equal(fingerprints.length, 206);
-  assert.equal(new Set(fingerprints).size, 204, 'cosmetic punctuation is not semantic diversity');
-  assert.deepEqual([...fingerprintGroups.values()].filter((ids) => ids.length > 1).map((ids) => ids.sort()), [
-    ['SB-001', 'V2-SENTENCE_BOUNDARY-005'],
-    ['V2-PUNCTUATION_ABUSE-003', 'V2-PUNCTUATION_ABUSE-007'],
-  ]);
+  assert.equal(new Set(fingerprints).size, 206, 'the frozen global duplicate policy rejects every repeated fingerprint');
+  assert.deepEqual([...fingerprintGroups.values()].filter((ids) => ids.length > 1), []);
   const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
   for (const item of [...generatedV2Cases, ...b5SemanticSupplementCases]) {
     const result = evaluatePhotosynthesisRelationsV2(item.text);
     assert.equal(result.passed ? 'PASS' : 'FAIL', item.expectedDecision, item.id);
     if (item.expectedPolarity) assert.equal(result.polarity, item.expectedPolarity, item.id);
+    for (const property of item.requiredDiagnostics || []) {
+      assert.ok(hasRequiredRelationBehavior(result, property, item), `${item.id}: ${property}`);
+    }
   }
   for (const row of requiredTestClasses) {
     const members = all.filter((item) => item.classIds?.includes(row.classId));
@@ -1116,6 +1139,9 @@ test('V2 parameter dimensions match parsed semantic differences and class allowa
   const { canonicalCases, requiredTestClasses, generatedV2Cases, b5SemanticSupplementCases } = require('./photosynthesis-relation-cases');
   const { evaluatePhotosynthesisRelationsV2, semanticCaseFingerprint, tokenizeV2 } = require('./photosynthesis-relation-evaluator');
   const same = (a,b) => JSON.stringify(a) === JSON.stringify(b);
+  const subjectSemantics = (result) => (result.subjectSet || []).map((group) => group.map(([lemma,role]) => [role === 'UNSUPPORTED' ? 'UNSUPPORTED_SUBJECT' : lemma,role]));
+  const objectSemantics = (result) => result.relationRecords.map(({directObject}) => directObject
+    ? [directObject.role,directObject.role === 'LIGHT_OBJECT' ? directObject.normalized : null] : null);
   for (const item of [...generatedV2Cases, ...b5SemanticSupplementCases]) {
     const row = requiredTestClasses.find((candidate) => item.classIds.includes(candidate.classId));
     const seed = canonicalCases.find((candidate) => row.requiredCanonicalCases.includes(candidate.id));
@@ -1124,7 +1150,7 @@ test('V2 parameter dimensions match parsed semantic differences and class allowa
     const dimensions = new Set(item.parameterDimensions);
     assert.ok(dimensions.size > 0, item.id);
     for (const dimension of dimensions) assert.ok(row.allowedParameterDimensions.includes(dimension), `${item.id}: ${dimension} is not allowed`);
-    if (dimensions.has('SL')) assert.notDeepEqual(before.subjectSet.flat(), after.subjectSet.flat(), `${item.id}: SL`);
+    if (dimensions.has('SL')) assert.notDeepEqual(subjectSemantics(before), subjectSemantics(after), `${item.id}: SL`);
     if (dimensions.has('SO')) assert.ok(!same(before.coordinationTopology, after.coordinationTopology), `${item.id}: SO`);
     if (dimensions.has('SC')) assert.notDeepEqual(before.coordinationTopology.map((x) => x.cardinality), after.coordinationTopology.map((x) => x.cardinality), `${item.id}: SC`);
     if (dimensions.has('VL')) {
@@ -1132,7 +1158,8 @@ test('V2 parameter dimensions match parsed semantic differences and class allowa
       assert.notDeepEqual(lemmas(seed.text), lemmas(item.text), `${item.id}: VL`);
     }
     if (dimensions.has('VF')) assert.notDeepEqual(before.relationRecords.map((x) => x.verbForm), after.relationRecords.map((x) => x.verbForm), `${item.id}: VF`);
-    if (dimensions.has('LO')) assert.notDeepEqual(before.relationRecords.map((x) => [x.directObject?.role,x.directObject?.normalized,x.directObject?.surface]), after.relationRecords.map((x) => [x.directObject?.role,x.directObject?.normalized,x.directObject?.surface]), `${item.id}: LO`);
+    if (dimensions.has('LO')) assert.notDeepEqual(objectSemantics(before), objectSemantics(after), `${item.id}: LO`);
+    if (dimensions.has('OB')) assert.notDeepEqual(before.relationRecords.map((x) => x.lightObject?.binding || null), after.relationRecords.map((x) => x.lightObject?.binding || null), `${item.id}: OB`);
     if (dimensions.has('BD')) assert.ok(!same(before.topology, after.topology) || !same(before.relationRecords.map((x) => x.objectBarriers?.marker), after.relationRecords.map((x) => x.objectBarriers?.marker)), `${item.id}: BD`);
     if (dimensions.has('PU')) {
       if (['V2-SENTENCE_BOUNDARY-005'].includes(item.id)) {
@@ -1472,17 +1499,11 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
     'photosynthesis', 'plant', 'plants', 'green plant', 'green plants', 'alga', 'algae',
     'some bacteria', 'photosynthetic bacterium', 'photosynthetic bacteria', 'chlorophyll',
   ]);
-  const knownUnsupportedSubjects = new Map([
-    ['animal', 'ANIMAL'], ['animals', 'ANIMAL'], ['bacteria', 'BACTERIA'],
-    ['bacterium', 'BACTERIA'], ['rock', 'ROCK'], ['rocks', 'ROCK'],
-  ]);
   const fingerprintSubjectMembers = (members) => (members || []).map(([lemma, role]) => [
-    role === 'UNSUPPORTED' ? knownUnsupportedSubjects.get(lemma) || 'UNSUPPORTED_SUBJECT' : lemma,
+    role === 'UNSUPPORTED' ? 'UNSUPPORTED_SUBJECT' : lemma,
     role,
   ]);
-  const normalizedDirectObject = (object) => object?.role === 'NON_LIGHT_OBJECT'
-    ? null
-    : object?.normalized;
+  const normalizedDirectObject = (object) => object?.role === 'LIGHT_OBJECT' ? object.normalized : null;
   const verbs = new Set((
     'capture captures captured capturing absorb absorbs absorbed absorbing harness harnesses harnessed harnessing '
     + 'use uses used using convert converts converted converting transform transforms transformed transforming '
@@ -1495,30 +1516,45 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
     + 'couldn\'t must should would to fail fails failed appear appears '
     + 'seem seems during while although because whereas if unless when since in for into near with by as'
   ).split(' '));
+  const projectMalformedStructure = (text, records) => {
+    const ranges = records.map((record) => {
+      const offset = text.indexOf(record.evidenceSpan?.text || '');
+      const shifted = (range) => range && offset >= 0
+        ? { start: range.start + offset, end: range.end + offset } : null;
+      return { subject: shifted(record.subjectSet), object: shifted(record.directObject) };
+    });
+    const projection = [];
+    for (const token of tokenizeV2(text)) {
+      const subject = ranges.some(({ subject: range }) => range?.start <= token.start && range?.end >= token.end);
+      const object = ranges.map(({ object: range }) => range).find((range) => range?.start <= token.start && range?.end >= token.end);
+      const role = subject ? 'SUBJECT'
+        : object ? object.role === 'NON_LIGHT_OBJECT' ? 'NON_LIGHT_OBJECT' : 'LIGHT_OBJECT'
+          : subjects.has(token.form) ? 'SUBJECT'
+          : verbs.has(token.form) ? 'VERB'
+            : structuralForms.has(token.form) || /^[,;:!.?]$/.test(token.form) ? 'STRUCTURE' : 'OTHER';
+      const value = role === 'STRUCTURE' ? { role, form: token.form }
+        : role === 'VERB' ? { role, lemma: token.lemma, form: token.form } : { role };
+      if (projection.at(-1)?.role === role
+        && ['SUBJECT', 'LIGHT_OBJECT', 'NON_LIGHT_OBJECT', 'OTHER'].includes(role)) continue;
+      projection.push(value);
+    }
+    return projection;
+  };
   const cases = [...canonicalCases, ...generatedV2Cases, ...b5SemanticSupplementCases];
   const fingerprintFor = (item) => {
     const result = evaluatePhotosynthesisRelationsV2(item.text);
     const records = result.relationRecords || [];
     const text = result.normalized || '';
+    const malformedStructure = result.hasMalformed ? projectMalformedStructure(text, records) : null;
     const projection = {
       grammarShape: {
         records: records.map((record) => record.grammarShape || 'UNRESOLVED'),
-        malformedRoleOrder: result.malformedShape || null,
-        malformedLexicalStructure: result.hasMalformed
-          ? tokenizeV2(text).map((token) => {
-            const role = subjects.has(token.form) ? 'SUBJECT'
-              : verbs.has(token.form) ? 'VERB'
-                : ['light', 'energy', 'sunlight'].includes(token.form) ? 'LIGHT' : 'OTHER';
-            return role !== 'OTHER' || structuralForms.has(token.form) || /^[,;:!.?]$/.test(token.form)
-              ? { role, lemma: token.lemma, form: token.form }
-              : { role };
-          })
-          : null,
+        malformedRoleOrder: malformedStructure?.map(({ role, form, lemma }) => [role, lemma, form].filter(Boolean).join(':')).join(' ') || null,
+        malformedLexicalStructure: malformedStructure,
       },
       orderedSubjectLemmasAndRoleClasses: (result.subjectSet || []).map(fingerprintSubjectMembers),
-      coordinationTypeAndCardinality: (result.coordinationTopology || []).map((group) => ({
-        ...group,
-        orderedMembers: fingerprintSubjectMembers(group.orderedMembers),
+      coordinationTypeAndCardinality: (result.coordinationTopology || []).map(({ type, cardinality, orderedMembers }) => ({
+        type, cardinality, orderedMembers: fingerprintSubjectMembers(orderedMembers),
       })),
       voice: records.map((record) => record.voice || 'ACTIVE'),
       verbLemmaAndMorphology: records.map((record) => [record.verbLemma, record.verbForm]),
@@ -1559,10 +1595,7 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
   }
   const duplicateGroups = [...groups.values()].filter((ids) => ids.length > 1)
     .map((ids) => ids.sort());
-  const sanctionedDuplicates = [
-    ['SB-001', 'V2-SENTENCE_BOUNDARY-005'],
-    ['V2-PUNCTUATION_ABUSE-003', 'V2-PUNCTUATION_ABUSE-007'],
-  ].map((ids) => ids.sort());
+  const sanctionedDuplicates = [];
   duplicateGroups.sort((left, right) => left[0].localeCompare(right[0]));
   sanctionedDuplicates.sort((left, right) => left[0].localeCompare(right[0]));
   assert.deepEqual(duplicateGroups, sanctionedDuplicates);
@@ -1622,10 +1655,8 @@ test('Astra PREQ-002 release fingerprint index rejects global duplicates without
   assert.equal(index.entries.length, index.uniqueCount);
   assert.equal(new Set(index.entries.map((entry) => entry.semanticFingerprint)).size, index.entries.length);
   assert.equal(index.sourceCaseCount, 206);
-  assert.deepEqual(index.rejectedDuplicates.map((entry) => [entry.retainedCaseId, entry.rejectedCaseId]), [
-    ['SB-001', 'V2-SENTENCE_BOUNDARY-005'],
-    ['V2-PUNCTUATION_ABUSE-003', 'V2-PUNCTUATION_ABUSE-007'],
-  ]);
+  assert.equal(index.entries.length, 206);
+  assert.deepEqual(index.rejectedDuplicates, []);
   for (const item of canonicalCases) assert.ok(index.entries.some((entry) => entry.caseId === item.id), item.id);
   for (const row of requiredTestClasses) {
     const count = new Set(index.entries

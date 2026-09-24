@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
   "kind": "alop-p1-authoritative-evidence-manifest",
-  "taskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
-  "repairAttemptId": "P1-FINAL-SEVEN-ASTRA-20260923-01A0CBA4",
+  "taskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
+  "repairAttemptId": "P1-FINAL-SEVEN-ASTRA-20260924-01A09D9F",
   "designVersion": "photosynthesis-light-relation-v2",
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
@@ -10,21 +10,21 @@
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "implementationCommitSha": "73732dc8979cddc623a669a615536516754e716e",
+  "implementationCommitSha": "e2109e5a5e55935552791f488557dc6d548802e0",
   "implementationCommitShas": [
-    "aaa4620ceff54cedaa930f1d6148680b1ef43d1d",
-    "73732dc8979cddc623a669a615536516754e716e"
+    "1e28dcc5e1d0b5bf244c30ca99d46fdadb89e3a3",
+    "e2109e5a5e55935552791f488557dc6d548802e0"
   ],
-  "implementationTreeSha": "b2b1ac538634f1ffbbaeefcb15774c4544347344",
-  "implementationParentSha": "937a1477c178d44c62c66a2c0d32d74a5810db48",
-  "candidateHeadAtCapture": "12d89158f7d3c598866154507d076074a99be0c8",
-  "candidateTreeAtCapture": "c75b54a77e1f11ab78d1fb96f6db266ab3650559",
-  "packageCommitSha": "12d89158f7d3c598866154507d076074a99be0c8",
-  "packageTreeSha": "c75b54a77e1f11ab78d1fb96f6db266ab3650559",
-  "packageGitBlob": "b28062d70feb8bd96bd9432cf644211cbf660e87",
-  "packageSha256": "418851eac29fab0c488e904ffab466fcea4e6b32b293b5579d0edc9766f42833",
-  "evaluatorInputCommitSha": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
-  "evaluatorInputBlob": "c7cc47587b6b49020b4814ace57793d9f8bbc0af",
+  "implementationTreeSha": "c15e5b2ebf284d19dceb5549cc235c50e785e922",
+  "implementationParentSha": "1e28dcc5e1d0b5bf244c30ca99d46fdadb89e3a3",
+  "candidateHeadAtCapture": "acd8d8e9260d139f249cbf0a201e92277cde4910",
+  "candidateTreeAtCapture": "ff1ed18291b54623845a029bf3264e5c43f214d5",
+  "packageCommitSha": "ab25a3a7912470a7141758ef7335d51e4986a568",
+  "packageTreeSha": "4f559a5c856095c56c813040613b5a4d6e67210e",
+  "packageGitBlob": "6017c99493c3d88c0b0ef2189522b6b96dd4f28d",
+  "packageSha256": "3ae65540fe23ecf42498aecfc1b7449a726aadd325ac05c3a127b3dd8969037f",
+  "evaluatorInputCommitSha": "e2109e5a5e55935552791f488557dc6d548802e0",
+  "evaluatorInputBlob": "16cb88d71ee39422b52556df63382d004302d9fe",
   "runnerInputCommitSha": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
   "runnerInputBlob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
   "recipeInputCommitSha": "3ae0f283461f304f2778a4dc463a85c8f7d86adf",
@@ -48,11 +48,11 @@
     },
     {
       "path": "backend/lib/p1-authoritative-repair-v2.test.js",
-      "sha256": "5244baabbb3c3c9e86d4ab96f435903240e3abd846043549e13c146637d14563"
+      "sha256": "512bfcbf41727b8b5455dddfb5da2a5a5a7a812c5d26c5b5627c04202d3d0673"
     },
     {
       "path": "backend/lib/photosynthesis-relation-cases.js",
-      "sha256": "b6dd046093041e2efcb2d0ce718929ccd4b3552e64367c14a051e7c8bbeb393e"
+      "sha256": "5ce1c68617c7a4aeb8e5e20247168be65c4329ba842c76c7aea1ca7cc143c8c1"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator-mutation.test.js",
@@ -60,7 +60,7 @@
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.js",
-      "sha256": "16863d27fd4d6e6dc5bc06774a2a6808835e1b7759ffb95c0d45744e430be39f"
+      "sha256": "4e7d8166e703f9b6715e13a2f8d9d57f90a4c51fa310f452c039509c874774aa"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
@@ -68,38 +68,51 @@
     },
     {
       "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-      "sha256": "418851eac29fab0c488e904ffab466fcea4e6b32b293b5579d0edc9766f42833"
+      "sha256": "3ae65540fe23ecf42498aecfc1b7449a726aadd325ac05c3a127b3dd8969037f"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
-      "sha256": "abdca9c3a27aaba81fb0b8cc47512909003e6e5b4dd52b311fe21f3f944d3242"
+      "sha256": "a4efd625014128fefd76e596e2e0a0f260c7f691d0df2b06d9fbb16e7f7e94d3"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/green-phase.json",
-      "sha256": "33c617138397890d5e414b3841249e8b7f0897de84a114f051a2ac3fa702c0a4"
+      "sha256": "925eb9261b6aec51c67e4338e381fa5b34d249061aa6c3baad86f46b8aad9fa4"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/mutation-phase.json",
-      "sha256": "5d056b90c8d6bb0dc1be08a3f636c4bf85f932e885110c8e01d4a20cadd1c3e9"
+      "sha256": "a2a05054ccaa688e158cef9e0ff49bee9d34964e2c1154ba4246de5589d2f02a"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/red-phase.json",
-      "sha256": "90afbcbaf046cdccfa371908aa7b558f0d1d2ced4772304cdc75ac932715dfe7"
+      "sha256": "378aecaccd756bc5b6c9046c1d4e15386dc96dd2ecd3a701d76f97b3b1599ebd"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/semantic-coverage.json",
-      "sha256": "16242f434bc32c5e357c3a497fb74acd2372fcd5b12650da0137d0165a400986"
+      "sha256": "b12f2b906dec9b5bb3f44f496bcb8d0e71f4349e7c92cea73f79501c29a6dd70"
     }
   ],
-  "implementationTaskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
+  "implementationTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
   "repairBaseSha": "fee44f4d2f3a46458b4b79277363585f78695ecc",
   "repairBaseTreeSha": "6bff90f3a379d192e30c01f9111cef65c31d9c55",
-  "packageBytes": 98158,
-  "workerModelReportedByOwner": "GPT-6 Luna",
-  "workerEffortReportedByOwner": "Max",
-  "capturedAtUtc": "2026-09-23T22:13:29Z",
-  "implementationSessionId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
+  "packageBytes": 99168,
+  "capturedAtUtc": "2026-09-24T21:09:17.692Z",
   "redCommitSha": "fc072ccd935d3cf6028e9efd9e805f03ec7d251f",
   "redEvidenceCommitSha": "3eeacfce68895db97236e8568154fefb8457b161",
-  "candidateBlockers": []
+  "candidateBlockers": [],
+  "implementationSessionIdStatus": "NOT_EXPOSED_BY_CURRENT_CODEX_RUNTIME",
+  "taskIdentityType": "Codex task/thread; not a runtime session UUID",
+  "workerDispatchState": "NO_CHILD_WORKER; DIRECT_CONTROLLER_OWNED_EVIDENCE_RECONCILIATION",
+  "historicalRedCommitSha": "fc072ccd935d3cf6028e9efd9e805f03ec7d251f",
+  "historicalRedEvidenceCommitSha": "3eeacfce68895db97236e8568154fefb8457b161",
+  "redReproduction": {
+    "kind": "exact-base inline semantic fingerprint differential",
+    "baseSha": "bc4cf79fdda869cb42465d720cac59822802fde5",
+    "baseTreeSha": "8859d1ebfa3fe891ba42a59137710eab06e79a54",
+    "candidateHead": "acd8d8e9260d139f249cbf0a201e92277cde4910",
+    "probeSourceSha256": "be5bc111ab62cb2aa6adc7794e2dd0428fd6d711eeeed643b39e6c0545c3418d",
+    "stdoutSha256": "b8208f8bdf12ef747448c60d4c88f46809ee90afec7fbf058101d4ef83571305",
+    "exitCode": 1,
+    "expectedRedConfirmed": true
+  },
+  "nextGate": "ASTRA_REVIEW_PENDING; NOT_RUN_BY_THIS_CONTROLLER"
 }

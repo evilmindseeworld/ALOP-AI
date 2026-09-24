@@ -7,8 +7,8 @@
   "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
   "authorityEpoch": 2,
   "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "implementationTaskId": "01a0cba4-2188-78b0-9d70-141ef3675f92",
-  "repairAttemptId": "P1-FINAL-SEVEN-ASTRA-20260923-01A0CBA4",
+  "implementationTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
+  "repairAttemptId": "P1-FINAL-SEVEN-ASTRA-20260924-01A09D9F",
   "capturedAtUtc": "2026-09-23T15:07:57.824Z",
   "phase": "RED",
   "expectedRed": true,
@@ -116,7 +116,11 @@
       "expectedPolarity": "UNCERTAIN",
       "observedPassed": true,
       "behavioralMismatch": true,
-      "evidenceSource": {"redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb", "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe", "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"}
+      "evidenceSource": {
+        "redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb",
+        "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe",
+        "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"
+      }
     },
     {
       "id": "ADV002",
@@ -125,7 +129,11 @@
       "expectedPolarity": "UNRESOLVED",
       "observedPassed": true,
       "behavioralMismatch": true,
-      "evidenceSource": {"redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb", "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe", "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"}
+      "evidenceSource": {
+        "redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb",
+        "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe",
+        "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"
+      }
     },
     {
       "id": "ADV003",
@@ -134,7 +142,11 @@
       "expectedPolarity": "UNRESOLVED",
       "observedPassed": true,
       "behavioralMismatch": true,
-      "evidenceSource": {"redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb", "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe", "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"}
+      "evidenceSource": {
+        "redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb",
+        "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe",
+        "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"
+      }
     },
     {
       "id": "ADV004",
@@ -143,7 +155,11 @@
       "expectedPolarity": "AFFIRMED",
       "observedPassed": false,
       "behavioralMismatch": true,
-      "evidenceSource": {"redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb", "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe", "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"}
+      "evidenceSource": {
+        "redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb",
+        "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe",
+        "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"
+      }
     },
     {
       "id": "ADV005",
@@ -152,7 +168,11 @@
       "expectedPolarity": "AFFIRMED",
       "observedPassed": false,
       "behavioralMismatch": true,
-      "evidenceSource": {"redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb", "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe", "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"}
+      "evidenceSource": {
+        "redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb",
+        "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe",
+        "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"
+      }
     },
     {
       "id": "ADV006",
@@ -161,7 +181,11 @@
       "expectedPolarity": "MIXED_INVALID",
       "observedPassed": true,
       "behavioralMismatch": true,
-      "evidenceSource": {"redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb", "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe", "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"}
+      "evidenceSource": {
+        "redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb",
+        "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe",
+        "artifactCommitSha": "1ee4ddc823dc712756839fa4c341473e7de915b8"
+      }
     }
   ],
   "historicalOriginalRed": {
@@ -194,5 +218,97 @@
   "testInputsCommittedAtTestedTree": true,
   "nonInputEvidenceModifiedDuringReceiptCapture": [],
   "baseWorktreeRestoredClean": true,
-  "provenanceSource": "fresh red run on committed test-only child of the exact repair base; source blobs resolved from immutable Git objects; output hash and byte count captured from the process streams"
+  "provenanceSource": "fresh red run on committed test-only child of the exact repair base; source blobs resolved from immutable Git objects; output hash and byte count captured from the process streams",
+  "final001SemanticFingerprintRedReproduction": {
+    "id": "FINAL001-MALFORMED-SEMANTIC-FINGERPRINT-RED",
+    "kind": "exact-base semanticCaseFingerprint differential reproduction",
+    "status": "PASS_REPRODUCED_ON_BASE_AND_NORMALIZED_ON_CANDIDATE",
+    "capturedAtUtc": "2026-09-24T20:26:21.330Z",
+    "repairBaseCommitSha": "bc4cf79fdda869cb42465d720cac59822802fde5",
+    "repairBaseTreeSha": "8859d1ebfa3fe891ba42a59137710eab06e79a54",
+    "candidateHead": "acd8d8e9260d139f249cbf0a201e92277cde4910",
+    "candidateTree": "ff1ed18291b54623845a029bf3264e5c43f214d5",
+    "runtime": {
+      "version": "v26.7.0",
+      "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
+      "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
+    },
+    "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe -e <inline three-pair semanticCaseFingerprint differential probe>",
+    "probeSourceSha256": "be5bc111ab62cb2aa6adc7794e2dd0428fd6d711eeeed643b39e6c0545c3418d",
+    "expectedExitCode": 1,
+    "observedExitCode": 1,
+    "expectedRedConfirmed": true,
+    "pairs": [
+      {
+        "id": "FINAL001-MALFORMED-UNKNOWN-NAME-001",
+        "a": "Photosynthesis captures light energy but Alice.",
+        "b": "Photosynthesis captures light energy but Alice Smith.",
+        "baseFingerprints": {
+          "a": "9a1c1a45e05998e3d34b28990743e3415508f36baeafdcf6519cec6451ae6d5f",
+          "b": "0717d2208c247c30ed3024dfbf0f3292fcc2fab110e684efa832a156e0823505",
+          "distinct": true
+        },
+        "candidateFingerprints": {
+          "a": "fa80d91f620a9155ce47e6ba3b66cce85c0854e7e6613eb1149f8839746dad5f",
+          "b": "fa80d91f620a9155ce47e6ba3b66cce85c0854e7e6613eb1149f8839746dad5f",
+          "equivalent": true
+        }
+      },
+      {
+        "id": "FINAL001-MALFORMED-OBJECT-TAIL-002",
+        "a": "Photosynthesis captures water but",
+        "b": "Photosynthesis captures carbon dioxide but",
+        "baseFingerprints": {
+          "a": "d07230226191a1b084dec0b2a42838d8fed798329326372fb6ecdcd8149923b3",
+          "b": "cb9d3e801b36075a08c51f7087efaf7fbc56dd97aedbec58ab8ee4adbb386c25",
+          "distinct": true
+        },
+        "candidateFingerprints": {
+          "a": "a92607c18b1744aef3fb510909d327468065f205a210f09509cf14238786cdb7",
+          "b": "a92607c18b1744aef3fb510909d327468065f205a210f09509cf14238786cdb7",
+          "equivalent": true
+        }
+      },
+      {
+        "id": "FINAL001-MALFORMED-SUBJECT-NAME-003",
+        "a": "Alice captures light energy but",
+        "b": "Alice Smith captures light energy but",
+        "baseFingerprints": {
+          "a": "24d1e509a04764509a2e93b5b30b25b3e9569762802765165e0f2d001d9f0434",
+          "b": "27f65bbda28fc6ea5939bd77697486eca90e6e2d5ebab681af36549ddb76b849",
+          "distinct": true
+        },
+        "candidateFingerprints": {
+          "a": "fafcf3e8c9c2f07d66a262484057f0ae3d44c3580d3fff88bf24a008824d9ab0",
+          "b": "fafcf3e8c9c2f07d66a262484057f0ae3d44c3580d3fff88bf24a008824d9ab0",
+          "equivalent": true
+        }
+      }
+    ],
+    "stdoutPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-final001-red-85c6937a00544d1fb6a91dcefe563d80.stdout",
+    "stdoutBytes": 1802,
+    "stdoutSha256": "b8208f8bdf12ef747448c60d4c88f46809ee90afec7fbf058101d4ef83571305",
+    "stderrPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-final001-red-85c6937a00544d1fb6a91dcefe563d80.stderr",
+    "stderrBytes": 0,
+    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "currentCandidateIdentity": {
+    "head": "acd8d8e9260d139f249cbf0a201e92277cde4910",
+    "tree": "ff1ed18291b54623845a029bf3264e5c43f214d5",
+    "implementationCommitSha": "e2109e5a5e55935552791f488557dc6d548802e0",
+    "implementationTreeSha": "c15e5b2ebf284d19dceb5549cc235c50e785e922",
+    "repairBaseSha": "bc4cf79fdda869cb42465d720cac59822802fde5",
+    "repairBaseTreeSha": "8859d1ebfa3fe891ba42a59137710eab06e79a54"
+  },
+  "currentRepairAttemptId": "P1-FINAL-SEVEN-ASTRA-20260924-01A09D9F",
+  "scopeGates": {
+    "astraRunByController": false,
+    "candidateQualificationRunByController": false,
+    "solReviewRunByController": false,
+    "release": false,
+    "deploy": false,
+    "lifecycleMutation": false,
+    "p2": false,
+    "nocturne": false
+  }
 }

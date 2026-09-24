@@ -1,4 +1,4 @@
-// p1-static-compose-v1; evaluator-blob=c7cc47587b6b49020b4814ace57793d9f8bbc0af; runner-blob=a40ced65bfbbad234ea8b68c22049b085dfd6937; recipe-blob=d5a84e74ed8a22eb2fcb8a85303335fa820826a9
+// p1-static-compose-v1; evaluator-blob=16cb88d71ee39422b52556df63382d004302d9fe; runner-blob=a40ced65bfbbad234ea8b68c22049b085dfd6937; recipe-blob=d5a84e74ed8a22eb2fcb8a85303335fa820826a9
 import * as __p1Crypto from 'node:crypto';
 import { closeSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs';
 import { createRequire, Module } from 'node:module';
@@ -846,13 +846,8 @@ function detectInvalidChlorophyllClaimsV2(records){
     || (record.subjectSet?.role === 'PIGMENT_AGENT' && record.subjectSet?.lemma === 'chlorophyll'
       && record.polarity === 'NEGATED' && record.polarityReason === 'LOCAL_NEGATION'));
 }
-const V2_FINGERPRINT_KNOWN_UNSUPPORTED_SUBJECTS = new Map([
-  ['animal', 'ANIMAL'], ['animals', 'ANIMAL'], ['bacteria', 'BACTERIA'],
-  ['bacterium', 'BACTERIA'], ['rock', 'ROCK'], ['rocks', 'ROCK'],
-]);
 const fingerprintSubjectMembers = (members) => (members || []).map(([lemma, role]) => [
-  role === 'UNSUPPORTED'
-    ? V2_FINGERPRINT_KNOWN_UNSUPPORTED_SUBJECTS.get(lemma) || 'UNSUPPORTED_SUBJECT' : lemma,
+  role === 'UNSUPPORTED' ? 'UNSUPPORTED_SUBJECT' : lemma,
   role,
 ]);
 function resolveButNegatedRelation(ts,verb,subject,object,sentenceText,primaryRecord){
@@ -1373,12 +1368,35 @@ const evaluatePhotosynthesisRelationsV2 = (input)=>{
     positiveChlorophyllBinding:relationRecords.some((record)=>record.qualifies&&record.relationType==='CHLOROPHYLL_SUPPORT'),
   };
 };
+function malformedFingerprintStructure(text,records){
+  const structuralWords=new Set(['and','or','but','not','never','do','does','did','is','are','was','were','has','have','had','to','fail','fails','failed','appear','appears','seem','seems','during','while','although','because','whereas','if','unless','when','since','in','for','into','near','with','by','as',',',';',';',':','.','!','?']);
+  let searchFrom=0;
+  const ranges=records.map((record)=>{
+    const frame=record.evidenceSpan?.text||'',found=frame?text.indexOf(frame,searchFrom):-1,offset=found>=0?found:frame?text.indexOf(frame):-1;
+    if(offset>=0)searchFrom=offset+frame.length;
+    const shift=(range)=>range&&offset>=0?{start:range.start+offset,end:range.end+offset}:null;
+    return{subject:shift(record.subjectSet),object:shift(record.directObject)};
+  });
+  const projected=[];
+  for(const token of tokenizeV2(text)){
+    const subject=ranges.some(({subject})=>subject?.start<=token.start&&subject?.end>=token.end);
+    const object=ranges.map(({object})=>object).find((value)=>value?.start<=token.start&&value?.end>=token.end);
+    const item=subject?{role:'SUBJECT'}:object?{role:object.role==='NON_LIGHT_OBJECT'?'NON_LIGHT_OBJECT':'LIGHT_OBJECT'}
+      :V2_SUBJECTS.has(token.form)?{role:'SUBJECT'}:V2_VERBS.has(token.form)?{role:'VERB',lemma:token.lemma,form:token.form}
+        :V2_MODALS.has(token.form)||structuralWords.has(token.form)?{role:'STRUCTURE',form:token.form}:{role:'OTHER'};
+    const prior=projected.at(-1);
+    if(prior?.role===item.role&&['SUBJECT','LIGHT_OBJECT','NON_LIGHT_OBJECT','OTHER'].includes(item.role))continue;
+    projected.push(item);
+  }
+  return projected;
+}
 function semanticCaseFingerprint(input,decision=null){
   const r=typeof input==='string'?evaluatePhotosynthesisRelationsV2(input):input,records=r.relationRecords||[],text=typeof input==='string'?normalizeInputV2(input):r.normalized||'',coordination=r.coordinationTopology||[];
-  const normalizeDirectObject = (object) => object?.role === 'NON_LIGHT_OBJECT' ? null : object?.normalized;
+  const malformedStructure=r.hasMalformed?malformedFingerprintStructure(text,records):null;
+  const normalizeDirectObject = (object) => object?.role === 'LIGHT_OBJECT' ? object.normalized : null;
   const f={
-    grammarShape:{records:records.map(x=>x.grammarShape||'UNRESOLVED'),malformedRoleOrder:r.malformedShape||null,malformedLexicalStructure:r.hasMalformed?tokenizeV2(text).map(t=>{const role=V2_SUBJECTS.has(t.form)?'SUBJECT':V2_VERBS.has(t.form)?'VERB':['light','energy','sunlight'].includes(t.form)?'LIGHT':'OTHER';const structural=role!=='OTHER'||V2_MODALS.has(t.form)||['and','or','but','not','never','do','does','did','is','are','was','were','has','have','had','to','fail','fails','failed','appear','appears','seem','seems','during','while','although','because','whereas','if','unless','when','since','in','for','into','near','with','by','as',',',';',';',':','.','!','?'].includes(t.form);return structural?{role,lemma:t.lemma,form:t.form}:{role};}):null},
-    orderedSubjectLemmasAndRoleClasses:(r.subjectSet||[]).map(fingerprintSubjectMembers),coordinationTypeAndCardinality:coordination.map((group)=>({...group,orderedMembers:fingerprintSubjectMembers(group.orderedMembers)})),voice:records.map(x=>x.voice||'ACTIVE'),verbLemmaAndMorphology:records.map(x=>[x.verbLemma,x.verbForm]),
+    grammarShape:{records:records.map(x=>x.grammarShape||'UNRESOLVED'),malformedRoleOrder:malformedStructure?.map(({role,form,lemma})=>[role,lemma,form].filter(Boolean).join(':')).join(' ')||null,malformedLexicalStructure:malformedStructure},
+    orderedSubjectLemmasAndRoleClasses:(r.subjectSet||[]).map(fingerprintSubjectMembers),coordinationTypeAndCardinality:coordination.map((group)=>({type:group.type,cardinality:group.cardinality,orderedMembers:fingerprintSubjectMembers(group.orderedMembers)})),voice:records.map(x=>x.voice||'ACTIVE'),verbLemmaAndMorphology:records.map(x=>[x.verbLemma,x.verbForm]),
     directObjectRoleAndNormalizedLightForm:records.map(x=>x.directObject?[x.directObject.role,normalizeDirectObject(x.directObject)]:null),objectBindingOrigin:records.map(x=>x.lightObject?.binding||null),
     auxiliaryChain:records.map(x=>x.auxiliaryChain?.chain||[]),modal:records.map(x=>x.modal||null),controlChain:records.map(x=>x.controlChain?[x.controlChain.type,x.controlChain.surface]:null),
     polarityStructure:records.map(x=>[x.polarity||'UNRESOLVED',x.polarityReason||'']),orderedBarrierTypes:r.barriers||[],clauseSentenceTopology:r.topology||[],

@@ -1409,10 +1409,12 @@ const structuralVariants = {
     ...[['??',['PU']],[':!',['PU','BD']],['?!?',['PU']],[':',['PU','BD']],[';',['PU','BD']],['...',['PU']]]
       .map(([punctuation,dimensions],index) => index === 0
         ? ['Photosynthesis captures carbon dioxide!; Light energy exists.',['PU','BD']]
+        : index === 2
+          ? ['Photosynthesis captures carbon dioxide?!? Light energy exists! Chlorophyll is present.',['PU']]
         : index === 4
-          ? ['Photosynthesis captures carbon dioxide:!; Light energy exists.',['PU','BD']]
-          : index === 5
-            ? ['Photosynthesis captures carbon dioxide?!; Light energy exists.',['PU','BD']]
+          ? ['Photosynthesis captures carbon dioxide:!; Light energy exists. Animals capture water.',['PU','BD']]
+        : index === 5
+            ? ['Photosynthesis captures carbon dioxide;?!: Light energy exists.',['PU','BD']]
             : [`Photosynthesis captures carbon dioxide${punctuation} Light energy exists.`,dimensions]),
     ['Photosynthesis captures carbon dioxide?! Light energy exists. Animals capture light energy.',['PU','BD']],
   ],
@@ -1464,7 +1466,7 @@ for (const row of requiredTestClasses) {
 const b5SemanticSupplementCases = [
   {
     id: 'B5-PUNCTUATION_ABUSE-001',
-    text: 'Photosynthesis captures carbon dioxide!?! Light energy exists.',
+    text: 'Photosynthesis captures carbon dioxide! Light energy exists! Chlorophyll is present! Light energy remains.',
     expectedDecision: 'FAIL',
     classIds: ['PUNCTUATION_ABUSE'],
     parameterDimensions: ['PU'],

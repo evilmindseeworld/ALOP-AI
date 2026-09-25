@@ -652,10 +652,10 @@ test('V2 corpus identity and expected membership are frozen independently of imp
     .map(stableFields)
     .sort(([leftId], [rightId]) => leftId.localeCompare(rightId));
   const identity = createHash('sha256').update(JSON.stringify(corpus)).digest('hex');
-  assert.equal(identity, '1b8624c6c6b327bd9f6ed8102445cf347192477edfb2e5bee5a75b6cc9653ab5');
+  assert.equal(identity, '81184d5d60dd45f55844a10ed2690ae56c895a34521f9b4b81eb5fd9346a2ea1');
   assert.deepEqual(b5SemanticSupplementCases.map(stableFields), [[
     'B5-PUNCTUATION_ABUSE-001',
-    'Photosynthesis captures carbon dioxide!?! Light energy exists.',
+    'Photosynthesis captures carbon dioxide! Light energy exists! Chlorophyll is present! Light energy remains.',
     'FAIL',
     null,
     ['PUNCTUATION_ABUSE'],
@@ -1118,7 +1118,7 @@ test('V2 semantic corpus meets every frozen class minimum with genuine projectio
   assert.equal(fingerprints.length, 206);
   assert.ok(new Set(fingerprints).size >= 201, 'at least 201 distinct frozen semantic projections are required');
   assert.deepEqual([...fingerprintGroups.values()].filter((ids) => ids.length > 1).map((ids) => ids.sort()).sort((a,b) => a[0].localeCompare(b[0])), [
-    ['B5-PUNCTUATION_ABUSE-001','V2-PUNCTUATION_ABUSE-003'],
+    ['V2-PUNCTUATION_ABUSE-002','V2-PUNCTUATION_ABUSE-006'],
     ['V2-SENTENCE_BOUNDARY-001','V2-SENTENCE_BOUNDARY-002'],
   ]);
   const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
@@ -1650,7 +1650,7 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
   const duplicateGroups = [...groups.values()].filter((ids) => ids.length > 1)
     .map((ids) => ids.sort());
   const sanctionedDuplicates = [
-    ['B5-PUNCTUATION_ABUSE-001','V2-PUNCTUATION_ABUSE-003'],
+    ['V2-PUNCTUATION_ABUSE-002','V2-PUNCTUATION_ABUSE-006'],
     ['V2-SENTENCE_BOUNDARY-001','V2-SENTENCE_BOUNDARY-002'],
   ];
   duplicateGroups.sort((left, right) => left[0].localeCompare(right[0]));
@@ -1678,7 +1678,7 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
   }
 
   const indexById = new Map(index.entries.map((entry) => [entry.caseId, entry]));
-  const rejectedIds = new Set(['B5-PUNCTUATION_ABUSE-001','V2-SENTENCE_BOUNDARY-002']);
+  const rejectedIds = new Set(['V2-PUNCTUATION_ABUSE-006','V2-SENTENCE_BOUNDARY-002']);
   for (const item of cases) {
     const entry = indexById.get(item.id);
     if (rejectedIds.has(item.id)) assert.equal(entry, undefined, item.id);
@@ -1690,7 +1690,7 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
   assert.equal(new Set(index.entries.map((entry) => entry.semanticFingerprint)).size, index.entries.length);
   assert.deepEqual(index.rejectedDuplicates.map(({ retainedCaseId, rejectedCaseId }) => [retainedCaseId, rejectedCaseId]), [
     ['V2-SENTENCE_BOUNDARY-001','V2-SENTENCE_BOUNDARY-002'],
-    ['V2-PUNCTUATION_ABUSE-003','B5-PUNCTUATION_ABUSE-001'],
+    ['V2-PUNCTUATION_ABUSE-002','V2-PUNCTUATION_ABUSE-006'],
   ]);
   assert.equal(index.sourceCaseCount - index.uniqueCount, 2);
 });
@@ -1950,6 +1950,10 @@ test('FINAL-003 RED: semicolon clauses cannot share a pronoun antecedent', () =>
   for (const answer of [
     'Photosynthesis captures light energy; photosynthesis stores it.',
     'Photosynthesis captures light energy; photosynthesis does not capture it.',
+    'Photosynthesis captures light energy; but photosynthesis stores it.',
+    'Photosynthesis captures light energy; but photosynthesis does not capture it.',
+    'Photosynthesis captures light energy: but photosynthesis stores it.',
+    'Photosynthesis captures light energy: but photosynthesis does not capture it.',
   ]) {
     const result = evaluatePhotosynthesisRelationsV2(answer);
     const laterClauseRecords = result.relationRecords.filter((record) => record.evidenceSpan?.text?.toLowerCase().startsWith('photosynthesis'));
@@ -1974,6 +1978,7 @@ test('P1 fingerprints ignore cosmetic determiners and punctuation while retainin
   const equivalentPairs = [
     ['Photosynthesis captures garnet while light energy is present.', 'Photosynthesis captures the garnet while light energy is present.'],
     ['Photosynthesis captures quartz while light energy is present.', 'Photosynthesis captures a quartz while light energy is present.'],
+    ['Photosynthesis captures light energy!', 'Photosynthesis captures light energy?!'],
     ['Photosynthesis captures garnet?! Light energy exists.', 'Photosynthesis captures garnet!? Light energy exists.'],
     ['Photosynthesis captures garnet?? Light energy exists.', 'Photosynthesis captures garnet??? Light energy exists.'],
     ['Photosynthesis captures garnet. Light energy exists.', 'Photosynthesis captures garnet! Light energy exists.'],
@@ -2009,6 +2014,15 @@ test('P1 recognizes unfamiliar subjects by grammatical role without preserving t
     ['the otters do not capture light energy.', 'the lattices do not capture light energy.'],
     ['the otter may capture light energy.', 'a lattice may capture light energy.'],
     ['the otter does not fail to capture light energy.', 'the lattice does not fail to capture light energy.'],
+    ['Geese capture light energy.', 'Wombats capture light energy.'],
+    ['Children capture light energy.', 'Badgers capture light energy.'],
+    ['Mice do not capture light energy.', 'Badgers do not capture light energy.'],
+    ['The oxen do capture light energy.', 'The schooners do capture light energy.'],
+    ['Alumni capture light energy.', 'Schooners capture light energy.'],
+    ['The species captures light energy.', 'The specimen captures light energy.'],
+    ['A species captures light energy.', 'A specimen captures light energy.'],
+    ['Women capture light energy.', 'Wombats capture light energy.'],
+    ['Teeth capture light energy.', 'Badgers capture light energy.'],
     ['the otter is capturing light energy.', 'a lattice is capturing light energy.'],
     ['the otters are capturing light energy.', 'the lattices are capturing light energy.'],
     ['otters and lattices capture light energy.', 'sparrows and widgets capture light energy.'],
@@ -2031,6 +2045,13 @@ test('P1 recognizes unfamiliar subjects by grammatical role without preserving t
     'the otters captures light energy.',
     'the lattice capture light energy.',
     'a lattices captures light energy.',
+    'A plants do capture light energy.',
+    'A plants may capture light energy.',
+    'Plants does capture light energy.',
+    'Plants does not fail to capture light energy.',
+    'Plants fails to capture light energy.',
+    'A plants and algae do capture light energy.',
+    'Plants and algae captures light energy.',
   ]) {
     const result = evaluate(answer);
     assert.equal(result.hasMalformed, true, answer);

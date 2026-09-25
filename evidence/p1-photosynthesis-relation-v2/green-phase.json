@@ -1,494 +1,261 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "designVersion": "photosynthesis-light-relation-v2",
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
-  "authorityEpoch": 2,
-  "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "repairAttemptId": "P1-FINAL-SEVEN-ASTRA-20260924-01A09D9F",
-  "capturedAtUtc": "2026-09-24T21:09:17.691Z",
-  "implementationCommitSha": "e2109e5a5e55935552791f488557dc6d548802e0",
-  "candidateHeadAtCapture": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-  "candidateTreeAtCapture": "ff1ed18291b54623845a029bf3264e5c43f214d5",
+  "repairAttemptId": "P1-ASTRA-REPAIR-001-003-20260925-8644913",
+  "capturedAtUtc": "2026-09-25T15:42:32.604Z",
+  "phase": "GREEN",
+  "status": "PASS_ZERO_CANDIDATE_REGRESSIONS_WITH_SHARED_BASELINE_FAILURE",
+  "repairBaseSha": "53dac79cf873443e2a8c468607af5deee8107759",
+  "repairBaseTreeSha": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
+  "implementationSourceCommitSha": "a90d4a43b7837ccc6e2cf1d8a1bc5fba2e6799db",
+  "implementationCommitSha": "aea18bdb72670af32203716d797fb1f9ff871aa0",
+  "implementationTreeSha": "c04c5c4efd0484a4cecb944aea2a6a2fb63aa38d",
+  "implementationParentSha": "c18e262c9202932bef8dcc3b1bd3b832dcb16a26",
+  "testedCandidateHead": "911a29d0ae8007bae9af8435940e65c55ec3ade3",
+  "testedCandidateTree": "450aed25ae224b79772758c8c91cfff1b8dd5b75",
+  "testedCandidateParent": "aea18bdb72670af32203716d797fb1f9ff871aa0",
+  "branch": "codex/p1-astra-repair-001-003-restart-20260925",
   "runtime": {
     "version": "v26.7.0",
     "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
     "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
   },
+  "testTool": {
+    "npmVersion": "11.17.0",
+    "npmCliPath": "C:/Program Files/nodejs/node_modules/npm/bin/npm-cli.js",
+    "gitVersion": "git version 2.55.0.windows.5",
+    "gitExecutablePath": "C:/Program Files/Git/cmd/git.exe",
+    "gitExecutableSha256": "78211c7ed73988da93a6d8a33d47ec6187f464d7ea2a9a00c182bbd7a1ecf30f"
+  },
   "dependencyIdentity": {
     "backendPackageJsonSha256": "90467537d4de957dbe49c1722ecb1767344dd7237b1dfd0179484c3bceba2159",
     "backendPackageLockSha256": "939370cd71896ccaeef4b3d4c4dffaa43840273e014fae5386c46f0cdf11bfa8",
     "backendNodeModulesPresent": true,
-    "backendNodeModulesRealPath": "C:\\Users\\LENOVO\\Documents\\AI-Classroom-p1-opus55-astra-converged-repair-20260923\\backend\\node_modules"
-  },
-  "phase": "GREEN",
-  "status": "PASS_FOCUSED_AND_ZERO_CANDIDATE_REGRESSIONS_WITH_SHARED_BASELINE_FAILURE",
-  "canonicalCasesPassed": true,
-  "semanticCoveragePass": true,
-  "allCorpusDecisionsMatch": true,
-  "failed": 0,
-  "skipped": 0,
-  "focusedTestRuns": [
-    {
-      "id": "authoritative-repair",
-      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test lib/p1-authoritative-repair-v2.test.js (cwd=backend)",
-      "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
-      "args": [
-        "--test",
-        "lib/p1-authoritative-repair-v2.test.js"
-      ],
-      "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-final-seven-repair-v2/backend",
-      "exitCode": 0,
-      "tests": 97,
-      "passed": 97,
-      "failed": 0,
-      "skipped": 0,
-      "durationMs": 1429.6049,
-      "stdoutPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-fresh-authoritative-ba796cb7098646118eca79b9692083fb.stdout",
-      "stdoutSha256": "e0a4d298cd977dc7d55a9f71909a975eb89dda8b9f91ef047950f3eeacd9c04b",
-      "bytes": 9065,
-      "stderrPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-fresh-authoritative-ba796cb7098646118eca79b9692083fb.stderr",
-      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderrBytes": 0,
-      "capturedAtUtc": "2026-09-24T19:55:43.510Z",
-      "testedCommitSha": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-      "testedTreeSha": "ff1ed18291b54623845a029bf3264e5c43f214d5"
-    },
-    {
-      "id": "authoritative-mutations",
-      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test lib/p1-authoritative-repair-v2-mutation.test.js (cwd=backend)",
-      "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
-      "args": [
-        "--test",
-        "lib/p1-authoritative-repair-v2-mutation.test.js"
-      ],
-      "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-final-seven-repair-v2/backend",
-      "exitCode": 0,
-      "tests": 20,
-      "passed": 20,
-      "failed": 0,
-      "skipped": 0,
-      "durationMs": 401.5395,
-      "stdoutPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-fresh-authoritative-mutations-b2bb237f762242ac9b2f444decf017f4.stdout",
-      "stdoutSha256": "c04333d07c4640338c3ec695c0619e0f08b847f9d5d859405fe8b38265d7f131",
-      "bytes": 1968,
-      "stderrPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-fresh-authoritative-mutations-b2bb237f762242ac9b2f444decf017f4.stderr",
-      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderrBytes": 0,
-      "capturedAtUtc": "2026-09-24T19:55:41.490Z",
-      "testedCommitSha": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-      "testedTreeSha": "ff1ed18291b54623845a029bf3264e5c43f214d5"
-    },
-    {
-      "id": "evaluator",
-      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test lib/photosynthesis-relation-evaluator.test.js (cwd=backend)",
-      "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
-      "args": [
-        "--test",
-        "lib/photosynthesis-relation-evaluator.test.js"
-      ],
-      "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-final-seven-repair-v2/backend",
-      "exitCode": 0,
-      "tests": 39,
-      "passed": 39,
-      "failed": 0,
-      "skipped": 0,
-      "durationMs": 255.6859,
-      "stdoutPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-fresh-evaluator-f9eed45811bb49709109a9f5f3b960cc.stdout",
-      "stdoutSha256": "5b88f3cdf56f46ec34a913bebbbe37eb7e3c4f228fe9bdae1494981322b635cb",
-      "bytes": 2607,
-      "stderrPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-fresh-evaluator-f9eed45811bb49709109a9f5f3b960cc.stderr",
-      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderrBytes": 0,
-      "capturedAtUtc": "2026-09-24T19:55:41.735Z",
-      "testedCommitSha": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-      "testedTreeSha": "ff1ed18291b54623845a029bf3264e5c43f214d5"
-    },
-    {
-      "id": "evaluator-mutations",
-      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test lib/photosynthesis-relation-evaluator-mutation.test.js (cwd=backend)",
-      "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
-      "args": [
-        "--test",
-        "lib/photosynthesis-relation-evaluator-mutation.test.js"
-      ],
-      "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-final-seven-repair-v2/backend",
-      "exitCode": 0,
-      "tests": 11,
-      "passed": 11,
-      "failed": 0,
-      "skipped": 0,
-      "durationMs": 375.5589,
-      "stdoutPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-fresh-evaluator-mutations-0b90686b07634ad2bcf9c2c21bceb3b5.stdout",
-      "stdoutSha256": "7f42425d4f672c246afe55afe36e7aaf88578447fcfd0e7dccb50457ad29ca82",
-      "bytes": 1105,
-      "stderrPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-fresh-evaluator-mutations-0b90686b07634ad2bcf9c2c21bceb3b5.stderr",
-      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stderrBytes": 0,
-      "capturedAtUtc": "2026-09-24T19:55:41.188Z",
-      "testedCommitSha": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-      "testedTreeSha": "ff1ed18291b54623845a029bf3264e5c43f214d5"
-    }
-  ],
-  "evaluationTestRun": {
-    "id": "evaluation",
-    "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test lib/evaluation.test.js (cwd=backend)",
-    "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
-    "args": [
-      "--test",
-      "lib/evaluation.test.js"
-    ],
-    "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-final-seven-repair-v2/backend",
-    "exitCode": 0,
-    "tests": 41,
-    "passed": 41,
-    "failed": 0,
-    "skipped": 0,
-    "durationMs": 380.11,
-    "stdoutPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-fresh-evaluation-8b3f3f9adb484a86b1ee591a3d4579b8.stdout",
-    "stdoutSha256": "8079ce6a4bfa36a4eea1e7fe3b1e6585658403fe0be63fd4f7be46d5c70532a4",
-    "bytes": 3520,
-    "stderrPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-fresh-evaluation-8b3f3f9adb484a86b1ee591a3d4579b8.stderr",
-    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "stderrBytes": 0,
-    "capturedAtUtc": "2026-09-24T19:55:43.289Z",
-    "testedCommitSha": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-    "testedTreeSha": "ff1ed18291b54623845a029bf3264e5c43f214d5"
-  },
-  "mutationKilled": 10,
-  "datasetValidation": {
-    "status": "PASS",
-    "mode": "validate-only",
-    "validationOnly": true,
-    "networkCalls": 0,
-    "providerCalls": 0,
-    "liveAuth": false,
-    "noMutations": true,
-    "datasets": [
+    "backendNodeModulesRealPath": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-restart-001-003/backend/node_modules",
+    "npmCi": [
       {
-        "dataset": "backend-intelligence-v1",
-        "status": "PASS",
-        "cases": 21,
-        "selected": 21,
-        "networkCalls": 0,
-        "providerCalls": 0,
-        "liveAuth": false,
-        "noMutations": true,
-        "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe scripts/run-evals.mjs --validate-only --dataset backend-intelligence-v1 (cwd=backend)",
-        "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
-        "args": [
-          "scripts/run-evals.mjs",
-          "--validate-only",
-          "--dataset",
-          "backend-intelligence-v1"
-        ],
-        "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-final-seven-repair-v2/backend",
+        "side": "repairBase",
+        "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe C:/Program Files/nodejs/node_modules/npm/bin/npm-cli.js ci --no-audit --no-fund --prefix C:/Users/LENOVO/AppData/Local/Temp/p1-astra-full-base-53dac79-20260925/backend",
+        "nodeVersion": "v26.7.0",
         "exitCode": 0,
-        "stdoutPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-resume-backend-intelligence-v1-17ed729f37484895bf194ec80e1db363.stdout",
-        "stdoutBytes": 93,
-        "stdoutSha256": "4a6555f72fd596798047904687ff9f8cce513b89aab2830811e9882fd9c337cc",
-        "stderrPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-resume-backend-intelligence-v1-17ed729f37484895bf194ec80e1db363.stderr",
-        "stderrBytes": 0,
-        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "capturedAtUtc": "2026-09-24T19:50:20.495Z",
-        "testedCommitSha": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-        "testedTreeSha": "ff1ed18291b54623845a029bf3264e5c43f214d5"
+        "packagesAdded": 170
       },
       {
-        "dataset": "backend-intelligence-v2",
-        "status": "PASS",
-        "cases": 21,
-        "selected": 21,
-        "networkCalls": 0,
-        "providerCalls": 0,
-        "liveAuth": false,
-        "noMutations": true,
-        "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe scripts/run-evals.mjs --validate-only --dataset backend-intelligence-v2 (cwd=backend)",
-        "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
-        "args": [
-          "scripts/run-evals.mjs",
-          "--validate-only",
-          "--dataset",
-          "backend-intelligence-v2"
-        ],
-        "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-final-seven-repair-v2/backend",
+        "side": "candidate",
+        "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe C:/Program Files/nodejs/node_modules/npm/bin/npm-cli.js ci --no-audit --no-fund --prefix C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-restart-001-003/backend",
+        "nodeVersion": "v26.7.0",
         "exitCode": 0,
-        "stdoutPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-resume-backend-intelligence-v2-3ad5d9fe37854a0aab5e916031b9fb59.stdout",
-        "stdoutBytes": 93,
-        "stdoutSha256": "cc48462d9a41c721f476b431ca5b5cbbaa8ee65ef65956c374f4483878908bee",
-        "stderrPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-resume-backend-intelligence-v2-3ad5d9fe37854a0aab5e916031b9fb59.stderr",
-        "stderrBytes": 0,
-        "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "capturedAtUtc": "2026-09-24T19:50:20.646Z",
-        "testedCommitSha": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-        "testedTreeSha": "ff1ed18291b54623845a029bf3264e5c43f214d5"
+        "packagesAdded": 170
       }
     ]
   },
+  "authoritativeTestRun": {
+    "id": "P1-AUTHORITATIVE",
+    "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test lib/p1-authoritative-repair-v2.test.js (cwd=C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-restart-001-003/backend; PATH begins with pinned Node directory)",
+    "args": [
+      "--test",
+      "lib/p1-authoritative-repair-v2.test.js"
+    ],
+    "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-restart-001-003/backend",
+    "exitCode": 0,
+    "testCount": 100,
+    "passed": 100,
+    "failed": 0,
+    "skipped": 0,
+    "stdout": {
+      "path": "C:/Users/LENOVO/AppData/Local/Temp/p1-authoritative-911a-pinned-final-20260925.log",
+      "bytes": 9483,
+      "sha256": "072fb1f1a0f590083008fb160fb9dbe1042dedf40eeecc5bd72ca781714211ea",
+      "modifiedAtUtc": "2026-09-25T15:31:54.636Z"
+    },
+    "testedCommitSha": "911a29d0ae8007bae9af8435940e65c55ec3ade3",
+    "testedTreeSha": "450aed25ae224b79772758c8c91cfff1b8dd5b75"
+  },
   "matchedFullSuiteComparison": {
     "status": "PASS_NO_CANDIDATE_REGRESSIONS_WITH_SHARED_BASELINE_FAILURE",
-    "capturedAtUtc": "2026-09-24T19:54:05.281Z",
     "runtime": {
       "version": "v26.7.0",
       "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
       "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
     },
     "repairComparisonBase": {
-      "side": "repairBase",
-      "head": "bc4cf79fdda869cb42465d720cac59822802fde5",
-      "tree": "8859d1ebfa3fe891ba42a59137710eab06e79a54",
-      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test lib/**/*.test.js (cwd=backend)",
-      "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
+      "head": "53dac79cf873443e2a8c468607af5deee8107759",
+      "tree": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
+      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe C:/Program Files/nodejs/node_modules/npm/bin/npm-cli.js test (cwd=backend; PATH begins with pinned Node directory)",
       "args": [
-        "--test",
-        "lib/**/*.test.js"
+        "npm-cli.js",
+        "test"
       ],
-      "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-final-seven/backend",
-      "exitCode": 1,
-      "total": 2549,
-      "passed": 2548,
-      "failed": 1,
-      "skipped": 0,
-      "stdoutPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-exact-base-bc4cf-f8bb81a78a6645c1985997c6603148a8.stdout",
-      "stdoutBytes": 186421,
-      "stdoutSha256": "93771de9db8c0385f6ebf09a52b0c454809482a7b837454b0ea1d8c77c98dfa6",
-      "stderrPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-exact-base-bc4cf-f8bb81a78a6645c1985997c6603148a8.stderr",
-      "stderrBytes": 0,
-      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "failureNames": [
-        "every declared Node major is the one deploy/targets.json names"
-      ],
-      "capturedAtUtc": "2026-09-24T19:54:05.281Z",
-      "failures": [
-        "every declared Node major is the one deploy/targets.json names"
-      ]
-    },
-    "candidate": {
-      "side": "candidate",
-      "head": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-      "tree": "ff1ed18291b54623845a029bf3264e5c43f214d5",
-      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test lib/**/*.test.js (cwd=backend)",
-      "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
-      "args": [
-        "--test",
-        "lib/**/*.test.js"
-      ],
-      "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-final-seven-repair-v2/backend",
+      "cwd": "C:/Users/LENOVO/AppData/Local/Temp/p1-astra-full-base-53dac79-20260925/backend",
       "exitCode": 1,
       "total": 2555,
       "passed": 2554,
       "failed": 1,
       "skipped": 0,
-      "stdoutPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-exact-candidate-acd8d8e-03e06727f5cd4c2d9ef5b2b0683a5474.stdout",
-      "stdoutBytes": 186975,
-      "stdoutSha256": "33e282241f8046bf5878a8fe770666f26272f2baf04d0a2b95b1a728990a0e5e",
-      "stderrPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-exact-candidate-acd8d8e-03e06727f5cd4c2d9ef5b2b0683a5474.stderr",
-      "stderrBytes": 0,
-      "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "log": {
+        "path": "C:/Users/LENOVO/AppData/Local/Temp/p1-full-base-53dac79-pinned-final-20260925.log",
+        "bytes": 189705,
+        "sha256": "cd75f4185b35cd8ef1643480172aed0647fc05a31921484f964941731d74893e",
+        "modifiedAtUtc": "2026-09-25T15:24:06.629Z"
+      },
       "failureNames": [
         "every declared Node major is the one deploy/targets.json names"
+      ]
+    },
+    "candidate": {
+      "head": "911a29d0ae8007bae9af8435940e65c55ec3ade3",
+      "tree": "450aed25ae224b79772758c8c91cfff1b8dd5b75",
+      "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe C:/Program Files/nodejs/node_modules/npm/bin/npm-cli.js test (cwd=backend; PATH begins with pinned Node directory)",
+      "args": [
+        "npm-cli.js",
+        "test"
       ],
-      "capturedAtUtc": "2026-09-24T19:54:02.759Z",
-      "failures": [
+      "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-restart-001-003/backend",
+      "exitCode": 1,
+      "total": 2558,
+      "passed": 2557,
+      "failed": 1,
+      "skipped": 0,
+      "log": {
+        "path": "C:/Users/LENOVO/AppData/Local/Temp/p1-full-candidate-911a-pinned-final-20260925.log",
+        "bytes": 190001,
+        "sha256": "36d72a7ba7fe50a2d927eaa55901bc831003c159616173b0aff44cdb0b42a0e4",
+        "modifiedAtUtc": "2026-09-25T15:24:06.690Z"
+      },
+      "failureNames": [
         "every declared Node major is the one deploy/targets.json names"
       ]
     },
     "candidateCausedFailureCount": 0,
     "candidateCausedFailureIds": [],
     "sameFailureSet": true,
-    "preRepairDelta": {
-      "tests": 6,
-      "failures": 0,
-      "additionalPassingTests": 6
-    },
-    "candidateHeadTested": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-    "candidateTreeTested": "ff1ed18291b54623845a029bf3264e5c43f214d5",
+    "additionalPassingTests": 3,
     "sharedBaselineFailure": {
       "testName": "every declared Node major is the one deploy/targets.json names",
       "file": "backend/lib/deployment-config.test.js",
-      "line": 361,
+      "line": 372,
       "targetNodeMajor": 26,
       "packageEnginesNode": "26.7.0",
-      "assertion": "engines.node must contain >=26 after whitespace removal",
-      "disposition": "shared by exact base and candidate; not candidate-caused"
+      "assertionRequires": ">=26",
+      "disposition": "same exact test failed on repair base and candidate; not repaired per instruction"
+    }
+  },
+  "semanticCoverage": {
+    "sourceCases": 206,
+    "rawUniqueTexts": 206,
+    "legitimateSemanticProjections": 204,
+    "requiredFloor": 201,
+    "classCount": 28,
+    "classMinimaPass": true,
+    "sentenceBoundary": {
+      "observed": 6,
+      "required": 6
     },
-    "comparisonNote": "Both isolated worktrees used pinned Node 26.7.0; only the same pre-existing engine-expectation assertion failed."
+    "punctuationAbuse": {
+      "observed": 8,
+      "required": 8
+    },
+    "canonicalCases": 54,
+    "canonicalCasesMatchFrozenDesign": true,
+    "structuralMarkers": 27,
+    "cosmeticLeaks": 0,
+    "arbitrarySubjectLeaks": 0,
+    "arbitraryObjectLeaks": 0,
+    "unsupportedSubjectProbes": {
+      "probes": 30,
+      "historicalEquivalent": 18,
+      "historicalFailed": 12,
+      "candidateEquivalent": 30,
+      "candidateFailed": 0,
+      "allGrammarDecisionsPreserved": true
+    }
   },
-  "preRepairCandidate": {
-    "head": "bc4cf79fdda869cb42465d720cac59822802fde5",
-    "tree": "8859d1ebfa3fe891ba42a59137710eab06e79a54",
-    "totalCases": 206,
-    "uniqueSemanticFingerprints": 204,
-    "duplicateGroups": [
-      {
-        "fingerprint": "81aba4575ece2353c275453d50692a448e15244d1ee56f06181bdb7ab4114a91",
-        "caseIds": [
-          "SB-001",
-          "V2-SENTENCE_BOUNDARY-005"
-        ]
-      },
-      {
-        "fingerprint": "22c143ff89a5e002d104e17a372153b389426eea8339d49e475765766672e62f",
-        "caseIds": [
-          "V2-PUNCTUATION_ABUSE-003",
-          "V2-PUNCTUATION_ABUSE-007"
-        ]
-      }
-    ]
+  "packageBuild": {
+    "buildA": {
+      "path": "C:/Users/LENOVO/AppData/Local/Temp/p1-astra-package-rebuild-20260925/build-a/package.mjs",
+      "bytes": 102580,
+      "sha256": "7df54b2e0a5f7a38b9ec4b8c8c864224de07a43d6ac76fa46f893295ccc266b9",
+      "gitBlob": "f3a7debd2bc8905204ef78ec7e42eaa344da05ff"
+    },
+    "buildB": {
+      "path": "C:/Users/LENOVO/AppData/Local/Temp/p1-astra-package-rebuild-20260925/build-b/package.mjs",
+      "bytes": 102580,
+      "sha256": "7df54b2e0a5f7a38b9ec4b8c8c864224de07a43d6ac76fa46f893295ccc266b9",
+      "gitBlob": "f3a7debd2bc8905204ef78ec7e42eaa344da05ff"
+    },
+    "byteForByteEqual": true,
+    "committedBlobMatchesBuild": true,
+    "committedSha256MatchesBuild": true,
+    "recipeComposerMode": "committed composeArtifact with separately read Git evaluator and runner inputs"
   },
-  "implementationAndPackage": {
-    "implementationCommitSha": "e2109e5a5e55935552791f488557dc6d548802e0",
-    "implementationTreeSha": "c15e5b2ebf284d19dceb5549cc235c50e785e922",
-    "implementationParentSha": "1e28dcc5e1d0b5bf244c30ca99d46fdadb89e3a3",
-    "evaluatorInputCommitSha": "e2109e5a5e55935552791f488557dc6d548802e0",
-    "evaluatorInputTreeSha": "c15e5b2ebf284d19dceb5549cc235c50e785e922",
-    "evaluatorInputPath": "backend/lib/photosynthesis-relation-evaluator.js",
-    "evaluatorBlob": "16cb88d71ee39422b52556df63382d004302d9fe",
-    "evaluatorSha256": "4e7d8166e703f9b6715e13a2f8d9d57f90a4c51fa310f452c039509c874774aa",
-    "runnerInputCommitSha": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
-    "runnerInputTreeSha": "f4f8b30f73448c34f7652f86a32a606d3dc8a739",
-    "runnerInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-    "runnerBlob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
-    "packageCommitSha": "ab25a3a7912470a7141758ef7335d51e4986a568",
-    "packageTreeSha": "4f559a5c856095c56c813040613b5a4d6e67210e",
-    "entryPoint": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-    "packageBlob": "6017c99493c3d88c0b0ef2189522b6b96dd4f28d",
-    "packageSha256": "3ae65540fe23ecf42498aecfc1b7449a726aadd325ac05c3a127b3dd8969037f",
-    "packageBytes": 99168,
-    "recipeInputCommitSha": "3ae0f283461f304f2778a4dc463a85c8f7d86adf",
-    "recipeInputTreeSha": "8ed002b01702ae842ea9e7c054fd91071eeb6792",
-    "recipeInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-    "recipeBlob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
-    "recipeVersion": "p1-static-compose-v1",
-    "independentByteReproduction": true,
-    "packageDirectMutationMode": "baseline-first committed-package execution; no lifecycle mutation",
-    "sourcePackageApiEquivalence": true,
-    "packageByteEquality": true
-  },
-  "modelInferenceTraffic": {
-    "performed": false,
-    "count": 0
-  },
-  "deployments": {
-    "performed": false,
-    "count": 0
-  },
-  "actions": {
-    "liveTraffic": false,
-    "deployed": false,
-    "merged": false
-  },
-  "implementationTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "repairBaseSha": "bc4cf79fdda869cb42465d720cac59822802fde5",
-  "repairBaseTreeSha": "8859d1ebfa3fe891ba42a59137710eab06e79a54",
-  "implementationTreeSha": "c15e5b2ebf284d19dceb5549cc235c50e785e922",
-  "implementationParentSha": "1e28dcc5e1d0b5bf244c30ca99d46fdadb89e3a3",
-  "authoritativeRepairTestRun": {
-    "id": "authoritative-repair",
-    "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test lib/p1-authoritative-repair-v2.test.js (cwd=backend)",
-    "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
-    "args": [
-      "--test",
-      "lib/p1-authoritative-repair-v2.test.js"
-    ],
-    "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-final-seven-repair-v2/backend",
-    "exitCode": 0,
-    "tests": 97,
-    "passed": 97,
-    "failed": 0,
-    "skipped": 0,
-    "durationMs": 1429.6049,
-    "stdoutPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-fresh-authoritative-ba796cb7098646118eca79b9692083fb.stdout",
-    "stdoutSha256": "e0a4d298cd977dc7d55a9f71909a975eb89dda8b9f91ef047950f3eeacd9c04b",
-    "bytes": 9065,
-    "stderrPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-fresh-authoritative-ba796cb7098646118eca79b9692083fb.stderr",
-    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "stderrBytes": 0,
-    "capturedAtUtc": "2026-09-24T19:55:43.510Z",
-    "testedCommitSha": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-    "testedTreeSha": "ff1ed18291b54623845a029bf3264e5c43f214d5"
-  },
-  "branch": "codex/p1-final-seven-astra-three-blocker-repair-20260924",
-  "worktreePath": "C:UsersLENOVODocumentsAI-Classroom-p1-final-seven-repair-v2",
-  "findingDisposition": {
-    "ASTRA_FINAL_001": "PASS: exact-base duplicate groups removed; 14-case corpus delta documented; frozen design unchanged",
-    "ASTRA_FINAL_002": "PASS: fresh focused/evaluation receipts and exact-base comparison; zero candidate-caused failures",
-    "ASTRA_FINAL_003": "PASS: deterministic package bytes and corrected package-lock hash recorded"
-  },
-  "knownBoundaries": [
-    "FINAL-001 resolved under explicit owner ruling without modifying/versioning the frozen design; see semantic-coverage.json.",
-    "Matched suites share one deployment-config assertion: package engines is 26.7.0 while assertion expects >=26; candidate-caused failures: 0.",
-    "Exactly eight frozen expected-PASS corpus cases also set hasMalformed because a separate proposition or sentence independently qualifies; malformed material itself remains nonqualifying. No global veto was added.",
-    "The broad FAIL_TEXT_SCAN remains a disclosed non-gating warning from fixture-bearing test paths; no cosmetic suppression was attempted.",
-    "Astra, CandidateQualification, Sol, release, deploy, merge, and P2 were not run."
-  ],
-  "authoritativeMutationTestRun": {
-    "id": "authoritative-mutations",
-    "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test lib/p1-authoritative-repair-v2-mutation.test.js (cwd=backend)",
-    "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
-    "args": [
-      "--test",
-      "lib/p1-authoritative-repair-v2-mutation.test.js"
-    ],
-    "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-final-seven-repair-v2/backend",
-    "exitCode": 0,
-    "tests": 20,
-    "passed": 20,
-    "failed": 0,
-    "skipped": 0,
-    "durationMs": 401.5395,
-    "stdoutPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-fresh-authoritative-mutations-b2bb237f762242ac9b2f444decf017f4.stdout",
-    "stdoutSha256": "c04333d07c4640338c3ec695c0619e0f08b847f9d5d859405fe8b38265d7f131",
-    "bytes": 1968,
-    "stderrPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-fresh-authoritative-mutations-b2bb237f762242ac9b2f444decf017f4.stderr",
-    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "stderrBytes": 0,
-    "capturedAtUtc": "2026-09-24T19:55:41.490Z",
-    "testedCommitSha": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-    "testedTreeSha": "ff1ed18291b54623845a029bf3264e5c43f214d5"
-  },
-  "packageApiEquivalence": {
+  "sourcePackageApiEquivalence": {
     "status": "PASS",
     "publicExports": 39,
     "matchedPublicExports": 39,
-    "uniqueInputs": 236,
-    "currentCorpusCases": 206,
-    "priorCorpusUniqueTextCount": 206,
     "comparedExports": [
       "evaluatePhotosynthesisRelations",
       "evaluatePhotosynthesisRelationsV2",
       "semanticCaseFingerprint"
     ],
-    "comparedResults": "Exact V1/V2 structured outputs and semantic fingerprints for current/prior corpus texts and owner-ruling controls.",
+    "inputCount": 3694,
+    "inputSetSha256": "d2d8e042a9b7a3649ad68ddda92f305b0e4d204dc26834c16848d4740e5f608c",
+    "comparedCalls": 11082,
+    "mismatches": 0,
     "sourceAndPackageIdentical": true
   },
-  "final001RedReproductionReference": "red-phase.json#final001SemanticFingerprintRedReproduction",
-  "verifierAndLifecycle": "NOT_RUN: Astra, CandidateQualification, Sol, release, deploy, merge, live evaluation, and P2.",
-  "focusedTestCases": 167,
-  "evaluationTestCases": 41,
-  "totalFocusedAndEvaluationTestCases": 208,
-  "focusedAndEvaluationSuites": 5,
-  "canonicalCaseCount": 54,
-  "packageByteEquality": true,
-  "currentBaseDeltaSummary": {
-    "changedGeneratedCases": 14,
-    "directDuplicateRepairs": 2,
-    "nonDuplicateCorpusVariantDeltas": 12,
-    "canonicalCasesChanged": 0,
-    "baseUnique": 204,
-    "candidateUnique": 206,
-    "remainingDuplicateGroups": 0
+  "metamorphicChecks": {
+    "historicalAstraPairs": 744,
+    "historicalAstraPairsCandidateEquivalent": 744,
+    "extraFreshPairs": 20,
+    "packageInputs": 3694,
+    "packageMismatches": 0
   },
+  "historicalProvenanceReconciliation": {
+    "priorRootManifestRepairBase": {
+      "sha": "fee44f4d2f3a46458b4b79277363585f78695ecc",
+      "tree": "6bff90f3a379d192e30c01f9111cef65c31d9c55"
+    },
+    "priorActiveGreenRepairBase": {
+      "sha": "bc4cf79fdda869cb42465d720cac59822802fde5",
+      "tree": "8859d1ebfa3fe891ba42a59137710eab06e79a54",
+      "stdoutPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-exact-base-bc4cf-f8bb81a78a6645c1985997c6603148a8.stdout",
+      "stdoutSha256Expected": "93771de9db8c0385f6ebf09a52b0c454809482a7b837454b0ea1d8c77c98dfa6",
+      "stdoutSha256Observed": "93771de9db8c0385f6ebf09a52b0c454809482a7b837454b0ea1d8c77c98dfa6",
+      "storedOutputMatches": true
+    },
+    "ancestry": {
+      "fee44IsAncestorOfBc4": true,
+      "bc4IsAncestorOfCurrentRepairBase": true
+    },
+    "historicalFullSuiteBaseDetermined": "bc4cf79fdda869cb42465d720cac59822802fde5; exact stored stdout hash matches active GREEN receipt; fee44 was a stale root-manifest label",
+    "currentRepairFullSuiteBase": {
+      "sha": "53dac79cf873443e2a8c468607af5deee8107759",
+      "tree": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
+      "executedNow": true
+    }
+  },
+  "frozenDesignSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
+  "quarantineCommits": [
+    {
+      "sha": "8c5f9afef9151923539c6016a2d6c75947b2e639",
+      "isAncestorOfFinalImplementation": false,
+      "isAncestorOfTestedHead": false
+    },
+    {
+      "sha": "090d1c99c1bbc3c85ef742fdbd0511e6ca728248",
+      "isAncestorOfFinalImplementation": false,
+      "isAncestorOfTestedHead": false
+    }
+  ],
   "scopeGates": {
-    "astraRunByController": false,
-    "candidateQualificationRunByController": false,
-    "solReviewRunByController": false,
+    "astraRun": false,
+    "candidateQualificationRun": false,
+    "solReviewRun": false,
     "release": false,
     "deploy": false,
-    "lifecycleMutation": false,
-    "p2": false,
-    "nocturne": false
+    "p2": false
   }
 }

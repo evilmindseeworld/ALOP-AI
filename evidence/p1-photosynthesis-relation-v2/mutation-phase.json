@@ -1,26 +1,104 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "designVersion": "photosynthesis-light-relation-v2",
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "authorityThreadId": "01a09cbe-d34d-7690-b60e-87bd1935012c",
-  "authorityEpoch": 2,
-  "controllerTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "repairAttemptId": "P1-FINAL-SEVEN-ASTRA-20260924-01A09D9F",
-  "capturedAtUtc": "2026-09-24T19:55:41.322Z",
-  "implementationCommitSha": "e2109e5a5e55935552791f488557dc6d548802e0",
-  "candidateHeadAtCapture": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-  "candidateTreeAtCapture": "ff1ed18291b54623845a029bf3264e5c43f214d5",
+  "repairAttemptId": "P1-ASTRA-REPAIR-001-003-20260925-8644913",
+  "capturedAtUtc": "2026-09-25T15:42:32.604Z",
+  "phase": "MUTATION",
+  "status": "PASS",
+  "repairBaseSha": "53dac79cf873443e2a8c468607af5deee8107759",
+  "repairBaseTreeSha": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
+  "implementationSourceCommitSha": "a90d4a43b7837ccc6e2cf1d8a1bc5fba2e6799db",
+  "implementationCommitSha": "aea18bdb72670af32203716d797fb1f9ff871aa0",
+  "implementationTreeSha": "c04c5c4efd0484a4cecb944aea2a6a2fb63aa38d",
+  "implementationParentSha": "c18e262c9202932bef8dcc3b1bd3b832dcb16a26",
+  "packageCommitSha": "aea18bdb72670af32203716d797fb1f9ff871aa0",
+  "packageTreeSha": "c04c5c4efd0484a4cecb944aea2a6a2fb63aa38d",
+  "packageCommitParentSha": "c18e262c9202932bef8dcc3b1bd3b832dcb16a26",
+  "packageGitBlob": "f3a7debd2bc8905204ef78ec7e42eaa344da05ff",
+  "packageSha256": "7df54b2e0a5f7a38b9ec4b8c8c864224de07a43d6ac76fa46f893295ccc266b9",
+  "packageBytes": 102580,
+  "packagePath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
   "runtime": {
     "version": "v26.7.0",
     "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
     "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
   },
-  "phase": "MUTATION",
-  "status": "PASS",
-  "cases": 206,
+  "recipeVersion": "p1-static-compose-v1",
+  "recipeInputCommitSha": "3ae0f283461f304f2778a4dc463a85c8f7d86adf",
+  "recipeInputTreeSha": "8ed002b01702ae842ea9e7c054fd91071eeb6792",
+  "recipeInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+  "recipeInputBlobSha": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
+  "recipeGitBlob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
+  "recipeSha256": "a80a4855a30ace45ff83bc0828fe62810ac46f5a0858543be8abaa693d8bbdb4",
+  "evaluatorInputCommitSha": "a90d4a43b7837ccc6e2cf1d8a1bc5fba2e6799db",
+  "evaluatorInputTreeSha": "022a613bfaf7671dacfc78ac10900acad7d80149",
+  "evaluatorInputPath": "backend/lib/photosynthesis-relation-evaluator.js",
+  "evaluatorBlob": "53807a53a581a523d87fc895750347f0237f24d2",
+  "evaluatorSha256": "cdd4ade64e89fa928eea78ae1f891c9ee255cf21ce07e51ac5fe571e8ddf6695",
+  "runnerInputCommitSha": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
+  "runnerInputTreeSha": "f4f8b30f73448c34f7652f86a32a606d3dc8a739",
+  "runnerInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+  "runnerBlob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
+  "runnerSha256": "e7bffea6fc690f6feb7003eb01c900bb798ba6b44cfb80c3a19edd45a1c6a3d7",
+  "runnerDerivedBlob": "9ce94afaab65d7cd0e8c0aa499b3e93679fb79ec",
+  "runnerDerivedSha256": "a58f3ea927089e03ea9f7a985d822478e1a6b0d355691d190d6aeb2286100c25",
+  "runnerM2M7Patch": {
+    "uniqueAnchor": "M2/M7 detatched-object insertion site",
+    "oldBlock": "      text = replaceOnce(text,\n        \"  if(ts[i]?.form==='the')i++;\",\n        \"  if(ts[i]?.form==='the')i++;\\n  const bound=ts.findIndex((t,n)=>n>=i&&['light','sunlight'].includes(t.form));\\n  if(bound>=0)i=bound;\",\n        id + ' detached-object rebinding');",
+    "newBlock": "      text = replaceOnce(text,\n        \"  if(!ts[i])return null;\",\n        \"  const bound=ts.findIndex((t,n)=>n>=i&&['light','sunlight'].includes(t.form));\\n  if(bound>=0)i=bound;\\n  if(!ts[i])return null;\",\n        id + ' detached-object rebinding');",
+    "derivedBlob": "9ce94afaab65d7cd0e8c0aa499b3e93679fb79ec",
+    "derivedSha256": "a58f3ea927089e03ea9f7a985d822478e1a6b0d355691d190d6aeb2286100c25"
+  },
+  "packageBuildReproduction": {
+    "buildA": {
+      "path": "C:/Users/LENOVO/AppData/Local/Temp/p1-astra-package-rebuild-20260925/build-a/package.mjs",
+      "bytes": 102580,
+      "sha256": "7df54b2e0a5f7a38b9ec4b8c8c864224de07a43d6ac76fa46f893295ccc266b9",
+      "gitBlob": "f3a7debd2bc8905204ef78ec7e42eaa344da05ff"
+    },
+    "buildB": {
+      "path": "C:/Users/LENOVO/AppData/Local/Temp/p1-astra-package-rebuild-20260925/build-b/package.mjs",
+      "bytes": 102580,
+      "sha256": "7df54b2e0a5f7a38b9ec4b8c8c864224de07a43d6ac76fa46f893295ccc266b9",
+      "gitBlob": "f3a7debd2bc8905204ef78ec7e42eaa344da05ff"
+    },
+    "byteForByteEqual": true,
+    "committedBlobMatchesBuild": true,
+    "committedSha256MatchesBuild": true,
+    "recipeComposerMode": "committed composeArtifact with separately read Git evaluator and runner inputs"
+  },
+  "sourcePackageApiEquivalence": {
+    "status": "PASS",
+    "publicExports": 39,
+    "matchedPublicExports": 39,
+    "comparedExports": [
+      "evaluatePhotosynthesisRelations",
+      "evaluatePhotosynthesisRelationsV2",
+      "semanticCaseFingerprint"
+    ],
+    "inputCount": 3694,
+    "inputSetSha256": "d2d8e042a9b7a3649ad68ddda92f305b0e4d204dc26834c16848d4740e5f608c",
+    "comparedCalls": 11082,
+    "mismatches": 0,
+    "sourceAndPackageIdentical": true
+  },
+  "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe scripts/run-photosynthesis-relation-mutations.mjs (cwd=C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-restart-001-003/backend; PATH begins with pinned Node directory)",
+  "args": [
+    "scripts/run-photosynthesis-relation-mutations.mjs"
+  ],
+  "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-restart-001-003/backend",
+  "exitCode": 0,
+  "stdout": {
+    "path": "C:/Users/LENOVO/AppData/Local/Temp/p1-mutations-911a-pinned-final-20260925.log",
+    "bytes": 2962,
+    "sha256": "050e247e6f5ad10ff053790f7f6feeecca272570ea94f9b02c3441cd8a7d04bd",
+    "modifiedAtUtc": "2026-09-25T15:32:11.885Z"
+  },
   "baselineFirst": true,
+  "sourceCaseCount": 206,
   "baseline": {
     "passed": 206,
     "failed": 0,
@@ -40,53 +118,131 @@
   ],
   "killed": 10,
   "total": 10,
-  "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe scripts/run-photosynthesis-relation-mutations.mjs (cwd=backend)",
-  "stdoutSha256": "3be23cf5c51b7ecbf5a397c001ab4eea6f8368888e26c8a3087314b5e713a7ea",
-  "evaluatorInputCommitSha": "e2109e5a5e55935552791f488557dc6d548802e0",
-  "evaluatorInputTreeSha": "c15e5b2ebf284d19dceb5549cc235c50e785e922",
-  "evaluatorInputPath": "backend/lib/photosynthesis-relation-evaluator.js",
-  "evaluatorBlob": "16cb88d71ee39422b52556df63382d004302d9fe",
-  "runnerInputCommitSha": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
-  "runnerInputTreeSha": "f4f8b30f73448c34f7652f86a32a606d3dc8a739",
-  "runnerInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-  "runnerBlob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
-  "recipeVersion": "p1-static-compose-v1",
-  "recipeGitBlob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
-  "recipeInputCommitSha": "3ae0f283461f304f2778a4dc463a85c8f7d86adf",
-  "packageCommitSha": "ab25a3a7912470a7141758ef7335d51e4986a568",
-  "packageTreeSha": "4f559a5c856095c56c813040613b5a4d6e67210e",
-  "packageGitBlob": "6017c99493c3d88c0b0ef2189522b6b96dd4f28d",
-  "packageSha256": "3ae65540fe23ecf42498aecfc1b7449a726aadd325ac05c3a127b3dd8969037f",
-  "packageBytes": 99168,
-  "independentByteReproduction": true,
-  "reproducedPackageSha256": "3ae65540fe23ecf42498aecfc1b7449a726aadd325ac05c3a127b3dd8969037f",
-  "sourcePackageApiEquivalence": true,
-  "packageByteEquality": true,
-  "qualificationMode": "committed package reproduction and M1-M10 mutation run; no CandidateQualification",
-  "dependencyIdentity": {
-    "backendPackageJsonSha256": "90467537d4de957dbe49c1722ecb1767344dd7237b1dfd0179484c3bceba2159",
-    "backendPackageLockSha256": "939370cd71896ccaeef4b3d4c4dffaa43840273e014fae5386c46f0cdf11bfa8",
-    "backendNodeModulesPresent": true,
-    "backendNodeModulesRealPath": "C:\\Users\\LENOVO\\Documents\\AI-Classroom-p1-opus55-astra-converged-repair-20260923\\backend\\node_modules"
-  },
+  "mutations": [
+    {
+      "id": "M1",
+      "killed": true,
+      "failuresByClass": {
+        "NEGATED_MODALITY": 8,
+        "UNCERTAIN_MODALITY": 12
+      },
+      "minimumFailuresByClass": {
+        "NEGATED_MODALITY": 4,
+        "UNCERTAIN_MODALITY": 4
+      }
+    },
+    {
+      "id": "M2",
+      "killed": true,
+      "failuresByClass": {
+        "DETACHED_OBJECT_DECOYS": 7,
+        "DIRECT_OBJECT_BARRIERS": 6,
+        "FINITE_PREDICATE_BARRIERS": 6
+      },
+      "minimumFailuresByClass": {
+        "DETACHED_OBJECT_DECOYS": 4,
+        "DIRECT_OBJECT_BARRIERS": 4,
+        "FINITE_PREDICATE_BARRIERS": 4
+      }
+    },
+    {
+      "id": "M3",
+      "killed": true,
+      "failuresByClass": {
+        "MALFORMED_SYNTAX": 9
+      },
+      "minimumFailuresByClass": {
+        "MALFORMED_SYNTAX": 6
+      }
+    },
+    {
+      "id": "M4",
+      "killed": true,
+      "failuresByClass": {
+        "AFFIRMATIVE_PASSIVE": 6
+      },
+      "minimumFailuresByClass": {
+        "AFFIRMATIVE_PASSIVE": 4
+      }
+    },
+    {
+      "id": "M5",
+      "killed": true,
+      "failuresByClass": {
+        "COORDINATED_SUBJECTS_MIXED_INVALID": 6
+      },
+      "minimumFailuresByClass": {
+        "COORDINATED_SUBJECTS_MIXED_INVALID": 6
+      }
+    },
+    {
+      "id": "M6",
+      "killed": true,
+      "failuresByClass": {
+        "DOUBLE_NEGATION": 6,
+        "NESTED_CONTROL": 7,
+        "UNRELATED_NEGATION": 6
+      },
+      "minimumFailuresByClass": {
+        "DOUBLE_NEGATION": 4,
+        "NESTED_CONTROL": 6,
+        "UNRELATED_NEGATION": 4
+      }
+    },
+    {
+      "id": "M7",
+      "killed": true,
+      "failuresByClass": {
+        "CLAUSE_BOUNDARY": 8,
+        "NO_STITCHING": 7
+      },
+      "minimumFailuresByClass": {
+        "CLAUSE_BOUNDARY": 4,
+        "NO_STITCHING": 4
+      }
+    },
+    {
+      "id": "M8",
+      "killed": true,
+      "failuresByClass": {
+        "COORDINATED_SUBJECTS_MIXED_INVALID": 8,
+        "INVALID_SUBJECT": 8
+      },
+      "minimumFailuresByClass": {
+        "COORDINATED_SUBJECTS_MIXED_INVALID": 4,
+        "INVALID_SUBJECT": 4
+      }
+    },
+    {
+      "id": "M9",
+      "killed": true,
+      "failuresByClass": {
+        "DETACHED_OBJECT_DECOYS": 8,
+        "INVALID_OBJECT": 7
+      },
+      "minimumFailuresByClass": {
+        "DETACHED_OBJECT_DECOYS": 4,
+        "INVALID_OBJECT": 4
+      }
+    },
+    {
+      "id": "M10",
+      "killed": true,
+      "failuresByClass": {
+        "AFFIRMATIVE_ACTIVE": 17,
+        "KNOWN_REGRESSIONS": 2
+      },
+      "minimumFailuresByClass": {
+        "AFFIRMATIVE_ACTIVE": 2,
+        "KNOWN_REGRESSIONS": 2
+      }
+    }
+  ],
   "mutationDeltaAccounting": {
-    "baselineFailuresInEveryRelevantClass": [],
     "baselineOnlyFailures": [],
     "sharedBaselineAndMutantFailures": [],
     "allCreditedKillsAreMutantOnly": true,
-    "sourceCaseCount": 206,
-    "requiredMutationIds": [
-      "M1",
-      "M2",
-      "M3",
-      "M4",
-      "M5",
-      "M6",
-      "M7",
-      "M8",
-      "M9",
-      "M10"
-    ],
+    "substringOnlyAttribution": false,
     "rows": [
       {
         "id": "M1",
@@ -208,313 +364,13 @@
       }
     ]
   },
-  "mutations": [
-    {
-      "id": "M1",
-      "killed": true,
-      "failuresByClass": {
-        "NEGATED_MODALITY": 8,
-        "UNCERTAIN_MODALITY": 12
-      },
-      "minimumFailuresByClass": {
-        "NEGATED_MODALITY": 4,
-        "UNCERTAIN_MODALITY": 4
-      }
-    },
-    {
-      "id": "M2",
-      "killed": true,
-      "failuresByClass": {
-        "DETACHED_OBJECT_DECOYS": 7,
-        "DIRECT_OBJECT_BARRIERS": 6,
-        "FINITE_PREDICATE_BARRIERS": 6
-      },
-      "minimumFailuresByClass": {
-        "DETACHED_OBJECT_DECOYS": 4,
-        "DIRECT_OBJECT_BARRIERS": 4,
-        "FINITE_PREDICATE_BARRIERS": 4
-      }
-    },
-    {
-      "id": "M3",
-      "killed": true,
-      "failuresByClass": {
-        "MALFORMED_SYNTAX": 9
-      },
-      "minimumFailuresByClass": {
-        "MALFORMED_SYNTAX": 6
-      }
-    },
-    {
-      "id": "M4",
-      "killed": true,
-      "failuresByClass": {
-        "AFFIRMATIVE_PASSIVE": 6
-      },
-      "minimumFailuresByClass": {
-        "AFFIRMATIVE_PASSIVE": 4
-      }
-    },
-    {
-      "id": "M5",
-      "killed": true,
-      "failuresByClass": {
-        "COORDINATED_SUBJECTS_MIXED_INVALID": 6
-      },
-      "minimumFailuresByClass": {
-        "COORDINATED_SUBJECTS_MIXED_INVALID": 6
-      }
-    },
-    {
-      "id": "M6",
-      "killed": true,
-      "failuresByClass": {
-        "DOUBLE_NEGATION": 6,
-        "NESTED_CONTROL": 7,
-        "UNRELATED_NEGATION": 6
-      },
-      "minimumFailuresByClass": {
-        "DOUBLE_NEGATION": 4,
-        "NESTED_CONTROL": 6,
-        "UNRELATED_NEGATION": 4
-      }
-    },
-    {
-      "id": "M7",
-      "killed": true,
-      "failuresByClass": {
-        "CLAUSE_BOUNDARY": 8,
-        "NO_STITCHING": 7
-      },
-      "minimumFailuresByClass": {
-        "CLAUSE_BOUNDARY": 4,
-        "NO_STITCHING": 4
-      }
-    },
-    {
-      "id": "M8",
-      "killed": true,
-      "failuresByClass": {
-        "COORDINATED_SUBJECTS_MIXED_INVALID": 8,
-        "INVALID_SUBJECT": 8
-      },
-      "minimumFailuresByClass": {
-        "COORDINATED_SUBJECTS_MIXED_INVALID": 4,
-        "INVALID_SUBJECT": 4
-      }
-    },
-    {
-      "id": "M9",
-      "killed": true,
-      "failuresByClass": {
-        "DETACHED_OBJECT_DECOYS": 8,
-        "INVALID_OBJECT": 7
-      },
-      "minimumFailuresByClass": {
-        "DETACHED_OBJECT_DECOYS": 4,
-        "INVALID_OBJECT": 4
-      }
-    },
-    {
-      "id": "M10",
-      "killed": true,
-      "failuresByClass": {
-        "AFFIRMATIVE_ACTIVE": 17,
-        "KNOWN_REGRESSIONS": 2
-      },
-      "minimumFailuresByClass": {
-        "AFFIRMATIVE_ACTIVE": 2,
-        "KNOWN_REGRESSIONS": 2
-      }
-    }
-  ],
-  "implementationTaskId": "01a09d9f-5c2a-7d53-817e-d0c83b535866",
-  "repairBaseSha": "bc4cf79fdda869cb42465d720cac59822802fde5",
-  "repairBaseTreeSha": "8859d1ebfa3fe891ba42a59137710eab06e79a54",
-  "implementationTreeSha": "c15e5b2ebf284d19dceb5549cc235c50e785e922",
-  "implementationParentSha": "1e28dcc5e1d0b5bf244c30ca99d46fdadb89e3a3",
-  "stdoutBytes": 2830,
-  "recipeInputTreeSha": "8ed002b01702ae842ea9e7c054fd91071eeb6792",
-  "recipeInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-  "recipeInputBlobSha": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
-  "sourcePackageApiEquivalenceReceipt": {
-    "status": "PASS",
-    "publicExports": 39,
-    "matchedPublicExports": 39,
-    "uniqueInputs": 236,
-    "currentCorpusCases": 206,
-    "priorCorpusUniqueTextCount": 206,
-    "comparedExports": [
-      "evaluatePhotosynthesisRelations",
-      "evaluatePhotosynthesisRelationsV2",
-      "semanticCaseFingerprint"
-    ],
-    "comparedResults": "Exact V1/V2 structured outputs and semantic fingerprints for current/prior corpus texts and owner-ruling controls.",
-    "sourceAndPackageIdentical": true
-  },
-  "packageReproductionReceipt": {
-    "status": "PASS",
-    "buildABytes": 99168,
-    "buildASha256": "3ae65540fe23ecf42498aecfc1b7449a726aadd325ac05c3a127b3dd8969037f",
-    "buildAPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-package-20260924-a/package.mjs",
-    "buildBBytes": 99168,
-    "buildBSha256": "3ae65540fe23ecf42498aecfc1b7449a726aadd325ac05c3a127b3dd8969037f",
-    "buildBPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-package-20260924-b/package.mjs",
-    "committedGitBlob": "6017c99493c3d88c0b0ef2189522b6b96dd4f28d",
-    "committedSha256": "3ae65540fe23ecf42498aecfc1b7449a726aadd325ac05c3a127b3dd8969037f",
-    "byteForByteEqual": true
-  },
-  "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-  "stderrBytes": 0,
-  "packageMutationExecution": {
-    "id": "packaged-M1-M10-baseline-first-run",
-    "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe scripts/run-photosynthesis-relation-mutations.mjs (cwd=backend)",
-    "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
-    "args": [
-      "scripts/run-photosynthesis-relation-mutations.mjs"
-    ],
-    "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-final-seven-repair-v2/backend",
-    "exitCode": 0,
-    "testedCommitSha": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-    "testedTreeSha": "ff1ed18291b54623845a029bf3264e5c43f214d5",
-    "capturedAtUtc": "2026-09-24T19:55:41.322Z",
-    "stdoutPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-fresh-package-mutations-6a2c545220e647f98402632011abad26.stdout",
-    "stdoutBytes": 2830,
-    "stdoutSha256": "3be23cf5c51b7ecbf5a397c001ab4eea6f8368888e26c8a3087314b5e713a7ea",
-    "stderrPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-fresh-package-mutations-6a2c545220e647f98402632011abad26.stderr",
-    "stderrBytes": 0,
-    "stderrSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-    "result": {
-      "schemaVersion": 2,
-      "oracle": "explicit-frozen-semantics-baseline-differential-v1",
-      "cases": 206,
-      "baseline": {
-        "passed": 206,
-        "failed": 0,
-        "failures": []
-      },
-      "mutations": [
-        {
-          "id": "M1",
-          "killed": true,
-          "failuresByClass": {
-            "NEGATED_MODALITY": 8,
-            "UNCERTAIN_MODALITY": 12
-          },
-          "minimumFailuresByClass": {
-            "NEGATED_MODALITY": 4,
-            "UNCERTAIN_MODALITY": 4
-          }
-        },
-        {
-          "id": "M2",
-          "killed": true,
-          "failuresByClass": {
-            "DETACHED_OBJECT_DECOYS": 7,
-            "DIRECT_OBJECT_BARRIERS": 6,
-            "FINITE_PREDICATE_BARRIERS": 6
-          },
-          "minimumFailuresByClass": {
-            "DETACHED_OBJECT_DECOYS": 4,
-            "DIRECT_OBJECT_BARRIERS": 4,
-            "FINITE_PREDICATE_BARRIERS": 4
-          }
-        },
-        {
-          "id": "M3",
-          "killed": true,
-          "failuresByClass": {
-            "MALFORMED_SYNTAX": 9
-          },
-          "minimumFailuresByClass": {
-            "MALFORMED_SYNTAX": 6
-          }
-        },
-        {
-          "id": "M4",
-          "killed": true,
-          "failuresByClass": {
-            "AFFIRMATIVE_PASSIVE": 6
-          },
-          "minimumFailuresByClass": {
-            "AFFIRMATIVE_PASSIVE": 4
-          }
-        },
-        {
-          "id": "M5",
-          "killed": true,
-          "failuresByClass": {
-            "COORDINATED_SUBJECTS_MIXED_INVALID": 6
-          },
-          "minimumFailuresByClass": {
-            "COORDINATED_SUBJECTS_MIXED_INVALID": 6
-          }
-        },
-        {
-          "id": "M6",
-          "killed": true,
-          "failuresByClass": {
-            "DOUBLE_NEGATION": 6,
-            "NESTED_CONTROL": 7,
-            "UNRELATED_NEGATION": 6
-          },
-          "minimumFailuresByClass": {
-            "DOUBLE_NEGATION": 4,
-            "NESTED_CONTROL": 6,
-            "UNRELATED_NEGATION": 4
-          }
-        },
-        {
-          "id": "M7",
-          "killed": true,
-          "failuresByClass": {
-            "CLAUSE_BOUNDARY": 8,
-            "NO_STITCHING": 7
-          },
-          "minimumFailuresByClass": {
-            "CLAUSE_BOUNDARY": 4,
-            "NO_STITCHING": 4
-          }
-        },
-        {
-          "id": "M8",
-          "killed": true,
-          "failuresByClass": {
-            "COORDINATED_SUBJECTS_MIXED_INVALID": 8,
-            "INVALID_SUBJECT": 8
-          },
-          "minimumFailuresByClass": {
-            "COORDINATED_SUBJECTS_MIXED_INVALID": 4,
-            "INVALID_SUBJECT": 4
-          }
-        },
-        {
-          "id": "M9",
-          "killed": true,
-          "failuresByClass": {
-            "DETACHED_OBJECT_DECOYS": 8,
-            "INVALID_OBJECT": 7
-          },
-          "minimumFailuresByClass": {
-            "DETACHED_OBJECT_DECOYS": 4,
-            "INVALID_OBJECT": 4
-          }
-        },
-        {
-          "id": "M10",
-          "killed": true,
-          "failuresByClass": {
-            "AFFIRMATIVE_ACTIVE": 17,
-            "KNOWN_REGRESSIONS": 2
-          },
-          "minimumFailuresByClass": {
-            "AFFIRMATIVE_ACTIVE": 2,
-            "KNOWN_REGRESSIONS": 2
-          }
-        }
-      ],
-      "killed": 10,
-      "total": 10
-    }
+  "qualificationMode": "committed package M1-M10 baseline-first execution; no CandidateQualification",
+  "scopeGates": {
+    "astraRun": false,
+    "candidateQualificationRun": false,
+    "solReviewRun": false,
+    "release": false,
+    "deploy": false,
+    "p2": false
   }
 }

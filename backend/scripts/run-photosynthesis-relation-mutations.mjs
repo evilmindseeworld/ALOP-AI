@@ -1,4 +1,4 @@
-// p1-static-compose-v1; evaluator-blob=53807a53a581a523d87fc895750347f0237f24d2; runner-blob=9ce94afaab65d7cd0e8c0aa499b3e93679fb79ec; recipe-blob=d5a84e74ed8a22eb2fcb8a85303335fa820826a9
+// p1-static-compose-v1; evaluator-blob=673ae7fd93e41e78912c57a0c28492dd30c444a9; runner-blob=9ce94afaab65d7cd0e8c0aa499b3e93679fb79ec; recipe-blob=d5a84e74ed8a22eb2fcb8a85303335fa820826a9
 import * as __p1Crypto from 'node:crypto';
 import { closeSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs';
 import { createRequire, Module } from 'node:module';
@@ -507,7 +507,12 @@ const V2_SUBJECTS = new Set(['photosynthesis','plant','plants','green plant','gr
 const V2_PIGMENT_TERMS = new Set(['chlorophyll','melanin','carotene','xanthophyll']);
 const V2_MODALS = new Map([['can',['UNCERTAIN','CAPABILITY_NOT_ACTUALITY']],['cannot',['NEGATED','ASSERTED_INABILITY']],['can\'t',['NEGATED','ASSERTED_INABILITY']],['may',['UNCERTAIN','POSSIBILITY']],['might',['UNCERTAIN','WEAK_POSSIBILITY']],['could',['UNCERTAIN','POSSIBILITY_OR_CAPABILITY']],['couldn\'t',['NEGATED','ASSERTED_INABILITY']],['must',['AFFIRMED','ASSERTED_NECESSITY']],['should',['UNRESOLVED','NORMATIVE_OR_EXPECTED']],['would',['UNRESOLVED','CONDITIONAL_OR_COUNTERFACTUAL']]]);
 const normalizePunctuationRunV2 = (run) => {
-  return [...new Set(run)].join('');
+  const boundaries = [];
+  for (const mark of run) {
+    const boundary = '.!?'.includes(mark) ? '.' : ';';
+    if (!boundaries.includes(boundary)) boundaries.push(boundary);
+  }
+  return boundaries.join('');
 };
 const normalizeInputV2 = (x) => normalizeInput(x).toLowerCase().replace(/’/g, "'").replace(/[.!?;:]+/g, normalizePunctuationRunV2);
 const segmentSentencesV2 = (x) => segmentSentences(normalizeInputV2(x));
@@ -520,14 +525,14 @@ const segmentClausesV2 = (x) => {
       ? part.split(/,\s+and\s+/i)
       : [part];
     return pieces.flatMap((piece, pieceIndex) => {
-      const boundaryBefore = pieceIndex > 0 ? 'comma-and' : partIndex > 0 ? 'hard' : 'start';
+      const boundaryBefore = partIndex > 0 ? 'hard' : pieceIndex > 0 ? 'comma-and' : 'start';
       const explicitBut = piece.match(/\s+but\s+/i);
       if (!explicitBut) return [{ text: piece, boundaryBefore }];
       const after = piece.slice(explicitBut.index + explicitBut[0].length).trim();
       return startsIndependentSupportedClauseV2(after)
         ? [
           { text: piece.slice(0, explicitBut.index), boundaryBefore },
-          { text: after, boundaryBefore: 'but' },
+          { text: after, boundaryBefore: boundaryBefore === 'hard' ? 'hard' : 'but' },
         ]
         : [{ text: piece, boundaryBefore }];
     });
@@ -548,9 +553,9 @@ function extractSubjectSet(ts,end){
   const raw=ts.slice(byWhich>=0?byWhich+2:subjectStart,boundary).map(t=>t.form).join(' '),
     members=raw.split(/\s+(?:and|or|rather\s+than)\s+|,\s*/).filter(Boolean).map((source)=>{
       const determiner=source.match(/^(a|an|the|some)\s+/)?.[1]||null,surface=source==='some bacteria'?'some bacteria':source.replace(/^(?:the|a|an|some)\s+/,'').replace(/^and\s+/,'').trim();
-      // ponytail: infer regular -s plurals; extend bounded morphology if corpus coverage requires irregular forms.
+      // ponytail: bounded English number cues; extend this list if corpus coverage requires more forms.
       const finalWord=surface.split(/\s+/).at(-1)||surface,pluralMorphology=/s$/.test(finalWord)&&!/(?:ss|us|is|ics)$/.test(finalWord);
-      const lemma=normalizeExactFormLemmaV2(surface),grammaticalNumber=pluralMorphology||V2_PLURAL_SUBJECT_LEMMAS.has(surface)||V2_PLURAL_SUBJECT_LEMMAS.has(lemma)?'PLURAL':'SINGULAR';
+      const lemma=normalizeExactFormLemmaV2(surface),grammaticalNumber=V2_PLURAL_SUBJECT_LEMMAS.has(surface)||V2_PLURAL_SUBJECT_LEMMAS.has(lemma)?'PLURAL':V2_SINGULAR_SUBJECT_LEMMAS.has(surface)||V2_SINGULAR_SUBJECT_LEMMAS.has(lemma)?'SINGULAR':pluralMorphology?'PLURAL':'SINGULAR';
       return{surface,lemma,role:V2_PIGMENT_TERMS.has(surface)?'PIGMENT_AGENT':V2_SUBJECTS.has(surface)?'BIOLOGICAL_AGENT':'UNSUPPORTED',valid:V2_SUBJECTS.has(surface),grammaticalNumber,determinerNumberMismatch:['a','an'].includes(determiner)&&grammaticalNumber==='PLURAL'};
     }),
     coordinator=/\sor\s/.test(raw)?'OR':/\sand\s/.test(raw)?'AND':/\srather\s+than\s/.test(raw)?'RATHER_THAN':members.length>1?'COMMA':'SINGLE',
@@ -562,8 +567,8 @@ function validateSubjectAgreement(subject,verb){return !subject.members.some((me
 const isSupportedSubjectCoordinationV2 = (x) => x.members.length === 1 || x.coordinator === 'AND';
 const validateSubjectSet = (x) => x.validity === 'ALL_VALID' && isSupportedSubjectCoordinationV2(x);
 function validateFinitePredicate(ts,i){const surface=ts[i]?.form||'',lemma=V2_VERBS.get(surface);if(!lemma)return null;if(lemma==='use'&&ts[i+1]?.form==='chlorophyll'&&ts[i+2]?.form==='to'&&V2_VERBS.has(ts[i+3]?.form))return null;const form=surface===lemma?'BASE':/ed$/.test(surface)?'PAST':/ing$/.test(surface)?'PRESENT_PARTICIPLE':'PRESENT_3SG';return{surface,lemma,form,finite:form!=='BASE'};}
-const V2_PLURAL_SUBJECT_LEMMAS=new Set(['plants','green plants','algae','bacteria','some bacteria','photosynthetic bacteria']);
-const V2_SINGULAR_SUBJECT_LEMMAS=new Set(['photosynthesis','plant','green plant','alga','photosynthetic bacterium','chlorophyll','animal','rock','bacterium']);
+const V2_PLURAL_SUBJECT_LEMMAS=new Set(['plants','green plants','algae','bacteria','some bacteria','photosynthetic bacteria','geese','children','mice','oxen','alumni','men','women','people','feet','teeth','dice','lice','nuclei','fungi','criteria','phenomena','data','media','stimuli','cacti','octopi','indices','matrices','appendices','analyses','bases','crises','theses']);
+const V2_SINGULAR_SUBJECT_LEMMAS=new Set(['photosynthesis','plant','green plant','alga','photosynthetic bacterium','chlorophyll','animal','rock','bacterium','species','series']);
 const V2_FINITE_AUXILIARIES=new Set(['do','does','did','is','are','was','were','has','have','had']);
 function isPluralSubjectV2(subject){
   const member=subject.coordinator==='RATHER_THAN'?subject.members.at(-1):subject.members[0];
@@ -575,6 +580,7 @@ function isPluralSubjectV2(subject){
 function agreesInSimplePresentV2(subject,verb){if(verb.form==='PAST')return true;return verb.form===(isPluralSubjectV2(subject)?'BASE':'PRESENT_3SG');}
 function validateAuxiliaryPrefixV2(chain,verb,subject){
   const agrees=validateSubjectAgreement(subject,verb);
+  if(subject.members.some((member)=>member.determinerNumberMismatch))return false;
   if(!chain.length)return agrees;
   const first=chain[0],rest=chain.slice(1),oneOf=(...allowed)=>allowed.some((forms)=>forms.length===chain.length&&forms.every((form,index)=>chain[index]===form));
   if(V2_MODALS.has(first))return (oneOf([first],[first,'not'])&&verb.form==='BASE');
@@ -596,6 +602,8 @@ function validateAuxiliaryPrefixV2(chain,verb,subject){
 function validateActiveFinitePredicateV2(ts,index,verb,subject,auxiliary,control){
   const prefix=ts.slice(subject.end,index).map((token)=>token.form),controlPrefix=control?.surface.split(' ')||[];
   if(control){
+    const controlForm=/^(?:did|failed)\b/.test(control.surface)?'PAST':'PRESENT_3SG';
+    if(!validateSubjectAgreement(subject,{form:controlForm}))return false;
     const remainder=prefix.slice(controlPrefix.length);
     return verb.form==='BASE'&&prefix.slice(0,controlPrefix.length).every((form,i)=>form===controlPrefix[i])
       &&(remainder.length===0

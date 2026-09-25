@@ -4,21 +4,21 @@
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "repairBaseSha": "53dac79cf873443e2a8c468607af5deee8107759",
   "repairBaseTreeSha": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
-  "implementationParentSha": "c18e262c9202932bef8dcc3b1bd3b832dcb16a26",
-  "implementationCommitSha": "aea18bdb72670af32203716d797fb1f9ff871aa0",
-  "implementationTreeSha": "c04c5c4efd0484a4cecb944aea2a6a2fb63aa38d",
-  "candidateHeadAtCapture": "aea18bdb72670af32203716d797fb1f9ff871aa0",
-  "candidateTreeAtCapture": "c04c5c4efd0484a4cecb944aea2a6a2fb63aa38d",
-  "branch": "codex/p1-astra-repair-001-003-restart-20260925",
-  "repairAttemptId": "P1-ASTRA-REPAIR-001-003-20260925-8644913",
-  "capturedAtUtc": "2026-09-25T15:15:24.107Z",
-  "captureStatus": "VERIFIED_AGAINST_COMMITTED_IMPLEMENTATION",
+  "implementationParentSha": "33070c57a8fa72ba97ba7e31175b454b0a97ad81",
+  "implementationCommitSha": "9d51a0a8809049d77674ee254910924fbc6a7def",
+  "implementationTreeSha": "ec7822df65b78b4418a6ecf52c673c38edd69fd6",
+  "candidateHeadAtCapture": "9d51a0a8809049d77674ee254910924fbc6a7def",
+  "candidateTreeAtCapture": "ec7822df65b78b4418a6ecf52c673c38edd69fd6",
+  "branch": "codex/p1-astra-restart-001-004-repair-20260926",
+  "repairAttemptId": "P1-ASTRA-RESTART-001-004-20260926-8644913",
+  "capturedAtUtc": "2026-09-25T22:26:02Z",
+  "captureStatus": "PASS",
   "runtime": {
     "version": "v26.7.0",
     "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
     "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
   },
-  "phase": "FINGERPRINT_INDEX",
+  "phase": "SEMANTIC_INDEX",
   "duplicatePolicy": "reject-global-duplicate",
   "sourceCaseCount": 206,
   "indexedCaseCount": 204,
@@ -38,9 +38,9 @@
       "rejectedCaseId": "V2-SENTENCE_BOUNDARY-002"
     },
     {
-      "semanticFingerprint": "a8ff2a4a62b0f5595061ca5487eddc1cb02337850189fecd46b2487c891ae328",
-      "retainedCaseId": "V2-PUNCTUATION_ABUSE-003",
-      "rejectedCaseId": "B5-PUNCTUATION_ABUSE-001"
+      "semanticFingerprint": "82438a30d238626a643bf36027eb4a1607d6fcab30928f3325bd41e196aedb18",
+      "retainedCaseId": "V2-PUNCTUATION_ABUSE-002",
+      "rejectedCaseId": "V2-PUNCTUATION_ABUSE-006"
     }
   ],
   "classMinima": [
@@ -256,8 +256,8 @@
       "semanticFingerprint": "61837a8c1066be4edc789820d440ef0e544f50acee36af3325432deaa49630af",
       "expectedDecision": "FAIL",
       "classIds": [
-        "KNOWN_REGRESSIONS",
-        "UNCERTAIN_MODALITY"
+        "UNCERTAIN_MODALITY",
+        "KNOWN_REGRESSIONS"
       ]
     },
     {
@@ -277,8 +277,8 @@
       "semanticFingerprint": "aad953f3f801c94512fbfb058d3eeae5dd01c379700dbdeff8dc5f299e120dba",
       "expectedDecision": "FAIL",
       "classIds": [
-        "KNOWN_REGRESSIONS",
-        "MALFORMED_SYNTAX"
+        "MALFORMED_SYNTAX",
+        "KNOWN_REGRESSIONS"
       ]
     },
     {
@@ -288,8 +288,8 @@
       "expectedDecision": "PASS",
       "classIds": [
         "DOUBLE_NEGATION",
-        "KNOWN_REGRESSIONS",
-        "NESTED_CONTROL"
+        "NESTED_CONTROL",
+        "KNOWN_REGRESSIONS"
       ]
     },
     {
@@ -1944,8 +1944,8 @@
     },
     {
       "caseId": "V2-PUNCTUATION_ABUSE-003",
-      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653f213f204c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "a8ff2a4a62b0f5595061ca5487eddc1cb02337850189fecd46b2487c891ae328",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653f213f204c6967687420656e6572677920657869737473212043686c6f726f7068796c6c2069732070726573656e742e",
+      "semanticFingerprint": "300dc039341a560c3e4e394d1f38572cda0b37f3e1d271387b06d402d5f1423f",
       "expectedDecision": "FAIL",
       "classIds": [
         "PUNCTUATION_ABUSE"
@@ -1962,17 +1962,8 @@
     },
     {
       "caseId": "V2-PUNCTUATION_ABUSE-005",
-      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653a213b204c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "a25d022f31b8cf90b525a0da2a35671ffb6629b3ea5fae00d5d92d42f3f2f0c0",
-      "expectedDecision": "FAIL",
-      "classIds": [
-        "PUNCTUATION_ABUSE"
-      ]
-    },
-    {
-      "caseId": "V2-PUNCTUATION_ABUSE-006",
-      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653f213b204c6967687420656e65726779206578697374732e",
-      "semanticFingerprint": "5e40516310ae5984e5eef7a16e36fbc688c9d393211faf0c11697d1733b884b3",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653a213b204c6967687420656e65726779206578697374732e20416e696d616c7320636170747572652077617465722e",
+      "semanticFingerprint": "6f71ddc066310aff5afb6a97ddbd67b47dcf3f4911e40df1f275cb824ff42c51",
       "expectedDecision": "FAIL",
       "classIds": [
         "PUNCTUATION_ABUSE"
@@ -1981,7 +1972,7 @@
     {
       "caseId": "V2-PUNCTUATION_ABUSE-007",
       "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653f21204c6967687420656e65726779206578697374732e20416e696d616c732063617074757265206c6967687420656e657267792e",
-      "semanticFingerprint": "f3497df398ae5bbdb3c482d2306f8c0ff5bf3fd65c7201571848283408cd3520",
+      "semanticFingerprint": "a53f9cf05a3ecb3f6d8d187f009136f531a73dbad2516da38707167902ba7b3c",
       "expectedDecision": "FAIL",
       "classIds": [
         "PUNCTUATION_ABUSE"
@@ -2058,6 +2049,17 @@
       "classIds": [
         "KNOWN_REGRESSIONS"
       ]
+    },
+    {
+      "caseId": "B5-PUNCTUATION_ABUSE-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f7869646521204c6967687420656e6572677920657869737473212043686c6f726f7068796c6c2069732070726573656e7421204c6967687420656e657267792072656d61696e732e",
+      "semanticFingerprint": "d1b45001bbf2a1ed0fc48974c5a9a03a20664d25a826a348610f0a3dcf26608f",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "PUNCTUATION_ABUSE"
+      ]
     }
-  ]
+  ],
+  "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
+  "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6"
 }

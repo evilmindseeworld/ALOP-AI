@@ -1585,8 +1585,8 @@ function mutate(id) {
     if (!text.includes('function bindDirectObject(ts,i){')) throw new Error('mutation target missing: bindDirectObject');
     if (id === 'M2' || id === 'M7') {
       text = replaceOnce(text,
-        "  if(ts[i]?.form==='the')i++;",
-        "  if(ts[i]?.form==='the')i++;\n  const bound=ts.findIndex((t,n)=>n>=i&&['light','sunlight'].includes(t.form));\n  if(bound>=0)i=bound;",
+        '  if(!ts[i])return null;',
+        "  const bound=ts.findIndex((t,n)=>n>=i&&['light','sunlight'].includes(t.form));\n  if(bound>=0)i=bound;\n  if(!ts[i])return null;",
         id + ' detached-object rebinding');
     }
     if (id === 'M9') {

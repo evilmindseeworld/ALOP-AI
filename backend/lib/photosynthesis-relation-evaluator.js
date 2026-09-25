@@ -537,24 +537,36 @@ function extractSubjectSet(ts,end){
   for(let i=subjectStart;i<end;i++)if(stop.has(ts[i].form)||V2_VERBS.has(ts[i].form)){boundary=i;break;}
   const byWhich=ts.findIndex((t,i)=>i+1<end&&t.lemma==='by'&&ts[i+1].lemma==='which');
   if(byWhich>=0)boundary=end;
-  const raw=ts.slice(byWhich>=0?byWhich+2:subjectStart,boundary).map(t=>t.form).join(' ').replace(/^(?:the|a|an)\s+/,''),
-    members=raw.split(/\s+(?:and|or|rather\s+than)\s+|,\s*/).filter(Boolean).map(surface=>surface.replace(/^and\s+/,'').trim()).map(surface=>({surface,lemma:normalizeExactFormLemmaV2(surface),role:V2_PIGMENT_TERMS.has(surface)?'PIGMENT_AGENT':V2_SUBJECTS.has(surface)?'BIOLOGICAL_AGENT':'UNSUPPORTED',valid:V2_SUBJECTS.has(surface)})),
+  const raw=ts.slice(byWhich>=0?byWhich+2:subjectStart,boundary).map(t=>t.form).join(' '),
+    members=raw.split(/\s+(?:and|or|rather\s+than)\s+|,\s*/).filter(Boolean).map((source)=>{
+      const determiner=source.match(/^(a|an|the|some)\s+/)?.[1]||null,surface=source==='some bacteria'?'some bacteria':source.replace(/^(?:the|a|an|some)\s+/,'').replace(/^and\s+/,'').trim();
+      // ponytail: infer regular -s plurals; extend bounded morphology if corpus coverage requires irregular forms.
+      const finalWord=surface.split(/\s+/).at(-1)||surface,pluralMorphology=/s$/.test(finalWord)&&!/(?:ss|us|is|ics)$/.test(finalWord);
+      const lemma=normalizeExactFormLemmaV2(surface),grammaticalNumber=pluralMorphology||V2_PLURAL_SUBJECT_LEMMAS.has(surface)||V2_PLURAL_SUBJECT_LEMMAS.has(lemma)?'PLURAL':'SINGULAR';
+      return{surface,lemma,role:V2_PIGMENT_TERMS.has(surface)?'PIGMENT_AGENT':V2_SUBJECTS.has(surface)?'BIOLOGICAL_AGENT':'UNSUPPORTED',valid:V2_SUBJECTS.has(surface),grammaticalNumber,determinerNumberMismatch:['a','an'].includes(determiner)&&grammaticalNumber==='PLURAL'};
+    }),
     coordinator=/\sor\s/.test(raw)?'OR':/\sand\s/.test(raw)?'AND':/\srather\s+than\s/.test(raw)?'RATHER_THAN':members.length>1?'COMMA':'SINGLE',
     n=members.filter(x=>x.valid).length;
   members.forEach((member)=>{member.coordinator=coordinator;});
   return{members,coordinator,validity:n===members.length&&n?'ALL_VALID':n?'MIXED_INVALID':'ALL_INVALID',start:subjectStart,end:boundary};
 }
-function validateSubjectAgreement(subject,verb){return verb.form==='PAST'||agreesInSimplePresentV2(subject,verb);}
+function validateSubjectAgreement(subject,verb){return !subject.members.some((member)=>member.determinerNumberMismatch)&&(verb.form==='PAST'||agreesInSimplePresentV2(subject,verb));}
 const isSupportedSubjectCoordinationV2 = (x) => x.members.length === 1 || x.coordinator === 'AND';
 const validateSubjectSet = (x) => x.validity === 'ALL_VALID' && isSupportedSubjectCoordinationV2(x);
 function validateFinitePredicate(ts,i){const surface=ts[i]?.form||'',lemma=V2_VERBS.get(surface);if(!lemma)return null;if(lemma==='use'&&ts[i+1]?.form==='chlorophyll'&&ts[i+2]?.form==='to'&&V2_VERBS.has(ts[i+3]?.form))return null;const form=surface===lemma?'BASE':/ed$/.test(surface)?'PAST':/ing$/.test(surface)?'PRESENT_PARTICIPLE':'PRESENT_3SG';return{surface,lemma,form,finite:form!=='BASE'};}
-const V2_PLURAL_SUBJECT_LEMMAS=new Set(['plants','green plants','algae','some bacteria','photosynthetic bacteria']);
+const V2_PLURAL_SUBJECT_LEMMAS=new Set(['plants','green plants','algae','bacteria','some bacteria','photosynthetic bacteria']);
 const V2_SINGULAR_SUBJECT_LEMMAS=new Set(['photosynthesis','plant','green plant','alga','photosynthetic bacterium','chlorophyll','animal','rock','bacterium']);
 const V2_FINITE_AUXILIARIES=new Set(['do','does','did','is','are','was','were','has','have','had']);
-function isPluralSubjectV2(subject){const member=subject.members[0];if(subject.members.length>1)return true;if(V2_PLURAL_SUBJECT_LEMMAS.has(member?.surface)||V2_PLURAL_SUBJECT_LEMMAS.has(member?.lemma))return true;if(V2_SINGULAR_SUBJECT_LEMMAS.has(member?.surface)||V2_SINGULAR_SUBJECT_LEMMAS.has(member?.lemma))return false;return /s$/.test(member?.surface||'');}
+function isPluralSubjectV2(subject){
+  const member=subject.coordinator==='RATHER_THAN'?subject.members.at(-1):subject.members[0];
+  if(subject.coordinator!=='RATHER_THAN'&&subject.members.length>1)return true;
+  if(member?.grammaticalNumber==='PLURAL'||V2_PLURAL_SUBJECT_LEMMAS.has(member?.surface)||V2_PLURAL_SUBJECT_LEMMAS.has(member?.lemma))return true;
+  if(member?.grammaticalNumber==='SINGULAR'||V2_SINGULAR_SUBJECT_LEMMAS.has(member?.surface)||V2_SINGULAR_SUBJECT_LEMMAS.has(member?.lemma))return false;
+  return /s$/.test(member?.surface||'')&&!/(?:ss|us|is|ics)$/.test(member?.surface||'');
+}
 function agreesInSimplePresentV2(subject,verb){if(verb.form==='PAST')return true;return verb.form===(isPluralSubjectV2(subject)?'BASE':'PRESENT_3SG');}
 function validateAuxiliaryPrefixV2(chain,verb,subject){
-  const agrees=subject.validity!=='ALL_VALID'||validateSubjectAgreement(subject,verb);
+  const agrees=validateSubjectAgreement(subject,verb);
   if(!chain.length)return agrees;
   const first=chain[0],rest=chain.slice(1),oneOf=(...allowed)=>allowed.some((forms)=>forms.length===chain.length&&forms.every((form,index)=>chain[index]===form));
   if(V2_MODALS.has(first))return (oneOf([first],[first,'not'])&&verb.form==='BASE');
@@ -625,7 +637,10 @@ function resolveControlChain(ts,i){const s=ts.slice(0,i).map(t=>t.form).join(' '
 const composePredicatePolarity = (m,c,a) => c ? {polarity:c.polarity,reason:c.type} : resolveModalState(a);
 function detectObjectBarrier(ts,start){const i=ts.findIndex((t,n)=>n>=start&&n<ts.length-1&&([';','.','!','?'].includes(t.form)||['while','although','because','whereas','if','unless','when','since'].includes(t.lemma)));return i<0?null:{type:['.','!','?'].includes(ts[i].form)?'SENTENCE':'CLAUSE',marker:ts[i].lemma,start:ts[i].start,end:ts[i].end};}
 function bindDirectObject(ts,i){
-  if(ts[i]?.form==='the')i++;
+  if(['a','an','the'].includes(ts[i]?.form)){
+    i++;
+    if(['a','an','the'].includes(ts[i]?.form))return null;
+  }
   if(!ts[i])return null;
   let end=i+1,light=['light','sunlight'].includes(ts[i].form);
   if(ts[i].form==='light'&&ts[i+1]?.form==='energy')end=i+2;
@@ -1008,13 +1023,9 @@ function parseMinimalRelationGrammar(input) {
         const candidateSubjects = extractSubjectSet(tokens, index);
         const auxiliary = parseAuxiliaryChain(tokens, index);
         const control = resolveControlChain(tokens, index);
-        const recognizedSubjectSurface = candidateSubjects.members.some((member) => [
-          'plants', 'algae', 'green plants', 'some bacteria', 'photosynthetic bacteria',
-          'animals', 'bacteria', 'rocks',
-        ].includes(member.surface));
+        const pluralBasePredicate = candidatePredicate?.form === 'BASE' && isPluralSubjectV2(candidateSubjects);
         if (candidatePredicate && (candidatePredicate.finite
-          || candidateSubjects.members.length > 1
-          || recognizedSubjectSurface
+          || pluralBasePredicate
           || auxiliary.modal
           || auxiliary.negators.length
           || control
@@ -1029,17 +1040,13 @@ function parseMinimalRelationGrammar(input) {
 
       const auxiliary = predicateIndex < 0 ? null : parseAuxiliaryChain(tokens, predicateIndex);
       const control = predicateIndex < 0 ? null : resolveControlChain(tokens, predicateIndex);
-      const recognizedSubjectSurface = subjectSet?.members.some((member) => [
-        'plants', 'algae', 'green plants', 'some bacteria', 'photosynthetic bacteria',
-        'animals', 'bacteria', 'rocks',
-      ].includes(member.surface));
       if (predicateIndex < 0 || (!predicate.finite
         && !auxiliary.modal
         && !auxiliary.negators.length
         && !control
         && !['do', 'does', 'did'].includes(auxiliary.chain[0])
         && tokens[predicateIndex - 1]?.form !== 'to'
-        && !(subjectSet.members.length > 1 || recognizedSubjectSurface))) {
+        && !(predicate.form === 'BASE' && isPluralSubjectV2(subjectSet)))) {
         malformed = true;
         diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
         continue;
@@ -1060,7 +1067,6 @@ function parseMinimalRelationGrammar(input) {
       const state = composePredicatePolarity(auxiliary.modal, control, auxiliary);
       let objectIndex = predicateIndex + 1;
       if (tokens[objectIndex]?.lemma === 'and' && V2_VERBS.has(tokens[objectIndex + 1]?.form)) objectIndex += 2;
-      if (tokens[objectIndex]?.form === 'the') objectIndex += 1;
       if (tokens[objectIndex]?.form === 'chlorophyll' && tokens[objectIndex + 1]?.form === 'to') objectIndex += 2;
       let object = bindDirectObject(tokens, objectIndex);
       if (!object) {
@@ -1137,8 +1143,11 @@ function parseMinimalRelationGrammar(input) {
         cardinality: subjectSet.members.length,
         orderedMembers: subjectSet.members.map((member) => [member.lemma, member.role]),
       });
+      const semanticSubject={...subject};
+      delete semanticSubject.grammaticalNumber;
+      delete semanticSubject.determinerNumberMismatch;
       const subjectRecord = {
-        ...subject,
+        ...semanticSubject,
         start: tokens[0].start,
         end: tokens[predicateIndex - 1].end,
         valid: subject.valid,
@@ -1362,21 +1371,63 @@ const evaluatePhotosynthesisRelationsV2 = (input)=>{
 };
 function malformedFingerprintStructure(text,records){
   const structuralWords=new Set(['and','or','but','not','never','do','does','did','is','are','was','were','has','have','had','to','fail','fails','failed','appear','appears','seem','seems','during','while','although','because','whereas','if','unless','when','since','in','for','into','near','with','by','as',',',';',';',':','.','!','?']);
+  const articles=new Set(['a','an','the','some']);
+  const punctuationBoundaries=new Map([[',','COORDINATION_BOUNDARY'],[';','CLAUSE_BOUNDARY'],[':','CLAUSE_BOUNDARY'],['.','SENTENCE_BOUNDARY'],['!','SENTENCE_BOUNDARY'],['?','SENTENCE_BOUNDARY']]);
   let searchFrom=0;
   const ranges=records.map((record)=>{
     const frame=record.evidenceSpan?.text||'',found=frame?text.indexOf(frame,searchFrom):-1,offset=found>=0?found:frame?text.indexOf(frame):-1;
     if(offset>=0)searchFrom=offset+frame.length;
     const shift=(range)=>range&&offset>=0?{start:range.start+offset,end:range.end+offset}:null;
-    return{subject:shift(record.subjectSet),object:shift(record.directObject)};
+    return{subject:shift(record.subjectSet),object:shift(record.directObject),objectRole:record.directObject?.role};
   });
+  const tokens=tokenizeV2(text),lightObjectRanges=[],pigmentRanges=[];
+  for(let index=0;index<tokens.length;index++){
+    const token=tokens[index],next=tokens[index+1];
+    if(token.form==='sunlight')lightObjectRanges.push({start:token.start,end:token.end});
+    else if(token.form==='light'&&next?.form==='energy'||token.form==='solar'&&['energy','light'].includes(next?.form)){
+      lightObjectRanges.push({start:token.start,end:next.end});
+    }
+    if(V2_PIGMENT_TERMS.has(token.form))pigmentRanges.push({start:token.start,end:token.end});
+  }
+  const subjectRanges=[];
+  let sentenceSearchFrom=0;
+  for(const sentence of segmentSentencesV2(text)){
+    const sentenceOffset=text.indexOf(sentence.text,sentenceSearchFrom);
+    if(sentenceOffset<0)continue;
+    sentenceSearchFrom=sentenceOffset+sentence.text.length;
+    let clauseSearchFrom=sentenceOffset;
+    for(const clause of segmentClausesV2(sentence)){
+      const clauseOffset=text.indexOf(clause.text,clauseSearchFrom);
+      if(clauseOffset<0)continue;
+      clauseSearchFrom=clauseOffset+clause.text.length;
+      const tokens=tokenizeV2(clause.text);
+      const predicateIndex=tokens.findIndex((token,index)=>index>0&&V2_VERBS.has(token.form));
+      if(predicateIndex<0)continue;
+      const subject=extractSubjectSet(tokens,predicateIndex);
+      for(let index=subject.start;index<subject.end;index++){
+        const token=tokens[index];
+        if(articles.has(token.form)||['and','or',','].includes(token.form)||structuralWords.has(token.form)
+          ||lightObjectRanges.some((range)=>range.start<=clauseOffset+token.start&&range.end>=clauseOffset+token.end)
+          ||pigmentRanges.some((range)=>range.start<=clauseOffset+token.start&&range.end>=clauseOffset+token.end))continue;
+        subjectRanges.push({start:clauseOffset+token.start,end:clauseOffset+token.end});
+      }
+    }
+  }
   const projected=[];
-  for(const token of tokenizeV2(text)){
-    const subject=ranges.some(({subject})=>subject?.start<=token.start&&subject?.end>=token.end);
-    const object=ranges.map(({object})=>object).find((value)=>value?.start<=token.start&&value?.end>=token.end);
-    const item=subject?{role:'SUBJECT'}:object?{role:object.role==='NON_LIGHT_OBJECT'?'NON_LIGHT_OBJECT':'LIGHT_OBJECT'}
-      :V2_SUBJECTS.has(token.form)?{role:'SUBJECT'}:V2_VERBS.has(token.form)?{role:'VERB',lemma:token.lemma,form:token.form}
+  for(const token of tokens){
+    if(articles.has(token.form))continue;
+    const parsedSubject=ranges.some(({subject})=>subject?.start<=token.start&&subject?.end>=token.end);
+    const fallbackSubject=subjectRanges.some((range)=>range.start<=token.start&&range.end>=token.end);
+    const object=ranges.find(({object})=>object?.start<=token.start&&object?.end>=token.end);
+    const boundary=punctuationBoundaries.get(token.form);
+    const lightObject=lightObjectRanges.some((range)=>range.start<=token.start&&range.end>=token.end);
+    const pigment=pigmentRanges.some((range)=>range.start<=token.start&&range.end>=token.end);
+    const item=parsedSubject?{role:'SUBJECT'}:object?{role:object.objectRole==='NON_LIGHT_OBJECT'?'NON_LIGHT_OBJECT':object.objectRole==='CHLOROPHYLL'?'PIGMENT':'LIGHT_OBJECT'}
+      :lightObject?{role:'LIGHT_OBJECT'}:pigment?{role:'PIGMENT'}:fallbackSubject?{role:'SUBJECT'}
+      :boundary?{role:'STRUCTURE',form:boundary}:V2_VERBS.has(token.form)?{role:'VERB',lemma:token.lemma,form:token.form}
         :V2_MODALS.has(token.form)||structuralWords.has(token.form)?{role:'STRUCTURE',form:token.form}:{role:'OTHER'};
     const prior=projected.at(-1);
+    if(boundary&&prior?.role==='STRUCTURE'&&prior.form===boundary)continue;
     if(prior?.role===item.role&&['SUBJECT','LIGHT_OBJECT','NON_LIGHT_OBJECT','OTHER'].includes(item.role))continue;
     projected.push(item);
   }

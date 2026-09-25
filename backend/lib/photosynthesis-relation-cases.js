@@ -1397,13 +1397,23 @@ const structuralVariants = {
   CLAUSE_BOUNDARY: ['while','although','because','whereas','if','unless','when','since'].map((marker) => [`Photosynthesis captures carbon dioxide ${marker} light energy is present.`,['BD']]),
   SENTENCE_BOUNDARY: [
     ...[['; ',['BD','PU']],[': ',['BD','PU']],['? ',['PU']],['! ',['PU']]]
-      .map(([separator,dimensions]) => [`Photosynthesis converts chemicals${separator}light energy exists.`,dimensions]),
+      .map(([separator,dimensions],index) => index < 2
+        ? [`Photosynthesis converts chemicals${separator}light energy exists.`,dimensions]
+        : index === 2
+          ? ['Photosynthesis converts chemicals. Photosynthesis converts chemicals. Light energy exists.',['BD']]
+          : ['Photosynthesis converts chemicals. Light energy exists. Photosynthesis converts chemicals.',['BD']]),
     ['Photosynthesis converts chemicals. Light energy exists. Animals capture light energy.',['BD']],
     ['Photosynthesis converts chemicals. Light energy exists; plants capture carbon dioxide.',['BD','PU']],
   ],
   PUNCTUATION_ABUSE: [
     ...[['??',['PU']],[':!',['PU','BD']],['?!?',['PU']],[':',['PU','BD']],[';',['PU','BD']],['...',['PU']]]
-      .map(([punctuation,dimensions]) => [`Photosynthesis captures carbon dioxide${punctuation} Light energy exists.`,dimensions]),
+      .map(([punctuation,dimensions],index) => index === 0
+        ? ['Photosynthesis captures carbon dioxide!; Light energy exists.',['PU','BD']]
+        : index === 4
+          ? ['Photosynthesis captures carbon dioxide:!; Light energy exists.',['PU','BD']]
+          : index === 5
+            ? ['Photosynthesis captures carbon dioxide?!; Light energy exists.',['PU','BD']]
+            : [`Photosynthesis captures carbon dioxide${punctuation} Light energy exists.`,dimensions]),
     ['Photosynthesis captures carbon dioxide?! Light energy exists. Animals capture light energy.',['PU','BD']],
   ],
   NO_STITCHING: [

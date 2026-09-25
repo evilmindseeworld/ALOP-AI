@@ -2078,3 +2078,24 @@ test('P1 non-light object determiners normalize without weakening invalid-object
     assert.equal(evaluate(answer).passed, false, answer);
   }
 });
+
+test('P1 preserves number agreement through plural control predicates', () => {
+  const { evaluatePhotosynthesisRelationsV2: evaluate, semanticCaseFingerprint } = require('./photosynthesis-relation-evaluator');
+  const singular = 'The lichen does not fail to capture and store light energy.';
+  const plural = 'The lichens do not fail to capture and store light energy.';
+  const pluralSubstitution = 'The basalts do not fail to capture and store light energy.';
+  const singularResult = evaluate(singular), pluralResult = evaluate(plural);
+  assert.equal(singularResult.hasMalformed, false);
+  assert.equal(pluralResult.hasMalformed, false);
+  assert.equal(evaluate('Plants do not fail to capture and store light energy.').passed, true);
+  assert.deepEqual(pluralResult.relationRecords.map(({ controlChain }) => controlChain?.surface), ['do not fail to', 'do not fail to']);
+  assert.equal(semanticCaseFingerprint(plural), semanticCaseFingerprint(pluralSubstitution));
+  assert.notEqual(semanticCaseFingerprint(singular), semanticCaseFingerprint(plural));
+  for (const answer of [
+    'The lichen do not fail to capture and store light energy.',
+    'The lichens does not fail to capture and store light energy.',
+    'A lichens do not fail to capture and store light energy.',
+  ]) {
+    assert.equal(evaluate(answer).hasMalformed, true, answer);
+  }
+});

@@ -1,7 +1,5 @@
 'use strict';
 
-const pluralize = require('pluralize');
-
 const PHOTOSYNTHESIS_EVALUATOR_ID = 'photosynthesis-light-relation-v1';
 
 const EXACT_FORM_LEMMAS = new Map([
@@ -580,20 +578,13 @@ const tokenizeV2 = (x) => tokenize(x).map(t=>({...t,form:t.form.toLowerCase()}))
 const normalizeExactFormLemmaV2 = normalizeExactFormLemma;
 function classifyNounNumberV2(surface, determiner) {
   const word = surface.split(/\s+/).at(-1) || surface;
-  let number;
-  // These suffix rules cover broad Latin noun classes that pluralize misclassifies.
-  if (/ae$/i.test(word) || /ora$/i.test(word)) number = 'PLURAL';
-  else if (/imen$/i.test(word)) number = 'SINGULAR';
-  else if (/ens$/i.test(word) && pluralize.isPlural(word)) {
-    const candidate = pluralize.singular(word);
-    number = candidate.length >= 4 && pluralize.isSingular(candidate) ? 'PLURAL' : 'VARIABLE';
-  }
-  else if (/is$/i.test(word)) number = 'SINGULAR';
-  else {
-    const plural = pluralize.isPlural(word);
-    const singular = pluralize.isSingular(word);
-    number = plural && singular ? 'VARIABLE' : plural ? 'PLURAL' : singular ? 'SINGULAR' : 'UNKNOWN';
-  }
+  let number = 'SINGULAR';
+  // Productive endings cover regular and common Latin number changes without a noun list.
+  if (/(?:ae|ora|nera|ata|ia|i|eese|eeth|ice|ves|dren|xen)$/i.test(word)) number = 'PLURAL';
+  else if (/ens$/i.test(word)) number = word.length > 4 ? 'PLURAL' : 'VARIABLE';
+  else if (/ies$/i.test(word)) number = 'VARIABLE';
+  else if (/as$/i.test(word) && word.length <= 5) number = 'SINGULAR';
+  else if (/s$/i.test(word) && !/(?:is|us|ss)$/i.test(word)) number = 'PLURAL';
   if (['a', 'an'].includes(determiner)) return number === 'PLURAL' ? 'PLURAL' : 'SINGULAR';
   return number;
 }

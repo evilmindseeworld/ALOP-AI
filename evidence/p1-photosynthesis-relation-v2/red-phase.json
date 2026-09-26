@@ -3,7 +3,7 @@
   "designVersion": "photosynthesis-light-relation-v2",
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
-  "repairAttemptId": "P1-ASTRA-REPAIR-001-003-20260925-8644913",
+  "repairAttemptId": "P1-ASTRA-RESTART-001-004-20260926-8644913",
   "capturedAtUtc": "2026-09-25T15:42:32.604Z",
   "phase": "RED",
   "status": "REPRODUCED_BASELINE_BLOCKERS",
@@ -18715,5 +18715,18 @@
       "tree": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
       "executedNow": true
     }
-  }
+  },
+  "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
+  "redCommitSha": "84e9288edca7f7a659806da7e73a376e0253eccb",
+  "redEvidenceCommitSha": "7f72c196310e4df2f7189c70feb730da45096efe",
+  "expectedRed": true,
+  "rootReproductions": [
+    "ADV001",
+    "ADV002",
+    "ADV003",
+    "ADV004",
+    "ADV005",
+    "ADV006"
+  ],
+  "reconciledAtUtc": "2026-09-26T00:54:17.313Z"
 }

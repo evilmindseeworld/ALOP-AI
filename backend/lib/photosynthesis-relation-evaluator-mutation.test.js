@@ -18,7 +18,7 @@ const replaceOnce = (source, needle, replacement, label) => {
 
 const loadMutant = (source) => {
   const module = { exports: {} };
-  new Function('module', 'exports', source)(module, module.exports);
+  new Function('require', 'module', 'exports', source)(require, module, module.exports);
   return module.exports;
 };
 

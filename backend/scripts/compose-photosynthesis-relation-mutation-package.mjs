@@ -44,6 +44,25 @@ function splitRunner(runnerBytes) {
   return body;
 }
 
+function deriveRunner(runnerBytes) {
+  let source = decodeUtf8(runnerBytes, 'mutation runner blob');
+  const replaceOnce = (before, after, label) => {
+    if (source.split(before).length !== 2) throw new Error(`mutation runner patch mismatch: ${label}`);
+    source = source.replace(before, after);
+  };
+  replaceOnce(
+    `      text = replaceOnce(text,\n        "  if(ts[i]?.form==='the')i++;",\n        "  if(ts[i]?.form==='the')i++;\\n  const bound=ts.findIndex((t,n)=>n>=i&&['light','sunlight'].includes(t.form));\\n  if(bound>=0)i=bound;",\n        id + ' detached-object rebinding');`,
+    `      text = replaceOnce(text,\n        "  if(!ts[i]||!hasContentV2(ts[i].form)",\n        "  const bound=ts.findIndex((t,n)=>n>=i&&['light','sunlight'].includes(t.form));\\n  if(bound>=0)i=bound;\\n  if(!ts[i]||!hasContentV2(ts[i].form)",\n        id + ' detached-object rebinding');`,
+    'M2/M7 direct-object frame',
+  );
+  replaceOnce(
+    `    text = replaceOnce(text,\n      'passed:relationRecords.some((record)=>record.qualifies)&&!contradictions.length&&!invalidChlorophyllClaims.length&&!affirmedDestructive,',\n      'passed:(relationRecords.some((record)=>record.qualifies)||result.hasMalformed)&&!contradictions.length&&!invalidChlorophyllClaims.length&&!affirmedDestructive,',\n      'malformed-answer acceptance');`,
+    `    text = replaceOnce(text,\n      'passed:relationRecords.some((record)=>record.qualifies)&&!result.malformedExplicitContinuation&&!contradictions.length&&!invalidChlorophyllClaims.length&&!affirmedDestructive,',\n      'passed:(relationRecords.some((record)=>record.qualifies)||result.hasMalformed)&&!result.malformedExplicitContinuation&&!contradictions.length&&!invalidChlorophyllClaims.length&&!affirmedDestructive,',\n      'malformed-answer acceptance');`,
+    'M3 malformed-answer acceptance',
+  );
+  return Buffer.from(source, 'utf8');
+}
+
 // The adapter reports Node permission policy; the reviewed verifier remains authoritative for OS-level network isolation.
 function qualificationAndNormalModePrefix() {
   return String.raw`
@@ -193,4 +212,4 @@ function composeArtifact(evaluatorBytes, runnerBytes) {
   };
 }
 
-export { composeArtifact, gitBlobOid };
+export { composeArtifact, deriveRunner, gitBlobOid };

@@ -1,5 +1,7 @@
 'use strict';
 
+const pluralize = require('pluralize');
+
 const PHOTOSYNTHESIS_EVALUATOR_ID = 'photosynthesis-light-relation-v1';
 
 const EXACT_FORM_LEMMAS = new Map([
@@ -499,40 +501,102 @@ const V2_SUBJECTS = new Set(['photosynthesis','plant','plants','green plant','gr
 const V2_PIGMENT_TERMS = new Set(['chlorophyll','melanin','carotene','xanthophyll']);
 const V2_MODALS = new Map([['can',['UNCERTAIN','CAPABILITY_NOT_ACTUALITY']],['cannot',['NEGATED','ASSERTED_INABILITY']],['can\'t',['NEGATED','ASSERTED_INABILITY']],['may',['UNCERTAIN','POSSIBILITY']],['might',['UNCERTAIN','WEAK_POSSIBILITY']],['could',['UNCERTAIN','POSSIBILITY_OR_CAPABILITY']],['couldn\'t',['NEGATED','ASSERTED_INABILITY']],['must',['AFFIRMED','ASSERTED_NECESSITY']],['should',['UNRESOLVED','NORMATIVE_OR_EXPECTED']],['would',['UNRESOLVED','CONDITIONAL_OR_COUNTERFACTUAL']]]);
 const normalizePunctuationRunV2 = (run) => {
-  const boundaries = [];
-  for (const mark of run) {
-    const boundary = '.!?'.includes(mark) ? '.' : ';';
-    if (!boundaries.includes(boundary)) boundaries.push(boundary);
-  }
-  return boundaries.join('');
+  const marks = run.replace(/\s+/g, '');
+  return /[.!?]/.test(marks) ? '.' : marks ? ';' : '';
 };
-const normalizeInputV2 = (x) => normalizeInput(x).toLowerCase().replace(/’/g, "'").replace(/[.!?;:]+/g, normalizePunctuationRunV2);
-const segmentSentencesV2 = (x) => segmentSentences(normalizeInputV2(x));
+const normalizeInputV2 = (x) => normalizeInput(x).toLowerCase().replace(/’/g, "'")
+  .replace(/[.!?;:](?:\s*[.!?;:])*/g, normalizePunctuationRunV2);
+const hasContentV2 = (text) => /[\p{L}\p{N}]/u.test(text);
+const segmentSentencesV2 = (x) => segmentSentences(normalizeInputV2(x))
+  .filter((sentence) => hasContentV2(sentence.text))
+  .map((sentence, index) => ({ ...sentence, index }));
+function hasCompleteActiveClauseV2(text) {
+  const tokens = tokenizeV2(text);
+  for (let index = 1; index < tokens.length; index += 1) {
+    const predicate = validateFinitePredicate(tokens, index);
+    if (!predicate) continue;
+    const subject = extractSubjectSet(tokens, index);
+    const auxiliary = parseAuxiliaryChain(tokens, index);
+    const control = resolveControlChain(tokens, index);
+    if (subject.end !== index
+      || !validateActiveFinitePredicateV2(tokens, index, predicate, subject, auxiliary, control)) continue;
+    const object = bindDirectObject(tokens, index + 1);
+    if (object && validateActiveTailV2(tokens, object.tokenEnd, null, subject, object)) return true;
+  }
+  return isCompleteUnsupportedClauseV2(tokens, false);
+}
+function isCompleteUnsupportedClauseV2(tokens, allowIntransitive) {
+  const structuralWords = new Set(['a','an','the','some','and','or','but','not','never','to','during','while','although','because','whereas','if','unless','when','since','in','for','into','near','with','by','as',',',';',':','.','!','?']);
+  if (tokens.some((token, index) => token.form === 'by' && tokens[index + 1]?.form === 'which')) return false;
+  for (let index = 1; index < (allowIntransitive ? tokens.length : tokens.length - 1); index += 1) {
+    const form = tokens[index].form;
+    if (V2_VERBS.has(form) || structuralWords.has(form) || /ing$/i.test(form)) continue;
+    const subject = extractSubjectSet(tokens, index), number = subjectNumberV2(subject);
+    if (subject.end !== index || !subjectPhraseWellFormedV2(subject)) continue;
+    const thirdPerson = /s$/i.test(form) && !/(?:ss|us|is|ics)$/i.test(form);
+    const past = /ed$/i.test(form);
+    const copulaNumber = { is:'SINGULAR', was:'SINGULAR', are:'PLURAL', were:'PLURAL' }[form];
+    const agrees = copulaNumber ? number === copulaNumber || number === 'VARIABLE'
+      : past || number === 'VARIABLE'
+        || number === 'PLURAL' && !thirdPerson
+        || number === 'SINGULAR' && thirdPerson;
+    if (agrees && (allowIntransitive || tokens.slice(index + 1).some((token) => hasContentV2(token.form)))) return true;
+  }
+  return false;
+}
+function splitIndependentAndV2(text) {
+  const separator = /,\s*and\s+|\s+and\s+/ig;
+  for (const match of text.matchAll(separator)) {
+    const left = text.slice(0, match.index).replace(/,\s*$/, '').trim();
+    const right = text.slice(match.index + match[0].length).trim();
+    if (left && right && hasCompleteActiveClauseV2(left) && startsIndependentSupportedClauseV2(right)) {
+      return [...splitIndependentAndV2(left), ...splitIndependentAndV2(right)];
+    }
+  }
+  return [text];
+}
 const segmentClausesV2 = (x) => {
   const text = String(typeof x === 'string' ? x : x.text);
-  return text.split(/[;:]+/).flatMap((part, partIndex) => {
-    const match = part.match(/,\s+and\s+/i);
-    const pieces = match && !part.slice(0, match.index).includes(',')
-      && startsIndependentSupportedClauseV2(part.slice(match.index + match[0].length))
-      ? part.split(/,\s+and\s+/i)
-      : [part];
+  return text.split(/[;:]+/).flatMap((rawPart, partIndex) => {
+    const withoutLeadingAnd = rawPart.replace(/^\s*and\s+/i, '');
+    const part = partIndex > 0 && withoutLeadingAnd !== rawPart
+      && startsIndependentSupportedClauseV2(withoutLeadingAnd) ? withoutLeadingAnd : rawPart;
+    const pieces = splitIndependentAndV2(part);
     return pieces.flatMap((piece, pieceIndex) => {
       const boundaryBefore = partIndex > 0 ? 'hard' : pieceIndex > 0 ? 'comma-and' : 'start';
       const explicitBut = piece.match(/\s+but\s+/i);
       if (!explicitBut) return [{ text: piece, boundaryBefore }];
       const after = piece.slice(explicitBut.index + explicitBut[0].length).trim();
-      return startsIndependentSupportedClauseV2(after)
-        ? [
-          { text: piece.slice(0, explicitBut.index), boundaryBefore },
-          { text: after, boundaryBefore: boundaryBefore === 'hard' ? 'hard' : 'but' },
-        ]
-        : [{ text: piece, boundaryBefore }];
+      if (!startsIndependentSupportedClauseV2(after)) return [{ text: piece, boundaryBefore }];
+      const before = piece.slice(0, explicitBut.index);
+      return hasContentV2(before)
+        ? [{ text: before, boundaryBefore }, { text: after, boundaryBefore: 'but' }]
+        : [{ text: after, boundaryBefore }];
     });
-  }).map(({ text, boundaryBefore }, index) => ({ index, text: text.trim(), boundaryBefore }))
-    .filter((clause) => clause.text);
+  }).filter(({ text }) => hasContentV2(text))
+    .map(({ text, boundaryBefore }, index) => ({ index, text: text.trim(), boundaryBefore }));
 };
 const tokenizeV2 = (x) => tokenize(x).map(t=>({...t,form:t.form.toLowerCase()}));
 const normalizeExactFormLemmaV2 = normalizeExactFormLemma;
+function classifyNounNumberV2(surface, determiner) {
+  const word = surface.split(/\s+/).at(-1) || surface;
+  let number;
+  // These suffix rules cover broad Latin noun classes that pluralize misclassifies.
+  if (/ae$/i.test(word) || /ora$/i.test(word)) number = 'PLURAL';
+  else if (/imen$/i.test(word)) number = 'SINGULAR';
+  else if (/ens$/i.test(word) && pluralize.isPlural(word)) {
+    const candidate = pluralize.singular(word);
+    number = candidate.length >= 4 && pluralize.isSingular(candidate) ? 'PLURAL' : 'VARIABLE';
+  }
+  else if (/is$/i.test(word)) number = 'SINGULAR';
+  else {
+    const plural = pluralize.isPlural(word);
+    const singular = pluralize.isSingular(word);
+    number = plural && singular ? 'VARIABLE' : plural ? 'PLURAL' : singular ? 'SINGULAR' : 'UNKNOWN';
+  }
+  if (['a', 'an'].includes(determiner)) return number === 'PLURAL' ? 'PLURAL' : 'SINGULAR';
+  return number;
+}
 function extractSubjectSet(ts,end){
   const stop=new Set(['does','do','did','is','are','was','were','has','have','had','can','cannot',"can't",'may','might','could',"couldn't",'must','should','would','not','never','to','during','while','although','because','whereas','if','unless','when','fail','fails','failed','appear','appears','seem','seems',';','.','!','?']);
   const howStart=ts[0]?.lemma==='photosynthesis'&&ts[1]?.form==='is'&&ts[2]?.form==='how'?3:0;
@@ -542,56 +606,66 @@ function extractSubjectSet(ts,end){
   for(let i=subjectStart;i<end;i++)if(stop.has(ts[i].form)||V2_VERBS.has(ts[i].form)){boundary=i;break;}
   const byWhich=ts.findIndex((t,i)=>i+1<end&&t.lemma==='by'&&ts[i+1].lemma==='which');
   if(byWhich>=0)boundary=end;
-  const raw=ts.slice(byWhich>=0?byWhich+2:subjectStart,boundary).map(t=>t.form).join(' '),
-    members=raw.split(/\s+(?:and|or|rather\s+than)\s+|,\s*/).filter(Boolean).map((source)=>{
-      const determiner=source.match(/^(a|an|the|some)\s+/)?.[1]||null,surface=source==='some bacteria'?'some bacteria':source.replace(/^(?:the|a|an|some)\s+/,'').replace(/^and\s+/,'').trim();
-      // ponytail: bounded English number cues; extend this list if corpus coverage requires more forms.
-      const finalWord=surface.split(/\s+/).at(-1)||surface,pluralMorphology=/s$/.test(finalWord)&&!/(?:ss|us|is|ics)$/.test(finalWord);
-      const lemma=normalizeExactFormLemmaV2(surface),grammaticalNumber=V2_PLURAL_SUBJECT_LEMMAS.has(surface)||V2_PLURAL_SUBJECT_LEMMAS.has(lemma)?'PLURAL':V2_SINGULAR_SUBJECT_LEMMAS.has(surface)||V2_SINGULAR_SUBJECT_LEMMAS.has(lemma)?'SINGULAR':pluralMorphology?'PLURAL':'SINGULAR';
+  const raw=ts.slice(byWhich>=0?byWhich+2:subjectStart,boundary).map(t=>t.form).join(' ');
+  const memberSources=raw.split(/\s+(?:and|or|rather\s+than)\s+|,\s*/);
+  const hasOxfordCoordinator=/,\s*(?:and|or)\s+/i.test(raw);
+  const malformedCoordinator=/^(?:and|or|rather\s+than)\b|(?:\b(?:and|or|rather\s+than)|,)\s*$/i.test(raw.trim());
+  const members=memberSources.filter((source)=>source.trim()).map((source)=>{
+      const trimmed=(hasOxfordCoordinator?source.trim().replace(/^(?:and|or)\s+/i,''):source.trim()),determiner=trimmed.match(/^(a|an|the|some)\s+/)?.[1]||null;
+      const surface=trimmed==='some bacteria'?'some bacteria':trimmed.replace(/^(?:the|a|an|some)\s+/,'').trim();
+      const lemma=normalizeExactFormLemmaV2(surface),grammaticalNumber=classifyNounNumberV2(surface,determiner);
       return{surface,lemma,role:V2_PIGMENT_TERMS.has(surface)?'PIGMENT_AGENT':V2_SUBJECTS.has(surface)?'BIOLOGICAL_AGENT':'UNSUPPORTED',valid:V2_SUBJECTS.has(surface),grammaticalNumber,determinerNumberMismatch:['a','an'].includes(determiner)&&grammaticalNumber==='PLURAL'};
     }),
     coordinator=/\sor\s/.test(raw)?'OR':/\sand\s/.test(raw)?'AND':/\srather\s+than\s/.test(raw)?'RATHER_THAN':members.length>1?'COMMA':'SINGLE',
-    n=members.filter(x=>x.valid).length;
+    n=members.filter(x=>x.valid).length,shapeValid=Boolean(raw.trim())&&!malformedCoordinator
+      &&memberSources.every((source)=>source.trim().length>0);
   members.forEach((member)=>{member.coordinator=coordinator;});
-  return{members,coordinator,validity:n===members.length&&n?'ALL_VALID':n?'MIXED_INVALID':'ALL_INVALID',start:subjectStart,end:boundary};
+  return{members,coordinator,validity:n===members.length&&n?'ALL_VALID':n?'MIXED_INVALID':'ALL_INVALID',shapeValid,start:subjectStart,end:boundary};
 }
-function validateSubjectAgreement(subject,verb){return !subject.members.some((member)=>member.determinerNumberMismatch)&&(verb.form==='PAST'||agreesInSimplePresentV2(subject,verb));}
-const isSupportedSubjectCoordinationV2 = (x) => x.members.length === 1 || x.coordinator === 'AND';
-const validateSubjectSet = (x) => x.validity === 'ALL_VALID' && isSupportedSubjectCoordinationV2(x);
-function validateFinitePredicate(ts,i){const surface=ts[i]?.form||'',lemma=V2_VERBS.get(surface);if(!lemma)return null;if(lemma==='use'&&ts[i+1]?.form==='chlorophyll'&&ts[i+2]?.form==='to'&&V2_VERBS.has(ts[i+3]?.form))return null;const form=surface===lemma?'BASE':/ed$/.test(surface)?'PAST':/ing$/.test(surface)?'PRESENT_PARTICIPLE':'PRESENT_3SG';return{surface,lemma,form,finite:form!=='BASE'};}
-const V2_PLURAL_SUBJECT_LEMMAS=new Set(['plants','green plants','algae','bacteria','some bacteria','photosynthetic bacteria','geese','children','mice','oxen','alumni','men','women','people','feet','teeth','dice','lice','nuclei','fungi','criteria','phenomena','data','media','stimuli','cacti','octopi','indices','matrices','appendices','analyses','bases','crises','theses']);
-const V2_SINGULAR_SUBJECT_LEMMAS=new Set(['photosynthesis','plant','green plant','alga','photosynthetic bacterium','chlorophyll','animal','rock','bacterium','species','series']);
-const V2_FINITE_AUXILIARIES=new Set(['do','does','did','is','are','was','were','has','have','had']);
-function isPluralSubjectV2(subject){
+function subjectPhraseWellFormedV2(subject){return subject.shapeValid!==false&&subject.members.length>0&&!subject.members.some((member)=>member.determinerNumberMismatch);}
+function subjectNumberV2(subject){
+  if(subject.coordinator!=='RATHER_THAN'&&subject.members.length>1)return 'PLURAL';
   const member=subject.coordinator==='RATHER_THAN'?subject.members.at(-1):subject.members[0];
-  if(subject.coordinator!=='RATHER_THAN'&&subject.members.length>1)return true;
-  if(member?.grammaticalNumber==='PLURAL'||V2_PLURAL_SUBJECT_LEMMAS.has(member?.surface)||V2_PLURAL_SUBJECT_LEMMAS.has(member?.lemma))return true;
-  if(member?.grammaticalNumber==='SINGULAR'||V2_SINGULAR_SUBJECT_LEMMAS.has(member?.surface)||V2_SINGULAR_SUBJECT_LEMMAS.has(member?.lemma))return false;
-  return /s$/.test(member?.surface||'')&&!/(?:ss|us|is|ics)$/.test(member?.surface||'');
+  return member?.grammaticalNumber||'UNKNOWN';
 }
-function agreesInSimplePresentV2(subject,verb){if(verb.form==='PAST')return true;return verb.form===(isPluralSubjectV2(subject)?'BASE':'PRESENT_3SG');}
+function validateSubjectAgreement(subject,verb){return subjectPhraseWellFormedV2(subject)&&(verb.form==='PAST'||agreesInSimplePresentV2(subject,verb));}
+const isSupportedSubjectCoordinationV2 = (x) => x.members.length === 1 || x.coordinator === 'AND';
+const validateSubjectSet = (x) => x.validity === 'ALL_VALID' && subjectPhraseWellFormedV2(x) && isSupportedSubjectCoordinationV2(x);
+function validateFinitePredicate(ts,i){const surface=ts[i]?.form||'',lemma=V2_VERBS.get(surface);if(!lemma)return null;if(lemma==='use'&&ts[i+1]?.form==='chlorophyll'&&ts[i+2]?.form==='to'&&V2_VERBS.has(ts[i+3]?.form))return null;const form=surface===lemma?'BASE':/ed$/.test(surface)?'PAST':/ing$/.test(surface)?'PRESENT_PARTICIPLE':'PRESENT_3SG';return{surface,lemma,form,finite:form!=='BASE'};}
+const V2_FINITE_AUXILIARIES=new Set(['do','does','did','is','are','was','were','has','have','had']);
+function isPluralSubjectV2(subject){return subjectNumberV2(subject)==='PLURAL';}
+function numberAllowsV2(subject,number){const actual=subjectNumberV2(subject);return actual===number||actual==='VARIABLE';}
+function hasBarePresentAgreementV2(subject){return ['PLURAL','VARIABLE'].includes(subjectNumberV2(subject));}
+function agreesInSimplePresentV2(subject,verb){
+  if(verb.form==='PAST')return true;
+  const number=subjectNumberV2(subject);
+  if(number==='VARIABLE')return ['BASE','PRESENT_3SG'].includes(verb.form);
+  if(number==='UNKNOWN')return false;
+  return verb.form===(number==='PLURAL'?'BASE':'PRESENT_3SG');
+}
 function validateAuxiliaryPrefixV2(chain,verb,subject){
   const agrees=validateSubjectAgreement(subject,verb);
-  if(subject.members.some((member)=>member.determinerNumberMismatch))return false;
+  if(!subjectPhraseWellFormedV2(subject))return false;
   if(!chain.length)return agrees;
   const first=chain[0],rest=chain.slice(1),oneOf=(...allowed)=>allowed.some((forms)=>forms.length===chain.length&&forms.every((form,index)=>chain[index]===form));
   if(V2_MODALS.has(first))return (oneOf([first],[first,'not'])&&verb.form==='BASE');
   if(['do','does','did'].includes(first)){
-    const agreement=first==='did'||first==='do'&&isPluralSubjectV2(subject)||first==='does'&&!isPluralSubjectV2(subject);
+    const agreement=first==='did'||first==='do'&&numberAllowsV2(subject,'PLURAL')||first==='does'&&numberAllowsV2(subject,'SINGULAR');
     return agreement&&verb.form==='BASE'&&oneOf([first],[first,'not'],[first,'never']);
   }
   if(['is','are','was','were'].includes(first)){
-    const agreement=first==='is'&&!isPluralSubjectV2(subject)||first==='are'&&isPluralSubjectV2(subject)||first==='was'&&!isPluralSubjectV2(subject)||first==='were'&&isPluralSubjectV2(subject);
+    const agreement=first==='is'&&numberAllowsV2(subject,'SINGULAR')||first==='are'&&numberAllowsV2(subject,'PLURAL')||first==='was'&&numberAllowsV2(subject,'SINGULAR')||first==='were'&&numberAllowsV2(subject,'PLURAL');
     return agreement&&verb.form==='PRESENT_PARTICIPLE'&&oneOf([first],[first,'not'],[first,'never']);
   }
   if(['has','have','had'].includes(first)){
-    const agreement=first==='had'||first==='has'&&!isPluralSubjectV2(subject)||first==='have'&&isPluralSubjectV2(subject),
+    const agreement=first==='had'||first==='has'&&numberAllowsV2(subject,'SINGULAR')||first==='have'&&numberAllowsV2(subject,'PLURAL'),
       perfect=oneOf([first],[first,'not']),progressive=oneOf([first,'been'],[first,'not','been']);
     return agreement&&(perfect&&verb.form==='PAST'||progressive&&verb.form==='PRESENT_PARTICIPLE');
   }
   return oneOf(['not'],['never'])&&agrees;
 }
 function validateActiveFinitePredicateV2(ts,index,verb,subject,auxiliary,control){
+  if(!subjectPhraseWellFormedV2(subject))return false;
   const prefix=ts.slice(subject.end,index).map((token)=>token.form),controlPrefix=control?.surface.split(' ')||[];
   if(control){
     if(!validateSubjectAgreement(subject,{form:control.matrixForm}))return false;
@@ -625,7 +699,7 @@ function startsIndependentSupportedClauseV2(text) {
     const predicate = validateFinitePredicate(tokens, index);
     if (!predicate) continue;
     const subject = extractSubjectSet(tokens, index);
-    if (subject.start !== 0 || subject.end <= 0 || subject.validity !== 'ALL_VALID') continue;
+    if (subject.start !== 0 || subject.end <= 0) continue;
     if (validateActiveFinitePredicateV2(
       tokens, index, predicate, subject,
       parseAuxiliaryChain(tokens, index), resolveControlChain(tokens, index),
@@ -648,7 +722,8 @@ function bindDirectObject(ts,i){
     i++;
     if(['a','an','the'].includes(ts[i]?.form))return null;
   }
-  if(!ts[i])return null;
+  if(!ts[i]||!hasContentV2(ts[i].form)
+    ||['and','or','but','into','during','in','for','near','with','by','as','while','although','because','whereas','if','unless','when','since',',',';',';',':','.','!','?'].includes(ts[i].form))return null;
   let end=i+1,light=['light','sunlight'].includes(ts[i].form);
   if(ts[i].form==='light'&&ts[i+1]?.form==='energy')end=i+2;
   if(ts[i].form==='solar'&&['energy','light'].includes(ts[i+1]?.form)){light=true;end=i+2;}
@@ -788,7 +863,10 @@ function buildRelationRecordV2(x){
   const polarity = passive ? state.polarity : x.polarity;
   const unsupportedOr = !passive && x.subjectValidity === 'ALL_VALID' && x.subjectSet?.coordinator === 'OR';
   const agentValid = passive && x.subjectValidity === 'ALL_VALID'
-    && ['SINGLE', 'AND'].includes(x.subjectSet?.coordinator);
+    && ['SINGLE', 'AND'].includes(x.subjectSet?.coordinator)
+    && x.subjectSet?.valid === true
+    && x.subjectSet?.shapeValid !== false
+    && !x.subjectSet?.determinerNumberMismatch;
   const subjectSet = passive
     ? { ...x.subjectSet, valid: agentValid, validityReason: agentValid ? 'SUPPORTED' : 'UNSUPPORTED' }
     : x.subjectSet;
@@ -921,7 +999,13 @@ function resolvePronounContinuationRelation(ts,object,sentenceText,primaryRecord
   });
 }
 function punctuationBoundaryTopologyV2(text){
-  return(text.match(/[.!?;:]+(?=\s+\S)/g)||[]).map((run)=>[...run].map((mark)=>`${';:'.includes(mark)?'CLAUSE':'SENTENCE'}:${mark}`));
+  const source=String(text),boundaries=[];
+  for(const match of source.matchAll(/[.!?;:](?:\s*[.!?;:])*/g)){
+    const end=match.index+match[0].length;
+    if(!hasContentV2(source.slice(0,match.index))||!hasContentV2(source.slice(end)))continue;
+    boundaries.push(/[.!?]/.test(match[0])?['SENTENCE:.']:['CLAUSE:;']);
+  }
+  return boundaries;
 }
 function resolveLocalChlorophyllSupport(records,sentences){
   for(const sentence of sentences)for(const clause of segmentClausesV2(sentence)){
@@ -949,20 +1033,31 @@ function parseMinimalRelationGrammar(input) {
   const orderedSubjects = [];
   const coordinationTopology = [];
   let malformed = false;
+  let malformedExplicitContinuation = false;
 
   for (const [sentenceIndex, sentence] of sentences.entries()) {
     let pronounAntecedentRecordStart = relationRecords.length;
+    const sentenceRecordStart = relationRecords.length;
     for (const clause of segmentClausesV2(sentence)) {
       const clauseRecordStart = relationRecords.length;
       if (clause.boundaryBefore !== 'but') pronounAntecedentRecordStart = clauseRecordStart;
+      const explicitContinuation = ['but', 'comma-and'].includes(clause.boundaryBefore);
+      const hadPriorQualifyingRelation = relationRecords.slice(sentenceRecordStart).some((record) => record.qualifies);
+      const markMalformed = () => {
+        malformed = true;
+        if (explicitContinuation && hadPriorQualifyingRelation) malformedExplicitContinuation = true;
+      };
       const tokens = tokenizeV2(clause.text);
       if (!tokens.length) continue;
       topology.push([sentenceIndex, clause.index]);
 
       const passive = bindLocalPassiveAgent(tokens);
       if (passive) {
-        const valid = passive.agent.validity === 'ALL_VALID'
-          && passive.agent.members.every((member) => member.lemma === 'chlorophyll');
+        const valid = validateSubjectSet(passive.agent);
+        if (!subjectPhraseWellFormedV2(passive.agent)) {
+          markMalformed();
+          diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
+        }
         const object = {
           start: tokens[passive.light].start,
           end: tokens[passive.lightEnd].end,
@@ -991,6 +1086,7 @@ function parseMinimalRelationGrammar(input) {
             start: tokens[passive.by + 1]?.start,
             end: tokens.at(-1).end,
             valid,
+            shapeValid: passive.agent.shapeValid,
             validityReason: valid ? 'SUPPORTED' : 'UNSUPPORTED',
           },
           subjectValidity: passive.agent.validity,
@@ -1030,7 +1126,7 @@ function parseMinimalRelationGrammar(input) {
         const candidateSubjects = extractSubjectSet(tokens, index);
         const auxiliary = parseAuxiliaryChain(tokens, index);
         const control = resolveControlChain(tokens, index);
-        const pluralBasePredicate = candidatePredicate?.form === 'BASE' && isPluralSubjectV2(candidateSubjects);
+        const pluralBasePredicate = candidatePredicate?.form === 'BASE' && hasBarePresentAgreementV2(candidateSubjects);
         if (candidatePredicate && (candidatePredicate.finite
           || pluralBasePredicate
           || auxiliary.modal
@@ -1053,20 +1149,22 @@ function parseMinimalRelationGrammar(input) {
         && !control
         && !['do', 'does', 'did'].includes(auxiliary.chain[0])
         && tokens[predicateIndex - 1]?.form !== 'to'
-        && !(predicate.form === 'BASE' && isPluralSubjectV2(subjectSet)))) {
-        malformed = true;
-        diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
+        && !(predicate.form === 'BASE' && hasBarePresentAgreementV2(subjectSet)))) {
+        if (!isCompleteUnsupportedClauseV2(tokens, true)) {
+          markMalformed();
+          diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
+        }
         continue;
       }
 
       if (!subjectSet.members.length) {
-        malformed = true;
+        markMalformed();
         diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
         continue;
       }
 
       if (!validateActiveFinitePredicateV2(tokens, predicateIndex, predicate, subjectSet, auxiliary, control)) {
-        malformed = true;
+        markMalformed();
         diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
         continue;
       }
@@ -1077,7 +1175,7 @@ function parseMinimalRelationGrammar(input) {
       if (tokens[objectIndex]?.form === 'chlorophyll' && tokens[objectIndex + 1]?.form === 'to') objectIndex += 2;
       let object = bindDirectObject(tokens, objectIndex);
       if (!object) {
-        malformed = true;
+        markMalformed();
         diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
         continue;
       }
@@ -1105,7 +1203,7 @@ function parseMinimalRelationGrammar(input) {
       const coordinatedPredicates = resolveCoordinatedPredicates(tokens, predicateIndex, objectIndex);
       const pronoun = resolvePronounContinuation(tokens, object);
       if (coordinatedPredicates.invalid) {
-        malformed = true;
+        markMalformed();
         diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
       }
 
@@ -1114,7 +1212,7 @@ function parseMinimalRelationGrammar(input) {
       const allowed = (!pronoun?.valid || pronoun.grammarValid)
         && validateActiveTailV2(tokens, object.tokenEnd, pronoun, subjectSet, object);
       if (!allowed) {
-        malformed = true;
+        markMalformed();
         diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
       }
 
@@ -1139,7 +1237,7 @@ function parseMinimalRelationGrammar(input) {
       const malformedSubject = subjectSet.validity === 'ALL_INVALID'
         && subjectSet.members[0]?.surface?.includes(' ');
       if (malformedSubject) {
-        malformed = true;
+        markMalformed();
         diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
       }
 
@@ -1288,6 +1386,10 @@ function parseMinimalRelationGrammar(input) {
   if (invalidChlorophyllClaims.length) diagnostics.push('WRONG_PIGMENT_RELATION');
   if (affirmedDestructive) diagnostics.push('DESTRUCTIVE_RELATION');
   if (contradictions.length) diagnostics.push('CONTRADICTION_PRESENT');
+  const lightMentionAcrossBoundary = !relationRecords.some((record) => record.qualifies)
+    && relationRecords.some((record) => record.rejectionReasons?.includes('LIGHT_OBJECT_MISSING'))
+    && (sentences.length > 1 || topology.length > sentences.length)
+    && /\b(?:light energy|sunlight)\b/.test(normalized);
 
   return {
     evaluatorId: V2_ID,
@@ -1295,9 +1397,10 @@ function parseMinimalRelationGrammar(input) {
     sentences,
     relationRecords,
     passed: relationRecords.some((record) => record.qualifies)
-      && !contradictions.length && !invalidChlorophyllClaims.length && !affirmedDestructive,
+      && !malformedExplicitContinuation && !contradictions.length && !invalidChlorophyllClaims.length && !affirmedDestructive,
     polarity: contradictions.length ? 'CONTRADICTED'
       : assertedWrongPigment ? 'AFFIRMED'
+        : lightMentionAcrossBoundary ? 'UNRESOLVED'
         : relationRecords[0]?.subjectValidity === 'ALL_INVALID'
           && relationRecords[0]?.subjectSet?.surface?.includes(' ') ? 'UNRESOLVED'
           : relationRecords[0]?.subjectValidity === 'ALL_INVALID' ? 'ALL_INVALID'
@@ -1308,6 +1411,7 @@ function parseMinimalRelationGrammar(input) {
     punctuationTopology: punctuationBoundaryTopologyV2(normalized),
     topology,
     hasMalformed: malformed,
+    malformedExplicitContinuation,
     malformedShape: malformed
       ? tokenizeV2(normalized).map((token) => V2_SUBJECTS.has(token.form) ? 'SUBJECT'
         : V2_VERBS.has(token.form) ? 'VERB'
@@ -1369,7 +1473,7 @@ const evaluatePhotosynthesisRelationsV2 = (input)=>{
     contradictions,
     invalidChlorophyllClaims,
     diagnostics:[...new Set([...result.diagnostics,...(invalidChlorophyllClaims.length?['WRONG_PIGMENT_RELATION']:[]),...(contradictions.length?['CONTRADICTION_PRESENT']:[])])],
-    passed:relationRecords.some((record)=>record.qualifies)&&!contradictions.length&&!invalidChlorophyllClaims.length&&!affirmedDestructive,
+    passed:relationRecords.some((record)=>record.qualifies)&&!result.malformedExplicitContinuation&&!contradictions.length&&!invalidChlorophyllClaims.length&&!affirmedDestructive,
     polarity:contradictions.length?'CONTRADICTED':affirmedWrongPigment?'AFFIRMED':result.polarity,
     barriers:relationRecords.map((record)=>record.objectBarriers?.type).filter(Boolean),
     positiveLightEnergy:relationRecords.some((record)=>record.qualifies),

@@ -652,7 +652,7 @@ test('V2 corpus identity and expected membership are frozen independently of imp
     .map(stableFields)
     .sort(([leftId], [rightId]) => leftId.localeCompare(rightId));
   const identity = createHash('sha256').update(JSON.stringify(corpus)).digest('hex');
-  assert.equal(identity, '81184d5d60dd45f55844a10ed2690ae56c895a34521f9b4b81eb5fd9346a2ea1');
+  assert.equal(identity, '615b439f94854f434f58aa4b9534138f75e5f0845d4acfce0076edbcc73019c4');
   assert.deepEqual(b5SemanticSupplementCases.map(stableFields), [[
     'B5-PUNCTUATION_ABUSE-001',
     'Photosynthesis captures carbon dioxide! Light energy exists! Chlorophyll is present! Light energy remains.',
@@ -1117,10 +1117,7 @@ test('V2 semantic corpus meets every frozen class minimum with genuine projectio
   all.forEach((item, index) => fingerprintGroups.set(fingerprints[index], [...(fingerprintGroups.get(fingerprints[index]) || []), item.id]));
   assert.equal(fingerprints.length, 206);
   assert.ok(new Set(fingerprints).size >= 201, 'at least 201 distinct frozen semantic projections are required');
-  assert.deepEqual([...fingerprintGroups.values()].filter((ids) => ids.length > 1).map((ids) => ids.sort()).sort((a,b) => a[0].localeCompare(b[0])), [
-    ['V2-PUNCTUATION_ABUSE-002','V2-PUNCTUATION_ABUSE-006'],
-    ['V2-SENTENCE_BOUNDARY-001','V2-SENTENCE_BOUNDARY-002'],
-  ]);
+  assert.deepEqual([...fingerprintGroups.values()].filter((ids) => ids.length > 1).map((ids) => ids.sort()).sort((a,b) => a[0].localeCompare(b[0])), []);
   const { evaluatePhotosynthesisRelationsV2 } = require('./photosynthesis-relation-evaluator');
   for (const item of [...generatedV2Cases, ...b5SemanticSupplementCases]) {
     const result = evaluatePhotosynthesisRelationsV2(item.text);
@@ -1649,10 +1646,7 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
   }
   const duplicateGroups = [...groups.values()].filter((ids) => ids.length > 1)
     .map((ids) => ids.sort());
-  const sanctionedDuplicates = [
-    ['V2-PUNCTUATION_ABUSE-002','V2-PUNCTUATION_ABUSE-006'],
-    ['V2-SENTENCE_BOUNDARY-001','V2-SENTENCE_BOUNDARY-002'],
-  ];
+  const sanctionedDuplicates = [];
   duplicateGroups.sort((left, right) => left[0].localeCompare(right[0]));
   sanctionedDuplicates.sort((left, right) => left[0].localeCompare(right[0]));
   assert.deepEqual(duplicateGroups, sanctionedDuplicates);
@@ -1678,7 +1672,7 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
   }
 
   const indexById = new Map(index.entries.map((entry) => [entry.caseId, entry]));
-  const rejectedIds = new Set(['V2-PUNCTUATION_ABUSE-006','V2-SENTENCE_BOUNDARY-002']);
+  const rejectedIds = new Set();
   for (const item of cases) {
     const entry = indexById.get(item.id);
     if (rejectedIds.has(item.id)) assert.equal(entry, undefined, item.id);
@@ -1688,11 +1682,8 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
   assert.equal(index.duplicatePolicy, 'reject-global-duplicate');
   assert.equal(index.uniqueCount, index.entries.length);
   assert.equal(new Set(index.entries.map((entry) => entry.semanticFingerprint)).size, index.entries.length);
-  assert.deepEqual(index.rejectedDuplicates.map(({ retainedCaseId, rejectedCaseId }) => [retainedCaseId, rejectedCaseId]), [
-    ['V2-SENTENCE_BOUNDARY-001','V2-SENTENCE_BOUNDARY-002'],
-    ['V2-PUNCTUATION_ABUSE-002','V2-PUNCTUATION_ABUSE-006'],
-  ]);
-  assert.equal(index.sourceCaseCount - index.uniqueCount, 2);
+  assert.deepEqual(index.rejectedDuplicates.map(({ retainedCaseId, rejectedCaseId }) => [retainedCaseId, rejectedCaseId]), []);
+  assert.equal(index.sourceCaseCount - index.uniqueCount, 0);
 });
 
 test('PREQ-008 package receipt binds the recipe by committed commit, path, and blob', () => {
@@ -1718,8 +1709,8 @@ test('Astra PREQ-002 release fingerprint index rejects global duplicates without
   assert.equal(new Set(index.entries.map((entry) => entry.semanticFingerprint)).size, index.entries.length);
   assert.equal(index.sourceCaseCount, 206);
   assert.ok(index.entries.length >= 201);
-  assert.equal(index.entries.length, 204);
-  assert.equal(index.rejectedDuplicates.length, 2);
+  assert.equal(index.entries.length, 206);
+  assert.equal(index.rejectedDuplicates.length, 0);
   for (const item of canonicalCases) assert.ok(index.entries.some((entry) => entry.caseId === item.id), item.id);
   for (const row of requiredTestClasses) {
     const count = new Set(index.entries

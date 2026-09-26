@@ -5,19 +5,19 @@
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
   "repairAttemptId": "P1-ASTRA-RESTART-001-004-20260926-8644913",
-  "capturedAtUtc": "2026-09-26T00:54:17.313Z",
+  "capturedAtUtc": "2026-09-26T20:17:20.470Z",
   "phase": "GREEN",
   "status": "PASS_ZERO_CANDIDATE_REGRESSIONS_WITH_SHARED_BASELINE_FAILURE",
   "repairBaseSha": "53dac79cf873443e2a8c468607af5deee8107759",
   "repairBaseTreeSha": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
-  "implementationSourceCommitSha": "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-  "implementationCommitSha": "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-  "implementationTreeSha": "de3b501a5ca90e6a33e6ed5b5b0206d7bbdab72d",
-  "implementationParentSha": "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-  "testedCandidateHead": "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-  "testedCandidateTree": "de3b501a5ca90e6a33e6ed5b5b0206d7bbdab72d",
-  "testedCandidateParent": "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-  "branch": "codex/p1-astra-restart-001-004-repair-20260926",
+  "implementationSourceCommitSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
+  "implementationCommitSha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
+  "implementationTreeSha": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
+  "implementationParentSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
+  "testedCandidateHead": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
+  "testedCandidateTree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
+  "testedCandidateParent": "e1b50b53769139f9d2f1381170f555e37efdcab3",
+  "branch": "codex/p1-astra-final-001-006-repair-20260926",
   "runtime": {
     "version": "v26.7.0",
     "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
@@ -34,7 +34,7 @@
     "backendPackageJsonSha256": "90467537d4de957dbe49c1722ecb1767344dd7237b1dfd0179484c3bceba2159",
     "backendPackageLockSha256": "939370cd71896ccaeef4b3d4c4dffaa43840273e014fae5386c46f0cdf11bfa8",
     "backendNodeModulesPresent": true,
-    "backendNodeModulesRealPath": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-restart-001-003/backend/node_modules",
+    "backendNodeModulesRealPath": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair/backend/node_modules",
     "npmCi": [
       {
         "side": "repairBase",
@@ -50,29 +50,32 @@
         "exitCode": 0,
         "packagesAdded": 170
       }
-    ]
+    ],
+    "backendTestNodePath": "unset",
+    "frontendNodeModulesPresent": true,
+    "frontendNodeModulesRealPath": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair/frontend/node_modules"
   },
   "authoritativeTestRun": {
     "id": "P1-AUTHORITATIVE-POST-PACKAGE",
-    "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test lib/p1-authoritative-repair-v2.test.js (cwd=C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-restart-001-004-repair/backend; NODE_PATH uses lockfile-identical audited backend dependencies)",
+    "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test lib/p1-authoritative-repair-v2.test.js (cwd=C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair/backend; NODE_PATH unset)",
     "args": [
       "--test",
       "lib/p1-authoritative-repair-v2.test.js"
     ],
-    "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-restart-001-004-repair/backend",
+    "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair/backend",
     "exitCode": 0,
     "testCount": 101,
     "passed": 101,
     "failed": 0,
     "skipped": 0,
     "stdout": {
-      "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/authoritative-packaged.log",
-      "bytes": 9565,
-      "sha256": "b1f94e83b01fb9213794168768dee0611075561358adc439b70191ff6c6ead78",
-      "modifiedAtUtc": "2026-09-25T22:51:55.905Z"
+      "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-authoritative-20260926.log",
+      "bytes": 9569,
+      "sha256": "0fb88e493589447f8944de57862db8e1a26b4253049c060a0aa0417f0e0a142b",
+      "modifiedAtUtc": "2026-09-26T19:38:41.663Z"
     },
-    "testedCommitSha": "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-    "testedTreeSha": "de3b501a5ca90e6a33e6ed5b5b0206d7bbdab72d"
+    "testedCommitSha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
+    "testedTreeSha": "e7bebb115b2c3fff3c59f772292d16969dddeb03"
   },
   "matchedFullSuiteComparison": {
     "status": "PASS_NO_CANDIDATE_REGRESSIONS_WITH_SHARED_BASELINE_FAILURE",
@@ -97,35 +100,35 @@
       "failed": 1,
       "skipped": 0,
       "log": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/p1-full-base-53dac79-pinned-final-20260925.log",
-        "bytes": 189705,
-        "sha256": "cd75f4185b35cd8ef1643480172aed0647fc05a31921484f964941731d74893e",
-        "modifiedAtUtc": "2026-09-25T15:24:06.629Z"
+        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-full-base-20260926.log",
+        "bytes": 189689,
+        "sha256": "68046575268defe2768fc2710fb1261c4f03ac8fd2690eb453a6e9070bf719ac",
+        "modifiedAtUtc": "2026-09-26T19:29:08.292Z"
       },
       "failureNames": [
         "every declared Node major is the one deploy/targets.json names"
       ]
     },
     "candidate": {
-      "head": "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-      "tree": "de3b501a5ca90e6a33e6ed5b5b0206d7bbdab72d",
-      "parent": "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-      "command": "pinned Node npm test (cwd=backend; NODE_PATH points to lockfile-identical audited dependency tree)",
+      "head": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
+      "tree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
+      "parent": "e1b50b53769139f9d2f1381170f555e37efdcab3",
+      "command": "pinned Node npm test (cwd=backend; NODE_PATH unset)",
       "args": [
         "npm",
         "test"
       ],
-      "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-restart-001-004-repair/backend",
+      "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair/backend",
       "exitCode": 1,
-      "total": 2559,
-      "passed": 2558,
+      "total": 2566,
+      "passed": 2565,
       "failed": 1,
       "skipped": 0,
       "log": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/backend-full-packaged.log",
-        "bytes": 190042,
-        "sha256": "5e16144378fa46f3f1c56bbd93302d2fec0c58023400011efad03cb9f67ee5b6",
-        "modifiedAtUtc": "2026-09-25T22:52:31.690Z"
+        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-full-candidate-20260926.log",
+        "bytes": 190755,
+        "sha256": "2b5057ea7d25e7c8f0d4fa53886955a64c4d66ba8f2a9bfcecd40c08b949a71e",
+        "modifiedAtUtc": "2026-09-26T19:29:08.292Z"
       },
       "failureNames": [
         "every declared Node major is the one deploy/targets.json names"
@@ -134,7 +137,7 @@
     "candidateCausedFailureCount": 0,
     "candidateCausedFailureIds": [],
     "sameFailureSet": true,
-    "additionalPassingTests": 4,
+    "additionalPassingTests": 11,
     "sharedBaselineFailure": {
       "testName": "every declared Node major is the one deploy/targets.json names",
       "file": "backend/lib/deployment-config.test.js",
@@ -148,22 +151,23 @@
   "semanticCoverage": {
     "sourceCases": 206,
     "rawUniqueTexts": 206,
-    "legitimateSemanticProjections": 204,
-    "uniqueSemanticFingerprintCount": 204,
+    "legitimateSemanticProjections": 206,
+    "uniqueSemanticFingerprintCount": 206,
     "requiredFloor": 201,
     "classCount": 28,
     "classMinimaPass": true,
     "sentenceBoundary": {
-      "observed": 6,
+      "observed": 7,
       "required": 6
     },
     "punctuationAbuse": {
       "sourceCases": 9,
-      "observed": 8,
+      "observed": 9,
       "required": 8
     },
     "canonicalCases": 54,
     "canonicalCasesMatchFrozenDesign": true,
+    "canonicalCasesMatchRepairBase": true,
     "structuralMarkers": 27,
     "cosmeticLeaks": 0,
     "arbitrarySubjectLeaks": 0,
@@ -228,8 +232,8 @@
         "failed": 0
       },
       "punctuation": {
-        "cases": 34,
-        "passed": 34,
+        "cases": 64,
+        "passed": 64,
         "failed": 0
       },
       "semantic boundary": {
@@ -273,21 +277,20 @@
         "failed": 0
       }
     },
-    "canonicalCasesMatchRepairBase": true,
     "allCorpusDecisionsMatch": true
   },
   "packageBuild": {
     "buildA": {
-      "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-package-rebuild-20260926-042d938/build-one/package.mjs",
-      "bytes": 104013,
-      "sha256": "efdbd1970681728d1ed0f8b290035aca02dbd3fd471911b24d71525c2b5d2cbc",
-      "gitBlob": "692ebb52c1d0f402ef8be791ff72548e8b07f7d5"
+      "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-recompute-fdd51033352147279b993d43659e5eb5/build-one-final/package.mjs",
+      "bytes": 122798,
+      "sha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
+      "gitBlob": "3cae4c2ced7d0a0009d20309ca0c7c1ca5312eeb"
     },
     "buildB": {
-      "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-package-rebuild-20260926-042d938/build-two/package.mjs",
-      "bytes": 104013,
-      "sha256": "efdbd1970681728d1ed0f8b290035aca02dbd3fd471911b24d71525c2b5d2cbc",
-      "gitBlob": "692ebb52c1d0f402ef8be791ff72548e8b07f7d5"
+      "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-recompute-fdd51033352147279b993d43659e5eb5/build-two-final/package.mjs",
+      "bytes": 122798,
+      "sha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
+      "gitBlob": "3cae4c2ced7d0a0009d20309ca0c7c1ca5312eeb"
     },
     "byteForByteEqual": true,
     "committedBlobMatchesBuild": true,
@@ -298,14 +301,9 @@
     "status": "PASS",
     "publicExports": 39,
     "matchedPublicExports": 39,
-    "comparedExports": [
-      "evaluatePhotosynthesisRelations",
-      "evaluatePhotosynthesisRelationsV2",
-      "semanticCaseFingerprint"
-    ],
-    "inputCount": 9199,
-    "inputSetSha256": "74f00a38e70c01c9500955c30f2c832cab5cd14239a07b99bf2e8cfd0be757c9",
-    "comparedCalls": 27597,
+    "inputCount": 12340,
+    "inputSetSha256": "aad5fe3141384b5b9ce5d6a13ed607a8dd1829b004e85bcdd7ccf07c4ac008c0",
+    "comparedCalls": 37020,
     "mismatches": 0,
     "exceptions": 0,
     "sourceAndPackageIdentical": true
@@ -317,10 +315,10 @@
     "freshAstraSubjectPairsPassing": 76,
     "additionalUnseenSubjectProbes": 40,
     "additionalUnseenSubjectProbesPassing": 40,
-    "punctuationPairs": 34,
-    "punctuationPairsPassing": 34,
-    "packageInputs": 9199,
-    "packageComparisons": 27597,
+    "punctuationPairs": 64,
+    "punctuationPairsPassing": 64,
+    "packageInputs": 12340,
+    "packageComparisons": 37020,
     "packageMismatches": 0,
     "packageExceptions": 0,
     "groups": {
@@ -355,8 +353,8 @@
         "failed": 0
       },
       "punctuation": {
-        "cases": 34,
-        "passed": 34,
+        "cases": 64,
+        "passed": 64,
         "failed": 0
       },
       "semantic boundary": {
@@ -423,7 +421,23 @@
       "sha": "53dac79cf873443e2a8c468607af5deee8107759",
       "tree": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
       "executedNow": true
-    }
+    },
+    "currentImplementationCommits": [
+      "c23532d49a5dab46ce3a5498a0ac5d72a9aadd81",
+      "9d51a0a8809049d77674ee254910924fbc6a7def",
+      "042d938ac5745b9b0679e35cec3d2e272ffd275b",
+      "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
+      "b315b455b679341d6dc6fe48bbf22c6e35a241bb",
+      "e7c248828a867b7ff285a2d96ea265460d755f18",
+      "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
+      "d20ee99dea304860767c9f5c8d49505eefd2b265",
+      "adeec90cf2fae5b8bc49d8780832ba2e8debf8c2",
+      "c0793c0f415f0a23befa1c7ae89e5b9244e89ec5",
+      "b1b584153d9efd720a99085fe6d44060e962ea16",
+      "6cf90b4dddf42716de319cac14a16cf755a4c938",
+      "e1b50b53769139f9d2f1381170f555e37efdcab3",
+      "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b"
+    ]
   },
   "frozenDesignSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "quarantineCommits": [
@@ -450,7 +464,17 @@
     "c23532d49a5dab46ce3a5498a0ac5d72a9aadd81",
     "9d51a0a8809049d77674ee254910924fbc6a7def",
     "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-    "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c"
+    "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
+    "b315b455b679341d6dc6fe48bbf22c6e35a241bb",
+    "e7c248828a867b7ff285a2d96ea265460d755f18",
+    "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
+    "d20ee99dea304860767c9f5c8d49505eefd2b265",
+    "adeec90cf2fae5b8bc49d8780832ba2e8debf8c2",
+    "c0793c0f415f0a23befa1c7ae89e5b9244e89ec5",
+    "b1b584153d9efd720a99085fe6d44060e962ea16",
+    "6cf90b4dddf42716de319cac14a16cf755a4c938",
+    "e1b50b53769139f9d2f1381170f555e37efdcab3",
+    "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b"
   ],
   "datasetValidation": {
     "status": "PASS",
@@ -482,15 +506,15 @@
   },
   "supportingTestRuns": {
     "evaluator": {
-      "tests": 39,
-      "passed": 39,
+      "tests": 46,
+      "passed": 46,
       "failed": 0,
       "skipped": 0,
       "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/evaluator-packaged.log",
-        "bytes": 2663,
-        "sha256": "08958192533c7a6ca155795f7c9ffea17eb392e6482b42d0a7c42e756c044464",
-        "modifiedAtUtc": "2026-09-25T22:51:55.778Z"
+        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-evaluator-20260926.log",
+        "bytes": 3301,
+        "sha256": "0a62fe559fddf89037d6959f497b0597f0abea519e8c3827885e6df91ce3c738",
+        "modifiedAtUtc": "2026-09-26T19:34:26.295Z"
       }
     },
     "evaluatorMutations": {
@@ -499,10 +523,10 @@
       "failed": 0,
       "skipped": 0,
       "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/evaluator-mutations-packaged.log",
-        "bytes": 1124,
-        "sha256": "ca424fda749a00b4ef3dde445aa78d24831f9d1cee6b22e4a54d849ec73b2eb3",
-        "modifiedAtUtc": "2026-09-25T22:51:57.240Z"
+        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-evaluator-mutation-20260926.log",
+        "bytes": 1126,
+        "sha256": "8cd3702102bcd1d08525dbf1b0877aed40b121aee9ea07fc51f7e64c2268e74e",
+        "modifiedAtUtc": "2026-09-26T19:34:28.326Z"
       }
     },
     "evaluation": {
@@ -511,10 +535,10 @@
       "failed": 0,
       "skipped": 0,
       "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/evaluation-current.log",
-        "bytes": 8486,
-        "sha256": "a80fd6dbf5cb217091234fd5901f268f038585d7db696f7b1a5613f8bf76e77a",
-        "modifiedAtUtc": "2026-09-25T23:05:39.673Z"
+        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-evaluation-glob-20260926.log",
+        "bytes": 8487,
+        "sha256": "162256244069654c0ac0235f2f25e6af7d9c7ee263bbd7774a2256e74e93d55c",
+        "modifiedAtUtc": "2026-09-26T19:38:43.092Z"
       }
     },
     "authoritativeMutations": {
@@ -523,10 +547,10 @@
       "failed": 0,
       "skipped": 0,
       "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/authoritative-mutations-current.log",
-        "bytes": 1997,
-        "sha256": "60301e15be0797d1d50e28038690d5ef9720ab74dd6eed0d2c18affd707fb8ec",
-        "modifiedAtUtc": "2026-09-25T23:05:40.242Z"
+        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-authoritative-mutations-20260926.log",
+        "bytes": 1995,
+        "sha256": "db116193adef5b6cc9dfec78638ef949882a19a165a43b69533084bdb7397420",
+        "modifiedAtUtc": "2026-09-26T19:34:26.863Z"
       }
     },
     "datasetV1": {
@@ -534,10 +558,10 @@
       "valid": true,
       "spent": false,
       "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/dataset-v1-final.log",
+        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-dataset-v1-20260926.log",
         "bytes": 95,
         "sha256": "a949a8a0c072b90f28be07a83dd78b272a725cbc1533253b29c3a441df18f79b",
-        "modifiedAtUtc": "2026-09-25T22:47:47.798Z"
+        "modifiedAtUtc": "2026-09-26T19:38:40.604Z"
       }
     },
     "datasetV2": {
@@ -545,10 +569,10 @@
       "valid": true,
       "spent": false,
       "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/dataset-v2-final.log",
+        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-dataset-v2-20260926.log",
         "bytes": 95,
         "sha256": "11a887e42686af89b2f9c04ce71a808ad91a8a776eb334234a2e6893788ee27e",
-        "modifiedAtUtc": "2026-09-25T22:47:49.477Z"
+        "modifiedAtUtc": "2026-09-26T19:38:41.694Z"
       }
     },
     "frontend": {
@@ -558,28 +582,51 @@
       "passed": 735,
       "failed": 0,
       "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/frontend-tests-2workers.log",
-        "bytes": 24732,
-        "sha256": "121f86c9545a857afd21024ff2c9f1201d304c8bbb371c40012a6873ef508e3e",
-        "modifiedAtUtc": "2026-09-26T00:25:00.538Z"
+        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-frontend-bounded-20260926.log",
+        "bytes": 24787,
+        "sha256": "254f40468f84a308179f13e0a47c3f4c07b8db8733113cfd88b43d5bf3613bf5",
+        "modifiedAtUtc": "2026-09-26T19:33:37.000Z"
       },
-      "defaultParallelRunHadTimingFailures": true,
-      "defaultParallelFailingFileRetry": {
-        "tests": 55,
-        "passed": 55,
-        "failed": 0,
-        "stdout": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/frontend-failed-files-retry.log",
-          "bytes": 3081,
-          "sha256": "a4ec71679058cf7caf1cbdc7c457daa78b05b06ff097d6eb2b0c7952e92e1d85",
-          "modifiedAtUtc": "2026-09-26T00:23:18.227Z"
-        }
-      }
+      "defaultParallelRunHadTimingFailures": true
     }
   },
   "canonicalCasesPassed": 54,
   "failed": 0,
   "skipped": 0,
   "allCorpusDecisionsMatch": true,
-  "semanticCoveragePass": true
+  "semanticCoveragePass": true,
+  "targetedBlockerMatricesSummary": {
+    "punctuation": {
+      "pairs": 64,
+      "passed": 64,
+      "freshGlyphControls": 9,
+      "punctuationOnlyFragments": 2
+    },
+    "subjects": {
+      "original30": 30,
+      "previousFresh76": 76,
+      "currentAstraActive112": 112,
+      "currentAstraActive112Passed": 112,
+      "freshPassive14": 14,
+      "unseenEquivalence24": 24,
+      "unseenAgreement16": 16
+    },
+    "semicolon": {
+      "crossBoundaryNoBind": true,
+      "postBoundaryLocalBind": true,
+      "localContradictions": 1
+    },
+    "passive": {
+      "probes": 11,
+      "validMalformedAgentRejections": 2
+    },
+    "continuation": {
+      "probes": 9,
+      "allExpectationsMatch": true
+    },
+    "commaCoordination": {
+      "cases": 16,
+      "passed": 16
+    }
+  }
 }

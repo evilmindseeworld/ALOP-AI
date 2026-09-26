@@ -3,13 +3,13 @@
   "kind": "alop-p1-authoritative-evidence-manifest",
   "repairAttemptId": "P1-ASTRA-RESTART-001-004-20260926-8644913",
   "phase": "FINAL_EVIDENCE",
-  "status": "PASS_ZERO_CANDIDATE_REGRESSIONS_WITH_SHARED_BASELINE_FAILURE",
+  "status": "PASS",
   "verified": true,
   "entryCount": 13,
   "allowedPathsPass": true,
   "nestedManifest": "ABSENT",
   "manifestSelfHashExcluded": true,
-  "capturedAtUtc": "2026-09-26T00:54:17.313Z",
+  "capturedAtUtc": "2026-09-26T20:17:20.470Z",
   "authority": {
     "directUserAuthorizedImplementationWorker": true,
     "runtimeSelectionSource": "Owner-reported Codex /status; accepted without internal model self-check or challenge",
@@ -295,37 +295,93 @@
         }
       ]
     },
-    "testedCandidateHead": "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-    "testedCandidateTree": "de3b501a5ca90e6a33e6ed5b5b0206d7bbdab72d",
-    "testedCandidateParent": "042d938ac5745b9b0679e35cec3d2e272ffd275b",
+    "testedCandidateHead": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
+    "testedCandidateTree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
+    "testedCandidateParent": "e1b50b53769139f9d2f1381170f555e37efdcab3",
     "implementationCommitShas": [
       "c23532d49a5dab46ce3a5498a0ac5d72a9aadd81",
       "9d51a0a8809049d77674ee254910924fbc6a7def",
       "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-      "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c"
+      "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
+      "b315b455b679341d6dc6fe48bbf22c6e35a241bb",
+      "e7c248828a867b7ff285a2d96ea265460d755f18",
+      "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
+      "d20ee99dea304860767c9f5c8d49505eefd2b265",
+      "adeec90cf2fae5b8bc49d8780832ba2e8debf8c2",
+      "c0793c0f415f0a23befa1c7ae89e5b9244e89ec5",
+      "b1b584153d9efd720a99085fe6d44060e962ea16",
+      "6cf90b4dddf42716de319cac14a16cf755a4c938",
+      "e1b50b53769139f9d2f1381170f555e37efdcab3",
+      "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b"
     ],
-    "sourceAndPackageCleanAtTest": true
+    "sourceAndPackageCleanAtTest": true,
+    "finalRepair": {
+      "auditedCandidateStart": {
+        "head": "23d4aac95729f152b3e3438fe08dabe1a1a95d8f",
+        "tree": "0fe8790f0528569bec36e6dee4234a5de81f772d",
+        "parent": "803ac0848b571c6e7cd13d17061d402c4a2ddfbb"
+      },
+      "worktree": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair",
+      "branch": "codex/p1-astra-final-001-006-repair-20260926",
+      "sourceCommit": {
+        "sha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
+        "tree": "bc94c403f9083e9fe8c0ab941082922998ea870e"
+      },
+      "implementationCommit": {
+        "sha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
+        "tree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
+        "parent": "e1b50b53769139f9d2f1381170f555e37efdcab3"
+      },
+      "testedCandidateHead": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
+      "testedCandidateTree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
+      "testedCandidateParent": "e1b50b53769139f9d2f1381170f555e37efdcab3",
+      "implementationCommitShas": [
+        "c23532d49a5dab46ce3a5498a0ac5d72a9aadd81",
+        "9d51a0a8809049d77674ee254910924fbc6a7def",
+        "042d938ac5745b9b0679e35cec3d2e272ffd275b",
+        "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
+        "b315b455b679341d6dc6fe48bbf22c6e35a241bb",
+        "e7c248828a867b7ff285a2d96ea265460d755f18",
+        "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
+        "d20ee99dea304860767c9f5c8d49505eefd2b265",
+        "adeec90cf2fae5b8bc49d8780832ba2e8debf8c2",
+        "c0793c0f415f0a23befa1c7ae89e5b9244e89ec5",
+        "b1b584153d9efd720a99085fe6d44060e962ea16",
+        "6cf90b4dddf42716de319cac14a16cf755a4c938",
+        "e1b50b53769139f9d2f1381170f555e37efdcab3",
+        "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b"
+      ],
+      "sourceAndPackageCleanAtTest": true
+    }
   },
   "package": {
     "entryPoint": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-    "commitSha": "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-    "treeSha": "de3b501a5ca90e6a33e6ed5b5b0206d7bbdab72d",
-    "gitBlob": "692ebb52c1d0f402ef8be791ff72548e8b07f7d5",
-    "sha256": "efdbd1970681728d1ed0f8b290035aca02dbd3fd471911b24d71525c2b5d2cbc",
-    "bytes": 104013,
+    "commitSha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
+    "treeSha": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
+    "parentSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
+    "gitBlob": "3cae4c2ced7d0a0009d20309ca0c7c1ca5312eeb",
+    "sha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
+    "bytes": 122798,
     "buildsByteIdentical": true,
-    "buildASha256": "efdbd1970681728d1ed0f8b290035aca02dbd3fd471911b24d71525c2b5d2cbc",
-    "buildBSha256": "efdbd1970681728d1ed0f8b290035aca02dbd3fd471911b24d71525c2b5d2cbc",
-    "buildABlob": "692ebb52c1d0f402ef8be791ff72548e8b07f7d5",
-    "buildBBlob": "692ebb52c1d0f402ef8be791ff72548e8b07f7d5",
+    "buildASha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
+    "buildBSha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
+    "buildABlob": "3cae4c2ced7d0a0009d20309ca0c7c1ca5312eeb",
+    "buildBBlob": "3cae4c2ced7d0a0009d20309ca0c7c1ca5312eeb",
     "recipeVersion": "p1-static-compose-v1",
+    "recipeCommitSha": "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
+    "recipeTreeSha": "3a41976c32a9a2c7627e3b369a843baaeabea5aa",
+    "recipePath": "backend/scripts/compose-photosynthesis-relation-mutation-package.mjs",
+    "recipeSha256": "ec88d5cecc2a4c43d4eac6c28be40bcab2f1d4479eb0db5bac54a77b11f9e26c",
+    "recipeGitBlob": "70b70ef7e6a4ea2d076e310f69bc64609ff2a5d7",
     "recipeInputCommitSha": "3ae0f283461f304f2778a4dc463a85c8f7d86adf",
     "recipeInputBlob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
-    "evaluatorInputCommitSha": "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-    "evaluatorInputBlob": "e27e7a327590fe09d0d7183d5dd02553f2412822",
+    "evaluatorInputCommitSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
+    "evaluatorInputBlob": "83d44f4e88b62a3db4f24b3649052ca716372111",
+    "evaluatorInputSha256": "30bd8f4d486b98aba224be0243e691b350de28e4507610f80689658516ad7193",
     "runnerInputCommitSha": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
     "runnerInputBlob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
-    "runnerDerivedBlob": "9ce94afaab65d7cd0e8c0aa499b3e93679fb79ec"
+    "runnerDerivedBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
+    "runnerDerivedSha256": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03"
   },
   "validation": {
     "authoritativeP1": {
@@ -333,77 +389,83 @@
       "passed": 101,
       "failed": 0,
       "log": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/authoritative-packaged.log",
-        "bytes": 9565,
-        "sha256": "b1f94e83b01fb9213794168768dee0611075561358adc439b70191ff6c6ead78",
-        "modifiedAtUtc": "2026-09-25T22:51:55.905Z"
-      }
+        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-authoritative-20260926.log",
+        "bytes": 9569,
+        "sha256": "0fb88e493589447f8944de57862db8e1a26b4253049c060a0aa0417f0e0a142b",
+        "modifiedAtUtc": "2026-09-26T19:38:41.663Z"
+      },
+      "testedCommitSha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
+      "testedTreeSha": "e7bebb115b2c3fff3c59f772292d16969dddeb03"
     },
     "fullSuite": {
       "base": {
         "head": "53dac79cf873443e2a8c468607af5deee8107759",
+        "tree": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
+        "parent": "acd8d8e9260d139f249cbf0a201e92277cde4910",
         "total": 2555,
         "passed": 2554,
         "failed": 1,
         "log": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/p1-full-base-53dac79-pinned-final-20260925.log",
-          "bytes": 189705,
-          "sha256": "cd75f4185b35cd8ef1643480172aed0647fc05a31921484f964941731d74893e",
-          "modifiedAtUtc": "2026-09-25T15:24:06.629Z"
+          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-full-base-20260926.log",
+          "bytes": 189689,
+          "sha256": "68046575268defe2768fc2710fb1261c4f03ac8fd2690eb453a6e9070bf719ac",
+          "modifiedAtUtc": "2026-09-26T19:29:08.292Z"
         }
       },
       "candidate": {
-        "head": "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-        "tree": "de3b501a5ca90e6a33e6ed5b5b0206d7bbdab72d",
-        "total": 2559,
-        "passed": 2558,
+        "head": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
+        "tree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
+        "parent": "e1b50b53769139f9d2f1381170f555e37efdcab3",
+        "total": 2566,
+        "passed": 2565,
         "failed": 1,
         "log": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/backend-full-packaged.log",
-          "bytes": 190042,
-          "sha256": "5e16144378fa46f3f1c56bbd93302d2fec0c58023400011efad03cb9f67ee5b6",
-          "modifiedAtUtc": "2026-09-25T22:52:31.690Z"
+          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-full-candidate-20260926.log",
+          "bytes": 190755,
+          "sha256": "2b5057ea7d25e7c8f0d4fa53886955a64c4d66ba8f2a9bfcecd40c08b949a71e",
+          "modifiedAtUtc": "2026-09-26T19:29:08.292Z"
         }
       },
-      "sameOneFailure": true,
+      "sameFailureSet": true,
       "candidateCausedFailures": 0,
       "sharedFailure": "every declared Node major is the one deploy/targets.json names"
     },
     "semanticCoverage": {
       "cases": 206,
       "rawUnique": 206,
-      "semanticUnique": 204,
+      "semanticUnique": 206,
       "floor": 201,
       "classMinima": "28/28",
-      "sentenceBoundary": "6/6",
-      "punctuationAbuse": "8/8",
+      "sentenceBoundary": "7/6",
+      "punctuationAbuse": "9/8",
       "canonical": "54/54",
       "markers": "27/27",
       "cosmeticLeaks": 0,
       "arbitrarySubjectLeaks": 0,
       "arbitraryObjectLeaks": 0
     },
-    "subjectProbes": "30/30 original; 76/76 fresh Astra pairs; 40/40 additional unseen subject probes",
+    "subjectProbes": "30/30 original; 76/76 previous fresh; 112/112 current Astra active; 14/14 passive; 24/24 unseen equivalence and 16/16 unseen agreement",
     "mutations": "10/10 killed with baseline 206/206",
     "packageEquivalence": {
-      "inputs": 9199,
-      "comparisons": 27597,
+      "inputs": 12340,
+      "calls": 37020,
+      "comparisons": 37020,
       "publicExports": 39,
       "mismatches": 0,
       "exceptions": 0,
-      "inputSetSha256": "74f00a38e70c01c9500955c30f2c832cab5cd14239a07b99bf2e8cfd0be757c9"
+      "inputSetSha256": "aad5fe3141384b5b9ce5d6a13ed607a8dd1829b004e85bcdd7ccf07c4ac008c0"
     },
     "supportingTestRuns": {
       "evaluator": {
-        "tests": 39,
-        "passed": 39,
+        "tests": 46,
+        "passed": 46,
         "failed": 0,
         "skipped": 0,
         "stdout": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/evaluator-packaged.log",
-          "bytes": 2663,
-          "sha256": "08958192533c7a6ca155795f7c9ffea17eb392e6482b42d0a7c42e756c044464",
-          "modifiedAtUtc": "2026-09-25T22:51:55.778Z"
+          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-evaluator-20260926.log",
+          "bytes": 3301,
+          "sha256": "0a62fe559fddf89037d6959f497b0597f0abea519e8c3827885e6df91ce3c738",
+          "modifiedAtUtc": "2026-09-26T19:34:26.295Z"
         }
       },
       "evaluatorMutations": {
@@ -412,10 +474,10 @@
         "failed": 0,
         "skipped": 0,
         "stdout": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/evaluator-mutations-packaged.log",
-          "bytes": 1124,
-          "sha256": "ca424fda749a00b4ef3dde445aa78d24831f9d1cee6b22e4a54d849ec73b2eb3",
-          "modifiedAtUtc": "2026-09-25T22:51:57.240Z"
+          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-evaluator-mutation-20260926.log",
+          "bytes": 1126,
+          "sha256": "8cd3702102bcd1d08525dbf1b0877aed40b121aee9ea07fc51f7e64c2268e74e",
+          "modifiedAtUtc": "2026-09-26T19:34:28.326Z"
         }
       },
       "evaluation": {
@@ -424,10 +486,10 @@
         "failed": 0,
         "skipped": 0,
         "stdout": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/evaluation-current.log",
-          "bytes": 8486,
-          "sha256": "a80fd6dbf5cb217091234fd5901f268f038585d7db696f7b1a5613f8bf76e77a",
-          "modifiedAtUtc": "2026-09-25T23:05:39.673Z"
+          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-evaluation-glob-20260926.log",
+          "bytes": 8487,
+          "sha256": "162256244069654c0ac0235f2f25e6af7d9c7ee263bbd7774a2256e74e93d55c",
+          "modifiedAtUtc": "2026-09-26T19:38:43.092Z"
         }
       },
       "authoritativeMutations": {
@@ -436,10 +498,10 @@
         "failed": 0,
         "skipped": 0,
         "stdout": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/authoritative-mutations-current.log",
-          "bytes": 1997,
-          "sha256": "60301e15be0797d1d50e28038690d5ef9720ab74dd6eed0d2c18affd707fb8ec",
-          "modifiedAtUtc": "2026-09-25T23:05:40.242Z"
+          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-authoritative-mutations-20260926.log",
+          "bytes": 1995,
+          "sha256": "db116193adef5b6cc9dfec78638ef949882a19a165a43b69533084bdb7397420",
+          "modifiedAtUtc": "2026-09-26T19:34:26.863Z"
         }
       },
       "datasetV1": {
@@ -447,10 +509,10 @@
         "valid": true,
         "spent": false,
         "stdout": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/dataset-v1-final.log",
+          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-dataset-v1-20260926.log",
           "bytes": 95,
           "sha256": "a949a8a0c072b90f28be07a83dd78b272a725cbc1533253b29c3a441df18f79b",
-          "modifiedAtUtc": "2026-09-25T22:47:47.798Z"
+          "modifiedAtUtc": "2026-09-26T19:38:40.604Z"
         }
       },
       "datasetV2": {
@@ -458,22 +520,37 @@
         "valid": true,
         "spent": false,
         "stdout": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/dataset-v2-final.log",
+          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-dataset-v2-20260926.log",
           "bytes": 95,
           "sha256": "11a887e42686af89b2f9c04ce71a808ad91a8a776eb334234a2e6893788ee27e",
-          "modifiedAtUtc": "2026-09-25T22:47:49.477Z"
+          "modifiedAtUtc": "2026-09-26T19:38:41.694Z"
         }
       },
       "frontend": {
+        "command": "npm test -- --run --minWorkers=1 --maxWorkers=2",
         "testFiles": 58,
         "tests": 735,
         "passed": 735,
         "failed": 0,
+        "stdout": {
+          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-frontend-bounded-20260926.log",
+          "bytes": 24787,
+          "sha256": "254f40468f84a308179f13e0a47c3f4c07b8db8733113cfd88b43d5bf3613bf5",
+          "modifiedAtUtc": "2026-09-26T19:33:37.000Z"
+        },
+        "defaultParallelRunHadTimingFailures": true
+      },
+      "mutationRunner": {
+        "cases": 206,
+        "baselinePassed": 206,
+        "baselineFailed": 0,
+        "killed": 10,
+        "total": 10,
         "log": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/frontend-tests-2workers.log",
-          "bytes": 24732,
-          "sha256": "121f86c9545a857afd21024ff2c9f1201d304c8bbb371c40012a6873ef508e3e",
-          "modifiedAtUtc": "2026-09-26T00:25:00.538Z"
+          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-mutation-runner-current.log",
+          "bytes": 2962,
+          "sha256": "050e247e6f5ad10ff053790f7f6feeecca272570ea94f9b02c3441cd8a7d04bd",
+          "modifiedAtUtc": "2026-09-26T20:00:10.458Z"
         }
       }
     }
@@ -507,8 +584,25 @@
       "c23532d49a5dab46ce3a5498a0ac5d72a9aadd81",
       "9d51a0a8809049d77674ee254910924fbc6a7def",
       "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-      "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c"
-    ]
+      "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
+      "b315b455b679341d6dc6fe48bbf22c6e35a241bb",
+      "e7c248828a867b7ff285a2d96ea265460d755f18",
+      "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
+      "d20ee99dea304860767c9f5c8d49505eefd2b265",
+      "adeec90cf2fae5b8bc49d8780832ba2e8debf8c2",
+      "c0793c0f415f0a23befa1c7ae89e5b9244e89ec5",
+      "b1b584153d9efd720a99085fe6d44060e962ea16",
+      "6cf90b4dddf42716de319cac14a16cf755a4c938",
+      "e1b50b53769139f9d2f1381170f555e37efdcab3",
+      "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b"
+    ],
+    "finalImplementation": {
+      "head": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
+      "tree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
+      "parent": "e1b50b53769139f9d2f1381170f555e37efdcab3",
+      "branch": "codex/p1-astra-final-001-006-repair-20260926",
+      "worktree": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair"
+    }
   },
   "quarantine": [
     {
@@ -541,39 +635,39 @@
     },
     {
       "path": "backend/lib/p1-authoritative-repair-v2.test.js",
-      "sha256": "5ba93155bf003f2624b8a9610d7fb7f2bd039d9c35d97ae5871059f4ff2cad72"
+      "sha256": "db6ac1851c9f5d7ddf140cce29e1956df6aba42f670813443646b3ec9fb04b59"
     },
     {
       "path": "backend/lib/photosynthesis-relation-cases.js",
-      "sha256": "a2b2212112c9e9a8041c6d484bb23d2069db7f27e0873133a112f99d54f887f0"
+      "sha256": "b62495937ef0a2adec9829fa5bb7dcc3afdb12a062cf82fe0ec1d0fc527589fe"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator-mutation.test.js",
-      "sha256": "705da08a17caa683a01480b7f44c1be95a082412f9c83849f6ca9092260fe28d"
+      "sha256": "badc2df849b9468fa24a40586994f78e765d1f29a84fce2ca5405e7740c4a85e"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.js",
-      "sha256": "0f1b1f30c7af6c858272a2c03941ba1490043c9d16aa0d4480fdf22a56cc1a87"
+      "sha256": "30bd8f4d486b98aba224be0243e691b350de28e4507610f80689658516ad7193"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
-      "sha256": "add5f9af78da6e8be31eb5b7bc65b67bbedcfc673c5999cd77886189f88b72e8"
+      "sha256": "5c5cdc3f25acb426f626d8a62679ff39d8ea2ec2b16e3d1dd2f8b010e9342880"
     },
     {
       "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-      "sha256": "efdbd1970681728d1ed0f8b290035aca02dbd3fd471911b24d71525c2b5d2cbc"
+      "sha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
-      "sha256": "5f5ec57aaba626c9d640e83b0f750279a76f1401ce756e2c18240f428dccbd3c"
+      "sha256": "878405821d68fa1a3c5e83b1216c5a0b0732f87d4bbbc8767f6586b7e2a2c25a"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/green-phase.json",
-      "sha256": "1f8b6c0d1b78e8a24189262b7e99e2af5d7f4bfc8ab757fce73cfd5c16e00dd6"
+      "sha256": "6efbbc5bedb15e8a3b6338841b3727269a62ca4e4f0ed9615583edc20d5c1cd9"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/mutation-phase.json",
-      "sha256": "6144f0fff77220e4b2d88bb0a1d2dfdd7c5ef1e3c722bff3d17baec68f3eb78d"
+      "sha256": "2655ae8556dff698e34f0422bede1dbfe76f88f90ffed415f0ef5f2f82de9ab6"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/red-phase.json",
@@ -581,14 +675,24 @@
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/semantic-coverage.json",
-      "sha256": "9fb85260a334160d26c9b91969aad3856d36fb3a272c7a807b41c23662d37953"
+      "sha256": "27d5e9c0125f4df53eaee8c2d58a24208a668f7716d9a94a1649b4942854521c"
     }
   ],
-  "implementationCommitSha": "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
+  "implementationCommitSha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
   "implementationCommitShas": [
     "c23532d49a5dab46ce3a5498a0ac5d72a9aadd81",
     "9d51a0a8809049d77674ee254910924fbc6a7def",
     "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-    "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c"
+    "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
+    "b315b455b679341d6dc6fe48bbf22c6e35a241bb",
+    "e7c248828a867b7ff285a2d96ea265460d755f18",
+    "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
+    "d20ee99dea304860767c9f5c8d49505eefd2b265",
+    "adeec90cf2fae5b8bc49d8780832ba2e8debf8c2",
+    "c0793c0f415f0a23befa1c7ae89e5b9244e89ec5",
+    "b1b584153d9efd720a99085fe6d44060e962ea16",
+    "6cf90b4dddf42716de319cac14a16cf755a4c938",
+    "e1b50b53769139f9d2f1381170f555e37efdcab3",
+    "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b"
   ]
 }

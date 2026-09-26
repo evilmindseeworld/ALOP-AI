@@ -5,21 +5,21 @@
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
   "repairAttemptId": "P1-ASTRA-RESTART-001-004-20260926-8644913",
-  "capturedAtUtc": "2026-09-26T00:54:17.313Z",
+  "capturedAtUtc": "2026-09-26T20:17:20.470Z",
   "phase": "MUTATION",
   "status": "PASS",
   "repairBaseSha": "53dac79cf873443e2a8c468607af5deee8107759",
   "repairBaseTreeSha": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
-  "implementationSourceCommitSha": "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-  "implementationCommitSha": "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-  "implementationTreeSha": "de3b501a5ca90e6a33e6ed5b5b0206d7bbdab72d",
-  "implementationParentSha": "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-  "packageCommitSha": "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-  "packageTreeSha": "de3b501a5ca90e6a33e6ed5b5b0206d7bbdab72d",
-  "packageCommitParentSha": "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-  "packageGitBlob": "692ebb52c1d0f402ef8be791ff72548e8b07f7d5",
-  "packageSha256": "efdbd1970681728d1ed0f8b290035aca02dbd3fd471911b24d71525c2b5d2cbc",
-  "packageBytes": 104013,
+  "implementationSourceCommitSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
+  "implementationCommitSha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
+  "implementationTreeSha": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
+  "implementationParentSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
+  "packageCommitSha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
+  "packageTreeSha": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
+  "packageCommitParentSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
+  "packageGitBlob": "3cae4c2ced7d0a0009d20309ca0c7c1ca5312eeb",
+  "packageSha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
+  "packageBytes": 122798,
   "packagePath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
   "runtime": {
     "version": "v26.7.0",
@@ -33,37 +33,37 @@
   "recipeInputBlobSha": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
   "recipeGitBlob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
   "recipeSha256": "a80a4855a30ace45ff83bc0828fe62810ac46f5a0858543be8abaa693d8bbdb4",
-  "evaluatorInputCommitSha": "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-  "evaluatorInputTreeSha": "d6580fd968badaa2c03b226306135b3c6d9e8f0c",
+  "evaluatorInputCommitSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
+  "evaluatorInputTreeSha": "bc94c403f9083e9fe8c0ab941082922998ea870e",
   "evaluatorInputPath": "backend/lib/photosynthesis-relation-evaluator.js",
-  "evaluatorBlob": "e27e7a327590fe09d0d7183d5dd02553f2412822",
-  "evaluatorSha256": "0f1b1f30c7af6c858272a2c03941ba1490043c9d16aa0d4480fdf22a56cc1a87",
+  "evaluatorBlob": "83d44f4e88b62a3db4f24b3649052ca716372111",
+  "evaluatorSha256": "30bd8f4d486b98aba224be0243e691b350de28e4507610f80689658516ad7193",
   "runnerInputCommitSha": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
   "runnerInputTreeSha": "f4f8b30f73448c34f7652f86a32a606d3dc8a739",
   "runnerInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
   "runnerBlob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
   "runnerSha256": "e7bffea6fc690f6feb7003eb01c900bb798ba6b44cfb80c3a19edd45a1c6a3d7",
-  "runnerDerivedBlob": "9ce94afaab65d7cd0e8c0aa499b3e93679fb79ec",
-  "runnerDerivedSha256": "a58f3ea927089e03ea9f7a985d822478e1a6b0d355691d190d6aeb2286100c25",
+  "runnerDerivedBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
+  "runnerDerivedSha256": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03",
   "runnerM2M7Patch": {
     "uniqueAnchor": "M2/M7 detatched-object insertion site",
     "oldBlock": "      text = replaceOnce(text,\n        \"  if(ts[i]?.form==='the')i++;\",\n        \"  if(ts[i]?.form==='the')i++;\\n  const bound=ts.findIndex((t,n)=>n>=i&&['light','sunlight'].includes(t.form));\\n  if(bound>=0)i=bound;\",\n        id + ' detached-object rebinding');",
     "newBlock": "      text = replaceOnce(text,\n        \"  if(!ts[i])return null;\",\n        \"  const bound=ts.findIndex((t,n)=>n>=i&&['light','sunlight'].includes(t.form));\\n  if(bound>=0)i=bound;\\n  if(!ts[i])return null;\",\n        id + ' detached-object rebinding');",
-    "derivedBlob": "9ce94afaab65d7cd0e8c0aa499b3e93679fb79ec",
-    "derivedSha256": "a58f3ea927089e03ea9f7a985d822478e1a6b0d355691d190d6aeb2286100c25"
+    "derivedBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
+    "derivedSha256": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03"
   },
   "packageBuildReproduction": {
     "buildA": {
-      "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-package-rebuild-20260926-042d938/build-one/package.mjs",
-      "bytes": 104013,
-      "sha256": "efdbd1970681728d1ed0f8b290035aca02dbd3fd471911b24d71525c2b5d2cbc",
-      "gitBlob": "692ebb52c1d0f402ef8be791ff72548e8b07f7d5"
+      "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-recompute-fdd51033352147279b993d43659e5eb5/build-one-final/package.mjs",
+      "bytes": 122798,
+      "sha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
+      "gitBlob": "3cae4c2ced7d0a0009d20309ca0c7c1ca5312eeb"
     },
     "buildB": {
-      "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-package-rebuild-20260926-042d938/build-two/package.mjs",
-      "bytes": 104013,
-      "sha256": "efdbd1970681728d1ed0f8b290035aca02dbd3fd471911b24d71525c2b5d2cbc",
-      "gitBlob": "692ebb52c1d0f402ef8be791ff72548e8b07f7d5"
+      "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-recompute-fdd51033352147279b993d43659e5eb5/build-two-final/package.mjs",
+      "bytes": 122798,
+      "sha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
+      "gitBlob": "3cae4c2ced7d0a0009d20309ca0c7c1ca5312eeb"
     },
     "byteForByteEqual": true,
     "committedBlobMatchesBuild": true,
@@ -74,29 +74,24 @@
     "status": "PASS",
     "publicExports": 39,
     "matchedPublicExports": 39,
-    "comparedExports": [
-      "evaluatePhotosynthesisRelations",
-      "evaluatePhotosynthesisRelationsV2",
-      "semanticCaseFingerprint"
-    ],
-    "inputCount": 9199,
-    "inputSetSha256": "74f00a38e70c01c9500955c30f2c832cab5cd14239a07b99bf2e8cfd0be757c9",
-    "comparedCalls": 27597,
+    "inputCount": 12340,
+    "inputSetSha256": "aad5fe3141384b5b9ce5d6a13ed607a8dd1829b004e85bcdd7ccf07c4ac008c0",
+    "comparedCalls": 37020,
     "mismatches": 0,
     "exceptions": 0,
     "sourceAndPackageIdentical": true
   },
-  "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe scripts/run-photosynthesis-relation-mutations.mjs (cwd=C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-restart-001-004-repair/backend; PATH begins with pinned Node directory)",
+  "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe scripts/run-photosynthesis-relation-mutations.mjs (cwd=C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair/backend)",
   "args": [
     "scripts/run-photosynthesis-relation-mutations.mjs"
   ],
-  "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-restart-001-004-repair/backend",
+  "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair/backend",
   "exitCode": 0,
   "stdout": {
-    "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/mutation-run-current.json",
+    "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-mutation-runner-current.log",
     "bytes": 2962,
     "sha256": "050e247e6f5ad10ff053790f7f6feeecca272570ea94f9b02c3441cd8a7d04bd",
-    "modifiedAtUtc": "2026-09-25T22:51:57.012Z"
+    "modifiedAtUtc": "2026-09-26T20:00:10.458Z"
   },
   "baselineFirst": true,
   "sourceCaseCount": 206,
@@ -378,7 +373,17 @@
     "c23532d49a5dab46ce3a5498a0ac5d72a9aadd81",
     "9d51a0a8809049d77674ee254910924fbc6a7def",
     "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-    "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c"
+    "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
+    "b315b455b679341d6dc6fe48bbf22c6e35a241bb",
+    "e7c248828a867b7ff285a2d96ea265460d755f18",
+    "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
+    "d20ee99dea304860767c9f5c8d49505eefd2b265",
+    "adeec90cf2fae5b8bc49d8780832ba2e8debf8c2",
+    "c0793c0f415f0a23befa1c7ae89e5b9244e89ec5",
+    "b1b584153d9efd720a99085fe6d44060e962ea16",
+    "6cf90b4dddf42716de319cac14a16cf755a4c938",
+    "e1b50b53769139f9d2f1381170f555e37efdcab3",
+    "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b"
   ],
   "datasetValidation": {
     "status": "PASS",
@@ -390,10 +395,10 @@
       "valid": true,
       "spent": false,
       "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/dataset-v1-final.log",
+        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-dataset-v1-20260926.log",
         "bytes": 95,
         "sha256": "a949a8a0c072b90f28be07a83dd78b272a725cbc1533253b29c3a441df18f79b",
-        "modifiedAtUtc": "2026-09-25T22:47:47.798Z"
+        "modifiedAtUtc": "2026-09-26T19:38:40.604Z"
       }
     },
     "v2": {
@@ -401,10 +406,10 @@
       "valid": true,
       "spent": false,
       "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/dataset-v2-final.log",
+        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-dataset-v2-20260926.log",
         "bytes": 95,
         "sha256": "11a887e42686af89b2f9c04ce71a808ad91a8a776eb334234a2e6893788ee27e",
-        "modifiedAtUtc": "2026-09-25T22:47:49.477Z"
+        "modifiedAtUtc": "2026-09-26T19:38:41.694Z"
       }
     }
   }

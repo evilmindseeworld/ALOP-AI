@@ -99,6 +99,16 @@ test('unlicensed noun piles never manufacture a mediated infinitive frame', () =
   assert.equal(evaluatePhotosynthesisRelationsV2('Plants capture chlorophyll.').relationRecords[0].grammarShape, 'ACTIVE_SIMPLE');
 });
 
+test('light aliases retain their grammatical role in descriptive propositions', () => {
+  for (const boundary of ['.', ';', '?!']) {
+    for (const tail of ['exists.', 'is present.', 'is nearby.']) {
+      const prefix = `Photosynthesis converts chemicals${boundary} `;
+      assert.equal(semanticCaseFingerprint(`${prefix}light energy ${tail}`),
+        semanticCaseFingerprint(`${prefix}sunlight ${tail}`));
+    }
+  }
+});
+
 const evaluateV2OrApprovedBase = evaluatePhotosynthesisRelationsV2 || evaluatePhotosynthesisRelations;
 
 const FROZEN_V2_ROOT_CASES = [

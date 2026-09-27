@@ -1125,7 +1125,11 @@ function extractSubjectSet(ts,end){
     coordinator=/\sor\s/.test(raw)?'OR':/\sand\s/.test(raw)?'AND':/\srather\s+than\s/.test(raw)?'RATHER_THAN':members.length>1?'COMMA':'SINGLE',
     n=members.filter(x=>x.valid).length,shapeValid=Boolean(raw.trim())&&!malformedCoordinator
       &&memberSources.every((source)=>source.trim().length>0)
-      &&members.every((member)=>V2_SUBJECTS.has(member.surface)||/^[a-z]+(?:-[a-z]+)*$/.test(member.surface));
+      &&members.every((member)=>{
+        if(V2_SUBJECTS.has(member.surface)||/^[a-z]+(?:-[a-z]+)*$/.test(member.surface))return true;
+        const tokens=tokenizeV2(member.surface),object=bindDirectObject(tokens,0);
+        return object?.role==='LIGHT_OBJECT'&&object.tokenEnd===tokens.length;
+      });
   members.forEach((member)=>{member.coordinator=coordinator;});
   return{members,coordinator,validity:n===members.length&&n?'ALL_VALID':n?'MIXED_INVALID':'ALL_INVALID',shapeValid,start:subjectStart,end:boundary};
 }

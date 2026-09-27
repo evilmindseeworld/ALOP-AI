@@ -503,6 +503,7 @@ const normalizePunctuationRunV2 = (run) => {
   return /[.!?]/.test(marks) ? '.' : marks ? ';' : '';
 };
 const normalizeInputV2 = (x) => normalizeInput(x).toLowerCase().replace(/’/g, "'")
+  .replace(/,\s*(?=(?:and|but)\b)/g, ' ')
   .replace(/[.!?;:](?:\s*[.!?;:])*/g, normalizePunctuationRunV2);
 const hasContentV2 = (text) => /[\p{L}\p{N}]/u.test(text);
 const segmentSentencesV2 = (x) => segmentSentences(normalizeInputV2(x))
@@ -556,23 +557,23 @@ function splitIndependentAndV2(text) {
 const segmentClausesV2 = (x) => {
   const text = String(typeof x === 'string' ? x : x.text);
   return text.split(/[;:]+/).flatMap((rawPart, partIndex) => {
-    const withoutLeadingAnd = rawPart.replace(/^\s*and\s+/i, '');
-    const part = partIndex > 0 && withoutLeadingAnd !== rawPart
-      && startsIndependentSupportedClauseV2(withoutLeadingAnd) ? withoutLeadingAnd : rawPart;
+    const discourseConjunction = rawPart.match(/^\s*(and|but)\s+/i)?.[1]?.toLowerCase() || null;
+    const part = discourseConjunction ? rawPart.replace(/^\s*(?:and|but)\s+/i, '') : rawPart;
     const pieces = splitIndependentAndV2(part);
     return pieces.flatMap((piece, pieceIndex) => {
-      const boundaryBefore = partIndex > 0 ? 'hard' : pieceIndex > 0 ? 'comma-and' : 'start';
+      const boundaryBefore = pieceIndex > 0 ? 'comma-and' : partIndex > 0 ? 'hard' : 'start';
+      const initial = { boundaryBefore, discourseConjunction: pieceIndex === 0 ? discourseConjunction : null };
       const explicitBut = piece.match(/\s+but\s+/i);
-      if (!explicitBut) return [{ text: piece, boundaryBefore }];
+      if (!explicitBut) return [{ text: piece, ...initial }];
       const after = piece.slice(explicitBut.index + explicitBut[0].length).trim();
-      if (!startsIndependentSupportedClauseV2(after)) return [{ text: piece, boundaryBefore }];
+      if (!startsIndependentSupportedClauseV2(after)) return [{ text: piece, ...initial }];
       const before = piece.slice(0, explicitBut.index);
       return hasContentV2(before)
-        ? [{ text: before, boundaryBefore }, { text: after, boundaryBefore: 'but' }]
-        : [{ text: after, boundaryBefore }];
+        ? [{ text: before, ...initial }, { text: after, boundaryBefore: 'but' }]
+        : [{ text: after, ...initial }];
     });
   }).filter(({ text }) => hasContentV2(text))
-    .map(({ text, boundaryBefore }, index) => ({ index, text: text.trim(), boundaryBefore }));
+    .map((clause, index) => ({ ...clause, index, text: clause.text.trim() }));
 };
 const tokenizeV2 = (x) => tokenize(x).map(t=>({...t,form:t.form.toLowerCase()}));
 const normalizeExactFormLemmaV2 = normalizeExactFormLemma;
@@ -931,7 +932,7 @@ const pluralizeNumberV2 = (() => {
     [/([^ch][ieo][ln])ey$/i, '$1ies'],
     [/(x|ch|ss|sh|zz)$/i, '$1es'],
     [/(matr|cod|mur|sil|vert|ind|append)(?:ix|ex)$/i, '$1ices'],
-    [/\b((?:tit)?m|l)(?:ice|ouse)$/i, '$1ice'],
+    [/(\w*m|\bl)(?:ice|ouse)$/i, '$1ice'],
     [/(pe)(?:rson|ople)$/i, '$1ople'],
     [/(child)(?:ren)?$/i, '$1ren'],
     [/eaux$/i, '$0'],
@@ -952,7 +953,7 @@ const pluralizeNumberV2 = (() => {
     [/ies$/i, 'y'],
     [/\b([pl]|zomb|(?:neck|cross)?t|coll|faer|food|gen|goon|group|lass|talk|goal|cut)ies$/i, '$1ie'],
     [/\b(mon|smil)ies$/i, '$1ey'],
-    [/\b((?:tit)?m|l)ice$/i, '$1ouse'],
+    [/(\w*m|\bl)ice$/i, '$1ouse'],
     [/(seraph|cherub)im$/i, '$1'],
     [/(x|ch|ss|sh|zz|tto|go|cho|alias|[^aou]us|t[lm]as|gas|(?:her|at|gr)o|[aeiou]ris)(?:es)?$/i, '$1'],
     [/(analy|diagno|parenthe|progno|synop|the|empha|cri|ne)(?:sis|ses)$/i, '$1sis'],
@@ -1123,7 +1124,8 @@ function extractSubjectSet(ts,end){
     }),
     coordinator=/\sor\s/.test(raw)?'OR':/\sand\s/.test(raw)?'AND':/\srather\s+than\s/.test(raw)?'RATHER_THAN':members.length>1?'COMMA':'SINGLE',
     n=members.filter(x=>x.valid).length,shapeValid=Boolean(raw.trim())&&!malformedCoordinator
-      &&memberSources.every((source)=>source.trim().length>0);
+      &&memberSources.every((source)=>source.trim().length>0)
+      &&members.every((member)=>V2_SUBJECTS.has(member.surface)||/^[a-z]+(?:-[a-z]+)*$/.test(member.surface));
   members.forEach((member)=>{member.coordinator=coordinator;});
   return{members,coordinator,validity:n===members.length&&n?'ALL_VALID':n?'MIXED_INVALID':'ALL_INVALID',shapeValid,start:subjectStart,end:boundary};
 }
@@ -1205,10 +1207,8 @@ function startsIndependentSupportedClauseV2(text) {
     if (!predicate) continue;
     const subject = extractSubjectSet(tokens, index);
     if (subject.start !== 0 || subject.end <= 0) continue;
-    if (validateActiveFinitePredicateV2(
-      tokens, index, predicate, subject,
-      parseAuxiliaryChain(tokens, index), resolveControlChain(tokens, index),
-    )) return true;
+    // Segmentation preserves explicit predicates even when later validation rejects them.
+    return true;
   }
   return false;
 }
@@ -1542,15 +1542,14 @@ function parseMinimalRelationGrammar(input) {
 
   for (const [sentenceIndex, sentence] of sentences.entries()) {
     let pronounAntecedentRecordStart = relationRecords.length;
-    const sentenceRecordStart = relationRecords.length;
     for (const clause of segmentClausesV2(sentence)) {
       const clauseRecordStart = relationRecords.length;
       if (clause.boundaryBefore !== 'but') pronounAntecedentRecordStart = clauseRecordStart;
-      const explicitContinuation = ['but', 'comma-and'].includes(clause.boundaryBefore);
-      const hadPriorQualifyingRelation = relationRecords.slice(sentenceRecordStart).some((record) => record.qualifies);
+      const explicitContinuation = Boolean(clause.discourseConjunction)
+        || ['but', 'comma-and'].includes(clause.boundaryBefore);
       const markMalformed = () => {
         malformed = true;
-        if (explicitContinuation && hadPriorQualifyingRelation) malformedExplicitContinuation = true;
+        if (explicitContinuation) malformedExplicitContinuation = true;
       };
       const tokens = tokenizeV2(clause.text);
       if (!tokens.length) continue;
@@ -1739,13 +1738,6 @@ function parseMinimalRelationGrammar(input) {
 
       const destructive = V2_DESTRUCTIVE_RELATION_LEMMAS.has(predicate.lemma);
       if (destructive) diagnostics.push('DESTRUCTIVE_RELATION');
-      const malformedSubject = subjectSet.validity === 'ALL_INVALID'
-        && subjectSet.members[0]?.surface?.includes(' ');
-      if (malformedSubject) {
-        markMalformed();
-        diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
-      }
-
       const subject = subjectSet.members[0];
       orderedSubjects.push(subjectSet.members.map((member) => [member.lemma, member.role]));
       coordinationTopology.push({
@@ -1765,8 +1757,7 @@ function parseMinimalRelationGrammar(input) {
       };
       const shape = coordinatedPredicates.length > 1
         ? 'ACTIVE_COORDINATED_SHARED_OBJECT'
-        : pronoun ? 'PRONOUN_CONTINUATION'
-          : object.role === 'CHLOROPHYLL' ? 'ACTIVE_INFINITIVAL_MEDIATED' : 'ACTIVE_SIMPLE';
+        : pronoun ? 'PRONOUN_CONTINUATION' : 'ACTIVE_SIMPLE';
       const rejectionReasons = [
         ...(!valid ? [
           subjectSet.validity === 'MIXED_INVALID'

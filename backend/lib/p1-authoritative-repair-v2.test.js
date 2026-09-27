@@ -1686,19 +1686,78 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
   assert.equal(index.sourceCaseCount - index.uniqueCount, 0);
 });
 
-test('PREQ-008 package receipt binds the recipe by committed commit, path, and blob', () => {
+test('PREQ-008 package receipt binds the recipe by committed commit, path, and blob', async () => {
   const receipt = JSON.parse(readFileSync(join(EVAL_ROOT, '..', '..', 'evidence', 'p1-photosynthesis-relation-v2', 'mutation-phase.json'), 'utf8'));
-  const recipeCommit = '3ae0f283461f304f2778a4dc463a85c8f7d86adf';
-  const recipePath = 'backend/scripts/run-photosynthesis-relation-mutations.mjs';
-  assert.equal(receipt.recipeInputCommitSha, recipeCommit);
-  assert.equal(receipt.recipeInputPath, recipePath);
-  assert.equal(receipt.recipeInputBlobSha, 'd5a84e74ed8a22eb2fcb8a85303335fa820826a9');
-  const resolvedBlob = execFileSync('git', ['rev-parse', `${recipeCommit}:${recipePath}`], {
-    cwd: join(__dirname, '..', '..'),
-    encoding: 'utf8',
-  }).trim();
-  assert.equal(receipt.recipeInputBlobSha, resolvedBlob);
-  assert.equal(receipt.recipeGitBlob, resolvedBlob);
+  const { mkdtempSync, writeFileSync, rmSync } = require('node:fs');
+  const { tmpdir } = require('node:os');
+  const { pathToFileURL } = require('node:url');
+  const root = join(__dirname, '..', '..');
+  const git = (...args) => execFileSync('git', args, { cwd: root, maxBuffer: 8 * 1024 * 1024 });
+  const hash = (bytes) => createHash('sha256').update(bytes).digest('hex');
+  const inputs = {};
+  for (const kind of ['recipe', 'evaluator', 'runner', 'corpus']) {
+    const commit = receipt[`${kind}InputCommitSha`];
+    const path = receipt[`${kind}InputPath`];
+    assert.match(commit, /^[a-f0-9]{40}$/);
+    assert.ok(path && !path.includes('..') && !path.includes('\\') && !path.startsWith('/'));
+    const spec = `${commit}:${path}`;
+    inputs[kind] = git('show', spec);
+    assert.equal(hash(inputs[kind]), receipt[`${kind}Sha256`], kind);
+    assert.equal(git('rev-parse', spec).toString().trim(), receipt[`${kind}InputBlobSha`], kind);
+  }
+  assert.equal(receipt.recipeGitBlob, receipt.recipeInputBlobSha);
+  assert.deepEqual(inputs.evaluator, readFileSync(join(__dirname, 'photosynthesis-relation-evaluator.js')));
+  assert.deepEqual(inputs.corpus, readFileSync(join(__dirname, 'photosynthesis-relation-cases.js')));
+  const temporary = mkdtempSync(join(tmpdir(), 'p1-package-provenance-'));
+  try {
+    const recipePath = join(temporary, 'recipe.mjs');
+    writeFileSync(recipePath, inputs.recipe);
+    const { deriveRunner, composeArtifact, gitBlobOid } = await import(pathToFileURL(recipePath).href);
+    const runner = deriveRunner(inputs.runner);
+    assert.equal(hash(runner), receipt.runnerDerivedSha256);
+    assert.equal(gitBlobOid(runner), receipt.runnerDerivedBlob);
+    const { artifact, metadata } = composeArtifact(inputs.evaluator, runner);
+    const committedPackage = readFileSync(join(root, receipt.packagePath));
+    assert.deepEqual(artifact, committedPackage);
+    assert.equal(hash(artifact), receipt.packageSha256);
+    assert.equal(artifact.length, receipt.packageBytes);
+    assert.equal(metadata.recipeBlob, receipt.recipeInputBlobSha);
+    assert.equal(metadata.evaluatorBlob, receipt.evaluatorInputBlobSha);
+    assert.equal(metadata.runnerBlob, receipt.runnerDerivedBlob);
+  } finally {
+    rmSync(temporary, { recursive: true, force: true });
+  }
+});
+
+test('complete explicit continuations survive sentence and clause boundaries', () => {
+  const { evaluatePhotosynthesisRelationsV2: evaluate } = require('./photosynthesis-relation-evaluator');
+  for (const joiner of ['. ', '. And ', '. But ', '; and ', '; but ']) {
+    const result = evaluate(`Plants capture light energy${joiner}plants do not capture light energy.`);
+    assert.equal(result.passed, false);
+    assert.equal(result.relationRecords.length, 2);
+    assert.equal(result.contradictions.length, 1);
+  }
+  for (const joiner of ['. And ', '. But ', '; and ', '; but ', '; algae absorb light energy and ']) {
+    const result = evaluate(`Plants capture light energy${joiner}plants do not store.`);
+    assert.equal(result.passed, false);
+    assert.equal(result.hasMalformed, true);
+  }
+});
+
+test('malformed subject members cannot be rescued by an earlier valid relation', () => {
+  const { evaluatePhotosynthesisRelationsV2: evaluate, semanticCaseFingerprint: fingerprint } = require('./photosynthesis-relation-evaluator');
+  for (const subject of ['plants and the the algae', 'plants and stone dust heap', 'plants and a algae']) {
+    for (const frame of [`${subject} absorb light energy`, `light energy is absorbed by ${subject}`]) {
+      const result = evaluate(`Plants capture light energy. And ${frame}.`);
+      assert.equal(result.passed, false);
+      assert.equal(result.hasMalformed, true);
+    }
+  }
+  const a = 'Photosynthesis light energy capture chlorophyll.';
+  const b = 'Photosynthesis sunlight capture chlorophyll.';
+  assert.deepEqual(evaluate(a).relationRecords, []);
+  assert.deepEqual(evaluate(b).relationRecords, []);
+  assert.equal(fingerprint(a), fingerprint(b));
 });
 
 test('Astra PREQ-002 release fingerprint index rejects global duplicates without dropping canonical coverage', () => {

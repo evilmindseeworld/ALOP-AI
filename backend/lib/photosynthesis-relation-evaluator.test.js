@@ -19,6 +19,86 @@ const {
   semanticCaseFingerprint,
 } = require('./photosynthesis-relation-evaluator');
 
+test('discourse conjunctions preserve explicit propositions and sentence topology', () => {
+  for (const [subject, verb] of [['Plants', 'capture'], ['Algae', 'absorb'], ['Green plants', 'store']]) {
+    const first = `${subject} ${verb} light energy`;
+    const second = `${subject.toLowerCase()} do not ${verb} light energy.`;
+    for (const conjunction of ['', 'And ', 'But ']) {
+      const result = evaluatePhotosynthesisRelationsV2(`${first}. ${conjunction}${second}`);
+      assert.equal(result.passed, false);
+      assert.equal(result.relationRecords.length, 2);
+      assert.equal(result.contradictions.length, 1);
+      assert.deepEqual(result.topology, [[0, 0], [1, 0]]);
+    }
+    assert.notEqual(semanticCaseFingerprint(`${first}. And ${second}`),
+      semanticCaseFingerprint(`${first} and ${second}`));
+    const positive = evaluatePhotosynthesisRelationsV2(`${first}. And ${subject.toLowerCase()} store light energy.`);
+    assert.equal(positive.passed, true);
+    assert.equal(positive.relationRecords.length, 2);
+  }
+});
+
+test('explicit malformed continuations reject independently of binding-region boundaries', () => {
+  for (const prefix of ['Plants capture light energy.', 'Algae absorb light energy;', 'Algae absorb light energy; Plants capture light energy']) {
+    for (const conjunction of ['and', 'but', ', and', ', but']) {
+      for (const tail of ['plants do not store.', 'plants does not store light energy.', 'plants and the the algae absorb light energy.']) {
+        const input = `${prefix} ${conjunction} ${tail}`;
+        const result = evaluatePhotosynthesisRelationsV2(input);
+        assert.equal(result.hasMalformed, true, input);
+        assert.equal(result.passed, false, input);
+      }
+    }
+  }
+});
+
+test('malformed coordination ignores an optional comma before its explicit conjunction', () => {
+  for (const verb of ['capture', 'absorb', 'harness', 'use', 'convert', 'transform', 'store']) {
+    for (const conjunction of ['and', 'but']) {
+      const left = `Photosynthesis uses chlorophyll to ${verb} carbon dioxide ${conjunction} light is nearby.`;
+      const right = left.replace(` ${conjunction} `, `, ${conjunction} `);
+      assert.equal(semanticCaseFingerprint(left), semanticCaseFingerprint(right), left);
+      assert.deepEqual(evaluatePhotosynthesisRelationsV2(left), evaluatePhotosynthesisRelationsV2(right));
+    }
+  }
+});
+
+test('compound irregular noun number is independent of finite verb agreement', () => {
+  for (const [singular, plural] of [['Dormouse', 'Dormice'], ['Titmouse', 'Titmice'], ['Woodmouse', 'Woodmice']]) {
+    for (const predicate of ['capture', 'do capture', 'do not capture', 'must capture', 'do not fail to capture', 'have captured']) {
+      const input = `${plural} ${predicate} light energy.`;
+      assert.equal(evaluatePhotosynthesisRelationsV2(input).hasMalformed, false, input);
+      assert.equal(semanticCaseFingerprint(input), semanticCaseFingerprint(`Otters ${predicate} light energy.`));
+    }
+    for (const input of [`${plural} does capture light energy.`, `A ${plural} must capture light energy.`, `${singular} do capture light energy.`]) {
+      assert.equal(evaluatePhotosynthesisRelationsV2(input).hasMalformed, true, input);
+    }
+  }
+});
+
+test('every coordinated noun phrase member uses the same complete active and passive grammar', () => {
+  const valid = ['plants and algae', 'plants and the algae', 'the plants and algae', 'the plants and the algae'];
+  const invalid = ['plants and the the algae', 'the the plants and algae', 'plants and a algae', 'plants and', 'plants and stone dust heap'];
+  for (const subject of [...valid, ...invalid]) {
+    for (const input of [`${subject} absorb light energy.`, `Light energy is absorbed by ${subject}.`]) {
+      const result = evaluatePhotosynthesisRelationsV2(input);
+      assert.equal(result.hasMalformed, invalid.includes(subject), input);
+      assert.equal(result.passed, valid.includes(subject), input);
+    }
+  }
+});
+
+test('unlicensed noun piles never manufacture a mediated infinitive frame', () => {
+  const pair = ['Photosynthesis light energy capture chlorophyll.', 'Photosynthesis sunlight capture chlorophyll.'];
+  for (const input of pair) {
+    const result = evaluatePhotosynthesisRelationsV2(input);
+    assert.equal(result.passed, false);
+    assert.equal(result.hasMalformed, true);
+    assert.deepEqual(result.relationRecords, []);
+  }
+  assert.equal(semanticCaseFingerprint(pair[0]), semanticCaseFingerprint(pair[1]));
+  assert.equal(evaluatePhotosynthesisRelationsV2('Plants capture chlorophyll.').relationRecords[0].grammarShape, 'ACTIVE_SIMPLE');
+});
+
 const evaluateV2OrApprovedBase = evaluatePhotosynthesisRelationsV2 || evaluatePhotosynthesisRelations;
 
 const FROZEN_V2_ROOT_CASES = [

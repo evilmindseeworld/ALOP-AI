@@ -1,23 +1,20 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "designVersion": "photosynthesis-light-relation-v2",
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
+  "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
+  "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
+  "repairAttemptId": "P1-RECONCILIATION-20260927",
+  "capturedAtUtc": "2026-09-27T12:49:23.221Z",
   "repairBaseSha": "53dac79cf873443e2a8c468607af5deee8107759",
   "repairBaseTreeSha": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
-  "implementationParentSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
-  "implementationCommitSha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-  "implementationTreeSha": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
-  "candidateHeadAtCapture": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-  "candidateTreeAtCapture": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
-  "branch": "codex/p1-astra-final-001-006-repair-20260926",
-  "repairAttemptId": "P1-ASTRA-RESTART-001-004-20260926-8644913",
-  "capturedAtUtc": "2026-09-26T19:21:39.702Z",
-  "captureStatus": "PASS",
-  "runtime": {
-    "version": "v26.7.0",
-    "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
-    "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
-  },
+  "repairStartHead": "ee010f0d0d2ed7281b2e0069e1dee6848b611d9b",
+  "implementationCommitSha": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+  "implementationTreeSha": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+  "implementationParentSha": "5fcdcd3a73d32e58b1ef4a9f9b78f4a648a8f8fd",
+  "implementationCommitShas": [
+    "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0"
+  ],
   "phase": "FINGERPRINT_INDEX",
   "duplicatePolicy": "reject-global-duplicate",
   "sourceCaseCount": 206,
@@ -29,7 +26,7 @@
   "reproducedBy": {
     "path": "backend/lib/photosynthesis-relation-evaluator.js",
     "export": "semanticCaseFingerprint",
-    "implementationCommitSha": "e1b50b53769139f9d2f1381170f555e37efdcab3"
+    "implementationCommitSha": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0"
   },
   "rejectedDuplicates": [],
   "classMinima": [
@@ -37,168 +34,196 @@
       "classId": "AFFIRMATIVE_ACTIVE",
       "minimumUniqueSemanticCases": 8,
       "observed": 17,
+      "independentObserved": 17,
       "pass": true
     },
     {
       "classId": "AFFIRMATIVE_PASSIVE",
       "minimumUniqueSemanticCases": 6,
       "observed": 6,
+      "independentObserved": 6,
       "pass": true
     },
     {
       "classId": "INFINITIVAL_CHLOROPHYLL_MEDIATED",
       "minimumUniqueSemanticCases": 6,
       "observed": 6,
+      "independentObserved": 6,
       "pass": true
     },
     {
       "classId": "COORDINATED_PREDICATES",
       "minimumUniqueSemanticCases": 6,
       "observed": 6,
+      "independentObserved": 6,
       "pass": true
     },
     {
       "classId": "COORDINATED_SUBJECTS_VALID",
       "minimumUniqueSemanticCases": 6,
       "observed": 6,
+      "independentObserved": 6,
       "pass": true
     },
     {
       "classId": "COORDINATED_SUBJECTS_MIXED_INVALID",
       "minimumUniqueSemanticCases": 8,
       "observed": 8,
+      "independentObserved": 8,
       "pass": true
     },
     {
       "classId": "DETACHED_OBJECT_DECOYS",
       "minimumUniqueSemanticCases": 8,
       "observed": 8,
+      "independentObserved": 8,
       "pass": true
     },
     {
       "classId": "DIRECT_OBJECT_BARRIERS",
       "minimumUniqueSemanticCases": 6,
       "observed": 6,
+      "independentObserved": 6,
       "pass": true
     },
     {
       "classId": "FINITE_PREDICATE_BARRIERS",
       "minimumUniqueSemanticCases": 6,
       "observed": 6,
+      "independentObserved": 6,
       "pass": true
     },
     {
       "classId": "MALFORMED_SYNTAX",
       "minimumUniqueSemanticCases": 9,
       "observed": 9,
+      "independentObserved": 9,
       "pass": true
     },
     {
       "classId": "LOCAL_NEGATION",
       "minimumUniqueSemanticCases": 8,
       "observed": 8,
+      "independentObserved": 8,
       "pass": true
     },
     {
       "classId": "UNCERTAIN_MODALITY",
       "minimumUniqueSemanticCases": 12,
       "observed": 12,
+      "independentObserved": 12,
       "pass": true
     },
     {
       "classId": "NEGATED_MODALITY",
       "minimumUniqueSemanticCases": 8,
       "observed": 8,
+      "independentObserved": 8,
       "pass": true
     },
     {
       "classId": "AFFIRMED_MODALITY",
       "minimumUniqueSemanticCases": 4,
       "observed": 4,
+      "independentObserved": 4,
       "pass": true
     },
     {
       "classId": "NESTED_CONTROL",
       "minimumUniqueSemanticCases": 10,
       "observed": 10,
+      "independentObserved": 10,
       "pass": true
     },
     {
       "classId": "DOUBLE_NEGATION",
       "minimumUniqueSemanticCases": 6,
       "observed": 6,
+      "independentObserved": 6,
       "pass": true
     },
     {
       "classId": "UNRELATED_NEGATION",
       "minimumUniqueSemanticCases": 6,
       "observed": 6,
+      "independentObserved": 6,
       "pass": true
     },
     {
       "classId": "CLAUSE_BOUNDARY",
       "minimumUniqueSemanticCases": 8,
       "observed": 8,
+      "independentObserved": 8,
       "pass": true
     },
     {
       "classId": "SENTENCE_BOUNDARY",
       "minimumUniqueSemanticCases": 6,
       "observed": 7,
+      "independentObserved": 7,
       "pass": true
     },
     {
       "classId": "PRONOUN_CONTINUATION",
       "minimumUniqueSemanticCases": 6,
       "observed": 9,
+      "independentObserved": 9,
       "pass": true
     },
     {
       "classId": "INVALID_SUBJECT",
       "minimumUniqueSemanticCases": 8,
       "observed": 8,
+      "independentObserved": 8,
       "pass": true
     },
     {
       "classId": "INVALID_OBJECT",
       "minimumUniqueSemanticCases": 8,
       "observed": 8,
+      "independentObserved": 8,
       "pass": true
     },
     {
       "classId": "DESTRUCTIVE_RELATION",
       "minimumUniqueSemanticCases": 6,
       "observed": 6,
+      "independentObserved": 6,
       "pass": true
     },
     {
       "classId": "WRONG_PIGMENT",
       "minimumUniqueSemanticCases": 6,
       "observed": 6,
+      "independentObserved": 6,
       "pass": true
     },
     {
       "classId": "CONTRADICTION",
       "minimumUniqueSemanticCases": 6,
       "observed": 6,
+      "independentObserved": 6,
       "pass": true
     },
     {
       "classId": "PUNCTUATION_ABUSE",
       "minimumUniqueSemanticCases": 8,
       "observed": 9,
+      "independentObserved": 9,
       "pass": true
     },
     {
       "classId": "NO_STITCHING",
       "minimumUniqueSemanticCases": 8,
       "observed": 8,
+      "independentObserved": 8,
       "pass": true
     },
     {
       "classId": "KNOWN_REGRESSIONS",
       "minimumUniqueSemanticCases": 8,
       "observed": 8,
+      "independentObserved": 8,
       "pass": true
     }
   ],
@@ -358,7 +383,7 @@
     {
       "caseId": "MAL-002",
       "canonicalCaseBytes": "50686f746f73796e746865736973206c6967687420656e6572677920636170747572652063686c6f726f7068796c6c2e",
-      "semanticFingerprint": "559d0126cae75298d262e451d9652826c70a1d523c52654c2be0e5e12d22bdc4",
+      "semanticFingerprint": "3c1987766522368d0d62dd0385eeaa0fe8678016c1a2df6e39149e8bb0f8eeec",
       "expectedDecision": "FAIL",
       "classIds": [
         "MALFORMED_SYNTAX"
@@ -367,7 +392,7 @@
     {
       "caseId": "MAL-003",
       "canonicalCaseBytes": "43686c6f726f7068796c6c206c696768742070686f746f73796e74686573697320636170747572657320656e657267792e",
-      "semanticFingerprint": "ad2f99006afa76b208459c896dfe31311e54f2a5de0ea0f4db43c66c6ad841ba",
+      "semanticFingerprint": "39681a2f319dcf30d00d428ce2553cddf7bfc593a3dd2cf41013f5acfb7d0239",
       "expectedDecision": "FAIL",
       "classIds": [
         "MALFORMED_SYNTAX"
@@ -691,7 +716,7 @@
     {
       "caseId": "KREG-001",
       "canonicalCaseBytes": "50686f746f73796e746865736973206973207468652070726f6365737320627920776869636820677265656e20706c616e74732c20616c6761652c20616e6420736f6d6520626163746572696120636f6e76657274206c6967687420656e6572677920696e746f206368656d6963616c20656e657267792c2073746f72696e6720697420696e20676c75636f7365206d6f6c6563756c65732e204974207573657320636172626f6e2064696f7869646520616e642077617465722c2072656c656173696e67206f787967656e206173206120627970726f647563742c20616e642069732064726976656e2062792063686c6f726f7068796c6c20696e207468652070726573656e6365206f662073756e6c696768742e",
-      "semanticFingerprint": "38de4830651ffaf11a0f5c7a2e631c8559fcfb9a7244ccace373716c115e193c",
+      "semanticFingerprint": "efa013b5c9eca441ee8b994f9f53736de4840458fa71323d6c28e1846af8dace",
       "expectedDecision": "PASS",
       "classIds": [
         "AFFIRMATIVE_ACTIVE",
@@ -1781,7 +1806,7 @@
     {
       "caseId": "V2-INVALID_OBJECT-007",
       "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c207768696c65206c6967687420656e657267792069732070726573656e742e",
-      "semanticFingerprint": "01be2e28ff7335a7c9772b46a9d039a3fce801465fba157412d0ec798d836b45",
+      "semanticFingerprint": "e012c02d7a19931ba9fb6f7c5b8bfd34d2b2cc46023e906153acc84c352e0caf",
       "expectedDecision": "FAIL",
       "classIds": [
         "INVALID_OBJECT"
@@ -2066,7 +2091,5 @@
         "PUNCTUATION_ABUSE"
       ]
     }
-  ],
-  "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
-  "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6"
+  ]
 }

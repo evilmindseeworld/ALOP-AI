@@ -4,629 +4,450 @@
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "repairAttemptId": "P1-ASTRA-RESTART-001-004-20260926-8644913",
-  "capturedAtUtc": "2026-09-26T20:17:20.470Z",
-  "phase": "GREEN",
-  "status": "PASS_ZERO_CANDIDATE_REGRESSIONS_WITH_SHARED_BASELINE_FAILURE",
+  "repairAttemptId": "P1-RECONCILIATION-20260927",
+  "capturedAtUtc": "2026-09-27T12:49:23.221Z",
   "repairBaseSha": "53dac79cf873443e2a8c468607af5deee8107759",
   "repairBaseTreeSha": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
-  "implementationSourceCommitSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
-  "implementationCommitSha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-  "implementationTreeSha": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
-  "implementationParentSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
-  "testedCandidateHead": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-  "testedCandidateTree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
-  "testedCandidateParent": "e1b50b53769139f9d2f1381170f555e37efdcab3",
-  "branch": "codex/p1-astra-final-001-006-repair-20260926",
+  "repairStartHead": "ee010f0d0d2ed7281b2e0069e1dee6848b611d9b",
+  "implementationCommitSha": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+  "implementationTreeSha": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+  "implementationParentSha": "5fcdcd3a73d32e58b1ef4a9f9b78f4a648a8f8fd",
+  "implementationCommitShas": [
+    "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0"
+  ],
+  "phase": "GREEN",
+  "status": "SOURCE_SNAPSHOT_RECORDED_FINAL_RESULTS_IN_POST_COMMIT_ATTESTATION",
   "runtime": {
     "version": "v26.7.0",
-    "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
+    "executablePath": "C:\\Users\\LENOVO\\.codex\\toolchains\\alop-node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe",
     "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
   },
-  "testTool": {
-    "npmVersion": "11.17.0",
-    "npmCliPath": "C:/Program Files/nodejs/node_modules/npm/bin/npm-cli.js",
-    "gitVersion": "git version 2.55.0.windows.5",
-    "gitExecutablePath": "C:/Program Files/Git/cmd/git.exe",
-    "gitExecutableSha256": "78211c7ed73988da93a6d8a33d47ec6187f464d7ea2a9a00c182bbd7a1ecf30f"
+  "suiteClassification": {
+    "authoritative": "MIXED: source assertions, fingerprint index, package and package receipt",
+    "evaluator": "SOURCE-ONLY",
+    "evaluatorMutation": "MIXED: ten source mutants plus generated-runner source assertion",
+    "evaluation": "SOURCE-ONLY",
+    "authoritativeMutation": "SOURCE-ONLY",
+    "semanticMutationRunner": "MIXED: generated package plus exact source/corpus; independently buildable from implementation inputs",
+    "fullBackend": "MIXED",
+    "datasetValidation": "SOURCE-ONLY",
+    "binder": "MIXED: source, corpus, evidence, manifest, ancestry"
   },
-  "dependencyIdentity": {
-    "backendPackageJsonSha256": "90467537d4de957dbe49c1722ecb1767344dd7237b1dfd0179484c3bceba2159",
-    "backendPackageLockSha256": "939370cd71896ccaeef4b3d4c4dffaa43840273e014fae5386c46f0cdf11bfa8",
-    "backendNodeModulesPresent": true,
-    "backendNodeModulesRealPath": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair/backend/node_modules",
-    "npmCi": [
-      {
-        "side": "repairBase",
-        "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe C:/Program Files/nodejs/node_modules/npm/bin/npm-cli.js ci --no-audit --no-fund --prefix C:/Users/LENOVO/AppData/Local/Temp/p1-astra-full-base-53dac79-20260925/backend",
-        "nodeVersion": "v26.7.0",
-        "exitCode": 0,
-        "packagesAdded": 170
-      },
-      {
-        "side": "candidate",
-        "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe C:/Program Files/nodejs/node_modules/npm/bin/npm-cli.js ci --no-audit --no-fund --prefix C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-restart-001-003/backend",
-        "nodeVersion": "v26.7.0",
-        "exitCode": 0,
-        "packagesAdded": 170
-      }
-    ],
-    "backendTestNodePath": "unset",
-    "frontendNodeModulesPresent": true,
-    "frontendNodeModulesRealPath": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair/frontend/node_modules"
+  "implementationSnapshot": {
+    "head": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+    "tree": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+    "parent": "5fcdcd3a73d32e58b1ef4a9f9b78f4a648a8f8fd",
+    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927\\implementation-06aab2b3"
   },
-  "authoritativeTestRun": {
-    "id": "P1-AUTHORITATIVE-POST-PACKAGE",
-    "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe --test lib/p1-authoritative-repair-v2.test.js (cwd=C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair/backend; NODE_PATH unset)",
-    "args": [
-      "--test",
-      "lib/p1-authoritative-repair-v2.test.js"
-    ],
-    "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair/backend",
-    "exitCode": 0,
-    "testCount": 101,
-    "passed": 101,
-    "failed": 0,
-    "skipped": 0,
-    "stdout": {
-      "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-authoritative-20260926.log",
-      "bytes": 9569,
-      "sha256": "0fb88e493589447f8944de57862db8e1a26b4253049c060a0aa0417f0e0a142b",
-      "modifiedAtUtc": "2026-09-26T19:38:41.663Z"
-    },
-    "testedCommitSha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-    "testedTreeSha": "e7bebb115b2c3fff3c59f772292d16969dddeb03"
-  },
-  "matchedFullSuiteComparison": {
-    "status": "PASS_NO_CANDIDATE_REGRESSIONS_WITH_SHARED_BASELINE_FAILURE",
-    "runtime": {
-      "version": "v26.7.0",
-      "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
-      "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
-    },
-    "repairComparisonBase": {
-      "head": "53dac79cf873443e2a8c468607af5deee8107759",
-      "tree": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
-      "parent": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-      "command": "pinned Node npm test (cwd=backend)",
+  "implementationSnapshotTestRuns": [
+    {
+      "name": "impl-authoritative",
+      "classification": "MIXED",
+      "testedCommitSha": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+      "testedTreeSha": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
       "args": [
-        "npm",
-        "test"
+        "--test",
+        "--test-reporter=tap",
+        "lib/p1-authoritative-repair-v2.test.js"
       ],
-      "cwd": "C:/Users/LENOVO/AppData/Local/Temp/p1-astra-full-base-53dac79-20260925/backend",
       "exitCode": 1,
-      "total": 2555,
-      "passed": 2554,
-      "failed": 1,
+      "tests": 103,
+      "pass": 99,
+      "fail": 4,
       "skipped": 0,
+      "cancelled": 0,
       "log": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-full-base-20260926.log",
-        "bytes": 189689,
-        "sha256": "68046575268defe2768fc2710fb1261c4f03ac8fd2690eb453a6e9070bf719ac",
-        "modifiedAtUtc": "2026-09-26T19:29:08.292Z"
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927\\impl-authoritative.log",
+        "bytes": 26768,
+        "sha256": "722c0468f13927ad620b30a95bc33968a38614151014cf95c2485e1549777724"
+      },
+      "failureNames": [
+        "second Astra blocker reproduction confirms the packaged fingerprint export is repaired",
+        "PREQ-002 reindexes all cases with exactly the frozen 18-field projection",
+        "PREQ-008 package receipt binds the recipe by committed commit, path, and blob",
+        "CONVERGED-RED O2 subjectless inputs fail closed through evaluator, gradeCase, and package"
+      ]
+    },
+    {
+      "name": "impl-evaluator",
+      "classification": "SOURCE-ONLY",
+      "testedCommitSha": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+      "testedTreeSha": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+      "args": [
+        "--test",
+        "--test-reporter=tap",
+        "lib/photosynthesis-relation-evaluator.test.js"
+      ],
+      "exitCode": 0,
+      "tests": 53,
+      "pass": 53,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "log": {
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927\\impl-evaluator.log",
+        "bytes": 10206,
+        "sha256": "0319806f8249a7089fce65c05441fbb13a5c45bb52467afd92110189c382cf38"
+      },
+      "failureNames": []
+    },
+    {
+      "name": "impl-evaluator-mutations",
+      "classification": "MIXED",
+      "testedCommitSha": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+      "testedTreeSha": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+      "args": [
+        "--test",
+        "--test-reporter=tap",
+        "lib/photosynthesis-relation-evaluator-mutation.test.js"
+      ],
+      "exitCode": 1,
+      "tests": 11,
+      "pass": 10,
+      "fail": 1,
+      "skipped": 0,
+      "cancelled": 0,
+      "log": {
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927\\impl-evaluator-mutations.log",
+        "bytes": 3757,
+        "sha256": "fed1c66d3a7c073c5fabae22f40eaa649f218e9b14ad71272f79b550bc50bb76"
+      },
+      "failureNames": [
+        "M1-M10 runner requires a green semantic baseline and counts only new frozen-behavior failures"
+      ]
+    },
+    {
+      "name": "impl-evaluation",
+      "classification": "SOURCE-ONLY",
+      "testedCommitSha": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+      "testedTreeSha": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+      "args": [
+        "--test",
+        "--test-reporter=tap",
+        "lib/evaluation*.test.js"
+      ],
+      "exitCode": 0,
+      "tests": 104,
+      "pass": 104,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "log": {
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927\\impl-evaluation.log",
+        "bytes": 21034,
+        "sha256": "7121facfb5f005811a87abeb5f90b8bac4fc94e2b72469aac1f6596ae464be4e"
+      },
+      "failureNames": []
+    },
+    {
+      "name": "impl-authoritative-mutations",
+      "classification": "SOURCE-ONLY",
+      "testedCommitSha": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+      "testedTreeSha": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+      "args": [
+        "--test",
+        "--test-reporter=tap",
+        "lib/p1-authoritative-repair-v2-mutation.test.js"
+      ],
+      "exitCode": 0,
+      "tests": 20,
+      "pass": 20,
+      "fail": 0,
+      "skipped": 0,
+      "cancelled": 0,
+      "log": {
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927\\impl-authoritative-mutations.log",
+        "bytes": 5044,
+        "sha256": "d384f7c5da7e6b57ae5f119ba437c5b74a889334b4a940bf38368b842b9a4d86"
+      },
+      "failureNames": []
+    },
+    {
+      "name": "impl-dataset-v1",
+      "classification": "SOURCE-ONLY",
+      "testedCommitSha": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+      "testedTreeSha": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+      "args": [
+        "scripts/run-evals.mjs",
+        "--dataset",
+        "backend-intelligence-v1",
+        "--validate-only"
+      ],
+      "exitCode": 0,
+      "tests": -1,
+      "pass": -1,
+      "fail": -1,
+      "skipped": -1,
+      "cancelled": -1,
+      "log": {
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927\\impl-dataset-v1.log",
+        "bytes": 562,
+        "sha256": "2fab193e98e668cc9bb309c414e5a596b6e9bd5a4517550230289ed1998bcb28"
+      },
+      "failureNames": []
+    },
+    {
+      "name": "impl-dataset-v2",
+      "classification": "SOURCE-ONLY",
+      "testedCommitSha": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+      "testedTreeSha": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+      "args": [
+        "scripts/run-evals.mjs",
+        "--dataset",
+        "backend-intelligence-v2",
+        "--validate-only"
+      ],
+      "exitCode": 0,
+      "tests": -1,
+      "pass": -1,
+      "fail": -1,
+      "skipped": -1,
+      "cancelled": -1,
+      "log": {
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927\\impl-dataset-v2.log",
+        "bytes": 562,
+        "sha256": "13a3423cb852bc91e97b16db483ccf783c50786433913af892a1c34b11e6f628"
+      },
+      "failureNames": []
+    },
+    {
+      "name": "full-baseline",
+      "classification": "MIXED",
+      "testedCommitSha": "53dac79cf873443e2a8c468607af5deee8107759",
+      "testedTreeSha": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
+      "args": [
+        "--test",
+        "--test-reporter=tap",
+        "lib/**/*.test.js"
+      ],
+      "exitCode": 1,
+      "tests": 2555,
+      "pass": 2554,
+      "fail": 1,
+      "skipped": 0,
+      "cancelled": 0,
+      "log": {
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927\\full-baseline.log",
+        "bytes": 474383,
+        "sha256": "4653c978316acbfa8c0a77da8ffdc66f842401902b6ff1b6784fd8c7778b43e7"
       },
       "failureNames": [
         "every declared Node major is the one deploy/targets.json names"
       ]
     },
-    "candidate": {
-      "head": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-      "tree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
-      "parent": "e1b50b53769139f9d2f1381170f555e37efdcab3",
-      "command": "pinned Node npm test (cwd=backend; NODE_PATH unset)",
+    {
+      "name": "full-implementation",
+      "classification": "MIXED",
+      "testedCommitSha": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+      "testedTreeSha": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
       "args": [
-        "npm",
-        "test"
+        "--test",
+        "--test-reporter=tap",
+        "lib/**/*.test.js"
       ],
-      "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair/backend",
       "exitCode": 1,
-      "total": 2566,
+      "tests": 2575,
+      "pass": 2569,
+      "fail": 6,
+      "skipped": 0,
+      "cancelled": 0,
+      "log": {
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927\\full-implementation.log",
+        "bytes": 483173,
+        "sha256": "afc2c35a83e58a780c1aeb087a811271de5c24c16b4dfeb2376156334584b464"
+      },
+      "failureNames": [
+        "every declared Node major is the one deploy/targets.json names",
+        "second Astra blocker reproduction confirms the packaged fingerprint export is repaired",
+        "PREQ-002 reindexes all cases with exactly the frozen 18-field projection",
+        "PREQ-008 package receipt binds the recipe by committed commit, path, and blob",
+        "CONVERGED-RED O2 subjectless inputs fail closed through evaluator, gradeCase, and package",
+        "M1-M10 runner requires a green semantic baseline and counts only new frozen-behavior failures"
+      ]
+    }
+  ],
+  "classificationCorrection": "The superseded 5fcdcd3 run initially called evaluator mutations SOURCE-ONLY; its last assertion reads the generated runner. The current 06aab2b run and receipt correctly classify it MIXED. Superseded logs are preserved externally.",
+  "implementationExpectedEvidenceFailures": [
+    {
+      "name": "impl-authoritative",
+      "failures": [
+        "second Astra blocker reproduction confirms the packaged fingerprint export is repaired",
+        "PREQ-002 reindexes all cases with exactly the frozen 18-field projection",
+        "PREQ-008 package receipt binds the recipe by committed commit, path, and blob",
+        "CONVERGED-RED O2 subjectless inputs fail closed through evaluator, gradeCase, and package"
+      ],
+      "reason": "Implementation snapshot intentionally contains producing recipe at runner path and pre-regeneration index/receipts. Generated-package and evidence-dependent assertions do not pass at this snapshot."
+    },
+    {
+      "name": "impl-evaluator-mutations",
+      "failures": [
+        "M1-M10 runner requires a green semantic baseline and counts only new frozen-behavior failures"
+      ],
+      "reason": "Implementation snapshot intentionally contains producing recipe at runner path and pre-regeneration index/receipts. Generated-package and evidence-dependent assertions do not pass at this snapshot."
+    },
+    {
+      "name": "full-implementation",
+      "failures": [
+        "every declared Node major is the one deploy/targets.json names",
+        "second Astra blocker reproduction confirms the packaged fingerprint export is repaired",
+        "PREQ-002 reindexes all cases with exactly the frozen 18-field projection",
+        "PREQ-008 package receipt binds the recipe by committed commit, path, and blob",
+        "CONVERGED-RED O2 subjectless inputs fail closed through evaluator, gradeCase, and package",
+        "M1-M10 runner requires a green semantic baseline and counts only new frozen-behavior failures"
+      ],
+      "reason": "Implementation snapshot intentionally contains producing recipe at runner path and pre-regeneration index/receipts. Generated-package and evidence-dependent assertions do not pass at this snapshot."
+    }
+  ],
+  "historicalTestedTreeCorrection": {
+    "oldDeclaredImplementationCommit": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
+    "oldDeclaredTree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
+    "actualAuthoritative": {
+      "passed": 99,
+      "total": 101
+    },
+    "actualFullBackend": {
+      "passed": 2563,
+      "total": 2566
+    },
+    "previouslyClaimedAuthoritative": {
+      "passed": 101,
+      "total": 101
+    },
+    "previouslyClaimedFullBackend": {
       "passed": 2565,
-      "failed": 1,
-      "skipped": 0,
-      "log": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-full-candidate-20260926.log",
-        "bytes": 190755,
-        "sha256": "2b5057ea7d25e7c8f0d4fa53886955a64c4d66ba8f2a9bfcecd40c08b949a71e",
-        "modifiedAtUtc": "2026-09-26T19:29:08.292Z"
-      },
-      "failureNames": [
-        "every declared Node major is the one deploy/targets.json names"
-      ]
+      "total": 2566
     },
-    "candidateCausedFailureCount": 0,
-    "candidateCausedFailureIds": [],
-    "sameFailureSet": true,
-    "additionalPassingTests": 11,
-    "sharedBaselineFailure": {
-      "testName": "every declared Node major is the one deploy/targets.json names",
-      "file": "backend/lib/deployment-config.test.js",
-      "line": 361,
-      "targetNodeMajor": 26,
-      "packageEnginesNode": "26.7.0",
-      "assertionRequires": ">=26",
-      "disposition": "same exact test failed on repair base and candidate; not repaired per instruction"
-    }
-  },
-  "semanticCoverage": {
-    "sourceCases": 206,
-    "rawUniqueTexts": 206,
-    "legitimateSemanticProjections": 206,
-    "uniqueSemanticFingerprintCount": 206,
-    "requiredFloor": 201,
-    "classCount": 28,
-    "classMinimaPass": true,
-    "sentenceBoundary": {
-      "observed": 7,
-      "required": 6
-    },
-    "punctuationAbuse": {
-      "sourceCases": 9,
-      "observed": 9,
-      "required": 8
-    },
-    "canonicalCases": 54,
-    "canonicalCasesMatchFrozenDesign": true,
-    "canonicalCasesMatchRepairBase": true,
-    "structuralMarkers": 27,
-    "cosmeticLeaks": 0,
-    "arbitrarySubjectLeaks": 0,
-    "arbitraryObjectLeaks": 0,
-    "originalAstraSubjectPairs": {
-      "total": 30,
-      "passed": 30,
-      "failed": 0
-    },
-    "freshAstraSubjectPairs": {
-      "total": 76,
-      "passed": 76,
-      "failed": 0
-    },
-    "additionalUnseenSubjectProbes": {
-      "equivalencePairs": 24,
-      "agreementCases": 16,
-      "total": 40,
-      "passed": 40,
-      "failed": 0,
-      "distinctInputStrings": 56
-    },
-    "behaviorProbes": {
-      "total": 121,
-      "passed": 121,
-      "failed": 0
-    },
-    "morphologyProbes": {
-      "total": 8,
-      "passed": 8,
-      "failed": 0
-    },
-    "metamorphicByKind": {
-      "original subject": {
-        "cases": 30,
-        "passed": 30,
-        "failed": 0
+    "ruling": "OLD ACTIVE SUCCESS ATTRIBUTION WAS FALSE. Exact ee010f0d evidence snapshot, not a9, passed those higher counts.",
+    "evidence": {
+      "implementation-authoritative.log": {
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/implementation-authoritative.log",
+        "bytes": 11649,
+        "sha256": "36ff05772a467cd52ddac0ec8aa78fb3f481c06efa3fb5348829007d21998870"
       },
-      "fresh subject": {
-        "cases": 60,
-        "passed": 60,
-        "failed": 0
+      "evidence-authoritative.log": {
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/evidence-authoritative.log",
+        "bytes": 9450,
+        "sha256": "e2739af717af638422eac3ac48562c0cac010851899796dd48e061319e7a879a"
       },
-      "fresh passive subject": {
-        "cases": 8,
-        "passed": 8,
-        "failed": 0
-      },
-      "determiner": {
-        "cases": 40,
-        "passed": 40,
-        "failed": 0
-      },
-      "object": {
-        "cases": 20,
-        "passed": 20,
-        "failed": 0
-      },
-      "determiner object": {
-        "cases": 12,
-        "passed": 12,
-        "failed": 0
-      },
-      "punctuation": {
-        "cases": 64,
-        "passed": 64,
-        "failed": 0
-      },
-      "semantic boundary": {
-        "cases": 1,
-        "passed": 1,
-        "failed": 0
-      },
-      "voice": {
-        "cases": 1,
-        "passed": 1,
-        "failed": 0
-      },
-      "polarity": {
-        "cases": 1,
-        "passed": 1,
-        "failed": 0
-      },
-      "coordination": {
-        "cases": 1,
-        "passed": 1,
-        "failed": 0
-      },
-      "modal": {
-        "cases": 1,
-        "passed": 1,
-        "failed": 0
-      },
-      "control": {
-        "cases": 1,
-        "passed": 1,
-        "failed": 0
-      },
-      "capitalization": {
-        "cases": 206,
-        "passed": 206,
-        "failed": 0
-      },
-      "spacing": {
-        "cases": 206,
-        "passed": 206,
-        "failed": 0
-      }
-    },
-    "allCorpusDecisionsMatch": true
-  },
-  "packageBuild": {
-    "buildA": {
-      "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-recompute-fdd51033352147279b993d43659e5eb5/build-one-final/package.mjs",
-      "bytes": 122798,
-      "sha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
-      "gitBlob": "3cae4c2ced7d0a0009d20309ca0c7c1ca5312eeb"
-    },
-    "buildB": {
-      "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-recompute-fdd51033352147279b993d43659e5eb5/build-two-final/package.mjs",
-      "bytes": 122798,
-      "sha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
-      "gitBlob": "3cae4c2ced7d0a0009d20309ca0c7c1ca5312eeb"
-    },
-    "byteForByteEqual": true,
-    "committedBlobMatchesBuild": true,
-    "committedSha256MatchesBuild": true,
-    "recipeComposerMode": "committed composeArtifact with separately read Git evaluator and runner inputs"
-  },
-  "sourcePackageApiEquivalence": {
-    "status": "PASS",
-    "publicExports": 39,
-    "matchedPublicExports": 39,
-    "inputCount": 12340,
-    "inputSetSha256": "aad5fe3141384b5b9ce5d6a13ed607a8dd1829b004e85bcdd7ccf07c4ac008c0",
-    "comparedCalls": 37020,
-    "mismatches": 0,
-    "exceptions": 0,
-    "sourceAndPackageIdentical": true
-  },
-  "metamorphicChecks": {
-    "originalAstraSubjectPairs": 30,
-    "originalAstraSubjectPairsPassing": 30,
-    "freshAstraSubjectPairs": 76,
-    "freshAstraSubjectPairsPassing": 76,
-    "additionalUnseenSubjectProbes": 40,
-    "additionalUnseenSubjectProbesPassing": 40,
-    "punctuationPairs": 64,
-    "punctuationPairsPassing": 64,
-    "packageInputs": 12340,
-    "packageComparisons": 37020,
-    "packageMismatches": 0,
-    "packageExceptions": 0,
-    "groups": {
-      "original subject": {
-        "cases": 30,
-        "passed": 30,
-        "failed": 0
-      },
-      "fresh subject": {
-        "cases": 60,
-        "passed": 60,
-        "failed": 0
-      },
-      "fresh passive subject": {
-        "cases": 8,
-        "passed": 8,
-        "failed": 0
-      },
-      "determiner": {
-        "cases": 40,
-        "passed": 40,
-        "failed": 0
-      },
-      "object": {
-        "cases": 20,
-        "passed": 20,
-        "failed": 0
-      },
-      "determiner object": {
-        "cases": 12,
-        "passed": 12,
-        "failed": 0
-      },
-      "punctuation": {
-        "cases": 64,
-        "passed": 64,
-        "failed": 0
-      },
-      "semantic boundary": {
-        "cases": 1,
-        "passed": 1,
-        "failed": 0
-      },
-      "voice": {
-        "cases": 1,
-        "passed": 1,
-        "failed": 0
-      },
-      "polarity": {
-        "cases": 1,
-        "passed": 1,
-        "failed": 0
-      },
-      "coordination": {
-        "cases": 1,
-        "passed": 1,
-        "failed": 0
-      },
-      "modal": {
-        "cases": 1,
-        "passed": 1,
-        "failed": 0
-      },
-      "control": {
-        "cases": 1,
-        "passed": 1,
-        "failed": 0
-      },
-      "capitalization": {
-        "cases": 206,
-        "passed": 206,
-        "failed": 0
-      },
-      "spacing": {
-        "cases": 206,
-        "passed": 206,
-        "failed": 0
+      "RECONCILIATION.md": {
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/RECONCILIATION.md",
+        "bytes": 5242,
+        "sha256": "271a869761d186af35876164d9b7a1a2ef1509278e7e44625aa7a57c2c187439"
       }
     }
   },
-  "historicalProvenanceReconciliation": {
-    "priorRootManifestRepairBase": {
-      "sha": "fee44f4d2f3a46458b4b79277363585f78695ecc",
-      "tree": "6bff90f3a379d192e30c01f9111cef65c31d9c55"
-    },
-    "priorActiveGreenRepairBase": {
-      "sha": "bc4cf79fdda869cb42465d720cac59822802fde5",
-      "tree": "8859d1ebfa3fe891ba42a59137710eab06e79a54",
-      "stdoutPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-exact-base-bc4cf-f8bb81a78a6645c1985997c6603148a8.stdout",
-      "stdoutSha256Expected": "93771de9db8c0385f6ebf09a52b0c454809482a7b837454b0ea1d8c77c98dfa6",
-      "stdoutSha256Observed": "93771de9db8c0385f6ebf09a52b0c454809482a7b837454b0ea1d8c77c98dfa6",
-      "storedOutputMatches": true
-    },
-    "ancestry": {
-      "fee44IsAncestorOfBc4": true,
-      "bc4IsAncestorOfCurrentRepairBase": true
-    },
-    "historicalFullSuiteBaseDetermined": "bc4cf79fdda869cb42465d720cac59822802fde5; exact stored stdout hash matches active GREEN receipt; fee44 was a stale root-manifest label",
-    "currentRepairFullSuiteBase": {
-      "sha": "53dac79cf873443e2a8c468607af5deee8107759",
-      "tree": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
-      "executedNow": true
-    },
-    "currentImplementationCommits": [
-      "c23532d49a5dab46ce3a5498a0ac5d72a9aadd81",
-      "9d51a0a8809049d77674ee254910924fbc6a7def",
-      "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-      "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-      "b315b455b679341d6dc6fe48bbf22c6e35a241bb",
-      "e7c248828a867b7ff285a2d96ea265460d755f18",
-      "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
-      "d20ee99dea304860767c9f5c8d49505eefd2b265",
-      "adeec90cf2fae5b8bc49d8780832ba2e8debf8c2",
-      "c0793c0f415f0a23befa1c7ae89e5b9244e89ec5",
-      "b1b584153d9efd720a99085fe6d44060e962ea16",
-      "6cf90b4dddf42716de319cac14a16cf755a4c938",
-      "e1b50b53769139f9d2f1381170f555e37efdcab3",
-      "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b"
+  "allCorpusDecisionsMatch": true,
+  "noDuplicateSemanticFingerprints": true,
+  "canonicalCasesPassed": 54,
+  "semanticCoveragePass": true,
+  "sourcePackageEquivalence": {
+    "inputCount": 13315,
+    "apiComparisonCount": 119835,
+    "publicExportCount": 39,
+    "exportNamesMatch": true,
+    "mismatches": [],
+    "exceptions": [],
+    "inputSetSha256": "09a0d7e31a488f7330b25e81db577a31c644fa53a3673bf1146d26e6060a3966",
+    "apis": [
+      "normalizeInputV2",
+      "segmentSentencesV2",
+      "segmentClausesV2",
+      "tokenizeV2",
+      "normalizeExactFormLemmaV2",
+      "parseMinimalRelationGrammar",
+      "evaluatePhotosynthesisRelationsV2",
+      "semanticCaseFingerprint",
+      "evaluatePhotosynthesisRelations"
     ]
   },
-  "frozenDesignSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
-  "quarantineCommits": [
+  "packageBuilds": [
     {
-      "sha": "8c5f9afef9151923539c6016a2d6c75947b2e639",
-      "isAncestorOfFinalImplementation": false,
-      "isAncestorOfTestedHead": false
+      "build": 1,
+      "snapshot": {
+        "head": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+        "tree": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+        "parent": "5fcdcd3a73d32e58b1ef4a9f9b78f4a648a8f8fd",
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927\\implementation-06aab2b3"
+      },
+      "path": "C:/Users/LENOVO/AppData/Local/Temp/p1-reconciliation-ee010f0d-20260927//build-1/package.mjs",
+      "bytes": 122632,
+      "sha256": "72240dbcdad6c98be640446fce6784c92611107443e3c12f6cf957c6b16a35b4",
+      "gitBlob": "af5cc9c2097c4a7087f17fa85375fa52c7fd712b",
+      "runnerDerivedBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
+      "runnerDerivedSha256": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03",
+      "metadata": {
+        "recipeVersion": "p1-static-compose-v1",
+        "recipeBlob": "70b70ef7e6a4ea2d076e310f69bc64609ff2a5d7",
+        "evaluatorBlob": "e3151e0f0faaf81e2955b4c2ba00a5d0cbdc852a",
+        "evaluatorSha256": "adeb8596dfbc1bbea3b7c5de8262c2d9a3e42ece9e4c996418323cc3c97ec782",
+        "runnerBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
+        "runnerSha256": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03",
+        "selectedExport": "evaluatePhotosynthesisRelationsV2",
+        "entryPoint": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+        "evaluatorStart": 548,
+        "evaluatorEnd": 103239,
+        "embeddedEvaluatorSha256": "adeb8596dfbc1bbea3b7c5de8262c2d9a3e42ece9e4c996418323cc3c97ec782",
+        "artifactSha256": "72240dbcdad6c98be640446fce6784c92611107443e3c12f6cf957c6b16a35b4",
+        "artifactBytes": 122632
+      }
     },
     {
-      "sha": "090d1c99c1bbc3c85ef742fdbd0511e6ca728248",
-      "isAncestorOfFinalImplementation": false,
-      "isAncestorOfTestedHead": false
+      "build": 2,
+      "snapshot": {
+        "head": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+        "tree": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+        "parent": "5fcdcd3a73d32e58b1ef4a9f9b78f4a648a8f8fd",
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927\\implementation-06aab2b3"
+      },
+      "path": "C:/Users/LENOVO/AppData/Local/Temp/p1-reconciliation-ee010f0d-20260927//build-2/package.mjs",
+      "bytes": 122632,
+      "sha256": "72240dbcdad6c98be640446fce6784c92611107443e3c12f6cf957c6b16a35b4",
+      "gitBlob": "af5cc9c2097c4a7087f17fa85375fa52c7fd712b",
+      "runnerDerivedBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
+      "runnerDerivedSha256": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03",
+      "metadata": {
+        "recipeVersion": "p1-static-compose-v1",
+        "recipeBlob": "70b70ef7e6a4ea2d076e310f69bc64609ff2a5d7",
+        "evaluatorBlob": "e3151e0f0faaf81e2955b4c2ba00a5d0cbdc852a",
+        "evaluatorSha256": "adeb8596dfbc1bbea3b7c5de8262c2d9a3e42ece9e4c996418323cc3c97ec782",
+        "runnerBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
+        "runnerSha256": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03",
+        "selectedExport": "evaluatePhotosynthesisRelationsV2",
+        "entryPoint": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+        "evaluatorStart": 548,
+        "evaluatorEnd": 103239,
+        "embeddedEvaluatorSha256": "adeb8596dfbc1bbea3b7c5de8262c2d9a3e42ece9e4c996418323cc3c97ec782",
+        "artifactSha256": "72240dbcdad6c98be640446fce6784c92611107443e3c12f6cf957c6b16a35b4",
+        "artifactBytes": 122632
+      }
     }
   ],
-  "scopeGates": {
-    "astraRun": false,
-    "candidateQualificationRun": false,
-    "solReviewRun": false,
-    "release": false,
-    "deploy": false,
-    "p2": false
+  "finalTestedCandidateAttestation": {
+    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/FINAL-TESTED-CANDIDATE.json",
+    "role": "External post-commit attestation: exact final HEAD/TREE, suite results and log hashes. Written only after final evidence commit and exact committed-tree tests. This file is not a claim that those tests have already passed.",
+    "selfReferencePolicy": "A committed receipt cannot contain its own future commit hash. Final tested candidate identity and results are sealed externally; committed source-snapshot results below are historical facts only."
   },
-  "implementationCommitShas": [
-    "c23532d49a5dab46ce3a5498a0ac5d72a9aadd81",
-    "9d51a0a8809049d77674ee254910924fbc6a7def",
-    "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-    "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-    "b315b455b679341d6dc6fe48bbf22c6e35a241bb",
-    "e7c248828a867b7ff285a2d96ea265460d755f18",
-    "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
-    "d20ee99dea304860767c9f5c8d49505eefd2b265",
-    "adeec90cf2fae5b8bc49d8780832ba2e8debf8c2",
-    "c0793c0f415f0a23befa1c7ae89e5b9244e89ec5",
-    "b1b584153d9efd720a99085fe6d44060e962ea16",
-    "6cf90b4dddf42716de319cac14a16cf755a4c938",
-    "e1b50b53769139f9d2f1381170f555e37efdcab3",
-    "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b"
-  ],
   "datasetValidation": {
     "status": "PASS",
     "mode": "validate-only",
     "networkCalls": 0,
     "providerCalls": 0,
-    "v1": {
-      "cases": 21,
-      "valid": true,
-      "spent": false,
-      "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/dataset-v1-final.log",
-        "bytes": 95,
-        "sha256": "a949a8a0c072b90f28be07a83dd78b272a725cbc1533253b29c3a441df18f79b",
-        "modifiedAtUtc": "2026-09-25T22:47:47.798Z"
-      }
-    },
-    "v2": {
-      "cases": 21,
-      "valid": true,
-      "spent": false,
-      "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-restart-repair-validation-20260926-8644913/dataset-v2-final.log",
-        "bytes": 95,
-        "sha256": "11a887e42686af89b2f9c04ce71a808ad91a8a776eb334234a2e6893788ee27e",
-        "modifiedAtUtc": "2026-09-25T22:47:49.477Z"
-      }
-    }
+    "v1Cases": 21,
+    "v2Cases": 21
   },
-  "supportingTestRuns": {
-    "evaluator": {
-      "tests": 46,
-      "passed": 46,
-      "failed": 0,
-      "skipped": 0,
-      "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-evaluator-20260926.log",
-        "bytes": 3301,
-        "sha256": "0a62fe559fddf89037d6959f497b0597f0abea519e8c3827885e6df91ce3c738",
-        "modifiedAtUtc": "2026-09-26T19:34:26.295Z"
-      }
-    },
-    "evaluatorMutations": {
-      "tests": 11,
-      "passed": 11,
-      "failed": 0,
-      "skipped": 0,
-      "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-evaluator-mutation-20260926.log",
-        "bytes": 1126,
-        "sha256": "8cd3702102bcd1d08525dbf1b0877aed40b121aee9ea07fc51f7e64c2268e74e",
-        "modifiedAtUtc": "2026-09-26T19:34:28.326Z"
-      }
-    },
-    "evaluation": {
-      "tests": 104,
-      "passed": 104,
-      "failed": 0,
-      "skipped": 0,
-      "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-evaluation-glob-20260926.log",
-        "bytes": 8487,
-        "sha256": "162256244069654c0ac0235f2f25e6af7d9c7ee263bbd7774a2256e74e93d55c",
-        "modifiedAtUtc": "2026-09-26T19:38:43.092Z"
-      }
-    },
-    "authoritativeMutations": {
-      "tests": 20,
-      "passed": 20,
-      "failed": 0,
-      "skipped": 0,
-      "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-authoritative-mutations-20260926.log",
-        "bytes": 1995,
-        "sha256": "db116193adef5b6cc9dfec78638ef949882a19a165a43b69533084bdb7397420",
-        "modifiedAtUtc": "2026-09-26T19:34:26.863Z"
-      }
-    },
-    "datasetV1": {
-      "cases": 21,
-      "valid": true,
-      "spent": false,
-      "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-dataset-v1-20260926.log",
-        "bytes": 95,
-        "sha256": "a949a8a0c072b90f28be07a83dd78b272a725cbc1533253b29c3a441df18f79b",
-        "modifiedAtUtc": "2026-09-26T19:38:40.604Z"
-      }
-    },
-    "datasetV2": {
-      "cases": 21,
-      "valid": true,
-      "spent": false,
-      "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-dataset-v2-20260926.log",
-        "bytes": 95,
-        "sha256": "11a887e42686af89b2f9c04ce71a808ad91a8a776eb334234a2e6893788ee27e",
-        "modifiedAtUtc": "2026-09-26T19:38:41.694Z"
-      }
-    },
-    "frontend": {
-      "command": "npm test -- --run --minWorkers=1 --maxWorkers=2",
-      "testFiles": 58,
-      "tests": 735,
-      "passed": 735,
-      "failed": 0,
-      "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-frontend-bounded-20260926.log",
-        "bytes": 24787,
-        "sha256": "254f40468f84a308179f13e0a47c3f4c07b8db8733113cfd88b43d5bf3613bf5",
-        "modifiedAtUtc": "2026-09-26T19:33:37.000Z"
-      },
-      "defaultParallelRunHadTimingFailures": true
-    }
+  "scopeGates": {
+    "astraRun": false,
+    "candidateQualification": false,
+    "solReview": false,
+    "release": false,
+    "deployment": false,
+    "providerCalls": 0,
+    "p2": false
   },
-  "canonicalCasesPassed": 54,
-  "failed": 0,
-  "skipped": 0,
-  "allCorpusDecisionsMatch": true,
-  "semanticCoveragePass": true,
-  "targetedBlockerMatricesSummary": {
-    "punctuation": {
-      "pairs": 64,
-      "passed": 64,
-      "freshGlyphControls": 9,
-      "punctuationOnlyFragments": 2
-    },
-    "subjects": {
-      "original30": 30,
-      "previousFresh76": 76,
-      "currentAstraActive112": 112,
-      "currentAstraActive112Passed": 112,
-      "freshPassive14": 14,
-      "unseenEquivalence24": 24,
-      "unseenAgreement16": 16
-    },
-    "semicolon": {
-      "crossBoundaryNoBind": true,
-      "postBoundaryLocalBind": true,
-      "localContradictions": 1
-    },
-    "passive": {
-      "probes": 11,
-      "validMalformedAgentRejections": 2
-    },
-    "continuation": {
-      "probes": 9,
-      "allExpectationsMatch": true
-    },
-    "commaCoordination": {
-      "cases": 16,
-      "passed": 16
-    }
+  "sourceFreezeHistory": {
+    "initialImplementation": "5fcdcd3a73d32e58b1ef4a9f9b78f4a648a8f8fd",
+    "finalImplementation": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+    "reason": "744 historical metamorphic checks found multiword light noun aliases must remain grammatical descriptive subjects. Corrected shared NP validation without changing those expectations.",
+    "supersededResults": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/implementation-5fcdcd3-evidence/test-results.json"
   }
 }

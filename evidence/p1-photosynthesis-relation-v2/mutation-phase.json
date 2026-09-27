@@ -4,94 +4,204 @@
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "repairAttemptId": "P1-ASTRA-RESTART-001-004-20260926-8644913",
-  "capturedAtUtc": "2026-09-26T20:17:20.470Z",
-  "phase": "MUTATION",
-  "status": "PASS",
+  "repairAttemptId": "P1-RECONCILIATION-20260927",
+  "capturedAtUtc": "2026-09-27T12:49:23.221Z",
   "repairBaseSha": "53dac79cf873443e2a8c468607af5deee8107759",
   "repairBaseTreeSha": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
-  "implementationSourceCommitSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
-  "implementationCommitSha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-  "implementationTreeSha": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
-  "implementationParentSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
-  "packageCommitSha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-  "packageTreeSha": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
-  "packageCommitParentSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
-  "packageGitBlob": "3cae4c2ced7d0a0009d20309ca0c7c1ca5312eeb",
-  "packageSha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
-  "packageBytes": 122798,
-  "packagePath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+  "repairStartHead": "ee010f0d0d2ed7281b2e0069e1dee6848b611d9b",
+  "implementationCommitSha": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+  "implementationTreeSha": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+  "implementationParentSha": "5fcdcd3a73d32e58b1ef4a9f9b78f4a648a8f8fd",
+  "implementationCommitShas": [
+    "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0"
+  ],
+  "phase": "MUTATION",
+  "status": "PASS",
   "runtime": {
     "version": "v26.7.0",
-    "executablePath": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe",
+    "executablePath": "C:\\Users\\LENOVO\\.codex\\toolchains\\alop-node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe",
     "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
   },
+  "packagePath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+  "packageGitBlob": "af5cc9c2097c4a7087f17fa85375fa52c7fd712b",
+  "packageSha256": "72240dbcdad6c98be640446fce6784c92611107443e3c12f6cf957c6b16a35b4",
+  "packageBytes": 122632,
+  "packageSnapshotRole": "Generated product committed with final evidence; exact final commit/tree and rerun recorded by external post-commit attestation.",
   "recipeVersion": "p1-static-compose-v1",
-  "recipeInputCommitSha": "3ae0f283461f304f2778a4dc463a85c8f7d86adf",
-  "recipeInputTreeSha": "8ed002b01702ae842ea9e7c054fd91071eeb6792",
+  "runnerDerivedBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
+  "runnerDerivedSha256": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03",
+  "recipeInputCommitSha": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+  "recipeInputTreeSha": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
   "recipeInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-  "recipeInputBlobSha": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
-  "recipeGitBlob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
-  "recipeSha256": "a80a4855a30ace45ff83bc0828fe62810ac46f5a0858543be8abaa693d8bbdb4",
-  "evaluatorInputCommitSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
-  "evaluatorInputTreeSha": "bc94c403f9083e9fe8c0ab941082922998ea870e",
+  "recipeInputBlobSha": "70b70ef7e6a4ea2d076e310f69bc64609ff2a5d7",
+  "recipeSha256": "ec88d5cecc2a4c43d4eac6c28be40bcab2f1d4479eb0db5bac54a77b11f9e26c",
+  "recipeBlob": "70b70ef7e6a4ea2d076e310f69bc64609ff2a5d7",
+  "evaluatorInputCommitSha": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+  "evaluatorInputTreeSha": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
   "evaluatorInputPath": "backend/lib/photosynthesis-relation-evaluator.js",
-  "evaluatorBlob": "83d44f4e88b62a3db4f24b3649052ca716372111",
-  "evaluatorSha256": "30bd8f4d486b98aba224be0243e691b350de28e4507610f80689658516ad7193",
+  "evaluatorInputBlobSha": "e3151e0f0faaf81e2955b4c2ba00a5d0cbdc852a",
+  "evaluatorSha256": "adeb8596dfbc1bbea3b7c5de8262c2d9a3e42ece9e4c996418323cc3c97ec782",
+  "evaluatorBlob": "e3151e0f0faaf81e2955b4c2ba00a5d0cbdc852a",
+  "corpusInputCommitSha": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+  "corpusInputTreeSha": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+  "corpusInputPath": "backend/lib/photosynthesis-relation-cases.js",
+  "corpusInputBlobSha": "979ed2146045fdd6c7360583875bd8abbb032642",
+  "corpusSha256": "b62495937ef0a2adec9829fa5bb7dcc3afdb12a062cf82fe0ec1d0fc527589fe",
+  "corpusBlob": "979ed2146045fdd6c7360583875bd8abbb032642",
   "runnerInputCommitSha": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
   "runnerInputTreeSha": "f4f8b30f73448c34f7652f86a32a606d3dc8a739",
   "runnerInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-  "runnerBlob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
+  "runnerInputBlobSha": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
   "runnerSha256": "e7bffea6fc690f6feb7003eb01c900bb798ba6b44cfb80c3a19edd45a1c6a3d7",
-  "runnerDerivedBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
-  "runnerDerivedSha256": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03",
-  "runnerM2M7Patch": {
-    "uniqueAnchor": "M2/M7 detatched-object insertion site",
-    "oldBlock": "      text = replaceOnce(text,\n        \"  if(ts[i]?.form==='the')i++;\",\n        \"  if(ts[i]?.form==='the')i++;\\n  const bound=ts.findIndex((t,n)=>n>=i&&['light','sunlight'].includes(t.form));\\n  if(bound>=0)i=bound;\",\n        id + ' detached-object rebinding');",
-    "newBlock": "      text = replaceOnce(text,\n        \"  if(!ts[i])return null;\",\n        \"  const bound=ts.findIndex((t,n)=>n>=i&&['light','sunlight'].includes(t.form));\\n  if(bound>=0)i=bound;\\n  if(!ts[i])return null;\",\n        id + ' detached-object rebinding');",
-    "derivedBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
-    "derivedSha256": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03"
-  },
+  "runnerBlob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
+  "recipeGitBlob": "70b70ef7e6a4ea2d076e310f69bc64609ff2a5d7",
+  "runnerDerivation": "Invoke deriveRunner(raw committed runner bytes) exported by the exact declared recipe. No external patches or header edits.",
   "packageBuildReproduction": {
-    "buildA": {
-      "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-recompute-fdd51033352147279b993d43659e5eb5/build-one-final/package.mjs",
-      "bytes": 122798,
-      "sha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
-      "gitBlob": "3cae4c2ced7d0a0009d20309ca0c7c1ca5312eeb"
+    "inputs": {
+      "recipe": {
+        "commit": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+        "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+        "blob": "70b70ef7e6a4ea2d076e310f69bc64609ff2a5d7",
+        "tree": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+        "sha256": "ec88d5cecc2a4c43d4eac6c28be40bcab2f1d4479eb0db5bac54a77b11f9e26c"
+      },
+      "evaluator": {
+        "commit": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+        "path": "backend/lib/photosynthesis-relation-evaluator.js",
+        "blob": "e3151e0f0faaf81e2955b4c2ba00a5d0cbdc852a",
+        "tree": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+        "sha256": "adeb8596dfbc1bbea3b7c5de8262c2d9a3e42ece9e4c996418323cc3c97ec782"
+      },
+      "corpus": {
+        "commit": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+        "path": "backend/lib/photosynthesis-relation-cases.js",
+        "blob": "979ed2146045fdd6c7360583875bd8abbb032642",
+        "tree": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+        "sha256": "b62495937ef0a2adec9829fa5bb7dcc3afdb12a062cf82fe0ec1d0fc527589fe"
+      },
+      "runner": {
+        "commit": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
+        "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+        "blob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
+        "tree": "f4f8b30f73448c34f7652f86a32a606d3dc8a739",
+        "sha256": "e7bffea6fc690f6feb7003eb01c900bb798ba6b44cfb80c3a19edd45a1c6a3d7"
+      }
     },
-    "buildB": {
-      "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-recompute-fdd51033352147279b993d43659e5eb5/build-two-final/package.mjs",
-      "bytes": 122798,
-      "sha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
-      "gitBlob": "3cae4c2ced7d0a0009d20309ca0c7c1ca5312eeb"
-    },
-    "byteForByteEqual": true,
-    "committedBlobMatchesBuild": true,
-    "committedSha256MatchesBuild": true,
-    "recipeComposerMode": "committed composeArtifact with separately read Git evaluator and runner inputs"
+    "builds": [
+      {
+        "build": 1,
+        "snapshot": {
+          "head": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+          "tree": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+          "parent": "5fcdcd3a73d32e58b1ef4a9f9b78f4a648a8f8fd",
+          "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927\\implementation-06aab2b3"
+        },
+        "path": "C:/Users/LENOVO/AppData/Local/Temp/p1-reconciliation-ee010f0d-20260927//build-1/package.mjs",
+        "bytes": 122632,
+        "sha256": "72240dbcdad6c98be640446fce6784c92611107443e3c12f6cf957c6b16a35b4",
+        "gitBlob": "af5cc9c2097c4a7087f17fa85375fa52c7fd712b",
+        "runnerDerivedBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
+        "runnerDerivedSha256": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03",
+        "metadata": {
+          "recipeVersion": "p1-static-compose-v1",
+          "recipeBlob": "70b70ef7e6a4ea2d076e310f69bc64609ff2a5d7",
+          "evaluatorBlob": "e3151e0f0faaf81e2955b4c2ba00a5d0cbdc852a",
+          "evaluatorSha256": "adeb8596dfbc1bbea3b7c5de8262c2d9a3e42ece9e4c996418323cc3c97ec782",
+          "runnerBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
+          "runnerSha256": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03",
+          "selectedExport": "evaluatePhotosynthesisRelationsV2",
+          "entryPoint": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+          "evaluatorStart": 548,
+          "evaluatorEnd": 103239,
+          "embeddedEvaluatorSha256": "adeb8596dfbc1bbea3b7c5de8262c2d9a3e42ece9e4c996418323cc3c97ec782",
+          "artifactSha256": "72240dbcdad6c98be640446fce6784c92611107443e3c12f6cf957c6b16a35b4",
+          "artifactBytes": 122632
+        }
+      },
+      {
+        "build": 2,
+        "snapshot": {
+          "head": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+          "tree": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+          "parent": "5fcdcd3a73d32e58b1ef4a9f9b78f4a648a8f8fd",
+          "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927\\implementation-06aab2b3"
+        },
+        "path": "C:/Users/LENOVO/AppData/Local/Temp/p1-reconciliation-ee010f0d-20260927//build-2/package.mjs",
+        "bytes": 122632,
+        "sha256": "72240dbcdad6c98be640446fce6784c92611107443e3c12f6cf957c6b16a35b4",
+        "gitBlob": "af5cc9c2097c4a7087f17fa85375fa52c7fd712b",
+        "runnerDerivedBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
+        "runnerDerivedSha256": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03",
+        "metadata": {
+          "recipeVersion": "p1-static-compose-v1",
+          "recipeBlob": "70b70ef7e6a4ea2d076e310f69bc64609ff2a5d7",
+          "evaluatorBlob": "e3151e0f0faaf81e2955b4c2ba00a5d0cbdc852a",
+          "evaluatorSha256": "adeb8596dfbc1bbea3b7c5de8262c2d9a3e42ece9e4c996418323cc3c97ec782",
+          "runnerBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
+          "runnerSha256": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03",
+          "selectedExport": "evaluatePhotosynthesisRelationsV2",
+          "entryPoint": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+          "evaluatorStart": 548,
+          "evaluatorEnd": 103239,
+          "embeddedEvaluatorSha256": "adeb8596dfbc1bbea3b7c5de8262c2d9a3e42ece9e4c996418323cc3c97ec782",
+          "artifactSha256": "72240dbcdad6c98be640446fce6784c92611107443e3c12f6cf957c6b16a35b4",
+          "artifactBytes": 122632
+        }
+      }
+    ],
+    "byteIdentical": true,
+    "metadata": {
+      "recipeVersion": "p1-static-compose-v1",
+      "recipeBlob": "70b70ef7e6a4ea2d076e310f69bc64609ff2a5d7",
+      "evaluatorBlob": "e3151e0f0faaf81e2955b4c2ba00a5d0cbdc852a",
+      "evaluatorSha256": "adeb8596dfbc1bbea3b7c5de8262c2d9a3e42ece9e4c996418323cc3c97ec782",
+      "runnerBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
+      "runnerSha256": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03",
+      "selectedExport": "evaluatePhotosynthesisRelationsV2",
+      "entryPoint": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+      "evaluatorStart": 548,
+      "evaluatorEnd": 103239,
+      "embeddedEvaluatorSha256": "adeb8596dfbc1bbea3b7c5de8262c2d9a3e42ece9e4c996418323cc3c97ec782",
+      "artifactSha256": "72240dbcdad6c98be640446fce6784c92611107443e3c12f6cf957c6b16a35b4",
+      "artifactBytes": 122632
+    }
   },
   "sourcePackageApiEquivalence": {
-    "status": "PASS",
-    "publicExports": 39,
-    "matchedPublicExports": 39,
-    "inputCount": 12340,
-    "inputSetSha256": "aad5fe3141384b5b9ce5d6a13ed607a8dd1829b004e85bcdd7ccf07c4ac008c0",
-    "comparedCalls": 37020,
-    "mismatches": 0,
-    "exceptions": 0,
-    "sourceAndPackageIdentical": true
+    "inputCount": 13315,
+    "apiComparisonCount": 119835,
+    "publicExportCount": 39,
+    "exportNamesMatch": true,
+    "mismatches": [],
+    "exceptions": [],
+    "inputSetSha256": "09a0d7e31a488f7330b25e81db577a31c644fa53a3673bf1146d26e6060a3966",
+    "apis": [
+      "normalizeInputV2",
+      "segmentSentencesV2",
+      "segmentClausesV2",
+      "tokenizeV2",
+      "normalizeExactFormLemmaV2",
+      "parseMinimalRelationGrammar",
+      "evaluatePhotosynthesisRelationsV2",
+      "semanticCaseFingerprint",
+      "evaluatePhotosynthesisRelations"
+    ]
   },
-  "command": "C:/Users/LENOVO/.codex/toolchains/alop-node-v26.7.0-win-x64/node-v26.7.0-win-x64/node.exe scripts/run-photosynthesis-relation-mutations.mjs (cwd=C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair/backend)",
-  "args": [
-    "scripts/run-photosynthesis-relation-mutations.mjs"
-  ],
-  "cwd": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair/backend",
+  "buildProductTestBinding": {
+    "kind": "BUILD_PRODUCT",
+    "sourceCommit": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+    "sourceTree": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+    "packageSha256": "72240dbcdad6c98be640446fce6784c92611107443e3c12f6cf957c6b16a35b4",
+    "args": [
+      "scripts/run-photosynthesis-relation-mutations.mjs"
+    ],
+    "cwd": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/mutation-build-product/backend"
+  },
+  "command": "C:\\Users\\LENOVO\\.codex\\toolchains\\alop-node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/run-build-mutations.cjs",
   "exitCode": 0,
   "stdout": {
-    "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-mutation-runner-current.log",
-    "bytes": 2962,
-    "sha256": "050e247e6f5ad10ff053790f7f6feeecca272570ea94f9b02c3441cd8a7d04bd",
-    "modifiedAtUtc": "2026-09-26T20:00:10.458Z"
+    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/build-semantic-mutations.log",
+    "bytes": 3229,
+    "sha256": "20c092e5119e6f57a69ca0d9ff13b3bb26643dbbcc3a8c20c141885e0f491b83"
   },
   "baselineFirst": true,
   "sourceCaseCount": 206,
@@ -234,183 +344,3555 @@
       }
     }
   ],
-  "mutationDeltaAccounting": {
-    "baselineOnlyFailures": [],
-    "sharedBaselineAndMutantFailures": [],
-    "allCreditedKillsAreMutantOnly": true,
-    "substringOnlyAttribution": false,
-    "rows": [
-      {
-        "id": "M1",
-        "killed": true,
-        "failuresByClass": {
-          "NEGATED_MODALITY": 8,
-          "UNCERTAIN_MODALITY": 12
+  "independentKillAttribution": [
+    {
+      "id": "M1",
+      "decisionThresholdPass": true,
+      "decisionCounts": {
+        "UNCERTAIN_MODALITY": 12,
+        "KNOWN_REGRESSIONS": 2,
+        "NEGATED_MODALITY": 8,
+        "CONTRADICTION": 6
+      },
+      "minimum": {
+        "NEGATED_MODALITY": 4,
+        "UNCERTAIN_MODALITY": 4
+      },
+      "exceptions": [],
+      "witness": {
+        "id": "ADV001",
+        "text": "Photosynthesis may use chlorophyll to capture light energy.",
+        "expected": false,
+        "baseline": false,
+        "mutant": true,
+        "baselinePolarity": "UNCERTAIN",
+        "mutantPolarity": "AFFIRMED",
+        "boundaryDestroyed": false,
+        "controlLost": false
+      },
+      "attributed": [
+        {
+          "id": "ADV001",
+          "text": "Photosynthesis may use chlorophyll to capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNCERTAIN",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
         },
-        "minimumFailuresByClass": {
-          "NEGATED_MODALITY": 4,
-          "UNCERTAIN_MODALITY": 4
+        {
+          "id": "MOD-CAN",
+          "text": "Photosynthesis can capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNCERTAIN",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "MOD-CANNOT",
+          "text": "Photosynthesis cannot capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "NEGATED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "MOD-CANT",
+          "text": "Photosynthesis can't capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "NEGATED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "MOD-MAY",
+          "text": "Photosynthesis may capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNCERTAIN",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "MOD-MAYNOT",
+          "text": "Photosynthesis may not capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNCERTAIN",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "MOD-MIGHT",
+          "text": "Photosynthesis might capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNCERTAIN",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "MOD-MIGHTNOT",
+          "text": "Photosynthesis might not capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNCERTAIN",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "MOD-COULD",
+          "text": "Photosynthesis could capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNCERTAIN",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "MOD-COULDNOT",
+          "text": "Photosynthesis could not capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "NEGATED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "MOD-MUSTNOT",
+          "text": "Photosynthesis must not capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "NEGATED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "MOD-SHOULD",
+          "text": "Photosynthesis should capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "MOD-SHOULDNOT",
+          "text": "Photosynthesis should not capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "MOD-WOULD",
+          "text": "Photosynthesis would capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "MOD-WOULDNOT",
+          "text": "Photosynthesis would not capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "CON-001",
+          "text": "Photosynthesis captures light energy but does not capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "CONTRADICTED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-UNCERTAIN_MODALITY-001",
+          "text": "Photosynthesis may use chlorophyll to absorb light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNCERTAIN",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-NEGATED_MODALITY-001",
+          "text": "Photosynthesis cannot absorb light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "NEGATED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-NEGATED_MODALITY-002",
+          "text": "Photosynthesis cannot harness light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "NEGATED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-NEGATED_MODALITY-003",
+          "text": "Photosynthesis cannot use light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "NEGATED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-NEGATED_MODALITY-004",
+          "text": "Photosynthesis cannot convert light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "NEGATED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CONTRADICTION-001",
+          "text": "Photosynthesis absorbs light energy but does not absorb light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "CONTRADICTED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CONTRADICTION-002",
+          "text": "Photosynthesis harnesses light energy but does not harness light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "CONTRADICTED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CONTRADICTION-003",
+          "text": "Photosynthesis uses light energy but does not use light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "CONTRADICTED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CONTRADICTION-004",
+          "text": "Photosynthesis converts light energy but does not convert light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "CONTRADICTED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CONTRADICTION-005",
+          "text": "Photosynthesis transforms light energy but does not transform light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "CONTRADICTED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-KNOWN_REGRESSIONS-001",
+          "text": "Photosynthesis may use chlorophyll to harness light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNCERTAIN",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
         }
+      ]
+    },
+    {
+      "id": "M2",
+      "decisionThresholdPass": true,
+      "decisionCounts": {
+        "DETACHED_OBJECT_DECOYS": 7,
+        "DIRECT_OBJECT_BARRIERS": 6,
+        "KNOWN_REGRESSIONS": 1,
+        "FINITE_PREDICATE_BARRIERS": 6,
+        "PRONOUN_CONTINUATION": 1,
+        "CLAUSE_BOUNDARY": 7,
+        "INVALID_OBJECT": 1
+      },
+      "minimum": {
+        "DETACHED_OBJECT_DECOYS": 4,
+        "DIRECT_OBJECT_BARRIERS": 4,
+        "FINITE_PREDICATE_BARRIERS": 4
+      },
+      "exceptions": [],
+      "witness": {
+        "id": "ADV002",
+        "text": "Photosynthesis uses chlorophyll to capture carbon dioxide and light is nearby.",
+        "expected": false,
+        "baseline": false,
+        "mutant": true,
+        "baselinePolarity": "UNRESOLVED",
+        "mutantPolarity": "AFFIRMED",
+        "boundaryDestroyed": false,
+        "controlLost": false
+      },
+      "attributed": [
+        {
+          "id": "ADV002",
+          "text": "Photosynthesis uses chlorophyll to capture carbon dioxide and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "DOB-001",
+          "text": "Photosynthesis captures carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "FPB-001",
+          "text": "Photosynthesis captures carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "PRON-002",
+          "text": "Photosynthesis captures carbon dioxide and stores it near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-001",
+          "text": "Photosynthesis uses chlorophyll to absorb starch and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-002",
+          "text": "Photosynthesis uses chlorophyll to harness water vapor and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-003",
+          "text": "Photosynthesis uses chlorophyll to use mineral salts and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-004",
+          "text": "Photosynthesis uses chlorophyll to convert ultraviolet radiation and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-005",
+          "text": "Photosynthesis uses chlorophyll to transform leaf tissue and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-006",
+          "text": "Photosynthesis uses chlorophyll to store sugar molecules and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DIRECT_OBJECT_BARRIERS-001",
+          "text": "Photosynthesis absorbs carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DIRECT_OBJECT_BARRIERS-002",
+          "text": "Photosynthesis harnesses carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DIRECT_OBJECT_BARRIERS-003",
+          "text": "Photosynthesis uses carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DIRECT_OBJECT_BARRIERS-004",
+          "text": "Photosynthesis converts carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-FINITE_PREDICATE_BARRIERS-001",
+          "text": "Photosynthesis absorbs carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-FINITE_PREDICATE_BARRIERS-002",
+          "text": "Photosynthesis harnesses carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-FINITE_PREDICATE_BARRIERS-003",
+          "text": "Photosynthesis uses carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-FINITE_PREDICATE_BARRIERS-004",
+          "text": "Photosynthesis converts carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-FINITE_PREDICATE_BARRIERS-005",
+          "text": "Photosynthesis transforms carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-001",
+          "text": "Photosynthesis captures carbon dioxide although light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-002",
+          "text": "Photosynthesis captures carbon dioxide because light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-003",
+          "text": "Photosynthesis captures carbon dioxide whereas light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-004",
+          "text": "Photosynthesis captures carbon dioxide if light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-005",
+          "text": "Photosynthesis captures carbon dioxide unless light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-006",
+          "text": "Photosynthesis captures carbon dioxide when light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-007",
+          "text": "Photosynthesis captures carbon dioxide since light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INVALID_OBJECT-007",
+          "text": "Photosynthesis uses chlorophyll while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        }
+      ]
+    },
+    {
+      "id": "M3",
+      "decisionThresholdPass": true,
+      "decisionCounts": {
+        "DETACHED_OBJECT_DECOYS": 7,
+        "DIRECT_OBJECT_BARRIERS": 6,
+        "KNOWN_REGRESSIONS": 2,
+        "MALFORMED_SYNTAX": 9,
+        "FINITE_PREDICATE_BARRIERS": 6,
+        "PRONOUN_CONTINUATION": 1,
+        "CLAUSE_BOUNDARY": 7,
+        "INVALID_OBJECT": 1
+      },
+      "minimum": {
+        "MALFORMED_SYNTAX": 6
+      },
+      "exceptions": [],
+      "witness": {
+        "id": "ADV002",
+        "text": "Photosynthesis uses chlorophyll to capture carbon dioxide and light is nearby.",
+        "expected": false,
+        "baseline": false,
+        "mutant": true,
+        "baselinePolarity": "UNRESOLVED",
+        "mutantPolarity": "UNRESOLVED",
+        "boundaryDestroyed": false,
+        "controlLost": false
+      },
+      "attributed": [
+        {
+          "id": "ADV002",
+          "text": "Photosynthesis uses chlorophyll to capture carbon dioxide and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "ADV003",
+          "text": "Photosynthesis chlorophyll capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "DOB-001",
+          "text": "Photosynthesis captures carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "FPB-001",
+          "text": "Photosynthesis captures carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "MAL-002",
+          "text": "Photosynthesis light energy capture chlorophyll.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "MAL-003",
+          "text": "Chlorophyll light photosynthesis captures energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "PRON-002",
+          "text": "Photosynthesis captures carbon dioxide and stores it near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-001",
+          "text": "Photosynthesis uses chlorophyll to absorb starch and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-002",
+          "text": "Photosynthesis uses chlorophyll to harness water vapor and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-003",
+          "text": "Photosynthesis uses chlorophyll to use mineral salts and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-004",
+          "text": "Photosynthesis uses chlorophyll to convert ultraviolet radiation and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-005",
+          "text": "Photosynthesis uses chlorophyll to transform leaf tissue and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-006",
+          "text": "Photosynthesis uses chlorophyll to store sugar molecules and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DIRECT_OBJECT_BARRIERS-001",
+          "text": "Photosynthesis absorbs carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DIRECT_OBJECT_BARRIERS-002",
+          "text": "Photosynthesis harnesses carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DIRECT_OBJECT_BARRIERS-003",
+          "text": "Photosynthesis uses carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DIRECT_OBJECT_BARRIERS-004",
+          "text": "Photosynthesis converts carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-FINITE_PREDICATE_BARRIERS-001",
+          "text": "Photosynthesis absorbs carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-FINITE_PREDICATE_BARRIERS-002",
+          "text": "Photosynthesis harnesses carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-FINITE_PREDICATE_BARRIERS-003",
+          "text": "Photosynthesis uses carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-FINITE_PREDICATE_BARRIERS-004",
+          "text": "Photosynthesis converts carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-FINITE_PREDICATE_BARRIERS-005",
+          "text": "Photosynthesis transforms carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-MALFORMED_SYNTAX-001",
+          "text": "Photosynthesis chlorophyll absorb light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-MALFORMED_SYNTAX-002",
+          "text": "Photosynthesis chlorophyll harness light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-MALFORMED_SYNTAX-003",
+          "text": "Photosynthesis chlorophyll use light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-MALFORMED_SYNTAX-004",
+          "text": "Photosynthesis chlorophyll convert light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-MALFORMED_SYNTAX-005",
+          "text": "Photosynthesis chlorophyll transform light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-MALFORMED_SYNTAX-006",
+          "text": "Photosynthesis chlorophyll store light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-001",
+          "text": "Photosynthesis captures carbon dioxide although light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-002",
+          "text": "Photosynthesis captures carbon dioxide because light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-003",
+          "text": "Photosynthesis captures carbon dioxide whereas light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-004",
+          "text": "Photosynthesis captures carbon dioxide if light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-005",
+          "text": "Photosynthesis captures carbon dioxide unless light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-006",
+          "text": "Photosynthesis captures carbon dioxide when light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-007",
+          "text": "Photosynthesis captures carbon dioxide since light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INVALID_OBJECT-007",
+          "text": "Photosynthesis uses chlorophyll while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        }
+      ]
+    },
+    {
+      "id": "M4",
+      "decisionThresholdPass": true,
+      "decisionCounts": {
+        "AFFIRMATIVE_PASSIVE": 6,
+        "KNOWN_REGRESSIONS": 1
+      },
+      "minimum": {
+        "AFFIRMATIVE_PASSIVE": 4
+      },
+      "exceptions": [],
+      "witness": {
+        "id": "ADV005",
+        "text": "Light energy is captured by chlorophyll during photosynthesis.",
+        "expected": true,
+        "baseline": true,
+        "mutant": false,
+        "baselinePolarity": "AFFIRMED",
+        "mutantPolarity": "UNRESOLVED",
+        "boundaryDestroyed": false,
+        "controlLost": false
+      },
+      "attributed": [
+        {
+          "id": "ADV005",
+          "text": "Light energy is captured by chlorophyll during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_PASSIVE-001",
+          "text": "Light energy is absorbed by chlorophyll during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_PASSIVE-002",
+          "text": "Light energy is harnessed by chlorophyll during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_PASSIVE-003",
+          "text": "Light energy is used by chlorophyll during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_PASSIVE-004",
+          "text": "Light energy is converted by chlorophyll during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_PASSIVE-005",
+          "text": "Light energy is transformed by chlorophyll during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        }
+      ]
+    },
+    {
+      "id": "M5",
+      "decisionThresholdPass": true,
+      "decisionCounts": {
+        "COORDINATED_SUBJECTS_VALID": 5,
+        "COORDINATED_SUBJECTS_MIXED_INVALID": 6,
+        "KNOWN_REGRESSIONS": 2,
+        "WRONG_PIGMENT": 6,
+        "AFFIRMATIVE_ACTIVE": 1
+      },
+      "minimum": {
+        "COORDINATED_SUBJECTS_MIXED_INVALID": 6
+      },
+      "exceptions": [],
+      "witness": {
+        "id": "CSV-001",
+        "text": "Plants and algae capture light energy during photosynthesis.",
+        "expected": true,
+        "baseline": true,
+        "mutant": false,
+        "baselinePolarity": "AFFIRMED",
+        "mutantPolarity": "MIXED_INVALID",
+        "boundaryDestroyed": false,
+        "controlLost": false
+      },
+      "attributed": [
+        {
+          "id": "CSV-001",
+          "text": "Plants and algae capture light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "MIXED_INVALID",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "ADV006",
+          "text": "Animals and plants use chlorophyll to capture light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "MIXED_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "CSI-002",
+          "text": "Plants and animals use chlorophyll to capture light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "MIXED_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "WP-001",
+          "text": "Melanin rather than chlorophyll captures the light for photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "KREG-001",
+          "text": "Photosynthesis is the process by which green plants, algae, and some bacteria convert light energy into chemical energy, storing it in glucose molecules. It uses carbon dioxide and water, releasing oxygen as a byproduct, and is driven by chlorophyll in the presence of sunlight.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_VALID-001",
+          "text": "Algae and plants capture light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "MIXED_INVALID",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_VALID-002",
+          "text": "Plants, algae, and some bacteria capture light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "MIXED_INVALID",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_VALID-003",
+          "text": "Green plants and algae capture light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "MIXED_INVALID",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_VALID-004",
+          "text": "Algae and photosynthetic bacteria capture light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "MIXED_INVALID",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-001",
+          "text": "Animals and algae use chlorophyll to capture light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "MIXED_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-002",
+          "text": "Algae and rocks use chlorophyll to capture light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "MIXED_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-003",
+          "text": "Animals and green plants use chlorophyll to capture light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "MIXED_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-004",
+          "text": "Animals and some bacteria use chlorophyll to capture light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "MIXED_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-WRONG_PIGMENT-001",
+          "text": "Melanin rather than chlorophyll absorbs the light for photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-WRONG_PIGMENT-002",
+          "text": "Melanin rather than chlorophyll harnesses the light for photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-WRONG_PIGMENT-003",
+          "text": "Melanin rather than chlorophyll uses the light for photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-WRONG_PIGMENT-004",
+          "text": "Melanin rather than chlorophyll converts the light for photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-WRONG_PIGMENT-005",
+          "text": "Melanin rather than chlorophyll transforms the light for photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        }
+      ]
+    },
+    {
+      "id": "M6",
+      "decisionThresholdPass": true,
+      "decisionCounts": {
+        "DOUBLE_NEGATION": 6,
+        "NESTED_CONTROL": 10,
+        "KNOWN_REGRESSIONS": 1,
+        "COORDINATED_SUBJECTS_VALID": 1,
+        "UNRELATED_NEGATION": 6,
+        "NO_STITCHING": 1
+      },
+      "minimum": {
+        "DOUBLE_NEGATION": 4,
+        "NESTED_CONTROL": 6,
+        "UNRELATED_NEGATION": 4
+      },
+      "exceptions": [],
+      "witness": {
+        "id": "ADV004",
+        "text": "Photosynthesis does not fail to use chlorophyll to capture light energy.",
+        "expected": true,
+        "baseline": true,
+        "mutant": false,
+        "baselinePolarity": "AFFIRMED",
+        "mutantPolarity": "UNRESOLVED",
+        "boundaryDestroyed": false,
+        "controlLost": true
+      },
+      "attributed": [
+        {
+          "id": "ADV004",
+          "text": "Photosynthesis does not fail to use chlorophyll to capture light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": true
+        },
+        {
+          "id": "SEP-001",
+          "text": "Animals move nearby, and plants capture light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "CTRL-FAIL",
+          "text": "Photosynthesis fails to capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "NEGATED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": true
+        },
+        {
+          "id": "CTRL-FAILED",
+          "text": "Photosynthesis failed to capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "NEGATED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": true
+        },
+        {
+          "id": "CTRL-DIDNOTFAIL",
+          "text": "Photosynthesis did not fail to capture light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": true
+        },
+        {
+          "id": "CTRL-NEVERFAIL",
+          "text": "Photosynthesis never fails to capture light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": true
+        },
+        {
+          "id": "CTRL-NOTAPPEAR",
+          "text": "Photosynthesis does not appear to capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": true
+        },
+        {
+          "id": "CTRL-APPEARNOT",
+          "text": "Photosynthesis appears not to capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "UNCERTAIN",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": true
+        },
+        {
+          "id": "CTRL-NOTSEEM",
+          "text": "Photosynthesis does not seem to capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": true
+        },
+        {
+          "id": "CTRL-SEEMNOT",
+          "text": "Photosynthesis seems not to capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "UNCERTAIN",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": true
+        },
+        {
+          "id": "UNN-001",
+          "text": "Animals do not move, and photosynthesis captures light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "NS-001",
+          "text": "Chlorophyll is present; animals capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "ALL_INVALID",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-NESTED_CONTROL-001",
+          "text": "Photosynthesis fails to absorb light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "NEGATED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": true
+        },
+        {
+          "id": "V2-NESTED_CONTROL-002",
+          "text": "Photosynthesis fails to harness light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "NEGATED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": true
+        },
+        {
+          "id": "V2-NESTED_CONTROL-003",
+          "text": "Photosynthesis fails to use light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "NEGATED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": true
+        },
+        {
+          "id": "V2-DOUBLE_NEGATION-001",
+          "text": "Photosynthesis does not fail to use chlorophyll to absorb light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": true
+        },
+        {
+          "id": "V2-DOUBLE_NEGATION-002",
+          "text": "Photosynthesis does not fail to use chlorophyll to harness light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": true
+        },
+        {
+          "id": "V2-DOUBLE_NEGATION-003",
+          "text": "Photosynthesis does not fail to use chlorophyll to use light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": true
+        },
+        {
+          "id": "V2-UNRELATED_NEGATION-001",
+          "text": "Animals do not move, and photosynthesis absorbs light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-UNRELATED_NEGATION-002",
+          "text": "Animals do not move, and photosynthesis harnesses light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-UNRELATED_NEGATION-003",
+          "text": "Animals do not move, and photosynthesis uses light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-UNRELATED_NEGATION-004",
+          "text": "Animals do not move, and photosynthesis converts light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-UNRELATED_NEGATION-005",
+          "text": "Animals do not move, and photosynthesis transforms light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        }
+      ]
+    },
+    {
+      "id": "M7",
+      "decisionThresholdPass": true,
+      "decisionCounts": {
+        "DETACHED_OBJECT_DECOYS": 8,
+        "DIRECT_OBJECT_BARRIERS": 6,
+        "KNOWN_REGRESSIONS": 1,
+        "COORDINATED_SUBJECTS_VALID": 1,
+        "FINITE_PREDICATE_BARRIERS": 6,
+        "UNRELATED_NEGATION": 6,
+        "CLAUSE_BOUNDARY": 8,
+        "PRONOUN_CONTINUATION": 1,
+        "NO_STITCHING": 7,
+        "SENTENCE_BOUNDARY": 1,
+        "INVALID_OBJECT": 1,
+        "PUNCTUATION_ABUSE": 1
+      },
+      "minimum": {
+        "CLAUSE_BOUNDARY": 4,
+        "NO_STITCHING": 4
+      },
+      "exceptions": [],
+      "witness": {
+        "id": "ADV002",
+        "text": "Photosynthesis uses chlorophyll to capture carbon dioxide and light is nearby.",
+        "expected": false,
+        "baseline": false,
+        "mutant": true,
+        "baselinePolarity": "UNRESOLVED",
+        "mutantPolarity": "AFFIRMED",
+        "boundaryDestroyed": false,
+        "controlLost": false
+      },
+      "attributed": [
+        {
+          "id": "ADV002",
+          "text": "Photosynthesis uses chlorophyll to capture carbon dioxide and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "SEP-001",
+          "text": "Animals move nearby, and plants capture light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "DOB-001",
+          "text": "Photosynthesis captures carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "FPB-001",
+          "text": "Photosynthesis captures carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "UNN-001",
+          "text": "Animals do not move, and photosynthesis captures light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "CB-001",
+          "text": "Photosynthesis captures carbon dioxide; light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "PRON-002",
+          "text": "Photosynthesis captures carbon dioxide and stores it near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "NS-001",
+          "text": "Chlorophyll is present; animals capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "ALL_INVALID",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": true,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-001",
+          "text": "Photosynthesis uses chlorophyll to absorb starch and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-002",
+          "text": "Photosynthesis uses chlorophyll to harness water vapor and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-003",
+          "text": "Photosynthesis uses chlorophyll to use mineral salts and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-004",
+          "text": "Photosynthesis uses chlorophyll to convert ultraviolet radiation and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-005",
+          "text": "Photosynthesis uses chlorophyll to transform leaf tissue and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-006",
+          "text": "Photosynthesis uses chlorophyll to store sugar molecules and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-007",
+          "text": "Photosynthesis uses chlorophyll to capture nitrogen; light energy is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DIRECT_OBJECT_BARRIERS-001",
+          "text": "Photosynthesis absorbs carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DIRECT_OBJECT_BARRIERS-002",
+          "text": "Photosynthesis harnesses carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DIRECT_OBJECT_BARRIERS-003",
+          "text": "Photosynthesis uses carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DIRECT_OBJECT_BARRIERS-004",
+          "text": "Photosynthesis converts carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-FINITE_PREDICATE_BARRIERS-001",
+          "text": "Photosynthesis absorbs carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-FINITE_PREDICATE_BARRIERS-002",
+          "text": "Photosynthesis harnesses carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-FINITE_PREDICATE_BARRIERS-003",
+          "text": "Photosynthesis uses carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-FINITE_PREDICATE_BARRIERS-004",
+          "text": "Photosynthesis converts carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-FINITE_PREDICATE_BARRIERS-005",
+          "text": "Photosynthesis transforms carbon dioxide while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-UNRELATED_NEGATION-001",
+          "text": "Animals do not move, and photosynthesis absorbs light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-UNRELATED_NEGATION-002",
+          "text": "Animals do not move, and photosynthesis harnesses light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-UNRELATED_NEGATION-003",
+          "text": "Animals do not move, and photosynthesis uses light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-UNRELATED_NEGATION-004",
+          "text": "Animals do not move, and photosynthesis converts light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-UNRELATED_NEGATION-005",
+          "text": "Animals do not move, and photosynthesis transforms light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-001",
+          "text": "Photosynthesis captures carbon dioxide although light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-002",
+          "text": "Photosynthesis captures carbon dioxide because light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-003",
+          "text": "Photosynthesis captures carbon dioxide whereas light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-004",
+          "text": "Photosynthesis captures carbon dioxide if light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-005",
+          "text": "Photosynthesis captures carbon dioxide unless light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-006",
+          "text": "Photosynthesis captures carbon dioxide when light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-CLAUSE_BOUNDARY-007",
+          "text": "Photosynthesis captures carbon dioxide since light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-SENTENCE_BOUNDARY-001",
+          "text": "Photosynthesis converts chemicals; light energy exists.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INVALID_OBJECT-007",
+          "text": "Photosynthesis uses chlorophyll while light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-PUNCTUATION_ABUSE-004",
+          "text": "Photosynthesis captures carbon dioxide: plants capture water; light energy exists.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-NO_STITCHING-002",
+          "text": "Chlorophyll is present; melanin captures light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": true,
+          "controlLost": false
+        },
+        {
+          "id": "V2-NO_STITCHING-003",
+          "text": "Chlorophyll is present; carotene captures light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": true,
+          "controlLost": false
+        },
+        {
+          "id": "V2-NO_STITCHING-004",
+          "text": "Chlorophyll is present; xanthophyll captures light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": true,
+          "controlLost": false
+        },
+        {
+          "id": "V2-NO_STITCHING-005",
+          "text": "Chlorophyll is present; light energy is captured by rocks.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "ALL_INVALID",
+          "mutantPolarity": "ALL_INVALID",
+          "boundaryDestroyed": true,
+          "controlLost": false
+        },
+        {
+          "id": "V2-NO_STITCHING-006",
+          "text": "Chlorophyll is present; chlorophyll captures water.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": true,
+          "controlLost": false
+        },
+        {
+          "id": "V2-NO_STITCHING-007",
+          "text": "Chlorophyll is present; rocks capture water.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "ALL_INVALID",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": true,
+          "controlLost": false
+        }
+      ]
+    },
+    {
+      "id": "M8",
+      "decisionThresholdPass": true,
+      "decisionCounts": {
+        "COORDINATED_SUBJECTS_MIXED_INVALID": 8,
+        "KNOWN_REGRESSIONS": 1,
+        "INVALID_SUBJECT": 8,
+        "NO_STITCHING": 3,
+        "SENTENCE_BOUNDARY": 1,
+        "PUNCTUATION_ABUSE": 1
+      },
+      "minimum": {
+        "COORDINATED_SUBJECTS_MIXED_INVALID": 4,
+        "INVALID_SUBJECT": 4
+      },
+      "exceptions": [],
+      "witness": {
+        "id": "ADV006",
+        "text": "Animals and plants use chlorophyll to capture light energy during photosynthesis.",
+        "expected": false,
+        "baseline": false,
+        "mutant": true,
+        "baselinePolarity": "MIXED_INVALID",
+        "mutantPolarity": "AFFIRMED",
+        "boundaryDestroyed": false,
+        "controlLost": false
+      },
+      "attributed": [
+        {
+          "id": "ADV006",
+          "text": "Animals and plants use chlorophyll to capture light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "MIXED_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "CSI-002",
+          "text": "Plants and animals use chlorophyll to capture light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "MIXED_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "CSI-003",
+          "text": "Plants, algae, and animals capture light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "MIXED_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "IS-001",
+          "text": "Animals capture light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "ALL_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "NS-001",
+          "text": "Chlorophyll is present; animals capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "ALL_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-001",
+          "text": "Animals and algae use chlorophyll to capture light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "MIXED_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-002",
+          "text": "Algae and rocks use chlorophyll to capture light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "MIXED_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-003",
+          "text": "Animals and green plants use chlorophyll to capture light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "MIXED_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-004",
+          "text": "Animals and some bacteria use chlorophyll to capture light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "MIXED_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-005",
+          "text": "Rocks, plants, algae, and some bacteria use chlorophyll to capture light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "MIXED_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-SENTENCE_BOUNDARY-005",
+          "text": "Photosynthesis converts chemicals. Light energy exists. Animals capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INVALID_SUBJECT-001",
+          "text": "Rocks and animals capture light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "ALL_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INVALID_SUBJECT-002",
+          "text": "Animals absorb light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "ALL_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INVALID_SUBJECT-003",
+          "text": "Animals harness light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "ALL_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INVALID_SUBJECT-004",
+          "text": "Animals use light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "ALL_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INVALID_SUBJECT-005",
+          "text": "Animals convert light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "ALL_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INVALID_SUBJECT-006",
+          "text": "Animals transform light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "ALL_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INVALID_SUBJECT-007",
+          "text": "Animals store light energy during photosynthesis.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "ALL_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-PUNCTUATION_ABUSE-007",
+          "text": "Photosynthesis captures carbon dioxide?! Light energy exists. Animals capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-NO_STITCHING-001",
+          "text": "Chlorophyll is present. Animals capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "ALL_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-NO_STITCHING-005",
+          "text": "Chlorophyll is present; light energy is captured by rocks.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "ALL_INVALID",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        }
+      ]
+    },
+    {
+      "id": "M9",
+      "decisionThresholdPass": true,
+      "decisionCounts": {
+        "DETACHED_OBJECT_DECOYS": 8,
+        "DIRECT_OBJECT_BARRIERS": 6,
+        "KNOWN_REGRESSIONS": 1,
+        "SENTENCE_BOUNDARY": 7,
+        "CLAUSE_BOUNDARY": 1,
+        "PRONOUN_CONTINUATION": 1,
+        "INVALID_OBJECT": 7,
+        "PUNCTUATION_ABUSE": 9,
+        "NO_STITCHING": 1
+      },
+      "minimum": {
+        "DETACHED_OBJECT_DECOYS": 4,
+        "INVALID_OBJECT": 4
+      },
+      "exceptions": [],
+      "witness": {
+        "id": "ADV002",
+        "text": "Photosynthesis uses chlorophyll to capture carbon dioxide and light is nearby.",
+        "expected": false,
+        "baseline": false,
+        "mutant": true,
+        "baselinePolarity": "UNRESOLVED",
+        "mutantPolarity": "AFFIRMED",
+        "boundaryDestroyed": false,
+        "controlLost": false
+      },
+      "attributed": [
+        {
+          "id": "ADV002",
+          "text": "Photosynthesis uses chlorophyll to capture carbon dioxide and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "DOB-001",
+          "text": "Photosynthesis captures carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "SB-001",
+          "text": "Photosynthesis converts chemicals. Light energy exists.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "CB-001",
+          "text": "Photosynthesis captures carbon dioxide; light energy is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "PRON-002",
+          "text": "Photosynthesis captures carbon dioxide and stores it near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "IO-001",
+          "text": "Photosynthesis captures heat energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "PUN-001",
+          "text": "Photosynthesis captures carbon dioxide!!! Light energy exists.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-001",
+          "text": "Photosynthesis uses chlorophyll to absorb starch and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-002",
+          "text": "Photosynthesis uses chlorophyll to harness water vapor and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-003",
+          "text": "Photosynthesis uses chlorophyll to use mineral salts and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-004",
+          "text": "Photosynthesis uses chlorophyll to convert ultraviolet radiation and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-005",
+          "text": "Photosynthesis uses chlorophyll to transform leaf tissue and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-006",
+          "text": "Photosynthesis uses chlorophyll to store sugar molecules and light is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DETACHED_OBJECT_DECOYS-007",
+          "text": "Photosynthesis uses chlorophyll to capture nitrogen; light energy is nearby.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DIRECT_OBJECT_BARRIERS-001",
+          "text": "Photosynthesis absorbs carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DIRECT_OBJECT_BARRIERS-002",
+          "text": "Photosynthesis harnesses carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DIRECT_OBJECT_BARRIERS-003",
+          "text": "Photosynthesis uses carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DIRECT_OBJECT_BARRIERS-004",
+          "text": "Photosynthesis converts carbon dioxide near light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-SENTENCE_BOUNDARY-001",
+          "text": "Photosynthesis converts chemicals; light energy exists.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-SENTENCE_BOUNDARY-002",
+          "text": "Photosynthesis converts chemicals. Plants capture water. Light energy exists.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-SENTENCE_BOUNDARY-003",
+          "text": "Photosynthesis converts chemicals. Photosynthesis converts chemicals. Light energy exists.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-SENTENCE_BOUNDARY-004",
+          "text": "Photosynthesis converts chemicals. Chlorophyll captures water. Light energy exists.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-SENTENCE_BOUNDARY-005",
+          "text": "Photosynthesis converts chemicals. Light energy exists. Animals capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-SENTENCE_BOUNDARY-006",
+          "text": "Photosynthesis converts chemicals. Light energy exists; plants capture carbon dioxide.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INVALID_OBJECT-001",
+          "text": "Photosynthesis absorbs water.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INVALID_OBJECT-002",
+          "text": "Photosynthesis harnesses carbon dioxide.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INVALID_OBJECT-003",
+          "text": "Photosynthesis uses oxygen.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INVALID_OBJECT-004",
+          "text": "Photosynthesis converts nutrients.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INVALID_OBJECT-005",
+          "text": "Photosynthesis transforms starch.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INVALID_OBJECT-006",
+          "text": "Photosynthesis stores sugar.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-PUNCTUATION_ABUSE-001",
+          "text": "Photosynthesis captures carbon dioxide?! Light energy exists. Animals capture water!!! Chlorophyll is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-PUNCTUATION_ABUSE-002",
+          "text": "Photosynthesis captures carbon dioxide? ! Chlorophyll captures water. Light energy exists!!!",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-PUNCTUATION_ABUSE-003",
+          "text": "Photosynthesis captures carbon dioxide?!? Light energy exists! Chlorophyll is present.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-PUNCTUATION_ABUSE-004",
+          "text": "Photosynthesis captures carbon dioxide: plants capture water; light energy exists.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-PUNCTUATION_ABUSE-005",
+          "text": "Photosynthesis captures carbon dioxide:!; Light energy exists. Animals capture water.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-PUNCTUATION_ABUSE-006",
+          "text": "Photosynthesis captures carbon dioxide?! Light energy exists. Plants transform carbon dioxide!!!",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-PUNCTUATION_ABUSE-007",
+          "text": "Photosynthesis captures carbon dioxide?! Light energy exists. Animals capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-NO_STITCHING-006",
+          "text": "Chlorophyll is present; chlorophyll captures water.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "B5-PUNCTUATION_ABUSE-001",
+          "text": "Photosynthesis captures carbon dioxide! Light energy exists! Chlorophyll is present! Light energy remains.",
+          "expected": false,
+          "baseline": false,
+          "mutant": true,
+          "baselinePolarity": "UNRESOLVED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        }
+      ]
+    },
+    {
+      "id": "M10",
+      "decisionThresholdPass": true,
+      "decisionCounts": {
+        "AFFIRMATIVE_ACTIVE": 17,
+        "INFINITIVAL_CHLOROPHYLL_MEDIATED": 6,
+        "COORDINATED_SUBJECTS_VALID": 6,
+        "DOUBLE_NEGATION": 6,
+        "NESTED_CONTROL": 1,
+        "KNOWN_REGRESSIONS": 2,
+        "AFFIRMED_MODALITY": 4,
+        "UNRELATED_NEGATION": 6,
+        "CONTRADICTION": 1
+      },
+      "minimum": {
+        "AFFIRMATIVE_ACTIVE": 2,
+        "KNOWN_REGRESSIONS": 2
+      },
+      "exceptions": [],
+      "witness": {
+        "id": "ACT-001",
+        "text": "Photosynthesis converts light energy into chemical energy.",
+        "expected": true,
+        "baseline": true,
+        "mutant": false,
+        "baselinePolarity": "AFFIRMED",
+        "mutantPolarity": "AFFIRMED",
+        "boundaryDestroyed": false,
+        "controlLost": false
+      },
+      "attributed": [
+        {
+          "id": "ACT-001",
+          "text": "Photosynthesis converts light energy into chemical energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "INF-001",
+          "text": "Photosynthesis uses chlorophyll to capture light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "CSV-001",
+          "text": "Plants and algae capture light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "ADV004",
+          "text": "Photosynthesis does not fail to use chlorophyll to capture light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "SEP-001",
+          "text": "Animals move nearby, and plants capture light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "MOD-MUST",
+          "text": "Photosynthesis must capture light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "CTRL-DIDNOTFAIL",
+          "text": "Photosynthesis did not fail to capture light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "CTRL-NEVERFAIL",
+          "text": "Photosynthesis never fails to capture light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "UNN-001",
+          "text": "Animals do not move, and photosynthesis captures light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "CON-001",
+          "text": "Photosynthesis captures light energy but does not capture light energy.",
+          "expected": false,
+          "baseline": false,
+          "mutant": false,
+          "baselinePolarity": "CONTRADICTED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "KREG-001",
+          "text": "Photosynthesis is the process by which green plants, algae, and some bacteria convert light energy into chemical energy, storing it in glucose molecules. It uses carbon dioxide and water, releasing oxygen as a byproduct, and is driven by chlorophyll in the presence of sunlight.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "UNRESOLVED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_ACTIVE-001",
+          "text": "Plants capture light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_ACTIVE-002",
+          "text": "Plants absorb light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_ACTIVE-003",
+          "text": "Plants harness light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_ACTIVE-004",
+          "text": "Plants use light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_ACTIVE-005",
+          "text": "Plants convert light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_ACTIVE-006",
+          "text": "Plants transform light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_ACTIVE-007",
+          "text": "Plants store light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_ACTIVE-008",
+          "text": "Green plants capture light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_ACTIVE-009",
+          "text": "Green plants absorb light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_ACTIVE-010",
+          "text": "Green plants harness light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_ACTIVE-011",
+          "text": "Green plants use light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_ACTIVE-012",
+          "text": "Green plants convert light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_ACTIVE-013",
+          "text": "Green plants transform light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_ACTIVE-014",
+          "text": "Green plants store light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMATIVE_ACTIVE-015",
+          "text": "Algae capture light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INFINITIVAL_CHLOROPHYLL_MEDIATED-001",
+          "text": "Photosynthesis uses chlorophyll to absorb light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INFINITIVAL_CHLOROPHYLL_MEDIATED-002",
+          "text": "Photosynthesis uses chlorophyll to harness light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INFINITIVAL_CHLOROPHYLL_MEDIATED-003",
+          "text": "Photosynthesis uses chlorophyll to use light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INFINITIVAL_CHLOROPHYLL_MEDIATED-004",
+          "text": "Photosynthesis uses chlorophyll to convert light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-INFINITIVAL_CHLOROPHYLL_MEDIATED-005",
+          "text": "Photosynthesis uses chlorophyll to transform light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_VALID-001",
+          "text": "Algae and plants capture light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_VALID-002",
+          "text": "Plants, algae, and some bacteria capture light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_VALID-003",
+          "text": "Green plants and algae capture light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-COORDINATED_SUBJECTS_VALID-004",
+          "text": "Algae and photosynthetic bacteria capture light energy during photosynthesis.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMED_MODALITY-001",
+          "text": "Photosynthesis must absorb light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMED_MODALITY-002",
+          "text": "Photosynthesis must harness light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-AFFIRMED_MODALITY-003",
+          "text": "Photosynthesis must use light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DOUBLE_NEGATION-001",
+          "text": "Photosynthesis does not fail to use chlorophyll to absorb light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DOUBLE_NEGATION-002",
+          "text": "Photosynthesis does not fail to use chlorophyll to harness light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-DOUBLE_NEGATION-003",
+          "text": "Photosynthesis does not fail to use chlorophyll to use light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-UNRELATED_NEGATION-001",
+          "text": "Animals do not move, and photosynthesis absorbs light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-UNRELATED_NEGATION-002",
+          "text": "Animals do not move, and photosynthesis harnesses light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-UNRELATED_NEGATION-003",
+          "text": "Animals do not move, and photosynthesis uses light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-UNRELATED_NEGATION-004",
+          "text": "Animals do not move, and photosynthesis converts light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        },
+        {
+          "id": "V2-UNRELATED_NEGATION-005",
+          "text": "Animals do not move, and photosynthesis transforms light energy.",
+          "expected": true,
+          "baseline": true,
+          "mutant": false,
+          "baselinePolarity": "AFFIRMED",
+          "mutantPolarity": "AFFIRMED",
+          "boundaryDestroyed": false,
+          "controlLost": false
+        }
+      ]
+    }
+  ],
+  "historicalProvenanceCorrection": {
+    "oldReceiptCommit": "ee010f0d0d2ed7281b2e0069e1dee6848b611d9b",
+    "staleRecipe": {
+      "commit": "3ae0f283461f304f2778a4dc463a85c8f7d86adf",
+      "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+      "blob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
+      "sha256": "a80a4855a30ace45ff83bc0828fe62810ac46f5a0858543be8abaa693d8bbdb4"
+    },
+    "declaredBuild": {
+      "bytes": 122556,
+      "sha256": "0cf7f9b87d7aafe11c5505da1f935a666f741422b1893df77319aeefb4e4f2af"
+    },
+    "actualRecipe": {
+      "commit": "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
+      "path": "backend/scripts/compose-photosynthesis-relation-mutation-package.mjs",
+      "blob": "70b70ef7e6a4ea2d076e310f69bc64609ff2a5d7",
+      "sha256": "ec88d5cecc2a4c43d4eac6c28be40bcab2f1d4479eb0db5bac54a77b11f9e26c",
+      "enteredHistory": "2026-09-26T22:02:16+04:00"
+    },
+    "actualOldPackage": {
+      "bytes": 122798,
+      "sha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a"
+    },
+    "reason": "Old active receipt named the older composer and incomplete runner patch. The newer committed recipe contains the actual require wrapper and M2/M7/M3 derivation. Both independent audit observations were correct.",
+    "reproduction": [
+      {
+        "mode": "declared",
+        "build": 1,
+        "recipeSha": "a80a4855a30ace45ff83bc0828fe62810ac46f5a0858543be8abaa693d8bbdb4",
+        "runnerSha": "a58f3ea927089e03ea9f7a985d822478e1a6b0d355691d190d6aeb2286100c25",
+        "bytes": 122556,
+        "sha256": "0cf7f9b87d7aafe11c5505da1f935a666f741422b1893df77319aeefb4e4f2af",
+        "matchesCommitted": false
       },
       {
-        "id": "M2",
-        "killed": true,
-        "failuresByClass": {
-          "DETACHED_OBJECT_DECOYS": 7,
-          "DIRECT_OBJECT_BARRIERS": 6,
-          "FINITE_PREDICATE_BARRIERS": 6
-        },
-        "minimumFailuresByClass": {
-          "DETACHED_OBJECT_DECOYS": 4,
-          "DIRECT_OBJECT_BARRIERS": 4,
-          "FINITE_PREDICATE_BARRIERS": 4
-        }
+        "mode": "declared",
+        "build": 2,
+        "recipeSha": "a80a4855a30ace45ff83bc0828fe62810ac46f5a0858543be8abaa693d8bbdb4",
+        "runnerSha": "a58f3ea927089e03ea9f7a985d822478e1a6b0d355691d190d6aeb2286100c25",
+        "bytes": 122556,
+        "sha256": "0cf7f9b87d7aafe11c5505da1f935a666f741422b1893df77319aeefb4e4f2af",
+        "matchesCommitted": false
       },
       {
-        "id": "M3",
-        "killed": true,
-        "failuresByClass": {
-          "MALFORMED_SYNTAX": 9
-        },
-        "minimumFailuresByClass": {
-          "MALFORMED_SYNTAX": 6
-        }
+        "mode": "latest-audit",
+        "build": 1,
+        "recipeSha": "ec88d5cecc2a4c43d4eac6c28be40bcab2f1d4479eb0db5bac54a77b11f9e26c",
+        "runnerSha": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03",
+        "bytes": 122798,
+        "sha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
+        "matchesCommitted": true
       },
       {
-        "id": "M4",
-        "killed": true,
-        "failuresByClass": {
-          "AFFIRMATIVE_PASSIVE": 6
-        },
-        "minimumFailuresByClass": {
-          "AFFIRMATIVE_PASSIVE": 4
-        }
-      },
-      {
-        "id": "M5",
-        "killed": true,
-        "failuresByClass": {
-          "COORDINATED_SUBJECTS_MIXED_INVALID": 6
-        },
-        "minimumFailuresByClass": {
-          "COORDINATED_SUBJECTS_MIXED_INVALID": 6
-        }
-      },
-      {
-        "id": "M6",
-        "killed": true,
-        "failuresByClass": {
-          "DOUBLE_NEGATION": 6,
-          "NESTED_CONTROL": 7,
-          "UNRELATED_NEGATION": 6
-        },
-        "minimumFailuresByClass": {
-          "DOUBLE_NEGATION": 4,
-          "NESTED_CONTROL": 6,
-          "UNRELATED_NEGATION": 4
-        }
-      },
-      {
-        "id": "M7",
-        "killed": true,
-        "failuresByClass": {
-          "CLAUSE_BOUNDARY": 8,
-          "NO_STITCHING": 7
-        },
-        "minimumFailuresByClass": {
-          "CLAUSE_BOUNDARY": 4,
-          "NO_STITCHING": 4
-        }
-      },
-      {
-        "id": "M8",
-        "killed": true,
-        "failuresByClass": {
-          "COORDINATED_SUBJECTS_MIXED_INVALID": 8,
-          "INVALID_SUBJECT": 8
-        },
-        "minimumFailuresByClass": {
-          "COORDINATED_SUBJECTS_MIXED_INVALID": 4,
-          "INVALID_SUBJECT": 4
-        }
-      },
-      {
-        "id": "M9",
-        "killed": true,
-        "failuresByClass": {
-          "DETACHED_OBJECT_DECOYS": 8,
-          "INVALID_OBJECT": 7
-        },
-        "minimumFailuresByClass": {
-          "DETACHED_OBJECT_DECOYS": 4,
-          "INVALID_OBJECT": 4
-        }
-      },
-      {
-        "id": "M10",
-        "killed": true,
-        "failuresByClass": {
-          "AFFIRMATIVE_ACTIVE": 17,
-          "KNOWN_REGRESSIONS": 2
-        },
-        "minimumFailuresByClass": {
-          "AFFIRMATIVE_ACTIVE": 2,
-          "KNOWN_REGRESSIONS": 2
-        }
+        "mode": "latest-audit",
+        "build": 2,
+        "recipeSha": "ec88d5cecc2a4c43d4eac6c28be40bcab2f1d4479eb0db5bac54a77b11f9e26c",
+        "runnerSha": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03",
+        "bytes": 122798,
+        "sha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
+        "matchesCommitted": true
       }
     ]
   },
-  "qualificationMode": "committed package M1-M10 baseline-first execution; no CandidateQualification",
-  "scopeGates": {
-    "astraRun": false,
-    "candidateQualificationRun": false,
-    "solReviewRun": false,
-    "release": false,
-    "deploy": false,
-    "p2": false
+  "buildCommand": "C:\\Users\\LENOVO\\.codex\\toolchains\\alop-node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/reproduce-active-receipt.mjs \"C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-reconciliation-repair\" \"C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/receipt-reproduction\"",
+  "buildProcedure": "Read recipe/evaluator/runner/corpus blobs using only the four declared commit:path pairs; verify blob and SHA256; import recipe in external scratch; deriveRunner(runner); composeArtifact(evaluator,derivedRunner); compare artifact bytes, hash, size and header to packagePath. Corpus is runtime runner input, not embedded package content.",
+  "finalTestedCandidateAttestation": {
+    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/FINAL-TESTED-CANDIDATE.json",
+    "role": "External post-commit attestation: exact final HEAD/TREE, suite results and log hashes. Written only after final evidence commit and exact committed-tree tests. This file is not a claim that those tests have already passed.",
+    "selfReferencePolicy": "A committed receipt cannot contain its own future commit hash. Final tested candidate identity and results are sealed externally; committed source-snapshot results below are historical facts only."
   },
-  "implementationCommitShas": [
-    "c23532d49a5dab46ce3a5498a0ac5d72a9aadd81",
-    "9d51a0a8809049d77674ee254910924fbc6a7def",
-    "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-    "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-    "b315b455b679341d6dc6fe48bbf22c6e35a241bb",
-    "e7c248828a867b7ff285a2d96ea265460d755f18",
-    "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
-    "d20ee99dea304860767c9f5c8d49505eefd2b265",
-    "adeec90cf2fae5b8bc49d8780832ba2e8debf8c2",
-    "c0793c0f415f0a23befa1c7ae89e5b9244e89ec5",
-    "b1b584153d9efd720a99085fe6d44060e962ea16",
-    "6cf90b4dddf42716de319cac14a16cf755a4c938",
-    "e1b50b53769139f9d2f1381170f555e37efdcab3",
-    "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b"
-  ],
-  "datasetValidation": {
-    "status": "PASS",
-    "mode": "validate-only",
-    "networkCalls": 0,
-    "providerCalls": 0,
-    "v1": {
-      "cases": 21,
-      "valid": true,
-      "spent": false,
-      "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-dataset-v1-20260926.log",
-        "bytes": 95,
-        "sha256": "a949a8a0c072b90f28be07a83dd78b272a725cbc1533253b29c3a441df18f79b",
-        "modifiedAtUtc": "2026-09-26T19:38:40.604Z"
-      }
-    },
-    "v2": {
-      "cases": 21,
-      "valid": true,
-      "spent": false,
-      "stdout": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-dataset-v2-20260926.log",
-        "bytes": 95,
-        "sha256": "11a887e42686af89b2f9c04ce71a808ad91a8a776eb334234a2e6893788ee27e",
-        "modifiedAtUtc": "2026-09-26T19:38:41.694Z"
-      }
-    }
+  "reproductionScript": {
+    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/reproduce-active-receipt.mjs",
+    "sha256": "dbdb28b1fa08129c05ee708513cdb42e5ea9ce768f73e0faa3288926758196f8"
   }
 }

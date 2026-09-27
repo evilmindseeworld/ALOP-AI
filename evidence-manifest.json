@@ -1,627 +1,142 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 1,
   "kind": "alop-p1-authoritative-evidence-manifest",
-  "repairAttemptId": "P1-ASTRA-RESTART-001-004-20260926-8644913",
-  "phase": "FINAL_EVIDENCE",
-  "status": "PASS",
-  "verified": true,
+  "repairAttemptId": "P1-RECONCILIATION-20260927",
+  "phase": "FINAL_REPAIR_EVIDENCE",
+  "status": "SOURCE_AND_BUILD_EVIDENCE_FINAL_TESTS_EXTERNAL",
   "entryCount": 13,
-  "allowedPathsPass": true,
-  "nestedManifest": "ABSENT",
   "manifestSelfHashExcluded": true,
-  "capturedAtUtc": "2026-09-26T20:17:20.470Z",
-  "authority": {
-    "directUserAuthorizedImplementationWorker": true,
-    "runtimeSelectionSource": "Owner-reported Codex /status; accepted without internal model self-check or challenge",
-    "delegation": "none"
-  },
+  "capturedAtUtc": "2026-09-27T12:49:23.221Z",
   "design": {
-    "version": "photosynthesis-light-relation-v2",
-    "sha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
-    "path": "C:/Users/LENOVO/Documents/AI-Classroom-supervisor/.alop-supervisor/evidence/designs/photosynthesis-clause-relation-v2.json"
+    "path": "C:/Users/LENOVO/Documents/AI-Classroom-supervisor/.alop-supervisor/evidence/designs/photosynthesis-clause-relation-v2.json",
+    "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
+    "designVersion": "photosynthesis-light-relation-v2"
   },
+  "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
+  "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
   "historicalIdentities": {
-    "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
-    "historicalRedSha": "84e9288edca7f7a659806da7e73a376e0253eccb",
-    "historicalRedEvidenceSha": "7f72c196310e4df2f7189c70feb730da45096efe",
-    "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6"
+    "approvedBase": "03c01ce23ead82762437286ebdab94d3485e0519",
+    "lineageRoot": "2e5418bb06ceb4466abbd864391950f070570fb6",
+    "historicalRed": "84e9288edca7f7a659806da7e73a376e0253eccb",
+    "historicalRedEvidence": "7f72c196310e4df2f7189c70feb730da45096efe",
+    "comparisonBaseline": "53dac79cf873443e2a8c468607af5deee8107759",
+    "previousBlocked": "23d4aac95729f152b3e3438fe08dabe1a1a95d8f",
+    "earlierBlocked": "33070c57a8fa72ba97ba7e31175b454b0a97ad81",
+    "reconciliationStart": "ee010f0d0d2ed7281b2e0069e1dee6848b611d9b"
   },
-  "repairComparisonBase": {
-    "head": "53dac79cf873443e2a8c468607af5deee8107759",
-    "tree": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
-    "parent": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-    "source": "explicitly designated authoritative Astra-blocked baseline; full suite rerun on this exact commit"
-  },
-  "partialRecovery": {
-    "strategy": "RECOVERY-B: RESTART_FROM_AUDITED_BASELINE",
-    "partialWorktree": {
-      "path": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-repair-001-003",
-      "branch": "codex/p1-astra-repair-001-003-20260925",
-      "head": "8644913d7e911e9d8094fd0f5d16b8b7a9b5fe85",
-      "tree": "1be535298e779c6d0e08f65c157965a050005cad",
-      "parent": "390364e8cd131ecb5cac66a0856bb5b38c064e31",
-      "status": "CLEAN; preserved and untouched"
-    },
-    "blockedCandidate": {
-      "head": "53dac79cf873443e2a8c468607af5deee8107759",
-      "tree": "70e2deb494279be866b3b52ac07a25b3e9c570f6"
-    },
-    "auditedReport": {
-      "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-p1-audit-cdcd576a6fbe4285b493b7efbb5cc2d3/AUDIT.md",
-      "sha256": "c1e51e9d3dbf0bbe17b5282a927877ea676e45fe1d0aae430a932577f50da969"
-    },
-    "decision": "The independent frozen projection found surface-only uniqueness and class-minimum failures; the partial test/corpus weakened the PU gate, and its root evidence misbound the comparison base. Restarted from exact 53dac79; no partial source/evidence hunks were cherry-picked.",
-    "partialCommits": [
-      {
-        "sha": "aa7ac28b81ef7483c7c2cadd09c40d79df87c0de",
-        "tree": "6b973e7151c94013bd5b442380d8d55251b661d4",
-        "parent": "53dac79cf873443e2a8c468607af5deee8107759",
-        "author": "evilmindseeworld",
-        "authorTime": "2026-09-25T05:25:37+04:00",
-        "subject": "P1: normalize frozen semantic fingerprints and generalize subjects",
-        "changedPaths": [
-          {
-            "status": "M",
-            "path": "backend/lib/p1-authoritative-repair-v2.test.js"
-          },
-          {
-            "status": "M",
-            "path": "backend/lib/photosynthesis-relation-cases.js"
-          },
-          {
-            "status": "M",
-            "path": "backend/lib/photosynthesis-relation-evaluator.js"
-          },
-          {
-            "status": "A",
-            "path": "backend/scripts/p1-photosynthesis-mutation-runner.mjs"
-          },
-          {
-            "status": "M",
-            "path": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json"
-          }
-        ],
-        "classification": "MIXED_SOURCE_TEST_CORPUS_EVIDENCE",
-        "disposition": "NOT_SALVAGED",
-        "pathAssessments": [
-          {
-            "path": "backend/lib/photosynthesis-relation-evaluator.js",
-            "classification": "VALID_BUT_INCOMPLETE",
-            "reason": "attempted semantic normalization and generalized subjects but remained unapproved and was replaced by a clean restart implementation"
-          },
-          {
-            "path": "backend/lib/p1-authoritative-repair-v2.test.js",
-            "classification": "WRONG",
-            "reason": "partial comparator lost NON_LIGHT_OBJECT role while projecting ranges and retained punctuation leakage; PU assertions/dimensions were weakened, so green count did not prove semantic diversity"
-          },
-          {
-            "path": "backend/lib/photosynthesis-relation-cases.js",
-            "classification": "WRONG",
-            "reason": "changed boundary and punctuation corpus dimensions/fixtures before the independent semantic projection was correct, preserving apparent uniqueness through surface distinctions"
-          },
-          {
-            "path": "backend/scripts/p1-photosynthesis-mutation-runner.mjs",
-            "classification": "UNVERIFIED",
-            "reason": "transient helper was later removed by the final partial commit and was not retained"
-          },
-          {
-            "path": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
-            "classification": "STALE_EVIDENCE",
-            "reason": "indexed 206 apparent fingerprints despite independently normalized count of 199"
-          }
-        ]
-      },
-      {
-        "sha": "48c4f926f85e5e571a3b543df53b995dadf71c2f",
-        "tree": "674a2c2c054c8d48c0e12b281d1778b93db29381",
-        "parent": "aa7ac28b81ef7483c7c2cadd09c40d79df87c0de",
-        "author": "evilmindseeworld",
-        "authorTime": "2026-09-25T05:54:42+04:00",
-        "subject": "P1: refresh package from repaired semantic inputs",
-        "changedPaths": [
-          {
-            "status": "M",
-            "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs"
-          }
-        ],
-        "classification": "PACKAGE",
-        "disposition": "VALID_BUT_INCOMPLETE",
-        "pathAssessments": [
-          {
-            "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-            "classification": "UNVERIFIED",
-            "reason": "static package derived from partial source; its old evaluator/runner inputs and package bytes were not accepted as final"
-          }
-        ]
-      },
-      {
-        "sha": "390364e8cd131ecb5cac66a0856bb5b38c064e31",
-        "tree": "7d952e1ab5e89373ffd10d1f76de9405f943d733",
-        "parent": "48c4f926f85e5e571a3b543df53b995dadf71c2f",
-        "author": "evilmindseeworld",
-        "authorTime": "2026-09-25T06:20:38+04:00",
-        "subject": "evidence(p1): reconcile Astra repair results and provenance",
-        "changedPaths": [
-          {
-            "status": "M",
-            "path": "evidence-manifest.json"
-          },
-          {
-            "status": "M",
-            "path": "evidence/p1-photosynthesis-relation-v2/green-phase.json"
-          },
-          {
-            "status": "M",
-            "path": "evidence/p1-photosynthesis-relation-v2/mutation-phase.json"
-          },
-          {
-            "status": "M",
-            "path": "evidence/p1-photosynthesis-relation-v2/red-phase.json"
-          },
-          {
-            "status": "M",
-            "path": "evidence/p1-photosynthesis-relation-v2/semantic-coverage.json"
-          }
-        ],
-        "classification": "EVIDENCE",
-        "disposition": "STALE_EVIDENCE",
-        "pathAssessments": [
-          {
-            "path": "evidence-manifest.json",
-            "classification": "STALE_EVIDENCE",
-            "reason": "current base fields claimed fee44f4d2f3a46458b4b79277363585f78695ecc / 6bff90f3a379d192e30c01f9111cef65c31d9c55 while active full-suite receipt used bc4cf79 / 8859d1e"
-          },
-          {
-            "path": "evidence/p1-photosynthesis-relation-v2/green-phase.json",
-            "classification": "STALE_EVIDENCE",
-            "reason": "reports a 206-unique corpus and tests from a different implementation/base"
-          },
-          {
-            "path": "evidence/p1-photosynthesis-relation-v2/mutation-phase.json",
-            "classification": "STALE_EVIDENCE",
-            "reason": "package and mutation provenance refer to the earlier evaluator/runner"
-          },
-          {
-            "path": "evidence/p1-photosynthesis-relation-v2/red-phase.json",
-            "classification": "STALE_EVIDENCE",
-            "reason": "historical/candidate identities do not bind the restarted repair"
-          },
-          {
-            "path": "evidence/p1-photosynthesis-relation-v2/semantic-coverage.json",
-            "classification": "STALE_EVIDENCE",
-            "reason": "claims 206 unique without independent normalization"
-          }
-        ]
-      },
-      {
-        "sha": "8644913d7e911e9d8094fd0f5d16b8b7a9b5fe85",
-        "tree": "1be535298e779c6d0e08f65c157965a050005cad",
-        "parent": "390364e8cd131ecb5cac66a0856bb5b38c064e31",
-        "author": "evilmindseeworld",
-        "authorTime": "2026-09-25T06:26:52+04:00",
-        "subject": "P1: remove transient disallowed mutation helper",
-        "changedPaths": [
-          {
-            "status": "D",
-            "path": "backend/scripts/p1-photosynthesis-mutation-runner.mjs"
-          }
-        ],
-        "classification": "PACKAGE_CLEANUP",
-        "disposition": "VALID_AND_REUSABLE",
-        "pathAssessments": [
-          {
-            "path": "backend/scripts/p1-photosynthesis-mutation-runner.mjs",
-            "classification": "VALID_AND_REUSABLE",
-            "reason": "removes the transient helper added by aa7ac28; this cleanup is valid, while no source or evidence from that lineage was cherry-picked"
-          }
-        ]
-      }
-    ]
-  },
+  "implementationCommitSha": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+  "implementationCommitShas": [
+    "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0"
+  ],
   "implementation": {
-    "repairStart": {
-      "head": "33070c57a8fa72ba97ba7e31175b454b0a97ad81",
-      "tree": "f996121425be1e12f620176983389659d57685c9",
-      "parent": "911a29d0ae8007bae9af8435940e65c55ec3ade3",
-      "worktree": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-restart-001-004-repair",
-      "branch": "codex/p1-astra-restart-001-004-repair-20260926",
-      "sourceWorktree": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-restart-001-003"
-    },
-    "repairSourceCommit": {
-      "sha": "c23532d49a5dab46ce3a5498a0ac5d72a9aadd81",
-      "tree": "4d108b6fd5009e3cc2cd32187db81f7885b7b79f",
-      "parent": "33070c57a8fa72ba97ba7e31175b454b0a97ad81",
-      "author": "evilmindseeworld",
-      "authorTime": "2026-09-26T02:15:37+04:00",
-      "subject": "P1: repair Astra boundary and agreement blockers",
-      "changedPaths": [
-        {
-          "status": "M",
-          "path": "backend/lib/p1-authoritative-repair-v2.test.js"
-        },
-        {
-          "status": "M",
-          "path": "backend/lib/photosynthesis-relation-cases.js"
-        },
-        {
-          "status": "M",
-          "path": "backend/lib/photosynthesis-relation-evaluator.js"
-        }
-      ]
-    },
-    "repairPackageCommit": {
-      "sha": "9d51a0a8809049d77674ee254910924fbc6a7def",
-      "tree": "ec7822df65b78b4418a6ecf52c673c38edd69fd6",
-      "parent": "c23532d49a5dab46ce3a5498a0ac5d72a9aadd81",
-      "author": "evilmindseeworld",
-      "authorTime": "2026-09-26T02:19:07+04:00",
-      "subject": "P1: package repaired relation evaluator",
-      "changedPaths": [
-        {
-          "status": "M",
-          "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs"
-        }
-      ]
-    },
-    "sourceCommit": {
-      "sha": "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-      "tree": "d6580fd968badaa2c03b226306135b3c6d9e8f0c",
-      "parent": "b94f59c12837e39134963198b556a7a9b3530e92",
-      "author": "evilmindseeworld",
-      "authorTime": "2026-09-26T02:46:52+04:00",
-      "subject": "P1: enforce agreement in plural control predicates",
-      "changedPaths": [
-        {
-          "status": "M",
-          "path": "backend/lib/p1-authoritative-repair-v2.test.js"
-        },
-        {
-          "status": "M",
-          "path": "backend/lib/photosynthesis-relation-evaluator.js"
-        }
-      ]
-    },
-    "packageAndFinalImplementationCommit": {
-      "sha": "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-      "tree": "de3b501a5ca90e6a33e6ed5b5b0206d7bbdab72d",
-      "parent": "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-      "author": "evilmindseeworld",
-      "authorTime": "2026-09-26T02:50:18+04:00",
-      "subject": "build(p1): package plural control agreement fix",
-      "changedPaths": [
-        {
-          "status": "M",
-          "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs"
-        }
-      ]
-    },
-    "testedCandidateHead": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-    "testedCandidateTree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
-    "testedCandidateParent": "e1b50b53769139f9d2f1381170f555e37efdcab3",
-    "implementationCommitShas": [
-      "c23532d49a5dab46ce3a5498a0ac5d72a9aadd81",
-      "9d51a0a8809049d77674ee254910924fbc6a7def",
-      "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-      "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-      "b315b455b679341d6dc6fe48bbf22c6e35a241bb",
-      "e7c248828a867b7ff285a2d96ea265460d755f18",
-      "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
-      "d20ee99dea304860767c9f5c8d49505eefd2b265",
-      "adeec90cf2fae5b8bc49d8780832ba2e8debf8c2",
-      "c0793c0f415f0a23befa1c7ae89e5b9244e89ec5",
-      "b1b584153d9efd720a99085fe6d44060e962ea16",
-      "6cf90b4dddf42716de319cac14a16cf755a4c938",
-      "e1b50b53769139f9d2f1381170f555e37efdcab3",
-      "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b"
-    ],
-    "sourceAndPackageCleanAtTest": true,
-    "finalRepair": {
-      "auditedCandidateStart": {
-        "head": "23d4aac95729f152b3e3438fe08dabe1a1a95d8f",
-        "tree": "0fe8790f0528569bec36e6dee4234a5de81f772d",
-        "parent": "803ac0848b571c6e7cd13d17061d402c4a2ddfbb"
-      },
-      "worktree": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair",
-      "branch": "codex/p1-astra-final-001-006-repair-20260926",
-      "sourceCommit": {
-        "sha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
-        "tree": "bc94c403f9083e9fe8c0ab941082922998ea870e"
-      },
-      "implementationCommit": {
-        "sha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-        "tree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
-        "parent": "e1b50b53769139f9d2f1381170f555e37efdcab3"
-      },
-      "testedCandidateHead": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-      "testedCandidateTree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
-      "testedCandidateParent": "e1b50b53769139f9d2f1381170f555e37efdcab3",
-      "implementationCommitShas": [
-        "c23532d49a5dab46ce3a5498a0ac5d72a9aadd81",
-        "9d51a0a8809049d77674ee254910924fbc6a7def",
-        "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-        "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-        "b315b455b679341d6dc6fe48bbf22c6e35a241bb",
-        "e7c248828a867b7ff285a2d96ea265460d755f18",
-        "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
-        "d20ee99dea304860767c9f5c8d49505eefd2b265",
-        "adeec90cf2fae5b8bc49d8780832ba2e8debf8c2",
-        "c0793c0f415f0a23befa1c7ae89e5b9244e89ec5",
-        "b1b584153d9efd720a99085fe6d44060e962ea16",
-        "6cf90b4dddf42716de319cac14a16cf755a4c938",
-        "e1b50b53769139f9d2f1381170f555e37efdcab3",
-        "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b"
-      ],
-      "sourceAndPackageCleanAtTest": true
-    }
+    "head": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+    "tree": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+    "parent": "5fcdcd3a73d32e58b1ef4a9f9b78f4a648a8f8fd",
+    "recipePreservedByteForByte": true,
+    "semanticSourceFrozen": true
   },
   "package": {
-    "entryPoint": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-    "commitSha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-    "treeSha": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
-    "parentSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
-    "gitBlob": "3cae4c2ced7d0a0009d20309ca0c7c1ca5312eeb",
-    "sha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
-    "bytes": 122798,
-    "buildsByteIdentical": true,
-    "buildASha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
-    "buildBSha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a",
-    "buildABlob": "3cae4c2ced7d0a0009d20309ca0c7c1ca5312eeb",
-    "buildBBlob": "3cae4c2ced7d0a0009d20309ca0c7c1ca5312eeb",
-    "recipeVersion": "p1-static-compose-v1",
-    "recipeCommitSha": "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
-    "recipeTreeSha": "3a41976c32a9a2c7627e3b369a843baaeabea5aa",
-    "recipePath": "backend/scripts/compose-photosynthesis-relation-mutation-package.mjs",
-    "recipeSha256": "ec88d5cecc2a4c43d4eac6c28be40bcab2f1d4479eb0db5bac54a77b11f9e26c",
-    "recipeGitBlob": "70b70ef7e6a4ea2d076e310f69bc64609ff2a5d7",
-    "recipeInputCommitSha": "3ae0f283461f304f2778a4dc463a85c8f7d86adf",
-    "recipeInputBlob": "d5a84e74ed8a22eb2fcb8a85303335fa820826a9",
-    "evaluatorInputCommitSha": "e1b50b53769139f9d2f1381170f555e37efdcab3",
-    "evaluatorInputBlob": "83d44f4e88b62a3db4f24b3649052ca716372111",
-    "evaluatorInputSha256": "30bd8f4d486b98aba224be0243e691b350de28e4507610f80689658516ad7193",
-    "runnerInputCommitSha": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
-    "runnerInputBlob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
-    "runnerDerivedBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
-    "runnerDerivedSha256": "36be624bba4af65a1cf0f251428ae9f7e8d48a6ee2c6199a22913785b4564e03"
-  },
-  "validation": {
-    "authoritativeP1": {
-      "tests": 101,
-      "passed": 101,
-      "failed": 0,
-      "log": {
-        "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-authoritative-20260926.log",
-        "bytes": 9569,
-        "sha256": "0fb88e493589447f8944de57862db8e1a26b4253049c060a0aa0417f0e0a142b",
-        "modifiedAtUtc": "2026-09-26T19:38:41.663Z"
+    "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+    "bytes": 122632,
+    "sha256": "72240dbcdad6c98be640446fce6784c92611107443e3c12f6cf957c6b16a35b4",
+    "gitBlob": "af5cc9c2097c4a7087f17fa85375fa52c7fd712b",
+    "inputs": {
+      "recipe": {
+        "commit": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+        "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+        "blob": "70b70ef7e6a4ea2d076e310f69bc64609ff2a5d7",
+        "tree": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+        "sha256": "ec88d5cecc2a4c43d4eac6c28be40bcab2f1d4479eb0db5bac54a77b11f9e26c"
       },
-      "testedCommitSha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-      "testedTreeSha": "e7bebb115b2c3fff3c59f772292d16969dddeb03"
-    },
-    "fullSuite": {
-      "base": {
-        "head": "53dac79cf873443e2a8c468607af5deee8107759",
-        "tree": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
-        "parent": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-        "total": 2555,
-        "passed": 2554,
-        "failed": 1,
-        "log": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-full-base-20260926.log",
-          "bytes": 189689,
-          "sha256": "68046575268defe2768fc2710fb1261c4f03ac8fd2690eb453a6e9070bf719ac",
-          "modifiedAtUtc": "2026-09-26T19:29:08.292Z"
-        }
-      },
-      "candidate": {
-        "head": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-        "tree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
-        "parent": "e1b50b53769139f9d2f1381170f555e37efdcab3",
-        "total": 2566,
-        "passed": 2565,
-        "failed": 1,
-        "log": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-full-candidate-20260926.log",
-          "bytes": 190755,
-          "sha256": "2b5057ea7d25e7c8f0d4fa53886955a64c4d66ba8f2a9bfcecd40c08b949a71e",
-          "modifiedAtUtc": "2026-09-26T19:29:08.292Z"
-        }
-      },
-      "sameFailureSet": true,
-      "candidateCausedFailures": 0,
-      "sharedFailure": "every declared Node major is the one deploy/targets.json names"
-    },
-    "semanticCoverage": {
-      "cases": 206,
-      "rawUnique": 206,
-      "semanticUnique": 206,
-      "floor": 201,
-      "classMinima": "28/28",
-      "sentenceBoundary": "7/6",
-      "punctuationAbuse": "9/8",
-      "canonical": "54/54",
-      "markers": "27/27",
-      "cosmeticLeaks": 0,
-      "arbitrarySubjectLeaks": 0,
-      "arbitraryObjectLeaks": 0
-    },
-    "subjectProbes": "30/30 original; 76/76 previous fresh; 112/112 current Astra active; 14/14 passive; 24/24 unseen equivalence and 16/16 unseen agreement",
-    "mutations": "10/10 killed with baseline 206/206",
-    "packageEquivalence": {
-      "inputs": 12340,
-      "calls": 37020,
-      "comparisons": 37020,
-      "publicExports": 39,
-      "mismatches": 0,
-      "exceptions": 0,
-      "inputSetSha256": "aad5fe3141384b5b9ce5d6a13ed607a8dd1829b004e85bcdd7ccf07c4ac008c0"
-    },
-    "supportingTestRuns": {
       "evaluator": {
-        "tests": 46,
-        "passed": 46,
-        "failed": 0,
-        "skipped": 0,
-        "stdout": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-evaluator-20260926.log",
-          "bytes": 3301,
-          "sha256": "0a62fe559fddf89037d6959f497b0597f0abea519e8c3827885e6df91ce3c738",
-          "modifiedAtUtc": "2026-09-26T19:34:26.295Z"
-        }
+        "commit": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+        "path": "backend/lib/photosynthesis-relation-evaluator.js",
+        "blob": "e3151e0f0faaf81e2955b4c2ba00a5d0cbdc852a",
+        "tree": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+        "sha256": "adeb8596dfbc1bbea3b7c5de8262c2d9a3e42ece9e4c996418323cc3c97ec782"
       },
-      "evaluatorMutations": {
-        "tests": 11,
-        "passed": 11,
-        "failed": 0,
-        "skipped": 0,
-        "stdout": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-evaluator-mutation-20260926.log",
-          "bytes": 1126,
-          "sha256": "8cd3702102bcd1d08525dbf1b0877aed40b121aee9ea07fc51f7e64c2268e74e",
-          "modifiedAtUtc": "2026-09-26T19:34:28.326Z"
-        }
+      "corpus": {
+        "commit": "06aab2b35bd5dc6a719cdfad1d3d47e5539867f0",
+        "path": "backend/lib/photosynthesis-relation-cases.js",
+        "blob": "979ed2146045fdd6c7360583875bd8abbb032642",
+        "tree": "f5f0b56c653ee325d3e79cf9f07bb78563a0b7e9",
+        "sha256": "b62495937ef0a2adec9829fa5bb7dcc3afdb12a062cf82fe0ec1d0fc527589fe"
       },
-      "evaluation": {
-        "tests": 104,
-        "passed": 104,
-        "failed": 0,
-        "skipped": 0,
-        "stdout": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-evaluation-glob-20260926.log",
-          "bytes": 8487,
-          "sha256": "162256244069654c0ac0235f2f25e6af7d9c7ee263bbd7774a2256e74e93d55c",
-          "modifiedAtUtc": "2026-09-26T19:38:43.092Z"
-        }
+      "runner": {
+        "commit": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
+        "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+        "blob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
+        "tree": "f4f8b30f73448c34f7652f86a32a606d3dc8a739",
+        "sha256": "e7bffea6fc690f6feb7003eb01c900bb798ba6b44cfb80c3a19edd45a1c6a3d7"
+      }
+    },
+    "runnerDerivedBlob": "7831d0dd8033898a568ba8dc3a2ba4abe42d6dc3",
+    "recipePreservedFrom": "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811"
+  },
+  "coverage": {
+    "sourceCases": 206,
+    "rawUnique": 206,
+    "legitimateProjections": 206,
+    "classMinima": 28,
+    "markers": 27,
+    "canonical": 54
+  },
+  "provenanceReconciliation": {
+    "oldDeclaredImplementationCommit": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
+    "oldDeclaredTree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
+    "actualAuthoritative": {
+      "passed": 99,
+      "total": 101
+    },
+    "actualFullBackend": {
+      "passed": 2563,
+      "total": 2566
+    },
+    "previouslyClaimedAuthoritative": {
+      "passed": 101,
+      "total": 101
+    },
+    "previouslyClaimedFullBackend": {
+      "passed": 2565,
+      "total": 2566
+    },
+    "ruling": "OLD ACTIVE SUCCESS ATTRIBUTION WAS FALSE. Exact ee010f0d evidence snapshot, not a9, passed those higher counts.",
+    "evidence": {
+      "implementation-authoritative.log": {
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/implementation-authoritative.log",
+        "bytes": 11649,
+        "sha256": "36ff05772a467cd52ddac0ec8aa78fb3f481c06efa3fb5348829007d21998870"
       },
-      "authoritativeMutations": {
-        "tests": 20,
-        "passed": 20,
-        "failed": 0,
-        "skipped": 0,
-        "stdout": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-authoritative-mutations-20260926.log",
-          "bytes": 1995,
-          "sha256": "db116193adef5b6cc9dfec78638ef949882a19a165a43b69533084bdb7397420",
-          "modifiedAtUtc": "2026-09-26T19:34:26.863Z"
-        }
+      "evidence-authoritative.log": {
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/evidence-authoritative.log",
+        "bytes": 9450,
+        "sha256": "e2739af717af638422eac3ac48562c0cac010851899796dd48e061319e7a879a"
       },
-      "datasetV1": {
-        "cases": 21,
-        "valid": true,
-        "spent": false,
-        "stdout": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-dataset-v1-20260926.log",
-          "bytes": 95,
-          "sha256": "a949a8a0c072b90f28be07a83dd78b272a725cbc1533253b29c3a441df18f79b",
-          "modifiedAtUtc": "2026-09-26T19:38:40.604Z"
-        }
-      },
-      "datasetV2": {
-        "cases": 21,
-        "valid": true,
-        "spent": false,
-        "stdout": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-dataset-v2-20260926.log",
-          "bytes": 95,
-          "sha256": "11a887e42686af89b2f9c04ce71a808ad91a8a776eb334234a2e6893788ee27e",
-          "modifiedAtUtc": "2026-09-26T19:38:41.694Z"
-        }
-      },
-      "frontend": {
-        "command": "npm test -- --run --minWorkers=1 --maxWorkers=2",
-        "testFiles": 58,
-        "tests": 735,
-        "passed": 735,
-        "failed": 0,
-        "stdout": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-frontend-bounded-20260926.log",
-          "bytes": 24787,
-          "sha256": "254f40468f84a308179f13e0a47c3f4c07b8db8733113cfd88b43d5bf3613bf5",
-          "modifiedAtUtc": "2026-09-26T19:33:37.000Z"
-        },
-        "defaultParallelRunHadTimingFailures": true
-      },
-      "mutationRunner": {
-        "cases": 206,
-        "baselinePassed": 206,
-        "baselineFailed": 0,
-        "killed": 10,
-        "total": 10,
-        "log": {
-          "path": "C:/Users/LENOVO/AppData/Local/Temp/astra-final-001-006-mutation-runner-current.log",
-          "bytes": 2962,
-          "sha256": "050e247e6f5ad10ff053790f7f6feeecca272570ea94f9b02c3441cd8a7d04bd",
-          "modifiedAtUtc": "2026-09-26T20:00:10.458Z"
-        }
+      "RECONCILIATION.md": {
+        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/RECONCILIATION.md",
+        "bytes": 5242,
+        "sha256": "271a869761d186af35876164d9b7a1a2ef1509278e7e44625aa7a57c2c187439"
       }
     }
   },
-  "provenanceReconciliation": {
-    "priorRootManifestRepairBase": {
-      "sha": "fee44f4d2f3a46458b4b79277363585f78695ecc",
-      "tree": "6bff90f3a379d192e30c01f9111cef65c31d9c55"
-    },
-    "priorActiveGreenRepairBase": {
-      "sha": "bc4cf79fdda869cb42465d720cac59822802fde5",
-      "tree": "8859d1ebfa3fe891ba42a59137710eab06e79a54",
-      "stdoutPath": "C:/Users/LENOVO/AppData/Local/Temp/p1-final-seven-exact-base-bc4cf-f8bb81a78a6645c1985997c6603148a8.stdout",
-      "stdoutSha256Expected": "93771de9db8c0385f6ebf09a52b0c454809482a7b837454b0ea1d8c77c98dfa6",
-      "stdoutSha256Observed": "93771de9db8c0385f6ebf09a52b0c454809482a7b837454b0ea1d8c77c98dfa6",
-      "storedOutputMatches": true
-    },
-    "ancestry": {
-      "fee44IsAncestorOfBc4": true,
-      "bc4IsAncestorOfCurrentRepairBase": true
-    },
-    "historicalFullSuiteBaseDetermined": "bc4cf79fdda869cb42465d720cac59822802fde5; exact stored stdout hash matches active GREEN receipt; fee44 was a stale root-manifest label",
-    "currentRepairFullSuiteBase": {
-      "sha": "53dac79cf873443e2a8c468607af5deee8107759",
-      "tree": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
-      "parent": "acd8d8e9260d139f249cbf0a201e92277cde4910",
-      "executedNow": true,
-      "role": "matched full-suite comparison baseline; current repair branch started from 33070c5"
-    },
-    "currentImplementationCommits": [
-      "c23532d49a5dab46ce3a5498a0ac5d72a9aadd81",
-      "9d51a0a8809049d77674ee254910924fbc6a7def",
-      "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-      "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-      "b315b455b679341d6dc6fe48bbf22c6e35a241bb",
-      "e7c248828a867b7ff285a2d96ea265460d755f18",
-      "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
-      "d20ee99dea304860767c9f5c8d49505eefd2b265",
-      "adeec90cf2fae5b8bc49d8780832ba2e8debf8c2",
-      "c0793c0f415f0a23befa1c7ae89e5b9244e89ec5",
-      "b1b584153d9efd720a99085fe6d44060e962ea16",
-      "6cf90b4dddf42716de319cac14a16cf755a4c938",
-      "e1b50b53769139f9d2f1381170f555e37efdcab3",
-      "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b"
-    ],
-    "finalImplementation": {
-      "head": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-      "tree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
-      "parent": "e1b50b53769139f9d2f1381170f555e37efdcab3",
-      "branch": "codex/p1-astra-final-001-006-repair-20260926",
-      "worktree": "C:/Users/LENOVO/Documents/AI-Classroom-p1-astra-final-001-006-repair"
-    }
+  "finalTestedCandidate": {
+    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/FINAL-TESTED-CANDIDATE.json",
+    "role": "External post-commit attestation: exact final HEAD/TREE, suite results and log hashes. Written only after final evidence commit and exact committed-tree tests. This file is not a claim that those tests have already passed.",
+    "selfReferencePolicy": "A committed receipt cannot contain its own future commit hash. Final tested candidate identity and results are sealed externally; committed source-snapshot results below are historical facts only."
   },
-  "quarantine": [
-    {
-      "sha": "8c5f9afef9151923539c6016a2d6c75947b2e639",
-      "isAncestorOfFinalImplementation": false,
-      "isAncestorOfTestedHead": false
-    },
-    {
-      "sha": "090d1c99c1bbc3c85ef742fdbd0511e6ca728248",
-      "isAncestorOfFinalImplementation": false,
-      "isAncestorOfTestedHead": false
-    }
-  ],
+  "quarantine": {
+    "commits": [
+      "8c5f9afef9151923539c6016a2d6c75947b2e639",
+      "090d1c99c1bbc3c85ef742fdbd0511e6ca728248"
+    ],
+    "ancestors": false
+  },
   "scopeGates": {
-    "astraRun": false,
-    "candidateQualificationRun": false,
-    "solReviewRun": false,
+    "astra": false,
+    "candidateQualification": false,
+    "sol": false,
     "release": false,
-    "deploy": false,
+    "deployment": false,
     "p2": false
   },
   "entries": [
@@ -635,7 +150,7 @@
     },
     {
       "path": "backend/lib/p1-authoritative-repair-v2.test.js",
-      "sha256": "db6ac1851c9f5d7ddf140cce29e1956df6aba42f670813443646b3ec9fb04b59"
+      "sha256": "1a77e9aa0543d181069a3bd89569e80d023506e8d40d51805f3e5a71686756ea"
     },
     {
       "path": "backend/lib/photosynthesis-relation-cases.js",
@@ -647,27 +162,27 @@
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.js",
-      "sha256": "30bd8f4d486b98aba224be0243e691b350de28e4507610f80689658516ad7193"
+      "sha256": "adeb8596dfbc1bbea3b7c5de8262c2d9a3e42ece9e4c996418323cc3c97ec782"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
-      "sha256": "5c5cdc3f25acb426f626d8a62679ff39d8ea2ec2b16e3d1dd2f8b010e9342880"
+      "sha256": "329e87a48568316a96b28ae15f9c060459a25ec7ec032406992115dc01953767"
     },
     {
       "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-      "sha256": "ba53c6ae49eeee3e4ee5473086a6db8bc71db633c2f88ae5efdbf0d6d5f4b98a"
+      "sha256": "72240dbcdad6c98be640446fce6784c92611107443e3c12f6cf957c6b16a35b4"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
-      "sha256": "878405821d68fa1a3c5e83b1216c5a0b0732f87d4bbbc8767f6586b7e2a2c25a"
+      "sha256": "7570c6d0075f6442066e030c386f1a4333e348ef73c6854b374a2e934465e8a4"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/green-phase.json",
-      "sha256": "6efbbc5bedb15e8a3b6338841b3727269a62ca4e4f0ed9615583edc20d5c1cd9"
+      "sha256": "bf4edc01bca3f4646f759153ef8755b3d29288db3d73c63cd23f424db4003721"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/mutation-phase.json",
-      "sha256": "2655ae8556dff698e34f0422bede1dbfe76f88f90ffed415f0ef5f2f82de9ab6"
+      "sha256": "698e46f132223cf129285c32e4417ed48aae33e9b82e86abdf67f991129a1304"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/red-phase.json",
@@ -675,24 +190,7 @@
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/semantic-coverage.json",
-      "sha256": "27d5e9c0125f4df53eaee8c2d58a24208a668f7716d9a94a1649b4942854521c"
+      "sha256": "3c05b809c10a0a7cc0de2b5e8a1cdec25c00fe88721657a0afcb503aaa987b40"
     }
-  ],
-  "implementationCommitSha": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-  "implementationCommitShas": [
-    "c23532d49a5dab46ce3a5498a0ac5d72a9aadd81",
-    "9d51a0a8809049d77674ee254910924fbc6a7def",
-    "042d938ac5745b9b0679e35cec3d2e272ffd275b",
-    "bfe9116e297ff27cc6a3a40c7cb2ea90718e397c",
-    "b315b455b679341d6dc6fe48bbf22c6e35a241bb",
-    "e7c248828a867b7ff285a2d96ea265460d755f18",
-    "f694f6f61e87da6ac8eb3c27e7b5fab28bcfa811",
-    "d20ee99dea304860767c9f5c8d49505eefd2b265",
-    "adeec90cf2fae5b8bc49d8780832ba2e8debf8c2",
-    "c0793c0f415f0a23befa1c7ae89e5b9244e89ec5",
-    "b1b584153d9efd720a99085fe6d44060e962ea16",
-    "6cf90b4dddf42716de319cac14a16cf755a4c938",
-    "e1b50b53769139f9d2f1381170f555e37efdcab3",
-    "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b"
   ]
 }

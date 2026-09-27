@@ -192,3 +192,66 @@ test('M10: suppressing all positive qualification is killed across positive clas
     KNOWN_REGRESSIONS: 2,
   });
 });
+
+test('root invariant 001 mutation: dropping boundary-independent frame marking restores the pass leak', () => {
+  const mutant = loadMutant(replaceOnce(
+    SOURCE,
+    'if (explicitContinuation || explicitTargetFrame) malformedExplicitContinuation = true;',
+    'if (explicitContinuation) malformedExplicitContinuation = true;',
+    'target-frame completeness independent of boundary',
+  ));
+  const probes = [
+    'Plants capture light energy. Algae do not store.',
+    'Plants capture light energy; Algae do not store.',
+    'Plants capture light energy! Algae do not store.',
+    'Plants capture light energy? Algae do not store.',
+    'Plants capture light energy. Quokkas do not store.',
+  ];
+  for (const input of probes) {
+    assert.equal(current.evaluatePhotosynthesisRelationsV2(input).passed, false, input);
+    assert.equal(mutant.evaluatePhotosynthesisRelationsV2(input).passed, true, input);
+  }
+});
+
+test('root invariant 002 mutation: removing productive louse/lice morphology reverses agreement', () => {
+  const mutant = loadMutant(replaceOnce(
+    SOURCE,
+    "if (/louse$/i.test(word)) number = 'SINGULAR';\n  else if (word === 'lice' || (word.length >= 7 && /lice$/i.test(word))) number = 'PLURAL';\n  else if (/ae$/i.test(word) || /ora$/i.test(word)) number = 'PLURAL';",
+    "if (/ae$/i.test(word) || /ora$/i.test(word)) number = 'PLURAL';",
+    'productive compound louse/lice morphology',
+  ));
+  const correct = 'Booklice do capture light energy.';
+  const incorrect = 'Booklice does capture light energy.';
+  assert.equal(current.evaluatePhotosynthesisRelationsV2(correct).hasMalformed, false);
+  assert.equal(current.evaluatePhotosynthesisRelationsV2(incorrect).hasMalformed, true);
+  assert.equal(mutant.evaluatePhotosynthesisRelationsV2(correct).hasMalformed, true);
+  assert.equal(mutant.evaluatePhotosynthesisRelationsV2(incorrect).hasMalformed, false);
+});
+
+test('root invariant 003 mutation: skipping member-head validation accepts a determiner-only tail', () => {
+  const mutant = loadMutant(replaceOnce(
+    SOURCE,
+    '&&memberShapes.every(Boolean);',
+    ';',
+    'shared coordinated-member noun-head validation',
+  ));
+  const active = 'Plants capture light energy but algae and the absorb sunlight.';
+  const passive = 'Light energy is absorbed by algae and the during photosynthesis.';
+  for (const input of [active, passive]) {
+    assert.equal(current.evaluatePhotosynthesisRelationsV2(input).hasMalformed, true, input);
+    assert.equal(mutant.evaluatePhotosynthesisRelationsV2(input).hasMalformed, false, input);
+  }
+});
+
+test('root invariant 004 mutation: recording a terminal boundary leaks punctuation into fingerprints', () => {
+  const mutant = loadMutant(replaceOnce(
+    SOURCE,
+    'if(boundary&&!hasContentV2(text.slice(token.end)))continue;',
+    '',
+    'terminal punctuation projection',
+  ));
+  const withPeriod = 'Photosynthesis light energy capture chlorophyll.';
+  const withoutPeriod = withPeriod.slice(0, -1);
+  assert.equal(current.semanticCaseFingerprint(withPeriod), current.semanticCaseFingerprint(withoutPeriod));
+  assert.notEqual(mutant.semanticCaseFingerprint(withPeriod), mutant.semanticCaseFingerprint(withoutPeriod));
+});

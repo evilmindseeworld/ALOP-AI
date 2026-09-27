@@ -1089,7 +1089,10 @@ const pluralizeNumberV2 = (() => {
 function classifyNounNumberV2(surface, determiner) {
   const word = surface.split(/\s+/).at(-1) || surface;
   let number;
-  if (/ae$/i.test(word) || /ora$/i.test(word)) number = 'PLURAL';
+  // ponytail: require a three-letter compound stem to avoid short suffix collisions; a lexical noun table would resolve shorter forms.
+  if (/louse$/i.test(word)) number = 'SINGULAR';
+  else if (word === 'lice' || (word.length >= 7 && /lice$/i.test(word))) number = 'PLURAL';
+  else if (/ae$/i.test(word) || /ora$/i.test(word)) number = 'PLURAL';
   else if (/imen$/i.test(word)) number = 'SINGULAR';
   else if (/ens$/i.test(word) && pluralizeNumberV2.isPlural(word)) {
     const candidate = pluralizeNumberV2.singular(word);
@@ -1116,20 +1119,26 @@ function extractSubjectSet(ts,end){
   const memberSources=raw.split(/\s+(?:and|or|rather\s+than)\s+|,\s*/);
   const hasOxfordCoordinator=/,\s*(?:and|or)\s+/i.test(raw);
   const malformedCoordinator=/^(?:and|or|rather\s+than)\b|(?:\b(?:and|or|rather\s+than)|,)\s*$/i.test(raw.trim());
-  const members=memberSources.filter((source)=>source.trim()).map((source)=>{
-      const trimmed=(hasOxfordCoordinator?source.trim().replace(/^(?:and|or)\s+/i,''):source.trim()),determiner=trimmed.match(/^(a|an|the|some)\s+/)?.[1]||null;
-      const surface=trimmed==='some bacteria'?'some bacteria':trimmed.replace(/^(?:the|a|an|some)\s+/,'').trim();
+  const determiners=new Set(['a','an','the','some']);
+  const malformedHeads=new Set(['and','or','rather','but',',',';',':','.','!','?']);
+  const memberShapes=[];
+  const members=memberSources.map((source)=>{
+      const trimmed=(hasOxfordCoordinator?source.trim().replace(/^(?:and|or)\s+/i,''):source.trim());
+      const words=tokenizeV2(trimmed).map((token)=>token.form);
+      const determiner=determiners.has(words[0])?words[0]:null;
+      const nounWords=determiner?words.slice(1):words;
+      const surface=trimmed==='some bacteria'?'some bacteria':determiner?trimmed.replace(/^(?:a|an|the|some)\b(?:\s+|$)/,'').trim():trimmed;
+      const hasNounHead=nounWords.length>0&&!determiners.has(nounWords[0])&&!malformedHeads.has(nounWords[0]);
+      const lexicalShape=V2_SUBJECTS.has(surface)||/^[a-z]+(?:-[a-z]+)*$/.test(surface)
+        ||(()=>{const tokens=tokenizeV2(surface),object=bindDirectObject(tokens,0);return object?.role==='LIGHT_OBJECT'&&object.tokenEnd===tokens.length;})();
+      memberShapes.push(hasNounHead&&lexicalShape);
       const lemma=normalizeExactFormLemmaV2(surface),grammaticalNumber=classifyNounNumberV2(surface,determiner);
       return{surface,lemma,role:V2_PIGMENT_TERMS.has(surface)?'PIGMENT_AGENT':V2_SUBJECTS.has(surface)?'BIOLOGICAL_AGENT':'UNSUPPORTED',valid:V2_SUBJECTS.has(surface),grammaticalNumber,determinerNumberMismatch:['a','an'].includes(determiner)&&grammaticalNumber==='PLURAL'};
     }),
     coordinator=/\sor\s/.test(raw)?'OR':/\sand\s/.test(raw)?'AND':/\srather\s+than\s/.test(raw)?'RATHER_THAN':members.length>1?'COMMA':'SINGLE',
     n=members.filter(x=>x.valid).length,shapeValid=Boolean(raw.trim())&&!malformedCoordinator
       &&memberSources.every((source)=>source.trim().length>0)
-      &&members.every((member)=>{
-        if(V2_SUBJECTS.has(member.surface)||/^[a-z]+(?:-[a-z]+)*$/.test(member.surface))return true;
-        const tokens=tokenizeV2(member.surface),object=bindDirectObject(tokens,0);
-        return object?.role==='LIGHT_OBJECT'&&object.tokenEnd===tokens.length;
-      });
+      &&memberShapes.every(Boolean);
   members.forEach((member)=>{member.coordinator=coordinator;});
   return{members,coordinator,validity:n===members.length&&n?'ALL_VALID':n?'MIXED_INVALID':'ALL_INVALID',shapeValid,start:subjectStart,end:boundary};
 }
@@ -1344,6 +1353,17 @@ function bindLocalPassiveAgent(ts){
 function resolveCoordinatedPredicates(ts,i,end){const a=ts.findIndex((t,n)=>n>i&&n<end&&t.lemma==='and');if(a<0)return[];const subject=extractSubjectSet(ts,i),first=validateFinitePredicate(ts,i),firstAux=parseAuxiliaryChain(ts,i),firstControl=resolveControlChain(ts,i),secondIndex=a+1,second=validateFinitePredicate(ts,secondIndex),secondAux=parseAuxiliaryChain(ts,secondIndex),secondControl=resolveControlChain(ts,secondIndex),accepted=Boolean(first&&second&&validateActiveFinitePredicateV2(ts,i,first,subject,firstAux,firstControl)&&validateActiveFinitePredicateV2(ts,secondIndex,second,subject,secondAux,secondControl)),indices=[i,secondIndex];if(!accepted)indices.invalid=true;return indices;}
 function resolvePronounContinuation(ts,o){const a=ts.findIndex((t,n)=>n>=o.tokenEnd&&t.lemma==='and');if(a<0||a!==o.tokenEnd)return null;const firstIndex=ts.findIndex((t,n)=>n<o.tokenEnd&&validateFinitePredicate(ts,n)),first=validateFinitePredicate(ts,firstIndex),subject=extractSubjectSet(ts,firstIndex),firstAux=parseAuxiliaryChain(ts,firstIndex),firstControl=resolveControlChain(ts,firstIndex),secondIndex=a+1,second=validateFinitePredicate(ts,secondIndex),secondSubject={...subject,end:a+1},secondAux=parseAuxiliaryChain(ts,secondIndex,a+1),secondControl=resolveControlChain(ts.slice(a+1),secondIndex-a-1);if(!first||!second||!V2_LIGHT_RELATION_LEMMAS.has(first.lemma)||!V2_LIGHT_RELATION_LEMMAS.has(second.lemma)||ts[secondIndex+1]?.lemma!=='it')return null;const grammarValid=!firstAux.chain.length&&!firstControl&&!secondAux.chain.length&&!secondControl&&validateActiveFinitePredicateV2(ts,firstIndex,first,subject,firstAux,firstControl)&&validateActiveFinitePredicateV2(ts,secondIndex,second,secondSubject,secondAux,secondControl);return{antecedent:o.normalized,valid:o.normalized==='light-energy',grammarValid,continuationTailOffset:secondIndex-o.tokenEnd,continuationVerb:second.surface,second,secondIndex,secondSubject,secondAuxiliary:secondAux,secondControl};}
 const V2_DESTRUCTIVE_RELATION_LEMMAS = new Set(['destroy', 'waste', 'ignore', 'lose', 'block', 'reject', 'eliminate', 'remove', 'prevent']);
+const isTargetRelationPredicateV2 = (lemma) => V2_LIGHT_RELATION_LEMMAS.has(lemma)
+  || V2_DESTRUCTIVE_RELATION_LEMMAS.has(lemma);
+function isTargetRelationFrameV2(tokens,predicateIndex){
+  if(!isTargetRelationPredicateV2(V2_VERBS.get(tokens[predicateIndex]?.form)))return false;
+  const subject=extractSubjectSet(tokens,predicateIndex);
+  if(subject.members.some((member)=>member.valid))return true;
+  let objectIndex=predicateIndex+1;
+  if(tokens[objectIndex]?.form==='chlorophyll'&&tokens[objectIndex+1]?.form==='to')objectIndex+=2;
+  const object=bindDirectObject(tokens,objectIndex);
+  return object?.role==='LIGHT_OBJECT'||subject.shapeValid&&subject.members.length>0&&!object;
+}
 function isSupportedPassiveAuxiliaryChain(chain) {
   const negators = chain.filter((form) => ['not', 'never'].includes(form));
   if (negators.length > 1) return false;
@@ -1551,19 +1571,20 @@ function parseMinimalRelationGrammar(input) {
       if (clause.boundaryBefore !== 'but') pronounAntecedentRecordStart = clauseRecordStart;
       const explicitContinuation = Boolean(clause.discourseConjunction)
         || ['but', 'comma-and'].includes(clause.boundaryBefore);
-      const markMalformed = () => {
+      const markMalformed = (explicitTargetFrame = false) => {
         malformed = true;
-        if (explicitContinuation) malformedExplicitContinuation = true;
+        if (explicitContinuation || explicitTargetFrame) malformedExplicitContinuation = true;
       };
       const tokens = tokenizeV2(clause.text);
       if (!tokens.length) continue;
+      const hasTargetFrame = tokens.some((token,index) => isTargetRelationFrameV2(tokens,index));
       topology.push([sentenceIndex, clause.index]);
 
       const passive = bindLocalPassiveAgent(tokens);
       if (passive) {
         const valid = validateSubjectSet(passive.agent);
         if (!subjectPhraseWellFormedV2(passive.agent)) {
-          markMalformed();
+          markMalformed(isTargetRelationPredicateV2(passive.verb.lemma));
           diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
         }
         const object = {
@@ -1658,21 +1679,21 @@ function parseMinimalRelationGrammar(input) {
         && !['do', 'does', 'did'].includes(auxiliary.chain[0])
         && tokens[predicateIndex - 1]?.form !== 'to'
         && !(predicate.form === 'BASE' && hasBarePresentAgreementV2(subjectSet)))) {
-        if (!isCompleteUnsupportedClauseV2(tokens, true)) {
-          markMalformed();
+        if (!isCompleteUnsupportedClauseV2(tokens, true) || hasTargetFrame) {
+          markMalformed(hasTargetFrame);
           diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
         }
         continue;
       }
 
       if (!subjectSet.members.length) {
-        markMalformed();
+        markMalformed(isTargetRelationFrameV2(tokens,predicateIndex));
         diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
         continue;
       }
 
       if (!validateActiveFinitePredicateV2(tokens, predicateIndex, predicate, subjectSet, auxiliary, control)) {
-        markMalformed();
+        markMalformed(isTargetRelationFrameV2(tokens,predicateIndex));
         diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
         continue;
       }
@@ -1683,7 +1704,7 @@ function parseMinimalRelationGrammar(input) {
       if (tokens[objectIndex]?.form === 'chlorophyll' && tokens[objectIndex + 1]?.form === 'to') objectIndex += 2;
       let object = bindDirectObject(tokens, objectIndex);
       if (!object) {
-        markMalformed();
+        markMalformed(isTargetRelationFrameV2(tokens,predicateIndex));
         diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
         continue;
       }
@@ -1711,7 +1732,7 @@ function parseMinimalRelationGrammar(input) {
       const coordinatedPredicates = resolveCoordinatedPredicates(tokens, predicateIndex, objectIndex);
       const pronoun = resolvePronounContinuation(tokens, object);
       if (coordinatedPredicates.invalid) {
-        markMalformed();
+        markMalformed(isTargetRelationFrameV2(tokens,predicateIndex));
         diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
       }
 
@@ -1720,7 +1741,7 @@ function parseMinimalRelationGrammar(input) {
       const allowed = (!pronoun?.valid || pronoun.grammarValid)
         && validateActiveTailV2(tokens, object.tokenEnd, pronoun, subjectSet, object);
       if (!allowed) {
-        markMalformed();
+        markMalformed(isTargetRelationFrameV2(tokens,predicateIndex));
         diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
       }
 
@@ -2031,6 +2052,7 @@ function malformedFingerprintStructure(text,records){
     const fallbackSubject=subjectRanges.some((range)=>range.start<=token.start&&range.end>=token.end);
     const object=ranges.find(({object})=>object?.start<=token.start&&object?.end>=token.end);
     const boundary=punctuationBoundaries.get(token.form);
+    if(boundary&&!hasContentV2(text.slice(token.end)))continue;
     const lightObject=lightObjectRanges.some((range)=>range.start<=token.start&&range.end>=token.end);
     const pigment=pigmentRanges.some((range)=>range.start<=token.start&&range.end>=token.end);
     const item=parsedSubject?{role:'SUBJECT'}:object?{role:object.objectRole==='NON_LIGHT_OBJECT'?'NON_LIGHT_OBJECT':object.objectRole==='CHLOROPHYLL'?'PIGMENT':'LIGHT_OBJECT'}

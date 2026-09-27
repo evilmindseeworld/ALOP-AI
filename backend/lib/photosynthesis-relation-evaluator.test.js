@@ -7,6 +7,9 @@ const { join } = require('node:path');
 const {
   EXPECTED_GENERATED_CASE_COUNT,
   PHOTOSYNTHESIS_RELATION_CASES,
+  canonicalCases,
+  generatedV2Cases,
+  b5SemanticSupplementCases,
 } = require('./photosynthesis-relation-cases');
 const { gradeCase } = require('./evaluation');
 const {
@@ -84,6 +87,270 @@ test('every coordinated noun phrase member uses the same complete active and pas
       assert.equal(result.hasMalformed, invalid.includes(subject), input);
       assert.equal(result.passed, valid.includes(subject), input);
     }
+  }
+});
+
+test('target-frame completeness is independent of clause and sentence boundary spelling', () => {
+  const boundaries = [
+    { name: 'semicolon', text: '; ', missingSubject: true },
+    { name: 'period', text: '. ', missingSubject: true },
+    { name: 'period-and', text: '. And ', missingSubject: true },
+    { name: 'period-but', text: '. But ', missingSubject: true },
+    { name: 'exclamation-and', text: '! And ', missingSubject: true },
+    { name: 'question-but', text: '? But ', missingSubject: true },
+    { name: 'same-clause-and', text: ' and ', missingSubject: false },
+    { name: 'same-clause-but', text: ' but ', missingSubject: false },
+  ];
+  const frames = [
+    { subject: 'Green plants', base: 'absorb', finite: 'absorb', singular: false },
+    { subject: 'Algae', base: 'store', finite: 'store', singular: false },
+    { subject: 'Some bacteria', base: 'convert', finite: 'convert', singular: false },
+    { subject: 'A plant', base: 'capture', finite: 'captures', singular: true },
+    { subject: 'Photosynthesis', base: 'use', finite: 'uses', singular: true },
+  ];
+  const first = 'Plants capture light energy';
+  let inputs = 0, validFrames = 0, invalidFrames = 0, freshSubjectVerbPairs = 0;
+  for (const boundary of boundaries) {
+    for (const frame of frames) {
+      const subject = boundary.text.includes('same-clause') ? frame.subject.toLowerCase() : frame.subject;
+      const join = `${first}${boundary.text}`;
+      const complete = `${join}${subject} ${frame.finite} light energy.`;
+      const completeResult = evaluatePhotosynthesisRelationsV2(complete);
+      assert.equal(completeResult.hasMalformed, false, `${boundary.name}: ${complete}`);
+      assert.equal(completeResult.passed, true, `${boundary.name}: ${complete}`);
+      inputs += 1; validFrames += 1;
+
+      const auxiliary = frame.singular ? 'does not' : 'do not';
+      for (const suffix of [
+        `${subject} ${auxiliary} ${frame.base}.`,
+        `${subject} does can ${frame.base} light energy.`,
+        `${subject} ${frame.finite} light energy between.`,
+      ]) {
+        const input = `${join}${suffix}`;
+        const result = evaluatePhotosynthesisRelationsV2(input);
+        assert.equal(result.hasMalformed, true, `${boundary.name}: ${input}`);
+        assert.equal(result.passed, false, `${boundary.name}: ${input}`);
+        inputs += 1; invalidFrames += 1;
+      }
+      if (boundary.missingSubject) {
+        const input = `${join}do not ${frame.base} light energy.`;
+        const result = evaluatePhotosynthesisRelationsV2(input);
+        assert.equal(result.hasMalformed, true, `${boundary.name}: ${input}`);
+        assert.equal(result.passed, false, `${boundary.name}: ${input}`);
+        inputs += 1; invalidFrames += 1;
+      }
+      freshSubjectVerbPairs += 1;
+    }
+  }
+  assert.equal(inputs, 190);
+  assert.equal(validFrames, 40);
+  assert.equal(invalidFrames, 150);
+  assert.equal(freshSubjectVerbPairs, 40);
+
+  const localBinding = evaluatePhotosynthesisRelationsV2(
+    'Plants store light energy; photosynthesis harnesses light energy but photosynthesis does not harness it.',
+  );
+  assert.equal(localBinding.passed, false);
+  assert.equal(localBinding.hasMalformed, false);
+  assert.equal(localBinding.contradictions.length, 1);
+  assert.equal(localBinding.relationRecords.at(-1)?.lightObject?.binding, 'PRONOUN_ANTECEDENT');
+  const resetBinding = evaluatePhotosynthesisRelationsV2(
+    'Plants capture light energy; photosynthesis does not capture it.',
+  );
+  assert.equal(resetBinding.relationRecords.at(-1)?.lightObject?.binding, undefined);
+
+  const unseenSubjects = ['Marmots', 'Quokkas', 'Puffins'];
+  const explicitBoundaries = ['. ', '; ', '. And ', '. But ', '! And ', '? But '];
+  let unseenSubjectFrames = 0;
+  for (const subject of unseenSubjects) {
+    for (const boundary of explicitBoundaries) {
+      const input = `Plants capture light energy${boundary}${subject} do not store.`;
+      const result = evaluatePhotosynthesisRelationsV2(input);
+      assert.equal(result.hasMalformed, true, input);
+      assert.equal(result.passed, false, input);
+      unseenSubjectFrames += 1;
+    }
+  }
+  assert.equal(unseenSubjectFrames, 18);
+});
+
+test('subject number is predicate-independent across fresh regular and compound plural families', () => {
+  const pairs = [
+    ['puffin', 'puffins'], ['tadpole', 'tadpoles'], ['narwhal', 'narwhals'],
+    ['marmot', 'marmots'], ['salamander', 'salamanders'], ['gecko', 'geckos'],
+    ['meerkat', 'meerkats'], ['lemur', 'lemurs'], ['wombat', 'wombats'],
+    ['weevil', 'weevils'], ['lynx', 'lynxes'], ['goose', 'geese'],
+    ['cactus', 'cacti'], ['booklouse', 'booklice'],
+  ];
+  const formsFor = (singular, plural) => [
+    [`${plural} capture light energy.`, `${plural} captures light energy.`],
+    [`${plural} do capture light energy.`, `${plural} does capture light energy.`],
+    [`${plural} do not capture light energy.`, `${plural} does not capture light energy.`],
+    [`${plural} have captured light energy.`, `${plural} has captured light energy.`],
+    [`${plural} do not fail to capture light energy.`, `${plural} does not fail to capture light energy.`],
+    [`${singular} captures light energy.`, `${singular} capture light energy.`],
+    [`${singular} does capture light energy.`, `${singular} do capture light energy.`],
+    [`${singular} does not capture light energy.`, `${singular} do not capture light energy.`],
+    [`${singular} has captured light energy.`, `${singular} have captured light energy.`],
+    [`${singular} does not fail to capture light energy.`, `${singular} do not fail to capture light energy.`],
+  ];
+  let inputs = 0, correct = 0, incorrect = 0, lexicalComparisons = 0;
+  for (const [singular, plural] of pairs) {
+    const pluralForms = formsFor(singular, plural).slice(0, 5);
+    const singularForms = formsFor(singular, plural).slice(5);
+    for (const [good, bad] of [...pluralForms, ...singularForms]) {
+      const goodResult = evaluatePhotosynthesisRelationsV2(good);
+      const badResult = evaluatePhotosynthesisRelationsV2(bad);
+      assert.equal(goodResult.hasMalformed, false, good);
+      assert.equal(badResult.hasMalformed, true, bad);
+      inputs += 2; correct += 1; incorrect += 1;
+    }
+    const modalPlural = `${plural} can capture light energy.`;
+    const modalSingular = `${singular} can capture light energy.`;
+    assert.equal(evaluatePhotosynthesisRelationsV2(modalPlural).hasMalformed, false, modalPlural);
+    assert.equal(evaluatePhotosynthesisRelationsV2(modalSingular).hasMalformed, false, modalSingular);
+    assert.equal(semanticCaseFingerprint(modalPlural), semanticCaseFingerprint(
+      `${pairs[0][1]} can capture light energy.`,
+    ));
+    inputs += 2; correct += 2; lexicalComparisons += 1;
+  }
+
+  for (const input of [
+    'Plants and algae do capture light energy.',
+    'Marmots and narwhals do capture light energy.',
+    'Plants and algae does capture light energy.',
+    'Marmots and narwhals does capture light energy.',
+    'A narwhal does capture light energy.',
+    'A narwhals does capture light energy.',
+    'The narwhals do capture light energy.',
+    'The narwhals does capture light energy.',
+  ]) {
+    const malformed = /does capture/.test(input) && /and|narwhals/.test(input)
+      || input === 'A narwhals does capture light energy.';
+    assert.equal(evaluatePhotosynthesisRelationsV2(input).hasMalformed, malformed, input);
+    inputs += 1;
+    if (malformed) incorrect += 1;
+    else correct += 1;
+  }
+  assert.equal(evaluatePhotosynthesisRelationsV2('Quokka do capture light energy.').hasMalformed, true);
+  assert.equal(evaluatePhotosynthesisRelationsV2('Quokka does capture light energy.').hasMalformed, false);
+  const alice = evaluatePhotosynthesisRelationsV2('Alice does capture light energy.');
+  const david = evaluatePhotosynthesisRelationsV2('David does capture light energy.');
+  assert.equal(alice.hasMalformed, false);
+  assert.equal(evaluatePhotosynthesisRelationsV2('Alice do capture light energy.').hasMalformed, true);
+  assert.equal(semanticCaseFingerprint('Alice does capture light energy.'),
+    semanticCaseFingerprint('David does capture light energy.'));
+  inputs += 5; correct += 3; incorrect += 2;
+  assert.equal(inputs, 321);
+  assert.equal(correct, 175);
+  assert.equal(incorrect, 146);
+  assert.ok(inputs >= 100, `generated ${inputs} subject-number inputs`);
+  assert.equal(correct + incorrect, inputs);
+  assert.equal(lexicalComparisons, pairs.length);
+});
+
+test('a malformed coordinated member invalidates the whole active or passive noun phrase', () => {
+  const valid = [
+    'plants and algae', 'plants and the algae', 'the plants and algae',
+    'the plants and the algae', 'algae and mosses', 'narwhals and puffins',
+    'the narwhals and the puffins', 'a narwhal and some puffins',
+  ];
+  let validCases = 0, malformedCases = 0, emptyMemberCases = 0, generatedAttacks = 0;
+  for (const subject of valid) {
+    for (const input of [`${subject} absorb light energy.`, `Light energy is absorbed by ${subject} during photosynthesis.`]) {
+      const result = evaluatePhotosynthesisRelationsV2(input);
+      assert.equal(result.hasMalformed, false, input);
+      if (/plants|algae/.test(subject) && !/mosses/.test(subject)) assert.equal(result.passed, true, input);
+      validCases += 1;
+    }
+  }
+  const invalid = [
+    'plants and', 'plants and the', 'plants and a', 'plants and an', 'plants and some',
+    'plants and the the algae', 'the the plants and algae', 'plants and and algae',
+    'plants and , algae', 'plants and absorb', 'plants and the absorb',
+  ];
+  for (const subject of invalid) {
+    for (const input of [`${subject} absorb light energy.`, `Light energy is absorbed by ${subject} during photosynthesis.`]) {
+      const result = evaluatePhotosynthesisRelationsV2(input);
+      assert.equal(result.hasMalformed, true, input);
+      assert.equal(result.passed, false, input);
+      malformedCases += 1;
+      if (/and\s*$|^and\s|and\s+,|and\s+and/.test(subject)) emptyMemberCases += 1;
+    }
+  }
+  const firstMembers = [
+    'plants', 'algae', 'green plants', 'some bacteria', 'photosynthesis', 'chlorophyll',
+    'a plant', 'the algae', 'narwhals', 'the geckos', 'beetles', 'some mosses', 'a fern',
+  ];
+  for (const first of firstMembers) {
+    for (const determiner of ['the', 'a', 'an', 'some']) {
+      const subject = `${first} and ${determiner}`;
+      for (const input of [`${subject} absorb light energy.`, `Light energy is absorbed by ${subject} during photosynthesis.`]) {
+        const result = evaluatePhotosynthesisRelationsV2(input);
+        assert.equal(result.hasMalformed, true, input);
+        assert.equal(result.passed, false, input);
+        generatedAttacks += 1;
+      }
+    }
+  }
+  assert.equal(validCases, 16);
+  assert.equal(generatedAttacks, 104);
+  assert.ok(malformedCases >= 20);
+  assert.ok(emptyMemberCases > 0);
+  for (const input of [
+    'Light energy is absorbed by and plants during photosynthesis.',
+    'Plants capture light energy and , algae absorb sunlight.',
+  ]) {
+    const result = evaluatePhotosynthesisRelationsV2(input);
+    assert.equal(result.hasMalformed, true, input);
+    assert.equal(result.passed, false, input);
+    emptyMemberCases += 1;
+  }
+  assert.equal(malformedCases, 22);
+  assert.equal(emptyMemberCases, 8);
+});
+
+test('terminal punctuation is cosmetic while genuine inter-proposition topology remains semantic', () => {
+  const corpus = [...canonicalCases, ...generatedV2Cases, ...b5SemanticSupplementCases];
+  assert.equal(corpus.length, 206);
+  let corpusPairs = 0, corpusVariants = 0, freshVariants = 0;
+  for (const item of corpus) {
+    const base = item.text.replace(/[.!?]+\s*$/, '');
+    const fingerprint = semanticCaseFingerprint(base);
+    assert.equal(semanticCaseFingerprint(item.text), fingerprint, item.id);
+    corpusPairs += 1;
+    for (const punctuation of ['.', '!', '?']) {
+      assert.equal(semanticCaseFingerprint(`${base}${punctuation}`), fingerprint, `${item.id}${punctuation}`);
+      corpusVariants += 1;
+    }
+  }
+  const malformedHeads = [
+    'pademelons', 'cormorants', 'pipits', 'sundews', 'yews', 'sculpins', 'wallabies',
+    'kingfishers', 'warthogs', 'barracudas', 'leafhoppers', 'puffbirds', 'marmosets',
+    'tamarins', 'lorikeets', 'woodpeckers', 'terns', 'dunlins', 'warblers', 'gannets',
+  ];
+  for (const head of malformedHeads) {
+    const base = `A ${head} light energy capture chlorophyll`;
+    const fingerprint = semanticCaseFingerprint(base);
+    for (const punctuation of ['', '.', '!', '?', '..', '...', '!?', '?!']) {
+      assert.equal(semanticCaseFingerprint(`${base}${punctuation}`), fingerprint, `${head}${punctuation}`);
+      freshVariants += 1;
+    }
+  }
+  assert.equal(corpusPairs, 206);
+  assert.equal(corpusVariants, 618);
+  assert.equal(freshVariants, 160);
+
+  const first = 'Plants capture light energy';
+  const second = 'Algae absorb sunlight';
+  const sentenceBoundaries = ['. ', '! ', '? '].map((mark) =>
+    semanticCaseFingerprint(`${first}${mark}${second}.`));
+  assert.equal(new Set(sentenceBoundaries).size, 1);
+  const sameClause = semanticCaseFingerprint(`${first} and algae absorb sunlight.`);
+  assert.notEqual(sentenceBoundaries[0], sameClause);
+  for (const conjunction of ['And', 'But']) {
+    const discourse = semanticCaseFingerprint(`${first}. ${conjunction} algae absorb sunlight.`);
+    assert.notEqual(discourse, sameClause);
   }
 });
 

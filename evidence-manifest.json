@@ -153,7 +153,7 @@
     },
     {
       "path": "backend/lib/p1-authoritative-repair-v2.test.js",
-      "sha256": "1a77e9aa0543d181069a3bd89569e80d023506e8d40d51805f3e5a71686756ea"
+      "sha256": "a1bccd12b056dbc3fa0edf3f2f0f58922ff90b7dec6d9c15cfb8a788248dc922"
     },
     {
       "path": "backend/lib/photosynthesis-relation-cases.js",
@@ -193,7 +193,7 @@
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/semantic-coverage.json",
-      "sha256": "9f14fcd82de5ac5cdde8fcf0270d1286e32c7895e0c8ec6e0a9ec1199e2fa033"
+      "sha256": "f35f9188d564a199c9aceb5b919fa32fee940afb53a680ea97261b0a6e4359b5"
     }
   ]
 }

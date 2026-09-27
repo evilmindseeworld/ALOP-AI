@@ -1585,6 +1585,7 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
                   : verbs.has(token.form) ? { role: 'VERB', lemma: token.lemma, form: token.form }
                     : structuralForms.has(token.form) ? { role: 'STRUCTURE', form: token.form } : { role: 'OTHER' };
       const prior = projected.at(-1);
+      if (boundary && !/[\p{L}\p{N}]/u.test(text.slice(token.end))) continue;
       if (boundary && prior?.role === 'STRUCTURE' && prior.form === boundary) continue;
       if (prior?.role === item.role && ['SUBJECT','LIGHT_OBJECT','NON_LIGHT_OBJECT','OTHER'].includes(item.role)) continue;
       projected.push(item);

@@ -320,6 +320,7 @@ test('empty coordinated member topology survives comma normalization in active a
     'wombats, and , plants',
     'plants, , algae',
     'puffins and , plants',
+    'plants and ,',
     ', geckos and plants',
     'plants, , and quokkas, green plants',
     'plants, algae, , and wombats',
@@ -362,7 +363,7 @@ test('empty coordinated member topology survives comma normalization in active a
   }
 
   assert.equal(freshNouns.size, 5);
-  assert.equal(emptyMemberAttacks, 18);
+  assert.equal(emptyMemberAttacks, 20);
   assert.equal(validControls, 8);
 });
 

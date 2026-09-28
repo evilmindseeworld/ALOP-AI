@@ -503,7 +503,7 @@ const normalizePunctuationRunV2 = (run) => {
   return /[.!?]/.test(marks) ? '.' : marks ? ';' : '';
 };
 const normalizeInputV2 = (x) => normalizeInput(x).toLowerCase().replace(/’/g, "'")
-  .replace(/,\s*(?=(?:and|but)\b)/g, ' ')
+  .replace(/,\s*(?=(?:and|but)\b)/g, (comma, offset, input) => /,\s*$/.test(input.slice(0, offset)) ? comma : ' ')
   .replace(/[.!?;:](?:\s*[.!?;:])*/g, normalizePunctuationRunV2);
 const hasContentV2 = (text) => /[\p{L}\p{N}]/u.test(text);
 const segmentSentencesV2 = (x) => segmentSentences(normalizeInputV2(x))

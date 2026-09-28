@@ -243,6 +243,34 @@ test('root invariant 003 mutation: skipping member-head validation accepts a det
   }
 });
 
+test('root invariant 005 mutation: destructive optional-comma normalization erases empty members', () => {
+  const mutant = loadMutant(replaceOnce(
+    SOURCE,
+    ".replace(/,\\s*(?=(?:and|but)\\b)/g, (comma, offset, input) => /,\\s*$/.test(input.slice(0, offset)) ? comma : ' ')",
+    ".replace(/,\\s*(?=(?:and|but)\\b)/g, ' ')",
+    'preservation of empty coordinated-member topology',
+  ));
+  const subjects = [
+    'plants, , and algae',
+    'narwhals, , and plants',
+    'plants, , and quokkas, green plants',
+    'plants, algae, , and wombats',
+  ];
+  let violations = 0;
+  for (const subject of subjects) {
+    for (const input of [
+      `${subject} absorb sunlight.`,
+      `Sunlight is absorbed by ${subject} during photosynthesis.`,
+    ]) {
+      assert.equal(current.evaluatePhotosynthesisRelationsV2(input).hasMalformed, true, input);
+      assert.equal(current.evaluatePhotosynthesisRelationsV2(input).passed, false, input);
+      const result = mutant.evaluatePhotosynthesisRelationsV2(input);
+      if (!result.hasMalformed || result.passed) violations += 1;
+    }
+  }
+  assert.equal(violations, 8);
+});
+
 test('root invariant 004 mutation: recording a terminal boundary leaks punctuation into fingerprints', () => {
   const mutant = loadMutant(replaceOnce(
     SOURCE,

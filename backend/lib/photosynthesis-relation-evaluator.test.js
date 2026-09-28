@@ -17,6 +17,8 @@ const {
   PHOTOSYNTHESIS_SEMANTIC_EVALUATOR_REGISTRY,
   evaluatePhotosynthesisRelationsV2,
   normalizeInputV2,
+  tokenizeV2,
+  extractSubjectSet,
   segmentSentencesV2,
   segmentClausesV2,
   semanticCaseFingerprint,
@@ -308,6 +310,60 @@ test('a malformed coordinated member invalidates the whole active or passive nou
   }
   assert.equal(malformedCases, 22);
   assert.equal(emptyMemberCases, 8);
+});
+
+test('empty coordinated member topology survives comma normalization in active and passive noun phrases', () => {
+  const malformedSubjects = [
+    'plants, , and algae',
+    'narwhals, , and plants',
+    'plants and , quokkas',
+    'wombats, and , plants',
+    'plants, , algae',
+    'puffins and , plants',
+    ', geckos and plants',
+    'plants, , and quokkas, green plants',
+    'plants, algae, , and wombats',
+  ];
+  const freshNouns = new Set(['narwhals', 'quokkas', 'wombats', 'puffins', 'geckos']);
+  const validCommaControls = [
+    'plants and algae',
+    'plants, and algae',
+    'plants, algae and green plants',
+    'plants, algae, and green plants',
+  ];
+  let emptyMemberAttacks = 0, validControls = 0;
+  for (const noun of freshNouns) assert.ok(malformedSubjects.some((subject) => subject.includes(noun)), noun);
+
+  for (const subject of malformedSubjects) {
+    const normalizedSubject = normalizeInputV2(subject);
+    const tokens = tokenizeV2(normalizedSubject);
+    const members = extractSubjectSet(tokens, tokens.length);
+    assert.equal(members.shapeValid, false, subject);
+    assert.ok(members.members.length >= 2, subject);
+    for (const input of [
+      `${subject} absorb sunlight.`,
+      `Sunlight is absorbed by ${subject} during photosynthesis.`,
+    ]) {
+      const result = evaluatePhotosynthesisRelationsV2(input);
+      assert.equal(result.hasMalformed, true, input);
+      assert.equal(result.passed, false, input);
+      emptyMemberAttacks += 1;
+    }
+  }
+
+  for (const subject of validCommaControls) {
+    const active = evaluatePhotosynthesisRelationsV2(`${subject} absorb sunlight.`);
+    const passive = evaluatePhotosynthesisRelationsV2(`Sunlight is absorbed by ${subject} during photosynthesis.`);
+    for (const result of [active, passive]) {
+      assert.equal(result.hasMalformed, false, subject);
+      assert.equal(result.passed, true, subject);
+      validControls += 1;
+    }
+  }
+
+  assert.equal(freshNouns.size, 5);
+  assert.equal(emptyMemberAttacks, 18);
+  assert.equal(validControls, 8);
 });
 
 test('terminal punctuation is cosmetic while genuine inter-proposition topology remains semantic', () => {

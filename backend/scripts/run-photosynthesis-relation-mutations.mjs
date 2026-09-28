@@ -1,4 +1,4 @@
-// p1-static-compose-v1; evaluator-blob=76da31ed741eb1900b3f8d4fed25c6920130d4d7; runner-blob=b92260cb5940637d6deab6e0efcdf1ee462b0f22; recipe-blob=2440f6c5c9c42248ca6439150fa6deea58be8848
+// p1-static-compose-v1; evaluator-blob=359087ae1ffe6674f95e6b0c8452d1914a21e3d6; runner-blob=b92260cb5940637d6deab6e0efcdf1ee462b0f22; recipe-blob=2440f6c5c9c42248ca6439150fa6deea58be8848
 import * as __p1Crypto from 'node:crypto';
 import { closeSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs';
 import { createRequire, Module } from 'node:module';
@@ -511,7 +511,7 @@ const normalizePunctuationRunV2 = (run) => {
   return /[.!?]/.test(marks) ? '.' : marks ? ';' : '';
 };
 const normalizeInputV2 = (x) => normalizeInput(x).toLowerCase().replace(/’/g, "'")
-  .replace(/,\s*(?=(?:and|but)\b)/g, ' ')
+  .replace(/,\s*(?=(?:and|but)\b)/g, (comma, offset, input) => /,\s*$/.test(input.slice(0, offset)) ? comma : ' ')
   .replace(/[.!?;:](?:\s*[.!?;:])*/g, normalizePunctuationRunV2);
 const hasContentV2 = (text) => /[\p{L}\p{N}]/u.test(text);
 const segmentSentencesV2 = (x) => segmentSentences(normalizeInputV2(x))

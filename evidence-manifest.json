@@ -1,12 +1,12 @@
 {
   "schemaVersion": 1,
   "kind": "alop-p1-authoritative-evidence-manifest",
-  "repairAttemptId": "P1-RECONCILIATION-20260927",
+  "repairAttemptId": "P1-BOUNDED-FINAL-001-20260928",
   "phase": "FINAL_REPAIR_EVIDENCE",
   "status": "SOURCE_AND_BUILD_EVIDENCE_FINAL_TESTS_EXTERNAL",
   "entryCount": 13,
   "manifestSelfHashExcluded": true,
-  "capturedAtUtc": "2026-09-27T17:03:48.245Z",
+  "capturedAtUtc": "2026-09-28T18:18:32.847Z",
   "design": {
     "path": "C:/Users/LENOVO/Documents/AI-Classroom-supervisor/.alop-supervisor/evidence/designs/photosynthesis-clause-relation-v2.json",
     "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
@@ -24,22 +24,25 @@
     "earlierBlocked": "33070c57a8fa72ba97ba7e31175b454b0a97ad81",
     "reconciliationStart": "ee010f0d0d2ed7281b2e0069e1dee6848b611d9b"
   },
-  "implementationCommitSha": "1980974e84078c91e6e277c2ec89fdc64f20ee44",
+  "implementationCommitSha": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
   "implementationCommitShas": [
-    "1980974e84078c91e6e277c2ec89fdc64f20ee44"
+    "426fb54aba8b5be5e1786fe1d5fd77c4dd3ff611",
+    "052060e044fb0222fd1f7dbd15676cc6e35cdc3b"
   ],
   "implementation": {
-    "head": "1980974e84078c91e6e277c2ec89fdc64f20ee44",
-    "tree": "252d30e17fd39b026e247238ee18edd5fea83212",
-    "parent": "1f862b070edfca57817a9dc486e2d0c6321ed305",
-    "recipePreservedByteForByte": false,
-    "semanticSourceFrozen": false
+    "head": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
+    "tree": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
+    "parent": "426fb54aba8b5be5e1786fe1d5fd77c4dd3ff611",
+    "recipePreservedByteForByte": true,
+    "recipeSourceCommit": "1980974e84078c91e6e277c2ec89fdc64f20ee44",
+    "semanticSourceFrozen": false,
+    "sourceChanges": 1
   },
   "package": {
     "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-    "bytes": 124505,
-    "sha256": "4015cecdb16ad09fab7499c7255c816fcc3ab4c0c09051c607a885a82fb5a6ea",
-    "gitBlob": "3e8f9cdf2480e77b9fdbbe2820146650a58a3d1f",
+    "bytes": 124578,
+    "sha256": "41a8d8158b7537f98af12aa66f11cf9e7b78033d481525f966efd8ce1ce534df",
+    "gitBlob": "7dd45faa83ac22a266fcc039c8fdeb0bcd7d9144",
     "inputs": {
       "recipe": {
         "commit": "1980974e84078c91e6e277c2ec89fdc64f20ee44",
@@ -50,18 +53,18 @@
         "bytes": 10442
       },
       "evaluator": {
-        "commit": "1980974e84078c91e6e277c2ec89fdc64f20ee44",
+        "commit": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
         "path": "backend/lib/photosynthesis-relation-evaluator.js",
-        "blob": "76da31ed741eb1900b3f8d4fed25c6920130d4d7",
-        "tree": "252d30e17fd39b026e247238ee18edd5fea83212",
-        "sha256": "d5f895f11982e7983600425b7fb73f6e03f1c1a70afdf54ff06b058bc2db9d15",
-        "bytes": 104603
+        "blob": "359087ae1ffe6674f95e6b0c8452d1914a21e3d6",
+        "tree": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
+        "sha256": "0547fb6f6069cd7978733427aa79b54e81902626c55b54b6fb4ee31d08511af4",
+        "bytes": 104676
       },
       "corpus": {
-        "commit": "1980974e84078c91e6e277c2ec89fdc64f20ee44",
+        "commit": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
         "path": "backend/lib/photosynthesis-relation-cases.js",
         "blob": "979ed2146045fdd6c7360583875bd8abbb032642",
-        "tree": "252d30e17fd39b026e247238ee18edd5fea83212",
+        "tree": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
         "sha256": "b62495937ef0a2adec9829fa5bb7dcc3afdb12a062cf82fe0ec1d0fc527589fe",
         "bytes": 43347
       },
@@ -124,8 +127,8 @@
     }
   },
   "finalTestedCandidate": {
-    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-post-recon-1f862b-20260927\\FINAL-TESTED-CANDIDATE.json",
-    "role": "External post-commit attestation: exact final HEAD/TREE, suite results and log hashes; created only after final evidence commit and exact committed-tree tests."
+    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-20260928\\FINAL-TESTED-CANDIDATE.json",
+    "role": "External post-commit attestation containing the exact evidence-complete final HEAD/TREE, suite results and log hashes."
   },
   "quarantine": {
     "commits": [
@@ -161,31 +164,31 @@
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator-mutation.test.js",
-      "sha256": "70b5775366fe012338fad6ee90d142f8006e090a3a6c8ceb0d8933d065baebc6"
+      "sha256": "9e4b446de1666d2e29a1ba7e53f11aa8bf6d39614ab116fb823750dae1341fa4"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.js",
-      "sha256": "d5f895f11982e7983600425b7fb73f6e03f1c1a70afdf54ff06b058bc2db9d15"
+      "sha256": "0547fb6f6069cd7978733427aa79b54e81902626c55b54b6fb4ee31d08511af4"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
-      "sha256": "af1a51ce1c5064e5a704c2a18c3c6ac946c57fcbe0db8ad6b87e5554726cd5f3"
+      "sha256": "8fcb571854c03da8ace9ca71b3fa4d7ad2bfa7179343b174148e82c3d4209df9"
     },
     {
       "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-      "sha256": "4015cecdb16ad09fab7499c7255c816fcc3ab4c0c09051c607a885a82fb5a6ea"
+      "sha256": "41a8d8158b7537f98af12aa66f11cf9e7b78033d481525f966efd8ce1ce534df"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
-      "sha256": "311486a429d846c29b71907929a8cc9d66218804840273e766f1e685abd36330"
+      "sha256": "cf6822d1f9d79be62ad85c2d86b30cc44a3238244cb78863047365cb15fb9216"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/green-phase.json",
-      "sha256": "a504f949adafb7d13b5cfeef6bf6ab4e8315c14caa35f372cf21ea886c7c38f3"
+      "sha256": "3e05750c0e53315207edc12099bc95c73d86085077b9a328c196279113abfaef"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/mutation-phase.json",
-      "sha256": "231b1d027618486133af8db42fc61c5b8b30bb20a846d68e9516c00fc8af3a7d"
+      "sha256": "79a1277aeaafc92a330bf04ef2586b0d3975b0fe231d4d1e47452dfcd38f4949"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/red-phase.json",
@@ -193,7 +196,12 @@
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/semantic-coverage.json",
-      "sha256": "f35f9188d564a199c9aceb5b919fa32fee940afb53a680ea97261b0a6e4359b5"
+      "sha256": "4331a90f62a8a4dac8404700fb4302fc08eeb983e1aa098de35ced50eb9ec0d7"
     }
-  ]
+  ],
+  "repairBaseSha": "53dac79cf873443e2a8c468607af5deee8107759",
+  "repairBaseTreeSha": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
+  "repairStartHead": "baf165d06dd41bd783356fc51a3cd3fa8972824a",
+  "implementationTreeSha": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
+  "implementationParentSha": "426fb54aba8b5be5e1786fe1d5fd77c4dd3ff611"
 }

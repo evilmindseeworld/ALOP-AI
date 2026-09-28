@@ -4,16 +4,17 @@
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "repairAttemptId": "P1-RECONCILIATION-20260927",
-  "capturedAtUtc": "2026-09-27T17:03:48.245Z",
+  "repairAttemptId": "P1-BOUNDED-FINAL-001-20260928",
+  "capturedAtUtc": "2026-09-28T18:18:32.847Z",
   "repairBaseSha": "53dac79cf873443e2a8c468607af5deee8107759",
   "repairBaseTreeSha": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
-  "repairStartHead": "1f862b070edfca57817a9dc486e2d0c6321ed305",
-  "implementationCommitSha": "1980974e84078c91e6e277c2ec89fdc64f20ee44",
-  "implementationTreeSha": "252d30e17fd39b026e247238ee18edd5fea83212",
-  "implementationParentSha": "1f862b070edfca57817a9dc486e2d0c6321ed305",
+  "repairStartHead": "baf165d06dd41bd783356fc51a3cd3fa8972824a",
+  "implementationCommitSha": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
+  "implementationTreeSha": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
+  "implementationParentSha": "426fb54aba8b5be5e1786fe1d5fd77c4dd3ff611",
   "implementationCommitShas": [
-    "1980974e84078c91e6e277c2ec89fdc64f20ee44"
+    "426fb54aba8b5be5e1786fe1d5fd77c4dd3ff611",
+    "052060e044fb0222fd1f7dbd15676cc6e35cdc3b"
   ],
   "phase": "FINGERPRINT_INDEX",
   "duplicatePolicy": "reject-global-duplicate",
@@ -26,7 +27,7 @@
   "reproducedBy": {
     "path": "backend/lib/photosynthesis-relation-evaluator.js",
     "export": "semanticCaseFingerprint",
-    "implementationCommitSha": "1980974e84078c91e6e277c2ec89fdc64f20ee44"
+    "implementationCommitSha": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b"
   },
   "rejectedDuplicates": [],
   "classMinima": [

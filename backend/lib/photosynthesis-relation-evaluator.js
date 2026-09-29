@@ -1970,6 +1970,12 @@ function parseMinimalRelationGrammar(input) {
     && relationRecords.some((record) => record.rejectionReasons?.includes('LIGHT_OBJECT_MISSING'))
     && (sentences.length > 1 || topology.length > sentences.length)
     && /\b(?:light energy|sunlight)\b/.test(normalized);
+  if(rawMalformedCoordination.length){
+    for(const record of relationRecords){
+      record.qualifies=false;
+      record.rejectionReasons=[...new Set([...(record.rejectionReasons||[]),'GRAMMAR_SHAPE_NOT_ACCEPTED'])];
+    }
+  }
   const malformedCoordinationKeys=new Set(rawMalformedCoordination.map((frame)=>(
     `${frame.sentenceIndex}|${frame.voice}|${frame.predicateLemma}`
   )));
@@ -1986,8 +1992,7 @@ function parseMinimalRelationGrammar(input) {
     sentences,
     relationRecords,
     passed: relationRecords.some((record) => record.qualifies)
-      && !malformedExplicitContinuation && !rawMalformedCoordination.length
-      && !contradictions.length && !invalidChlorophyllClaims.length && !affirmedDestructive,
+      && !malformedExplicitContinuation && !contradictions.length && !invalidChlorophyllClaims.length && !affirmedDestructive,
     polarity: contradictions.length ? 'CONTRADICTED'
       : assertedWrongPigment ? 'AFFIRMED'
         : lightMentionAcrossBoundary ? 'UNRESOLVED'
@@ -2002,7 +2007,6 @@ function parseMinimalRelationGrammar(input) {
     topology,
     hasMalformed: malformed,
     malformedExplicitContinuation,
-    malformedCoordination:rawMalformedCoordination.length>0,
     malformedShape: malformed
       ? tokenizeV2(normalized).map((token) => V2_SUBJECTS.has(token.form) ? 'SUBJECT'
         : V2_VERBS.has(token.form) ? 'VERB'
@@ -2064,8 +2068,7 @@ const evaluatePhotosynthesisRelationsV2 = (input)=>{
     contradictions,
     invalidChlorophyllClaims,
     diagnostics:[...new Set([...result.diagnostics,...(invalidChlorophyllClaims.length?['WRONG_PIGMENT_RELATION']:[]),...(contradictions.length?['CONTRADICTION_PRESENT']:[])])],
-    passed:relationRecords.some((record)=>record.qualifies)&&!result.malformedExplicitContinuation
-      &&!result.malformedCoordination&&!contradictions.length&&!invalidChlorophyllClaims.length&&!affirmedDestructive,
+    passed:relationRecords.some((record)=>record.qualifies)&&!result.malformedExplicitContinuation&&!contradictions.length&&!invalidChlorophyllClaims.length&&!affirmedDestructive,
     polarity:contradictions.length?'CONTRADICTED':affirmedWrongPigment?'AFFIRMED':result.polarity,
     barriers:relationRecords.map((record)=>record.objectBarriers?.type).filter(Boolean),
     positiveLightEnergy:relationRecords.some((record)=>record.qualifies),

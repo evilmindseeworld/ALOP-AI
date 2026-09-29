@@ -13,13 +13,6 @@ const {
 } = require('./photosynthesis-relation-cases');
 const { gradeCase } = require('./evaluation');
 const {
-  freshNouns,
-  malformedCases: coordinationTopologyCases,
-  boundaryCases: coordinationBoundaryCases,
-  validControls: coordinationValidControls,
-  optionalCommaControls,
-} = require('./photosynthesis-coordination-topology-cases');
-const {
   evaluatePhotosynthesisRelations,
   PHOTOSYNTHESIS_SEMANTIC_EVALUATOR_REGISTRY,
   evaluatePhotosynthesisRelationsV2,
@@ -30,6 +23,81 @@ const {
   segmentClausesV2,
   semanticCaseFingerprint,
 } = require('./photosynthesis-relation-evaluator');
+
+const freshNouns = Object.freeze([
+  'maples', 'cedars', 'willows', 'orchids', 'cattails', 'reeds', 'clovers', 'vines',
+  'shrubs', 'seedlings', 'saplings', 'acorns', 'petals', 'roots', 'flowers', 'grains',
+  'seeds', 'berries', 'herbs', 'grasses', 'leaves', 'stems', 'cones', 'lichens',
+]);
+const malformedTemplates = Object.freeze([
+  ['initial', (noun) => `, and ${noun} and algae`],
+  ['initial', (noun) => `, and plants and ${noun}`],
+  ['initial', (noun) => `, and plants and algae and ${noun}`],
+  ['initial', (noun) => `, ${noun} and algae`],
+  ['initial', (noun) => `and , ${noun} and algae`],
+  ['middle', (noun) => `plants, , and ${noun}`],
+  ['middle', (noun) => `plants and , ${noun}`],
+  ['middle', (noun) => `plants, and , ${noun}`],
+  ['middle', (noun) => `plants, ${noun}, , and algae`],
+  ['middle', (noun) => `plants, , and ${noun}, algae`],
+  ['final', (noun) => `plants and ${noun}, ,`],
+  ['final', (noun) => `plants and ${noun} and ,`],
+]);
+const coordinationTopologyCases = [];
+for (const noun of freshNouns) {
+  for (const [position, makeSubject] of malformedTemplates) {
+    const subject = makeSubject(noun);
+    const subjectVariants = [
+      ['standard', subject],
+      ['spaced', subject.replace(/,/g, ' , ').replace(/\s+/g, '   ')],
+      ['linebreak', subject.replace(/\s+/g, '\n\t')],
+    ];
+    for (const [spacing, variant] of subjectVariants) {
+      coordinationTopologyCases.push({
+        position, noun, subject: variant, spacing, voice: 'active',
+        input: `${variant} absorb sunlight.`,
+      });
+      coordinationTopologyCases.push({
+        position, noun, subject: variant, spacing, voice: 'passive',
+        input: `Sunlight is absorbed by ${variant} during photosynthesis.`,
+      });
+    }
+  }
+}
+const coordinationBoundaryCases = [];
+for (const noun of freshNouns) {
+  const subject = `, and ${noun} and algae`;
+  for (const [boundary, prefix] of [
+    ['period', 'Plants capture light energy. '],
+    ['semicolon', 'Plants capture light energy; '],
+  ]) {
+    for (const [spacing, variant] of [
+      ['standard', subject],
+      ['spaced', subject.replace(/,/g, ' , ').replace(/\s+/g, '   ')],
+      ['linebreak', subject.replace(/\s+/g, '\n\t')],
+    ]) {
+      coordinationBoundaryCases.push({
+        position: 'initial', noun, subject: variant, spacing, boundary, voice: 'active',
+        input: `${prefix}${variant} absorb sunlight.`,
+      });
+      coordinationBoundaryCases.push({
+        position: 'initial', noun, subject: variant, spacing, boundary, voice: 'passive',
+        input: `${prefix}Sunlight is absorbed by ${variant} during photosynthesis.`,
+      });
+    }
+  }
+}
+const coordinationValidControls = [];
+for (const noun of freshNouns) {
+  for (const [kind, continuation] of [
+    ['plain', 'Plants and algae absorb sunlight.'],
+    ['initial-and', 'And plants and algae absorb sunlight.'],
+    ['initial-but', 'But plants and algae absorb sunlight.'],
+  ]) coordinationValidControls.push({ noun, kind, input: `${noun} grow. ${continuation}` });
+}
+const optionalCommaControls = Object.freeze([
+  'plants and algae', 'plants, and algae', 'plants, algae and plants', 'plants, algae, and plants',
+]);
 
 test('discourse conjunctions preserve explicit propositions and sentence topology', () => {
   for (const [subject, verb] of [['Plants', 'capture'], ['Algae', 'absorb'], ['Green plants', 'store']]) {
@@ -392,6 +460,25 @@ test('ASTRA-BOUNDED-FINAL-002 validates raw coordination topology before normali
   const passiveTopology = passive.coordinationTopology.find((group) => group.shapeValid === false);
   assert.deepEqual(passiveTopology?.rawMembers, ['', 'plants', 'algae']);
   assert.equal(passiveTopology?.cardinality, 3);
+});
+
+test('root invariant 006 mutation: preprocessing before raw topology validation salvages malformed frames', () => {
+  const source = readFileSync(join(__dirname, 'photosynthesis-relation-evaluator.js'), 'utf8').replace(/\r\n/g, '\n');
+  const anchor = 'const rawMalformedCoordination=analyzePreNormalizationCoordinationV2(input);';
+  assert.equal(source.split(anchor).length, 2, 'raw-topology mutation anchor must occur once');
+  const mutantSource = source.replace(anchor, 'const rawMalformedCoordination=[];');
+  const module = { exports: {} };
+  new Function('require', 'module', 'exports', mutantSource)(require, module, module.exports);
+  const attacks = [...coordinationTopologyCases, ...coordinationBoundaryCases];
+  let violations = 0;
+  for (const { input } of attacks) {
+    const expected = evaluatePhotosynthesisRelationsV2(input);
+    assert.equal(expected.hasMalformed, true, input);
+    assert.equal(expected.passed, false, input);
+    const result = module.exports.evaluatePhotosynthesisRelationsV2(input);
+    if (!result.hasMalformed || result.passed) violations += 1;
+  }
+  assert.ok(violations >= 100, `destructive preprocessing mutant violations=${violations}`);
 });
 
 test('coordination topology properties cover full source and committed-package evaluator paths', async () => {

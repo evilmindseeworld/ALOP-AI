@@ -6,10 +6,6 @@ const { execFileSync } = require('node:child_process');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const current = require('./photosynthesis-relation-evaluator');
-const {
-  malformedCases: coordinationTopologyCases,
-  boundaryCases: coordinationBoundaryCases,
-} = require('./photosynthesis-coordination-topology-cases');
 
 const SOURCE = readFileSync(join(__dirname, 'photosynthesis-relation-evaluator.js'), 'utf8').replace(/\r\n/g, '\n');
 
@@ -279,25 +275,6 @@ test('root invariant 005 mutation: restoring normalization-first order erases em
     }
   }
   assert.equal(violations, 8);
-});
-
-test('root invariant 006 mutation: preprocessing before raw topology validation salvages malformed frames', () => {
-  const mutant = loadMutant(replaceOnce(
-    SOURCE,
-    'const rawMalformedCoordination=analyzePreNormalizationCoordinationV2(input);',
-    'const rawMalformedCoordination=[];',
-    'pre-normalization coordination topology annotation',
-  ));
-  const attacks = [...coordinationTopologyCases, ...coordinationBoundaryCases];
-  let violations = 0;
-  for (const { input } of attacks) {
-    const expected = current.evaluatePhotosynthesisRelationsV2(input);
-    assert.equal(expected.hasMalformed, true, input);
-    assert.equal(expected.passed, false, input);
-    const result = mutant.evaluatePhotosynthesisRelationsV2(input);
-    if (!result.hasMalformed || result.passed) violations += 1;
-  }
-  assert.ok(violations >= 100, `destructive preprocessing mutant violations=${violations}`);
 });
 
 test('root invariant 004 mutation: recording a terminal boundary leaks punctuation into fingerprints', () => {

@@ -25,14 +25,21 @@ const malformedCases = [];
 for (const noun of freshNouns) {
   for (const [position, makeSubject] of malformedTemplates) {
     const subject = makeSubject(noun);
-    malformedCases.push({ position, noun, subject, voice: 'active', input: `${subject} absorb sunlight.` });
-    malformedCases.push({
-      position,
-      noun,
-      subject,
-      voice: 'passive',
-      input: `Sunlight is absorbed by ${subject} during photosynthesis.`,
-    });
+    const subjectVariants = [
+      ['standard', subject],
+      ['spaced', subject.replace(/,/g, ' , ').replace(/\s+/g, '   ')],
+      ['linebreak', subject.replace(/\s+/g, '\n\t')],
+    ];
+    for (const [spacing, variant] of subjectVariants) {
+      malformedCases.push({
+        position, noun, subject: variant, spacing, voice: 'active',
+        input: `${variant} absorb sunlight.`,
+      });
+      malformedCases.push({
+        position, noun, subject: variant, spacing, voice: 'passive',
+        input: `Sunlight is absorbed by ${variant} during photosynthesis.`,
+      });
+    }
   }
 }
 
@@ -43,14 +50,20 @@ for (const noun of freshNouns) {
     ['period', 'Plants capture light energy. '],
     ['semicolon', 'Plants capture light energy; '],
   ]) {
-    boundaryCases.push({
-      position: 'initial', noun, subject, boundary, voice: 'active',
-      input: `${prefix}${subject} absorb sunlight.`,
-    });
-    boundaryCases.push({
-      position: 'initial', noun, subject, boundary, voice: 'passive',
-      input: `${prefix}Sunlight is absorbed by ${subject} during photosynthesis.`,
-    });
+    for (const [spacing, variant] of [
+      ['standard', subject],
+      ['spaced', subject.replace(/,/g, ' , ').replace(/\s+/g, '   ')],
+      ['linebreak', subject.replace(/\s+/g, '\n\t')],
+    ]) {
+      boundaryCases.push({
+        position: 'initial', noun, subject: variant, spacing, boundary, voice: 'active',
+        input: `${prefix}${variant} absorb sunlight.`,
+      });
+      boundaryCases.push({
+        position: 'initial', noun, subject: variant, spacing, boundary, voice: 'passive',
+        input: `${prefix}Sunlight is absorbed by ${variant} during photosynthesis.`,
+      });
+    }
   }
 }
 

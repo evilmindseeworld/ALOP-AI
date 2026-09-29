@@ -1,289 +1,108 @@
 {
-  "schemaVersion": 2,
+  "schemaVersion": 1,
   "designVersion": "photosynthesis-light-relation-v2",
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "repairAttemptId": "P1-BOUNDED-FINAL-001-20260928",
-  "capturedAtUtc": "2026-09-28T18:18:32.847Z",
-  "repairBaseSha": "53dac79cf873443e2a8c468607af5deee8107759",
-  "repairBaseTreeSha": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
-  "repairStartHead": "baf165d06dd41bd783356fc51a3cd3fa8972824a",
-  "implementationCommitSha": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
-  "implementationTreeSha": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
-  "implementationParentSha": "426fb54aba8b5be5e1786fe1d5fd77c4dd3ff611",
+  "repairAttemptId": "P1-ASTRA-BOUNDED-FINAL-002-20260929",
+  "capturedAtUtc": "2026-09-29T03:12:59.622Z",
+  "repairBaseSha": "fcc28a8c90309a58c400c961fe1fd7f627981b10",
+  "repairBaseTreeSha": "f6d157be040372a75e45fcb3429d2be5fffaf3a1",
+  "repairStartHead": "fcc28a8c90309a58c400c961fe1fd7f627981b10",
+  "implementationCommitSha": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc",
+  "implementationTreeSha": "7c28da720c1948587f1a7460a411613f1b522877",
+  "implementationParentSha": "8cea887624cd2599fa7849cc0a47868c173a2388",
   "implementationCommitShas": [
-    "426fb54aba8b5be5e1786fe1d5fd77c4dd3ff611",
-    "052060e044fb0222fd1f7dbd15676cc6e35cdc3b"
+    "7b76d67dc6bf2b7a6430341e966a5f0afd4520b8",
+    "f8c87a067b009a7c57ef42ac7e267bde453c1305",
+    "9767634ee902f23d7dff1803e3249a3651b7725c",
+    "8bf5b84eb3fd9f09aa038b67a1c803f0b19fae2c",
+    "8e5bc78552fe146b704386d5e7396e2563ca3210",
+    "f34ef7ef00a5964747dea5e2fd21fcf408405f4c",
+    "8cea887624cd2599fa7849cc0a47868c173a2388",
+    "6550f2eb7cfe43d8f13c438acd077c99d27f04cc"
   ],
   "phase": "GREEN",
-  "status": "SOURCE_SNAPSHOT_AND_BUILD_RECORDED_FINAL_RESULTS_IN_POST_COMMIT_ATTESTATION",
-  "runtime": {
-    "version": "v26.7.0",
-    "executablePath": "C:\\Users\\LENOVO\\.codex\\toolchains\\alop-node-v26.7.0-win-x64\\node-v26.7.0-win-x64\\node.exe",
-    "executableSha256": "e921fe5307e29bf6fd00000dd594356affd3a7b044e52720c7f10decbdc305b9"
-  },
-  "suiteClassification": {
-    "authoritative": "MIXED: source assertions, fingerprint index, package and package receipt",
-    "evaluator": "SOURCE-ONLY",
-    "evaluatorMutation": "MIXED: ten source mutants plus generated-runner source assertion",
-    "evaluation": "SOURCE-ONLY",
-    "authoritativeMutation": "SOURCE-ONLY",
-    "semanticMutationRunner": "MIXED: generated package plus exact source/corpus; independently buildable from implementation inputs",
-    "fullBackend": "MIXED",
-    "datasetValidation": "SOURCE-ONLY",
-    "binder": "MIXED: source, corpus, evidence, manifest, ancestry"
-  },
+  "status": "SOURCE_AND_BUILD_PASS_FINAL_MATRIX_IN_EXTERNAL_ATTESTATION",
+  "runtime": "Node v26.7.0",
   "implementationSnapshot": {
-    "head": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
-    "tree": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
-    "parent": "426fb54aba8b5be5e1786fe1d5fd77c4dd3ff611",
-    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-build-20260928\\v3-implementation-snapshot"
-  },
-  "implementationSnapshotTestRuns": [
-    {
-      "name": "impl-evaluator",
-      "classification": "SOURCE-SNAPSHOT",
-      "testedCommitSha": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
-      "testedTreeSha": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
-      "testedParentSha": "426fb54aba8b5be5e1786fe1d5fd77c4dd3ff611",
-      "args": [
-        "--test",
-        "--test-reporter=tap",
-        "lib/photosynthesis-relation-evaluator.test.js"
-      ],
-      "exitCode": 0,
-      "tests": 58,
-      "pass": 58,
-      "fail": 0,
-      "skipped": 0,
-      "cancelled": 0,
-      "validateOnly": false,
-      "networkCalls": 0,
-      "providerCalls": 0,
-      "log": {
-        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-build-20260928\\impl-runs-final\\impl-evaluator.log",
-        "bytes": 11473,
-        "sha256": "1b5b0f950dc3036f4afcdaa94aa99054e00d6ebad9a28f5e09eff7a710f423d8"
-      },
-      "failureNames": []
-    },
-    {
-      "name": "impl-evaluator-mutations",
-      "classification": "SOURCE-SNAPSHOT",
-      "testedCommitSha": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
-      "testedTreeSha": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
-      "testedParentSha": "426fb54aba8b5be5e1786fe1d5fd77c4dd3ff611",
-      "args": [
-        "--test",
-        "--test-reporter=tap",
-        "lib/photosynthesis-relation-evaluator-mutation.test.js"
-      ],
-      "exitCode": 0,
-      "tests": 16,
-      "pass": 16,
-      "fail": 0,
-      "skipped": 0,
-      "cancelled": 0,
-      "validateOnly": false,
-      "networkCalls": 0,
-      "providerCalls": 0,
-      "log": {
-        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-build-20260928\\impl-runs-final\\impl-evaluator-mutations.log",
-        "bytes": 4286,
-        "sha256": "d1a283bd557af02365cf7689286bd4c2af4e83726cf6941ee58d6e2d057e2c49"
-      },
-      "failureNames": []
-    },
-    {
-      "name": "impl-dataset-v1",
-      "classification": "SOURCE-SNAPSHOT",
-      "testedCommitSha": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
-      "testedTreeSha": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
-      "testedParentSha": "426fb54aba8b5be5e1786fe1d5fd77c4dd3ff611",
-      "args": [
-        "scripts/run-evals.mjs",
-        "--dataset",
-        "backend-intelligence-v1",
-        "--validate-only"
-      ],
-      "exitCode": 0,
-      "tests": 21,
-      "pass": 21,
-      "fail": 0,
-      "skipped": 0,
-      "cancelled": 0,
-      "validateOnly": true,
-      "networkCalls": 0,
-      "providerCalls": 0,
-      "log": {
-        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-build-20260928\\impl-runs-final\\impl-dataset-v1.log",
-        "bytes": 598,
-        "sha256": "3196a2de91c4b937f33b3ce364af776d3fa3b0f66184827898f5ee5db67a1897"
-      },
-      "failureNames": []
-    },
-    {
-      "name": "impl-dataset-v2",
-      "classification": "SOURCE-SNAPSHOT",
-      "testedCommitSha": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
-      "testedTreeSha": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
-      "testedParentSha": "426fb54aba8b5be5e1786fe1d5fd77c4dd3ff611",
-      "args": [
-        "scripts/run-evals.mjs",
-        "--dataset",
-        "backend-intelligence-v2",
-        "--validate-only"
-      ],
-      "exitCode": 0,
-      "tests": 21,
-      "pass": 21,
-      "fail": 0,
-      "skipped": 0,
-      "cancelled": 0,
-      "validateOnly": true,
-      "networkCalls": 0,
-      "providerCalls": 0,
-      "log": {
-        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-build-20260928\\impl-runs-final\\impl-dataset-v2.log",
-        "bytes": 598,
-        "sha256": "65eee64c9241a82e7e74a08d1abc6fa56581b28128d611d20eaccaf9f70badb3"
-      },
-      "failureNames": []
-    }
-  ],
-  "classificationCorrection": "The superseded 5fcdcd3 run initially called evaluator mutations SOURCE-ONLY; its last assertion reads the generated runner. The current 06aab2b run and receipt correctly classify it MIXED. Superseded logs are preserved externally.",
-  "implementationExpectedEvidenceFailures": [],
-  "historicalTestedTreeCorrection": {
-    "oldDeclaredImplementationCommit": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-    "oldDeclaredTree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
-    "actualAuthoritative": {
-      "passed": 99,
-      "total": 101
-    },
-    "actualFullBackend": {
-      "passed": 2563,
-      "total": 2566
-    },
-    "previouslyClaimedAuthoritative": {
-      "passed": 101,
-      "total": 101
-    },
-    "previouslyClaimedFullBackend": {
-      "passed": 2565,
-      "total": 2566
-    },
-    "ruling": "OLD ACTIVE SUCCESS ATTRIBUTION WAS FALSE. Exact ee010f0d evidence snapshot, not a9, passed those higher counts.",
-    "evidence": {
-      "implementation-authoritative.log": {
-        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/implementation-authoritative.log",
-        "bytes": 11649,
-        "sha256": "36ff05772a467cd52ddac0ec8aa78fb3f481c06efa3fb5348829007d21998870"
-      },
-      "evidence-authoritative.log": {
-        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/evidence-authoritative.log",
-        "bytes": 9450,
-        "sha256": "e2739af717af638422eac3ac48562c0cac010851899796dd48e061319e7a879a"
-      },
-      "RECONCILIATION.md": {
-        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/RECONCILIATION.md",
-        "bytes": 5242,
-        "sha256": "271a869761d186af35876164d9b7a1a2ef1509278e7e44625aa7a57c2c187439"
-      }
-    }
+    "head": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc",
+    "tree": "7c28da720c1948587f1a7460a411613f1b522877",
+    "parent": "8cea887624cd2599fa7849cc0a47868c173a2388",
+    "trackedFiles": 607,
+    "worktreeStatus": "CLEAN_BEFORE_EVIDENCE_UPDATE"
   },
   "allCorpusDecisionsMatch": true,
   "noDuplicateSemanticFingerprints": true,
+  "canonicalCaseCount": 54,
   "canonicalCasesPassed": 54,
   "semanticCoveragePass": true,
   "sourcePackageEquivalence": {
-    "previousInputCount": 16700,
-    "inputCount": 16726,
-    "apiComparisonCount": 150534,
-    "structuredComparisons": 10590,
-    "totalComparisons": 161124,
-    "publicExportCount": 39,
-    "exportNamesMatch": true,
-    "apis": [
-      "normalizeInputV2",
-      "segmentSentencesV2",
-      "segmentClausesV2",
-      "tokenizeV2",
-      "normalizeExactFormLemmaV2",
-      "parseMinimalRelationGrammar",
-      "evaluatePhotosynthesisRelationsV2",
-      "semanticCaseFingerprint",
-      "evaluatePhotosynthesisRelations"
-    ],
+    "inputCount": 2302,
+    "publicApiCount": 8,
+    "apiComparisonCount": 18416,
     "mismatches": [],
     "exceptions": [],
-    "inputSetSha256": "82bf0a6b9842e2e3a91895185b9197bc9fd8221a0e08eeff3f2ed93860254166"
+    "sourceCorpusCases": 206,
+    "malformedEndToEndCases": 2016,
+    "validControlCases": 80,
+    "comparisonMethod": "deep structural equality of every complete API result"
   },
-  "packageBuilds": [
-    {
-      "build": 1,
-      "snapshot": {
-        "head": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
-        "tree": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
-        "parent": "426fb54aba8b5be5e1786fe1d5fd77c4dd3ff611",
-        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-build-20260928\\v3-build1"
+  "packageBuilds": {
+    "recipeVersion": "p1-static-compose-v1",
+    "inputs": {
+      "recipe": {
+        "commit": "1980974e84078c91e6e277c2ec89fdc64f20ee44",
+        "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+        "blob": "2440f6c5c9c42248ca6439150fa6deea58be8848",
+        "tree": "252d30e17fd39b026e247238ee18edd5fea83212",
+        "sha256": "39542bf7d96a39d02596c4c5c18898e96bc1d402ae523d4f5d937c0091c96443",
+        "bytes": 10442
       },
-      "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-build-20260928\\v3-build1\\package.mjs",
-      "bytes": 124578,
-      "sha256": "41a8d8158b7537f98af12aa66f11cf9e7b78033d481525f966efd8ce1ce534df",
-      "gitBlob": "7dd45faa83ac22a266fcc039c8fdeb0bcd7d9144",
-      "runnerDerivedBlob": "b92260cb5940637d6deab6e0efcdf1ee462b0f22",
-      "runnerDerivedSha256": "93310034620c1d557e40803eeb884036deca4313fa2b958d483700e93ce894b8",
-      "metadata": {
-        "recipeVersion": "p1-static-compose-v1",
-        "recipeBlob": "2440f6c5c9c42248ca6439150fa6deea58be8848",
-        "evaluatorBlob": "359087ae1ffe6674f95e6b0c8452d1914a21e3d6",
-        "evaluatorSha256": "0547fb6f6069cd7978733427aa79b54e81902626c55b54b6fb4ee31d08511af4",
-        "runnerBlob": "b92260cb5940637d6deab6e0efcdf1ee462b0f22",
-        "runnerSha256": "93310034620c1d557e40803eeb884036deca4313fa2b958d483700e93ce894b8",
-        "selectedExport": "evaluatePhotosynthesisRelationsV2",
-        "entryPoint": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-        "evaluatorStart": 548,
-        "evaluatorEnd": 105224,
-        "embeddedEvaluatorSha256": "0547fb6f6069cd7978733427aa79b54e81902626c55b54b6fb4ee31d08511af4",
-        "artifactSha256": "41a8d8158b7537f98af12aa66f11cf9e7b78033d481525f966efd8ce1ce534df",
-        "artifactBytes": 124578
+      "evaluator": {
+        "commit": "8e5bc78552fe146b704386d5e7396e2563ca3210",
+        "path": "backend/lib/photosynthesis-relation-evaluator.js",
+        "blob": "5d1c4227b7d3512890d9ea71c74c0506a95f899c",
+        "tree": "668a144a2974f4ea50e0d32e8a76f9e407bbbc90",
+        "sha256": "61a90bc4df5484bbde72deb969153a3519a2bcb03cb567e19e00ecf0e560fbe3",
+        "bytes": 108504
+      },
+      "corpus": {
+        "commit": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc",
+        "path": "backend/lib/photosynthesis-relation-cases.js",
+        "blob": "979ed2146045fdd6c7360583875bd8abbb032642",
+        "tree": "7c28da720c1948587f1a7460a411613f1b522877",
+        "sha256": "b62495937ef0a2adec9829fa5bb7dcc3afdb12a062cf82fe0ec1d0fc527589fe",
+        "bytes": 43347
+      },
+      "runner": {
+        "commit": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
+        "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+        "blob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
+        "tree": "f4f8b30f73448c34f7652f86a32a606d3dc8a739",
+        "sha256": "e7bffea6fc690f6feb7003eb01c900bb798ba6b44cfb80c3a19edd45a1c6a3d7",
+        "bytes": 15204
       }
     },
-    {
-      "build": 2,
-      "snapshot": {
-        "head": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
-        "tree": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
-        "parent": "426fb54aba8b5be5e1786fe1d5fd77c4dd3ff611",
-        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-build-20260928\\v3-build2"
-      },
-      "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-build-20260928\\v3-build2\\package.mjs",
-      "bytes": 124578,
-      "sha256": "41a8d8158b7537f98af12aa66f11cf9e7b78033d481525f966efd8ce1ce534df",
-      "gitBlob": "7dd45faa83ac22a266fcc039c8fdeb0bcd7d9144",
-      "runnerDerivedBlob": "b92260cb5940637d6deab6e0efcdf1ee462b0f22",
-      "runnerDerivedSha256": "93310034620c1d557e40803eeb884036deca4313fa2b958d483700e93ce894b8",
-      "metadata": {
-        "recipeVersion": "p1-static-compose-v1",
-        "recipeBlob": "2440f6c5c9c42248ca6439150fa6deea58be8848",
-        "evaluatorBlob": "359087ae1ffe6674f95e6b0c8452d1914a21e3d6",
-        "evaluatorSha256": "0547fb6f6069cd7978733427aa79b54e81902626c55b54b6fb4ee31d08511af4",
-        "runnerBlob": "b92260cb5940637d6deab6e0efcdf1ee462b0f22",
-        "runnerSha256": "93310034620c1d557e40803eeb884036deca4313fa2b958d483700e93ce894b8",
-        "selectedExport": "evaluatePhotosynthesisRelationsV2",
-        "entryPoint": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-        "evaluatorStart": 548,
-        "evaluatorEnd": 105224,
-        "embeddedEvaluatorSha256": "0547fb6f6069cd7978733427aa79b54e81902626c55b54b6fb4ee31d08511af4",
-        "artifactSha256": "41a8d8158b7537f98af12aa66f11cf9e7b78033d481525f966efd8ce1ce534df",
-        "artifactBytes": 124578
-      }
-    }
-  ],
-  "finalTestedCandidateAttestation": {
-    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-20260928\\FINAL-TESTED-CANDIDATE.json",
-    "role": "External post-commit attestation for the evidence-complete exact final candidate, full matrix and binder."
+    "runnerDerivedBlob": "b92260cb5940637d6deab6e0efcdf1ee462b0f22",
+    "runnerDerivedSha256": "93310034620c1d557e40803eeb884036deca4313fa2b958d483700e93ce894b8",
+    "runnerDerivedBytes": 15261,
+    "build1": {
+      "bytes": 128406,
+      "sha256": "0e6031c5189d4358e6a3d98d09d0f3457295a09ddef75ff69fb93e0297405246",
+      "gitBlob": "88b5b15f82d3abcf262b95bf40ee905fc39fc76a"
+    },
+    "build2": {
+      "bytes": 128406,
+      "sha256": "0e6031c5189d4358e6a3d98d09d0f3457295a09ddef75ff69fb93e0297405246",
+      "gitBlob": "88b5b15f82d3abcf262b95bf40ee905fc39fc76a"
+    },
+    "committed": {
+      "bytes": 128406,
+      "sha256": "0e6031c5189d4358e6a3d98d09d0f3457295a09ddef75ff69fb93e0297405246",
+      "gitBlob": "88b5b15f82d3abcf262b95bf40ee905fc39fc76a"
+    },
+    "byteIdentical": true
   },
   "datasetValidation": {
     "status": "PASS",
@@ -292,19 +111,75 @@
     "providerCalls": 0,
     "v1Cases": 21,
     "v2Cases": 21,
-    "logs": [
+    "runs": [
       {
-        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-build-20260928\\impl-runs-final\\impl-dataset-v1.log",
-        "bytes": 598,
-        "sha256": "3196a2de91c4b937f33b3ce364af776d3fa3b0f66184827898f5ee5db67a1897"
+        "name": "backend-intelligence-v1",
+        "status": "PASS",
+        "totalCases": 21,
+        "selectedCases": 21,
+        "mode": "validate-only",
+        "networkCalls": 0,
+        "providerCalls": 0,
+        "log": {
+          "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-002-repair-20260929\\backend-intelligence-v1.log",
+          "bytes": 93,
+          "sha256": "4a6555f72fd596798047904687ff9f8cce513b89aab2830811e9882fd9c337cc"
+        }
       },
       {
-        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-build-20260928\\impl-runs-final\\impl-dataset-v2.log",
-        "bytes": 598,
-        "sha256": "65eee64c9241a82e7e74a08d1abc6fa56581b28128d611d20eaccaf9f70badb3"
+        "name": "backend-intelligence-v2",
+        "status": "PASS",
+        "totalCases": 21,
+        "selectedCases": 21,
+        "mode": "validate-only",
+        "networkCalls": 0,
+        "providerCalls": 0,
+        "log": {
+          "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-002-repair-20260929\\backend-intelligence-v2.log",
+          "bytes": 93,
+          "sha256": "cc48462d9a41c721f476b431ca5b5cbbaa8ee65ef65956c374f4483878908bee"
+        }
       }
     ]
   },
+  "coordinationTopologyPreprocessingSuite": {
+    "suite": "COORDINATION_TOPOLOGY_PREPROCESSING_SUITE",
+    "status": "PASS",
+    "malformedEndToEndCases": 2016,
+    "initialEmptySlotCases": 1008,
+    "middleEmptySlotCases": 720,
+    "finalEmptySlotCases": 288,
+    "activePassivePairs": 1008,
+    "validControls": 80,
+    "freshNounCount": 24,
+    "boundaryForms": [
+      "period",
+      "semicolon"
+    ],
+    "whitespaceForms": [
+      "standard",
+      "repeated spaces",
+      "newline and tab"
+    ],
+    "sourcePackageMismatches": 0,
+    "sourcePackageExceptions": 0,
+    "rootMutationViolations": 360
+  },
+  "implementationSnapshotTestRuns": [
+    {
+      "suite": "evaluator and evaluator mutation tests",
+      "passed": 77,
+      "total": 77,
+      "failed": 0,
+      "skipped": 0
+    }
+  ],
+  "expectationChanges": 0,
+  "finalTestedCandidateAttestation": {
+    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-002-repair-20260929\\FINAL-TESTED-CANDIDATE.json",
+    "role": "Post-evidence-commit attestation for the exact tested Final002 candidate, test outputs, frozen hashes and binder result."
+  },
+  "finalTestStatus": "Final exact-tree backend, frontend, dataset, package, fingerprint, manifest and binder outputs are in the external attestation.",
   "scopeGates": {
     "astra": false,
     "candidateQualification": false,
@@ -312,27 +187,6 @@
     "release": false,
     "deployment": false,
     "p2": false
-  },
-  "sourceFreezeHistory": {
-    "initialImplementation": "5fcdcd3a73d32e58b1ef4a9f9b78f4a648a8f8fd",
-    "finalImplementation": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
-    "reason": "One shared normalizeInputV2 guard now preserves empty coordinated-member topology before structural validation; no corpus or frozen expectation changed.",
-    "supersededResults": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/implementation-5fcdcd3-evidence/test-results.json",
-    "rootInvariantRepair": {
-      "base": "baf165d06dd41bd783356fc51a3cd3fa8972824a",
-      "baseTree": "b64b0b437dd710ab8cd223315f9465ade243db55",
-      "implementation": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
-      "implementationTree": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
-      "sourceChanges": 1,
-      "testsAdded": 2,
-      "corpusExpectationsChanged": 0,
-      "testRemovals": 0,
-      "propertyAttackCountAdjustment": {
-        "old": 18,
-        "new": 20,
-        "reason": "Added active and passive terminal-empty-member cases after and."
-      }
-    }
   },
   "finalFullBackendBaseline": {
     "head": "53dac79cf873443e2a8c468607af5deee8107759",
@@ -349,5 +203,14 @@
       "sha256": "77219992176e1d743ddc5842eadf8dc3f7a3365cc45dc68841290bfafb5b6cb8"
     }
   },
-  "finalTestStatus": "Final exact-tree test matrix and unchanged binder run after the evidence commit; their exact candidate IDs and output hashes are recorded in the external attestation."
+  "historicalFinal001": {
+    "repairAttemptId": "P1-BOUNDED-FINAL-001-20260928",
+    "implementationCommitSha": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
+    "implementationTreeSha": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
+    "finalTestedCandidateAttestation": {
+      "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-20260928\\FINAL-TESTED-CANDIDATE.json",
+      "role": "External post-commit attestation for the evidence-complete exact final candidate, full matrix and binder."
+    },
+    "sourceSnapshotCommit": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc"
+  }
 }

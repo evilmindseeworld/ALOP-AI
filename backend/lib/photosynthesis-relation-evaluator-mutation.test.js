@@ -247,12 +247,18 @@ test('root invariant 003 mutation: skipping member-head validation accepts a det
   }
 });
 
-test('root invariant 005 mutation: destructive optional-comma normalization erases empty members', () => {
-  const mutant = loadMutant(replaceOnce(
+test('root invariant 005 mutation: restoring normalization-first order erases empty members', () => {
+  const commaNormalizationMutation = replaceOnce(
     SOURCE,
     ".replace(/,\\s*(?=(?:and|but)\\b)/g, (comma, offset, input) => /,\\s*$/.test(input.slice(0, offset)) ? comma : ' ')",
     ".replace(/,\\s*(?=(?:and|but)\\b)/g, ' ')",
     'preservation of empty coordinated-member topology',
+  );
+  const mutant = loadMutant(replaceOnce(
+    commaNormalizationMutation,
+    'const rawMalformedCoordination=analyzePreNormalizationCoordinationV2(input);',
+    'const rawMalformedCoordination=[];',
+    'previous normalization-first ordering',
   ));
   const subjects = [
     'plants, , and algae',

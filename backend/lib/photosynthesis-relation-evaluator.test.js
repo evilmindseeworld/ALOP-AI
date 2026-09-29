@@ -13,6 +13,13 @@ const {
 } = require('./photosynthesis-relation-cases');
 const { gradeCase } = require('./evaluation');
 const {
+  freshNouns,
+  malformedCases: coordinationTopologyCases,
+  boundaryCases: coordinationBoundaryCases,
+  validControls: coordinationValidControls,
+  optionalCommaControls,
+} = require('./photosynthesis-coordination-topology-cases');
+const {
   evaluatePhotosynthesisRelations,
   PHOTOSYNTHESIS_SEMANTIC_EVALUATOR_REGISTRY,
   evaluatePhotosynthesisRelationsV2,
@@ -365,6 +372,87 @@ test('empty coordinated member topology survives comma normalization in active a
   assert.equal(freshNouns.size, 5);
   assert.equal(emptyMemberAttacks, 20);
   assert.equal(validControls, 8);
+});
+
+test('ASTRA-BOUNDED-FINAL-002 validates raw coordination topology before normalization', () => {
+  const active = evaluatePhotosynthesisRelationsV2(', and plants and algae absorb sunlight.');
+  assert.equal(active.passed, false);
+  assert.equal(active.hasMalformed, true);
+  const activeTopology = active.coordinationTopology.find((group) => group.shapeValid === false);
+  assert.ok(activeTopology);
+  assert.deepEqual(activeTopology.rawMembers, ['', 'plants', 'algae']);
+  assert.equal(activeTopology.cardinality, 3);
+  assert.equal(activeTopology.type, 'AND');
+
+  const passive = evaluatePhotosynthesisRelationsV2(
+    'Sunlight is absorbed by , and plants and algae during photosynthesis.',
+  );
+  assert.equal(passive.passed, false);
+  assert.equal(passive.hasMalformed, true);
+  const passiveTopology = passive.coordinationTopology.find((group) => group.shapeValid === false);
+  assert.deepEqual(passiveTopology?.rawMembers, ['', 'plants', 'algae']);
+  assert.equal(passiveTopology?.cardinality, 3);
+});
+
+test('coordination topology properties cover full source and committed-package evaluator paths', async () => {
+  const { createDerivedEvaluator } = await import('../scripts/run-photosynthesis-relation-mutations.mjs');
+  const packaged = createDerivedEvaluator().evaluatePhotosynthesisRelationsV2;
+  const generatedAttacks = [...coordinationTopologyCases, ...coordinationBoundaryCases];
+  const positionCounts = { initial: 0, middle: 0, final: 0 };
+  let activePassivePairs = 0;
+  let validControlCount = 0;
+
+  for (const attack of generatedAttacks) {
+    const source = evaluatePhotosynthesisRelationsV2(attack.input);
+    assert.equal(source.passed, false, attack.input);
+    assert.equal(source.hasMalformed, true, attack.input);
+    const invalidTopology = source.coordinationTopology.find((group) => group.shapeValid === false);
+    assert.ok(invalidTopology, attack.input);
+    assert.equal(invalidTopology.cardinality, invalidTopology.rawMembers.length, attack.input);
+    assert.deepEqual(packaged(attack.input), source, `source/package: ${attack.input}`);
+    positionCounts[attack.position] += 1;
+  }
+
+  for (let index = 0; index < coordinationTopologyCases.length; index += 2) {
+    const activeCase = coordinationTopologyCases[index];
+    const passiveCase = coordinationTopologyCases[index + 1];
+    assert.equal(activeCase.voice, 'active');
+    assert.equal(passiveCase.voice, 'passive');
+    const activeResult = evaluatePhotosynthesisRelationsV2(activeCase.input);
+    const passiveResult = evaluatePhotosynthesisRelationsV2(passiveCase.input);
+    assert.equal(activeResult.hasMalformed, passiveResult.hasMalformed, activeCase.subject);
+    assert.equal(activeResult.passed, passiveResult.passed, activeCase.subject);
+    activePassivePairs += 1;
+  }
+
+  for (const control of coordinationValidControls) {
+    const source = evaluatePhotosynthesisRelationsV2(control.input);
+    assert.equal(source.passed, true, control.input);
+    assert.equal(source.hasMalformed, false, control.input);
+    assert.deepEqual(packaged(control.input), source, `source/package: ${control.input}`);
+    validControlCount += 1;
+  }
+
+  for (const subject of optionalCommaControls) {
+    for (const input of [
+      `${subject} absorb sunlight.`,
+      `Sunlight is absorbed by ${subject} during photosynthesis.`,
+    ]) {
+      const source = evaluatePhotosynthesisRelationsV2(input);
+      assert.equal(source.passed, true, input);
+      assert.equal(source.hasMalformed, false, input);
+      assert.deepEqual(packaged(input), source, `source/package: ${input}`);
+      validControlCount += 1;
+    }
+  }
+
+  assert.equal(freshNouns.length, 24);
+  assert.ok(positionCounts.initial >= 100, `initial-empty cases=${positionCounts.initial}`);
+  assert.ok(positionCounts.middle >= 100, `middle-empty cases=${positionCounts.middle}`);
+  assert.ok(positionCounts.final >= 50, `final-empty cases=${positionCounts.final}`);
+  assert.ok(activePassivePairs >= 50, `active/passive pairs=${activePassivePairs}`);
+  assert.ok(validControlCount >= 50, `valid controls=${validControlCount}`);
+  assert.ok(generatedAttacks.length + validControlCount >= 300);
 });
 
 test('terminal punctuation is cosmetic while genuine inter-proposition topology remains semantic', () => {

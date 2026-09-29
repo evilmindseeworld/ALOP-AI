@@ -4,23 +4,17 @@
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "repairAttemptId": "P1-ASTRA-BOUNDED-FINAL-002-20260929",
-  "capturedAtUtc": "2026-09-29T03:12:59.622Z",
-  "repairBaseSha": "fcc28a8c90309a58c400c961fe1fd7f627981b10",
-  "repairBaseTreeSha": "f6d157be040372a75e45fcb3429d2be5fffaf3a1",
-  "repairStartHead": "fcc28a8c90309a58c400c961fe1fd7f627981b10",
-  "implementationCommitSha": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc",
-  "implementationTreeSha": "7c28da720c1948587f1a7460a411613f1b522877",
-  "implementationParentSha": "8cea887624cd2599fa7849cc0a47868c173a2388",
+  "repairAttemptId": "P1-FRAME-LIFECYCLE-ROOT-REPAIR-20260930",
+  "capturedAtUtc": "2026-09-29T23:04:02Z",
+  "repairBaseSha": "9d162c96589c2beecd46b5bdc5b629cac26ef100",
+  "repairBaseTreeSha": "161647f212dd35611cc3cc6a74e1bb7aa5b3c38f",
+  "repairStartHead": "9d162c96589c2beecd46b5bdc5b629cac26ef100",
+  "implementationCommitSha": "ab1b6f26bc3b9a63ad99e2e29cc513db607597a0",
+  "implementationTreeSha": "bb732b7f050f6169d2fa1fb6fb86ab5fbd302379",
+  "implementationParentSha": "558ad7ca5ee65b968f37131d2ac1875301a2e053",
   "implementationCommitShas": [
-    "7b76d67dc6bf2b7a6430341e966a5f0afd4520b8",
-    "f8c87a067b009a7c57ef42ac7e267bde453c1305",
-    "9767634ee902f23d7dff1803e3249a3651b7725c",
-    "8bf5b84eb3fd9f09aa038b67a1c803f0b19fae2c",
-    "8e5bc78552fe146b704386d5e7396e2563ca3210",
-    "f34ef7ef00a5964747dea5e2fd21fcf408405f4c",
-    "8cea887624cd2599fa7849cc0a47868c173a2388",
-    "6550f2eb7cfe43d8f13c438acd077c99d27f04cc"
+    "558ad7ca5ee65b968f37131d2ac1875301a2e053",
+    "ab1b6f26bc3b9a63ad99e2e29cc513db607597a0"
   ],
   "phase": "SEMANTIC_COVERAGE",
   "status": "PASS",
@@ -504,8 +498,8 @@
     "comparisonMethod": "deep structural equality of every complete API result"
   },
   "finalTestedCandidateAttestation": {
-    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-002-repair-20260929\\FINAL-TESTED-CANDIDATE.json",
-    "role": "Post-evidence-commit attestation for the exact tested Final002 candidate, test outputs, frozen hashes and binder result."
+    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-frame-lifecycle-root-repair-final-20260930\\FINAL-TESTED-CANDIDATE.json",
+    "role": "External post-evidence-commit attestation for exact final candidate, test outputs, frozen hashes, and unchanged static design binder result."
   },
   "historicalFinal001": {
     "repairAttemptId": "P1-BOUNDED-FINAL-001-20260928",
@@ -516,5 +510,115 @@
       "role": "External post-commit attestation for the evidence-complete exact final candidate, full matrix and binder."
     },
     "sourceSnapshotCommit": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc"
+  },
+  "expectationChangeCount": 0,
+  "changeAccounting": {
+    "testsRemoved": 0,
+    "testsSkipped": 0,
+    "assertionsLoosened": 0,
+    "expectationsChanged": 0,
+    "relocatedTests": 9
+  },
+  "fingerprintProjectionFieldCount": 18,
+  "datasetValidation": {
+    "status": "PASS",
+    "mode": "validate-only",
+    "validationOnly": true,
+    "liveAuth": false,
+    "noMutations": true,
+    "networkCalls": 0,
+    "providerCalls": 0,
+    "v1": {
+      "validated": 21,
+      "total": 21
+    },
+    "v2": {
+      "validated": 21,
+      "total": 21
+    }
+  },
+  "testMatrix": {
+    "authoritative": {
+      "passed": 103,
+      "total": 103,
+      "skipped": 0
+    },
+    "evaluator": {
+      "passed": 65,
+      "total": 65,
+      "skipped": 0
+    },
+    "evaluatorMutations": {
+      "passed": 21,
+      "total": 21,
+      "skipped": 0
+    },
+    "evaluation": {
+      "passed": 41,
+      "total": 41,
+      "skipped": 0
+    },
+    "authoritativeMutations": {
+      "passed": 20,
+      "total": 20,
+      "skipped": 0
+    },
+    "frameLifecyclePropertyAndMutation": {
+      "passed": 86,
+      "total": 86,
+      "skipped": 0,
+      "twoFrameCases": 1024,
+      "threeFrameCases": 256,
+      "sourcePackageParityInputs": 1280
+    },
+    "fullBackend": {
+      "passed": 2596,
+      "total": 2597,
+      "failed": 1,
+      "skipped": 0,
+      "exitCode": 1,
+      "soleFailure": "every declared Node major is the one deploy/targets.json names",
+      "candidateCausedFailures": 0
+    },
+    "frontend": {
+      "passed": 735,
+      "total": 735,
+      "filesPassed": 58,
+      "filesTotal": 58,
+      "skipped": 0
+    },
+    "datasetV1": {
+      "validated": 21,
+      "total": 21,
+      "mode": "validate-only",
+      "providerCalls": 0,
+      "networkCalls": 0
+    },
+    "datasetV2": {
+      "validated": 21,
+      "total": 21,
+      "mode": "validate-only",
+      "providerCalls": 0,
+      "networkCalls": 0
+    },
+    "semanticCorpus": {
+      "passed": 206,
+      "total": 206,
+      "uniqueFingerprints": 206,
+      "expectationChanges": 0
+    },
+    "mutationRunnerM1M10": {
+      "killed": 10,
+      "total": 10,
+      "baselinePassed": 206,
+      "baselineFailed": 0
+    },
+    "testChangeAccounting": {
+      "testsRemoved": 0,
+      "testsSkipped": 0,
+      "assertionsLoosened": 0,
+      "expectationsChanged": 0,
+      "relocatedTests": 9
+    }
   }
 }

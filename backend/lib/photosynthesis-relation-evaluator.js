@@ -1383,26 +1383,36 @@ function analyzePreNormalizationCoordinationV2(input){
   };
 
   for(const [sentenceIndex,sentence] of segmentSentences(source).entries()){
-    for(const [clauseIndex,rawClause] of sentence.text.split(/[;:]+/).entries()){
-      const discourse=rawClause.match(/^\s*(and|but)\s+/i);
-      const discourseRemainder=discourse?rawClause.slice(discourse[0].length):'';
-      const clause=discourse&&!/^\s*,/.test(discourseRemainder)
+    for(const [partIndex,rawPart] of sentence.text.split(/[;:]+/).entries()){
+      const discourse=rawPart.match(/^\s*(and|but)\s+/i);
+      const discourseRemainder=discourse?rawPart.slice(discourse[0].length):'';
+      const part=discourse&&!/^\s*,/.test(discourseRemainder)
         ?discourseRemainder
-        :rawClause;
-      const tokens=tokenizeV2(clause);
-      if(!tokens.length)continue;
+        :rawPart;
+      for(const rawClause of splitIndependentAndV2(part)){
+        const explicitBut=rawClause.match(/\s+but\s+/i);
+        const afterBut=explicitBut?rawClause.slice(explicitBut.index+explicitBut[0].length).trim():'';
+        const clauses=explicitBut&&startsIndependentSupportedClauseV2(afterBut)
+          ?[rawClause.slice(0,explicitBut.index),afterBut].filter(hasContentV2)
+          :[rawClause];
+        for(const clause of clauses){
+          const tokens=tokenizeV2(clause);
+          if(!tokens.length)continue;
 
-      const passive=bindLocalPassiveAgent(tokens);
-      if(passive&&isTargetRelationPredicateV2(passive.verb.lemma)){
-        addMalformedFrame(sentenceIndex,clauseIndex,'PASSIVE',passive.verb.lemma,passive.agent);
-      }
+          const passive=bindLocalPassiveAgent(tokens);
+          if(passive&&isTargetRelationPredicateV2(passive.verb.lemma)){
+            addMalformedFrame(sentenceIndex,partIndex,'PASSIVE',passive.verb.lemma,passive.agent);
+          }
 
-      for(let predicateIndex=1;predicateIndex<tokens.length;predicateIndex++){
-        const predicate=validateFinitePredicate(tokens,predicateIndex);
-        if(!predicate||!isTargetRelationPredicateV2(predicate.lemma))continue;
-        const subject=extractSubjectSet(tokens,predicateIndex);
-        if(subject.end!==predicateIndex||!isTargetRelationFrameV2(tokens,predicateIndex))continue;
-        addMalformedFrame(sentenceIndex,clauseIndex,'ACTIVE',predicate.lemma,subject);
+          for(let predicateIndex=1;predicateIndex<tokens.length;predicateIndex++){
+            const predicate=validateFinitePredicate(tokens,predicateIndex);
+            if(!predicate||!isTargetRelationPredicateV2(predicate.lemma))continue;
+            if(predicate.form==='PRESENT_PARTICIPLE'&&!parseAuxiliaryChain(tokens,predicateIndex).chain.length)continue;
+            const subject=extractSubjectSet(tokens,predicateIndex);
+            if(subject.end!==predicateIndex||!isTargetRelationFrameV2(tokens,predicateIndex))continue;
+            addMalformedFrame(sentenceIndex,partIndex,'ACTIVE',predicate.lemma,subject);
+          }
+        }
       }
     }
   }

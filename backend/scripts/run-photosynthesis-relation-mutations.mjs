@@ -1,4 +1,4 @@
-// p1-static-compose-v1; evaluator-blob=359087ae1ffe6674f95e6b0c8452d1914a21e3d6; runner-blob=b92260cb5940637d6deab6e0efcdf1ee462b0f22; recipe-blob=2440f6c5c9c42248ca6439150fa6deea58be8848
+// p1-static-compose-v1; evaluator-blob=5d1c4227b7d3512890d9ea71c74c0506a95f899c; runner-blob=b92260cb5940637d6deab6e0efcdf1ee462b0f22; recipe-blob=2440f6c5c9c42248ca6439150fa6deea58be8848
 import * as __p1Crypto from 'node:crypto';
 import { closeSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs';
 import { createRequire, Module } from 'node:module';
@@ -1372,6 +1372,60 @@ function isTargetRelationFrameV2(tokens,predicateIndex){
   const object=bindDirectObject(tokens,objectIndex);
   return object?.role==='LIGHT_OBJECT'||subject.shapeValid&&subject.members.length>0&&!object;
 }
+function analyzePreNormalizationCoordinationV2(input){
+  const source=normalizeInput(input).toLowerCase().replace(/’/g,"'");
+  const frames=[];
+  const addMalformedFrame=(sentenceIndex,clauseIndex,voice,predicateLemma,subject)=>{
+    const explicitlyCoordinated=subject.members.length>1||subject.coordinator!=='SINGLE';
+    if(subject.shapeValid||!explicitlyCoordinated)return;
+    frames.push({
+      sentenceIndex,clauseIndex,voice,predicateLemma,
+      topology:{
+        type:subject.coordinator,
+        cardinality:subject.members.length,
+        orderedMembers:subject.members.map((member)=>[member.lemma,member.role]),
+        shapeValid:false,
+        rawMembers:subject.members.map((member)=>member.surface),
+      },
+    });
+  };
+
+  for(const [sentenceIndex,sentence] of segmentSentences(source).entries()){
+    for(const [partIndex,rawPart] of sentence.text.split(/[;:]+/).entries()){
+      const discourse=rawPart.match(/^\s*(and|but)\s+/i);
+      const discourseRemainder=discourse?rawPart.slice(discourse[0].length):'';
+      const part=discourse&&!/^\s*,/.test(discourseRemainder)
+        ?discourseRemainder
+        :rawPart;
+      for(const rawClause of splitIndependentAndV2(part)){
+        const explicitBut=rawClause.match(/\s+but\s+/i);
+        const afterBut=explicitBut?rawClause.slice(explicitBut.index+explicitBut[0].length).trim():'';
+        const clauses=explicitBut&&startsIndependentSupportedClauseV2(afterBut)
+          ?[rawClause.slice(0,explicitBut.index),afterBut].filter(hasContentV2)
+          :[rawClause];
+        for(const clause of clauses){
+          const tokens=tokenizeV2(clause);
+          if(!tokens.length)continue;
+
+          const passive=bindLocalPassiveAgent(tokens);
+          if(passive&&isTargetRelationPredicateV2(passive.verb.lemma)){
+            addMalformedFrame(sentenceIndex,partIndex,'PASSIVE',passive.verb.lemma,passive.agent);
+          }
+
+          for(let predicateIndex=1;predicateIndex<tokens.length;predicateIndex++){
+            const predicate=validateFinitePredicate(tokens,predicateIndex);
+            if(!predicate||!isTargetRelationPredicateV2(predicate.lemma))continue;
+            if(predicate.form==='PRESENT_PARTICIPLE'&&!parseAuxiliaryChain(tokens,predicateIndex).chain.length)continue;
+            const subject=extractSubjectSet(tokens,predicateIndex);
+            if(subject.end!==predicateIndex||!isTargetRelationFrameV2(tokens,predicateIndex))continue;
+            addMalformedFrame(sentenceIndex,partIndex,'ACTIVE',predicate.lemma,subject);
+          }
+        }
+      }
+    }
+  }
+  return frames;
+}
 function isSupportedPassiveAuxiliaryChain(chain) {
   const negators = chain.filter((form) => ['not', 'never'].includes(form));
   if (negators.length > 1) return false;
@@ -1562,6 +1616,7 @@ function resolveLocalChlorophyllSupport(records,sentences){
   return null;
 }
 function parseMinimalRelationGrammar(input) {
+  const rawMalformedCoordination=analyzePreNormalizationCoordinationV2(input);
   const normalized = normalizeInputV2(input);
   const sentences = segmentSentencesV2(normalized);
   const relationRecords = [];
@@ -1569,8 +1624,10 @@ function parseMinimalRelationGrammar(input) {
   const topology = [];
   const orderedSubjects = [];
   const coordinationTopology = [];
-  let malformed = false;
+  const coordinationTopologySources=[];
+  let malformed = rawMalformedCoordination.length>0;
   let malformedExplicitContinuation = false;
+  if(rawMalformedCoordination.length)diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
 
   for (const [sentenceIndex, sentence] of sentences.entries()) {
     let pronounAntecedentRecordStart = relationRecords.length;
@@ -1615,6 +1672,7 @@ function parseMinimalRelationGrammar(input) {
           cardinality: subjectMembers.length,
           orderedMembers: subjectMembers,
         });
+        coordinationTopologySources.push({sentenceIndex,voice:'PASSIVE',predicateLemma:passive.verb.lemma});
         relationRecords.push(buildRelationRecordV2({
           grammarShape: 'PASSIVE_LOCAL_AGENT',
           voice: 'PASSIVE',
@@ -1778,6 +1836,7 @@ function parseMinimalRelationGrammar(input) {
         cardinality: subjectSet.members.length,
         orderedMembers: subjectSet.members.map((member) => [member.lemma, member.role]),
       });
+      coordinationTopologySources.push({sentenceIndex,voice:'ACTIVE',predicateLemma:predicate.lemma});
       const semanticSubject={...subject};
       delete semanticSubject.grammaticalNumber;
       delete semanticSubject.determinerNumberMismatch;
@@ -1919,6 +1978,21 @@ function parseMinimalRelationGrammar(input) {
     && relationRecords.some((record) => record.rejectionReasons?.includes('LIGHT_OBJECT_MISSING'))
     && (sentences.length > 1 || topology.length > sentences.length)
     && /\b(?:light energy|sunlight)\b/.test(normalized);
+  if(rawMalformedCoordination.length){
+    for(const record of relationRecords){
+      record.qualifies=false;
+      record.rejectionReasons=[...new Set([...(record.rejectionReasons||[]),'GRAMMAR_SHAPE_NOT_ACCEPTED'])];
+    }
+  }
+  const malformedCoordinationKeys=new Set(rawMalformedCoordination.map((frame)=>(
+    `${frame.sentenceIndex}|${frame.voice}|${frame.predicateLemma}`
+  )));
+  const reportedCoordinationTopology=rawMalformedCoordination.length
+    ?coordinationTopology.filter((_,index)=>{
+      const source=coordinationTopologySources[index];
+      return !malformedCoordinationKeys.has(`${source.sentenceIndex}|${source.voice}|${source.predicateLemma}`);
+    }).concat(rawMalformedCoordination.map((frame)=>frame.topology))
+    :coordinationTopology;
 
   return {
     evaluatorId: V2_ID,
@@ -1947,7 +2021,7 @@ function parseMinimalRelationGrammar(input) {
           : ['light', 'energy', 'sunlight'].includes(token.form) ? 'LIGHT' : 'OTHER').join(' ')
       : null,
     subjectSet: orderedSubjects,
-    coordinationTopology,
+    coordinationTopology:reportedCoordinationTopology,
     barriers: relationRecords.map((record) => record.objectBarriers?.type).filter(Boolean),
     contradictions,
     positiveLightEnergy: relationRecords.some((record) => record.qualifies),

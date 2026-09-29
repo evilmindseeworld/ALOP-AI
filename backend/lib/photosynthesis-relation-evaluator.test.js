@@ -464,9 +464,9 @@ test('ASTRA-BOUNDED-FINAL-002 validates raw coordination topology before normali
 
 test('root invariant 006 mutation: preprocessing before raw topology validation salvages malformed frames', () => {
   const source = readFileSync(join(__dirname, 'photosynthesis-relation-evaluator.js'), 'utf8').replace(/\r\n/g, '\n');
-  const anchor = 'const rawMalformedCoordination=analyzePreNormalizationCoordinationV2(input);';
+  const anchor = 'frame.rawStructuralAnalysis = analyzePreNormalizationCoordinationV2(frame);';
   assert.equal(source.split(anchor).length, 2, 'raw-topology mutation anchor must occur once');
-  const mutantSource = source.replace(anchor, 'const rawMalformedCoordination=[];');
+  const mutantSource = source.replace(anchor, 'frame.rawStructuralAnalysis = [];');
   const module = { exports: {} };
   new Function('require', 'module', 'exports', mutantSource)(require, module, module.exports);
   const attacks = [...coordinationTopologyCases, ...coordinationBoundaryCases];

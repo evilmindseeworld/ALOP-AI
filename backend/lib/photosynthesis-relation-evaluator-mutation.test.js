@@ -196,8 +196,8 @@ test('M10: suppressing all positive qualification is killed across positive clas
 test('root invariant 001 mutation: dropping boundary-independent frame marking restores the pass leak', () => {
   const mutant = loadMutant(replaceOnce(
     SOURCE,
-    'if (explicitContinuation || explicitTargetFrame) malformedExplicitContinuation = true;',
-    'if (explicitContinuation) malformedExplicitContinuation = true;',
+    'if (explicitContinuation || explicitTargetFrame) frame.malformedExplicitContinuation = true;',
+    'if (explicitContinuation) frame.malformedExplicitContinuation = true;',
     'target-frame completeness independent of boundary',
   ));
   const probes = [
@@ -252,8 +252,8 @@ test('root invariant 005 mutation: restoring normalization-first order erases em
   );
   const mutant = loadMutant(replaceOnce(
     commaNormalizationMutation,
-    'const rawMalformedCoordination=analyzePreNormalizationCoordinationV2(input);',
-    'const rawMalformedCoordination=[];',
+    'frame.rawStructuralAnalysis = analyzePreNormalizationCoordinationV2(frame);',
+    'frame.rawStructuralAnalysis = [];',
     'previous normalization-first ordering',
   ));
   const subjects = [

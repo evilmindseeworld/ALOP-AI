@@ -1,242 +1,120 @@
 {
   "schemaVersion": 1,
+  "kind": "ALOP-AI-P1-EVIDENCE-MANIFEST",
   "designVersion": "photosynthesis-light-relation-v2",
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "repairAttemptId": "P1-FRAME-LIFECYCLE-ROOT-REPAIR-20260930",
-  "capturedAtUtc": "2026-09-29T23:04:02Z",
-  "repairBaseSha": "9d162c96589c2beecd46b5bdc5b629cac26ef100",
-  "repairBaseTreeSha": "161647f212dd35611cc3cc6a74e1bb7aa5b3c38f",
-  "repairStartHead": "9d162c96589c2beecd46b5bdc5b629cac26ef100",
-  "implementationCommitSha": "ab1b6f26bc3b9a63ad99e2e29cc513db607597a0",
-  "implementationTreeSha": "bb732b7f050f6169d2fa1fb6fb86ab5fbd302379",
-  "implementationParentSha": "558ad7ca5ee65b968f37131d2ac1875301a2e053",
+  "repairAttemptId": "P1-ASTRA-FINAL-FRAME-001-REPAIR-20260930",
+  "capturedAtUtc": "2026-09-30T17:48:45.458Z",
+  "repairBaseSha": "300dac2f0bc3adb725bcc0604e87493578a4974f",
+  "repairBaseTreeSha": "63a236139fbb10e0e3d80d0eee4501c641fce312",
+  "repairStartHead": "300dac2f0bc3adb725bcc0604e87493578a4974f",
+  "implementationCommitSha": "110d637974201bd3b1995e4dcb7c46558eda6f20",
+  "implementationTreeSha": "02143c5717aa7d60170560484ca8967a46761ced",
+  "implementationParentSha": "9ce4424fc2f73f4fff6ed1aaaf00e9a52ff7b1ef",
   "implementationCommitShas": [
-    "558ad7ca5ee65b968f37131d2ac1875301a2e053",
-    "ab1b6f26bc3b9a63ad99e2e29cc513db607597a0"
+    "110d637974201bd3b1995e4dcb7c46558eda6f20"
   ],
-  "kind": "ALOP-AI-P1-EVIDENCE-MANIFEST",
   "phase": "FINAL_EVIDENCE",
-  "status": "PASS_FRAME_LIFECYCLE_ROOT_ARCHITECTURE_REPAIR_PRE_ASTRA",
+  "status": "PASS_P1_ASTRA_FINAL_FRAME_001_REPAIR_PRE_ASTRA",
   "entryCount": 13,
   "manifestSelfHashExcluded": true,
   "design": {
     "version": "photosynthesis-light-relation-v2",
-    "path": "C:\\Users\\LENOVO\\Documents\\AI-Classroom-supervisor\\.alop-supervisor\\evidence\\designs\\photosynthesis-clause-relation-v2.json",
+    "path": "C:/Users/LENOVO/Documents/AI-Classroom-supervisor/.alop-supervisor/evidence/designs/photosynthesis-clause-relation-v2.json",
     "sha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272"
   },
   "binder": {
-    "path": "C:\\Users\\LENOVO\\Documents\\AI-Classroom-supervisor\\tools\\supervisor\\design-binding.mjs",
+    "path": "C:/Users/LENOVO/Documents/AI-Classroom-supervisor/tools/supervisor/design-binding.mjs",
     "sha256": "01aac01eb74cdd312410d5ba8be5140bef9bed1163c75c2d966d980a0c29e0f8"
   },
   "historicalIdentities": {
     "approvedBase": "03c01ce23ead82762437286ebdab94d3485e0519",
     "lineageRoot": "2e5418bb06ceb4466abbd864391950f070570fb6",
-    "historicalRed": "84e9288edca7f7a659806da7e73a376e0253eccb",
-    "historicalRedEvidence": "7f72c196310e4df2f7189c70feb730da45096efe",
-    "comparisonBaseline": "53dac79cf873443e2a8c468607af5deee8107759",
-    "previousBlocked": "23d4aac95729f152b3e3438fe08dabe1a1a95d8f",
-    "earlierBlocked": "33070c57a8fa72ba97ba7e31175b454b0a97ad81",
-    "reconciliationStart": "ee010f0d0d2ed7281b2e0069e1dee6848b611d9b",
-    "repairBaseFinal001Candidate": "fcc28a8c90309a58c400c961fe1fd7f627981b10",
-    "repairBaseFinal001Tree": "f6d157be040372a75e45fcb3429d2be5fffaf3a1"
-  },
-  "implementation": {
-    "head": "ab1b6f26bc3b9a63ad99e2e29cc513db607597a0",
-    "tree": "bb732b7f050f6169d2fa1fb6fb86ab5fbd302379",
-    "parent": "558ad7ca5ee65b968f37131d2ac1875301a2e053",
-    "recipePreservedByteForByte": true,
-    "recipeSourceCommit": "1980974e84078c91e6e277c2ec89fdc64f20ee44",
-    "sourceFixCommit": "558ad7ca5ee65b968f37131d2ac1875301a2e053",
-    "semanticSourceFrozen": false,
-    "sourceChanges": 1,
-    "implementationCommitShas": [
-      "558ad7ca5ee65b968f37131d2ac1875301a2e053",
-      "ab1b6f26bc3b9a63ad99e2e29cc513db607597a0"
-    ],
-    "testRelocationCommit": "ab1b6f26bc3b9a63ad99e2e29cc513db607597a0",
-    "sourcePackageCleanAtCommit": true
+    "blockedRepairBase": "300dac2f0bc3adb725bcc0604e87493578a4974f",
+    "blockedRepairBaseTree": "63a236139fbb10e0e3d80d0eee4501c641fce312",
+    "previousCandidateKnownFailed": "300dac2f0bc3adb725bcc0604e87493578a4974f"
   },
   "package": {
     "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-    "bytes": 128406,
-    "sha256": "0e6031c5189d4358e6a3d98d09d0f3457295a09ddef75ff69fb93e0297405246",
-    "gitBlob": "88b5b15f82d3abcf262b95bf40ee905fc39fc76a",
+    "bytes": 130508,
+    "sha256": "abb122edbf5007843911435dc8ed01450f1cd29942d47acafc83e0847b3860c3",
+    "gitBlob": "24591b2acf680e59a2f29e50e2fadaffb5dacf36",
+    "recipeVersion": "p1-static-compose-v1",
+    "buildsByteIdentical": true,
+    "runnerDerivedBlob": "b92260cb5940637d6deab6e0efcdf1ee462b0f22",
     "inputs": {
       "recipe": {
         "commit": "1980974e84078c91e6e277c2ec89fdc64f20ee44",
+        "tree": "252d30e17fd39b026e247238ee18edd5fea83212",
         "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
         "blob": "2440f6c5c9c42248ca6439150fa6deea58be8848",
-        "tree": "252d30e17fd39b026e247238ee18edd5fea83212",
         "sha256": "39542bf7d96a39d02596c4c5c18898e96bc1d402ae523d4f5d937c0091c96443",
         "bytes": 10442
       },
       "evaluator": {
-        "commit": "8e5bc78552fe146b704386d5e7396e2563ca3210",
+        "commit": "110d637974201bd3b1995e4dcb7c46558eda6f20",
+        "tree": "02143c5717aa7d60170560484ca8967a46761ced",
         "path": "backend/lib/photosynthesis-relation-evaluator.js",
-        "blob": "5d1c4227b7d3512890d9ea71c74c0506a95f899c",
-        "tree": "668a144a2974f4ea50e0d32e8a76f9e407bbbc90",
-        "sha256": "61a90bc4df5484bbde72deb969153a3519a2bcb03cb567e19e00ecf0e560fbe3",
-        "bytes": 108504
+        "blob": "bae32d7996327a43373bf1f75ba9e2961bad603b",
+        "sha256": "541416a4942ee2d4bd46aa09d1f790feccfe2170b3f36d73505929e7160ee016",
+        "bytes": 110606
       },
       "corpus": {
         "commit": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc",
+        "tree": "7c28da720c1948587f1a7460a411613f1b522877",
         "path": "backend/lib/photosynthesis-relation-cases.js",
         "blob": "979ed2146045fdd6c7360583875bd8abbb032642",
-        "tree": "7c28da720c1948587f1a7460a411613f1b522877",
         "sha256": "b62495937ef0a2adec9829fa5bb7dcc3afdb12a062cf82fe0ec1d0fc527589fe",
         "bytes": 43347
       },
       "runner": {
         "commit": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
+        "tree": "f4f8b30f73448c34f7652f86a32a606d3dc8a739",
         "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
         "blob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
-        "tree": "f4f8b30f73448c34f7652f86a32a606d3dc8a739",
         "sha256": "e7bffea6fc690f6feb7003eb01c900bb798ba6b44cfb80c3a19edd45a1c6a3d7",
         "bytes": 15204
       }
-    },
-    "recipeVersion": "p1-static-compose-v1",
-    "runnerDerivedBlob": "b92260cb5940637d6deab6e0efcdf1ee462b0f22",
-    "runnerDerivedSha256": "93310034620c1d557e40803eeb884036deca4313fa2b958d483700e93ce894b8"
+    }
   },
   "coverage": {
     "sourceCases": 206,
-    "rawUnique": 206,
-    "legitimateProjections": 206,
-    "classMinima": 28,
-    "markers": 27,
-    "canonical": 54,
-    "coordinationMalformedCases": 2016,
-    "coordinationValidControls": 80,
-    "freshNouns": 24
+    "uniqueSemanticFingerprints": 206,
+    "frozenProjectionFields": 18,
+    "malformedMediatedStandaloneCases": 980,
+    "validMediatedControls": 245,
+    "mediatedCompositionCases": 2184,
+    "sourcePackageMismatches": 0,
+    "expectationChanges": 0
   },
-  "provenanceReconciliation": {
-    "oldDeclaredImplementationCommit": "a9ae0a5547fa59aeb457ba5d871fe33afcadbe9b",
-    "oldDeclaredTree": "e7bebb115b2c3fff3c59f772292d16969dddeb03",
-    "actualAuthoritative": {
-      "passed": 99,
-      "total": 101
-    },
-    "actualFullBackend": {
-      "passed": 2563,
-      "total": 2566
-    },
-    "previouslyClaimedAuthoritative": {
-      "passed": 101,
-      "total": 101
-    },
-    "previouslyClaimedFullBackend": {
-      "passed": 2565,
-      "total": 2566
-    },
-    "ruling": "OLD ACTIVE SUCCESS ATTRIBUTION WAS FALSE. Exact ee010f0d evidence snapshot, not a9, passed those higher counts.",
-    "evidence": {
-      "implementation-authoritative.log": {
-        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/implementation-authoritative.log",
-        "bytes": 11649,
-        "sha256": "36ff05772a467cd52ddac0ec8aa78fb3f481c06efa3fb5348829007d21998870"
-      },
-      "evidence-authoritative.log": {
-        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/evidence-authoritative.log",
-        "bytes": 9450,
-        "sha256": "e2739af717af638422eac3ac48562c0cac010851899796dd48e061319e7a879a"
-      },
-      "RECONCILIATION.md": {
-        "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-reconciliation-ee010f0d-20260927/RECONCILIATION.md",
-        "bytes": 5242,
-        "sha256": "271a869761d186af35876164d9b7a1a2ef1509278e7e44625aa7a57c2c187439"
-      }
-    },
-    "final002RepairBase": "fcc28a8c90309a58c400c961fe1fd7f627981b10",
-    "final002RepairBaseTree": "f6d157be040372a75e45fcb3429d2be5fffaf3a1",
-    "final002ImplementationHead": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc",
-    "final002ImplementationTree": "7c28da720c1948587f1a7460a411613f1b522877"
+  "implementation": {
+    "head": "110d637974201bd3b1995e4dcb7c46558eda6f20",
+    "tree": "02143c5717aa7d60170560484ca8967a46761ced",
+    "parent": "9ce4424fc2f73f4fff6ed1aaaf00e9a52ff7b1ef",
+    "sourceChanges": 2,
+    "implementationCommitShas": [
+      "110d637974201bd3b1995e4dcb7c46558eda6f20"
+    ],
+    "sourcePackageCleanAtCommit": true
   },
-  "finalTestedCandidate": {
-    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-002-repair-20260929\\FINAL-TESTED-CANDIDATE.json",
-    "role": "Post-evidence-commit attestation for the exact tested Final002 candidate, test outputs, frozen hashes and binder result."
-  },
-  "quarantine": {
-    "status": "ABSENT_FROM_FRAME_LIFECYCLE_ROOT_REPAIR_ANCESTRY",
-    "commits": [
-      "8c5f9afef9151923539c6016a2d6c75947b2e639",
-      "090d1c99c1bbc3c85ef742fdbd0511e6ca728248"
-    ]
-  },
-  "scopeGates": {
-    "astra": false,
-    "candidateQualification": false,
-    "sol": false,
-    "release": false,
-    "deployment": false,
-    "p2": false
-  },
-  "entries": [
-    {
-      "path": "backend/evals/backend-intelligence-v2.json",
-      "sha256": "7c887a0d8ece5a75b9dd1a43b2a285aa9f6ebea7e95ece49b1e753ceea57a4bc"
+  "redEvidence": {
+    "redCommitSha": "8a60634b867c14726f0b9530f389d96969e32b10",
+    "redEvidenceCommitSha": "9ce4424fc2f73f4fff6ed1aaaf00e9a52ff7b1ef",
+    "blockedBaseResult": {
+      "passed": true,
+      "hasMalformed": false
     },
-    {
-      "path": "backend/lib/evaluation.js",
-      "sha256": "fce2b17505e9f64ebc0e390e92841576012f3492dc120be6955a0651f0031446"
-    },
-    {
-      "path": "backend/lib/p1-authoritative-repair-v2.test.js",
-      "sha256": "a1bccd12b056dbc3fa0edf3f2f0f58922ff90b7dec6d9c15cfb8a788248dc922"
-    },
-    {
-      "path": "backend/lib/photosynthesis-relation-cases.js",
-      "sha256": "b62495937ef0a2adec9829fa5bb7dcc3afdb12a062cf82fe0ec1d0fc527589fe"
-    },
-    {
-      "path": "backend/lib/photosynthesis-relation-evaluator-mutation.test.js",
-      "sha256": "92e5e3101c149ddefa19147efd2cf4d2d14d22d7d76783f33f58f69c7c073fd4"
-    },
-    {
-      "path": "backend/lib/photosynthesis-relation-evaluator.js",
-      "sha256": "a2d21920db5c93874e66138507747736ae6392787de32a27582a6fc9f9c26b6b"
-    },
-    {
-      "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
-      "sha256": "36e8c02ff5b90bab659539f1446fc8559583f7b88ce2033e49ca7a829b5d3af8"
-    },
-    {
-      "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-      "sha256": "0a431a0fc05c69eea4f68d070ca1ba2d6534a06a2ea4053efb066c2efd66330e"
-    },
-    {
-      "path": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
-      "sha256": "68f4d3e7241d875a9ff030761be7b6ec15b3d6ad9ed846dca78ede30d4f8a9cb"
-    },
-    {
-      "path": "evidence/p1-photosynthesis-relation-v2/green-phase.json",
-      "sha256": "9cc984619c7afc359ac2cd21dbcb8f1b5214b915cc9627d10126c75de795d598"
-    },
-    {
-      "path": "evidence/p1-photosynthesis-relation-v2/mutation-phase.json",
-      "sha256": "057c6f7b1cf276edb8195f36b56bba444160a8b8d29468b8450edb1e80095062"
-    },
-    {
-      "path": "evidence/p1-photosynthesis-relation-v2/red-phase.json",
-      "sha256": "8dc121ce833dd7959dea7dd5b41efcaa24de08536f25baf905e3c7a17d827b68"
-    },
-    {
-      "path": "evidence/p1-photosynthesis-relation-v2/semantic-coverage.json",
-      "sha256": "ccdec316f463f02c264be5124effa5a53688ab1e22f45d991c65ad54be9c7813"
+    "partialCandidateResult": {
+      "passed": false,
+      "hasMalformed": true,
+      "rawMembers": [
+        "",
+        "green plants",
+        "algae"
+      ]
     }
-  ],
-  "historicalFinal001": {
-    "repairAttemptId": "P1-BOUNDED-FINAL-001-20260928",
-    "implementationCommitSha": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
-    "implementationTreeSha": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
-    "finalTestedCandidateAttestation": null,
-    "sourceSnapshotCommit": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc"
-  },
-  "finalTestedCandidateAttestation": {
-    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-frame-lifecycle-root-repair-final-20260930\\FINAL-TESTED-CANDIDATE.json",
-    "role": "External post-evidence-commit attestation for exact final candidate, test outputs, frozen hashes, and unchanged static design binder result."
   },
   "testMatrix": {
     "authoritative": {
@@ -245,8 +123,8 @@
       "skipped": 0
     },
     "evaluator": {
-      "passed": 65,
-      "total": 65,
+      "passed": 71,
+      "total": 71,
       "skipped": 0
     },
     "evaluatorMutations": {
@@ -264,21 +142,36 @@
       "total": 20,
       "skipped": 0
     },
-    "frameLifecyclePropertyAndMutation": {
-      "passed": 86,
-      "total": 86,
+    "mediatedPredicateProperties": {
+      "passed": 3,
+      "total": 3,
       "skipped": 0,
+      "malformedStandaloneCases": 980,
+      "validControlCases": 245,
+      "sourcePackageParityReported": 1960,
+      "compositionCases": 2184,
+      "compositionParityMismatches": 0,
+      "compositionParityExceptions": 0,
+      "mutationKills": {
+        "validationBypass": 980,
+        "wrongSubjectEnd": 980,
+        "droppedAttachment": 980
+      }
+    },
+    "frameLifecycleProperties": {
       "twoFrameCases": 1024,
       "threeFrameCases": 256,
-      "sourcePackageParityInputs": 1280
+      "sourcePackageParityInputs": 1280,
+      "mismatches": 0,
+      "exceptions": 0
     },
     "fullBackend": {
-      "passed": 2596,
-      "total": 2597,
+      "passed": 2602,
+      "total": 2603,
       "failed": 1,
       "skipped": 0,
       "exitCode": 1,
-      "soleFailure": "every declared Node major is the one deploy/targets.json names",
+      "soleFailure": "every declared Node major is the one deploy/targets.json names; backend/package.json engines is 26.7.0",
       "candidateCausedFailures": 0
     },
     "frontend": {
@@ -286,7 +179,8 @@
       "total": 735,
       "filesPassed": 58,
       "filesTotal": 58,
-      "skipped": 0
+      "skipped": 0,
+      "command": "npm test -- --run --maxWorkers=1 --minWorkers=1"
     },
     "datasetV1": {
       "validated": 21,
@@ -318,63 +212,77 @@
       "testsRemoved": 0,
       "testsSkipped": 0,
       "assertionsLoosened": 0,
-      "expectationsChanged": 0,
-      "relocatedTests": 9
+      "expectationsChanged": 0
     }
   },
-  "frameLifecycleArchitecture": {
-    "status": "PASS",
-    "invariant": "structural invalidity is sticky within one frame, isolated across frames, and aggregated at document scope",
-    "twoFrameCompositionCases": 1024,
-    "threeFrameCompositionCases": 256,
-    "sourcePackageParityInputs": 1280,
-    "sourcePackageMismatches": 0,
-    "sourcePackageExceptions": 0,
-    "mutations": [
-      {
-        "id": "MUT-A",
-        "attributableFailures": 256,
-        "cases": 256
-      },
-      {
-        "id": "MUT-B",
-        "attributableFailures": 256,
-        "cases": 256
-      },
-      {
-        "id": "MUT-C",
-        "attributableFailures": 432,
-        "cases": 256
-      },
-      {
-        "id": "MUT-D",
-        "attributableFailures": 20,
-        "cases": 20
-      },
-      {
-        "id": "MUT-E",
-        "attributableFailures": 4,
-        "cases": 4
-      }
-    ],
-    "rawPreservationClasses": [
-      "initial-empty",
-      "middle-empty",
-      "final-empty",
-      "active",
-      "passive"
-    ],
-    "compositionDimensions": [
-      "semicolon",
-      "period",
-      "period+And",
-      "period+But",
-      "same-predicate",
-      "different-predicate",
-      "active",
-      "passive",
-      "permutation",
-      "duplicate-semantic-frames"
+  "quarantine": {
+    "status": "ABSENT_FROM_REPAIR_ANCESTRY",
+    "commits": [
+      "8c5f9afef9151923539c6016a2d6c75947b2e639",
+      "090d1c99c1bbc3c85ef742fdbd0511e6ca728248"
     ]
-  }
+  },
+  "scopeGates": {
+    "astra": false,
+    "cq": false,
+    "candidateQualification": false,
+    "sol": false,
+    "release": false,
+    "deployment": false,
+    "p2": false
+  },
+  "entries": [
+    {
+      "path": "backend/evals/backend-intelligence-v2.json",
+      "sha256": "7c887a0d8ece5a75b9dd1a43b2a285aa9f6ebea7e95ece49b1e753ceea57a4bc"
+    },
+    {
+      "path": "backend/lib/evaluation.js",
+      "sha256": "fce2b17505e9f64ebc0e390e92841576012f3492dc120be6955a0651f0031446"
+    },
+    {
+      "path": "backend/lib/p1-authoritative-repair-v2.test.js",
+      "sha256": "a1bccd12b056dbc3fa0edf3f2f0f58922ff90b7dec6d9c15cfb8a788248dc922"
+    },
+    {
+      "path": "backend/lib/photosynthesis-relation-cases.js",
+      "sha256": "b62495937ef0a2adec9829fa5bb7dcc3afdb12a062cf82fe0ec1d0fc527589fe"
+    },
+    {
+      "path": "backend/lib/photosynthesis-relation-evaluator-mutation.test.js",
+      "sha256": "92e5e3101c149ddefa19147efd2cf4d2d14d22d7d76783f33f58f69c7c073fd4"
+    },
+    {
+      "path": "backend/lib/photosynthesis-relation-evaluator.js",
+      "sha256": "541416a4942ee2d4bd46aa09d1f790feccfe2170b3f36d73505929e7160ee016"
+    },
+    {
+      "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
+      "sha256": "5588d3085dee6ddc775dfeb4081750be93d70bf97e2c73f39fef18230735e71e"
+    },
+    {
+      "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+      "sha256": "abb122edbf5007843911435dc8ed01450f1cd29942d47acafc83e0847b3860c3"
+    },
+    {
+      "path": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
+      "sha256": "f824c1c7bf24f47816288b132738cdb8c94d8e18f70ccd7c6d327f6aa9237c97"
+    },
+    {
+      "path": "evidence/p1-photosynthesis-relation-v2/green-phase.json",
+      "sha256": "bf193086c4a21cae55e31c67ea66a3aedc7ba2254b287f95ad371adc639a310c"
+    },
+    {
+      "path": "evidence/p1-photosynthesis-relation-v2/mutation-phase.json",
+      "sha256": "9161efa0c7f3af5d41949d8771e796d21a870b0821777148ecdf8a5bcb9cd89e"
+    },
+    {
+      "path": "evidence/p1-photosynthesis-relation-v2/red-phase.json",
+      "sha256": "09b8c1a32303fc4477927e0f8fec5ba87f19b4706f53b1bea6acd5925b117e25"
+    },
+    {
+      "path": "evidence/p1-photosynthesis-relation-v2/semantic-coverage.json",
+      "sha256": "c35fc02be01b1817d2ae5ea9e9c40df805c2fbc8fb5e15e34ddf50a6b4e053c3"
+    }
+  ]
 }

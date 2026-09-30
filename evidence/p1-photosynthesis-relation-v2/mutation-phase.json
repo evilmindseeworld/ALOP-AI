@@ -4,25 +4,26 @@
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "repairAttemptId": "P1-FRAME-LIFECYCLE-ROOT-REPAIR-20260930",
-  "capturedAtUtc": "2026-09-29T23:04:02Z",
-  "repairBaseSha": "9d162c96589c2beecd46b5bdc5b629cac26ef100",
-  "repairBaseTreeSha": "161647f212dd35611cc3cc6a74e1bb7aa5b3c38f",
-  "repairStartHead": "9d162c96589c2beecd46b5bdc5b629cac26ef100",
-  "implementationCommitSha": "ab1b6f26bc3b9a63ad99e2e29cc513db607597a0",
-  "implementationTreeSha": "bb732b7f050f6169d2fa1fb6fb86ab5fbd302379",
-  "implementationParentSha": "558ad7ca5ee65b968f37131d2ac1875301a2e053",
+  "repairAttemptId": "P1-ASTRA-FINAL-FRAME-001-REPAIR-20260930",
+  "capturedAtUtc": "2026-09-30T17:48:45.458Z",
+  "repairBaseSha": "300dac2f0bc3adb725bcc0604e87493578a4974f",
+  "repairBaseTreeSha": "63a236139fbb10e0e3d80d0eee4501c641fce312",
+  "repairStartHead": "300dac2f0bc3adb725bcc0604e87493578a4974f",
+  "implementationCommitSha": "110d637974201bd3b1995e4dcb7c46558eda6f20",
+  "implementationTreeSha": "02143c5717aa7d60170560484ca8967a46761ced",
+  "implementationParentSha": "9ce4424fc2f73f4fff6ed1aaaf00e9a52ff7b1ef",
   "implementationCommitShas": [
-    "558ad7ca5ee65b968f37131d2ac1875301a2e053",
-    "ab1b6f26bc3b9a63ad99e2e29cc513db607597a0"
+    "110d637974201bd3b1995e4dcb7c46558eda6f20"
   ],
+  "redCommitSha": "8a60634b867c14726f0b9530f389d96969e32b10",
+  "redEvidenceCommitSha": "9ce4424fc2f73f4fff6ed1aaaf00e9a52ff7b1ef",
   "phase": "MUTATION",
-  "status": "PASS_FRAME_LIFECYCLE_PROPERTY_MUTATION_PACKAGE_AND_DATASET_GATES_PRE_ASTRA",
-  "runtime": "Node v26.7.0",
+  "status": "PASS_MEDIATED_PREDICATE_COVERAGE_PACKAGE_AND_DATASET_GATES_PRE_ASTRA",
+  "runtime": "v26.4.0",
   "packagePath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-  "packageGitBlob": "79d011d08b6a81fcfb84cb95462f84b26383bc75",
-  "packageSha256": "0a431a0fc05c69eea4f68d070ca1ba2d6534a06a2ea4053efb066c2efd66330e",
-  "packageBytes": 129609,
+  "packageGitBlob": "24591b2acf680e59a2f29e50e2fadaffb5dacf36",
+  "packageSha256": "abb122edbf5007843911435dc8ed01450f1cd29942d47acafc83e0847b3860c3",
+  "packageBytes": 130508,
   "packageSnapshotRole": "committed derived evaluator package",
   "recipeVersion": "p1-static-compose-v1",
   "runnerDerivedBlob": "b92260cb5940637d6deab6e0efcdf1ee462b0f22",
@@ -32,13 +33,13 @@
   "recipeInputPath": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
   "recipeInputBlobSha": "2440f6c5c9c42248ca6439150fa6deea58be8848",
   "recipeSha256": "39542bf7d96a39d02596c4c5c18898e96bc1d402ae523d4f5d937c0091c96443",
-  "evaluatorInputCommitSha": "558ad7ca5ee65b968f37131d2ac1875301a2e053",
-  "evaluatorInputTreeSha": "88191a1cc7f939e4eb4962a91e7d9186f2e14d23",
+  "evaluatorInputCommitSha": "110d637974201bd3b1995e4dcb7c46558eda6f20",
+  "evaluatorInputTreeSha": "02143c5717aa7d60170560484ca8967a46761ced",
   "evaluatorInputPath": "backend/lib/photosynthesis-relation-evaluator.js",
-  "evaluatorInputBlobSha": "05573cafa3da26b47bdb77cc8e7e647040fa552d",
-  "evaluatorSha256": "a2d21920db5c93874e66138507747736ae6392787de32a27582a6fc9f9c26b6b",
-  "corpusInputCommitSha": "558ad7ca5ee65b968f37131d2ac1875301a2e053",
-  "corpusInputTreeSha": "88191a1cc7f939e4eb4962a91e7d9186f2e14d23",
+  "evaluatorInputBlobSha": "bae32d7996327a43373bf1f75ba9e2961bad603b",
+  "evaluatorSha256": "541416a4942ee2d4bd46aa09d1f790feccfe2170b3f36d73505929e7160ee016",
+  "corpusInputCommitSha": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc",
+  "corpusInputTreeSha": "7c28da720c1948587f1a7460a411613f1b522877",
   "corpusInputPath": "backend/lib/photosynthesis-relation-cases.js",
   "corpusInputBlobSha": "979ed2146045fdd6c7360583875bd8abbb032642",
   "corpusSha256": "b62495937ef0a2adec9829fa5bb7dcc3afdb12a062cf82fe0ec1d0fc527589fe",
@@ -60,16 +61,16 @@
         "bytes": 10442
       },
       "evaluator": {
-        "commit": "558ad7ca5ee65b968f37131d2ac1875301a2e053",
-        "tree": "88191a1cc7f939e4eb4962a91e7d9186f2e14d23",
+        "commit": "110d637974201bd3b1995e4dcb7c46558eda6f20",
+        "tree": "02143c5717aa7d60170560484ca8967a46761ced",
         "path": "backend/lib/photosynthesis-relation-evaluator.js",
-        "blob": "05573cafa3da26b47bdb77cc8e7e647040fa552d",
-        "sha256": "a2d21920db5c93874e66138507747736ae6392787de32a27582a6fc9f9c26b6b",
-        "bytes": 109707
+        "blob": "bae32d7996327a43373bf1f75ba9e2961bad603b",
+        "sha256": "541416a4942ee2d4bd46aa09d1f790feccfe2170b3f36d73505929e7160ee016",
+        "bytes": 110606
       },
       "corpus": {
-        "commit": "558ad7ca5ee65b968f37131d2ac1875301a2e053",
-        "tree": "88191a1cc7f939e4eb4962a91e7d9186f2e14d23",
+        "commit": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc",
+        "tree": "7c28da720c1948587f1a7460a411613f1b522877",
         "path": "backend/lib/photosynthesis-relation-cases.js",
         "blob": "979ed2146045fdd6c7360583875bd8abbb032642",
         "sha256": "b62495937ef0a2adec9829fa5bb7dcc3afdb12a062cf82fe0ec1d0fc527589fe",
@@ -88,32 +89,52 @@
     "runnerDerivedSha256": "93310034620c1d557e40803eeb884036deca4313fa2b958d483700e93ce894b8",
     "runnerDerivedBytes": 15261,
     "build1": {
-      "bytes": 129609,
-      "sha256": "0a431a0fc05c69eea4f68d070ca1ba2d6534a06a2ea4053efb066c2efd66330e",
-      "gitBlob": "79d011d08b6a81fcfb84cb95462f84b26383bc75"
+      "bytes": 130508,
+      "sha256": "abb122edbf5007843911435dc8ed01450f1cd29942d47acafc83e0847b3860c3",
+      "gitBlob": "24591b2acf680e59a2f29e50e2fadaffb5dacf36"
     },
     "build2": {
-      "bytes": 129609,
-      "sha256": "0a431a0fc05c69eea4f68d070ca1ba2d6534a06a2ea4053efb066c2efd66330e",
-      "gitBlob": "79d011d08b6a81fcfb84cb95462f84b26383bc75"
+      "bytes": 130508,
+      "sha256": "abb122edbf5007843911435dc8ed01450f1cd29942d47acafc83e0847b3860c3",
+      "gitBlob": "24591b2acf680e59a2f29e50e2fadaffb5dacf36"
     },
     "committed": {
-      "bytes": 129609,
-      "sha256": "0a431a0fc05c69eea4f68d070ca1ba2d6534a06a2ea4053efb066c2efd66330e",
-      "gitBlob": "79d011d08b6a81fcfb84cb95462f84b26383bc75"
+      "bytes": 130508,
+      "sha256": "abb122edbf5007843911435dc8ed01450f1cd29942d47acafc83e0847b3860c3",
+      "gitBlob": "24591b2acf680e59a2f29e50e2fadaffb5dacf36"
     },
     "byteIdentical": true
   },
   "sourcePackageApiEquivalence": {
-    "inputCount": 2302,
-    "publicApiCount": 8,
-    "apiComparisonCount": 18416,
-    "mismatches": [],
-    "exceptions": [],
-    "sourceCorpusCases": 206,
-    "malformedEndToEndCases": 2016,
-    "validControlCases": 80,
-    "comparisonMethod": "deep structural equality of every complete API result"
+    "status": "PASS",
+    "mismatches": 0,
+    "exceptions": 0,
+    "mediatedPredicate": {
+      "standaloneMalformedCases": 980,
+      "validControlCases": 245,
+      "sourcePackageParityReported": 1960,
+      "twoFrameSimpleSiblingCases": 1960,
+      "mediatedSiblingCases": 56,
+      "threeFrameCases": 84,
+      "crossSentenceCases": 84,
+      "totalCompositionCases": 2184,
+      "compositionParityChecked": true,
+      "compositionMismatches": 0,
+      "compositionExceptions": 0,
+      "mutationKills": {
+        "validationBypass": 980,
+        "wrongSubjectEnd": 980,
+        "droppedAttachment": 980,
+        "droppedFindingsProducedBeforeDrop": 980
+      }
+    },
+    "existingFrameLifecycle": {
+      "twoFrameCases": 1024,
+      "threeFrameCases": 256,
+      "sourcePackageParityInputs": 1280,
+      "mismatches": 0,
+      "exceptions": 0
+    }
   },
   "sourceCaseCount": 206,
   "mutationIds": [
@@ -135,10 +156,6 @@
       "failuresByClass": {
         "NEGATED_MODALITY": 8,
         "UNCERTAIN_MODALITY": 12
-      },
-      "minimumFailuresByClass": {
-        "NEGATED_MODALITY": 4,
-        "UNCERTAIN_MODALITY": 4
       }
     },
     {
@@ -148,11 +165,6 @@
         "DETACHED_OBJECT_DECOYS": 7,
         "DIRECT_OBJECT_BARRIERS": 6,
         "FINITE_PREDICATE_BARRIERS": 6
-      },
-      "minimumFailuresByClass": {
-        "DETACHED_OBJECT_DECOYS": 4,
-        "DIRECT_OBJECT_BARRIERS": 4,
-        "FINITE_PREDICATE_BARRIERS": 4
       }
     },
     {
@@ -160,9 +172,6 @@
       "killed": true,
       "failuresByClass": {
         "MALFORMED_SYNTAX": 9
-      },
-      "minimumFailuresByClass": {
-        "MALFORMED_SYNTAX": 6
       }
     },
     {
@@ -170,18 +179,12 @@
       "killed": true,
       "failuresByClass": {
         "AFFIRMATIVE_PASSIVE": 6
-      },
-      "minimumFailuresByClass": {
-        "AFFIRMATIVE_PASSIVE": 4
       }
     },
     {
       "id": "M5",
       "killed": true,
       "failuresByClass": {
-        "COORDINATED_SUBJECTS_MIXED_INVALID": 6
-      },
-      "minimumFailuresByClass": {
         "COORDINATED_SUBJECTS_MIXED_INVALID": 6
       }
     },
@@ -190,13 +193,8 @@
       "killed": true,
       "failuresByClass": {
         "DOUBLE_NEGATION": 6,
-        "NESTED_CONTROL": 7,
+        "NESTED_CONTROL": 10,
         "UNRELATED_NEGATION": 6
-      },
-      "minimumFailuresByClass": {
-        "DOUBLE_NEGATION": 4,
-        "NESTED_CONTROL": 6,
-        "UNRELATED_NEGATION": 4
       }
     },
     {
@@ -204,11 +202,7 @@
       "killed": true,
       "failuresByClass": {
         "CLAUSE_BOUNDARY": 8,
-        "NO_STITCHING": 7
-      },
-      "minimumFailuresByClass": {
-        "CLAUSE_BOUNDARY": 4,
-        "NO_STITCHING": 4
+        "NO_STITCHING": 8
       }
     },
     {
@@ -217,10 +211,6 @@
       "failuresByClass": {
         "COORDINATED_SUBJECTS_MIXED_INVALID": 8,
         "INVALID_SUBJECT": 8
-      },
-      "minimumFailuresByClass": {
-        "COORDINATED_SUBJECTS_MIXED_INVALID": 4,
-        "INVALID_SUBJECT": 4
       }
     },
     {
@@ -229,10 +219,6 @@
       "failuresByClass": {
         "DETACHED_OBJECT_DECOYS": 8,
         "INVALID_OBJECT": 7
-      },
-      "minimumFailuresByClass": {
-        "DETACHED_OBJECT_DECOYS": 4,
-        "INVALID_OBJECT": 4
       }
     },
     {
@@ -240,10 +226,6 @@
       "killed": true,
       "failuresByClass": {
         "AFFIRMATIVE_ACTIVE": 17,
-        "KNOWN_REGRESSIONS": 2
-      },
-      "minimumFailuresByClass": {
-        "AFFIRMATIVE_ACTIVE": 2,
         "KNOWN_REGRESSIONS": 2
       }
     }
@@ -255,67 +237,52 @@
     "failed": 0,
     "failures": []
   },
-  "rootInvariantSelfMutation": {
-    "tests": 6,
-    "pass": 6,
-    "fail": 0,
-    "attributable": true,
-    "rootMutationId": "006",
-    "endToEndCases": 2016,
-    "destructiveNormalizationViolations": 360
-  },
-  "coordinationTopologyPreprocessingSuite": {
-    "suite": "COORDINATION_TOPOLOGY_PREPROCESSING_SUITE",
-    "status": "PASS",
-    "malformedEndToEndCases": 2016,
-    "initialEmptySlotCases": 1008,
-    "middleEmptySlotCases": 720,
-    "finalEmptySlotCases": 288,
-    "activePassivePairs": 1008,
-    "validControls": 80,
-    "freshNounCount": 24,
-    "boundaryForms": [
-      "period",
-      "semicolon"
+  "mediatedPredicateCoverage": {
+    "supportedShape": "VALID_PROCESS_SUBJECT_SET FINITE_USE_CHAIN chlorophyll to TARGET_BASE LIGHT_OBJECT",
+    "mediatorForms": [
+      "use",
+      "uses",
+      "used"
     ],
-    "whitespaceForms": [
-      "standard",
-      "repeated spaces",
-      "newline and tab"
+    "targetVerbs": [
+      "capture",
+      "absorb",
+      "harness",
+      "use",
+      "convert",
+      "transform",
+      "store"
     ],
-    "sourcePackageMismatches": 0,
-    "sourcePackageExceptions": 0,
-    "rootMutationViolations": 360
-  },
-  "expectationChanges": 0,
-  "removedTests": 0,
-  "skips": 0,
-  "assertionsLoosened": 0,
-  "candidateCausedFailures": "RECORDED_IN_EXTERNAL_FINAL_TESTED_CANDIDATE_ATTESTATION",
-  "finalTestedCandidateAttestation": {
-    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-frame-lifecycle-root-repair-final-20260930\\FINAL-TESTED-CANDIDATE.json",
-    "role": "External post-evidence-commit attestation for exact final candidate, test outputs, frozen hashes, and unchanged static design binder result."
-  },
-  "historicalFinal001": {
-    "repairAttemptId": "P1-BOUNDED-FINAL-001-20260928",
-    "implementationCommitSha": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
-    "implementationTreeSha": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
-    "finalTestedCandidateAttestation": {
-      "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-20260928\\FINAL-TESTED-CANDIDATE.json",
-      "role": "External post-commit attestation for the evidence-complete exact final candidate, full matrix and binder."
+    "lightObjects": [
+      "light",
+      "the light",
+      "light energy",
+      "the light energy",
+      "sunlight",
+      "solar energy",
+      "solar light"
+    ],
+    "malformedStandaloneCases": 980,
+    "validControlCases": 245,
+    "sourcePackageParityReported": 1960,
+    "composition": {
+      "simpleSiblingCases": 1960,
+      "mediatedSiblingCases": 56,
+      "threeFrameCases": 84,
+      "crossSentenceCases": 84,
+      "total": 2184,
+      "sourcePackageMismatches": 0,
+      "sourcePackageExceptions": 0
     },
-    "sourceSnapshotCommit": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc"
+    "mutations": {
+      "validationBypassKilledAcross": 980,
+      "wrongSubjectEndKilledAcross": 980,
+      "droppedAttachmentKilledAcross": 980,
+      "droppedFindingsProducedAcross": 980
+    }
   },
-  "implementationSnapshot": {
-    "head": "ab1b6f26bc3b9a63ad99e2e29cc513db607597a0",
-    "tree": "bb732b7f050f6169d2fa1fb6fb86ab5fbd302379",
-    "parent": "558ad7ca5ee65b968f37131d2ac1875301a2e053",
-    "sourcePackageCleanAtCommit": true
-  },
-  "candidateCausedBackendFailureCount": 0,
   "frameLifecycleArchitecture": {
     "status": "PASS",
-    "invariant": "structural invalidity is sticky within one frame, isolated across frames, and aggregated at document scope",
     "twoFrameCompositionCases": 1024,
     "threeFrameCompositionCases": 256,
     "sourcePackageParityInputs": 1280,
@@ -347,27 +314,19 @@
         "attributableFailures": 4,
         "cases": 4
       }
-    ],
-    "rawPreservationClasses": [
-      "initial-empty",
-      "middle-empty",
-      "final-empty",
-      "active",
-      "passive"
-    ],
-    "compositionDimensions": [
-      "semicolon",
-      "period",
-      "period+And",
-      "period+But",
-      "same-predicate",
-      "different-predicate",
-      "active",
-      "passive",
-      "permutation",
-      "duplicate-semantic-frames"
     ]
   },
+  "historicalRegressions": {
+    "status": "PASS",
+    "historical001002003MutationsPassed": 3,
+    "historical001002003MutationsTotal": 3,
+    "astraBoundedFinal002RawTopologyRegression": "PASS"
+  },
+  "expectationChanges": 0,
+  "removedTests": 0,
+  "skips": 0,
+  "assertionsLoosened": 0,
+  "candidateCausedBackendFailureCount": 0,
   "datasetValidation": {
     "status": "PASS",
     "mode": "validate-only",
@@ -392,8 +351,8 @@
       "skipped": 0
     },
     "evaluator": {
-      "passed": 65,
-      "total": 65,
+      "passed": 71,
+      "total": 71,
       "skipped": 0
     },
     "evaluatorMutations": {
@@ -411,21 +370,36 @@
       "total": 20,
       "skipped": 0
     },
-    "frameLifecyclePropertyAndMutation": {
-      "passed": 86,
-      "total": 86,
+    "mediatedPredicateProperties": {
+      "passed": 3,
+      "total": 3,
       "skipped": 0,
+      "malformedStandaloneCases": 980,
+      "validControlCases": 245,
+      "sourcePackageParityReported": 1960,
+      "compositionCases": 2184,
+      "compositionParityMismatches": 0,
+      "compositionParityExceptions": 0,
+      "mutationKills": {
+        "validationBypass": 980,
+        "wrongSubjectEnd": 980,
+        "droppedAttachment": 980
+      }
+    },
+    "frameLifecycleProperties": {
       "twoFrameCases": 1024,
       "threeFrameCases": 256,
-      "sourcePackageParityInputs": 1280
+      "sourcePackageParityInputs": 1280,
+      "mismatches": 0,
+      "exceptions": 0
     },
     "fullBackend": {
-      "passed": 2596,
-      "total": 2597,
+      "passed": 2602,
+      "total": 2603,
       "failed": 1,
       "skipped": 0,
       "exitCode": 1,
-      "soleFailure": "every declared Node major is the one deploy/targets.json names",
+      "soleFailure": "every declared Node major is the one deploy/targets.json names; backend/package.json engines is 26.7.0",
       "candidateCausedFailures": 0
     },
     "frontend": {
@@ -433,7 +407,8 @@
       "total": 735,
       "filesPassed": 58,
       "filesTotal": 58,
-      "skipped": 0
+      "skipped": 0,
+      "command": "npm test -- --run --maxWorkers=1 --minWorkers=1"
     },
     "datasetV1": {
       "validated": 21,
@@ -465,8 +440,8 @@
       "testsRemoved": 0,
       "testsSkipped": 0,
       "assertionsLoosened": 0,
-      "expectationsChanged": 0,
-      "relocatedTests": 9
+      "expectationsChanged": 0
     }
-  }
+  },
+  "priorPartialImplementationCommitSha": "c12c8e106e64341dd1f642036108624e519bb3f9"
 }

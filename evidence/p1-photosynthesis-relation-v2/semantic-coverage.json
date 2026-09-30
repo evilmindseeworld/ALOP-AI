@@ -4,18 +4,19 @@
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "repairAttemptId": "P1-FRAME-LIFECYCLE-ROOT-REPAIR-20260930",
-  "capturedAtUtc": "2026-09-29T23:04:02Z",
-  "repairBaseSha": "9d162c96589c2beecd46b5bdc5b629cac26ef100",
-  "repairBaseTreeSha": "161647f212dd35611cc3cc6a74e1bb7aa5b3c38f",
-  "repairStartHead": "9d162c96589c2beecd46b5bdc5b629cac26ef100",
-  "implementationCommitSha": "ab1b6f26bc3b9a63ad99e2e29cc513db607597a0",
-  "implementationTreeSha": "bb732b7f050f6169d2fa1fb6fb86ab5fbd302379",
-  "implementationParentSha": "558ad7ca5ee65b968f37131d2ac1875301a2e053",
+  "repairAttemptId": "P1-ASTRA-FINAL-FRAME-001-REPAIR-20260930",
+  "capturedAtUtc": "2026-09-30T17:48:45.458Z",
+  "repairBaseSha": "300dac2f0bc3adb725bcc0604e87493578a4974f",
+  "repairBaseTreeSha": "63a236139fbb10e0e3d80d0eee4501c641fce312",
+  "repairStartHead": "300dac2f0bc3adb725bcc0604e87493578a4974f",
+  "implementationCommitSha": "110d637974201bd3b1995e4dcb7c46558eda6f20",
+  "implementationTreeSha": "02143c5717aa7d60170560484ca8967a46761ced",
+  "implementationParentSha": "9ce4424fc2f73f4fff6ed1aaaf00e9a52ff7b1ef",
   "implementationCommitShas": [
-    "558ad7ca5ee65b968f37131d2ac1875301a2e053",
-    "ab1b6f26bc3b9a63ad99e2e29cc513db607597a0"
+    "110d637974201bd3b1995e4dcb7c46558eda6f20"
   ],
+  "redCommitSha": "8a60634b867c14726f0b9530f389d96969e32b10",
+  "redEvidenceCommitSha": "9ce4424fc2f73f4fff6ed1aaaf00e9a52ff7b1ef",
   "phase": "SEMANTIC_COVERAGE",
   "status": "PASS",
   "projectionContract": {
@@ -39,7 +40,8 @@
       "pigmentIdentity",
       "invalidClaimType",
       "expectedDecision"
-    ]
+    ],
+    "frameIdIncluded": false
   },
   "sourceCaseCount": 206,
   "rawUniqueTextCount": 206,
@@ -47,479 +49,116 @@
   "uniqueSemanticFingerprintCount": 206,
   "uniqueSemanticProjectionCount": 206,
   "legitimateSemanticProjections": 206,
-  "independentNormalization": {
-    "status": "PASS",
-    "fieldCount": 18,
-    "checkedCases": 206,
-    "expectationChanges": 0
-  },
-  "collisionGroupCount": 0,
-  "duplicateSemanticFingerprints": [],
   "canonicalCaseCount": 54,
   "canonicalCasesMatchFrozenDesign": true,
-  "canonicalCasesSha256": "24ac7123e0ca5afedad5b199e5b993752589e5ad15c878fc4e7edbc7a872d7bd",
-  "classCounts": [
-    {
-      "classId": "AFFIRMATIVE_ACTIVE",
-      "minimumUniqueSemanticCases": 8,
-      "observed": 17,
-      "independentObserved": 17,
-      "pass": true
-    },
-    {
-      "classId": "AFFIRMATIVE_PASSIVE",
-      "minimumUniqueSemanticCases": 6,
-      "observed": 6,
-      "independentObserved": 6,
-      "pass": true
-    },
-    {
-      "classId": "INFINITIVAL_CHLOROPHYLL_MEDIATED",
-      "minimumUniqueSemanticCases": 6,
-      "observed": 6,
-      "independentObserved": 6,
-      "pass": true
-    },
-    {
-      "classId": "COORDINATED_PREDICATES",
-      "minimumUniqueSemanticCases": 6,
-      "observed": 6,
-      "independentObserved": 6,
-      "pass": true
-    },
-    {
-      "classId": "COORDINATED_SUBJECTS_VALID",
-      "minimumUniqueSemanticCases": 6,
-      "observed": 6,
-      "independentObserved": 6,
-      "pass": true
-    },
-    {
-      "classId": "COORDINATED_SUBJECTS_MIXED_INVALID",
-      "minimumUniqueSemanticCases": 8,
-      "observed": 8,
-      "independentObserved": 8,
-      "pass": true
-    },
-    {
-      "classId": "DETACHED_OBJECT_DECOYS",
-      "minimumUniqueSemanticCases": 8,
-      "observed": 8,
-      "independentObserved": 8,
-      "pass": true
-    },
-    {
-      "classId": "DIRECT_OBJECT_BARRIERS",
-      "minimumUniqueSemanticCases": 6,
-      "observed": 6,
-      "independentObserved": 6,
-      "pass": true
-    },
-    {
-      "classId": "FINITE_PREDICATE_BARRIERS",
-      "minimumUniqueSemanticCases": 6,
-      "observed": 6,
-      "independentObserved": 6,
-      "pass": true
-    },
-    {
-      "classId": "MALFORMED_SYNTAX",
-      "minimumUniqueSemanticCases": 9,
-      "observed": 9,
-      "independentObserved": 9,
-      "pass": true
-    },
-    {
-      "classId": "LOCAL_NEGATION",
-      "minimumUniqueSemanticCases": 8,
-      "observed": 8,
-      "independentObserved": 8,
-      "pass": true
-    },
-    {
-      "classId": "UNCERTAIN_MODALITY",
-      "minimumUniqueSemanticCases": 12,
-      "observed": 12,
-      "independentObserved": 12,
-      "pass": true
-    },
-    {
-      "classId": "NEGATED_MODALITY",
-      "minimumUniqueSemanticCases": 8,
-      "observed": 8,
-      "independentObserved": 8,
-      "pass": true
-    },
-    {
-      "classId": "AFFIRMED_MODALITY",
-      "minimumUniqueSemanticCases": 4,
-      "observed": 4,
-      "independentObserved": 4,
-      "pass": true
-    },
-    {
-      "classId": "NESTED_CONTROL",
-      "minimumUniqueSemanticCases": 10,
-      "observed": 10,
-      "independentObserved": 10,
-      "pass": true
-    },
-    {
-      "classId": "DOUBLE_NEGATION",
-      "minimumUniqueSemanticCases": 6,
-      "observed": 6,
-      "independentObserved": 6,
-      "pass": true
-    },
-    {
-      "classId": "UNRELATED_NEGATION",
-      "minimumUniqueSemanticCases": 6,
-      "observed": 6,
-      "independentObserved": 6,
-      "pass": true
-    },
-    {
-      "classId": "CLAUSE_BOUNDARY",
-      "minimumUniqueSemanticCases": 8,
-      "observed": 8,
-      "independentObserved": 8,
-      "pass": true
-    },
-    {
-      "classId": "SENTENCE_BOUNDARY",
-      "minimumUniqueSemanticCases": 6,
-      "observed": 7,
-      "independentObserved": 7,
-      "pass": true
-    },
-    {
-      "classId": "PRONOUN_CONTINUATION",
-      "minimumUniqueSemanticCases": 6,
-      "observed": 9,
-      "independentObserved": 9,
-      "pass": true
-    },
-    {
-      "classId": "INVALID_SUBJECT",
-      "minimumUniqueSemanticCases": 8,
-      "observed": 8,
-      "independentObserved": 8,
-      "pass": true
-    },
-    {
-      "classId": "INVALID_OBJECT",
-      "minimumUniqueSemanticCases": 8,
-      "observed": 8,
-      "independentObserved": 8,
-      "pass": true
-    },
-    {
-      "classId": "DESTRUCTIVE_RELATION",
-      "minimumUniqueSemanticCases": 6,
-      "observed": 6,
-      "independentObserved": 6,
-      "pass": true
-    },
-    {
-      "classId": "WRONG_PIGMENT",
-      "minimumUniqueSemanticCases": 6,
-      "observed": 6,
-      "independentObserved": 6,
-      "pass": true
-    },
-    {
-      "classId": "CONTRADICTION",
-      "minimumUniqueSemanticCases": 6,
-      "observed": 6,
-      "independentObserved": 6,
-      "pass": true
-    },
-    {
-      "classId": "PUNCTUATION_ABUSE",
-      "minimumUniqueSemanticCases": 8,
-      "observed": 9,
-      "independentObserved": 9,
-      "pass": true
-    },
-    {
-      "classId": "NO_STITCHING",
-      "minimumUniqueSemanticCases": 8,
-      "observed": 8,
-      "independentObserved": 8,
-      "pass": true
-    },
-    {
-      "classId": "KNOWN_REGRESSIONS",
-      "minimumUniqueSemanticCases": 8,
-      "observed": 8,
-      "independentObserved": 8,
-      "pass": true
-    }
-  ],
-  "structuralMarkerCount": 27,
-  "structuralMarkers": [
-    {
-      "id": "normalize-input",
-      "present": true
-    },
-    {
-      "id": "sentence-segmentation",
-      "present": true
-    },
-    {
-      "id": "clause-segmentation",
-      "present": true
-    },
-    {
-      "id": "tokenization",
-      "present": true
-    },
-    {
-      "id": "exact-form-lemma",
-      "present": true
-    },
-    {
-      "id": "minimal-grammar",
-      "present": true
-    },
-    {
-      "id": "auxiliary-chain",
-      "present": true
-    },
-    {
-      "id": "finite-predicate",
-      "present": true
-    },
-    {
-      "id": "subject-extraction",
-      "present": true
-    },
-    {
-      "id": "subject-agreement",
-      "present": true
-    },
-    {
-      "id": "subject-validity",
-      "present": true
-    },
-    {
-      "id": "direct-object-binding",
-      "present": true
-    },
-    {
-      "id": "object-barrier",
-      "present": true
-    },
-    {
-      "id": "coordinated-predicates",
-      "present": true
-    },
-    {
-      "id": "passive-agent",
-      "present": true
-    },
-    {
-      "id": "modality-state",
-      "present": true
-    },
-    {
-      "id": "control-state",
-      "present": true
-    },
-    {
-      "id": "polarity-composition",
-      "present": true
-    },
-    {
-      "id": "pronoun-continuation",
-      "present": true
-    },
-    {
-      "id": "relation-record-v2",
-      "present": true
-    },
-    {
-      "id": "semantic-fingerprint",
-      "present": true
-    },
-    {
-      "id": "contradiction-detection",
-      "present": true
-    },
-    {
-      "id": "invalid-chlorophyll-claims",
-      "present": true
-    },
-    {
-      "id": "top-level-evaluation",
-      "present": true
-    },
-    {
-      "id": "structured-record-array",
-      "present": true
-    },
-    {
-      "id": "immutable-registry",
-      "present": true
-    },
-    {
-      "id": "evaluation-wiring",
-      "present": true
-    }
-  ],
-  "allCorpusDecisionsMatch": true,
-  "expectationChanges": [],
-  "currentRepairExpectationChanges": [],
-  "semanticCoveragePass": true,
-  "coordinationTopologyPreprocessingSuite": {
-    "suite": "COORDINATION_TOPOLOGY_PREPROCESSING_SUITE",
-    "status": "PASS",
-    "malformedEndToEndCases": 2016,
-    "initialEmptySlotCases": 1008,
-    "middleEmptySlotCases": 720,
-    "finalEmptySlotCases": 288,
-    "activePassivePairs": 1008,
-    "validControls": 80,
-    "freshNounCount": 24,
-    "boundaryForms": [
-      "period",
-      "semicolon"
-    ],
-    "whitespaceForms": [
-      "standard",
-      "repeated spaces",
-      "newline and tab"
-    ],
-    "sourcePackageMismatches": 0,
-    "sourcePackageExceptions": 0,
-    "rootMutationViolations": 360
+  "classCounts": {
+    "AFFIRMATIVE_ACTIVE": 17,
+    "INFINITIVAL_CHLOROPHYLL_MEDIATED": 6,
+    "COORDINATED_PREDICATES": 6,
+    "COORDINATED_SUBJECTS_VALID": 6,
+    "UNCERTAIN_MODALITY": 12,
+    "KNOWN_REGRESSIONS": 8,
+    "DETACHED_OBJECT_DECOYS": 8,
+    "DIRECT_OBJECT_BARRIERS": 6,
+    "MALFORMED_SYNTAX": 9,
+    "DOUBLE_NEGATION": 6,
+    "NESTED_CONTROL": 10,
+    "AFFIRMATIVE_PASSIVE": 6,
+    "COORDINATED_SUBJECTS_MIXED_INVALID": 8,
+    "FINITE_PREDICATE_BARRIERS": 6,
+    "SENTENCE_BOUNDARY": 7,
+    "LOCAL_NEGATION": 8,
+    "NEGATED_MODALITY": 8,
+    "AFFIRMED_MODALITY": 4,
+    "UNRELATED_NEGATION": 6,
+    "CLAUSE_BOUNDARY": 8,
+    "PRONOUN_CONTINUATION": 9,
+    "INVALID_SUBJECT": 8,
+    "INVALID_OBJECT": 8,
+    "DESTRUCTIVE_RELATION": 6,
+    "WRONG_PIGMENT": 6,
+    "CONTRADICTION": 6,
+    "PUNCTUATION_ABUSE": 9,
+    "NO_STITCHING": 8
   },
-  "rootInvariantFamilies": {
-    "001": {
-      "invariant": "Explicit later target-frame completeness is independent of preceding boundary spelling.",
-      "sharedImplementation": "parseMinimalRelationGrammar / explicit continuation frame validation",
-      "boundaryFrameInputs": 190,
-      "validCompleteFrames": 40,
-      "invalidIncompleteFrames": 150,
-      "boundaryForms": 8,
-      "subjectVerbPairs": 40,
-      "freshUnseenSubjectFrameInputs": 18,
-      "unseenSubjects": [
-        "Marmots",
-        "Quokkas",
-        "Puffins"
-      ],
-      "localBindingControls": 2,
-      "unexpectedOutcomes": 0
+  "allCorpusDecisionsMatch": true,
+  "expectationChanges": 0,
+  "semanticCoveragePass": true,
+  "mediatedPredicateCoverage": {
+    "supportedShape": "VALID_PROCESS_SUBJECT_SET FINITE_USE_CHAIN chlorophyll to TARGET_BASE LIGHT_OBJECT",
+    "mediatorForms": [
+      "use",
+      "uses",
+      "used"
+    ],
+    "targetVerbs": [
+      "capture",
+      "absorb",
+      "harness",
+      "use",
+      "convert",
+      "transform",
+      "store"
+    ],
+    "lightObjects": [
+      "light",
+      "the light",
+      "light energy",
+      "the light energy",
+      "sunlight",
+      "solar energy",
+      "solar light"
+    ],
+    "malformedStandaloneCases": 980,
+    "validControlCases": 245,
+    "sourcePackageParityReported": 1960,
+    "composition": {
+      "simpleSiblingCases": 1960,
+      "mediatedSiblingCases": 56,
+      "threeFrameCases": 84,
+      "crossSentenceCases": 84,
+      "total": 2184,
+      "sourcePackageMismatches": 0,
+      "sourcePackageExceptions": 0
     },
-    "002": {
-      "invariant": "Subject number comes from the subject NP, independent of predicate auxiliaries or morphology.",
-      "subjectFormsTested": 321,
-      "correctAgreementCases": 175,
-      "incorrectAgreementCases": 146,
-      "unseenNounPairs": 14,
-      "regularPluralPairs": 11,
-      "irregularOrCompoundPluralPairs": 3,
-      "predicateFormsPerPair": 10,
-      "coordinatedSubjectControls": 8,
-      "predicateIndependenceChecks": 14,
-      "unexpectedAgreementReversals": 0
-    },
-    "003": {
-      "invariant": "Every coordinated NP member must contain a valid noun head.",
-      "validCoordinatedNpcases": 16,
-      "validActiveCases": 8,
-      "validPassiveCases": 8,
-      "malformedMemberCases": 22,
-      "malformedActiveCases": 11,
-      "malformedPassiveCases": 11,
-      "determinerOnlyAttacks": 104,
-      "activeDeterminerOnlyAttacks": 52,
-      "passiveDeterminerOnlyAttacks": 52,
-      "emptyMemberCases": 8,
-      "freshNouns": [
-        "narwhals",
-        "puffins",
-        "geckos",
-        "beetles",
-        "mosses",
-        "fern"
-      ],
-      "unexpectedOutcomes": 0,
-      "emptyMemberProperty": {
-        "malformedTopologies": 10,
-        "activeAttacks": 10,
-        "passiveAttacks": 10,
-        "propertyTestCases": 20,
-        "freshNouns": [
-          "narwhals",
-          "quokkas",
-          "wombats",
-          "puffins",
-          "geckos"
-        ],
-        "validCommaControlCases": 8,
-        "activePassiveConsistency": "PASS",
-        "destructiveNormalizationMutationViolations": 8,
-        "unexpectedOutcomes": 0
-      }
-    },
-    "004": {
-      "invariant": "Terminal punctuation does not add semantic topology; genuine inter-proposition boundaries remain semantic.",
-      "corpusCases": 206,
-      "terminalNormalizationPairs": 206,
-      "alternateTerminalVariants": 618,
-      "freshMalformedPunctuationVariants": 160,
-      "cosmeticEqualComparisons": 984,
-      "cosmeticFingerprintMismatches": 0,
-      "legitimateSemanticBoundaryControls": 5,
-      "realSentenceBoundaryMarks": [
-        ".",
-        "!",
-        "?"
-      ],
-      "discourseBoundaryControls": [
-        ". And",
-        ". But"
-      ],
-      "unexpectedOutcomes": 0,
-      "legitimateSemanticChanges": 3
+    "mutations": {
+      "validationBypassKilledAcross": 980,
+      "wrongSubjectEndKilledAcross": 980,
+      "droppedAttachmentKilledAcross": 980,
+      "droppedFindingsProducedAcross": 980
     }
   },
   "sourcePackageEquivalence": {
-    "inputCount": 2302,
-    "publicApiCount": 8,
-    "apiComparisonCount": 18416,
-    "mismatches": [],
-    "exceptions": [],
-    "sourceCorpusCases": 206,
-    "malformedEndToEndCases": 2016,
-    "validControlCases": 80,
-    "comparisonMethod": "deep structural equality of every complete API result"
-  },
-  "finalTestedCandidateAttestation": {
-    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-frame-lifecycle-root-repair-final-20260930\\FINAL-TESTED-CANDIDATE.json",
-    "role": "External post-evidence-commit attestation for exact final candidate, test outputs, frozen hashes, and unchanged static design binder result."
-  },
-  "historicalFinal001": {
-    "repairAttemptId": "P1-BOUNDED-FINAL-001-20260928",
-    "implementationCommitSha": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
-    "implementationTreeSha": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
-    "finalTestedCandidateAttestation": {
-      "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-20260928\\FINAL-TESTED-CANDIDATE.json",
-      "role": "External post-commit attestation for the evidence-complete exact final candidate, full matrix and binder."
+    "status": "PASS",
+    "mismatches": 0,
+    "exceptions": 0,
+    "mediatedPredicate": {
+      "standaloneMalformedCases": 980,
+      "validControlCases": 245,
+      "sourcePackageParityReported": 1960,
+      "twoFrameSimpleSiblingCases": 1960,
+      "mediatedSiblingCases": 56,
+      "threeFrameCases": 84,
+      "crossSentenceCases": 84,
+      "totalCompositionCases": 2184,
+      "compositionParityChecked": true,
+      "compositionMismatches": 0,
+      "compositionExceptions": 0,
+      "mutationKills": {
+        "validationBypass": 980,
+        "wrongSubjectEnd": 980,
+        "droppedAttachment": 980,
+        "droppedFindingsProducedBeforeDrop": 980
+      }
     },
-    "sourceSnapshotCommit": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc"
+    "existingFrameLifecycle": {
+      "twoFrameCases": 1024,
+      "threeFrameCases": 256,
+      "sourcePackageParityInputs": 1280,
+      "mismatches": 0,
+      "exceptions": 0
+    }
   },
-  "expectationChangeCount": 0,
-  "changeAccounting": {
-    "testsRemoved": 0,
-    "testsSkipped": 0,
-    "assertionsLoosened": 0,
-    "expectationsChanged": 0,
-    "relocatedTests": 9
-  },
-  "fingerprintProjectionFieldCount": 18,
   "datasetValidation": {
     "status": "PASS",
     "mode": "validate-only",
@@ -544,8 +183,8 @@
       "skipped": 0
     },
     "evaluator": {
-      "passed": 65,
-      "total": 65,
+      "passed": 71,
+      "total": 71,
       "skipped": 0
     },
     "evaluatorMutations": {
@@ -563,21 +202,36 @@
       "total": 20,
       "skipped": 0
     },
-    "frameLifecyclePropertyAndMutation": {
-      "passed": 86,
-      "total": 86,
+    "mediatedPredicateProperties": {
+      "passed": 3,
+      "total": 3,
       "skipped": 0,
+      "malformedStandaloneCases": 980,
+      "validControlCases": 245,
+      "sourcePackageParityReported": 1960,
+      "compositionCases": 2184,
+      "compositionParityMismatches": 0,
+      "compositionParityExceptions": 0,
+      "mutationKills": {
+        "validationBypass": 980,
+        "wrongSubjectEnd": 980,
+        "droppedAttachment": 980
+      }
+    },
+    "frameLifecycleProperties": {
       "twoFrameCases": 1024,
       "threeFrameCases": 256,
-      "sourcePackageParityInputs": 1280
+      "sourcePackageParityInputs": 1280,
+      "mismatches": 0,
+      "exceptions": 0
     },
     "fullBackend": {
-      "passed": 2596,
-      "total": 2597,
+      "passed": 2602,
+      "total": 2603,
       "failed": 1,
       "skipped": 0,
       "exitCode": 1,
-      "soleFailure": "every declared Node major is the one deploy/targets.json names",
+      "soleFailure": "every declared Node major is the one deploy/targets.json names; backend/package.json engines is 26.7.0",
       "candidateCausedFailures": 0
     },
     "frontend": {
@@ -585,7 +239,8 @@
       "total": 735,
       "filesPassed": 58,
       "filesTotal": 58,
-      "skipped": 0
+      "skipped": 0,
+      "command": "npm test -- --run --maxWorkers=1 --minWorkers=1"
     },
     "datasetV1": {
       "validated": 21,
@@ -617,8 +272,7 @@
       "testsRemoved": 0,
       "testsSkipped": 0,
       "assertionsLoosened": 0,
-      "expectationsChanged": 0,
-      "relocatedTests": 9
+      "expectationsChanged": 0
     }
   }
 }

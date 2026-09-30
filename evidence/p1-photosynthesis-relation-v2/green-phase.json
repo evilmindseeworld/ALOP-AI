@@ -4,25 +4,26 @@
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "repairAttemptId": "P1-FRAME-LIFECYCLE-ROOT-REPAIR-20260930",
-  "capturedAtUtc": "2026-09-29T23:04:02Z",
-  "repairBaseSha": "9d162c96589c2beecd46b5bdc5b629cac26ef100",
-  "repairBaseTreeSha": "161647f212dd35611cc3cc6a74e1bb7aa5b3c38f",
-  "repairStartHead": "9d162c96589c2beecd46b5bdc5b629cac26ef100",
-  "implementationCommitSha": "ab1b6f26bc3b9a63ad99e2e29cc513db607597a0",
-  "implementationTreeSha": "bb732b7f050f6169d2fa1fb6fb86ab5fbd302379",
-  "implementationParentSha": "558ad7ca5ee65b968f37131d2ac1875301a2e053",
+  "repairAttemptId": "P1-ASTRA-FINAL-FRAME-001-REPAIR-20260930",
+  "capturedAtUtc": "2026-09-30T17:48:45.458Z",
+  "repairBaseSha": "300dac2f0bc3adb725bcc0604e87493578a4974f",
+  "repairBaseTreeSha": "63a236139fbb10e0e3d80d0eee4501c641fce312",
+  "repairStartHead": "300dac2f0bc3adb725bcc0604e87493578a4974f",
+  "implementationCommitSha": "110d637974201bd3b1995e4dcb7c46558eda6f20",
+  "implementationTreeSha": "02143c5717aa7d60170560484ca8967a46761ced",
+  "implementationParentSha": "9ce4424fc2f73f4fff6ed1aaaf00e9a52ff7b1ef",
   "implementationCommitShas": [
-    "558ad7ca5ee65b968f37131d2ac1875301a2e053",
-    "ab1b6f26bc3b9a63ad99e2e29cc513db607597a0"
+    "110d637974201bd3b1995e4dcb7c46558eda6f20"
   ],
+  "redCommitSha": "8a60634b867c14726f0b9530f389d96969e32b10",
+  "redEvidenceCommitSha": "9ce4424fc2f73f4fff6ed1aaaf00e9a52ff7b1ef",
   "phase": "GREEN",
   "status": "PASS",
-  "runtime": "Node v26.7.0",
+  "runtime": "v26.4.0",
   "implementationSnapshot": {
-    "head": "ab1b6f26bc3b9a63ad99e2e29cc513db607597a0",
-    "tree": "bb732b7f050f6169d2fa1fb6fb86ab5fbd302379",
-    "parent": "558ad7ca5ee65b968f37131d2ac1875301a2e053",
+    "head": "110d637974201bd3b1995e4dcb7c46558eda6f20",
+    "tree": "02143c5717aa7d60170560484ca8967a46761ced",
+    "parent": "9ce4424fc2f73f4fff6ed1aaaf00e9a52ff7b1ef",
     "sourcePackageCleanAtCommit": true
   },
   "allCorpusDecisionsMatch": true,
@@ -31,69 +32,51 @@
   "canonicalCasesPassed": 54,
   "semanticCoveragePass": true,
   "sourcePackageEquivalence": {
-    "inputCount": 2302,
-    "publicApiCount": 8,
-    "apiComparisonCount": 18416,
-    "mismatches": [],
-    "exceptions": [],
-    "sourceCorpusCases": 206,
-    "malformedEndToEndCases": 2016,
-    "validControlCases": 80,
-    "comparisonMethod": "deep structural equality of every complete API result"
-  },
-  "packageBuilds": {
-    "recipeVersion": "p1-static-compose-v1",
-    "inputs": {
-      "recipe": {
-        "commit": "1980974e84078c91e6e277c2ec89fdc64f20ee44",
-        "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-        "blob": "2440f6c5c9c42248ca6439150fa6deea58be8848",
-        "tree": "252d30e17fd39b026e247238ee18edd5fea83212",
-        "sha256": "39542bf7d96a39d02596c4c5c18898e96bc1d402ae523d4f5d937c0091c96443",
-        "bytes": 10442
-      },
-      "evaluator": {
-        "commit": "8e5bc78552fe146b704386d5e7396e2563ca3210",
-        "path": "backend/lib/photosynthesis-relation-evaluator.js",
-        "blob": "5d1c4227b7d3512890d9ea71c74c0506a95f899c",
-        "tree": "668a144a2974f4ea50e0d32e8a76f9e407bbbc90",
-        "sha256": "61a90bc4df5484bbde72deb969153a3519a2bcb03cb567e19e00ecf0e560fbe3",
-        "bytes": 108504
-      },
-      "corpus": {
-        "commit": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc",
-        "path": "backend/lib/photosynthesis-relation-cases.js",
-        "blob": "979ed2146045fdd6c7360583875bd8abbb032642",
-        "tree": "7c28da720c1948587f1a7460a411613f1b522877",
-        "sha256": "b62495937ef0a2adec9829fa5bb7dcc3afdb12a062cf82fe0ec1d0fc527589fe",
-        "bytes": 43347
-      },
-      "runner": {
-        "commit": "85155ef2f16a4e326aa18bd686195d8132c60ea2",
-        "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-        "blob": "a40ced65bfbbad234ea8b68c22049b085dfd6937",
-        "tree": "f4f8b30f73448c34f7652f86a32a606d3dc8a739",
-        "sha256": "e7bffea6fc690f6feb7003eb01c900bb798ba6b44cfb80c3a19edd45a1c6a3d7",
-        "bytes": 15204
+    "status": "PASS",
+    "mismatches": 0,
+    "exceptions": 0,
+    "mediatedPredicate": {
+      "standaloneMalformedCases": 980,
+      "validControlCases": 245,
+      "sourcePackageParityReported": 1960,
+      "twoFrameSimpleSiblingCases": 1960,
+      "mediatedSiblingCases": 56,
+      "threeFrameCases": 84,
+      "crossSentenceCases": 84,
+      "totalCompositionCases": 2184,
+      "compositionParityChecked": true,
+      "compositionMismatches": 0,
+      "compositionExceptions": 0,
+      "mutationKills": {
+        "validationBypass": 980,
+        "wrongSubjectEnd": 980,
+        "droppedAttachment": 980,
+        "droppedFindingsProducedBeforeDrop": 980
       }
     },
-    "runnerDerivedBlob": "b92260cb5940637d6deab6e0efcdf1ee462b0f22",
-    "runnerDerivedSha256": "93310034620c1d557e40803eeb884036deca4313fa2b958d483700e93ce894b8",
-    "runnerDerivedBytes": 15261,
+    "existingFrameLifecycle": {
+      "twoFrameCases": 1024,
+      "threeFrameCases": 256,
+      "sourcePackageParityInputs": 1280,
+      "mismatches": 0,
+      "exceptions": 0
+    }
+  },
+  "packageBuilds": {
     "build1": {
-      "bytes": 128406,
-      "sha256": "0e6031c5189d4358e6a3d98d09d0f3457295a09ddef75ff69fb93e0297405246",
-      "gitBlob": "88b5b15f82d3abcf262b95bf40ee905fc39fc76a"
+      "bytes": 130508,
+      "sha256": "abb122edbf5007843911435dc8ed01450f1cd29942d47acafc83e0847b3860c3",
+      "gitBlob": "24591b2acf680e59a2f29e50e2fadaffb5dacf36"
     },
     "build2": {
-      "bytes": 128406,
-      "sha256": "0e6031c5189d4358e6a3d98d09d0f3457295a09ddef75ff69fb93e0297405246",
-      "gitBlob": "88b5b15f82d3abcf262b95bf40ee905fc39fc76a"
+      "bytes": 130508,
+      "sha256": "abb122edbf5007843911435dc8ed01450f1cd29942d47acafc83e0847b3860c3",
+      "gitBlob": "24591b2acf680e59a2f29e50e2fadaffb5dacf36"
     },
     "committed": {
-      "bytes": 128406,
-      "sha256": "0e6031c5189d4358e6a3d98d09d0f3457295a09ddef75ff69fb93e0297405246",
-      "gitBlob": "88b5b15f82d3abcf262b95bf40ee905fc39fc76a"
+      "bytes": 130508,
+      "sha256": "abb122edbf5007843911435dc8ed01450f1cd29942d47acafc83e0847b3860c3",
+      "gitBlob": "24591b2acf680e59a2f29e50e2fadaffb5dacf36"
     },
     "byteIdentical": true
   },
@@ -114,38 +97,25 @@
       "total": 21
     }
   },
-  "coordinationTopologyPreprocessingSuite": {
-    "suite": "COORDINATION_TOPOLOGY_PREPROCESSING_SUITE",
-    "status": "PASS",
-    "malformedEndToEndCases": 2016,
-    "initialEmptySlotCases": 1008,
-    "middleEmptySlotCases": 720,
-    "finalEmptySlotCases": 288,
-    "activePassivePairs": 1008,
-    "validControls": 80,
-    "freshNounCount": 24,
-    "boundaryForms": [
-      "period",
-      "semicolon"
-    ],
-    "whitespaceForms": [
-      "standard",
-      "repeated spaces",
-      "newline and tab"
-    ],
-    "sourcePackageMismatches": 0,
-    "sourcePackageExceptions": 0,
-    "rootMutationViolations": 360
+  "expectationChanges": 0,
+  "scopeGates": {
+    "astra": false,
+    "cq": false,
+    "candidateQualification": false,
+    "sol": false,
+    "release": false,
+    "deployment": false,
+    "p2": false
   },
-  "implementationSnapshotTestRuns": {
+  "testMatrix": {
     "authoritative": {
       "passed": 103,
       "total": 103,
       "skipped": 0
     },
     "evaluator": {
-      "passed": 65,
-      "total": 65,
+      "passed": 71,
+      "total": 71,
       "skipped": 0
     },
     "evaluatorMutations": {
@@ -163,21 +133,36 @@
       "total": 20,
       "skipped": 0
     },
-    "frameLifecyclePropertyAndMutation": {
-      "passed": 86,
-      "total": 86,
+    "mediatedPredicateProperties": {
+      "passed": 3,
+      "total": 3,
       "skipped": 0,
+      "malformedStandaloneCases": 980,
+      "validControlCases": 245,
+      "sourcePackageParityReported": 1960,
+      "compositionCases": 2184,
+      "compositionParityMismatches": 0,
+      "compositionParityExceptions": 0,
+      "mutationKills": {
+        "validationBypass": 980,
+        "wrongSubjectEnd": 980,
+        "droppedAttachment": 980
+      }
+    },
+    "frameLifecycleProperties": {
       "twoFrameCases": 1024,
       "threeFrameCases": 256,
-      "sourcePackageParityInputs": 1280
+      "sourcePackageParityInputs": 1280,
+      "mismatches": 0,
+      "exceptions": 0
     },
     "fullBackend": {
-      "passed": 2596,
-      "total": 2597,
+      "passed": 2602,
+      "total": 2603,
       "failed": 1,
       "skipped": 0,
       "exitCode": 1,
-      "soleFailure": "every declared Node major is the one deploy/targets.json names",
+      "soleFailure": "every declared Node major is the one deploy/targets.json names; backend/package.json engines is 26.7.0",
       "candidateCausedFailures": 0
     },
     "frontend": {
@@ -185,7 +170,8 @@
       "total": 735,
       "filesPassed": 58,
       "filesTotal": 58,
-      "skipped": 0
+      "skipped": 0,
+      "command": "npm test -- --run --maxWorkers=1 --minWorkers=1"
     },
     "datasetV1": {
       "validated": 21,
@@ -217,44 +203,7 @@
       "testsRemoved": 0,
       "testsSkipped": 0,
       "assertionsLoosened": 0,
-      "expectationsChanged": 0,
-      "relocatedTests": 9
+      "expectationsChanged": 0
     }
-  },
-  "expectationChanges": 0,
-  "finalTestedCandidateAttestation": {
-    "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\p1-frame-lifecycle-root-repair-final-20260930\\FINAL-TESTED-CANDIDATE.json",
-    "role": "External post-evidence-commit attestation for exact final candidate, test outputs, frozen hashes, and unchanged static design binder result."
-  },
-  "finalTestStatus": "PASS_REPAIR_GATES_WITH_ONE_UNCHANGED_BASELINE_BACKEND_FAILURE",
-  "scopeGates": {
-    "astra": false,
-    "candidateQualification": false,
-    "sol": false,
-    "release": false,
-    "deployment": false,
-    "p2": false
-  },
-  "finalFullBackendBaseline": {
-    "baselineCommitSha": "53dac79cf873443e2a8c468607af5deee8107759",
-    "baselineTreeSha": "70e2deb494279be866b3b52ac07a25b3e9c570f6",
-    "runtime": "Node v26.4.0",
-    "declaredNode": "26.7.0",
-    "unchangedTestBlob": "4d8324001baddecafb8cfc6f8f7b7dda7c6cfd39",
-    "unchangedBackendPackageBlob": "9a719c1cf3c5decf37108fb5f67f13f20cc49be4",
-    "candidatePassed": 2596,
-    "candidateTotal": 2597,
-    "candidateCausedFailures": 0,
-    "soleFailure": "every declared Node major is the one deploy/targets.json names"
-  },
-  "historicalFinal001": {
-    "repairAttemptId": "P1-BOUNDED-FINAL-001-20260928",
-    "implementationCommitSha": "052060e044fb0222fd1f7dbd15676cc6e35cdc3b",
-    "implementationTreeSha": "476ff885ffe7690cef6f6613247ceb0147e51b4c",
-    "finalTestedCandidateAttestation": {
-      "path": "C:\\Users\\LENOVO\\AppData\\Local\\Temp\\astra-bounded-final-001-repair-20260928\\FINAL-TESTED-CANDIDATE.json",
-      "role": "External post-commit attestation for the evidence-complete exact final candidate, full matrix and binder."
-    },
-    "sourceSnapshotCommit": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc"
   }
 }

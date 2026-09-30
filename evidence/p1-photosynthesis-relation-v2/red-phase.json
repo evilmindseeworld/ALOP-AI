@@ -12,6 +12,7 @@
   "repairBaseTreeSha": "63a236139fbb10e0e3d80d0eee4501c641fce312",
   "repairStartHead": "300dac2f0bc3adb725bcc0604e87493578a4974f",
   "redCommitSha": "8a60634b867c14726f0b9530f389d96969e32b10",
+  "redEvidenceCommitSha": "9ce4424fc2f73f4fff6ed1aaaf00e9a52ff7b1ef",
   "expectedRed": true,
   "rootReproductions": [
     { "id": "ADV001", "expectedDecision": "FAIL" },

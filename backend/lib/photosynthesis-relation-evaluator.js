@@ -1220,23 +1220,31 @@ function validateAuxiliaryPrefixV2(chain,verb,subject){
   }
   return oneOf(['not'],['never'])&&agrees;
 }
+function resolveSupportedMediatedPredicateV2(ts,index,subject){
+  const mediatorIndex=index-3,mediatorSurface=ts[mediatorIndex]?.form;
+  if(!['use','uses','used'].includes(mediatorSurface)||ts[index-1]?.form!=='to'||ts[index-2]?.form!=='chlorophyll')return null;
+  const outerPrefix=ts.slice(subject.end,mediatorIndex).map((token)=>token.form),outerText=outerPrefix.join(' ');
+  const auxiliary=parseAuxiliaryChain(ts,mediatorIndex),control=resolveControlChain(ts,mediatorIndex);
+  const reachesSubject=subject.end===mediatorIndex||Boolean(outerText&&(auxiliary.start===subject.end&&auxiliary.chain.join(' ')===outerText||control?.surface===outerText));
+  return reachesSubject?{mediatorIndex,mediatorSurface,outerPrefix}:null;
+}
 function validateActiveFinitePredicateV2(ts,index,verb,subject,auxiliary,control){
   if(!subjectPhraseWellFormedV2(subject))return false;
-  const prefix=ts.slice(subject.end,index).map((token)=>token.form),controlPrefix=control?.surface.split(' ')||[];
+  const prefix=ts.slice(subject.end,index).map((token)=>token.form),controlPrefix=control?.surface.split(' ')||[],mediated=resolveSupportedMediatedPredicateV2(ts,index,subject);
   if(control){
     if(!validateSubjectAgreement(subject,{form:control.matrixForm}))return false;
     const remainder=prefix.slice(controlPrefix.length);
     return verb.form==='BASE'&&prefix.slice(0,controlPrefix.length).every((form,i)=>form===controlPrefix[i])
       &&(remainder.length===0
-        || /^(?:use|uses|used) chlorophyll to$/.test(remainder.join(' '))
+        || Boolean(mediated&&remainder.join(' ')===`${mediated.mediatorSurface} chlorophyll to`)
         || (remainder.length===2 && remainder[1]==='and'
           && validateFinitePredicate([{ form: remainder[0] }], 0)?.form === 'BASE'));
   }
   if(prefix.at(-1)==='to'){
-    const mediated=prefix.slice(-3),outer=prefix.slice(0,-3);
-    if(!/^(?:use|uses|used) chlorophyll to$/.test(mediated.join(' ')))return false;
+    if(!mediated)return false;
+    const outer=mediated.outerPrefix;
     if(!outer.length){
-      const useSurface=mediated[0],useForm=useSurface==='use'?'BASE':useSurface==='used'?'PAST':'PRESENT_3SG';
+      const useSurface=mediated.mediatorSurface,useForm=useSurface==='use'?'BASE':useSurface==='used'?'PAST':'PRESENT_3SG';
       return verb.form==='BASE'&&validateSubjectAgreement(subject,{form:useForm});
     }
     return verb.form==='BASE'&&validateAuxiliaryPrefixV2(outer,{form:'BASE'},subject);
@@ -1432,17 +1440,8 @@ function analyzePreNormalizationCoordinationV2(frame){
     if(!predicate||!isTargetRelationPredicateV2(predicate.lemma))continue;
     if(predicate.form==='PRESENT_PARTICIPLE'&&!parseAuxiliaryChain(tokens,predicateIndex).chain.length)continue;
     const subject=extractSubjectSet(tokens,predicateIndex);
-    const mediatorIndex=predicateIndex-3;
-    const mediatorPrefix=tokens.slice(subject.end,mediatorIndex).map((token)=>token.form).join(' ');
-    const mediatorAuxiliary=parseAuxiliaryChain(tokens,mediatorIndex);
-    const mediatorControl=resolveControlChain(tokens,mediatorIndex);
-    const subjectReachesMediator=subject.end===mediatorIndex
-      ||Boolean(mediatorPrefix&&(mediatorAuxiliary.start===subject.end&&mediatorAuxiliary.chain.join(' ')===mediatorPrefix
-        ||mediatorControl?.surface===mediatorPrefix));
-    const mediatedTarget=subjectReachesMediator&&tokens[predicateIndex-1]?.form==='to'&&tokens[predicateIndex-2]?.form==='chlorophyll'
-      &&['use','uses','used'].includes(tokens[predicateIndex-3]?.form);
+    const mediatedTarget=Boolean(resolveSupportedMediatedPredicateV2(tokens,predicateIndex,subject));
     if((subject.end!==predicateIndex&&!mediatedTarget)||!isTargetRelationFrameV2(tokens,predicateIndex))continue;
-    // The extracted subject can end at a supported auxiliary/control chain before its mediator.
     addMalformedFrame('ACTIVE',predicate.lemma,subject);
   }
   return findings;

@@ -1152,7 +1152,7 @@ function extractSubjectSet(ts,end){
   const byWhich=ts.findIndex((t,i)=>i+1<end&&t.lemma==='by'&&ts[i+1].lemma==='which');
   if(byWhich>=0)boundary=end;
   const raw=ts.slice(byWhich>=0?byWhich+2:subjectStart,boundary).map(t=>t.form).join(' ');
-  const memberSources=raw.split(/\s+(?:and|or|rather\s+than)\s+|,\s*/);
+  const memberSources=raw.split(/\s+(?:and|or|rather\s+than)(?=\s|$)\s*|,\s*/);
   const hasOxfordCoordinator=/,\s*(?:and|or)\s+/i.test(raw);
   const malformedCoordinator=/^(?:and|or|rather\s+than)\b|(?:\b(?:and|or|rather\s+than)|,)\s*$/i.test(raw.trim());
   const determiners=new Set(['a','an','the','some']);
@@ -1171,7 +1171,7 @@ function extractSubjectSet(ts,end){
       const lemma=normalizeExactFormLemmaV2(surface),grammaticalNumber=classifyNounNumberV2(surface,determiner);
       return{surface,lemma,role:V2_PIGMENT_TERMS.has(surface)?'PIGMENT_AGENT':V2_SUBJECTS.has(surface)?'BIOLOGICAL_AGENT':'UNSUPPORTED',valid:V2_SUBJECTS.has(surface),grammaticalNumber,determinerNumberMismatch:['a','an'].includes(determiner)&&grammaticalNumber==='PLURAL'};
     }),
-    coordinator=/\sor\s/.test(raw)?'OR':/\sand\s/.test(raw)?'AND':/\srather\s+than\s/.test(raw)?'RATHER_THAN':members.length>1?'COMMA':'SINGLE',
+    coordinator=/\sor(?:\s|$)/.test(raw)?'OR':/\sand(?:\s|$)/.test(raw)?'AND':/\srather\s+than(?:\s|$)/.test(raw)?'RATHER_THAN':members.length>1?'COMMA':'SINGLE',
     n=members.filter(x=>x.valid).length,shapeValid=Boolean(raw.trim())&&!malformedCoordinator
       &&memberSources.every((source)=>source.trim().length>0)
       &&memberShapes.every(Boolean);
@@ -1432,7 +1432,17 @@ function analyzePreNormalizationCoordinationV2(frame){
     if(!predicate||!isTargetRelationPredicateV2(predicate.lemma))continue;
     if(predicate.form==='PRESENT_PARTICIPLE'&&!parseAuxiliaryChain(tokens,predicateIndex).chain.length)continue;
     const subject=extractSubjectSet(tokens,predicateIndex);
-    if(subject.end!==predicateIndex||!isTargetRelationFrameV2(tokens,predicateIndex))continue;
+    const mediatorIndex=predicateIndex-3;
+    const mediatorPrefix=tokens.slice(subject.end,mediatorIndex).map((token)=>token.form).join(' ');
+    const mediatorAuxiliary=parseAuxiliaryChain(tokens,mediatorIndex);
+    const mediatorControl=resolveControlChain(tokens,mediatorIndex);
+    const subjectReachesMediator=subject.end===mediatorIndex
+      ||Boolean(mediatorPrefix&&(mediatorAuxiliary.start===subject.end&&mediatorAuxiliary.chain.join(' ')===mediatorPrefix
+        ||mediatorControl?.surface===mediatorPrefix));
+    const mediatedTarget=subjectReachesMediator&&tokens[predicateIndex-1]?.form==='to'&&tokens[predicateIndex-2]?.form==='chlorophyll'
+      &&['use','uses','used'].includes(tokens[predicateIndex-3]?.form);
+    if((subject.end!==predicateIndex&&!mediatedTarget)||!isTargetRelationFrameV2(tokens,predicateIndex))continue;
+    // The extracted subject can end at a supported auxiliary/control chain before its mediator.
     addMalformedFrame('ACTIVE',predicate.lemma,subject);
   }
   return findings;

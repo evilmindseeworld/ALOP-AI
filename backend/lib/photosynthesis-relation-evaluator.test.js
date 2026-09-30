@@ -1301,7 +1301,7 @@ test('frame identity remains private and outside the frozen semantic projection'
 });
 
 const mediatedTargets = Object.freeze(['capture', 'absorb', 'harness', 'use', 'convert', 'transform', 'store']);
-const mediatedLightObjects = Object.freeze(['light energy', 'sunlight', 'solar energy', 'solar light']);
+const mediatedLightObjects = Object.freeze(['light', 'the light', 'light energy', 'the light energy', 'sunlight', 'solar energy', 'solar light']);
 const mediatedSubjectPairs = Object.freeze([
   ['plants', 'algae'],
   ['green plants', 'some bacteria'],
@@ -1405,7 +1405,7 @@ test('supported mediated chains retain malformed raw subject topology and valid 
   const failures = [];
   const packageMismatches = [];
 
-  assert.equal(malformedMediatedCases.length, 560);
+  assert.equal(malformedMediatedCases.length, 980);
   for (const item of malformedMediatedCases) {
     const result = evaluatePhotosynthesisRelationsV2(item.text);
     const topology = result.coordinationTopology.find((group) => group.shapeValid === false);
@@ -1467,7 +1467,7 @@ test('supported mediated chains retain malformed raw subject topology and valid 
     `mediated raw-structure failures: ${JSON.stringify({ count: failures.length, first: failures.slice(0, 8) })}`);
   assert.equal(packageMismatches.length, 0,
     `source/package mismatches: ${JSON.stringify({ count: packageMismatches.length, first: packageMismatches.slice(0, 8) })}`);
-  t.diagnostic('standalone malformed mediated cases=560; supported valid-control cases=140; source/package parity=700');
+  t.diagnostic('standalone malformed mediated cases=980; supported valid-control cases=245; source/package parity=1960');
 });
 
 test('mediated raw-topology properties kill validation bypass, wrong subject end, and dropped attachment mutations', (t) => {
@@ -1557,7 +1557,7 @@ test('mediated malformed frames preserve sibling and document state across compo
     semicolonCases.push({ frames: [validSimple, item.text], joins: ['; '], label: `simple-first/${item.id}` });
     semicolonCases.push({ frames: [item.text, validSimple], joins: ['; '], label: `simple-last/${item.id}` });
   }
-  assert.equal(semicolonCases.length, 1120);
+  assert.equal(semicolonCases.length, 1960);
 
   for (const item of semicolonCases) {
     assertMediatedComposition(item.frames, item.joins, item.label);
@@ -1619,6 +1619,6 @@ test('mediated malformed frames preserve sibling and document state across compo
   assert.equal(mediatedSiblingCases, 56);
   assert.equal(threeFrameCases, 84);
   assert.equal(crossSentenceCases.length, 84);
-  t.diagnostic('composed malformed mediated cases=1120; mediated siblings=56; three-frame cases=84; cross-sentence cases=84; source/package parity checked');
+  t.diagnostic('composed malformed mediated cases=1960; mediated siblings=56; three-frame cases=84; cross-sentence cases=84; source/package parity checked');
 });
 })();

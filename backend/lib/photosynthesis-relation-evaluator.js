@@ -1443,6 +1443,7 @@ function analyzePreNormalizationCoordinationV2(frame){
   for(let predicateIndex=1;predicateIndex<tokens.length;predicateIndex++){
     const predicate=validateFinitePredicate(tokens,predicateIndex);
     if(!predicate||!isTargetRelationPredicateV2(predicate.lemma))continue;
+    if(predicate.form==='PRESENT_PARTICIPLE'&&!parseAuxiliaryChain(tokens,predicateIndex).chain.length)continue;
     const subject=extractSubjectSet(tokens,predicateIndex);
     if(!isTargetRelationFrameV2(tokens,predicateIndex))continue;
     addMalformedFrame('ACTIVE',predicate.lemma,subject);

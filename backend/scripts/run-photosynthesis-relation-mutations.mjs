@@ -1,4 +1,4 @@
-// p1-static-compose-v1; evaluator-blob=bae32d7996327a43373bf1f75ba9e2961bad603b; runner-blob=b92260cb5940637d6deab6e0efcdf1ee462b0f22; recipe-blob=2440f6c5c9c42248ca6439150fa6deea58be8848
+// p1-static-compose-v1; evaluator-blob=6751fa9740b1f0488bc374c9172ef886eef1f5f0; runner-blob=b92260cb5940637d6deab6e0efcdf1ee462b0f22; recipe-blob=2440f6c5c9c42248ca6439150fa6deea58be8848
 import * as __p1Crypto from 'node:crypto';
 import { closeSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs';
 import { createRequire, Module } from 'node:module';
@@ -501,6 +501,9 @@ function evaluatePhotosynthesisRelations(input) {
 
 // V2 has its own bounded parse path; V1 remains frozen above.
 const V2_ID = 'photosynthesis-light-relation-v2';
+const V2_FRAME_CONTEXT = Symbol('V2_FRAME_CONTEXT');
+const V2_FRAME_PROJECTIONS = Symbol('V2_FRAME_PROJECTIONS');
+const V2_FRAME_OWNER = Symbol('V2_FRAME_OWNER');
 const V2_VERBS = new Map(Object.entries({capture:'capture',captures:'capture',captured:'capture',capturing:'capture',absorb:'absorb',absorbs:'absorb',absorbed:'absorb',absorbing:'absorb',harness:'harness',harnesses:'harness',harnessed:'harness',harnessing:'harness',use:'use',uses:'use',used:'use',using:'use',convert:'convert',converts:'convert',converted:'convert',converting:'convert',transform:'transform',transforms:'transform',transformed:'transform',transforming:'transform',store:'store',stores:'store',stored:'store',storing:'store',destroy:'destroy',destroys:'destroy',destroyed:'destroy',waste:'waste',wastes:'waste',ignore:'ignore',ignores:'ignore',lose:'lose',loses:'lose',block:'block',blocks:'block',reject:'reject',rejects:'reject',eliminate:'eliminate',eliminates:'eliminate',remove:'remove',removes:'remove',prevent:'prevent',prevents:'prevent'}));
 const V2_LIGHT_RELATION_LEMMAS = new Set(['capture','absorb','harness','use','convert','transform','store']);
 const V2_SUBJECTS = new Set(['photosynthesis','plant','plants','green plant','green plants','alga','algae','some bacteria','photosynthetic bacterium','photosynthetic bacteria','chlorophyll']);
@@ -519,16 +522,14 @@ const segmentSentencesV2 = (x) => segmentSentences(normalizeInputV2(x))
   .map((sentence, index) => ({ ...sentence, index }));
 function hasCompleteActiveClauseV2(text) {
   const tokens = tokenizeV2(text);
+  // This is an occurrence-boundary probe, not the semantic validator. Keep an
+  // explicit supported target clause intact even when its subject or auxiliary
+  // path will later be rejected inside that clause.
+  if (bindLocalPassiveAgent(tokens)) return true;
   for (let index = 1; index < tokens.length; index += 1) {
     const predicate = validateFinitePredicate(tokens, index);
-    if (!predicate) continue;
-    const subject = extractSubjectSet(tokens, index);
-    const auxiliary = parseAuxiliaryChain(tokens, index);
-    const control = resolveControlChain(tokens, index);
-    if (subject.end !== index
-      || !validateActiveFinitePredicateV2(tokens, index, predicate, subject, auxiliary, control)) continue;
-    const object = bindDirectObject(tokens, index + 1);
-    if (object && validateActiveTailV2(tokens, object.tokenEnd, null, subject, object)) return true;
+    if (predicate && isTargetRelationPredicateV2(predicate.lemma)
+      && isTargetRelationFrameV2(tokens, index)) return true;
   }
   return isCompleteUnsupportedClauseV2(tokens, false);
 }
@@ -567,19 +568,18 @@ const segmentClausesV2 = (x) => {
   return text.split(/[;:]+/).flatMap((rawPart, partIndex) => {
     const discourseConjunction = rawPart.match(/^\s*(and|but)\s+/i)?.[1]?.toLowerCase() || null;
     const part = discourseConjunction ? rawPart.replace(/^\s*(?:and|but)\s+/i, '') : rawPart;
-    const pieces = splitIndependentAndV2(part);
-    return pieces.flatMap((piece, pieceIndex) => {
-      const boundaryBefore = pieceIndex > 0 ? 'comma-and' : partIndex > 0 ? 'hard' : 'start';
-      const initial = { boundaryBefore, discourseConjunction: pieceIndex === 0 ? discourseConjunction : null };
-      const explicitBut = piece.match(/\s+but\s+/i);
-      if (!explicitBut) return [{ text: piece, ...initial }];
-      const after = piece.slice(explicitBut.index + explicitBut[0].length).trim();
-      if (!startsIndependentSupportedClauseV2(after)) return [{ text: piece, ...initial }];
-      const before = piece.slice(0, explicitBut.index);
-      return hasContentV2(before)
-        ? [{ text: before, ...initial }, { text: after, boundaryBefore: 'but' }]
-        : [{ text: after, ...initial }];
-    });
+    const explicitBut = part.match(/\s+but\s+/i);
+    const beforeBut = explicitBut ? part.slice(0, explicitBut.index) : '';
+    const afterBut = explicitBut ? part.slice(explicitBut.index + explicitBut[0].length).trim() : '';
+    const splitBut = Boolean(explicitBut && startsIndependentSupportedClauseV2(afterBut));
+    const halves = splitBut
+      ? [{ text: beforeBut, boundaryBefore: partIndex > 0 ? 'hard' : 'start' }, { text: afterBut, boundaryBefore: 'but' }]
+      : [{ text: part, boundaryBefore: partIndex > 0 ? 'hard' : 'start' }];
+    return halves.flatMap((half, halfIndex) => splitIndependentAndV2(half.text).map((piece, pieceIndex) => ({
+      text: piece,
+      boundaryBefore: pieceIndex > 0 ? 'comma-and' : half.boundaryBefore,
+      discourseConjunction: halfIndex === 0 && pieceIndex === 0 ? discourseConjunction : null,
+    })));
   }).filter(({ text }) => hasContentV2(text))
     .map((clause, index) => ({ ...clause, index, text: clause.text.trim() }));
 };
@@ -595,12 +595,12 @@ function createRelationFramesV2(input) {
       const normalizedText = normalizeInputV2(clause.text);
       const normalizedClauses = segmentClausesV2(normalizedText).map((normalizedClause, index) => ({
         ...normalizedClause,
+        ...(index === 0 ? {
+          boundaryBefore: clause.boundaryBefore,
+          discourseConjunction: clause.discourseConjunction,
+        } : {}),
         frameId,
-        index: clause.index + index,
-        boundaryBefore: index === 0 ? clause.boundaryBefore : normalizedClause.boundaryBefore,
-        discourseConjunction: index === 0
-          ? normalizedClause.discourseConjunction || clause.discourseConjunction
-          : normalizedClause.discourseConjunction,
+        index: clause.index,
       }));
       frames.push({
         frameId,
@@ -1195,7 +1195,7 @@ function subjectNumberV2(subject){
 function validateSubjectAgreement(subject,verb){return subjectPhraseWellFormedV2(subject)&&(verb.form==='PAST'||agreesInSimplePresentV2(subject,verb));}
 const isSupportedSubjectCoordinationV2 = (x) => x.members.length === 1 || x.coordinator === 'AND';
 const validateSubjectSet = (x) => x.validity === 'ALL_VALID' && subjectPhraseWellFormedV2(x) && isSupportedSubjectCoordinationV2(x);
-function validateFinitePredicate(ts,i){const surface=ts[i]?.form||'',lemma=V2_VERBS.get(surface);if(!lemma)return null;if(lemma==='use'&&ts[i+1]?.form==='chlorophyll'&&ts[i+2]?.form==='to'&&V2_VERBS.has(ts[i+3]?.form))return null;const form=surface===lemma?'BASE':/ed$/.test(surface)?'PAST':/ing$/.test(surface)?'PRESENT_PARTICIPLE':'PRESENT_3SG';return{surface,lemma,form,finite:form!=='BASE'};}
+function validateFinitePredicate(ts,i,{allowMediatedUse=false}={}){const surface=ts[i]?.form||'',lemma=V2_VERBS.get(surface);if(!lemma)return null;if(!allowMediatedUse&&lemma==='use'&&ts[i+1]?.form==='chlorophyll'&&ts[i+2]?.form==='to'&&V2_VERBS.has(ts[i+3]?.form))return null;const form=surface===lemma?'BASE':/ed$/.test(surface)?'PAST':/ing$/.test(surface)?'PRESENT_PARTICIPLE':'PRESENT_3SG';return{surface,lemma,form,finite:form!=='BASE'};}
 const V2_FINITE_AUXILIARIES=new Set(['do','does','did','is','are','was','were','has','have','had']);
 function isPluralSubjectV2(subject){return subjectNumberV2(subject)==='PLURAL';}
 function numberAllowsV2(subject,number){const actual=subjectNumberV2(subject);return actual===number||actual==='VARIABLE';}
@@ -1272,6 +1272,8 @@ function startsIndependentSupportedClauseV2(text) {
     if (!predicate) continue;
     const subject = extractSubjectSet(tokens, index);
     if (subject.start !== 0 || subject.end <= 0) continue;
+    if (['a', 'an', 'the', 'some'].includes(tokens[0]?.form)
+      && !subject.members.some((member) => member.surface)) continue;
     // Segmentation preserves explicit predicates even when later validation rejects them.
     return true;
   }
@@ -1421,6 +1423,9 @@ function analyzePreNormalizationCoordinationV2(frame){
   const addMalformedFrame=(voice,predicateLemma,subject)=>{
     const explicitlyCoordinated=subject.members.length>1||subject.coordinator!=='SINGLE';
     if(subject.shapeValid||!explicitlyCoordinated)return;
+    const rawMembers=subject.members.map((member)=>member.surface);
+    if(findings.some((finding)=>finding.voice===voice&&finding.topology.type===subject.coordinator
+      &&JSON.stringify(finding.topology.rawMembers)===JSON.stringify(rawMembers)))return;
     findings.push({
       frameId:frame.frameId,
       failureType:'MALFORMED_COORDINATION',
@@ -1433,7 +1438,7 @@ function analyzePreNormalizationCoordinationV2(frame){
         cardinality:subject.members.length,
         orderedMembers:subject.members.map((member)=>[member.lemma,member.role]),
         shapeValid:false,
-        rawMembers:subject.members.map((member)=>member.surface),
+        rawMembers,
       },
     });
   };
@@ -1448,8 +1453,7 @@ function analyzePreNormalizationCoordinationV2(frame){
     if(!predicate||!isTargetRelationPredicateV2(predicate.lemma))continue;
     if(predicate.form==='PRESENT_PARTICIPLE'&&!parseAuxiliaryChain(tokens,predicateIndex).chain.length)continue;
     const subject=extractSubjectSet(tokens,predicateIndex);
-    const mediatedTarget=Boolean(resolveSupportedMediatedPredicateV2(tokens,predicateIndex,subject));
-    if((subject.end!==predicateIndex&&!mediatedTarget)||!isTargetRelationFrameV2(tokens,predicateIndex))continue;
+    if(!isTargetRelationFrameV2(tokens,predicateIndex))continue;
     addMalformedFrame('ACTIVE',predicate.lemma,subject);
   }
   return findings;
@@ -1627,7 +1631,8 @@ function punctuationBoundaryTopologyV2(text){
   }
   return boundaries;
 }
-function resolveLocalChlorophyllSupport(records,frames){
+function resolveLocalChlorophyllSupports(records,frames){
+  const supports=[];
   for(const frame of frames)for(const clause of frame.normalizedClauses){
     const tokens=tokenizeV2(clause.text),useIndex=tokens.findIndex((token,index)=>['use','uses','used'].includes(token.form)&&tokens[index+1]?.form==='chlorophyll'&&tokens[index+2]?.form==='to'&&V2_VERBS.has(tokens[index+3]?.form));
     if(useIndex<0)continue;
@@ -1637,13 +1642,15 @@ function resolveLocalChlorophyllSupport(records,frames){
       &&record.verbLemma===V2_VERBS.get(tokens[embeddedIndex].form)
       &&record.lightObject?.normalized==='light-energy');
     if(!embedded)continue;
+    const mediator=validateFinitePredicate(tokens,useIndex,{allowMediatedUse:true});
+    if(!mediator)continue;
     const instrument={start:tokens[useIndex+1].start,end:tokens[useIndex+1].end,surface:'chlorophyll',normalized:'chlorophyll',role:'CHLOROPHYLL'};
-    return{
+    supports.push({
       embedded,
-      record:{...embedded,frameId:frame.frameId,grammarShape:'ACTIVE_INFINITIVAL_MEDIATED',relationType:'CHLOROPHYLL_SUPPORT',verbLemma:'use',verbSurface:tokens[useIndex].form,verbForm:/s$/.test(tokens[useIndex].form)?'PRESENT_3SG':'PAST',predicateStart:tokens[useIndex].start,predicateEnd:tokens[useIndex].end,directObject:instrument,instrumentSet:{start:instrument.start,end:instrument.end,lemma:'chlorophyll',surface:'chlorophyll'},qualifies:embedded.qualifies},
-    };
+      record:{...embedded,frameId:frame.frameId,grammarShape:'ACTIVE_INFINITIVAL_MEDIATED',relationType:'CHLOROPHYLL_SUPPORT',verbLemma:mediator.lemma,verbSurface:mediator.surface,verbForm:mediator.form,predicateStart:tokens[useIndex].start,predicateEnd:tokens[useIndex].end,directObject:instrument,instrumentSet:{start:instrument.start,end:instrument.end,lemma:'chlorophyll',surface:'chlorophyll'},qualifies:embedded.qualifies},
+    });
   }
-  return null;
+  return supports;
 }
 function parseMinimalRelationGrammar(input) {
   const normalized = normalizeInputV2(input);
@@ -1669,6 +1676,9 @@ function parseMinimalRelationGrammar(input) {
       currentSentenceIndex = sentenceIndex;
       pronounAntecedentRecordStart = relationRecords.length;
     }
+    if (frame.normalizedClauses.some((clause) => tokenizeV2(clause.text).length)) {
+      topology.push([sentenceIndex, frame.clauseIndex]);
+    }
     for (const clause of frame.normalizedClauses) {
       const clauseRecordStart = relationRecords.length;
       if (clause.boundaryBefore !== 'but') pronounAntecedentRecordStart = clauseRecordStart;
@@ -1681,7 +1691,6 @@ function parseMinimalRelationGrammar(input) {
       const tokens = tokenizeV2(clause.text);
       if (!tokens.length) continue;
       const hasTargetFrame = tokens.some((token,index) => isTargetRelationFrameV2(tokens,index));
-      topology.push([sentenceIndex, clause.index]);
 
       const passive = bindLocalPassiveAgent(tokens);
       if (passive) {
@@ -1705,6 +1714,7 @@ function parseMinimalRelationGrammar(input) {
           : passive.auxiliaryChain.some((form) => ['has', 'have', 'had'].includes(form)) ? 'HAVE' : 'BE';
         const subjectMembers = passive.agent.members.map((member) => [member.lemma, member.role]);
         orderedSubjects.push(subjectMembers);
+        frame.subjectSets = [...(frame.subjectSets || []), subjectMembers];
         frame.coordinationTopologies.push({
           frameId: frame.frameId,
           sentenceIndex,
@@ -1872,7 +1882,9 @@ function parseMinimalRelationGrammar(input) {
       const destructive = V2_DESTRUCTIVE_RELATION_LEMMAS.has(predicate.lemma);
       if (destructive) diagnostics.push('DESTRUCTIVE_RELATION');
       const subject = subjectSet.members[0];
-      orderedSubjects.push(subjectSet.members.map((member) => [member.lemma, member.role]));
+      const subjectMembers = subjectSet.members.map((member) => [member.lemma, member.role]);
+      orderedSubjects.push(subjectMembers);
+      frame.subjectSets = [...(frame.subjectSets || []), subjectMembers];
       frame.coordinationTopologies.push({
         frameId: frame.frameId,
         sentenceIndex,
@@ -2001,8 +2013,8 @@ function parseMinimalRelationGrammar(input) {
     }
   }
 
-  const chlorophyllSupport = resolveLocalChlorophyllSupport(relationRecords, frames);
-  if (chlorophyllSupport) relationRecords.push(chlorophyllSupport.record);
+  relationRecords.push(...resolveLocalChlorophyllSupports(relationRecords, frames).map(({ record }) => record));
+  relationRecords.sort((left, right) => left.frameId - right.frameId);
   if (sentences.length > 1) diagnostics.push('SENTENCE');
   if (topology.length > sentences.length) diagnostics.push('CLAUSE');
   if (relationRecords.some((record) => record.objectBarriers?.type === 'SENTENCE')) diagnostics.push('SENTENCE');
@@ -2045,14 +2057,29 @@ function parseMinimalRelationGrammar(input) {
       : frame.coordinationTopologies
   ));
   const reportedCoordinationTopology = ownedCoordinationTopologies;
-  for (const record of relationRecords) delete record.frameId;
+  const frameContext = frames.map((frame) => ({
+    frameId: frame.frameId,
+    sentenceIndex: frame.sentenceIndex,
+    clauseIndex: frame.clauseIndex,
+    text: frame.normalizedText,
+    malformed: frame.malformedReasons.size > 0,
+    subjectSets: frame.subjectSets || [],
+    topology: topology.filter(([sentence, clause]) => sentence === frame.sentenceIndex && clause === frame.clauseIndex),
+    coordinationTopology: ownedCoordinationTopologies
+      .filter((group) => group.frameId === frame.frameId)
+      .map(({ frameId, sentenceIndex, voice, predicateLemma, ...group }) => group),
+  }));
+  for (const record of relationRecords) {
+    Object.defineProperty(record, V2_FRAME_OWNER, { value: record.frameId });
+    delete record.frameId;
+  }
   for (const group of reportedCoordinationTopology) {
     delete group.frameId;
     delete group.sentenceIndex;
     delete group.voice;
     delete group.predicateLemma;
   }
-  return {
+  const parsed = {
     evaluatorId: V2_ID,
     normalized,
     sentences,
@@ -2087,12 +2114,21 @@ function parseMinimalRelationGrammar(input) {
       record.qualifies && record.relationType === 'CHLOROPHYLL_SUPPORT'),
     invalidChlorophyllClaims,
   };
+  Object.defineProperty(parsed, V2_FRAME_CONTEXT, { value: frameContext });
+  return parsed;
+}
+function setV2FrameOwner(record, frameId) {
+  if (Number.isInteger(frameId) && record[V2_FRAME_OWNER] !== frameId) {
+    Object.defineProperty(record, V2_FRAME_OWNER, { value: frameId });
+  }
+  return record;
 }
 function expandCoordinatedSubjectRecords(records){
   return records.flatMap((original)=>{
     const chain=original.auxiliaryChain?.chain||[];
     const auxiliaryFunction=chain.some((form)=>V2_MODALS.has(form))?'MODAL':chain.some((form)=>['has','have','had'].includes(form))?'HAVE':original.auxiliaryChain?.function;
-    const record=auxiliaryFunction?{...original,auxiliaryChain:{...original.auxiliaryChain,function:auxiliaryFunction}}:original;
+    const owner=original[V2_FRAME_OWNER];
+    const record=setV2FrameOwner(auxiliaryFunction?{...original,auxiliaryChain:{...original.auxiliaryChain,function:auxiliaryFunction}}:original,owner);
     const text=record.evidenceSpan?.text;
     if(!text||!record.subjectSet?.coordinator||record.subjectSet.coordinator==='SINGLE')return[record];
     const tokens=tokenizeV2(text),passive=record.voice==='PASSIVE';
@@ -2113,12 +2149,12 @@ function expandCoordinatedSubjectRecords(records){
       if(tokenIndex<0)return null;
       cursor=tokenIndex+words.length;
       const wrongPigment=member.role==='PIGMENT_AGENT'&&member.lemma!=='chlorophyll';
-      return{
+      return setV2FrameOwner({
         ...record,
         relationType:wrongPigment?'WRONG_PIGMENT_RELATION':record.relationType,
         rejectionReasons:wrongPigment?[...new Set([...record.rejectionReasons,'WRONG_PIGMENT_RELATION'])]:record.rejectionReasons,
         subjectSet:{...record.subjectSet,surface:member.surface,lemma:member.lemma,role:member.role,start:tokens[tokenIndex].start,end:tokens[tokenIndex+words.length-1].end,valid:member.valid,validityReason:member.valid?'SUPPORTED':'UNSUPPORTED'},
-      };
+      },owner);
     });
     return expanded.every(Boolean)?expanded:[record];
   });
@@ -2128,7 +2164,7 @@ const evaluatePhotosynthesisRelationsV2 = (input)=>{
   const contradictions=detectContradictions(relationRecords),invalidChlorophyllClaims=detectInvalidChlorophyllClaimsV2(relationRecords);
   const affirmedWrongPigment=invalidChlorophyllClaims.some((record)=>record.relationType==='WRONG_PIGMENT_RELATION'&&record.polarity==='AFFIRMED');
   const affirmedDestructive=relationRecords.some((record)=>record.relationType==='DESTRUCTIVE_RELATION'&&record.polarity==='AFFIRMED');
-  return{
+  const evaluated={
     ...result,
     relationRecords,
     contradictions,
@@ -2140,6 +2176,14 @@ const evaluatePhotosynthesisRelationsV2 = (input)=>{
     positiveLightEnergy:relationRecords.some((record)=>record.qualifies),
     positiveChlorophyllBinding:relationRecords.some((record)=>record.qualifies&&record.relationType==='CHLOROPHYLL_SUPPORT'),
   };
+  const frameContext=result[V2_FRAME_CONTEXT]||[];
+  const frameProjections=frameContext.map((frame)=>({
+    ...frame,
+    records:relationRecords.filter((record)=>record[V2_FRAME_OWNER]===frame.frameId),
+  }));
+  Object.defineProperty(evaluated,V2_FRAME_CONTEXT,{value:frameContext});
+  Object.defineProperty(evaluated,V2_FRAME_PROJECTIONS,{value:frameProjections});
+  return evaluated;
 };
 function malformedFingerprintStructure(text,records){
   const structuralWords=new Set(['and','or','but','not','never','do','does','did','is','are','was','were','has','have','had','to','fail','fails','failed','appear','appears','seem','seems','during','while','although','because','whereas','if','unless','when','since','in','for','into','near','with','by','as',',',';',';',':','.','!','?']);
@@ -2208,16 +2252,39 @@ function malformedFingerprintStructure(text,records){
 }
 function semanticCaseFingerprint(input,decision=null){
   const r=typeof input==='string'?evaluatePhotosynthesisRelationsV2(input):input,records=r.relationRecords||[],text=typeof input==='string'?normalizeInputV2(input):r.normalized||'',coordination=r.coordinationTopology||[];
-  const malformedStructure=r.hasMalformed?malformedFingerprintStructure(text,records):null;
+  const frames=r[V2_FRAME_PROJECTIONS]||[{
+    text,
+    malformed:r.hasMalformed,
+    subjectSets:r.subjectSet||[],
+    coordinationTopology:coordination,
+    topology:r.topology||[],
+    records,
+  }];
   const normalizeDirectObject = (object) => object?.role === 'LIGHT_OBJECT' ? object.normalized : null;
+  const perFrame = (project) => frames.length === 1 ? project(frames[0]) : frames.map(project);
+  const grammarFrames=frames.map((frame)=>{
+    const malformedStructure=frame.malformed?malformedFingerprintStructure(frame.text,frame.records):null;
+    return{records:frame.records.map(x=>x.grammarShape||'UNRESOLVED'),malformedRoleOrder:malformedStructure?.map(({role,form,lemma})=>[role,lemma,form].filter(Boolean).join(':')).join(' ')||null,malformedLexicalStructure:malformedStructure};
+  });
   const f={
-    grammarShape:{records:records.map(x=>x.grammarShape||'UNRESOLVED'),malformedRoleOrder:malformedStructure?.map(({role,form,lemma})=>[role,lemma,form].filter(Boolean).join(':')).join(' ')||null,malformedLexicalStructure:malformedStructure},
-    orderedSubjectLemmasAndRoleClasses:(r.subjectSet||[]).map(fingerprintSubjectMembers),coordinationTypeAndCardinality:coordination.map((group)=>({type:group.type,cardinality:group.cardinality,orderedMembers:fingerprintSubjectMembers(group.orderedMembers)})),voice:records.map(x=>x.voice||'ACTIVE'),verbLemmaAndMorphology:records.map(x=>[x.verbLemma,x.verbForm]),
-    directObjectRoleAndNormalizedLightForm:records.map(x=>x.directObject?[x.directObject.role,normalizeDirectObject(x.directObject)]:null),objectBindingOrigin:records.map(x=>x.lightObject?.binding||null),
-    auxiliaryChain:records.map(x=>x.auxiliaryChain?.chain||[]),modal:records.map(x=>x.modal||null),controlChain:records.map(x=>x.controlChain?[x.controlChain.type,x.controlChain.surface]:null),
-    polarityStructure:records.map(x=>[x.polarity||'UNRESOLVED',x.polarityReason||'']),orderedBarrierTypes:r.barriers||[],clauseSentenceTopology:r.topology||[],
-    contextBindingType:records.map(x=>x.processContext||null),pronounAntecedentTopology:records.map((x,i)=>({recordIndex:i,shape:x.grammarShape,binding:x.lightObject?.binding||null,antecedentObject:x.lightObject?.binding==='PRONOUN_ANTECEDENT'?normalizeDirectObject(x.directObject):null})),
-    pigmentIdentity:[...new Set((text.match(/\b(?:chlorophyll|melanin|carotene|xanthophyll)\b/gi)||[]).map(x=>x.toLowerCase()))],invalidClaimType:records.map(x=>x.relationType||null),expectedDecision:decision||(r.passed?'PASS':'FAIL'),
+    grammarShape:frames.length===1?grammarFrames[0]:{frames:grammarFrames},
+    orderedSubjectLemmasAndRoleClasses:perFrame((frame)=>frame.subjectSets.map(fingerprintSubjectMembers)),
+    coordinationTypeAndCardinality:perFrame((frame)=>frame.coordinationTopology.map((group)=>({type:group.type,cardinality:group.cardinality,orderedMembers:fingerprintSubjectMembers(group.orderedMembers)}))),
+    voice:perFrame((frame)=>frame.records.map(x=>x.voice||'ACTIVE')),
+    verbLemmaAndMorphology:perFrame((frame)=>frame.records.map(x=>[x.verbLemma,x.verbForm])),
+    directObjectRoleAndNormalizedLightForm:perFrame((frame)=>frame.records.map(x=>x.directObject?[x.directObject.role,normalizeDirectObject(x.directObject)]:null)),
+    objectBindingOrigin:perFrame((frame)=>frame.records.map(x=>x.lightObject?.binding||null)),
+    auxiliaryChain:perFrame((frame)=>frame.records.map(x=>x.auxiliaryChain?.chain||[])),
+    modal:perFrame((frame)=>frame.records.map(x=>x.modal||null)),
+    controlChain:perFrame((frame)=>frame.records.map(x=>x.controlChain?[x.controlChain.type,x.controlChain.surface]:null)),
+    polarityStructure:perFrame((frame)=>frame.records.map(x=>[x.polarity||'UNRESOLVED',x.polarityReason||''])),
+    orderedBarrierTypes:perFrame((frame)=>frame.records.map(x=>x.objectBarriers?.type).filter(Boolean)),
+    clauseSentenceTopology:perFrame((frame)=>frame.topology),
+    contextBindingType:perFrame((frame)=>frame.records.map(x=>x.processContext||null)),
+    pronounAntecedentTopology:perFrame((frame)=>frame.records.map((x,i)=>({recordIndex:i,shape:x.grammarShape,binding:x.lightObject?.binding||null,antecedentObject:x.lightObject?.binding==='PRONOUN_ANTECEDENT'?normalizeDirectObject(x.directObject):null}))),
+    pigmentIdentity:[...new Set((text.match(/\b(?:chlorophyll|melanin|carotene|xanthophyll)\b/gi)||[]).map(x=>x.toLowerCase()))],
+    invalidClaimType:perFrame((frame)=>frame.records.map(x=>x.relationType||null)),
+    expectedDecision:decision||(r.passed?'PASS':'FAIL'),
   };
   return require('node:crypto').createHash('sha256').update(JSON.stringify(Object.fromEntries(Object.entries(f).sort(([a],[b])=>a.localeCompare(b))))).digest('hex');
 }

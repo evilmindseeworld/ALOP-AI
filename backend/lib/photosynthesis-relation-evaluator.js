@@ -585,8 +585,12 @@ function createRelationFramesV2(input) {
     for (const clause of segmentClausesV2(sentence)) {
       const frameId = frames.length;
       const normalizedText = normalizeInputV2(clause.text);
-      const normalizedClauses = segmentClausesV2(normalizedText).map((normalizedClause) => ({
+      const normalizedClauses = segmentClausesV2(normalizedText).map((normalizedClause, index) => ({
         ...normalizedClause,
+        ...(index === 0 ? {
+          boundaryBefore: clause.boundaryBefore,
+          discourseConjunction: clause.discourseConjunction,
+        } : {}),
         frameId,
         index: clause.index,
       }));
@@ -1255,11 +1259,16 @@ function validateActiveFinitePredicateV2(ts,index,verb,subject,auxiliary,control
 }
 function startsIndependentSupportedClauseV2(text) {
   const tokens = tokenizeV2(text);
+  if (tokens.length && isTargetRelationFrameV2(tokens, 0)) return true;
+  const beginsWithAuxiliary = ['can', 'cannot', "can't", 'could', "couldn't", 'did', 'do', 'does', 'had', 'has', 'have', 'is', 'may', 'might', 'must', 'are', 'was', 'were', 'should', 'would', 'not', 'never']
+    .includes(tokens[0]?.lemma);
+  if (beginsWithAuxiliary && tokens.some((_, index) => isTargetRelationFrameV2(tokens, index))) return true;
   for (let index = 1; index < tokens.length; index += 1) {
     const predicate = validateFinitePredicate(tokens, index);
     if (!predicate) continue;
     const subject = extractSubjectSet(tokens, index);
     if (subject.start !== 0 || subject.end <= 0) continue;
+    if (!subject.members.some((member) => member.surface)) continue;
     // Segmentation preserves explicit predicates even when later validation rejects them.
     return true;
   }

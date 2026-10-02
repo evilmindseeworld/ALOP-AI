@@ -290,6 +290,70 @@ test('root invariant 004 mutation: recording a terminal boundary leaks punctuati
   assert.notEqual(mutant.semanticCaseFingerprint(withPeriod), mutant.semanticCaseFingerprint(withoutPeriod));
 });
 
+test('five-root closure mutations are killed by the bounded regression controls', async (t) => {
+  await t.test('R1 raw topology cannot depend on subject ending at the predicate', () => {
+    const mutant = loadMutant(replaceOnce(
+      SOURCE,
+      'if(!isTargetRelationFrameV2(tokens,predicateIndex))continue;',
+      'if(subject.end!==predicateIndex||!isTargetRelationFrameV2(tokens,predicateIndex))continue;',
+      'R1 predicate-adjacent subject gate',
+    )).evaluatePhotosynthesisRelationsV2;
+    const answer = ', and plants and algae must absorb sunlight';
+    const currentResult = current.evaluatePhotosynthesisRelationsV2(answer);
+    const mutantResult = mutant(answer);
+    assert.equal(currentResult.coordinationTopology.some((group) => group.shapeValid === false), true);
+    assert.equal(mutantResult.coordinationTopology.some((group) => group.shapeValid === false), false);
+  });
+
+  await t.test('R2 normalized clause re-segmentation cannot merge raw sibling ownership', () => {
+    const mutant = loadMutant(replaceOnce(
+      SOURCE,
+      'for (const clause of segmentClausesV2(sentence)) {',
+      "for (const clause of [{ text: sentence.text, index: 0, boundaryBefore: 'start', discourseConjunction: null }]) {",
+      'R2 normalized sibling merge',
+    )).evaluatePhotosynthesisRelationsV2;
+    const answer = 'Plants use chlorophyll to absorb sunlight and algae absorb sunlight';
+    assert.equal(current.evaluatePhotosynthesisRelationsV2(answer).topology.length, 2);
+    assert.equal(mutant(answer).topology.length, 1);
+  });
+
+  await t.test('R3 truncating local support resolution loses later frames', () => {
+    const mutant = loadMutant(replaceOnce(SOURCE, 'return supports;', 'return supports.slice(0, 1);',
+      'R3 first-support truncation')).evaluatePhotosynthesisRelationsV2;
+    const answer = 'Plants use chlorophyll to absorb sunlight; algae use chlorophyll to absorb sunlight';
+    const supportCount = (run) => run(answer).relationRecords.filter((record) => record.relationType === 'CHLOROPHYLL_SUPPORT').length;
+    assert.equal(supportCount(current.evaluatePhotosynthesisRelationsV2), 2);
+    assert.equal(supportCount(mutant), 1);
+  });
+
+  await t.test('R4 assigning every record to every frame loses mediation ownership', () => {
+    const mutant = loadMutant(replaceOnce(
+      SOURCE,
+      'records:relationRecords.filter((record)=>record[V2_FRAME_OWNER]===frame.frameId),',
+      "records:relationRecords.toSorted((left,right)=>Number(left.relationType==='CHLOROPHYLL_SUPPORT')-Number(right.relationType==='CHLOROPHYLL_SUPPORT')) ,",
+      'R4 collapsed frame record ownership',
+    )).semanticCaseFingerprint;
+    const first = 'Plants use chlorophyll to absorb sunlight; algae absorb sunlight';
+    const second = 'Plants absorb sunlight; algae use chlorophyll to absorb sunlight';
+    assert.notEqual(current.semanticCaseFingerprint(first), current.semanticCaseFingerprint(second));
+    assert.equal(mutant(first), mutant(second));
+  });
+
+  await t.test('R5 replacing shared morphology with a use-specific past rule changes BASE', () => {
+    const mutant = loadMutant(replaceOnce(
+      SOURCE,
+      "const form=surface===lemma?'BASE':/ed$/.test(surface)?'PAST':/ing$/.test(surface)?'PRESENT_PARTICIPLE':'PRESENT_3SG';",
+      "const form=surface==='use'?'PAST':surface===lemma?'BASE':/ed$/.test(surface)?'PAST':/ing$/.test(surface)?'PRESENT_PARTICIPLE':'PRESENT_3SG';",
+      'R5 ad hoc mediator morphology',
+    )).evaluatePhotosynthesisRelationsV2;
+    const answer = 'Plants use chlorophyll to absorb sunlight';
+    const supportForm = (run) => run(answer).relationRecords
+      .find((record) => record.relationType === 'CHLOROPHYLL_SUPPORT')?.verbForm;
+    assert.equal(supportForm(current.evaluatePhotosynthesisRelationsV2), 'BASE');
+    assert.equal(supportForm(mutant), 'PAST');
+  });
+});
+
 
 // Frame lifecycle architecture mutations A-E.
 (function frameLifecycleMutationSuite() {

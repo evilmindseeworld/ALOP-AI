@@ -1633,6 +1633,56 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
       invalidClaimType: records.map((record) => record.relationType || null),
       expectedDecision: item.expectedDecision,
     };
+    const frameSymbol = Object.getOwnPropertySymbols(result)
+      .find((symbol) => String(symbol) === 'Symbol(V2_FRAME_PROJECTIONS)');
+    const frames = frameSymbol ? result[frameSymbol] : null;
+    if (frames?.length > 1) {
+      const grammarFrames = frames.map((frame) => {
+        const malformedStructure = frame.malformed
+          ? projectMalformedStructure(frame.text, frame.records) : null;
+        return {
+          records: frame.records.map((record) => record.grammarShape || 'UNRESOLVED'),
+          malformedRoleOrder: malformedStructure?.map(({ role, form, lemma }) => [role, lemma, form]
+            .filter(Boolean).join(':')).join(' ') || null,
+          malformedLexicalStructure: malformedStructure,
+        };
+      });
+      const perFrame = (project) => frames.map(project);
+      projection.grammarShape = { frames: grammarFrames };
+      projection.orderedSubjectLemmasAndRoleClasses = perFrame((frame) =>
+        frame.subjectSets.map(fingerprintSubjectMembers));
+      projection.coordinationTypeAndCardinality = perFrame((frame) => frame.coordinationTopology
+        .map(({ type, cardinality, orderedMembers }) => ({
+          type, cardinality, orderedMembers: fingerprintSubjectMembers(orderedMembers),
+        })));
+      projection.voice = perFrame((frame) => frame.records.map((record) => record.voice || 'ACTIVE'));
+      projection.verbLemmaAndMorphology = perFrame((frame) =>
+        frame.records.map((record) => [record.verbLemma, record.verbForm]));
+      projection.directObjectRoleAndNormalizedLightForm = perFrame((frame) => frame.records.map((record) =>
+        record.directObject ? [record.directObject.role, normalizedDirectObject(record.directObject)] : null));
+      projection.objectBindingOrigin = perFrame((frame) =>
+        frame.records.map((record) => record.lightObject?.binding || null));
+      projection.auxiliaryChain = perFrame((frame) =>
+        frame.records.map((record) => record.auxiliaryChain?.chain || []));
+      projection.modal = perFrame((frame) => frame.records.map((record) => record.modal || null));
+      projection.controlChain = perFrame((frame) => frame.records.map((record) => record.controlChain
+        ? [record.controlChain.type, record.controlChain.surface] : null));
+      projection.polarityStructure = perFrame((frame) => frame.records
+        .map((record) => [record.polarity || 'UNRESOLVED', record.polarityReason || '']));
+      projection.orderedBarrierTypes = perFrame((frame) =>
+        frame.records.map((record) => record.objectBarriers?.type).filter(Boolean));
+      projection.clauseSentenceTopology = perFrame((frame) => frame.topology);
+      projection.contextBindingType = perFrame((frame) =>
+        frame.records.map((record) => record.processContext || null));
+      projection.pronounAntecedentTopology = perFrame((frame) => frame.records.map((record, recordIndex) => ({
+        recordIndex,
+        shape: record.grammarShape,
+        binding: record.lightObject?.binding || null,
+        antecedentObject: record.lightObject?.binding === 'PRONOUN_ANTECEDENT'
+          ? normalizedDirectObject(record.directObject) : null,
+      })));
+      projection.invalidClaimType = perFrame((frame) => frame.records.map((record) => record.relationType || null));
+    }
     assert.deepEqual(Object.keys(projection).sort(), frozenFieldNames);
     const sorted = Object.fromEntries(Object.entries(projection).sort(([left], [right]) => left.localeCompare(right)));
     return createHash('sha256').update(JSON.stringify(sorted)).digest('hex');

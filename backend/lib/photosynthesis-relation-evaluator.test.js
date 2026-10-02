@@ -476,7 +476,8 @@ test('root invariant 006 mutation: preprocessing before raw topology validation 
     assert.equal(expected.hasMalformed, true, input);
     assert.equal(expected.passed, false, input);
     const result = module.exports.evaluatePhotosynthesisRelationsV2(input);
-    if (!result.hasMalformed || result.passed) violations += 1;
+    if (!result.hasMalformed || result.passed
+      || !result.coordinationTopology.some((group) => group.shapeValid === false)) violations += 1;
   }
   assert.ok(violations >= 100, `destructive preprocessing mutant violations=${violations}`);
 });
@@ -1417,6 +1418,8 @@ test('supported mediated chains retain malformed raw subject topology and valid 
       && record.verbLemma === item.target);
     const expectedControl = item.chain.id === 'control' ? 'NOT_FAIL_TO' : null;
     const expectedModal = item.chain.id === 'modal' ? 'may' : null;
+    const expectedMediatorForm = item.chain.surface.endsWith('used') ? 'PAST'
+      : item.chain.surface.endsWith('uses') ? 'PRESENT_3SG' : 'BASE';
     const expectedRecordCount = item.chain.validSubject.includes(' and ') ? 2 : 1;
     const mediationSemanticsValid = supportRecords.length === expectedRecordCount
       && targetRecords.length === expectedRecordCount
@@ -1427,6 +1430,7 @@ test('supported mediated chains retain malformed raw subject topology and valid 
         && record.modal === expectedModal)
       && supportRecords.every((record) => record.directObject?.role === 'CHLOROPHYLL'
         && record.instrumentSet?.lemma === 'chlorophyll'
+        && record.verbForm === expectedMediatorForm
         && record.lightObject?.normalized === 'light-energy'
         && record.lightObject?.binding === 'DIRECT_OBJECT')
       && targetRecords.every((record) => record.directObject?.role === 'LIGHT_OBJECT'
@@ -1484,7 +1488,7 @@ test('mediated raw-topology properties kill validation bypass, wrong subject end
     'mediated-validation-bypass',
   );
   const wrongSubjectEnd = loadMutant(
-    'if((subject.end!==predicateIndex&&!mediatedTarget)||!isTargetRelationFrameV2(tokens,predicateIndex))continue;',
+    'if(!isTargetRelationFrameV2(tokens,predicateIndex))continue;',
     'if(subject.end!==predicateIndex||!isTargetRelationFrameV2(tokens,predicateIndex))continue;',
     'downstream-subject-end',
   );
@@ -1620,5 +1624,364 @@ test('mediated malformed frames preserve sibling and document state across compo
   assert.equal(threeFrameCases, 84);
   assert.equal(crossSentenceCases.length, 84);
   t.diagnostic('composed malformed mediated cases=1960; mediated siblings=56; three-frame cases=84; cross-sentence cases=84; source/package parity checked');
+});
+
+/*
+Architecture note — one raw explicit-proposition partition must own the full
+frame lifecycle: discover each raw occurrence, validate its subject topology
+before normalization, then resolve records and local support within that same
+occurrence. Build the frozen fingerprint from those ordered frame projections
+using only its existing 18 fields; occurrence IDs stay internal. Mediator form
+comes from the same morphology classifier as ordinary predicates.
+*/
+test('five-root closure regressions reproduce the independent Sol blockers', async (t) => {
+  const evaluate = evaluatePhotosynthesisRelationsV2;
+
+  await t.test('R1 raw subject validation covers supported auxiliary paths', () => {
+    const malformed = [
+      ['modal', ', and plants and algae must absorb sunlight'],
+      ['perfect', ', and plants and algae have absorbed sunlight'],
+      ['progressive', ', and plants and algae are absorbing sunlight'],
+      ['negative', ', and plants and algae do not absorb sunlight'],
+      ['control', ', and plants and algae do not fail to absorb sunlight'],
+      ['passive', 'sunlight is absorbed by , and plants and algae during photosynthesis'],
+    ];
+    const missed = malformed.filter(([, text]) => !evaluate(text).hasMalformed).map(([path]) => path);
+    assert.deepEqual(missed, [], `raw validation bypasses: ${missed.join(', ')}`);
+    assert.equal(evaluate('Plants and algae must absorb sunlight').passed, true);
+  });
+
+  await t.test('R2 same-sentence explicit propositions retain separate topology', () => {
+    const valid = evaluate('Plants and algae use chlorophyll to absorb sunlight and plants and algae absorb sunlight');
+    assert.equal(valid.passed, true);
+    assert.equal(valid.topology.length, 2);
+    assert.equal(valid.relationRecords.length, 6);
+
+    const malformed = evaluate(', and green plants and algae use chlorophyll to harness solar energy and plants and algae absorb sunlight');
+    assert.equal(malformed.hasMalformed, true);
+    assert.ok(malformed.relationRecords.some((record) => record.qualifies
+      && record.evidenceSpan?.text.includes('plants and algae absorb sunlight')),
+    'valid sibling must keep its own frame state');
+    assert.equal(malformed.coordinationTopology.length, 2);
+  });
+
+  await t.test('R3 every mediated frame receives one local support record', () => {
+    const result = evaluate('Plants use chlorophyll to absorb sunlight; algae use chlorophyll to absorb sunlight');
+    const supports = result.relationRecords.filter((record) => record.relationType === 'CHLOROPHYLL_SUPPORT');
+    assert.equal(result.relationRecords.filter((record) => record.relationType === 'CORE_LIGHT_RELATION').length, 2);
+    assert.equal(supports.length, 2);
+    assert.deepEqual(supports.map((record) => record.subjectSet.lemma), ['plant', 'algae']);
+  });
+
+  await t.test('R4 fingerprint retains the proposition that owns mediation', () => {
+    const first = 'Plants use chlorophyll to absorb sunlight; algae absorb sunlight';
+    const second = 'Plants absorb sunlight; algae use chlorophyll to absorb sunlight';
+    assert.notEqual(semanticCaseFingerprint(first), semanticCaseFingerprint(second));
+  });
+
+  await t.test('R5 mediator morphology distinguishes base from past', () => {
+    const base = 'Plants use chlorophyll to absorb sunlight';
+    const past = 'Plants used chlorophyll to absorb sunlight';
+    const baseRecord = evaluate(base).relationRecords.find((record) => record.relationType === 'CHLOROPHYLL_SUPPORT');
+    const pastRecord = evaluate(past).relationRecords.find((record) => record.relationType === 'CHLOROPHYLL_SUPPORT');
+    assert.equal(baseRecord.verbForm, 'BASE');
+    assert.equal(pastRecord.verbForm, 'PAST');
+    assert.notEqual(semanticCaseFingerprint(base), semanticCaseFingerprint(past));
+  });
+});
+
+test('five-root closure matrices cover raw paths, frame boundaries, and mediator ownership', async (t) => {
+  const { createDerivedEvaluator } = await import('../scripts/run-photosynthesis-relation-mutations.mjs');
+  const packaged = createDerivedEvaluator();
+  const malformedSubjects = [
+    ['initial-empty', ', and plants and algae'],
+    ['middle-empty', 'plants, , and algae'],
+    ['final-empty', 'plants and algae and'],
+    ['determiner-only', 'plants and the'],
+  ];
+  const activePaths = [
+    ['finite', 'absorb sunlight', true],
+    ['past', 'absorbed sunlight', true],
+    ['modal-must', 'must absorb sunlight', true],
+    ['modal-may', 'may absorb sunlight', false],
+    ['negation', 'do not absorb sunlight', false],
+    ['perfect', 'have absorbed sunlight', true],
+    ['progressive', 'are absorbing sunlight', true],
+    ['control-affirm', 'do not fail to absorb sunlight', true],
+    ['control-neg', 'fail to absorb sunlight', false],
+    ['control-uncertain', 'appear not to absorb sunlight', false],
+    ['mediated', 'use chlorophyll to absorb sunlight', true],
+    ['mediated-past', 'used chlorophyll to absorb sunlight', true],
+    ['mediated-must', 'must use chlorophyll to absorb sunlight', true],
+    ['mediated-may', 'may use chlorophyll to absorb sunlight', false],
+    ['mediated-neg', 'do not use chlorophyll to absorb sunlight', false],
+    ['mediated-control', 'do not fail to use chlorophyll to absorb sunlight', true],
+    ['mediated-control-neg', 'fail to use chlorophyll to absorb sunlight', false],
+    ['mediated-control-uncertain', 'appear not to use chlorophyll to absorb sunlight', false],
+    ['coordinated', 'capture and store sunlight', true],
+    ['pronoun', 'capture sunlight and store it', true],
+    ['mediated-pronoun', 'use chlorophyll to capture sunlight and store it', true],
+  ];
+  const validSubjects = ['Plants and algae', 'Plants, algae, and green plants'];
+  let validControls = 0;
+  for (const [path, tail, expectedPass] of activePaths) {
+    for (const subject of validSubjects) {
+      const text = `${subject} ${tail}.`;
+      const result = evaluatePhotosynthesisRelationsV2(text);
+      assert.equal(result.hasMalformed, false, `${path}/valid/${subject}`);
+      assert.equal(result.passed, expectedPass, `${path}/valid/${subject}`);
+      assert.deepEqual(packaged.evaluatePhotosynthesisRelationsV2(text), result, `${path}/valid/package parity`);
+      validControls += 1;
+    }
+  }
+  let rawCases = 0;
+  for (const [shape, subject] of malformedSubjects) {
+    for (const [path, tail] of activePaths) {
+      const text = `${subject} ${tail}.`;
+      const result = evaluatePhotosynthesisRelationsV2(text);
+      assert.equal(result.hasMalformed, true, `${shape}/${path}: ${text}`);
+      assert.equal(result.passed, false, `${shape}/${path}: ${text}`);
+      assert.deepEqual(packaged.evaluatePhotosynthesisRelationsV2(text), result, `${shape}/${path}/package parity`);
+      rawCases += 1;
+    }
+    const passive = `Sunlight is absorbed by ${subject} during photosynthesis.`;
+    const result = evaluatePhotosynthesisRelationsV2(passive);
+    assert.equal(result.hasMalformed, true, `${shape}/passive`);
+    assert.deepEqual(packaged.evaluatePhotosynthesisRelationsV2(passive), result, `${shape}/passive/package parity`);
+    rawCases += 1;
+  }
+  for (const subject of validSubjects) {
+    const result = evaluatePhotosynthesisRelationsV2(`Sunlight is absorbed by ${subject} during photosynthesis.`);
+    assert.equal(result.passed, true, `passive/valid/${subject}`);
+    assert.equal(result.hasMalformed, false, `passive/valid/${subject}`);
+    assert.deepEqual(packaged.evaluatePhotosynthesisRelationsV2(`Sunlight is absorbed by ${subject} during photosynthesis.`), result,
+      `passive/valid/package/${subject}`);
+    validControls += 1;
+  }
+
+  const joins = [' and ', ', and ', '; ', ': ', '. ', '. And ', '. But ', ' but ', ', but '];
+  let compositionCases = 0;
+  for (const join of joins) {
+    const validText = `Plants use chlorophyll to absorb sunlight${join}Algae absorb sunlight`;
+    const valid = evaluatePhotosynthesisRelationsV2(validText);
+    assert.equal(valid.topology.length, 2, `valid frame split at ${JSON.stringify(join)}`);
+    assert.equal(valid.passed, true, `valid frame split at ${JSON.stringify(join)}`);
+    assert.deepEqual(packaged.evaluatePhotosynthesisRelationsV2(validText), valid, `valid package split at ${JSON.stringify(join)}`);
+    const mixed = evaluatePhotosynthesisRelationsV2(
+      `, and green plants and algae use chlorophyll to harness solar energy${join}plants absorb sunlight`,
+    );
+    assert.equal(mixed.topology.length, 2, `malformed frame split at ${JSON.stringify(join)}`);
+    assert.equal(mixed.hasMalformed, true, `malformed first frame at ${JSON.stringify(join)}`);
+    assert.ok(mixed.relationRecords.some((record) => record.qualifies
+      && record.evidenceSpan?.text.includes('plants absorb sunlight')),
+    `valid sibling keeps its own state at ${JSON.stringify(join)}`);
+    const mixedText = `, and green plants and algae use chlorophyll to harness solar energy${join}plants absorb sunlight`;
+    assert.deepEqual(packaged.evaluatePhotosynthesisRelationsV2(mixedText), mixed, `mixed package split at ${JSON.stringify(join)}`);
+    compositionCases += 2;
+  }
+
+  const mediatedFrames = [
+    'plants use chlorophyll to absorb sunlight',
+    'algae use chlorophyll to convert light energy',
+    'green plants use chlorophyll to capture solar energy',
+  ];
+  for (const join of ['; ', ' and ', '. ']) {
+    const text = mediatedFrames.join(join);
+    const result = evaluatePhotosynthesisRelationsV2(text);
+    const supports = result.relationRecords.filter((record) => record.relationType === 'CHLOROPHYLL_SUPPORT');
+    assert.equal(supports.length, mediatedFrames.length, `support count at ${JSON.stringify(join)}`);
+    assert.deepEqual(supports.map((record) => record.evidenceSpan.text.replace(/[.!?;:]+$/, '').trim()), mediatedFrames,
+      `support frame ownership at ${JSON.stringify(join)}`);
+    assert.deepEqual(packaged.evaluatePhotosynthesisRelationsV2(text), result, `support package parity at ${JSON.stringify(join)}`);
+  }
+
+  const morphology = [['Plants', 'use', 'BASE'], ['Photosynthesis', 'uses', 'PRESENT_3SG'], ['Plants', 'used', 'PAST']];
+  const targetObjects = { capture: 'light energy', absorb: 'sunlight', harness: 'solar energy', use: 'sunlight', convert: 'light energy', transform: 'sunlight', store: 'light energy' };
+  let morphologyCases = 0;
+  for (const target of mediatedTargets) {
+    let baseFingerprint;
+    let pastFingerprint;
+    for (const [subject, surface, form] of morphology) {
+      const answer = `${subject} ${surface} chlorophyll to ${target} ${targetObjects[target]}`;
+      const result = evaluatePhotosynthesisRelationsV2(answer);
+      const support = result.relationRecords.find((record) => record.relationType === 'CHLOROPHYLL_SUPPORT');
+      assert.equal(support?.verbForm, form, `${target}/${surface}`);
+      assert.deepEqual(packaged.evaluatePhotosynthesisRelationsV2(answer), result,
+        `morphology package parity ${target}/${surface}`);
+      if (form === 'BASE') baseFingerprint = semanticCaseFingerprint(answer);
+      if (form === 'PAST') pastFingerprint = semanticCaseFingerprint(answer);
+      morphologyCases += 1;
+    }
+    assert.notEqual(baseFingerprint, pastFingerprint, `${target} BASE/PAST fingerprint distinction`);
+  }
+  assert.equal(rawCases, 88);
+  assert.equal(validControls, 44);
+  assert.equal(compositionCases, 18);
+  t.diagnostic(`raw topology paths=${rawCases}; valid controls=${validControls}; frame-boundary cases=${compositionCases}; supported predicate paths=${activePaths.length}; mediator cases=${morphologyCases}; multi-frame support owners=${mediatedFrames.length} x 3`);
+});
+
+test('mediated support cardinality and ownership hold for one, two, and three frames', async (t) => {
+  const { createDerivedEvaluator } = await import('../scripts/run-photosynthesis-relation-mutations.mjs');
+  const packaged = createDerivedEvaluator();
+  const objects = { capture: 'light energy', absorb: 'sunlight', harness: 'solar energy', use: 'sunlight', convert: 'light energy', transform: 'sunlight', store: 'light energy' };
+  const subjects = ['Plants', 'Algae', 'Green plants'];
+  const boundaries = ['; ', '. ', ' and ', '. But ', ', and '];
+  const scenarios = [
+    { id: 'same-subject-target', subject: (index) => subjects[0], target: () => 'absorb' },
+    { id: 'different-subject-same-target', subject: (index) => subjects[index], target: () => 'absorb' },
+    { id: 'same-subject-different-target', subject: () => subjects[0], target: (index) => mediatedTargets[index] },
+    { id: 'different-subject-target', subject: (index) => subjects[index], target: (index) => mediatedTargets[index] },
+  ];
+  let supportCases = 0;
+  for (let count = 1; count <= 3; count += 1) {
+    for (const scenario of scenarios) {
+      const frames = Array.from({ length: count }, (_, index) => {
+        const subject = scenario.subject(index);
+        const target = scenario.target(index);
+        return `${subject} use chlorophyll to ${target} ${objects[target]}`;
+      });
+      for (const boundary of (count === 1 ? [''] : boundaries)) {
+        const text = frames.join(boundary);
+        const result = evaluatePhotosynthesisRelationsV2(text);
+        const supports = result.relationRecords.filter((record) => record.relationType === 'CHLOROPHYLL_SUPPORT');
+        const targets = result.relationRecords.filter((record) => record.relationType === 'CORE_LIGHT_RELATION');
+        assert.equal(result.passed, true, `${count}/${scenario.id}/${JSON.stringify(boundary)}`);
+        assert.equal(targets.length, count, `${count}/${scenario.id} target count`);
+        assert.equal(supports.length, count, `${count}/${scenario.id} support count`);
+        assert.deepEqual(supports.map((record) => record.evidenceSpan.text.replace(/[.!?;:]+$/, '').trim()),
+          frames.map((frame) => frame.toLowerCase()), `${count}/${scenario.id} support owner order`);
+        assert.deepEqual(packaged.evaluatePhotosynthesisRelationsV2(text), result,
+          `${count}/${scenario.id}/${JSON.stringify(boundary)} package parity`);
+        supportCases += 1;
+      }
+    }
+  }
+  for (const target of mediatedTargets) {
+    for (let count = 1; count <= 3; count += 1) {
+      const frames = subjects.slice(0, count)
+        .map((subject) => `${subject} use chlorophyll to ${target} ${objects[target]}`);
+      for (const boundary of (count === 1 ? [''] : boundaries)) {
+        const text = frames.join(boundary);
+        const result = evaluatePhotosynthesisRelationsV2(text);
+        const supports = result.relationRecords.filter((record) => record.relationType === 'CHLOROPHYLL_SUPPORT');
+        assert.equal(supports.length, count, `${target}/${count}/${JSON.stringify(boundary)} support count`);
+        assert.deepEqual(supports.map((record) => record.evidenceSpan.text.replace(/[.!?;:]+$/, '').trim()),
+          frames.map((frame) => frame.toLowerCase()), `${target}/${count} support owner order`);
+        assert.deepEqual(packaged.evaluatePhotosynthesisRelationsV2(text), result,
+          `${target}/${count}/${JSON.stringify(boundary)} package parity`);
+        supportCases += 1;
+      }
+    }
+  }
+  assert.equal(supportCases, 121);
+  t.diagnostic(`mediated support cases=${supportCases}; multiplicities=1,2,3; target families=${mediatedTargets.length}; boundary types=${boundaries.length}`);
+});
+
+test('fingerprint ownership differentials cover every supported target and semantic frame position', async () => {
+  const { createDerivedEvaluator } = await import('../scripts/run-photosynthesis-relation-mutations.mjs');
+  const packaged = createDerivedEvaluator();
+  const boundaries = ['; ', '. ', ': ', ' and ', '. But '];
+  let ownershipCases = 0;
+  for (const target of mediatedTargets) {
+    for (const boundary of boundaries) {
+      const first = `Plants use chlorophyll to ${target} sunlight${boundary}algae ${target} sunlight`;
+      const second = `Plants ${target} sunlight${boundary}algae use chlorophyll to ${target} sunlight`;
+      assert.equal(evaluatePhotosynthesisRelationsV2(first).passed, true, `${target}/${JSON.stringify(boundary)}/first`);
+      assert.equal(evaluatePhotosynthesisRelationsV2(second).passed, true, `${target}/${JSON.stringify(boundary)}/second`);
+      assert.notEqual(semanticCaseFingerprint(first), semanticCaseFingerprint(second),
+        `${target}/${JSON.stringify(boundary)}`);
+      assert.equal(packaged.semanticCaseFingerprint(first), semanticCaseFingerprint(first),
+        `${target}/${JSON.stringify(boundary)} first package fingerprint`);
+      assert.equal(packaged.semanticCaseFingerprint(second), semanticCaseFingerprint(second),
+        `${target}/${JSON.stringify(boundary)} second package fingerprint`);
+      assert.equal(semanticCaseFingerprint(first), semanticCaseFingerprint(`  ${first.toUpperCase().replace(/\s+/g, '   ')}.  `),
+        `${target}/${JSON.stringify(boundary)} case/space/terminal-punctuation invariant`);
+      ownershipCases += 1;
+    }
+  }
+  const movedSemantics = [
+    [
+      'Plants may absorb sunlight; algae absorb sunlight',
+      'Plants absorb sunlight; algae may absorb sunlight',
+    ],
+    [
+      'Plants do not fail to absorb sunlight; algae absorb sunlight',
+      'Plants absorb sunlight; algae do not fail to absorb sunlight',
+    ],
+    [
+      'Plants use chlorophyll to absorb sunlight; algae used chlorophyll to capture sunlight',
+      'Plants used chlorophyll to capture sunlight; algae use chlorophyll to absorb sunlight',
+    ],
+    [
+      ', and plants and algae absorb sunlight; photosynthesis absorbs sunlight',
+      'Plants and algae absorb sunlight; , and photosynthesis absorbs sunlight',
+    ],
+    [
+      'Plants capture light energy; algae absorb light energy',
+      'Plants capture light energy. Algae absorb light energy',
+    ],
+  ];
+  for (const [left, right] of movedSemantics) {
+    assert.notEqual(semanticCaseFingerprint(left), semanticCaseFingerprint(right), `${left} <> ${right}`);
+    assert.equal(packaged.semanticCaseFingerprint(left), semanticCaseFingerprint(left), `${left} package fingerprint`);
+    assert.equal(packaged.semanticCaseFingerprint(right), semanticCaseFingerprint(right), `${right} package fingerprint`);
+    ownershipCases += 1;
+  }
+  assert.equal(ownershipCases, 40);
+});
+
+test('frame partition matrix crosses predicate classes, nine boundaries, and validity positions', async (t) => {
+  const { createDerivedEvaluator } = await import('../scripts/run-photosynthesis-relation-mutations.mjs');
+  const packaged = createDerivedEvaluator();
+  const frameTypes = {
+    simple: 'absorb sunlight',
+    mediated: 'use chlorophyll to absorb sunlight',
+    auxiliary: 'must absorb sunlight',
+    control: 'do not fail to absorb sunlight',
+    mediatedControl: 'do not fail to use chlorophyll to absorb sunlight',
+    mediatedModal: 'may use chlorophyll to absorb sunlight',
+  };
+  const boundaries = [' and ', ', and ', '; ', ': ', '. ', '. And ', '. But ', ' but ', ', but '];
+  const pairings = Object.keys(frameTypes).flatMap((left) => Object.keys(frameTypes).map((right) => [left, right]));
+  const malformed = 'plants, , and algae';
+  let compositionCases = 0;
+  const keys = new Set();
+  const rendered = (type, subject) => `${subject} ${frameTypes[type]}`;
+  for (const [leftType, rightType] of pairings) {
+    for (const boundary of boundaries) {
+      const left = rendered(leftType, 'Plants');
+      const right = rendered(rightType, 'Algae');
+      const inputs = [
+        ['valid-valid', left, right],
+        ['malformed-valid', rendered(leftType, malformed), right],
+        ['valid-malformed', left, rendered(rightType, malformed)],
+      ];
+      for (const [state, first, second] of inputs) {
+        const result = evaluatePhotosynthesisRelationsV2(first + boundary + second);
+        assert.deepEqual(packaged.evaluatePhotosynthesisRelationsV2(first + boundary + second), result,
+          `${leftType}+${rightType}/${state}/${JSON.stringify(boundary)} package parity`);
+        assert.equal(result.topology.length, 2, `${leftType}+${rightType}/${state}/${JSON.stringify(boundary)}`);
+        const expectedMalformed = state !== 'valid-valid';
+        assert.equal(result.hasMalformed, expectedMalformed, `${leftType}+${rightType}/${state}/${JSON.stringify(boundary)}`);
+        const expectedSupports = state === 'valid-valid'
+          ? Number(leftType.toLowerCase().includes('mediated')) + Number(rightType.toLowerCase().includes('mediated'))
+          : Number((state === 'malformed-valid' ? rightType : leftType).toLowerCase().includes('mediated'));
+        assert.equal(result.relationRecords.filter((record) => record.relationType === 'CHLOROPHYLL_SUPPORT').length,
+          expectedSupports, `${leftType}+${rightType}/${state}/${JSON.stringify(boundary)} support count`);
+        const validSubject = state === 'malformed-valid' ? 'algae' : 'plants';
+        const siblingRecord = result.relationRecords.find((record) => record.evidenceSpan?.text.includes(validSubject)
+          && record.relationType === 'CORE_LIGHT_RELATION');
+        assert.ok(siblingRecord, `${leftType}+${rightType}/${state}/${JSON.stringify(boundary)} valid sibling record`);
+        assert.equal(siblingRecord.rejectionReasons.includes('GRAMMAR_SHAPE_NOT_ACCEPTED'), false,
+          `${leftType}+${rightType}/${state}/${JSON.stringify(boundary)} sibling grammar isolation`);
+        if (expectedMalformed) assert.equal(result.passed, false, `${leftType}+${rightType}/${state}`);
+        keys.add(`${leftType}+${rightType}|${boundary}|${state}`);
+        compositionCases += 1;
+      }
+    }
+  }
+  assert.equal(compositionCases, 972);
+  assert.equal(keys.size, compositionCases);
+  t.diagnostic(`cross-root compositions=${compositionCases}; unique composition keys=${keys.size}; predicate classes=${Object.keys(frameTypes).length}; boundaries=${boundaries.length}; validity positions=valid-valid/malformed-valid/valid-malformed`);
 });
 })();

@@ -1,17 +1,16 @@
 {
   "schemaVersion": 1,
   "designVersion": "photosynthesis-light-relation-v2",
-  "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
   "repairAttemptId": "P1-FIVE-ROOT-CLOSURE-REPAIR-20261002",
-  "capturedAtUtc": "2026-10-02T00:51:17.494Z",
+  "capturedAtUtc": "2026-10-02T01:15:35.029Z",
   "phase": "RED",
-  "status": "BLOCKED_BASE_REPRODUCED",
+  "status": "RED_REPRODUCED_EXACT_BLOCKED_BASE",
   "repairBaseSha": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
   "repairBaseTreeSha": "25e7623f2734ce2e111ef3da92dcac15a999d6d4",
   "repairStartHead": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
-  "redCommitSha": null,
+  "redCommitSha": "502fef0d8bb3a6c3d31083ddee6df55fb1a78275",
   "redEvidenceCommitSha": null,
   "expectedRed": true,
   "rootReproductions": [
@@ -20,43 +19,73 @@
       "input": ", and plants and algae must absorb sunlight.",
       "observed": {
         "passed": true,
-        "hasMalformed": false
+        "hasMalformed": false,
+        "polarity": "AFFIRMED",
+        "coreRecordCount": 2,
+        "qualifyingCoreRecordCount": 2,
+        "supportRecordCount": 0,
+        "qualifyingSupportRecordCount": 0,
+        "supportVerbForms": [],
+        "coordinationTopology": [
+          {
+            "type": "AND",
+            "cardinality": 2,
+            "rawMembers": null
+          }
+        ],
+        "fingerprint": "0e74ac30da6db39f4042ded060eb2eebe10f685177674ad6085becdd4d0aac7d"
+      },
+      "control": {
+        "input": "Plants and algae must absorb sunlight.",
+        "observed": {
+          "passed": true,
+          "hasMalformed": false,
+          "polarity": "AFFIRMED",
+          "coreRecordCount": 2,
+          "qualifyingCoreRecordCount": 2,
+          "supportRecordCount": 0,
+          "qualifyingSupportRecordCount": 0,
+          "supportVerbForms": [],
+          "coordinationTopology": [
+            {
+              "type": "AND",
+              "cardinality": 2,
+              "rawMembers": null
+            }
+          ]
+        },
+        "fingerprint": "0e74ac30da6db39f4042ded060eb2eebe10f685177674ad6085becdd4d0aac7d"
       },
       "controlFingerprintEqual": true
     },
     {
       "id": "ROOT_2_TOPOLOGY_FRAME_COLLAPSE",
-      "input": ", and green plants and algae use chlorophyll to harness solar energy and plants and algae absorb sunlight",
+      "input": ", and green plants and algae use chlorophyll to harness solar energy and plants and algae absorb sunlight.",
       "observed": {
         "passed": false,
         "hasMalformed": true,
+        "polarity": "UNRESOLVED",
+        "coreRecordCount": 4,
+        "qualifyingCoreRecordCount": 0,
+        "supportRecordCount": 2,
+        "qualifyingSupportRecordCount": 0,
+        "supportVerbForms": [
+          "PAST",
+          "PAST"
+        ],
         "coordinationTopology": [
           {
             "type": "AND",
             "cardinality": 3,
-            "orderedMembers": [
-              [
-                "",
-                "UNSUPPORTED"
-              ],
-              [
-                "green plants",
-                "BIOLOGICAL_AGENT"
-              ],
-              [
-                "algae",
-                "BIOLOGICAL_AGENT"
-              ]
-            ],
-            "shapeValid": false,
             "rawMembers": [
               "",
               "green plants",
               "algae"
-            ]
+            ],
+            "shapeValid": false
           }
         ],
-        "qualifyingCoreRecordCount": 0
+        "fingerprint": "3d454465cba4d0f645f795589f692373fe2b3d066168dd4299d50e5dde476012"
       },
       "expectedValidSiblingPreserved": true
     },
@@ -64,30 +93,191 @@
       "id": "ROOT_3_FRAME_ATTACHMENT_FAILURE",
       "input": "plants use chlorophyll to absorb sunlight; algae use chlorophyll to absorb sunlight",
       "observed": {
+        "passed": true,
+        "hasMalformed": false,
+        "polarity": "AFFIRMED",
         "coreRecordCount": 2,
-        "supportRecordCount": 1
+        "qualifyingCoreRecordCount": 2,
+        "supportRecordCount": 1,
+        "qualifyingSupportRecordCount": 1,
+        "supportVerbForms": [
+          "PAST"
+        ],
+        "coordinationTopology": [
+          {
+            "type": "SINGLE",
+            "cardinality": 1,
+            "rawMembers": null
+          },
+          {
+            "type": "SINGLE",
+            "cardinality": 1,
+            "rawMembers": null
+          }
+        ],
+        "fingerprint": "bda2d9df7b1f861949de1dd6fbe15c37147b5137d18f6e2e244b88ffefdbb39f"
       },
       "expectedSupportRecordCount": 2
     },
     {
       "id": "ROOT_4_FINGERPRINT_COLLISION",
-      "inputs": [
-        "plants use chlorophyll to absorb sunlight; algae absorb sunlight",
-        "plants absorb sunlight; algae use chlorophyll to absorb sunlight"
-      ],
+      "input": "plants use chlorophyll to absorb sunlight; algae absorb sunlight",
+      "observed": {
+        "passed": true,
+        "hasMalformed": false,
+        "polarity": "AFFIRMED",
+        "coreRecordCount": 2,
+        "qualifyingCoreRecordCount": 2,
+        "supportRecordCount": 1,
+        "qualifyingSupportRecordCount": 1,
+        "supportVerbForms": [
+          "PAST"
+        ],
+        "coordinationTopology": [
+          {
+            "type": "SINGLE",
+            "cardinality": 1,
+            "rawMembers": null
+          },
+          {
+            "type": "SINGLE",
+            "cardinality": 1,
+            "rawMembers": null
+          }
+        ],
+        "fingerprint": "bda2d9df7b1f861949de1dd6fbe15c37147b5137d18f6e2e244b88ffefdbb39f"
+      },
+      "comparison": {
+        "input": "plants absorb sunlight; algae use chlorophyll to absorb sunlight",
+        "observed": {
+          "passed": true,
+          "hasMalformed": false,
+          "polarity": "AFFIRMED",
+          "coreRecordCount": 2,
+          "qualifyingCoreRecordCount": 2,
+          "supportRecordCount": 1,
+          "qualifyingSupportRecordCount": 1,
+          "supportVerbForms": [
+            "PAST"
+          ],
+          "coordinationTopology": [
+            {
+              "type": "SINGLE",
+              "cardinality": 1,
+              "rawMembers": null
+            },
+            {
+              "type": "SINGLE",
+              "cardinality": 1,
+              "rawMembers": null
+            }
+          ]
+        },
+        "fingerprint": "bda2d9df7b1f861949de1dd6fbe15c37147b5137d18f6e2e244b88ffefdbb39f"
+      },
       "fingerprintsEqual": true
     },
     {
       "id": "ROOT_5_MEDIATOR_MORPHOLOGY_COLLAPSE",
-      "inputs": [
-        "plants use chlorophyll to absorb sunlight",
-        "plants used chlorophyll to absorb sunlight"
-      ],
-      "supportVerbForms": [
-        "PAST",
-        "PAST"
-      ],
+      "input": "plants use chlorophyll to absorb sunlight",
+      "observed": {
+        "passed": true,
+        "hasMalformed": false,
+        "polarity": "AFFIRMED",
+        "coreRecordCount": 1,
+        "qualifyingCoreRecordCount": 1,
+        "supportRecordCount": 1,
+        "qualifyingSupportRecordCount": 1,
+        "supportVerbForms": [
+          "PAST"
+        ],
+        "coordinationTopology": [
+          {
+            "type": "SINGLE",
+            "cardinality": 1,
+            "rawMembers": null
+          }
+        ],
+        "fingerprint": "9074e45d92a9addec42a00a64f0aa8d78a59ee27d64600a0b5de0c45d5773f6a"
+      },
+      "comparison": {
+        "input": "plants used chlorophyll to absorb sunlight",
+        "observed": {
+          "passed": true,
+          "hasMalformed": false,
+          "polarity": "AFFIRMED",
+          "coreRecordCount": 1,
+          "qualifyingCoreRecordCount": 1,
+          "supportRecordCount": 1,
+          "qualifyingSupportRecordCount": 1,
+          "supportVerbForms": [
+            "PAST"
+          ],
+          "coordinationTopology": [
+            {
+              "type": "SINGLE",
+              "cardinality": 1,
+              "rawMembers": null
+            }
+          ]
+        },
+        "fingerprint": "9074e45d92a9addec42a00a64f0aa8d78a59ee27d64600a0b5de0c45d5773f6a"
+      },
       "fingerprintsEqual": true
+    },
+    {
+      "id": "ADV001",
+      "input": "Photosynthesis may use chlorophyll to capture light energy.",
+      "expectedDecision": "FAIL",
+      "expectedPolarity": "UNCERTAIN",
+      "observedDecision": "FAIL",
+      "observedPolarity": "UNCERTAIN",
+      "fingerprint": "61837a8c1066be4edc789820d440ef0e544f50acee36af3325432deaa49630af"
+    },
+    {
+      "id": "ADV002",
+      "input": "Photosynthesis uses chlorophyll to capture carbon dioxide and light is nearby.",
+      "expectedDecision": "FAIL",
+      "expectedPolarity": "UNRESOLVED",
+      "observedDecision": "FAIL",
+      "observedPolarity": "UNRESOLVED",
+      "fingerprint": "9dce189bc37e9931c0dd8ddd88b9aefcc6eb0fb8a4bf8c285af19a0800ecb790"
+    },
+    {
+      "id": "ADV003",
+      "input": "Photosynthesis chlorophyll capture light energy.",
+      "expectedDecision": "FAIL",
+      "expectedPolarity": "UNRESOLVED",
+      "observedDecision": "FAIL",
+      "observedPolarity": "UNRESOLVED",
+      "fingerprint": "ea0e7ccebc5e42746b57d929abf2eb396ae11208b0a45af0b83b3e1051b3de74"
+    },
+    {
+      "id": "ADV004",
+      "input": "Photosynthesis does not fail to use chlorophyll to capture light energy.",
+      "expectedDecision": "PASS",
+      "expectedPolarity": "AFFIRMED",
+      "observedDecision": "PASS",
+      "observedPolarity": "AFFIRMED",
+      "fingerprint": "5acac2db4ff4784bc2c4cb1225aaab694085516d341a378d5ccc5c39ed569b02"
+    },
+    {
+      "id": "ADV005",
+      "input": "Light energy is captured by chlorophyll during photosynthesis.",
+      "expectedDecision": "PASS",
+      "expectedPolarity": "AFFIRMED",
+      "observedDecision": "PASS",
+      "observedPolarity": "AFFIRMED",
+      "fingerprint": "1f8b592073d9fc127c15e9069298cae6884643bdba79d97b23ec5b18f55ef34c"
+    },
+    {
+      "id": "ADV006",
+      "input": "Animals and plants use chlorophyll to capture light energy during photosynthesis.",
+      "expectedDecision": "FAIL",
+      "expectedPolarity": "MIXED_INVALID",
+      "observedDecision": "FAIL",
+      "observedPolarity": "MIXED_INVALID",
+      "fingerprint": "51260dc85fb5a34f38e886bce305f717eab66e922d500ec13089addfaeee5d9f"
     }
   ],
   "mediatedPredicateCoverageHole": {
@@ -122,5 +312,17 @@
   ],
   "redEvidenceMethod": "read-only evaluation of exact blocked-base source bytes with fresh root probes",
   "inheritedPartialImplementationCommitSha": "c12c8e106e64341dd1f642036108624e519bb3f9",
-  "inheritedPartialImplementationTreeSha": "ab830a0a6c4c5aa7bc6b85311032e2edcac8994a"
+  "inheritedPartialImplementationTreeSha": "ab830a0a6c4c5aa7bc6b85311032e2edcac8994a",
+  "redEvidence": {
+    "method": "compile and evaluate evaluator bytes read-only from git show",
+    "blockedBaseHead": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
+    "blockedBaseTree": "25e7623f2734ce2e111ef3da92dcac15a999d6d4",
+    "evaluatorPath": "backend/lib/photosynthesis-relation-evaluator.js",
+    "evaluatorGitBlob": "bae32d7996327a43373bf1f75ba9e2961bad603b",
+    "evaluatorSha256": "541416a4942ee2d4bd46aa09d1f790feccfe2170b3f36d73505929e7160ee016",
+    "evaluatorBytes": 110606,
+    "canonicalAdversarialCaseCount": 6,
+    "allCanonicalExpectedOutcomesObserved": true
+  },
+  "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272"
 }

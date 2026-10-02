@@ -1737,7 +1737,7 @@ test('PREQ-002 reindexes all cases with exactly the frozen 18-field projection',
   assert.equal(index.sourceCaseCount - index.uniqueCount, 0);
 });
 
-test('PREQ-008 package receipt binds the recipe by committed commit, path, and blob', async () => {
+test('PREQ-008 historical package receipt binds the recipe and artifact by committed blobs', async () => {
   const receipt = JSON.parse(readFileSync(join(EVAL_ROOT, '..', '..', 'evidence', 'p1-photosynthesis-relation-v2', 'mutation-phase.json'), 'utf8'));
   const { mkdtempSync, writeFileSync, rmSync } = require('node:fs');
   const { tmpdir } = require('node:os');
@@ -1757,7 +1757,8 @@ test('PREQ-008 package receipt binds the recipe by committed commit, path, and b
     assert.equal(git('rev-parse', spec).toString().trim(), receipt[`${kind}InputBlobSha`], kind);
   }
   assert.equal(receipt.recipeGitBlob, receipt.recipeInputBlobSha);
-  assert.deepEqual(inputs.evaluator, readFileSync(join(__dirname, 'photosynthesis-relation-evaluator.js')));
+  // This receipt describes an immutable predecessor; compare it to its Git objects,
+  // not the evaluator and package being repaired in the current working tree.
   assert.deepEqual(inputs.corpus, readFileSync(join(__dirname, 'photosynthesis-relation-cases.js')));
   const temporary = mkdtempSync(join(tmpdir(), 'p1-package-provenance-'));
   try {
@@ -1768,7 +1769,7 @@ test('PREQ-008 package receipt binds the recipe by committed commit, path, and b
     assert.equal(hash(runner), receipt.runnerDerivedSha256);
     assert.equal(gitBlobOid(runner), receipt.runnerDerivedBlob);
     const { artifact, metadata } = composeArtifact(inputs.evaluator, runner);
-    const committedPackage = readFileSync(join(root, receipt.packagePath));
+    const committedPackage = git('cat-file', 'blob', receipt.packageGitBlob);
     assert.deepEqual(artifact, committedPackage);
     assert.equal(hash(artifact), receipt.packageSha256);
     assert.equal(artifact.length, receipt.packageBytes);

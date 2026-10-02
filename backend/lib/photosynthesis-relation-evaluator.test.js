@@ -2047,3 +2047,155 @@ test('P1 five-root fresh self-closure preserves raw, frame, support, owner, and 
 });
 
 })();
+
+// Exact P1 post-five-root boundary and passive-agent closure regressions.
+(function boundaryPassiveClosureRegressionSuite() {
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { join } = require('node:path');
+const { pathToFileURL } = require('node:url');
+const {
+  evaluatePhotosynthesisRelationsV2,
+  semanticCaseFingerprint,
+} = require('./photosynthesis-relation-evaluator');
+
+async function loadPackageEvaluator() {
+  const { createDerivedEvaluator } = await import(pathToFileURL(join(
+    __dirname, '..', 'scripts', 'run-photosynthesis-relation-mutations.mjs',
+  )).href);
+  return createDerivedEvaluator();
+}
+
+function evaluateBoth(input, packaged) {
+  const source = evaluatePhotosynthesisRelationsV2(input);
+  const packageResult = packaged.evaluatePhotosynthesisRelationsV2(input);
+  assert.deepEqual(packageResult, source, `source/package trace: ${input}`);
+  return { source, packageResult };
+}
+
+function assertPass(result, input) {
+  assert.equal(result.passed, true, input);
+  assert.equal(result.hasMalformed, false, input);
+}
+
+test('post-five-root boundary and passive-agent closure regressions', async (t) => {
+  const packaged = await loadPackageEvaluator();
+
+  await t.test('repeated BUT boundaries retain three explicit frame occurrences', () => {
+    const supportOnAlgae = 'Green plants store solar light but algae use chlorophyll to transform sunlight but photosynthetic bacteria transform sunlight';
+    const supportOnBacteria = 'Green plants store solar light but algae transform sunlight but photosynthetic bacteria use chlorophyll to transform sunlight';
+    const a = evaluateBoth(supportOnAlgae, packaged).source;
+    const b = evaluateBoth(supportOnBacteria, packaged).source;
+
+    assert.equal(a.passed, true);
+    assert.equal(b.passed, true);
+    assert.deepEqual(a.topology, [[0, 0], [0, 1], [0, 2]]);
+    assert.deepEqual(b.topology, [[0, 0], [0, 1], [0, 2]]);
+  });
+
+  await t.test('moving mediation between repeated-BUT frames changes the frozen fingerprint', () => {
+    const supportOnAlgae = 'Green plants store solar light but algae use chlorophyll to transform sunlight but photosynthetic bacteria transform sunlight';
+    const supportOnBacteria = 'Green plants store solar light but algae transform sunlight but photosynthetic bacteria use chlorophyll to transform sunlight';
+    const a = evaluateBoth(supportOnAlgae, packaged).source;
+    const b = evaluateBoth(supportOnBacteria, packaged).source;
+
+    assert.deepEqual(a.relationRecords.filter((record) => record.relationType === 'CORE_LIGHT_RELATION')
+      .map((record) => record.subjectSet.lemma), ['green plants', 'algae', 'photosynthetic bacteria']);
+    assert.deepEqual(b.relationRecords.filter((record) => record.relationType === 'CORE_LIGHT_RELATION')
+      .map((record) => record.subjectSet.lemma), ['green plants', 'algae', 'photosynthetic bacteria']);
+    assert.match(a.relationRecords.find((record) => record.relationType === 'CHLOROPHYLL_SUPPORT').evidenceSpan.text, /algae/);
+    assert.match(b.relationRecords.find((record) => record.relationType === 'CHLOROPHYLL_SUPPORT').evidenceSpan.text, /photosynthetic bacteria/);
+    assert.notEqual(semanticCaseFingerprint(a), semanticCaseFingerprint(b));
+    assert.notEqual(packaged.semanticCaseFingerprint(supportOnAlgae), packaged.semanticCaseFingerprint(supportOnBacteria));
+  });
+
+  await t.test('passive-agent AND stays inside the agent span before an explicit sibling', () => {
+    const input = 'Solar light is stored by green plants and algae during photosynthesis and photosynthetic bacteria transform sunlight';
+    const { source } = evaluateBoth(input, packaged);
+
+    assertPass(source, input);
+    assert.deepEqual(source.topology, [[0, 0], [0, 1]]);
+    assert.deepEqual(source.relationRecords.filter((record) => record.relationType === 'CORE_LIGHT_RELATION')
+      .map((record) => [record.subjectSet.lemma, record.voice, record.qualifies]), [
+        ['green plants', 'PASSIVE', true],
+        ['algae', 'PASSIVE', true],
+        ['photosynthetic bacteria', 'ACTIVE', true],
+      ]);
+    assert.deepEqual(source.coordinationTopology[0].orderedMembers, [
+      ['green plants', 'BIOLOGICAL_AGENT'], ['algae', 'BIOLOGICAL_AGENT'],
+    ]);
+  });
+
+  await t.test('comma before BUT is a clause delimiter, not an empty passive-agent member', () => {
+    const withComma = 'Solar light is stored by green plants, but algae transform sunlight';
+    const withoutComma = 'Solar light is stored by green plants but algae transform sunlight';
+    const a = evaluateBoth(withComma, packaged).source;
+    const b = evaluateBoth(withoutComma, packaged).source;
+
+    assertPass(a, withComma);
+    assertPass(b, withoutComma);
+    assert.deepEqual(a.topology, [[0, 0], [0, 1]]);
+    assert.equal(a.coordinationTopology[0].cardinality, 1);
+    assert.deepEqual(a.coordinationTopology[0].orderedMembers, [['green plants', 'BIOLOGICAL_AGENT']]);
+    assert.equal(semanticCaseFingerprint(a), semanticCaseFingerprint(b));
+  });
+
+  await t.test('passive agent ends before every supported local context adjunct', () => {
+    for (const preposition of ['in', 'for']) {
+      const input = `Solar light is stored by green plants ${preposition} photosynthesis`;
+      const { source } = evaluateBoth(input, packaged);
+
+      assertPass(source, input);
+      assert.deepEqual(source.topology, [[0, 0]]);
+      assert.equal(source.relationRecords.length, 1);
+      assert.equal(source.relationRecords[0].subjectSet.lemma, 'green plants');
+      assert.equal(source.relationRecords[0].subjectSet.valid, true);
+      assert.equal(source.relationRecords[0].processContext, 'LOCAL_ADJUNCT');
+      assert.equal(source.relationRecords[0].qualifies, true);
+    }
+  });
+});
+
+test('exact owner-recovered ASTRA-BOUNDED-FINAL-003 sibling locality remains intact', async (t) => {
+  const packaged = await loadPackageEvaluator();
+  const cases = [
+    {
+      input: 'Plants and algae absorb sunlight; plants, , and algae absorb sunlight.',
+      validIndex: 0,
+      malformedIndex: 1,
+      topology: [[0, 0], [0, 1]],
+    },
+    {
+      input: 'Plants, , and algae absorb sunlight. And plants and algae absorb sunlight.',
+      validIndex: 1,
+      malformedIndex: 0,
+      topology: [[0, 0], [1, 0]],
+    },
+  ];
+
+  for (const item of cases) {
+    await t.test(item.input, () => {
+      const { source } = evaluateBoth(item.input, packaged);
+      assert.equal(source.passed, false);
+      assert.equal(source.hasMalformed, true);
+      assert.deepEqual(source.topology, item.topology);
+      const groups = source.coordinationTopology;
+      assert.equal(groups.length, 2);
+      assert.deepEqual(groups[item.validIndex].orderedMembers, [
+        ['plant', 'BIOLOGICAL_AGENT'], ['algae', 'BIOLOGICAL_AGENT'],
+      ]);
+      assert.notEqual(groups[item.validIndex].shapeValid, false);
+      assert.equal(groups[item.malformedIndex].shapeValid, false);
+      assert.deepEqual(groups[item.malformedIndex].rawMembers, ['plants', '', 'algae']);
+      const validFrameText = item.input.includes(';')
+        ? 'plants and algae absorb sunlight'
+        : 'plants and algae absorb sunlight';
+      assert.equal(source.relationRecords.filter((record) => record.qualifies
+        && record.evidenceSpan.text.toLowerCase().includes(validFrameText)).length, 2);
+      const packageResult = packaged.evaluatePhotosynthesisRelationsV2(item.input);
+      assert.deepEqual(packageResult, source);
+    });
+  }
+});
+
+})();

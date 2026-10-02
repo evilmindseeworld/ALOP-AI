@@ -544,34 +544,34 @@ function isCompleteUnsupportedClauseV2(tokens, allowIntransitive) {
   }
   return false;
 }
-function splitIndependentAndV2(text) {
-  const separator = /,\s*and\s+|\s+and\s+/ig;
+function splitIndependentConjunctionsV2(text) {
+  const separator = /,\s*(and|but)\s+|\s+(and|but)\s+/ig;
   for (const match of text.matchAll(separator)) {
-    const left = text.slice(0, match.index).replace(/,\s*$/, '').trim();
+    const left = text.slice(0, match.index).trim();
     const right = text.slice(match.index + match[0].length).trim();
     if (left && right && hasCompleteActiveClauseV2(left) && startsIndependentSupportedClauseV2(right)) {
-      return [...splitIndependentAndV2(left), ...splitIndependentAndV2(right)];
+      const leftParts = splitIndependentConjunctionsV2(left);
+      const rightParts = splitIndependentConjunctionsV2(right);
+      const coordinator = (match[1] || match[2]).toLowerCase();
+      return [
+        ...leftParts,
+        { ...rightParts[0], boundaryBefore: coordinator === 'but' ? 'but' : 'comma-and' },
+        ...rightParts.slice(1),
+      ];
     }
   }
-  return [text];
+  return [{ text: text.trim(), boundaryBefore: 'start' }];
 }
 const segmentClausesV2 = (x) => {
   const text = String(typeof x === 'string' ? x : x.text);
   return text.split(/[;:]+/).flatMap((rawPart, partIndex) => {
     const discourseConjunction = rawPart.match(/^\s*(and|but)\s+/i)?.[1]?.toLowerCase() || null;
     const part = discourseConjunction ? rawPart.replace(/^\s*(?:and|but)\s+/i, '') : rawPart;
-    const explicitBut = part.match(/\s+but\s+/i);
-    const beforeBut = explicitBut ? part.slice(0, explicitBut.index) : '';
-    const afterBut = explicitBut ? part.slice(explicitBut.index + explicitBut[0].length).trim() : '';
-    const splitBut = Boolean(explicitBut && startsIndependentSupportedClauseV2(afterBut));
-    const halves = splitBut
-      ? [{ text: beforeBut, boundaryBefore: partIndex > 0 ? 'hard' : 'start' }, { text: afterBut, boundaryBefore: 'but' }]
-      : [{ text: part, boundaryBefore: partIndex > 0 ? 'hard' : 'start' }];
-    return halves.flatMap((half, halfIndex) => splitIndependentAndV2(half.text).map((piece, pieceIndex) => ({
-      text: piece,
-      boundaryBefore: pieceIndex > 0 ? 'comma-and' : half.boundaryBefore,
-      discourseConjunction: halfIndex === 0 && pieceIndex === 0 ? discourseConjunction : null,
-    })));
+    return splitIndependentConjunctionsV2(part).map((piece, index) => ({
+      ...piece,
+      boundaryBefore: index === 0 && partIndex > 0 ? 'hard' : piece.boundaryBefore,
+      discourseConjunction: index === 0 ? discourseConjunction : null,
+    }));
   }).filter(({ text }) => hasContentV2(text))
     .map((clause, index) => ({ ...clause, index, text: clause.text.trim() }));
 };
@@ -584,16 +584,14 @@ function createRelationFramesV2(input) {
     const sharedSentenceIndex = sentenceIndex++;
     for (const clause of segmentClausesV2(sentence)) {
       const frameId = frames.length;
-      const normalizedText = normalizeInputV2(clause.text);
-      const normalizedClauses = segmentClausesV2(normalizedText).map((normalizedClause, index) => ({
-        ...normalizedClause,
-        ...(index === 0 ? {
-          boundaryBefore: clause.boundaryBefore,
-          discourseConjunction: clause.discourseConjunction,
-        } : {}),
+      const normalizedText = normalizeInputV2(clause.text).replace(/^\s*(?:and|but)\s+/i, '');
+      const normalizedClauses = [{
+        text: normalizedText,
+        boundaryBefore: clause.boundaryBefore,
+        discourseConjunction: clause.discourseConjunction,
         frameId,
         index: clause.index,
-      }));
+      }];
       frames.push({
         frameId,
         sentenceIndex: sharedSentenceIndex,
@@ -1147,8 +1145,9 @@ function extractSubjectSet(ts,end){
   const howStart=ts[0]?.lemma==='photosynthesis'&&ts[1]?.form==='is'&&ts[2]?.form==='how'?3:0;
   const adjunctStart=ts[0]?.lemma==='during'&&ts[1]?.lemma==='photosynthesis'&&ts[2]?.form===','?3:0;
   const subjectStart=Math.max(howStart,adjunctStart);
+  const contextStart=findSupportedContextStartV2(ts,subjectStart,end);
   let boundary=end;
-  for(let i=subjectStart;i<end;i++)if(stop.has(ts[i].form)||V2_VERBS.has(ts[i].form)){boundary=i;break;}
+  for(let i=subjectStart;i<end;i++)if(i===contextStart||stop.has(ts[i].form)||V2_VERBS.has(ts[i].form)){boundary=i;break;}
   const byWhich=ts.findIndex((t,i)=>i+1<end&&t.lemma==='by'&&ts[i+1].lemma==='which');
   if(byWhich>=0)boundary=end;
   const raw=ts.slice(byWhich>=0?byWhich+2:subjectStart,boundary).map(t=>t.form).join(' ');
@@ -1259,6 +1258,7 @@ function validateActiveFinitePredicateV2(ts,index,verb,subject,auxiliary,control
 }
 function startsIndependentSupportedClauseV2(text) {
   const tokens = tokenizeV2(text);
+  if (bindLocalPassiveAgent(tokens)) return true;
   for (let index = 1; index < tokens.length; index += 1) {
     const predicate = validateFinitePredicate(tokens, index);
     if (!predicate) continue;
@@ -1266,8 +1266,14 @@ function startsIndependentSupportedClauseV2(text) {
     if (subject.start !== 0 || subject.end <= 0) continue;
     if (['a', 'an', 'the', 'some'].includes(tokens[0]?.form)
       && !subject.members.some((member) => member.surface)) continue;
-    // Segmentation preserves explicit predicates even when later validation rejects them.
-    return true;
+    const malformedEmptyAnd = subject.shapeValid === false && subject.coordinator === 'AND'
+      && subject.members.length > 1 && subject.members.some((member) => member.valid)
+      && subject.members.every((member) => member.valid || member.surface === '');
+    if (subject.shapeValid === false && !malformedEmptyAnd) continue;
+    const boundarySubject = malformedEmptyAnd ? { ...subject, shapeValid: true } : subject;
+    const auxiliary = parseAuxiliaryChain(tokens, index);
+    const control = resolveControlChain(tokens, index);
+    if (validateActiveFinitePredicateV2(tokens, index, predicate, boundarySubject, auxiliary, control)) return true;
   }
   return false;
 }
@@ -1311,6 +1317,15 @@ function isCompleteContrastContinuationV2(forms, subject, antecedentObject) {
 const V2_CONTEXT_ADJUNCT_TAILS = new Set([
   'during photosynthesis', 'in photosynthesis', 'for photosynthesis',
 ]);
+
+function findSupportedContextStartV2(tokens, start, end) {
+  for (let index = start; index < end; index += 1) {
+    const tail = tokens.slice(index, end).map((token) => token.form);
+    while (['.', '!', '?'].includes(tail.at(-1))) tail.pop();
+    if (V2_CONTEXT_ADJUNCT_TAILS.has(tail.join(' '))) return index;
+  }
+  return -1;
+}
 
 function parseButContinuationV2(tokens, subject, antecedentObject = null) {
   for (let predicateIndex = 0; predicateIndex < tokens.length; predicateIndex += 1) {
@@ -1393,8 +1408,9 @@ function bindLocalPassiveAgent(ts){
   const tail=ts.slice(by+1+agent.end).map((token)=>token.form),terminal=tail.at(-1);
   if(['.','!','?'].includes(terminal))tail.pop();
   if(tail[0]===',')tail.shift();
-  if(tail.length&&!['during photosynthesis','in photosynthesis','for photosynthesis'].includes(tail.join(' ')))return null;
-  return{light,lightEnd,by,verbIndex,verb,auxiliaryChain,agent,local:true};
+  const contextBindingType=tail.length?'LOCAL_ADJUNCT':null;
+  if(tail.length&&!V2_CONTEXT_ADJUNCT_TAILS.has(tail.join(' ')))return null;
+  return{light,lightEnd,by,verbIndex,verb,auxiliaryChain,agent,contextBindingType,local:true};
 }
 function resolveCoordinatedPredicates(ts,i,end){const a=ts.findIndex((t,n)=>n>i&&n<end&&t.lemma==='and');if(a<0)return[];const subject=extractSubjectSet(ts,i),first=validateFinitePredicate(ts,i),firstAux=parseAuxiliaryChain(ts,i),firstControl=resolveControlChain(ts,i),secondIndex=a+1,second=validateFinitePredicate(ts,secondIndex),secondAux=parseAuxiliaryChain(ts,secondIndex),secondControl=resolveControlChain(ts,secondIndex),accepted=Boolean(first&&second&&validateActiveFinitePredicateV2(ts,i,first,subject,firstAux,firstControl)&&validateActiveFinitePredicateV2(ts,secondIndex,second,subject,secondAux,secondControl)),indices=[i,secondIndex];if(!accepted)indices.invalid=true;return indices;}
 function resolvePronounContinuation(ts,o){const a=ts.findIndex((t,n)=>n>=o.tokenEnd&&t.lemma==='and');if(a<0||a!==o.tokenEnd)return null;const firstIndex=ts.findIndex((t,n)=>n<o.tokenEnd&&validateFinitePredicate(ts,n)),first=validateFinitePredicate(ts,firstIndex),subject=extractSubjectSet(ts,firstIndex),firstAux=parseAuxiliaryChain(ts,firstIndex),firstControl=resolveControlChain(ts,firstIndex),secondIndex=a+1,second=validateFinitePredicate(ts,secondIndex),secondSubject={...subject,end:a+1},secondAux=parseAuxiliaryChain(ts,secondIndex,a+1),secondControl=resolveControlChain(ts.slice(a+1),secondIndex-a-1);if(!first||!second||!V2_LIGHT_RELATION_LEMMAS.has(first.lemma)||!V2_LIGHT_RELATION_LEMMAS.has(second.lemma)||ts[secondIndex+1]?.lemma!=='it')return null;const grammarValid=!firstAux.chain.length&&!firstControl&&!secondAux.chain.length&&!secondControl&&validateActiveFinitePredicateV2(ts,firstIndex,first,subject,firstAux,firstControl)&&validateActiveFinitePredicateV2(ts,secondIndex,second,secondSubject,secondAux,secondControl);return{antecedent:o.normalized,valid:o.normalized==='light-energy',grammarValid,continuationTailOffset:secondIndex-o.tokenEnd,continuationVerb:second.surface,second,secondIndex,secondSubject,secondAuxiliary:secondAux,secondControl};}

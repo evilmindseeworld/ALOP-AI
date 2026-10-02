@@ -586,3 +586,493 @@ test('MUT-E merges semantically identical sibling topology groups', (t) => {
   assert.ok(result.properties.includes('topology.frame-order-and-ownership'));
 });
 })();
+
+// Independent seeded P1 boundary/passive closure holdout and in-memory mutants.
+(function boundaryPassiveClosureHoldoutSuite() {
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const Module = require('node:module');
+const { join } = require('node:path');
+const { dirname } = require('node:path');
+const { pathToFileURL } = require('node:url');
+const {
+  evaluatePhotosynthesisRelationsV2,
+  semanticCaseFingerprint,
+} = require('./photosynthesis-relation-evaluator');
+
+// This holdout has a separate seed and generative matrix from the exact blocker
+// regressions. Subjects, context tails, boundary shapes, and their compositions
+// are selected before evaluation; no outcome is used to generate an oracle.
+const HOLDOUT_SEED = 0xB0A7C10F;
+const REQUIRED_CASES = 500;
+const REQUIRED_STRUCTURAL_KEYS = 400;
+const SUBJECTS = [
+  'green plants', 'plants', 'algae', 'photosynthetic bacteria',
+  'some bacteria', 'plant', 'alga', 'photosynthetic bacterium',
+];
+const CONTEXTS = ['during photosynthesis', 'in photosynthesis', 'for photosynthesis'];
+const EXACT_ROWS_EXCLUDED = new Set([
+  'Green plants store solar light but algae use chlorophyll to transform sunlight but photosynthetic bacteria transform sunlight',
+  'Green plants store solar light but algae transform sunlight but photosynthetic bacteria use chlorophyll to transform sunlight',
+  'Solar light is stored by green plants and algae during photosynthesis and photosynthetic bacteria transform sunlight',
+  'Solar light is stored by green plants, but algae transform sunlight',
+  'Solar light is stored by green plants in photosynthesis',
+  'Solar light is stored by green plants for photosynthesis',
+  'Solar light is stored by green plants and algae for photosynthesis and photosynthetic bacteria transform sunlight',
+  'Plants and algae absorb sunlight; plants, , and algae absorb sunlight.',
+  'Plants, , and algae absorb sunlight. And plants and algae absorb sunlight.',
+]);
+
+function createRandom(seed) {
+  let state = seed >>> 0;
+  return () => {
+    state ^= state << 13;
+    state ^= state >>> 17;
+    state ^= state << 5;
+    return (state >>> 0) / 0x1_0000_0000;
+  };
+}
+
+function shuffle(values, random) {
+  const result = [...values];
+  for (let index = result.length - 1; index > 0; index -= 1) {
+    const other = Math.floor(random() * (index + 1));
+    [result[index], result[other]] = [result[other], result[index]];
+  }
+  return result;
+}
+
+function mutateExactlyOnce(source, mutantId, anchor, replacement) {
+  const occurrences = source.split(anchor).length - 1;
+  assert.equal(occurrences, 1, `${mutantId} source anchor count`);
+  return source.replace(anchor, replacement);
+}
+
+function compileEvaluatorMutant(mutantId, transform) {
+  const evaluatorPath = require.resolve('./photosynthesis-relation-evaluator');
+  const source = fs.readFileSync(evaluatorPath, 'utf8');
+  const mutatedSource = transform(source);
+  assert.notEqual(mutatedSource, source, `${mutantId} must change exactly one production expression`);
+  const mutantModule = new Module(`${evaluatorPath}#${mutantId}`, module);
+  mutantModule.filename = evaluatorPath;
+  mutantModule.paths = Module._nodeModulePaths(dirname(evaluatorPath));
+  mutantModule._compile(mutatedSource, evaluatorPath);
+  return mutantModule.exports;
+}
+
+function summarizeMutationOutput(result) {
+  return {
+    passed: result.passed,
+    hasMalformed: result.hasMalformed,
+    topology: result.topology,
+    records: result.relationRecords.map((record) => ({
+      subject: record.subjectSet?.lemma || null,
+      voice: record.voice || null,
+      qualifies: record.qualifies,
+      relationType: record.relationType,
+      context: record.processContext || null,
+      evidence: record.evidenceSpan?.text || null,
+    })),
+    groups: result.coordinationTopology.map((group) => ({
+      rawMembers: group.rawMembers,
+      orderedMembers: group.orderedMembers,
+      shapeValid: group.shapeValid,
+      cardinality: group.cardinality,
+    })),
+  };
+}
+
+function assertMutantKilled(mutantId, input, mutantEvaluator, oracleName, oracle) {
+  const result = mutantEvaluator.evaluatePhotosynthesisRelationsV2(input);
+  let failure;
+  try {
+    oracle(result);
+  } catch (error) {
+    failure = error;
+  }
+  const assertionFailed = failure && (failure.code === 'ERR_ASSERTION' || failure.name === 'AssertionError');
+  assert.ok(assertionFailed,
+    `${mutantId} survived oracle ${oracleName}; failure=${failure?.name || 'none'}:${failure?.code || 'no-code'}; output=${JSON.stringify(summarizeMutationOutput(result))}`);
+  console.log(`MUTANT_KILL ${JSON.stringify({
+    mutantId,
+    input,
+    mutatedOutput: summarizeMutationOutput(result),
+    killedByOracle: oracleName,
+    failingAssertion: failure.message.split('\n')[0],
+  })}`);
+}
+
+function isSingular(subject) {
+  return ['plant', 'alga', 'photosynthetic bacterium'].includes(subject);
+}
+
+function inflect(subject, plural, singular) {
+  return isSingular(subject) ? singular : plural;
+}
+
+function core(subject, verb) {
+  return `${subject} ${inflect(subject, verb, `${verb}s`)} sunlight`;
+}
+
+function stored(subject) {
+  return `${subject} ${inflect(subject, 'store', 'stores')} solar light`;
+}
+
+function mediated(subject) {
+  return `${subject} ${inflect(subject, 'use', 'uses')} chlorophyll to transform sunlight`;
+}
+
+function subjectsFor(aIndex, bIndex) {
+  const a = SUBJECTS[aIndex];
+  const b = SUBJECTS[bIndex];
+  let offset = 1 + (aIndex % 6);
+  if (offset === SUBJECTS.length / 2) offset += 1;
+  const cIndex = (bIndex + offset) % SUBJECTS.length;
+  let dIndex = (cIndex + 1 + (bIndex % 6)) % SUBJECTS.length;
+  if (dIndex === cIndex) dIndex = (dIndex + 1) % SUBJECTS.length;
+  const c = SUBJECTS[cIndex];
+  const d = SUBJECTS[dIndex];
+  return { a, b, c, d };
+}
+
+function subjectLemma(subject) {
+  return subject === 'plants' ? 'plant' : subject;
+}
+
+function buildCase(mode, aIndex, bIndex, random) {
+  const { a, b, c, d } = subjectsFor(aIndex, bIndex);
+  const context = CONTEXTS[Math.floor(random() * CONTEXTS.length)];
+  const common = { mode, a, b, c, d, context };
+  switch (mode) {
+    case 0: {
+      const mediator = random() < 0.5 ? b : c;
+      const plain = mediator === b ? c : b;
+      const input = `${stored(a)} but ${mediated(mediator)} but ${core(plain, 'transform')}`;
+      return { ...common, kind: 'repeated-but-three-frames', input, mediator, plain };
+    }
+    case 1: {
+      const input = `Solar light is stored by ${a} and ${b} ${context} and ${core(c, 'transform')}`;
+      return { ...common, kind: 'passive-agent-and-active-sibling', input };
+    }
+    case 2: {
+      const input = `Solar light is stored by ${a}, but ${core(b, 'transform')}`;
+      return { ...common, kind: 'comma-but-boundary', input };
+    }
+    case 3: {
+      const input = `Solar light is stored by ${a} and ${b} ${context}`;
+      return { ...common, kind: 'passive-context-after-agent-list', input };
+    }
+    case 4: {
+      const input = `Solar light is stored by ${a} and ${b} in photosynthesis but ${core(c, 'absorb')} but ${mediated(d)}`;
+      return { ...common, kind: 'passive-context-and-repeated-but-composition', input };
+    }
+    case 5: {
+      const input = `Solar light is stored by ${a},, and ${core(b, 'transform')} but ${core(c, 'absorb')}`;
+      return { ...common, kind: 'double-comma-local-malformation-composition', input };
+    }
+    case 6: {
+      const left = `${stored(a)} but ${core(b, 'transform')} but ${mediated(c)}`;
+      const right = `${stored(a)} but ${mediated(b)} but ${core(c, 'transform')}`;
+      return { ...common, kind: 'repeated-but-mediation-owner-move', input: left, pairedInput: right };
+    }
+    case 7: {
+      const input = `Solar light is stored by ${a},,, and ${core(b, 'transform')} but ${core(c, 'absorb')} in photosynthesis`;
+      return { ...common, kind: 'triple-comma-context-and-repeated-but-composition', input };
+    }
+    default:
+      throw new Error(`unknown holdout mode ${mode}`);
+  }
+}
+
+function structuralKey(item) {
+  // A key encodes clause shape, ordered subject identities, and context/punctuation
+  // features. It intentionally omits case ordinal and raw whole-sentence text.
+  const subjectSlots = {
+    'repeated-but-three-frames': [item.a, item.mediator, item.plain],
+    'passive-agent-and-active-sibling': [item.a, item.b, item.c],
+    'comma-but-boundary': [item.a, item.b],
+    'passive-context-after-agent-list': [item.a, item.b],
+    'passive-context-and-repeated-but-composition': [item.a, item.b, item.c, item.d],
+    'double-comma-local-malformation-composition': [item.a, item.b, item.c],
+    'repeated-but-mediation-owner-move': [item.a, item.b, item.c],
+    'triple-comma-context-and-repeated-but-composition': [item.a, item.b, item.c],
+  }[item.kind];
+  const context = {
+    'passive-agent-and-active-sibling': item.context,
+    'passive-context-after-agent-list': item.context,
+    'passive-context-and-repeated-but-composition': 'in photosynthesis',
+    'triple-comma-context-and-repeated-but-composition': 'active-tail:in photosynthesis',
+  }[item.kind] || null;
+  return JSON.stringify({
+    kind: item.kind,
+    subjects: subjectSlots,
+    context,
+    boundary: item.kind.includes('comma') ? (item.kind.includes('double') ? ',,' : item.kind.includes('triple') ? ',,,' : ',but') : 'but/and',
+  });
+}
+
+function buildHoldout() {
+  const candidates = [];
+  const variationRandom = createRandom(HOLDOUT_SEED);
+  for (let mode = 0; mode < 8; mode += 1) {
+    for (let aIndex = 0; aIndex < SUBJECTS.length; aIndex += 1) {
+      for (let bIndex = 0; bIndex < SUBJECTS.length; bIndex += 1) {
+        const item = buildCase(mode, aIndex, bIndex, variationRandom);
+        item.key = structuralKey(item);
+        candidates.push(item);
+      }
+    }
+  }
+  const excluded = candidates.filter((item) => EXACT_ROWS_EXCLUDED.has(item.input)
+    || (item.pairedInput && EXACT_ROWS_EXCLUDED.has(item.pairedInput)));
+  const eligible = candidates.filter((item) => !EXACT_ROWS_EXCLUDED.has(item.input)
+    && !(item.pairedInput && EXACT_ROWS_EXCLUDED.has(item.pairedInput)));
+  const cases = shuffle(eligible, createRandom(HOLDOUT_SEED ^ 0x9E3779B9));
+  return { candidates, excluded, cases };
+}
+
+async function loadPackageEvaluator() {
+  const { createDerivedEvaluator } = await import(pathToFileURL(join(
+    __dirname, '..', 'scripts', 'run-photosynthesis-relation-mutations.mjs',
+  )).href);
+  return createDerivedEvaluator();
+}
+
+function requireFrameTopology(result, expectedLength, item) {
+  const expected = Array.from({ length: expectedLength }, (_, index) => [0, index]);
+  assert.deepEqual(result.topology, expected, `${item.kind}: ${item.input}`);
+}
+
+function assertSubjectSequence(records, expected, item) {
+  assert.deepEqual(records.filter((record) => record.relationType === 'CORE_LIGHT_RELATION')
+    .map((record) => record.subjectSet.lemma), expected.map(subjectLemma), `${item.kind}: ${item.input}`);
+}
+
+function checkCase(item, packaged, evaluator = evaluatePhotosynthesisRelationsV2) {
+  const result = evaluator(item.input);
+  if (packaged) {
+    assert.deepEqual(packaged.evaluatePhotosynthesisRelationsV2(item.input), result,
+      `source/package trace: ${item.input}`);
+  }
+  switch (item.kind) {
+    case 'repeated-but-three-frames':
+      assert.equal(result.passed, true, item.input);
+      assert.equal(result.hasMalformed, false, item.input);
+      requireFrameTopology(result, 3, item);
+      assert.ok(result.relationRecords.some((record) => record.relationType === 'CHLOROPHYLL_SUPPORT'
+        && record.evidenceSpan.text.includes(item.mediator)), item.input);
+      assert.equal(result.coordinationTopology.length, 3, item.input);
+      break;
+    case 'passive-agent-and-active-sibling':
+      assert.equal(result.passed, true, item.input);
+      assert.equal(result.hasMalformed, false, item.input);
+      requireFrameTopology(result, 2, item);
+      assertSubjectSequence(result.relationRecords, [item.a, item.b, item.c], item);
+      assert.deepEqual(result.relationRecords.filter((record) => record.relationType === 'CORE_LIGHT_RELATION')
+        .map((record) => record.voice), ['PASSIVE', 'PASSIVE', 'ACTIVE'], item.input);
+      assert.deepEqual(result.coordinationTopology[0].orderedMembers
+        .map(([lemma]) => lemma), [item.a, item.b].map(subjectLemma), item.input);
+      break;
+    case 'comma-but-boundary':
+      assert.equal(result.passed, true, item.input);
+      assert.equal(result.hasMalformed, false, item.input);
+      requireFrameTopology(result, 2, item);
+      assertSubjectSequence(result.relationRecords, [item.a, item.b], item);
+      assert.equal(result.coordinationTopology[0].cardinality, 1, item.input);
+      break;
+    case 'passive-context-after-agent-list':
+      assert.equal(result.passed, true, item.input);
+      assert.equal(result.hasMalformed, false, item.input);
+      requireFrameTopology(result, 1, item);
+      assertSubjectSequence(result.relationRecords, [item.a, item.b], item);
+      assert.deepEqual(result.relationRecords.map((record) => record.processContext), ['LOCAL_ADJUNCT', 'LOCAL_ADJUNCT'], item.input);
+      assert.deepEqual(result.coordinationTopology[0].orderedMembers.map(([lemma]) => lemma), [item.a, item.b].map(subjectLemma), item.input);
+      break;
+    case 'passive-context-and-repeated-but-composition':
+      assert.equal(result.passed, true, item.input);
+      assert.equal(result.hasMalformed, false, item.input);
+      requireFrameTopology(result, 3, item);
+      assertSubjectSequence(result.relationRecords, [item.a, item.b, item.c, item.d], item);
+      assert.deepEqual(result.relationRecords.filter((record) => record.voice === 'PASSIVE')
+        .map((record) => record.processContext), ['LOCAL_ADJUNCT', 'LOCAL_ADJUNCT'], item.input);
+      assert.ok(result.relationRecords.some((record) => record.relationType === 'CHLOROPHYLL_SUPPORT'
+        && record.evidenceSpan.text.includes(item.d)), item.input);
+      break;
+    case 'double-comma-local-malformation-composition':
+      assert.equal(result.passed, false, item.input);
+      assert.equal(result.hasMalformed, true, item.input);
+      requireFrameTopology(result, 3, item);
+      assert.deepEqual(result.coordinationTopology[0].rawMembers, [item.a, ''], item.input);
+      assert.deepEqual(result.relationRecords.filter((record) => record.qualifies)
+        .map((record) => record.subjectSet.lemma), [item.b, item.c].map(subjectLemma), item.input);
+      break;
+    case 'repeated-but-mediation-owner-move': {
+      const paired = evaluator(item.pairedInput);
+      assert.equal(result.passed, true, item.input);
+      assert.equal(paired.passed, true, item.pairedInput);
+      requireFrameTopology(result, 3, item);
+      requireFrameTopology(paired, 3, item);
+      assert.ok(result.relationRecords.some((record) => record.relationType === 'CHLOROPHYLL_SUPPORT'
+        && record.evidenceSpan.text.includes(item.c)), item.input);
+      assert.ok(paired.relationRecords.some((record) => record.relationType === 'CHLOROPHYLL_SUPPORT'
+        && record.evidenceSpan.text.includes(item.b)), item.pairedInput);
+      assert.notEqual(semanticCaseFingerprint(result), semanticCaseFingerprint(paired), item.input);
+      break;
+    }
+    case 'triple-comma-context-and-repeated-but-composition':
+      assert.equal(result.passed, false, item.input);
+      assert.equal(result.hasMalformed, true, item.input);
+      requireFrameTopology(result, 3, item);
+      assert.deepEqual(result.coordinationTopology[0].rawMembers, [item.a, '', ''], item.input);
+      assert.deepEqual(result.relationRecords.filter((record) => record.qualifies)
+        .map((record) => record.subjectSet.lemma), [item.b, item.c].map(subjectLemma), item.input);
+      break;
+    default:
+      throw new Error(`unhandled holdout case ${item.kind}`);
+  }
+}
+
+function assertNewB4Oracle(result, input) {
+  assert.equal(result.passed, true, input);
+  assert.equal(result.hasMalformed, false, input);
+  assert.deepEqual(result.topology, [[0, 0], [0, 1]], input);
+  assert.deepEqual(result.relationRecords.filter((record) => record.relationType === 'CORE_LIGHT_RELATION')
+    .map((record) => [record.subjectSet.lemma, record.voice, record.qualifies, record.processContext]), [
+    ['green plants', 'PASSIVE', true, 'LOCAL_ADJUNCT'],
+    ['algae', 'PASSIVE', true, 'LOCAL_ADJUNCT'],
+    ['photosynthetic bacteria', 'ACTIVE', true, 'EXPLICIT_SUBJECT'],
+  ], input);
+  assert.deepEqual(result.coordinationTopology[0].orderedMembers, [
+    ['green plants', 'BIOLOGICAL_AGENT'], ['algae', 'BIOLOGICAL_AGENT'],
+  ], input);
+}
+
+test('NEW-B1 mutant kill: repeated-BUT scanner stops after one partition', () => {
+  const mutant = compileEvaluatorMutant('NEW-B1', (source) => mutateExactlyOnce(
+    source,
+    'NEW-B1',
+    'const rightParts = splitIndependentConjunctionsV2(right);',
+    "const rightParts = [{ text: right, boundaryBefore: 'start' }];",
+  ));
+  const item = buildCase(0, 1, 2, createRandom(HOLDOUT_SEED));
+  assertMutantKilled('NEW-B1', item.input, mutant, 'three explicit frame occurrences', (result) => {
+    assert.deepEqual(result.topology, [[0, 0], [0, 1], [0, 2]], item.input);
+  });
+});
+
+test('NEW-B2 mutant kill: any later finite predicate counts as an independent clause', () => {
+  const mutant = compileEvaluatorMutant('NEW-B2', (source) => mutateExactlyOnce(
+    source,
+    'NEW-B2',
+    'if (validateActiveFinitePredicateV2(tokens, index, predicate, boundarySubject, auxiliary, control)) return true;',
+    'return true;',
+  ));
+  const item = buildCase(1, 1, 2, () => 0);
+  assertMutantKilled('NEW-B2', item.input, mutant, 'passive agent AND stays inside its coordinated frame', (result) => {
+    assert.equal(result.passed, true, item.input);
+    assert.equal(result.hasMalformed, false, item.input);
+    assert.deepEqual(result.topology, [[0, 0], [0, 1]], item.input);
+    assert.deepEqual(result.relationRecords.filter((record) => record.relationType === 'CORE_LIGHT_RELATION')
+      .map((record) => [record.subjectSet.lemma, record.voice, record.qualifies]), [
+      [subjectLemma(item.a), 'PASSIVE', true], [subjectLemma(item.b), 'PASSIVE', true],
+      [subjectLemma(item.c), 'ACTIVE', true],
+    ], item.input);
+  });
+});
+
+test('NEW-B3 mutant kill: comma before BUT remains attached to the passive clause', () => {
+  const mutant = compileEvaluatorMutant('NEW-B3', (source) => mutateExactlyOnce(
+    source,
+    'NEW-B3',
+    'const separator = /,\\s*(and|but)\\s+|\\s+(and|but)\\s+/ig;',
+    'const separator = /\\s+(and|but)\\s+/ig;',
+  ));
+  const item = buildCase(2, 1, 2, () => 0);
+  assertMutantKilled('NEW-B3', item.input, mutant, 'comma-BUT clause boundary stays well formed', (result) => {
+    assert.equal(result.passed, true, item.input);
+    assert.equal(result.hasMalformed, false, item.input);
+    assert.deepEqual(result.topology, [[0, 0], [0, 1]], item.input);
+  });
+});
+
+test('NEW-B4 mutant kill: supported in/for context tails are not recognized', () => {
+  const mutant = compileEvaluatorMutant('NEW-B4', (source) => mutateExactlyOnce(
+    source,
+    'NEW-B4',
+    "if (V2_CONTEXT_ADJUNCT_TAILS.has(tail.join(' '))) return index;",
+    "if (false && V2_CONTEXT_ADJUNCT_TAILS.has(tail.join(' '))) return index;",
+  ));
+  const input = 'Solar light is stored by green plants and algae for photosynthesis and photosynthetic bacteria transform sunlight';
+  assertMutantKilled('NEW-B4', input, mutant, 'two passive agents and the active sibling retain local ownership', (result) => {
+    assertNewB4Oracle(result, input);
+  });
+});
+
+test('NEW-B4 cross-root context boundary preserves passive agents and the active sibling', async () => {
+  const input = 'Solar light is stored by green plants and algae for photosynthesis and photosynthetic bacteria transform sunlight';
+  const result = evaluatePhotosynthesisRelationsV2(input);
+  const packaged = process.env.P1_BOUNDARY_HOLDOUT_SOURCE_ONLY === '1' ? null : await loadPackageEvaluator();
+
+  // `for photosynthesis` is an accepted passive context adjunct. The adjacent
+  // `and` starts a separately supported clause, so it must not be absorbed into
+  // the passive-agent span as `algae for photosynthesis`.
+  assertNewB4Oracle(result, input);
+  if (packaged) assert.deepEqual(packaged.evaluatePhotosynthesisRelationsV2(input), result, `source/package trace: ${input}`);
+});
+
+test('seeded internal holdout covers four roots and cross-root compositions', async () => {
+  const { candidates, excluded, cases } = buildHoldout();
+  const sourceOnly = process.env.P1_BOUNDARY_HOLDOUT_SOURCE_ONLY === '1';
+  const packaged = sourceOnly ? null : await loadPackageEvaluator();
+  const keys = new Set(cases.map((item) => item.key));
+  const inputs = new Set(cases.map((item) => item.input));
+  const counts = Object.fromEntries([...new Set(candidates.map((item) => item.kind))]
+    .map((kind) => [kind, cases.filter((item) => item.kind === kind).length]));
+
+  assert.equal(candidates.length, 512, '8 structural families x 8 x 8 lexical slots');
+  assert.ok(cases.length >= REQUIRED_CASES, `holdout count ${cases.length} < ${REQUIRED_CASES}`);
+  assert.ok(keys.size >= REQUIRED_STRUCTURAL_KEYS, `unique structural keys ${keys.size} < ${REQUIRED_STRUCTURAL_KEYS}`);
+  assert.equal(inputs.size, cases.length, 'source strings must remain unique');
+  assert.ok(excluded.length > 0, 'the fixed exclusion list should be exercised by this matrix');
+  assert.ok(Object.values(counts).every((count) => count > 0), 'every root/composition family must be represented');
+
+  const failures = [];
+  for (const item of cases) {
+    try {
+      checkCase(item, packaged);
+      if (packaged && item.pairedInput) {
+        assert.deepEqual(packaged.evaluatePhotosynthesisRelationsV2(item.pairedInput),
+          evaluatePhotosynthesisRelationsV2(item.pairedInput), `source/package trace: ${item.pairedInput}`);
+      }
+    } catch (error) {
+      failures.push({ kind: item.kind, input: item.input, pairedInput: item.pairedInput || null, message: error.message });
+    }
+  }
+
+  console.log(`HOLDOUT_SUMMARY ${JSON.stringify({
+    seed: `0x${HOLDOUT_SEED.toString(16).toUpperCase()}`,
+    generated: candidates.length,
+    excludedExactBlockerOrPermanentRows: excluded.length,
+    excludedInputs: excluded.map(({ input }) => input).sort(),
+    executed: cases.length,
+    uniqueStructuralKeys: keys.size,
+    uniqueInputs: inputs.size,
+    coverage: counts,
+    mutationKillCoverage: {
+      NEW_B1_repeated_boundary_ownership: counts['repeated-but-three-frames'],
+      NEW_B2_passive_agent_and_split_reachability: counts['passive-agent-and-active-sibling'],
+      NEW_B3_comma_boundary_and_empty_member_locality: counts['comma-but-boundary']
+        + counts['double-comma-local-malformation-composition']
+        + counts['triple-comma-context-and-repeated-but-composition'],
+      NEW_B4_context_tail_and_cross_root_boundary: counts['passive-context-after-agent-list']
+        + counts['passive-context-and-repeated-but-composition'] + 1,
+    },
+    sourceOnly,
+    sourcePackageParityCases: packaged ? cases.length + cases.filter((item) => item.pairedInput).length + 1 : 0,
+    failures: failures.length,
+  })}`);
+  assert.equal(failures.length, 0, `holdout failures (${failures.length}): ${JSON.stringify(failures.slice(0, 20))}`);
+});
+
+})();

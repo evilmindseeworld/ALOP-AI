@@ -1984,4 +1984,66 @@ test('frame partition matrix crosses predicate classes, nine boundaries, and val
   assert.equal(keys.size, compositionCases);
   t.diagnostic(`cross-root compositions=${compositionCases}; unique composition keys=${keys.size}; predicate classes=${Object.keys(frameTypes).length}; boundaries=${boundaries.length}; validity positions=valid-valid/malformed-valid/valid-malformed`);
 });
+test('P1 five-root fresh self-closure preserves raw, frame, support, owner, and morphology boundaries', async (t) => {
+  const { createDerivedEvaluator } = await import('../scripts/run-photosynthesis-relation-mutations.mjs');
+  const packaged = createDerivedEvaluator().evaluatePhotosynthesisRelationsV2;
+  const cases = [
+    { id: 'raw-control-malformed', text: ', and chlorophyll and some bacteria do not fail to use chlorophyll to transform solar light.' },
+    { id: 'raw-control-valid', text: 'Chlorophyll and some bacteria do not fail to use chlorophyll to transform solar light.' },
+    { id: 'same-sentence-and-partition', text: 'Plants use chlorophyll to transform solar light and algae absorb sunlight.' },
+    { id: 'two-local-mediated-supports', text: 'Plants use chlorophyll to harness solar light, and algae use chlorophyll to store the light energy.' },
+    { id: 'fingerprint-owner-a', text: 'Plants use chlorophyll to transform solar light; algae absorb sunlight.' },
+    { id: 'fingerprint-owner-b', text: 'Plants transform solar light; algae use chlorophyll to absorb sunlight.' },
+    { id: 'mediator-base', text: 'Plants use chlorophyll to harness the solar light during photosynthesis.' },
+    { id: 'mediator-present-3sg', text: 'Photosynthesis uses chlorophyll to absorb the solar light during photosynthesis.' },
+    { id: 'mediator-past', text: 'Photosynthesis used chlorophyll to capture the light energy during photosynthesis.' },
+    { id: 'cross-root-combination', text: ', and plants and algae do not fail to use chlorophyll to transform solar light, but chlorophyll captures sunlight.' },
+  ];
+  const results = new Map();
+  for (const item of cases) {
+    const result = evaluatePhotosynthesisRelationsV2(item.text);
+    assert.deepEqual(packaged(item.text), result, item.id + ': source/package parity');
+    results.set(item.id, result);
+  }
+  const malformed = results.get('raw-control-malformed');
+  assert.equal(malformed.passed, false);
+  assert.equal(malformed.hasMalformed, true);
+  assert.deepEqual(malformed.coordinationTopology.find(group => group.shapeValid === false)?.rawMembers,
+    ['', 'chlorophyll', 'some bacteria']);
+  const validControl = results.get('raw-control-valid');
+  assert.equal(validControl.passed, true);
+  assert.equal(validControl.hasMalformed, false);
+  assert.notEqual(semanticCaseFingerprint(malformed), semanticCaseFingerprint(validControl));
+
+  const partition = results.get('same-sentence-and-partition');
+  assert.equal(partition.passed, true);
+  assert.equal(partition.coordinationTopology.length, 2);
+  assert.equal(partition.relationRecords.filter(record => record.relationType === 'CHLOROPHYLL_SUPPORT' && record.qualifies).length, 1);
+  assert.equal(partition.relationRecords.filter(record => record.relationType === 'CORE_LIGHT_RELATION' && record.qualifies).length, 2);
+
+  const multiple = results.get('two-local-mediated-supports');
+  const supports = multiple.relationRecords.filter(record => record.relationType === 'CHLOROPHYLL_SUPPORT' && record.qualifies);
+  const targets = multiple.relationRecords.filter(record => record.relationType === 'CORE_LIGHT_RELATION' && record.qualifies);
+  assert.equal(supports.length, 2);
+  assert.equal(targets.length, 2);
+  assert.deepEqual(supports.map(record => record.subjectSet.surface).sort(), ['algae', 'plants']);
+  assert.deepEqual(targets.filter(record => record.verbLemma === 'harness').map(record => record.subjectSet.surface), ['plants']);
+  assert.deepEqual(targets.filter(record => record.verbLemma === 'store').map(record => record.subjectSet.surface), ['algae']);
+  assert.notEqual(semanticCaseFingerprint(results.get('fingerprint-owner-a')),
+    semanticCaseFingerprint(results.get('fingerprint-owner-b')));
+
+  for (const [id, expectedForm] of [['mediator-base', 'BASE'], ['mediator-present-3sg', 'PRESENT_3SG'], ['mediator-past', 'PAST']]) {
+    const result = results.get(id);
+    assert.equal(result.passed, true, id);
+    assert.equal(result.relationRecords.find(record => record.relationType === 'CHLOROPHYLL_SUPPORT')?.verbForm, expectedForm, id);
+  }
+  const crossRoot = results.get('cross-root-combination');
+  assert.equal(crossRoot.passed, false);
+  assert.equal(crossRoot.hasMalformed, true);
+  assert.equal(crossRoot.coordinationTopology.some(group => group.shapeValid === false), true);
+  assert.equal(crossRoot.relationRecords.some(record => record.relationType === 'CORE_LIGHT_RELATION'
+    && record.verbLemma === 'capture' && record.qualifies), true);
+  t.diagnostic('fresh self-closure cases=10; roots=5/5; cross-root=PASS; source/package mismatches=0');
+});
+
 })();

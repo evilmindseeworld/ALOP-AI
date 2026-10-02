@@ -6,7 +6,7 @@
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
   "repairAttemptId": "P1-FIVE-ROOT-CLOSURE-REPAIR-20261002",
-  "capturedAtUtc": "2026-10-02T01:01:50.674Z",
+  "capturedAtUtc": "2026-10-02T01:18:40.499Z",
   "repairBaseSha": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
   "repairBaseTreeSha": "25e7623f2734ce2e111ef3da92dcac15a999d6d4",
   "repairStartHead": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
@@ -208,8 +208,8 @@
       "skipped": 0
     },
     "evaluator": {
-      "passed": 81,
-      "total": 81,
+      "passed": 82,
+      "total": 82,
       "skipped": 0
     },
     "evaluatorMutations": {
@@ -251,8 +251,8 @@
       "exceptions": 0
     },
     "fullBackend": {
-      "passed": 2618,
-      "total": 2619,
+      "passed": 2619,
+      "total": 2620,
       "failed": 1,
       "skipped": 0,
       "exitCode": 1,
@@ -357,7 +357,7 @@
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
-      "sha256": "cc0892f548a58b8badc51575f4b557616c3a28d3b8bee9d7d6b050d62ec1a605"
+      "sha256": "c65dccd52cc45573ef6fb82f6eddbe4b317661bfee9e205e654afc0a004649a5"
     },
     {
       "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
@@ -369,7 +369,7 @@
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/green-phase.json",
-      "sha256": "cf72dd8963bca63a2f47d78a685e9e4a34417d52fef1ae60d4c03c4f967e7175"
+      "sha256": "089dec4be3c152ad579f0f0c35d5631220b25f0951567371288974e25519587f"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/mutation-phase.json",
@@ -377,7 +377,7 @@
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/red-phase.json",
-      "sha256": "83c0ef841c5d352562fe16c3c1923f29829a451dad6f698160f31f67bd54127b"
+      "sha256": "80fa97310549dae50211c13d3d126e5cd8cafc64bdec4878449c4415b4a3ba90"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/semantic-coverage.json",

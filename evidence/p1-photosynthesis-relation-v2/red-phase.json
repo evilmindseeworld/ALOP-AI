@@ -4,48 +4,102 @@
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "repairAttemptId": "P1-ASTRA-FINAL-FRAME-001-REPAIR-20260930",
-  "capturedAtUtc": "2026-09-30T17:22:14Z",
+  "repairAttemptId": "P1-FIVE-ROOT-CLOSURE-REPAIR-20261002",
+  "capturedAtUtc": "2026-10-02T00:51:17.494Z",
   "phase": "RED",
   "status": "BLOCKED_BASE_REPRODUCED",
-  "repairBaseSha": "300dac2f0bc3adb725bcc0604e87493578a4974f",
-  "repairBaseTreeSha": "63a236139fbb10e0e3d80d0eee4501c641fce312",
-  "repairStartHead": "300dac2f0bc3adb725bcc0604e87493578a4974f",
-  "redCommitSha": "8a60634b867c14726f0b9530f389d96969e32b10",
-  "redEvidenceCommitSha": "9ce4424fc2f73f4fff6ed1aaaf00e9a52ff7b1ef",
+  "repairBaseSha": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
+  "repairBaseTreeSha": "25e7623f2734ce2e111ef3da92dcac15a999d6d4",
+  "repairStartHead": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
+  "redCommitSha": null,
+  "redEvidenceCommitSha": null,
   "expectedRed": true,
   "rootReproductions": [
-    { "id": "ADV001", "expectedDecision": "FAIL" },
-    { "id": "ADV002", "expectedDecision": "FAIL" },
-    { "id": "ADV003", "expectedDecision": "FAIL" },
-    { "id": "ADV004", "expectedDecision": "PASS" },
-    { "id": "ADV005", "expectedDecision": "PASS" },
-    { "id": "ADV006", "expectedDecision": "FAIL" }
+    {
+      "id": "ROOT_1_RAW_VALIDATION_BYPASS",
+      "input": ", and plants and algae must absorb sunlight.",
+      "observed": {
+        "passed": true,
+        "hasMalformed": false
+      },
+      "controlFingerprintEqual": true
+    },
+    {
+      "id": "ROOT_2_TOPOLOGY_FRAME_COLLAPSE",
+      "input": ", and green plants and algae use chlorophyll to harness solar energy and plants and algae absorb sunlight",
+      "observed": {
+        "passed": false,
+        "hasMalformed": true,
+        "coordinationTopology": [
+          {
+            "type": "AND",
+            "cardinality": 3,
+            "orderedMembers": [
+              [
+                "",
+                "UNSUPPORTED"
+              ],
+              [
+                "green plants",
+                "BIOLOGICAL_AGENT"
+              ],
+              [
+                "algae",
+                "BIOLOGICAL_AGENT"
+              ]
+            ],
+            "shapeValid": false,
+            "rawMembers": [
+              "",
+              "green plants",
+              "algae"
+            ]
+          }
+        ],
+        "qualifyingCoreRecordCount": 0
+      },
+      "expectedValidSiblingPreserved": true
+    },
+    {
+      "id": "ROOT_3_FRAME_ATTACHMENT_FAILURE",
+      "input": "plants use chlorophyll to absorb sunlight; algae use chlorophyll to absorb sunlight",
+      "observed": {
+        "coreRecordCount": 2,
+        "supportRecordCount": 1
+      },
+      "expectedSupportRecordCount": 2
+    },
+    {
+      "id": "ROOT_4_FINGERPRINT_COLLISION",
+      "inputs": [
+        "plants use chlorophyll to absorb sunlight; algae absorb sunlight",
+        "plants absorb sunlight; algae use chlorophyll to absorb sunlight"
+      ],
+      "fingerprintsEqual": true
+    },
+    {
+      "id": "ROOT_5_MEDIATOR_MORPHOLOGY_COLLAPSE",
+      "inputs": [
+        "plants use chlorophyll to absorb sunlight",
+        "plants used chlorophyll to absorb sunlight"
+      ],
+      "supportVerbForms": [
+        "PAST",
+        "PAST"
+      ],
+      "fingerprintsEqual": true
+    }
   ],
   "mediatedPredicateCoverageHole": {
-    "finding": "ASTRA-FINAL-FRAME-001",
-    "blockedInput": ", and green plants and algae use chlorophyll to harness solar energy.",
-    "blockedBaseHead": "300dac2f0bc3adb725bcc0604e87493578a4974f",
-    "blockedBaseTree": "63a236139fbb10e0e3d80d0eee4501c641fce312",
+    "finding": "ROOT_1_RAW_VALIDATION_BYPASS",
+    "blockedInput": ", and plants and algae must absorb sunlight.",
+    "blockedBaseHead": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
+    "blockedBaseTree": "25e7623f2734ce2e111ef3da92dcac15a999d6d4",
     "blockedBaseResult": {
       "passed": true,
       "hasMalformed": false,
-      "malformedTopologyCount": 0,
-      "qualifyingRelationCount": 4
-    },
-    "partialRepairHead": "c12c8e106e64341dd1f642036108624e519bb3f9",
-    "partialRepairTree": "ab830a0a6c4c5aa7bc6b85311032e2edcac8994a",
-    "partialRepairResult": {
-      "passed": false,
-      "hasMalformed": true,
-      "malformedTopology": {
-        "type": "AND",
-        "cardinality": 3,
-        "rawMembers": ["", "green plants", "algae"],
-        "shapeValid": false
-      },
-      "relationRecordsRejected": 4,
-      "rejectionReason": "GRAMMAR_SHAPE_NOT_ACCEPTED"
+      "qualifyingRelationCount": 2,
+      "controlFingerprintEqual": true
     }
   },
   "scopeGates": {
@@ -55,5 +109,18 @@
     "release": false,
     "deployment": false,
     "p2": false
-  }
+  },
+  "implementationCommitSha": "ca12d884731f772ef4048e547fae96be1dafffe6",
+  "implementationTreeSha": "c0b444d047fcb9fdbf71df79143ba4fcd152cd14",
+  "implementationParentSha": "d23f208d892542d9c984d83e587816a249bdd6df",
+  "implementationCommitShas": [
+    "d711c01b230b4095cf17ff3aa56e800436c51732",
+    "789cedff0091213315a0c33674f8081feb4b1a29",
+    "b56fd878325be4ba25bca6046234cd3bf51a7c6f",
+    "d23f208d892542d9c984d83e587816a249bdd6df",
+    "ca12d884731f772ef4048e547fae96be1dafffe6"
+  ],
+  "redEvidenceMethod": "read-only evaluation of exact blocked-base source bytes with fresh root probes",
+  "inheritedPartialImplementationCommitSha": "c12c8e106e64341dd1f642036108624e519bb3f9",
+  "inheritedPartialImplementationTreeSha": "ab830a0a6c4c5aa7bc6b85311032e2edcac8994a"
 }

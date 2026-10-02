@@ -4,26 +4,30 @@
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "repairAttemptId": "P1-ASTRA-FINAL-FRAME-001-REPAIR-20260930",
-  "capturedAtUtc": "2026-09-30T17:48:45.458Z",
-  "repairBaseSha": "300dac2f0bc3adb725bcc0604e87493578a4974f",
-  "repairBaseTreeSha": "63a236139fbb10e0e3d80d0eee4501c641fce312",
-  "repairStartHead": "300dac2f0bc3adb725bcc0604e87493578a4974f",
-  "implementationCommitSha": "110d637974201bd3b1995e4dcb7c46558eda6f20",
-  "implementationTreeSha": "02143c5717aa7d60170560484ca8967a46761ced",
-  "implementationParentSha": "9ce4424fc2f73f4fff6ed1aaaf00e9a52ff7b1ef",
+  "repairAttemptId": "P1-FIVE-ROOT-CLOSURE-REPAIR-20261002",
+  "capturedAtUtc": "2026-10-02T01:01:50.674Z",
+  "repairBaseSha": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
+  "repairBaseTreeSha": "25e7623f2734ce2e111ef3da92dcac15a999d6d4",
+  "repairStartHead": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
+  "implementationCommitSha": "ca12d884731f772ef4048e547fae96be1dafffe6",
+  "implementationTreeSha": "c0b444d047fcb9fdbf71df79143ba4fcd152cd14",
+  "implementationParentSha": "d23f208d892542d9c984d83e587816a249bdd6df",
   "implementationCommitShas": [
-    "110d637974201bd3b1995e4dcb7c46558eda6f20"
+    "d711c01b230b4095cf17ff3aa56e800436c51732",
+    "789cedff0091213315a0c33674f8081feb4b1a29",
+    "b56fd878325be4ba25bca6046234cd3bf51a7c6f",
+    "d23f208d892542d9c984d83e587816a249bdd6df",
+    "ca12d884731f772ef4048e547fae96be1dafffe6"
   ],
-  "redCommitSha": "8a60634b867c14726f0b9530f389d96969e32b10",
-  "redEvidenceCommitSha": "9ce4424fc2f73f4fff6ed1aaaf00e9a52ff7b1ef",
+  "redCommitSha": null,
+  "redEvidenceCommitSha": null,
   "phase": "GREEN",
-  "status": "PASS",
+  "status": "PASS_PRE_SOL",
   "runtime": "v26.4.0",
   "implementationSnapshot": {
-    "head": "110d637974201bd3b1995e4dcb7c46558eda6f20",
-    "tree": "02143c5717aa7d60170560484ca8967a46761ced",
-    "parent": "9ce4424fc2f73f4fff6ed1aaaf00e9a52ff7b1ef",
+    "head": "ca12d884731f772ef4048e547fae96be1dafffe6",
+    "tree": "c0b444d047fcb9fdbf71df79143ba4fcd152cd14",
+    "parent": "d23f208d892542d9c984d83e587816a249bdd6df",
     "sourcePackageCleanAtCommit": true
   },
   "allCorpusDecisionsMatch": true,
@@ -60,23 +64,34 @@
       "sourcePackageParityInputs": 1280,
       "mismatches": 0,
       "exceptions": 0
+    },
+    "fiveRootClosure": {
+      "rawValidationPropertyCases": 88,
+      "validControls": 44,
+      "frameBoundaryCases": 18,
+      "mediatedPredicatePaths": 21,
+      "mediatedSupportCases": 121,
+      "fingerprintOwnershipCases": 40,
+      "crossRootCompositions": 972,
+      "uniqueStructuralKeys": 972,
+      "sourcePackageMismatches": 0
     }
   },
   "packageBuilds": {
     "build1": {
-      "bytes": 130508,
-      "sha256": "abb122edbf5007843911435dc8ed01450f1cd29942d47acafc83e0847b3860c3",
-      "gitBlob": "24591b2acf680e59a2f29e50e2fadaffb5dacf36"
+      "bytes": 133536,
+      "sha256": "abc3e9b1df7e65e5ee9d3567d674fe2c827773ef089a462bd6123d4e55f2a475",
+      "gitBlob": "13f185f59346544ec37d9ad0b46d975f93d6cace"
     },
     "build2": {
-      "bytes": 130508,
-      "sha256": "abb122edbf5007843911435dc8ed01450f1cd29942d47acafc83e0847b3860c3",
-      "gitBlob": "24591b2acf680e59a2f29e50e2fadaffb5dacf36"
+      "bytes": 133536,
+      "sha256": "abc3e9b1df7e65e5ee9d3567d674fe2c827773ef089a462bd6123d4e55f2a475",
+      "gitBlob": "13f185f59346544ec37d9ad0b46d975f93d6cace"
     },
     "committed": {
-      "bytes": 130508,
-      "sha256": "abb122edbf5007843911435dc8ed01450f1cd29942d47acafc83e0847b3860c3",
-      "gitBlob": "24591b2acf680e59a2f29e50e2fadaffb5dacf36"
+      "bytes": 133536,
+      "sha256": "abc3e9b1df7e65e5ee9d3567d674fe2c827773ef089a462bd6123d4e55f2a475",
+      "gitBlob": "13f185f59346544ec37d9ad0b46d975f93d6cace"
     },
     "byteIdentical": true
   },
@@ -114,13 +129,13 @@
       "skipped": 0
     },
     "evaluator": {
-      "passed": 71,
-      "total": 71,
+      "passed": 81,
+      "total": 81,
       "skipped": 0
     },
     "evaluatorMutations": {
-      "passed": 21,
-      "total": 21,
+      "passed": 27,
+      "total": 27,
       "skipped": 0
     },
     "evaluation": {
@@ -157,13 +172,14 @@
       "exceptions": 0
     },
     "fullBackend": {
-      "passed": 2602,
-      "total": 2603,
+      "passed": 2618,
+      "total": 2619,
       "failed": 1,
       "skipped": 0,
       "exitCode": 1,
-      "soleFailure": "every declared Node major is the one deploy/targets.json names; backend/package.json engines is 26.7.0",
-      "candidateCausedFailures": 0
+      "soleFailure": "deployment-config assertion requires package.json engines to contain >=26, while unchanged baseline declares exact 26.7.0",
+      "candidateCausedFailures": 0,
+      "command": "npm test"
     },
     "frontend": {
       "passed": 735,
@@ -199,11 +215,216 @@
       "baselinePassed": 206,
       "baselineFailed": 0
     },
+    "newRootMutations": {
+      "killed": 5,
+      "total": 5
+    },
+    "fiveRootClosure": {
+      "rawValidationPropertyCases": 88,
+      "framePartitionPropertyCases": 972,
+      "multiMediatedSupportCases": 121,
+      "fingerprintOwnershipCases": 40,
+      "morphologyCases": 21,
+      "crossRootCompositions": 972,
+      "uniqueStructuralKeys": 972
+    },
     "testChangeAccounting": {
       "testsRemoved": 0,
       "testsSkipped": 0,
       "assertionsLoosened": 0,
       "expectationsChanged": 0
     }
+  },
+  "selfClosureAudit": {
+    "status": "PASS",
+    "freshCaseCount": 10,
+    "newFailures": 0,
+    "sourcePackageMismatches": 0,
+    "attacks": [
+      "auxiliary/control raw validation",
+      "same-sentence AND partitioning",
+      "multiple mediated support records",
+      "mediation-owner fingerprint position",
+      "BASE/PRESENT_3SG/PAST mediator morphology",
+      "cross-root combinations"
+    ],
+    "cases": [
+      {
+        "id": "raw-control-malformed",
+        "input": ", and chlorophyll and some bacteria do not fail to use chlorophyll to transform solar light.",
+        "inputSha256": "e09ce579fae3a73a8f4379025f3728ef8a29c10bbd0265fb77d99cabfe5e7c5e",
+        "sourcePackageParity": true,
+        "passed": false,
+        "hasMalformed": true,
+        "fingerprint": "930ba43a498a10e10b37f54ca0674c11b8302ad6e18f87d3d218ae490fad9b8e",
+        "supportForms": [
+          "BASE",
+          "BASE"
+        ],
+        "supportSubjects": [
+          "chlorophyll",
+          "some bacteria"
+        ],
+        "rawMembers": [
+          "",
+          "chlorophyll",
+          "some bacteria"
+        ]
+      },
+      {
+        "id": "raw-control-valid",
+        "input": "Chlorophyll and some bacteria do not fail to use chlorophyll to transform solar light.",
+        "inputSha256": "869dcd09951bb4cfeffed4eb37a286f9c23fa8ef336ef497bb09863413f5eb53",
+        "sourcePackageParity": true,
+        "passed": true,
+        "hasMalformed": false,
+        "fingerprint": "d6bdaa0f53df57f7ee60e59d8e252dfe1dd577301a8089572d8359c0ceabccd0",
+        "supportForms": [
+          "BASE",
+          "BASE"
+        ],
+        "supportSubjects": [
+          "chlorophyll",
+          "some bacteria"
+        ],
+        "rawMembers": null
+      },
+      {
+        "id": "same-sentence-and-partition",
+        "input": "Plants use chlorophyll to transform solar light and algae absorb sunlight.",
+        "inputSha256": "596e6aa730704c7769eb8457cbf4c8d7f47357910813ed93dfe708d6bbc38faa",
+        "sourcePackageParity": true,
+        "passed": true,
+        "hasMalformed": false,
+        "fingerprint": "f7cb480bbabdfc714c11a2062fc2a00802795eb4ca4623c4f968c89274701a9d",
+        "supportForms": [
+          "BASE"
+        ],
+        "supportSubjects": [
+          "plants"
+        ],
+        "rawMembers": null
+      },
+      {
+        "id": "two-local-mediated-supports",
+        "input": "Plants use chlorophyll to harness solar light, and algae use chlorophyll to store the light energy.",
+        "inputSha256": "56e7b2bbc794a54e8a785b59b49517a73c263f144f4a4d751e8f66bab5dffa8e",
+        "sourcePackageParity": true,
+        "passed": true,
+        "hasMalformed": false,
+        "fingerprint": "7217fccb686fa844809b9c6425639d2bd1e25d5db3c4103c0386adca3b96e464",
+        "supportForms": [
+          "BASE",
+          "BASE"
+        ],
+        "supportSubjects": [
+          "plants",
+          "algae"
+        ],
+        "rawMembers": null
+      },
+      {
+        "id": "fingerprint-owner-a",
+        "input": "Plants use chlorophyll to transform solar light; algae absorb sunlight.",
+        "inputSha256": "e62c1c2ed6155c976739d39c298ae30331056a5006d3ae631f03791828a6b8af",
+        "sourcePackageParity": true,
+        "passed": true,
+        "hasMalformed": false,
+        "fingerprint": "f7cb480bbabdfc714c11a2062fc2a00802795eb4ca4623c4f968c89274701a9d",
+        "supportForms": [
+          "BASE"
+        ],
+        "supportSubjects": [
+          "plants"
+        ],
+        "rawMembers": null
+      },
+      {
+        "id": "fingerprint-owner-b",
+        "input": "Plants transform solar light; algae use chlorophyll to absorb sunlight.",
+        "inputSha256": "c6b103fd62cf5aa91a9895050cb6f287b18ad9edd09edd5ede881f87b4d3a99a",
+        "sourcePackageParity": true,
+        "passed": true,
+        "hasMalformed": false,
+        "fingerprint": "3afa7da8061c6db9d21bb16158da9065eb64b90ca52471339b09e1aba143dd8c",
+        "supportForms": [
+          "BASE"
+        ],
+        "supportSubjects": [
+          "algae"
+        ],
+        "rawMembers": null
+      },
+      {
+        "id": "mediator-base",
+        "input": "Plants use chlorophyll to harness the solar light during photosynthesis.",
+        "inputSha256": "626f769e4e4cde2cf5bc106603cebb3ae604c7f09ac3fd722bdab9f31fc03b9b",
+        "sourcePackageParity": true,
+        "passed": true,
+        "hasMalformed": false,
+        "fingerprint": "7d3e57251538efec7887e5eec70ece492118b7bca85c270ad37cdd714af594a1",
+        "supportForms": [
+          "BASE"
+        ],
+        "supportSubjects": [
+          "plants"
+        ],
+        "rawMembers": null
+      },
+      {
+        "id": "mediator-present-3sg",
+        "input": "Photosynthesis uses chlorophyll to absorb the solar light during photosynthesis.",
+        "inputSha256": "0a2f7c12a2c03491b0bed0e5c79256235a607204d658963f0ec4149e59705d27",
+        "sourcePackageParity": true,
+        "passed": true,
+        "hasMalformed": false,
+        "fingerprint": "524e8f68eaf8bb248b70c2190dbd3229d3c8855fa6cc1abbf69eba47c7086f14",
+        "supportForms": [
+          "PRESENT_3SG"
+        ],
+        "supportSubjects": [
+          "photosynthesis"
+        ],
+        "rawMembers": null
+      },
+      {
+        "id": "mediator-past",
+        "input": "Photosynthesis used chlorophyll to capture the light energy during photosynthesis.",
+        "inputSha256": "a4603c01445e3e488622af982bc97914f96c4b7b48c4cbddbadb79523a2fdff1",
+        "sourcePackageParity": true,
+        "passed": true,
+        "hasMalformed": false,
+        "fingerprint": "e3947750f7088357652e8374b47f89ebe8d3d2d555a5c87dafbf540f0b8d2af2",
+        "supportForms": [
+          "PAST"
+        ],
+        "supportSubjects": [
+          "photosynthesis"
+        ],
+        "rawMembers": null
+      },
+      {
+        "id": "cross-root-combination",
+        "input": ", and plants and algae do not fail to use chlorophyll to transform solar light, but chlorophyll captures sunlight.",
+        "inputSha256": "1cfe657a5dbe126bff07295e58246ed27d28094ea623d4e483f4d0e431e6d5e4",
+        "sourcePackageParity": true,
+        "passed": false,
+        "hasMalformed": true,
+        "fingerprint": "098add611646548f301dc77d2b9a44f12c4170d498a11a8c8e8021087f06b20b",
+        "supportForms": [
+          "BASE",
+          "BASE"
+        ],
+        "supportSubjects": [
+          "plants",
+          "algae"
+        ],
+        "rawMembers": [
+          "",
+          "plants",
+          "algae"
+        ]
+      }
+    ]
   }
 }

@@ -5,23 +5,21 @@
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "repairAttemptId": "P1-FIVE-ROOT-CLOSURE-REPAIR-20261002",
-  "capturedAtUtc": "2026-10-02T01:18:40.499Z",
-  "repairBaseSha": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
-  "repairBaseTreeSha": "25e7623f2734ce2e111ef3da92dcac15a999d6d4",
-  "repairStartHead": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
-  "implementationCommitSha": "ca12d884731f772ef4048e547fae96be1dafffe6",
-  "implementationTreeSha": "c0b444d047fcb9fdbf71df79143ba4fcd152cd14",
-  "implementationParentSha": "d23f208d892542d9c984d83e587816a249bdd6df",
+  "repairAttemptId": "P1-TWO-ROOT-BOUNDARY-FRAME-IDENTITY-CLOSURE-20261003",
+  "capturedAtUtc": "2026-10-03T02:36:53.774Z",
+  "repairBaseSha": "c72b03456fbb0065dab7b8993e9e08f153bec936",
+  "repairBaseTreeSha": "15274bc628f183177428e69ff6697c04a962f106",
+  "repairStartHead": "c72b03456fbb0065dab7b8993e9e08f153bec936",
+  "implementationCommitSha": "d86afac5516847773ed55773f5d23150a0fea201",
+  "implementationTreeSha": "20d991ccc4f23179fcd3ca937880eb140d795a46",
+  "implementationParentSha": "c72b03456fbb0065dab7b8993e9e08f153bec936",
   "implementationCommitShas": [
-    "d711c01b230b4095cf17ff3aa56e800436c51732",
-    "789cedff0091213315a0c33674f8081feb4b1a29",
-    "b56fd878325be4ba25bca6046234cd3bf51a7c6f",
-    "d23f208d892542d9c984d83e587816a249bdd6df",
-    "ca12d884731f772ef4048e547fae96be1dafffe6"
+    "5b5120fe6b5c35e12dadf9aac78891dbe311daf0",
+    "c72b03456fbb0065dab7b8993e9e08f153bec936",
+    "d86afac5516847773ed55773f5d23150a0fea201"
   ],
   "phase": "FINAL_EVIDENCE",
-  "status": "PASS_P1_FIVE_ROOT_CLOSURE_REPAIR_PRE_SOL",
+  "status": "PASS_P1_TWO_ROOT_BOUNDARY_FRAME_IDENTITY_CLOSURE_REPAIR_PRE_SOL",
   "entryCount": 13,
   "manifestSelfHashExcluded": true,
   "design": {
@@ -38,21 +36,29 @@
     "lineageRoot": "2e5418bb06ceb4466abbd864391950f070570fb6",
     "blockedRepairBase": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
     "blockedRepairBaseTree": "25e7623f2734ce2e111ef3da92dcac15a999d6d4",
-    "previousCandidateKnownFailed": "5b6fc5909da0176d65ffa93599937db6dffe4b93"
+    "previousCandidateKnownFailed": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
+    "twoRootRepairBase": "c72b03456fbb0065dab7b8993e9e08f153bec936",
+    "twoRootRepairBaseTree": "15274bc628f183177428e69ff6697c04a962f106",
+    "twoRootImplementationHead": "d86afac5516847773ed55773f5d23150a0fea201",
+    "twoRootImplementationTree": "20d991ccc4f23179fcd3ca937880eb140d795a46",
+    "quarantinedCommitsAbsent": [
+      "8c5f9afef9151923539c6016a2d6c75947b2e639",
+      "090d1c99c1bbc3c85ef742fdbd0511e6ca728248"
+    ]
   },
   "package": {
     "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-    "bytes": 133536,
-    "sha256": "abc3e9b1df7e65e5ee9d3567d674fe2c827773ef089a462bd6123d4e55f2a475",
-    "gitBlob": "13f185f59346544ec37d9ad0b46d975f93d6cace",
+    "bytes": 135973,
+    "sha256": "7c3c744716fbef24c58aced3a31d6afe0a1d38c99df2c29cfd0cd5edc4a83d6c",
+    "gitBlob": "2812a22f0363913b1e22b9426b43f96010715bce",
     "recipeVersion": "p1-static-compose-v1",
     "buildsByteIdentical": true,
     "runnerDerivedBlob": "b92260cb5940637d6deab6e0efcdf1ee462b0f22",
     "runnerDerivedSha256": "93310034620c1d557e40803eeb884036deca4313fa2b958d483700e93ce894b8",
     "runnerDerivedBytes": 15261,
-    "evaluatorBlob": "6751fa9740b1f0488bc374c9172ef886eef1f5f0",
-    "evaluatorSha256": "25bb3483d7da3bd6822a2cbae9e9ad2b5c4f91cd815b8bc4add9b18ceb0470ed",
-    "evaluatorBytes": 113634,
+    "evaluatorBlob": "f022b02ed5e7488b0819f9d325c6499089a4dc65",
+    "evaluatorSha256": "9fe6c7613cbf444538da9e4e8723eaab3077df92f3aa745ecd0f3d8db035e5a7",
+    "evaluatorBytes": 116071,
     "inputs": {
       "recipe": {
         "commit": "1980974e84078c91e6e277c2ec89fdc64f20ee44",
@@ -63,12 +69,12 @@
         "bytes": 10442
       },
       "evaluator": {
-        "commit": "ca12d884731f772ef4048e547fae96be1dafffe6",
-        "tree": "c0b444d047fcb9fdbf71df79143ba4fcd152cd14",
+        "commit": "d86afac5516847773ed55773f5d23150a0fea201",
+        "tree": "20d991ccc4f23179fcd3ca937880eb140d795a46",
         "path": "backend/lib/photosynthesis-relation-evaluator.js",
-        "blob": "6751fa9740b1f0488bc374c9172ef886eef1f5f0",
-        "sha256": "25bb3483d7da3bd6822a2cbae9e9ad2b5c4f91cd815b8bc4add9b18ceb0470ed",
-        "bytes": 113634
+        "blob": "f022b02ed5e7488b0819f9d325c6499089a4dc65",
+        "sha256": "9fe6c7613cbf444538da9e4e8723eaab3077df92f3aa745ecd0f3d8db035e5a7",
+        "bytes": 116071
       },
       "corpus": {
         "commit": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc",
@@ -86,6 +92,14 @@
         "sha256": "e7bffea6fc690f6feb7003eb01c900bb798ba6b44cfb80c3a19edd45a1c6a3d7",
         "bytes": 15204
       }
+    },
+    "buildA": {
+      "bytes": 135973,
+      "sha256": "7c3c744716fbef24c58aced3a31d6afe0a1d38c99df2c29cfd0cd5edc4a83d6c"
+    },
+    "buildB": {
+      "bytes": 135973,
+      "sha256": "7c3c744716fbef24c58aced3a31d6afe0a1d38c99df2c29cfd0cd5edc4a83d6c"
     }
   },
   "coverage": {
@@ -104,21 +118,34 @@
     "mediatedSupportCases": 121,
     "fingerprintOwnershipCases": 40,
     "crossRootCompositions": 972,
-    "uniqueStructuralKeys": 972
+    "uniqueStructuralKeys": 972,
+    "twoRootFramePartitionCases": 972,
+    "twoRootFramePartitionUniqueKeys": 972,
+    "twoRootHoldoutCases": 1200,
+    "twoRootHoldoutUniqueKeys": 1200,
+    "twoRootHoldoutSeeds": [
+      "0xA2C59D71",
+      "0x3F86E4B2"
+    ],
+    "twoRootHoldoutSourcePackageMismatches": 0,
+    "twoRootHoldoutFamilyCounts": {
+      "passiveRole": 400,
+      "malformedSibling": 200,
+      "crossRoot": 600
+    }
   },
   "implementation": {
-    "head": "ca12d884731f772ef4048e547fae96be1dafffe6",
-    "tree": "c0b444d047fcb9fdbf71df79143ba4fcd152cd14",
-    "parent": "d23f208d892542d9c984d83e587816a249bdd6df",
+    "head": "d86afac5516847773ed55773f5d23150a0fea201",
+    "tree": "20d991ccc4f23179fcd3ca937880eb140d795a46",
+    "parent": "c72b03456fbb0065dab7b8993e9e08f153bec936",
     "sourceChanges": 4,
     "implementationCommitShas": [
-      "d711c01b230b4095cf17ff3aa56e800436c51732",
-      "789cedff0091213315a0c33674f8081feb4b1a29",
-      "b56fd878325be4ba25bca6046234cd3bf51a7c6f",
-      "d23f208d892542d9c984d83e587816a249bdd6df",
-      "ca12d884731f772ef4048e547fae96be1dafffe6"
+      "5b5120fe6b5c35e12dadf9aac78891dbe311daf0",
+      "c72b03456fbb0065dab7b8993e9e08f153bec936",
+      "d86afac5516847773ed55773f5d23150a0fea201"
     ],
-    "sourcePackageCleanAtCommit": true
+    "sourcePackageCleanAtCommit": true,
+    "architecturalRepair": "Boundary discovery recognizes supported structural clause occurrences independently of semantic agreement, while a comma only outranks earlier conjunctions when its prefix closes a complete passive frame."
   },
   "redEvidence": {
     "method": "read-only evaluation of exact blocked-base source bytes",
@@ -208,14 +235,19 @@
       "skipped": 0
     },
     "evaluator": {
-      "passed": 82,
-      "total": 82,
-      "skipped": 0
+      "passed": 92,
+      "total": 92,
+      "skipped": 0,
+      "sourcePackageMismatches": 0
     },
     "evaluatorMutations": {
-      "passed": 27,
-      "total": 27,
-      "skipped": 0
+      "passed": 35,
+      "total": 35,
+      "skipped": 0,
+      "rootMutations": "2/2",
+      "latestBoundaryMutations": "4/4",
+      "previousFiveRootMutations": "5/5",
+      "M1M10": "10/10"
     },
     "evaluation": {
       "passed": 41,
@@ -251,14 +283,16 @@
       "exceptions": 0
     },
     "fullBackend": {
-      "passed": 2619,
-      "total": 2620,
+      "passed": 2637,
+      "total": 2638,
       "failed": 1,
       "skipped": 0,
       "exitCode": 1,
-      "soleFailure": "deployment-config assertion requires package.json engines to contain >=26, while unchanged baseline declares exact 26.7.0",
+      "command": "npm test",
+      "soleFailure": "Unchanged deployment-config assertion expects package.json engines to contain >=26 while repository baseline declares exact 26.7.0.",
+      "baselineReproducedOnUntouchedBase": true,
       "candidateCausedFailures": 0,
-      "command": "npm test"
+      "runtimeNode": "v26.4.0"
     },
     "frontend": {
       "passed": 735,
@@ -266,7 +300,14 @@
       "filesPassed": 58,
       "filesTotal": 58,
       "skipped": 0,
-      "command": "npm test -- --run --maxWorkers=1 --minWorkers=1"
+      "status": "PASS",
+      "command": "npm test -- --run --maxWorkers=1 --minWorkers=1",
+      "parallelAggregateAttempt": {
+        "passed": 730,
+        "total": 735,
+        "failed": 5,
+        "affectedFilesPassedInIsolation": 55
+      }
     },
     "datasetV1": {
       "validated": 21,
@@ -295,8 +336,8 @@
       "baselineFailed": 0
     },
     "newRootMutations": {
-      "killed": 5,
-      "total": 5
+      "killed": 2,
+      "total": 2
     },
     "fiveRootClosure": {
       "rawValidationPropertyCases": 88,
@@ -312,6 +353,25 @@
       "testsSkipped": 0,
       "assertionsLoosened": 0,
       "expectationsChanged": 0
+    },
+    "latestBoundaryMutations": {
+      "killed": 4,
+      "total": 4
+    },
+    "previousFiveRootMutations": {
+      "killed": 5,
+      "total": 5
+    },
+    "twoRootClosure": {
+      "framePartitionCases": 972,
+      "holdoutCases": 1200,
+      "holdoutUniqueKeys": 1200,
+      "sourcePackageMismatches": 0
+    },
+    "evaluatorFocused": {
+      "passed": 127,
+      "total": 127,
+      "skipped": 0
     }
   },
   "quarantine": {
@@ -341,7 +401,7 @@
     },
     {
       "path": "backend/lib/p1-authoritative-repair-v2.test.js",
-      "sha256": "ec28ee48eab80c1c6075f0ea6231ccd831e8f78919ed6f4f63f523f6384f2326"
+      "sha256": "6267c383e0e86baf6bdf663676d57b91a22b8991108842797eb71d336810a06e"
     },
     {
       "path": "backend/lib/photosynthesis-relation-cases.js",
@@ -349,19 +409,19 @@
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator-mutation.test.js",
-      "sha256": "1ce6482f7b3b518411ee6d05d0d64037b06c8bc623efe6f7c0e2e5d4c25f5776"
+      "sha256": "e683cca6a201c791dfa24fbff4b1bab51a2234fc934ddc7e644efdba95bdb663"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.js",
-      "sha256": "25bb3483d7da3bd6822a2cbae9e9ad2b5c4f91cd815b8bc4add9b18ceb0470ed"
+      "sha256": "9fe6c7613cbf444538da9e4e8723eaab3077df92f3aa745ecd0f3d8db035e5a7"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
-      "sha256": "c65dccd52cc45573ef6fb82f6eddbe4b317661bfee9e205e654afc0a004649a5"
+      "sha256": "c647b3625f40ac85f836d6c29a7ada7525d3f349e549eaed846b41f525fc24e3"
     },
     {
       "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-      "sha256": "abc3e9b1df7e65e5ee9d3567d674fe2c827773ef089a462bd6123d4e55f2a475"
+      "sha256": "7c3c744716fbef24c58aced3a31d6afe0a1d38c99df2c29cfd0cd5edc4a83d6c"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
@@ -386,16 +446,75 @@
   ],
   "selfClosureAudit": {
     "status": "PASS",
-    "freshCaseCount": 10,
+    "freshCaseCount": 1200,
     "newFailures": 0,
     "sourcePackageMismatches": 0,
+    "holdoutSeeds": [
+      "0xA2C59D71",
+      "0x3F86E4B2"
+    ],
+    "rootResults": {
+      "ROOT_001_PASSIVE_ROLE_TO_CLAUSE_REASSIGNMENT": "FIXED",
+      "ROOT_002_MALFORMED_SIBLING_BOUNDARY_LOSS": "FIXED",
+      "ROOT_001_FINGERPRINT_COLLISION": "FIXED",
+      "malformedSiblingLocality": "PASS",
+      "twoFrameTopology": "PASS",
+      "threeFrameTopology": "PASS",
+      "passiveAgentCoordination": "PASS"
+    },
     "attacks": [
-      "auxiliary/control raw validation",
-      "same-sentence AND partitioning",
-      "multiple mediated support records",
-      "mediation-owner fingerprint position",
-      "BASE/PRESENT_3SG/PAST mediator morphology",
-      "cross-root combinations"
+      "passive role AND versus explicit clause boundary",
+      "structural malformed sibling boundary versus agreement validation",
+      "valid-malformed-valid three-frame locality",
+      "972 predicate, boundary, and validity compositions",
+      "1200 seeded unique-key source/package parity cases",
+      "previous five-root, latest four-root, and historical regression controls"
     ]
+  },
+  "providerTraffic": {
+    "externalModelProviderCalls": 0,
+    "datasetValidationMode": "validate-only",
+    "v1NothingSpent": true,
+    "v2NothingSpent": true,
+    "deployments": 0,
+    "liveTraffic": false,
+    "merges": 0,
+    "npmRegistryUsedForLockedDependencyInstallation": true
+  },
+  "twoRootClosure": {
+    "root001": {
+      "result": "FIXED",
+      "input": "Light is stored by plants and algae, and plants capture sunlight",
+      "frames": 2,
+      "passiveAgents": [
+        "plant",
+        "algae"
+      ],
+      "activeSubject": "plant",
+      "fingerprintCollisionResolved": true
+    },
+    "root002": {
+      "result": "FIXED",
+      "input": "Plants absorb sunlight but plants absorbs sunlight",
+      "document": "FAIL",
+      "frames": 2,
+      "firstFrameQualifies": true,
+      "malformedSecondFrameLocal": true
+    },
+    "holdout": {
+      "cases": 1200,
+      "uniqueStructuralKeys": 1200,
+      "seeds": [
+        "0xA2C59D71",
+        "0x3F86E4B2"
+      ],
+      "sourcePackageMismatches": 0
+    },
+    "mutations": {
+      "newRoots": "2/2",
+      "latestFourRoots": "4/4",
+      "previousFiveRoots": "5/5",
+      "M1M10": "10/10"
+    }
   }
 }

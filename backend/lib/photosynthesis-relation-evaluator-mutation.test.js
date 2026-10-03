@@ -58,6 +58,8 @@ test('M1-M10 runner requires a green semantic baseline and counts only new froze
   assert.equal(result.baseline.failed, 0);
   assert.equal(result.mutations.length, 10);
   assert.ok(result.mutations.every((mutation) => mutation.killed));
+  assert.ok(result.mutations.every((mutation) => mutation.crashes === 0 && mutation.executedCases === 206),
+    'all mutation kills must come from executed semantic failures, never evaluator exceptions');
   assert.equal(result.killed, 10);
 });
 

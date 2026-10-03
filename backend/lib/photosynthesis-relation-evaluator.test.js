@@ -2455,3 +2455,171 @@ test('two-root boundary ownership and malformed-sibling closure', async () => {
 });
 
 })();
+
+// Three-root frame lifecycle properties and implementation-side holdout.
+{
+'use strict';
+const test = require('node:test');
+const assert = require('node:assert/strict');
+const { readFileSync } = require('node:fs');
+const { join } = require('node:path');
+const { pathToFileURL } = require('node:url');
+const e = require('./photosynthesis-relation-evaluator');
+const SOURCE = readFileSync(join(__dirname, 'photosynthesis-relation-evaluator.js'), 'utf8');
+const projection = (r) => r[Object.getOwnPropertySymbols(r).find((s) => s.description === 'V2_FRAME_PROJECTIONS')];
+const compile = (source) => { const m = { exports: {} }; new Function('require', 'module', 'exports', source)(require, m, m.exports); return m.exports; };
+const replace = (needle, next) => { assert.equal(SOURCE.split(needle).length, 2); return compile(SOURCE.replace(needle, next)); };
+const lemma = (s) => e.normalizeExactFormLemmaV2(s);
+const boundaries = [' and ', ', and ', ' but ', ', but ', '; ', '. '];
+const seeds = [0x74E1C293, 0xC68A5F12];
+const agents = ['plants', 'green plants', 'algae', 'photosynthetic bacteria', 'some bacteria'];
+const verbs = ['capture', 'absorb', 'harness', 'convert', 'transform', 'store'];
+const lights = ['light', 'sunlight', 'light energy', 'solar energy'];
+const contexts = ['', ' during photosynthesis', ' in photosynthesis', ' for photosynthesis'];
+function passive(members, style, verb, light, context = '', aux = 'is') {
+  const role = members.length === 1 ? members[0] : members.length === 2 ? members.join(' and ')
+    : members.slice(0, -1).join(', ') + (style === 'oxford' ? ', and ' : ' and ') + members.at(-1);
+  return { text: `${light} ${aux} ${verb}${verb.endsWith('e') ? 'd' : 'ed'} by ${role}${context}`, members, voice: 'PASSIVE', verb,
+    malformed: !['is', 'was', 'is being', 'was being', 'has been', 'had been', 'must be', 'may be'].includes(aux),
+    qualifies: aux !== 'may be' && ['is', 'was', 'is being', 'was being', 'has been', 'had been', 'must be'].includes(aux), context: !!context, support: false };
+}
+function active(subject, verb, light, kind = 'plain', context = '') {
+  const prefix = { plain: '', mediated: 'use chlorophyll to ', modal: 'must ', uncertain: 'may ', control: 'do not fail to ' }[kind];
+  return { text: `${subject} ${prefix}${verb} ${light}${context}`, members: [subject], voice: 'ACTIVE', verb,
+    malformed: false, qualifies: kind !== 'uncertain', context: !!context, support: kind === 'mediated' };
+}
+function malformed(subject, verb, light, style, kind = 'active') {
+  const role = [`${subject}, , and animals`, `${subject} and , algae`, `${subject}, algae, and , photosynthetic bacteria`][style];
+  const text = kind === 'passive' ? `${light} is ${verb}${verb.endsWith('e') ? 'd' : 'ed'} by ${role}`
+    : `${role} ${kind === 'mediated' ? 'use chlorophyll to ' : ''}${verb} ${light}`;
+  return { text, members: null, voice: kind === 'passive' ? 'PASSIVE' : 'ACTIVE', verb, malformed: true, qualifies: false, support: false };
+}
+function compose(blocks, separators) {
+  return { blocks, separators, text: blocks.map((b, i) => (i ? separators[i - 1] : '') + b.text).join('') };
+}
+function oracle(item, evaluator = e) {
+  const r = evaluator.evaluatePhotosynthesisRelationsV2(item.text);
+  const frames = projection(r);
+  assert.equal(frames.length, item.blocks.length, item.text);
+  assert.equal(r.hasMalformed, item.blocks.some((b) => b.malformed), item.text);
+  assert.equal(r.passed, !item.blocks.some((b) => b.malformed) && item.blocks.some((b) => b.qualifies), item.text);
+  item.blocks.forEach((block, i) => {
+    const f = frames[i];
+    assert.equal(f.frameId, i, item.text);
+    assert.equal(f.malformed, block.malformed, item.text);
+    assert.ok(f.records.every((record) => record.evidenceSpan.text === f.text), item.text);
+    const core = f.records.filter((record) => record.relationType === 'CORE_LIGHT_RELATION');
+    if (!block.malformed) {
+      assert.deepEqual(core.map((record) => record.subjectSet.lemma), block.members.map(lemma), item.text);
+      assert.deepEqual(core.map((record) => record.voice), block.members.map(() => block.voice), item.text);
+      assert.deepEqual(core.map((record) => record.qualifies), block.members.map(() => block.qualifies), item.text);
+      assert.equal(f.coordinationTopology[0].cardinality, block.members.length, item.text);
+      assert.equal(f.records.filter((record) => record.relationType === 'CHLOROPHYLL_SUPPORT').length, block.support ? 1 : 0, item.text);
+      if (block.voice === 'PASSIVE') assert.ok(core.every((record) => record.lightObject.binding === 'PASSIVE_SUBJECT'
+        && record.processContext === (block.context ? 'LOCAL_ADJUNCT' : null)), item.text);
+    } else assert.ok(f.records.every((record) => !record.qualifies), item.text);
+  });
+  return r;
+}
+async function packaged() { return (await import(pathToFileURL(join(__dirname, '../scripts/run-photosynthesis-relation-mutations.mjs')).href)).createDerivedEvaluator(); }
+const exact = [
+  compose([passive(['plants', 'algae', 'photosynthetic bacteria'], 'oxford', 'store', 'light'), active('plants', 'capture', 'sunlight')], [', and ']),
+  compose([active('plants', 'absorb', 'sunlight'), passive(['plants'], '', 'store', 'light', '', 'are')], [' but ']),
+  compose([active('plants', 'absorb', 'sunlight'), malformed('plants', 'absorb', 'sunlight', 0)], [' but ']),
+];
+test('three roots: exact cases retain frame ownership and valid qualification in source/package', async () => {
+  const p = await packaged();
+  for (const item of exact) {
+    const r = oracle(item); const pr = oracle(item, p);
+    assert.deepEqual(pr, r); assert.deepEqual(projection(pr), projection(r));
+    assert.equal(p.semanticCaseFingerprint(pr), e.semanticCaseFingerprint(r));
+  }
+});
+test('passive maximal/Oxford role properties cross supported sibling forms and boundaries', () => {
+  let count = 0;
+  for (const members of [agents.slice(0, 1), agents.slice(0, 2), agents.slice(0, 3)])
+    for (const style of ['oxford', 'serial']) for (const boundary of boundaries)
+      for (const kind of ['plain', 'mediated', 'modal', 'control']) {
+        oracle(compose([passive(members, style, 'store', 'light'), active('plants', 'capture', 'sunlight', kind)], [boundary])); count++;
+      }
+  console.log(`ROLE_SPAN_PROPERTIES ${count}`);
+});
+test('passive auxiliary malformation remains local in first/middle/last frames', () => {
+  let count = 0;
+  for (const aux of ['are', 'were', 'have been', 'has be', 'is been', 'has being', 'must been', 'must is', 'is be'])
+    for (const boundary of boundaries) for (let position = 0; position < 3; position++) {
+      const blocks = [active('plants', 'absorb', 'sunlight'), active('algae', 'harness', 'light'), active('green plants', 'capture', 'solar energy', 'mediated')];
+      blocks[position] = passive(['plants'], '', 'store', 'light', '', aux);
+      oracle(compose(blocks, [boundary, boundary])); count++;
+    }
+  console.log(`MALFORMED_PASSIVE_PROPERTIES ${count}`);
+});
+test('malformed coordination prefixes remain local across conjunctions and hard boundaries', () => {
+  let count = 0;
+  for (const style of [0, 1, 2]) for (const kind of ['active', 'passive', 'mediated'])
+    for (const boundary of boundaries) for (let position = 0; position < 3; position++) {
+    const blocks = [passive(agents.slice(0, 3), 'oxford', 'store', 'light'), active('algae', 'harness', 'sunlight', 'mediated'), active('green plants', 'capture', 'solar energy')];
+    blocks[position] = malformed('plants', 'absorb', 'sunlight', style, kind);
+    oracle(compose(blocks, [boundary, boundary])); count++;
+  }
+  console.log(`MALFORMED_SIBLING_PROPERTIES ${count}`);
+});
+test('Oxford ownership differential and normalization-equivalent forms preserve fingerprints', () => {
+  const a = exact[0].text;
+  const b = 'Light is stored by plants and algae, and photosynthetic bacteria and plants capture sunlight';
+  assert.notEqual(e.semanticCaseFingerprint(a), e.semanticCaseFingerprint(b));
+  assert.equal(e.semanticCaseFingerprint(a), e.semanticCaseFingerprint(a.toUpperCase().replaceAll(' ', '  ')));
+  assert.notEqual(e.semanticCaseFingerprint('Light is stored by plants and algae, and plants capture sunlight'),
+    e.semanticCaseFingerprint('Light is stored by plants, and algae and plants capture sunlight'));
+});
+test('NEW-A/NEW-B/NEW-C mutations execute and lose their intended semantic property', () => {
+  const mutants = [
+    replace("return candidate.commaDelimited && passive\n        && isRecognizableRoleSpanV2(passive.agent);", 'return candidate.commaDelimited && passive;'),
+    replace('|| !isSupportedPassiveAuxiliaryChain(passive.auxiliaryChain)', '|| false'),
+    replace("&& isRecognizableRoleSpanV2(subject);", "&& subject.members.some((member) => member.valid) && subject.members.every((member) => member.valid || member.surface === '');"),
+  ];
+  mutants.forEach((m, i) => {
+    oracle(exact[i]);
+    assert.doesNotThrow(() => m.evaluatePhotosynthesisRelationsV2(exact[i].text));
+    assert.throws(() => oracle(exact[i], m), { code: 'ERR_ASSERTION' });
+  });
+});
+function random(seed) { let x = seed; return () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return (x >>> 0) / 0x100000000; }; }
+test('fresh deterministic holdout stresses all three mechanisms with source/package parity', async () => {
+  const p = await packaged();
+  const cases = []; const inputs = new Set(); const keys = new Set(); const fingerprints = new Set();
+  const familyCounts = [0, 0, 0, 0, 0, 0];
+  for (const seed of seeds) {
+    const rng = random(seed), pick = (a) => a[Math.floor(rng() * a.length)];
+    for (let attempts = 0, accepted = 0; accepted < 900 && attempts < 50000; attempts++) {
+      const family = attempts % 6;
+      const role = [...agents].sort(() => rng() - 0.5).slice(0, pick([1, 2, 3, 3, 3]));
+      const first = passive(role, pick(['oxford', 'serial']), pick(verbs), pick(lights), pick(contexts));
+      const good = active(pick(agents), pick(verbs), pick(lights), pick(['plain', 'mediated', 'modal', 'uncertain', 'control']), pick(contexts));
+      const badAux = passive([pick(agents)], '', pick(verbs), pick(lights), pick(contexts), pick(['are', 'were', 'have been', 'has be', 'is been', 'must been', 'must is']));
+      const badRole = malformed(pick(agents), pick(verbs), pick(lights), pick([0, 1, 2]), pick(['active', 'passive', 'mediated']));
+      const blocks = [[first, good], [good, badAux], [good, badRole], [first, badAux, good], [first, good, badRole], [first, badAux, badRole]][family];
+      if (rng() < 0.5) blocks.reverse();
+      const item = compose(blocks, blocks.slice(1).map(() => pick(boundaries)));
+      // Structural key from construction semantics, excluding surface punctuation
+      // and normalized light synonyms. This is independent of parser output.
+      const key = JSON.stringify({ blocks: blocks.map(({ text, context, ...b }) => ({ ...b, members: b.members?.map(lemma), context: !!context })), boundaries: item.separators.map((s) => s.includes('.') ? 'sentence' : s.includes(';') ? 'hard' : s.includes('but') ? 'but' : 'and') });
+      if (inputs.has(item.text) || keys.has(key)) continue;
+      inputs.add(item.text); keys.add(key); cases.push(item); accepted++; familyCounts[family]++;
+    }
+  }
+  assert.equal(cases.length, 1800); assert.ok(keys.size >= 1200);
+  const failures = [];
+  for (const item of cases) {
+    try {
+      const r = oracle(item); const pr = oracle(item, p);
+      assert.deepEqual(pr, r); assert.deepEqual(projection(pr), projection(r));
+      assert.equal(p.semanticCaseFingerprint(pr), e.semanticCaseFingerprint(r));
+      fingerprints.add(e.semanticCaseFingerprint(r));
+    } catch (error) { failures.push({ input: item.text, message: error.message }); }
+  }
+  console.log(`THREE_ROOT_HOLDOUT ${JSON.stringify({ seeds: seeds.map((s) => '0x' + s.toString(16).toUpperCase()), cases: cases.length, uniqueKeys: keys.size, uniqueFingerprints: fingerprints.size, familyCounts, failed: failures.length, examples: failures.slice(0, 8) })}`);
+  assert.equal(failures.length, 0, JSON.stringify(failures.slice(0, 8)));
+});
+
+}

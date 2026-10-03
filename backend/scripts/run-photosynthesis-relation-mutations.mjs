@@ -1,4 +1,4 @@
-// p1-static-compose-v1; evaluator-blob=f022b02ed5e7488b0819f9d325c6499089a4dc65; runner-blob=b92260cb5940637d6deab6e0efcdf1ee462b0f22; recipe-blob=2440f6c5c9c42248ca6439150fa6deea58be8848
+// p1-static-compose-v1; evaluator-blob=bb9e32bd70fea4ba897bcdcc7004d1ed777a5f1c; runner-blob=2d0441ae9942be224ae27d2cc911b177a8d41eab; recipe-blob=2440f6c5c9c42248ca6439150fa6deea58be8848
 import * as __p1Crypto from 'node:crypto';
 import { closeSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs';
 import { createRequire, Module } from 'node:module';
@@ -570,11 +570,16 @@ function splitIndependentConjunctionsV2(text) {
   }
   if (candidates.length) {
     // A comma may outrank earlier conjunctions only when it closes a passive frame.
-    const commaPassiveCandidate = candidates.find((candidate) => candidate.commaDelimited
-      && bindLocalPassiveAgent(tokenizeV2(candidate.left)));
-    const passiveAgentCandidates = candidates.filter((candidate) => (
-      bindLocalPassiveAgent(tokenizeV2(candidate.left))
-    ));
+    const commaPassiveCandidate = candidates.find((candidate) => {
+      const passive = bindLocalPassiveAgent(tokenizeV2(candidate.left));
+      // A serial-list comma cannot close an agent role before its final AND.
+      return candidate.commaDelimited && passive
+        && isRecognizableRoleSpanV2(passive.agent);
+    });
+    const passiveAgentCandidates = candidates.filter((candidate) => {
+      const passive = bindLocalPassiveAgent(tokenizeV2(candidate.left));
+      return passive && isRecognizableRoleSpanV2(passive.agent);
+    });
     const selected = commaPassiveCandidate || passiveAgentCandidates.at(-1) || candidates[0];
     const leftParts = splitIndependentConjunctionsV2(selected.left);
     const rightParts = splitIndependentConjunctionsV2(selected.right);
@@ -1182,7 +1187,7 @@ function extractSubjectSet(ts,end){
   const malformedHeads=new Set(['and','or','rather','but',',',';',':','.','!','?']);
   const memberShapes=[];
   const members=memberSources.map((source)=>{
-      const trimmed=(hasOxfordCoordinator?source.trim().replace(/^(?:and|or)\s+/i,''):source.trim());
+      const trimmed=(hasOxfordCoordinator?source.trim().replace(/^(?:and|or)(?:\s+|$)/i,''):source.trim());
       const words=tokenizeV2(trimmed).map((token)=>token.form);
       const determiner=determiners.has(words[0])?words[0]:null;
       const nounWords=determiner?words.slice(1):words;
@@ -1202,6 +1207,17 @@ function extractSubjectSet(ts,end){
   return{members,coordinator,validity:n===members.length&&n?'ALL_VALID':n?'MIXED_INVALID':'ALL_INVALID',shapeValid,start:subjectStart,end:boundary};
 }
 function subjectPhraseWellFormedV2(subject){return subject.shapeValid!==false&&subject.members.length>0&&!subject.members.some((member)=>member.determinerNumberMismatch);}
+function isRecognizableRoleSpanV2(subject) {
+  if (subject.coordinator === 'COMMA') return false;
+  if (subject.shapeValid !== false) return true;
+  if (subject.coordinator !== 'AND' || !subject.members.some((member) => member.valid)) return false;
+  if (!subject.members.at(-1)?.surface) return false;
+  const members = subject.members.filter((member) => member.surface);
+  if (members.length === subject.members.length) return false;
+  const tokens = tokenizeV2(members.map((member) => member.surface).join(' and '));
+  // Empty members establish malformed coordination, but do not erase the span.
+  return extractSubjectSet(tokens, tokens.length).shapeValid;
+}
 function subjectNumberV2(subject){
   if(subject.coordinator!=='RATHER_THAN'&&subject.members.length>1)return 'PLURAL';
   const member=subject.coordinator==='RATHER_THAN'?subject.members.at(-1):subject.members[0];
@@ -1291,8 +1307,7 @@ function startsIndependentSupportedClauseV2(text) {
     if (['a', 'an', 'the', 'some'].includes(tokens[0]?.form)
       && !subject.members.some((member) => member.surface)) continue;
     const malformedEmptyAnd = subject.shapeValid === false && subject.coordinator === 'AND'
-      && subject.members.length > 1 && subject.members.some((member) => member.valid)
-      && subject.members.every((member) => member.valid || member.surface === '');
+      && isRecognizableRoleSpanV2(subject);
     if (subject.shapeValid === false && !malformedEmptyAnd) continue;
     const boundarySubject = malformedEmptyAnd ? { ...subject, shapeValid: true } : subject;
     if (hasSupportedBoundaryPrefixV2(tokens, index, boundarySubject)) return true;
@@ -1744,7 +1759,10 @@ function parseMinimalRelationGrammar(input) {
       const passive = bindLocalPassiveAgent(tokens);
       if (passive) {
         const valid = validateSubjectSet(passive.agent);
-        if (!subjectPhraseWellFormedV2(passive.agent)) {
+        // Passive existence precedes validation. A rejected auxiliary belongs
+        // to this frame and must participate in document malformation.
+        if (!subjectPhraseWellFormedV2(passive.agent)
+          || !isSupportedPassiveAuxiliaryChain(passive.auxiliaryChain)) {
           markMalformed(isTargetRelationPredicateV2(passive.verb.lemma));
           diagnostics.push('GRAMMAR_SHAPE_NOT_ACCEPTED');
         }
@@ -2505,7 +2523,7 @@ function replaceOnce(text, search, replacement, label) {
 function replaceConstDeclaration(text, name, nextName, replacement) {
   const startMarker = `const ${name} =`;
   const start = text.indexOf(startMarker);
-  const end = text.indexOf(`\nconst ${nextName}`, start);
+  const end = text.indexOf(`\nfunction ${nextName}`, start);
   if (start < 0 || end < 0 || text.indexOf(startMarker, start + startMarker.length) >= 0) {
     throw new Error(`mutation target missing or ambiguous: ${name}`);
   }
@@ -2557,11 +2575,11 @@ function mutate(id) {
   }
   if (id === 'M6') {
     text = replaceFunction(text, 'resolveControlChain', 'function resolveControlChain(){return null;}');
-    text = replaceConstDeclaration(text, 'segmentClausesV2', 'tokenizeV2',
+    text = replaceConstDeclaration(text, 'segmentClausesV2', 'createRelationFramesV2',
       "const segmentClausesV2 = (x) => [{index:0,text:String(typeof x==='string'?x:x.text)}];");
   }
   if (id === 'M7') {
-    text = replaceConstDeclaration(text, 'segmentClausesV2', 'tokenizeV2',
+    text = replaceConstDeclaration(text, 'segmentClausesV2', 'createRelationFramesV2',
       "const segmentClausesV2 = (x) => [{index:0,text:String(typeof x==='string'?x:x.text)}];");
     text = replaceFunction(text, 'detectObjectBarrier', 'function detectObjectBarrier(){return null;}');
   }
@@ -2707,10 +2725,11 @@ if (baselineFailures.length === 0) {
     for (const classId of Object.keys(byClass)) {
       failuresByClass[classId] = cases.filter((item) => item.classIds?.includes(classId)
         && frozenCaseFailures(item, baselineEvaluator).length === 0
-        && frozenCaseFailures(item, evaluator).length > 0).length;
+        && (() => { const failures = frozenCaseFailures(item, evaluator); return failures.length > 0 && !failures.some((failure) => failure.startsWith('evaluator-threw:')); })()).length;
     }
     const killed = Object.entries(byClass).every(([classId, minimum]) => failuresByClass[classId] >= minimum);
-    rows.push({ id, killed, failuresByClass, minimumFailuresByClass: byClass });
+    const crashes = cases.filter((item) => frozenCaseFailures(item, evaluator).some((failure) => failure.startsWith('evaluator-threw:'))).length;
+    rows.push({ id, killed: killed && crashes === 0, crashes, executedCases: cases.length - crashes, failuresByClass, minimumFailuresByClass: byClass });
   }
 }
 const result = {

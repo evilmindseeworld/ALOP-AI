@@ -952,8 +952,8 @@ test('NEW-B1 mutant kill: repeated-BUT scanner stops after one partition', () =>
   const mutant = compileEvaluatorMutant('NEW-B1', (source) => mutateExactlyOnce(
     source,
     'NEW-B1',
-    'const rightParts = splitIndependentConjunctionsV2(right);',
-    "const rightParts = [{ text: right, boundaryBefore: 'start' }];",
+    'const rightParts = splitIndependentConjunctionsV2(selected.right);',
+    "const rightParts = [{ text: selected.right, boundaryBefore: 'start' }];",
   ));
   const item = buildCase(0, 1, 2, createRandom(HOLDOUT_SEED));
   assertMutantKilled('NEW-B1', item.input, mutant, 'three explicit frame occurrences', (result) => {
@@ -965,19 +965,14 @@ test('NEW-B2 mutant kill: any later finite predicate counts as an independent cl
   const mutant = compileEvaluatorMutant('NEW-B2', (source) => mutateExactlyOnce(
     source,
     'NEW-B2',
-    'if (validateActiveFinitePredicateV2(tokens, index, predicate, boundarySubject, auxiliary, control)) return true;',
+    'if (hasSupportedBoundaryPrefixV2(tokens, index, boundarySubject)) return true;',
     'return true;',
   ));
-  const item = buildCase(1, 1, 2, () => 0);
-  assertMutantKilled('NEW-B2', item.input, mutant, 'passive agent AND stays inside its coordinated frame', (result) => {
-    assert.equal(result.passed, true, item.input);
-    assert.equal(result.hasMalformed, false, item.input);
-    assert.deepEqual(result.topology, [[0, 0], [0, 1]], item.input);
-    assert.deepEqual(result.relationRecords.filter((record) => record.relationType === 'CORE_LIGHT_RELATION')
-      .map((record) => [record.subjectSet.lemma, record.voice, record.qualifies]), [
-      [subjectLemma(item.a), 'PASSIVE', true], [subjectLemma(item.b), 'PASSIVE', true],
-      [subjectLemma(item.c), 'ACTIVE', true],
-    ], item.input);
+  const input = 'Solar light is stored by plants and algae for photosynthesis transform sunlight';
+  assertMutantKilled('NEW-B2', input, mutant, 'a context tail cannot be skipped to invent a clause boundary', (result) => {
+    assert.equal(result.passed, false, input);
+    assert.equal(result.hasMalformed, true, input);
+    assert.deepEqual(result.topology, [[0, 0]], input);
   });
 });
 
@@ -1019,6 +1014,40 @@ test('NEW-B4 cross-root context boundary preserves passive agents and the active
   // the passive-agent span as `algae for photosynthesis`.
   assertNewB4Oracle(result, input);
   if (packaged) assert.deepEqual(packaged.evaluatePhotosynthesisRelationsV2(input), result, `source/package trace: ${input}`);
+});
+
+test('ROOT-001 mutation: first plausible AND steals a coordinated passive agent', () => {
+  const mutant = compileEvaluatorMutant('ROOT-001', (source) => mutateExactlyOnce(
+    source,
+    'ROOT-001',
+    'const selected = commaPassiveCandidate || passiveAgentCandidates.at(-1) || candidates[0];',
+    'const selected = commaPassiveCandidate || candidates[0];',
+  ));
+  const input = 'Light is stored by plants and algae and plants capture sunlight';
+  assertMutantKilled('ROOT-001', input, mutant, 'passive coordinated agents stay with the passive frame', (result) => {
+    assert.deepEqual(result.topology, [[0, 0], [0, 1]], input);
+    assert.deepEqual(result.relationRecords.filter((record) => record.relationType === 'CORE_LIGHT_RELATION')
+      .map((record) => [record.voice, record.subjectSet.lemma]), [
+      ['PASSIVE', 'plant'], ['PASSIVE', 'algae'], ['ACTIVE', 'plant'],
+    ], input);
+  });
+});
+
+test('ROOT-002 mutation: semantic agreement must not gate sibling occurrence creation', () => {
+  const mutant = compileEvaluatorMutant('ROOT-002', (source) => mutateExactlyOnce(
+    source,
+    'ROOT-002',
+    'if (hasSupportedBoundaryPrefixV2(tokens, index, boundarySubject)) return true;',
+    'if (validateActiveFinitePredicateV2(tokens, index, predicate, boundarySubject, parseAuxiliaryChain(tokens, index), resolveControlChain(tokens, index))) return true;',
+  ));
+  const input = 'Plants absorb sunlight but plants absorbs sunlight';
+  assertMutantKilled('ROOT-002', input, mutant, 'malformed right sibling retains its occurrence and local first frame', (result) => {
+    assert.equal(result.passed, false, input);
+    assert.equal(result.hasMalformed, true, input);
+    assert.deepEqual(result.topology, [[0, 0], [0, 1]], input);
+    assert.ok(result.relationRecords.some((record) => record.relationType === 'CORE_LIGHT_RELATION'
+      && record.qualifies && record.evidenceSpan.text === 'plants absorb sunlight'), input);
+  });
 });
 
 test('seeded internal holdout covers four roots and cross-root compositions', async () => {

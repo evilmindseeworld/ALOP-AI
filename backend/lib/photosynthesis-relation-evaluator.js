@@ -514,6 +514,7 @@ const segmentSentencesV2 = (x) => segmentSentences(normalizeInputV2(x))
   .map((sentence, index) => ({ ...sentence, index }));
 function hasCompleteActiveClauseV2(text) {
   const tokens = tokenizeV2(text);
+  if (['and', 'or', 'but'].includes(tokens.at(-1)?.form)) return false;
   // This is an occurrence-boundary probe, not the semantic validator. Keep an
   // explicit supported target clause intact even when its subject or auxiliary
   // path will later be rejected inside that clause.
@@ -546,19 +547,34 @@ function isCompleteUnsupportedClauseV2(tokens, allowIntransitive) {
 }
 function splitIndependentConjunctionsV2(text) {
   const separator = /,\s*(and|but)\s+|\s+(and|but)\s+/ig;
+  const candidates = [];
   for (const match of text.matchAll(separator)) {
     const left = text.slice(0, match.index).trim();
     const right = text.slice(match.index + match[0].length).trim();
     if (left && right && hasCompleteActiveClauseV2(left) && startsIndependentSupportedClauseV2(right)) {
-      const leftParts = splitIndependentConjunctionsV2(left);
-      const rightParts = splitIndependentConjunctionsV2(right);
-      const coordinator = (match[1] || match[2]).toLowerCase();
-      return [
-        ...leftParts,
-        { ...rightParts[0], boundaryBefore: coordinator === 'but' ? 'but' : 'comma-and' },
-        ...rightParts.slice(1),
-      ];
+      candidates.push({
+        left,
+        right,
+        coordinator: (match[1] || match[2]).toLowerCase(),
+        commaDelimited: match[0].startsWith(','),
+      });
     }
+  }
+  if (candidates.length) {
+    // A comma may outrank earlier conjunctions only when it closes a passive frame.
+    const commaPassiveCandidate = candidates.find((candidate) => candidate.commaDelimited
+      && bindLocalPassiveAgent(tokenizeV2(candidate.left)));
+    const passiveAgentCandidates = candidates.filter((candidate) => (
+      bindLocalPassiveAgent(tokenizeV2(candidate.left))
+    ));
+    const selected = commaPassiveCandidate || passiveAgentCandidates.at(-1) || candidates[0];
+    const leftParts = splitIndependentConjunctionsV2(selected.left);
+    const rightParts = splitIndependentConjunctionsV2(selected.right);
+    return [
+      ...leftParts,
+      { ...rightParts[0], boundaryBefore: selected.coordinator === 'but' ? 'but' : 'comma-and' },
+      ...rightParts.slice(1),
+    ];
   }
   return [{ text: text.trim(), boundaryBefore: 'start' }];
 }
@@ -1271,10 +1287,27 @@ function startsIndependentSupportedClauseV2(text) {
       && subject.members.every((member) => member.valid || member.surface === '');
     if (subject.shapeValid === false && !malformedEmptyAnd) continue;
     const boundarySubject = malformedEmptyAnd ? { ...subject, shapeValid: true } : subject;
-    const auxiliary = parseAuxiliaryChain(tokens, index);
-    const control = resolveControlChain(tokens, index);
-    if (validateActiveFinitePredicateV2(tokens, index, predicate, boundarySubject, auxiliary, control)) return true;
+    if (hasSupportedBoundaryPrefixV2(tokens, index, boundarySubject)) return true;
   }
+  return false;
+}
+function hasSupportedBoundaryPrefixV2(tokens, predicateIndex, subject) {
+  const prefix = tokens.slice(subject.end, predicateIndex).map((token) => token.form);
+  if (!prefix.length) return true;
+  const prefixText = prefix.join(' ');
+  const control = resolveControlChain(tokens, predicateIndex);
+  if (control && (prefixText === control.surface
+    || prefixText === `${control.surface} use chlorophyll to`)) return true;
+  if (resolveSupportedMediatedPredicateV2(tokens, predicateIndex, subject)) return true;
+  if (prefix.length === 1 && ['not', 'never'].includes(prefix[0])) return true;
+  const first = prefix[0];
+  const optionalNegator = (forms) => forms.length === 1
+    || forms.length === 2 && ['not', 'never'].includes(forms[1]);
+  if (V2_MODALS.has(first) && (prefix.length === 1 || prefix.length === 2 && prefix[1] === 'not')) return true;
+  if (['do', 'does', 'did', 'is', 'are', 'was', 'were'].includes(first) && optionalNegator(prefix)) return true;
+  if (['has', 'have', 'had'].includes(first)
+    && (optionalNegator(prefix) || prefix.at(-1) === 'been'
+      && (prefix.length === 2 || prefix.length === 3 && prefix[1] === 'not'))) return true;
   return false;
 }
 function parseAuxiliaryChain(ts,i,fromIndex=0){const all=ts.slice(fromIndex,i),relative=all.findIndex((t,n)=>t.form==='by'&&all[n+1]?.form==='which'),how=all.findIndex((t,n)=>t.form==='is'&&all[n+1]?.form==='how'),scopeStart=relative>=0?relative+2:how>=0?how+2:0,scope=all.slice(scopeStart),modal=scope.filter(t=>V2_MODALS.has(t.form)).map(t=>t.form),localStart=scope.findIndex(t=>V2_MODALS.has(t.form)||['do','does','did','not','never','has','have','had','is','are','was','were'].includes(t.form)),start=fromIndex+scopeStart+(localStart<0?scope.length:localStart),chain=localStart<0?[]:scope.slice(localStart).map(t=>t.form);return{start,chain,modal:modal.length>1?'STACKED':modal[0]||null,negators:chain.filter(x=>['not','never','cannot',"can't"].includes(x))};}

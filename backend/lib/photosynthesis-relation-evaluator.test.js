@@ -2198,4 +2198,260 @@ test('exact owner-recovered ASTRA-BOUNDED-FINAL-003 sibling locality remains int
   }
 });
 
+test('two-root boundary ownership and malformed-sibling closure', async () => {
+  const packaged = await loadPackageEvaluator();
+  const coreRecords = (result) => result.relationRecords
+    .filter((record) => record.relationType === 'CORE_LIGHT_RELATION');
+
+  const passiveTarget = 'Light is stored by plants and algae, and plants capture sunlight';
+  const passiveControl = 'Light is stored by plants and algae; plants capture sunlight.';
+  const ownershipCollision = 'Light is stored by plants, and algae and plants capture sunlight.';
+  const target = evaluateBoth(passiveTarget, packaged).source;
+  const control = evaluateBoth(passiveControl, packaged).source;
+  const collision = evaluateBoth(ownershipCollision, packaged).source;
+  assertPass(target, passiveTarget);
+  assert.deepEqual(target.topology, [[0, 0], [0, 1]]);
+  assert.deepEqual(coreRecords(target).map((record) => [record.voice, record.subjectSet.lemma, record.qualifies]), [
+    ['PASSIVE', 'plant', true], ['PASSIVE', 'algae', true], ['ACTIVE', 'plant', true],
+  ]);
+  assert.deepEqual(target.coordinationTopology[0].orderedMembers, [
+    ['plant', 'BIOLOGICAL_AGENT'], ['algae', 'BIOLOGICAL_AGENT'],
+  ]);
+  assert.deepEqual(target.coordinationTopology[1].orderedMembers, [['plant', 'BIOLOGICAL_AGENT']]);
+  assert.equal(semanticCaseFingerprint(target), semanticCaseFingerprint(control));
+  assert.notEqual(semanticCaseFingerprint(target), semanticCaseFingerprint(collision));
+
+  const malformed = 'Plants absorb sunlight but plants absorbs sunlight';
+  const malformedResult = evaluateBoth(malformed, packaged).source;
+  assert.equal(malformedResult.passed, false);
+  assert.equal(malformedResult.hasMalformed, true);
+  assert.deepEqual(malformedResult.topology, [[0, 0], [0, 1]]);
+  assert.deepEqual(coreRecords(malformedResult).map((record) => [record.subjectSet.lemma, record.qualifies, record.evidenceSpan.text]), [
+    ['plant', true, 'plants absorb sunlight'],
+  ]);
+
+  const formatAgents = (agents, style) => agents.length === 1 ? agents[0]
+    : style === 'oxford' && agents.length > 2
+      ? `${agents.slice(0, -1).join(', ')}, and ${agents.at(-1)}`
+      : style === 'oxford' ? `${agents[0]}, and ${agents[1]}` : agents.join(' and ');
+  const agentSets = [
+    ['plants'], ['algae'], ['green plants'], ['plants', 'algae'],
+    ['green plants', 'algae'], ['algae', 'green plants', 'plants'],
+    ['plants', 'algae', 'photosynthetic bacteria'], ['green plants', 'photosynthetic bacteria', 'algae'],
+  ];
+  const contexts = ['', 'during photosynthesis', 'in photosynthesis', 'for photosynthesis'];
+  const siblingFrames = [
+    ['active', 'Algae capture sunlight', true],
+    ['modal', 'Algae may absorb sunlight', false],
+    ['mediated', 'Algae use chlorophyll to absorb sunlight', true],
+    ['active-alt', 'Green plants transform light energy', true],
+  ];
+  const clauseJoins = [
+    ['and', ' and '], ['comma-and', ', and '], ['semicolon', '; '],
+  ];
+  const passiveAgentCases = [];
+  for (const agents of agentSets) {
+    for (const style of (agents.length === 1 ? ['single'] : agents.length === 2 ? ['and'] : ['and', 'oxford'])) {
+      for (const context of contexts) {
+        for (const [siblingKind, sibling, siblingQualifies] of siblingFrames) {
+          for (const [joinId, join] of (style === 'oxford' ? [clauseJoins[2]] : clauseJoins.slice(0, 2))) {
+            for (const hasThird of [false, true]) {
+              const agentText = formatAgents(agents, style);
+              const input = `Light energy is stored by ${agentText}${context ? ` ${context}` : ''}${join}${sibling}`
+                + (hasThird ? ' and Plants absorb sunlight' : '');
+              passiveAgentCases.push({
+                input,
+                key: JSON.stringify(['passive', agents, style, context, siblingKind, joinId, hasThird]),
+                agents,
+                siblingKind,
+                siblingQualifies,
+                hasThird,
+              });
+            }
+          }
+        }
+      }
+    }
+  }
+
+  const malformedTails = [
+    ['agreement', 'plants absorbs sunlight'],
+    ['auxiliary', 'plants does not absorbs sunlight'],
+    ['leading-empty', ', and plants and algae absorb sunlight'],
+    ['modal', 'plants may absorbed sunlight'],
+    ['perfect', 'plants have absorb sunlight'],
+    ['progressive', 'plants are absorb sunlight'],
+    ['control', 'plants does not fail to absorbs sunlight'],
+    ['mediated', 'plants uses chlorophyll to absorbs sunlight'],
+  ];
+  const validHeads = [
+    ['Plants absorb sunlight', 'plant'],
+    ['Algae capture light energy', 'algae'],
+    ['Green plants convert solar energy', 'green plants'],
+    ['Photosynthetic bacteria harness sunlight', 'photosynthetic bacteria'],
+    ['Photosynthesis stores light energy', 'photosynthesis'],
+    ['A plant absorbs sunlight', 'plant'],
+    ['Plants must transform sunlight', 'plant'],
+    ['Plants use chlorophyll to absorb sunlight', 'plant'],
+  ];
+  const siblingJoins = [
+    ['and', ' and '], ['comma-and', ', and '], ['but', ' but '], ['comma-but', ', but '],
+    ['semicolon', '; '], ['period', '. '],
+  ];
+  const malformedSiblingCases = [];
+  for (const [headIndex, [head]] of validHeads.entries()) {
+    for (const [malformedKind, malformedTail] of malformedTails) {
+      for (const [joinId, join] of siblingJoins) {
+        const input = `${head}${join}${malformedTail}`;
+        malformedSiblingCases.push({
+          input,
+          key: JSON.stringify(['malformed-sibling', headIndex, malformedKind, joinId]),
+          head,
+          malformedKind,
+        });
+      }
+    }
+  }
+
+  const malformedCrossRootTails = malformedTails.filter(([kind]) => kind !== 'leading-empty');
+  const crossRootJoins = [
+    ['and', ' and '], ['comma-and', ', and '], ['but', ' but '], ['comma-but', ', but '],
+    ['semicolon', '; '], ['period', '. '],
+  ];
+  const crossRootCases = [];
+  for (const agents of agentSets) {
+    for (const style of (agents.length === 1 ? ['single'] : agents.length === 2 ? ['and'] : ['and', 'oxford'])) {
+      for (const context of contexts) {
+        for (const [malformedKind, malformedTail] of malformedCrossRootTails) {
+          const passiveJoins = style === 'oxford'
+            ? crossRootJoins.slice(2) : crossRootJoins.slice(0, 4);
+          for (const [firstJoinId, firstJoin] of passiveJoins) {
+            for (const [lastJoinId, lastJoin] of crossRootJoins.slice(0, 4)) {
+              for (const mediatedThird of [false, true]) {
+                const passive = `Solar light is stored by ${formatAgents(agents, style)}`
+                  + (context ? ` ${context}` : '');
+                const third = mediatedThird
+                  ? 'Green plants use chlorophyll to absorb sunlight'
+                  : 'Green plants absorb sunlight';
+                crossRootCases.push({
+                  input: `${passive}${firstJoin}${malformedTail}${lastJoin}${third}`,
+                  key: JSON.stringify(['cross-root', agents, style, context, malformedKind, firstJoinId, lastJoinId, mediatedThird]),
+                  agents,
+                  third,
+                  malformedKind,
+                  mediatedThird,
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  let randomState = 0;
+  const random = (seed) => () => {
+    randomState = seed >>> 0;
+    return () => {
+      randomState ^= randomState << 13;
+      randomState ^= randomState >>> 17;
+      randomState ^= randomState << 5;
+      return (randomState >>> 0) / 0x1_0000_0000;
+    };
+  };
+  const shuffle = (values, seed) => {
+    const next = random(seed)();
+    const result = [...values];
+    for (let index = result.length - 1; index > 0; index -= 1) {
+      const other = Math.floor(next() * (index + 1));
+      [result[index], result[other]] = [result[other], result[index]];
+    }
+    return result;
+  };
+  const holdoutSeeds = [0xA2C59D71, 0x3F86E4B2];
+  const selected = [];
+  const selectedKeys = new Set();
+  const perSeed = [];
+  for (const [seedIndex, seed] of holdoutSeeds.entries()) {
+    const seedCount = selected.length;
+    for (const [pool, count, family] of [
+      [passiveAgentCases, 200, 'passive-role'],
+      [malformedSiblingCases, 100, 'malformed-sibling'],
+      [crossRootCases, 300, 'cross-root'],
+    ]) {
+      let added = 0;
+      for (const item of shuffle(pool, seed ^ (seedIndex + 1) * 0x9E3779B9)) {
+        if (selectedKeys.has(item.key)) continue;
+        selectedKeys.add(item.key);
+        selected.push({ ...item, family, seed });
+        if (++added === count) break;
+      }
+      assert.equal(added, count, `${family} holdout sample for 0x${seed.toString(16)}`);
+    }
+    perSeed.push({ seed: `0x${seed.toString(16).toUpperCase()}`, cases: selected.length - seedCount });
+  }
+  assert.ok(selected.length >= 800, `holdout cases ${selected.length} < 800`);
+  assert.equal(selectedKeys.size, selected.length, 'holdout structural keys are unique');
+
+  for (const item of selected) {
+    const { source } = evaluateBoth(item.input, packaged);
+    if (item.family === 'passive-role') {
+      assert.equal(source.hasMalformed, false, item.input);
+      assert.equal(source.topology.length, item.hasThird ? 3 : 2, item.input);
+      const cores = coreRecords(source);
+      const passive = cores.filter((record) => record.voice === 'PASSIVE');
+      assert.deepEqual(passive.map((record) => record.subjectSet.lemma), item.agents.map((agent) => agent === 'plants' ? 'plant' : agent), item.input);
+      assert.ok(passive.every((record) => record.qualifies), item.input);
+      const active = cores.filter((record) => record.voice === 'ACTIVE');
+      assert.equal(active[0].subjectSet.lemma, item.siblingKind === 'active-alt' ? 'green plants' : 'algae', item.input);
+      assert.equal(active[0].qualifies, item.siblingQualifies, item.input);
+      assert.equal(active.at(-1).subjectSet.lemma, item.hasThird ? 'plant' : active[0].subjectSet.lemma, item.input);
+    } else if (item.family === 'malformed-sibling') {
+      assert.equal(source.passed, false, item.input);
+      assert.equal(source.hasMalformed, true, item.input);
+      assert.equal(source.topology.length, 2, item.input);
+      const first = coreRecords(source).find((record) => record.evidenceSpan.text.toLowerCase()
+        .replace(/[.!?;:]+$/, '').trim() === item.head.toLowerCase());
+      assert.ok(first?.qualifies, item.input);
+    } else {
+      assert.equal(source.passed, false, item.input);
+      assert.equal(source.hasMalformed, true, item.input);
+      assert.equal(source.topology.length, 3, item.input);
+      const passive = coreRecords(source).filter((record) => record.voice === 'PASSIVE');
+      assert.deepEqual(passive.map((record) => record.subjectSet.lemma), item.agents.map((agent) => agent === 'plants' ? 'plant' : agent), item.input);
+      assert.ok(passive.every((record) => record.qualifies), item.input);
+      assert.ok(coreRecords(source).some((record) => record.voice === 'ACTIVE'
+        && record.subjectSet.lemma === 'green plants' && record.qualifies), item.input);
+      if (item.mediatedThird) {
+        assert.ok(source.relationRecords.some((record) => record.relationType === 'CHLOROPHYLL_SUPPORT'
+          && record.evidenceSpan.text.toLowerCase().includes(item.third.toLowerCase())), item.input);
+      }
+    }
+  }
+
+  for (const passive of [
+    'Light are absorbed by plants',
+    'Light may absorbed by plants',
+    'Light have absorbed by plants',
+    'Light are absorb by plants',
+  ]) {
+    const input = `Plants absorb sunlight but ${passive}`;
+    const { source } = evaluateBoth(input, packaged);
+    assert.equal(source.topology.length, 2, input);
+    assert.ok(coreRecords(source).some((record) => record.evidenceSpan.text === 'plants absorb sunlight'
+      && record.qualifies), input);
+    assert.ok(source.hasMalformed || coreRecords(source).some((record) => record.voice === 'PASSIVE'
+      && !record.qualifies), input);
+  }
+
+  console.log(`TWO_ROOT_HOLDOUT ${JSON.stringify({
+    seeds: perSeed,
+    executed: selected.length,
+    uniqueStructuralKeys: selectedKeys.size,
+    familyCounts: Object.fromEntries(['passive-role', 'malformed-sibling', 'cross-root']
+      .map((family) => [family, selected.filter((item) => item.family === family).length])),
+    sourcePackageMismatches: 0,
+  })}`);
+});
+
 })();

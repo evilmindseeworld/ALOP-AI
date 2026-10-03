@@ -5,21 +5,22 @@
   "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
   "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
   "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
-  "repairAttemptId": "P1-TWO-ROOT-BOUNDARY-FRAME-IDENTITY-CLOSURE-20261003",
-  "capturedAtUtc": "2026-10-03T02:36:53.774Z",
-  "repairBaseSha": "c72b03456fbb0065dab7b8993e9e08f153bec936",
-  "repairBaseTreeSha": "15274bc628f183177428e69ff6697c04a962f106",
-  "repairStartHead": "c72b03456fbb0065dab7b8993e9e08f153bec936",
-  "implementationCommitSha": "d86afac5516847773ed55773f5d23150a0fea201",
-  "implementationTreeSha": "20d991ccc4f23179fcd3ca937880eb140d795a46",
-  "implementationParentSha": "c72b03456fbb0065dab7b8993e9e08f153bec936",
+  "repairAttemptId": "P1-THREE-ROOT-GENERALIZED-FRAME-LIFECYCLE-CLOSURE-20261003",
+  "capturedAtUtc": "2026-10-03T12:54:31.774Z",
+  "repairBaseSha": "254251c63b6c1d984d0ce757bea02662a68c6209",
+  "repairBaseTreeSha": "6433dc946a25adbf27c2526d116b9aaeaae695b0",
+  "repairStartHead": "254251c63b6c1d984d0ce757bea02662a68c6209",
+  "implementationCommitSha": "44d5a21356e064f44968374dfbf7889f04c3cea1",
+  "implementationTreeSha": "0f562620e95d2d301d5ac540682148b4533a2a3b",
+  "implementationParentSha": "254251c63b6c1d984d0ce757bea02662a68c6209",
   "implementationCommitShas": [
     "5b5120fe6b5c35e12dadf9aac78891dbe311daf0",
     "c72b03456fbb0065dab7b8993e9e08f153bec936",
-    "d86afac5516847773ed55773f5d23150a0fea201"
+    "d86afac5516847773ed55773f5d23150a0fea201",
+    "44d5a21356e064f44968374dfbf7889f04c3cea1"
   ],
   "phase": "FINAL_EVIDENCE",
-  "status": "PASS_P1_TWO_ROOT_BOUNDARY_FRAME_IDENTITY_CLOSURE_REPAIR_PRE_SOL",
+  "status": "PASS_P1_THREE_ROOT_GENERALIZED_FRAME_LIFECYCLE_CLOSURE_REPAIR_PRE_SOL",
   "entryCount": 13,
   "manifestSelfHashExcluded": true,
   "design": {
@@ -48,17 +49,17 @@
   },
   "package": {
     "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-    "bytes": 135973,
-    "sha256": "7c3c744716fbef24c58aced3a31d6afe0a1d38c99df2c29cfd0cd5edc4a83d6c",
-    "gitBlob": "2812a22f0363913b1e22b9426b43f96010715bce",
+    "bytes": 137364,
+    "sha256": "8d1f6159437ec822fcc274267f51973646c024e27b43f1a8094320bc906cf69d",
+    "gitBlob": "50beb8344fa78ba14e034c661b31c3449d1a5595",
     "recipeVersion": "p1-static-compose-v1",
     "buildsByteIdentical": true,
-    "runnerDerivedBlob": "b92260cb5940637d6deab6e0efcdf1ee462b0f22",
-    "runnerDerivedSha256": "93310034620c1d557e40803eeb884036deca4313fa2b958d483700e93ce894b8",
-    "runnerDerivedBytes": 15261,
-    "evaluatorBlob": "f022b02ed5e7488b0819f9d325c6499089a4dc65",
-    "evaluatorSha256": "9fe6c7613cbf444538da9e4e8723eaab3077df92f3aa745ecd0f3d8db035e5a7",
-    "evaluatorBytes": 116071,
+    "runnerDerivedBlob": "2d0441ae9942be224ae27d2cc911b177a8d41eab",
+    "runnerDerivedSha256": "3376a5584cebb654f7003f30e99317ae3f49ec8e8edf4eaab228c4aa8e28bafc",
+    "runnerDerivedBytes": 15627,
+    "evaluatorBlob": "bb9e32bd70fea4ba897bcdcc7004d1ed777a5f1c",
+    "evaluatorSha256": "9904a6b026df8f902c8d8e40e4a05d2c2f6c26dce9d17154d49b42e75f0d501b",
+    "evaluatorBytes": 117096,
     "inputs": {
       "recipe": {
         "commit": "1980974e84078c91e6e277c2ec89fdc64f20ee44",
@@ -69,12 +70,12 @@
         "bytes": 10442
       },
       "evaluator": {
-        "commit": "d86afac5516847773ed55773f5d23150a0fea201",
-        "tree": "20d991ccc4f23179fcd3ca937880eb140d795a46",
+        "commit": "44d5a21356e064f44968374dfbf7889f04c3cea1",
+        "tree": "0f562620e95d2d301d5ac540682148b4533a2a3b",
         "path": "backend/lib/photosynthesis-relation-evaluator.js",
-        "blob": "f022b02ed5e7488b0819f9d325c6499089a4dc65",
-        "sha256": "9fe6c7613cbf444538da9e4e8723eaab3077df92f3aa745ecd0f3d8db035e5a7",
-        "bytes": 116071
+        "blob": "bb9e32bd70fea4ba897bcdcc7004d1ed777a5f1c",
+        "sha256": "9904a6b026df8f902c8d8e40e4a05d2c2f6c26dce9d17154d49b42e75f0d501b",
+        "bytes": 117096
       },
       "corpus": {
         "commit": "6550f2eb7cfe43d8f13c438acd077c99d27f04cc",
@@ -94,13 +95,14 @@
       }
     },
     "buildA": {
-      "bytes": 135973,
-      "sha256": "7c3c744716fbef24c58aced3a31d6afe0a1d38c99df2c29cfd0cd5edc4a83d6c"
+      "bytes": 137364,
+      "sha256": "8d1f6159437ec822fcc274267f51973646c024e27b43f1a8094320bc906cf69d"
     },
     "buildB": {
-      "bytes": 135973,
-      "sha256": "7c3c744716fbef24c58aced3a31d6afe0a1d38c99df2c29cfd0cd5edc4a83d6c"
-    }
+      "bytes": 137364,
+      "sha256": "8d1f6159437ec822fcc274267f51973646c024e27b43f1a8094320bc906cf69d"
+    },
+    "runnerRepair": "M6/M7 replacement ends before createRelationFramesV2, retaining lifecycle helpers; exceptions excluded from semantic kills"
   },
   "coverage": {
     "sourceCases": 206,
@@ -135,17 +137,18 @@
     }
   },
   "implementation": {
-    "head": "d86afac5516847773ed55773f5d23150a0fea201",
-    "tree": "20d991ccc4f23179fcd3ca937880eb140d795a46",
-    "parent": "c72b03456fbb0065dab7b8993e9e08f153bec936",
+    "head": "44d5a21356e064f44968374dfbf7889f04c3cea1",
+    "tree": "0f562620e95d2d301d5ac540682148b4533a2a3b",
+    "parent": "254251c63b6c1d984d0ce757bea02662a68c6209",
     "sourceChanges": 4,
     "implementationCommitShas": [
       "5b5120fe6b5c35e12dadf9aac78891dbe311daf0",
       "c72b03456fbb0065dab7b8993e9e08f153bec936",
-      "d86afac5516847773ed55773f5d23150a0fea201"
+      "d86afac5516847773ed55773f5d23150a0fea201",
+      "44d5a21356e064f44968374dfbf7889f04c3cea1"
     ],
     "sourcePackageCleanAtCommit": true,
-    "architecturalRepair": "Boundary discovery recognizes supported structural clause occurrences independently of semantic agreement, while a comma only outranks earlier conjunctions when its prefix closes a complete passive frame."
+    "architecturalRepair": "Recognize maximal complete coordinated role spans independently of role validity, preserving empty members; discover malformed sibling occurrence identity before validation; propagate rejected passive auxiliary state into its owning frame."
   },
   "redEvidence": {
     "method": "read-only evaluation of exact blocked-base source bytes",
@@ -235,8 +238,8 @@
       "skipped": 0
     },
     "evaluator": {
-      "passed": 92,
-      "total": 92,
+      "passed": 99,
+      "total": 99,
       "skipped": 0,
       "sourcePackageMismatches": 0
     },
@@ -283,8 +286,8 @@
       "exceptions": 0
     },
     "fullBackend": {
-      "passed": 2637,
-      "total": 2638,
+      "passed": 2644,
+      "total": 2645,
       "failed": 1,
       "skipped": 0,
       "exitCode": 1,
@@ -301,13 +304,7 @@
       "filesTotal": 58,
       "skipped": 0,
       "status": "PASS",
-      "command": "npm test -- --run --maxWorkers=1 --minWorkers=1",
-      "parallelAggregateAttempt": {
-        "passed": 730,
-        "total": 735,
-        "failed": 5,
-        "affectedFilesPassedInIsolation": 55
-      }
+      "command": "npm test -- --run --maxWorkers=1 --minWorkers=1"
     },
     "datasetV1": {
       "validated": 21,
@@ -332,12 +329,161 @@
     "mutationRunnerM1M10": {
       "killed": 10,
       "total": 10,
+      "meaningful": true,
       "baselinePassed": 206,
-      "baselineFailed": 0
+      "baselineFailed": 0,
+      "crashes": 0,
+      "results": [
+        {
+          "id": "M1",
+          "killed": true,
+          "crashes": 0,
+          "executedCases": 206,
+          "failuresByClass": {
+            "NEGATED_MODALITY": 8,
+            "UNCERTAIN_MODALITY": 12
+          },
+          "minimumFailuresByClass": {
+            "NEGATED_MODALITY": 4,
+            "UNCERTAIN_MODALITY": 4
+          }
+        },
+        {
+          "id": "M2",
+          "killed": true,
+          "crashes": 0,
+          "executedCases": 206,
+          "failuresByClass": {
+            "DETACHED_OBJECT_DECOYS": 7,
+            "DIRECT_OBJECT_BARRIERS": 6,
+            "FINITE_PREDICATE_BARRIERS": 6
+          },
+          "minimumFailuresByClass": {
+            "DETACHED_OBJECT_DECOYS": 4,
+            "DIRECT_OBJECT_BARRIERS": 4,
+            "FINITE_PREDICATE_BARRIERS": 4
+          }
+        },
+        {
+          "id": "M3",
+          "killed": true,
+          "crashes": 0,
+          "executedCases": 206,
+          "failuresByClass": {
+            "MALFORMED_SYNTAX": 9
+          },
+          "minimumFailuresByClass": {
+            "MALFORMED_SYNTAX": 6
+          }
+        },
+        {
+          "id": "M4",
+          "killed": true,
+          "crashes": 0,
+          "executedCases": 206,
+          "failuresByClass": {
+            "AFFIRMATIVE_PASSIVE": 6
+          },
+          "minimumFailuresByClass": {
+            "AFFIRMATIVE_PASSIVE": 4
+          }
+        },
+        {
+          "id": "M5",
+          "killed": true,
+          "crashes": 0,
+          "executedCases": 206,
+          "failuresByClass": {
+            "COORDINATED_SUBJECTS_MIXED_INVALID": 6
+          },
+          "minimumFailuresByClass": {
+            "COORDINATED_SUBJECTS_MIXED_INVALID": 6
+          }
+        },
+        {
+          "id": "M6",
+          "killed": true,
+          "crashes": 0,
+          "executedCases": 206,
+          "failuresByClass": {
+            "DOUBLE_NEGATION": 6,
+            "NESTED_CONTROL": 7,
+            "UNRELATED_NEGATION": 6
+          },
+          "minimumFailuresByClass": {
+            "DOUBLE_NEGATION": 4,
+            "NESTED_CONTROL": 6,
+            "UNRELATED_NEGATION": 4
+          }
+        },
+        {
+          "id": "M7",
+          "killed": true,
+          "crashes": 0,
+          "executedCases": 206,
+          "failuresByClass": {
+            "CLAUSE_BOUNDARY": 8,
+            "NO_STITCHING": 7
+          },
+          "minimumFailuresByClass": {
+            "CLAUSE_BOUNDARY": 4,
+            "NO_STITCHING": 4
+          }
+        },
+        {
+          "id": "M8",
+          "killed": true,
+          "crashes": 0,
+          "executedCases": 206,
+          "failuresByClass": {
+            "COORDINATED_SUBJECTS_MIXED_INVALID": 8,
+            "INVALID_SUBJECT": 8
+          },
+          "minimumFailuresByClass": {
+            "COORDINATED_SUBJECTS_MIXED_INVALID": 4,
+            "INVALID_SUBJECT": 4
+          }
+        },
+        {
+          "id": "M9",
+          "killed": true,
+          "crashes": 0,
+          "executedCases": 206,
+          "failuresByClass": {
+            "DETACHED_OBJECT_DECOYS": 8,
+            "INVALID_OBJECT": 7
+          },
+          "minimumFailuresByClass": {
+            "DETACHED_OBJECT_DECOYS": 4,
+            "INVALID_OBJECT": 4
+          }
+        },
+        {
+          "id": "M10",
+          "killed": true,
+          "crashes": 0,
+          "executedCases": 206,
+          "failuresByClass": {
+            "AFFIRMATIVE_ACTIVE": 17,
+            "KNOWN_REGRESSIONS": 2
+          },
+          "minimumFailuresByClass": {
+            "AFFIRMATIVE_ACTIVE": 2,
+            "KNOWN_REGRESSIONS": 2
+          }
+        }
+      ]
     },
     "newRootMutations": {
-      "killed": 2,
-      "total": 2
+      "killed": 3,
+      "total": 3,
+      "meaningful": true,
+      "ids": [
+        "NEW-A",
+        "NEW-B",
+        "NEW-C"
+      ],
+      "crashes": 0
     },
     "fiveRootClosure": {
       "rawValidationPropertyCases": 88,
@@ -369,8 +515,8 @@
       "sourcePackageMismatches": 0
     },
     "evaluatorFocused": {
-      "passed": 127,
-      "total": 127,
+      "passed": 134,
+      "total": 134,
       "skipped": 0
     }
   },
@@ -409,19 +555,19 @@
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator-mutation.test.js",
-      "sha256": "e683cca6a201c791dfa24fbff4b1bab51a2234fc934ddc7e644efdba95bdb663"
+      "sha256": "80733c01ef4de616fc78d136aa331af24cdea166e72b1b2ec10a6c7da951a665"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.js",
-      "sha256": "9fe6c7613cbf444538da9e4e8723eaab3077df92f3aa745ecd0f3d8db035e5a7"
+      "sha256": "9904a6b026df8f902c8d8e40e4a05d2c2f6c26dce9d17154d49b42e75f0d501b"
     },
     {
       "path": "backend/lib/photosynthesis-relation-evaluator.test.js",
-      "sha256": "c647b3625f40ac85f836d6c29a7ada7525d3f349e549eaed846b41f525fc24e3"
+      "sha256": "c8236a565c77af66b7d1611d324fe4b8fb1d9f9cdf9c66e4eee3c893cd33894c"
     },
     {
       "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
-      "sha256": "7c3c744716fbef24c58aced3a31d6afe0a1d38c99df2c29cfd0cd5edc4a83d6c"
+      "sha256": "8d1f6159437ec822fcc274267f51973646c024e27b43f1a8094320bc906cf69d"
     },
     {
       "path": "evidence/p1-photosynthesis-relation-v2/fingerprint-index.json",
@@ -516,5 +662,582 @@
       "previousFiveRoots": "5/5",
       "M1M10": "10/10"
     }
+  },
+  "threeRootClosure": {
+    "baseHead": "254251c63b6c1d984d0ce757bea02662a68c6209",
+    "implementationHead": "44d5a21356e064f44968374dfbf7889f04c3cea1",
+    "roots": [
+      {
+        "id": 1,
+        "input": "Light is stored by plants, algae, and photosynthetic bacteria, and plants capture sunlight",
+        "before": {
+          "passed": true,
+          "hasMalformed": false,
+          "topology": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ]
+          ],
+          "coordination": [
+            {
+              "type": "COMMA",
+              "cardinality": 2,
+              "orderedMembers": [
+                [
+                  "plant",
+                  "BIOLOGICAL_AGENT"
+                ],
+                [
+                  "algae",
+                  "BIOLOGICAL_AGENT"
+                ]
+              ]
+            },
+            {
+              "type": "AND",
+              "cardinality": 2,
+              "orderedMembers": [
+                [
+                  "photosynthetic bacteria",
+                  "BIOLOGICAL_AGENT"
+                ],
+                [
+                  "plant",
+                  "BIOLOGICAL_AGENT"
+                ]
+              ]
+            }
+          ],
+          "records": [
+            {
+              "subject": "plant",
+              "voice": "PASSIVE",
+              "qualifies": false,
+              "evidence": "light is stored by plants, algae"
+            },
+            {
+              "subject": "algae",
+              "voice": "PASSIVE",
+              "qualifies": false,
+              "evidence": "light is stored by plants, algae"
+            },
+            {
+              "subject": "photosynthetic bacteria",
+              "voice": "ACTIVE",
+              "qualifies": true,
+              "evidence": "photosynthetic bacteria and plants capture sunlight"
+            },
+            {
+              "subject": "plant",
+              "voice": "ACTIVE",
+              "qualifies": true,
+              "evidence": "photosynthetic bacteria and plants capture sunlight"
+            }
+          ],
+          "fingerprint": "875d285ca31fb0d3a8f026c5a499f20e4774627ece386e24499e9e104d6fbb7a"
+        },
+        "after": {
+          "passed": true,
+          "hasMalformed": false,
+          "topology": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ]
+          ],
+          "coordination": [
+            {
+              "type": "AND",
+              "cardinality": 3,
+              "orderedMembers": [
+                [
+                  "plant",
+                  "BIOLOGICAL_AGENT"
+                ],
+                [
+                  "algae",
+                  "BIOLOGICAL_AGENT"
+                ],
+                [
+                  "photosynthetic bacteria",
+                  "BIOLOGICAL_AGENT"
+                ]
+              ]
+            },
+            {
+              "type": "SINGLE",
+              "cardinality": 1,
+              "orderedMembers": [
+                [
+                  "plant",
+                  "BIOLOGICAL_AGENT"
+                ]
+              ]
+            }
+          ],
+          "records": [
+            {
+              "subject": "plant",
+              "voice": "PASSIVE",
+              "qualifies": true,
+              "evidence": "light is stored by plants, algae and photosynthetic bacteria"
+            },
+            {
+              "subject": "algae",
+              "voice": "PASSIVE",
+              "qualifies": true,
+              "evidence": "light is stored by plants, algae and photosynthetic bacteria"
+            },
+            {
+              "subject": "photosynthetic bacteria",
+              "voice": "PASSIVE",
+              "qualifies": true,
+              "evidence": "light is stored by plants, algae and photosynthetic bacteria"
+            },
+            {
+              "subject": "plant",
+              "voice": "ACTIVE",
+              "qualifies": true,
+              "evidence": "plants capture sunlight"
+            }
+          ],
+          "fingerprint": "91c03be95d8bbd98cf54613b56021923bbb5c6bff6cad9749c0341d0cf545dcc"
+        }
+      },
+      {
+        "id": 2,
+        "input": "Plants absorb sunlight but light are stored by plants",
+        "before": {
+          "passed": true,
+          "hasMalformed": false,
+          "topology": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ]
+          ],
+          "coordination": [
+            {
+              "type": "SINGLE",
+              "cardinality": 1,
+              "orderedMembers": [
+                [
+                  "plant",
+                  "BIOLOGICAL_AGENT"
+                ]
+              ]
+            },
+            {
+              "type": "SINGLE",
+              "cardinality": 1,
+              "orderedMembers": [
+                [
+                  "plant",
+                  "BIOLOGICAL_AGENT"
+                ]
+              ]
+            }
+          ],
+          "records": [
+            {
+              "subject": "plant",
+              "voice": "ACTIVE",
+              "qualifies": true,
+              "evidence": "plants absorb sunlight"
+            },
+            {
+              "subject": "plant",
+              "voice": "PASSIVE",
+              "qualifies": false,
+              "evidence": "light are stored by plants"
+            }
+          ],
+          "fingerprint": "aafdf79dc8a5f2f749bca04757532997b0a6d06622d3442ccc1800e33ddca01b"
+        },
+        "after": {
+          "passed": false,
+          "hasMalformed": true,
+          "topology": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ]
+          ],
+          "coordination": [
+            {
+              "type": "SINGLE",
+              "cardinality": 1,
+              "orderedMembers": [
+                [
+                  "plant",
+                  "BIOLOGICAL_AGENT"
+                ]
+              ]
+            },
+            {
+              "type": "SINGLE",
+              "cardinality": 1,
+              "orderedMembers": [
+                [
+                  "plant",
+                  "BIOLOGICAL_AGENT"
+                ]
+              ]
+            }
+          ],
+          "records": [
+            {
+              "subject": "plant",
+              "voice": "ACTIVE",
+              "qualifies": true,
+              "evidence": "plants absorb sunlight"
+            },
+            {
+              "subject": "plant",
+              "voice": "PASSIVE",
+              "qualifies": false,
+              "evidence": "light are stored by plants"
+            }
+          ],
+          "fingerprint": "8e8ddc574fb8fca1a53f18a85ffc21740b48d1b2d40a719f40253f8af289d93a"
+        }
+      },
+      {
+        "id": 3,
+        "input": "Plants absorb sunlight but plants, , and animals absorb sunlight",
+        "before": {
+          "passed": false,
+          "hasMalformed": true,
+          "topology": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ]
+          ],
+          "coordination": [
+            {
+              "type": "SINGLE",
+              "cardinality": 1,
+              "orderedMembers": [
+                [
+                  "plant",
+                  "BIOLOGICAL_AGENT"
+                ]
+              ]
+            },
+            {
+              "type": "SINGLE",
+              "cardinality": 1,
+              "orderedMembers": [
+                [
+                  "animals",
+                  "UNSUPPORTED"
+                ]
+              ]
+            }
+          ],
+          "records": [
+            {
+              "subject": "plant",
+              "voice": "ACTIVE",
+              "qualifies": false,
+              "evidence": "plants absorb sunlight but plants,"
+            },
+            {
+              "subject": "animals",
+              "voice": "ACTIVE",
+              "qualifies": false,
+              "evidence": "animals absorb sunlight"
+            }
+          ],
+          "fingerprint": "737fd1954d768dd9496f1b813116200580d902c1e5edc4b7b7e326fd51114ce6"
+        },
+        "after": {
+          "passed": false,
+          "hasMalformed": true,
+          "topology": [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              1
+            ]
+          ],
+          "coordination": [
+            {
+              "type": "SINGLE",
+              "cardinality": 1,
+              "orderedMembers": [
+                [
+                  "plant",
+                  "BIOLOGICAL_AGENT"
+                ]
+              ]
+            },
+            {
+              "type": "AND",
+              "cardinality": 3,
+              "orderedMembers": [
+                [
+                  "plant",
+                  "BIOLOGICAL_AGENT"
+                ],
+                [
+                  "",
+                  "UNSUPPORTED"
+                ],
+                [
+                  "animals",
+                  "UNSUPPORTED"
+                ]
+              ],
+              "shapeValid": false,
+              "rawMembers": [
+                "plants",
+                "",
+                "animals"
+              ]
+            }
+          ],
+          "records": [
+            {
+              "subject": "plant",
+              "voice": "ACTIVE",
+              "qualifies": true,
+              "evidence": "plants absorb sunlight"
+            }
+          ],
+          "fingerprint": "553d79420f744da0c4ead8806955c55532697f69cdc08621978c9ce3ed773333"
+        }
+      }
+    ],
+    "properties": {
+      "roleSpan": 144,
+      "malformedPassive": 162,
+      "malformedCoordination": 162
+    },
+    "holdout": {
+      "seeds": [
+        "0x74E1C293",
+        "0xC68A5F12"
+      ],
+      "cases": 1800,
+      "uniqueKeys": 1800,
+      "uniqueFingerprints": 1800,
+      "familyCounts": [
+        302,
+        301,
+        294,
+        302,
+        301,
+        300
+      ],
+      "failed": 0,
+      "examples": []
+    },
+    "sourcePackageMismatches": 0,
+    "meaningfulMutations": [
+      {
+        "id": "M1",
+        "killed": true,
+        "crashes": 0,
+        "executedCases": 206,
+        "failuresByClass": {
+          "NEGATED_MODALITY": 8,
+          "UNCERTAIN_MODALITY": 12
+        },
+        "minimumFailuresByClass": {
+          "NEGATED_MODALITY": 4,
+          "UNCERTAIN_MODALITY": 4
+        }
+      },
+      {
+        "id": "M2",
+        "killed": true,
+        "crashes": 0,
+        "executedCases": 206,
+        "failuresByClass": {
+          "DETACHED_OBJECT_DECOYS": 7,
+          "DIRECT_OBJECT_BARRIERS": 6,
+          "FINITE_PREDICATE_BARRIERS": 6
+        },
+        "minimumFailuresByClass": {
+          "DETACHED_OBJECT_DECOYS": 4,
+          "DIRECT_OBJECT_BARRIERS": 4,
+          "FINITE_PREDICATE_BARRIERS": 4
+        }
+      },
+      {
+        "id": "M3",
+        "killed": true,
+        "crashes": 0,
+        "executedCases": 206,
+        "failuresByClass": {
+          "MALFORMED_SYNTAX": 9
+        },
+        "minimumFailuresByClass": {
+          "MALFORMED_SYNTAX": 6
+        }
+      },
+      {
+        "id": "M4",
+        "killed": true,
+        "crashes": 0,
+        "executedCases": 206,
+        "failuresByClass": {
+          "AFFIRMATIVE_PASSIVE": 6
+        },
+        "minimumFailuresByClass": {
+          "AFFIRMATIVE_PASSIVE": 4
+        }
+      },
+      {
+        "id": "M5",
+        "killed": true,
+        "crashes": 0,
+        "executedCases": 206,
+        "failuresByClass": {
+          "COORDINATED_SUBJECTS_MIXED_INVALID": 6
+        },
+        "minimumFailuresByClass": {
+          "COORDINATED_SUBJECTS_MIXED_INVALID": 6
+        }
+      },
+      {
+        "id": "M6",
+        "killed": true,
+        "crashes": 0,
+        "executedCases": 206,
+        "failuresByClass": {
+          "DOUBLE_NEGATION": 6,
+          "NESTED_CONTROL": 7,
+          "UNRELATED_NEGATION": 6
+        },
+        "minimumFailuresByClass": {
+          "DOUBLE_NEGATION": 4,
+          "NESTED_CONTROL": 6,
+          "UNRELATED_NEGATION": 4
+        }
+      },
+      {
+        "id": "M7",
+        "killed": true,
+        "crashes": 0,
+        "executedCases": 206,
+        "failuresByClass": {
+          "CLAUSE_BOUNDARY": 8,
+          "NO_STITCHING": 7
+        },
+        "minimumFailuresByClass": {
+          "CLAUSE_BOUNDARY": 4,
+          "NO_STITCHING": 4
+        }
+      },
+      {
+        "id": "M8",
+        "killed": true,
+        "crashes": 0,
+        "executedCases": 206,
+        "failuresByClass": {
+          "COORDINATED_SUBJECTS_MIXED_INVALID": 8,
+          "INVALID_SUBJECT": 8
+        },
+        "minimumFailuresByClass": {
+          "COORDINATED_SUBJECTS_MIXED_INVALID": 4,
+          "INVALID_SUBJECT": 4
+        }
+      },
+      {
+        "id": "M9",
+        "killed": true,
+        "crashes": 0,
+        "executedCases": 206,
+        "failuresByClass": {
+          "DETACHED_OBJECT_DECOYS": 8,
+          "INVALID_OBJECT": 7
+        },
+        "minimumFailuresByClass": {
+          "DETACHED_OBJECT_DECOYS": 4,
+          "INVALID_OBJECT": 4
+        }
+      },
+      {
+        "id": "M10",
+        "killed": true,
+        "crashes": 0,
+        "executedCases": 206,
+        "failuresByClass": {
+          "AFFIRMATIVE_ACTIVE": 17,
+          "KNOWN_REGRESSIONS": 2
+        },
+        "minimumFailuresByClass": {
+          "AFFIRMATIVE_ACTIVE": 2,
+          "KNOWN_REGRESSIONS": 2
+        }
+      }
+    ],
+    "staleM6M7": {
+      "cases": 206,
+      "crashes": 206,
+      "errors": [
+        "createRelationFramesV2 is not defined"
+      ],
+      "cause": "replacement through tokenizeV2 deletes createRelationFramesV2 and intervening frame lifecycle helpers"
+    },
+    "preserved": {
+      "previousTwoExact": "PASS",
+      "latestFour": "PASS",
+      "previousFive": "PASS",
+      "historical": "PASS",
+      "exactHistoricalFinal003": "PASS"
+    },
+    "logEvidence": {
+      "focused-final.log": {
+        "sha256": "9a638ee5cdd2b106672bbd49fc3e9ed7c8f273889ff80e37f41e88fc464ee8fe"
+      },
+      "backend-final.log": {
+        "sha256": "e353c6b678550f4df0fc424297f9f001d8f2cbf4ca726811f50e1a37fe49922b"
+      },
+      "frontend.log": {
+        "sha256": "3817827d26d69df45fd10526aa8b161b1490aa8af0c03594a4375fda462b83da"
+      },
+      "authoritative-main.log": {
+        "sha256": "8c080246b0bec5e20da88e528cd7801ed458722b4ecb364a66f97f57b4767585"
+      },
+      "evaluation.log": {
+        "sha256": "eb51d25fabcd14e1a7058d3d48107e4214d6a263c5c58df974c9382196d7e10b"
+      },
+      "v1-final.log": {
+        "sha256": "a949a8a0c072b90f28be07a83dd78b272a725cbc1533253b29c3a441df18f79b"
+      },
+      "v2-final.log": {
+        "sha256": "11a887e42686af89b2f9c04ce71a808ad91a8a776eb334234a2e6893788ee27e"
+      }
+    },
+    "networkProviderCalls": 0,
+    "nextAllowedStep": "FRESH INDEPENDENT GPT-6.1-SOL MEDIUM GENERALIZED CLOSURE AUDIT"
   }
 }

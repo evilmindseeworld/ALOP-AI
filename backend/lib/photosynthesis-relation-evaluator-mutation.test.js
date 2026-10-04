@@ -982,8 +982,8 @@ test('NEW-B3 mutant kill: comma before BUT remains attached to the passive claus
   const mutant = compileEvaluatorMutant('NEW-B3', (source) => mutateExactlyOnce(
     source,
     'NEW-B3',
-    'const separator = /,\\s*(and|but)\\s+|\\s+(and|but)\\s+/ig;',
-    'const separator = /\\s+(and|but)\\s+/ig;',
+    'const separator = /,\\s*(and|but)(?=\\s)|\\s+(and|but)(?=\\s)/ig;',
+    'const separator = /\\s+(and|but)(?=\\s)/ig;',
   ));
   const item = buildCase(2, 1, 2, () => 0);
   assertMutantKilled('NEW-B3', item.input, mutant, 'comma-BUT clause boundary stays well formed', (result) => {

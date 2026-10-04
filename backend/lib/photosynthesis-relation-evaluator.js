@@ -514,11 +514,11 @@ const segmentSentencesV2 = (x) => segmentSentences(normalizeInputV2(x))
   .map((sentence, index) => ({ ...sentence, index }));
 function hasCompleteActiveClauseV2(text) {
   const tokens = tokenizeV2(text);
-  if (['and', 'or', 'but'].includes(tokens.at(-1)?.form)) return false;
   // This is an occurrence-boundary probe, not the semantic validator. Keep an
   // explicit supported target clause intact even when its subject or auxiliary
   // path will later be rejected inside that clause.
   if (bindLocalPassiveAgent(tokens)) return true;
+  if (['and', 'or', 'but'].includes(tokens.at(-1)?.form)) return false;
   for (let index = 1; index < tokens.length; index += 1) {
     const predicate = validateFinitePredicate(tokens, index);
     if (predicate && isTargetRelationPredicateV2(predicate.lemma)
@@ -532,6 +532,9 @@ function isCompleteUnsupportedClauseV2(tokens, allowIntransitive) {
   for (let index = 1; index < (allowIntransitive ? tokens.length : tokens.length - 1); index += 1) {
     const form = tokens[index].form;
     if (V2_VERBS.has(form) || structuralWords.has(form) || /ing$/i.test(form)) continue;
+    const rolePrefix = extractSubjectSet(tokens, index + 1);
+    // A word inside a recognized role member is not an unrelated predicate.
+    if (rolePrefix.end === index + 1 && rolePrefix.members.at(-1)?.valid) continue;
     const subject = extractSubjectSet(tokens, index), number = subjectNumberV2(subject);
     if (subject.end !== index || !subjectPhraseWellFormedV2(subject)) continue;
     const thirdPerson = /s$/i.test(form) && !/(?:ss|us|is|ics)$/i.test(form);
@@ -546,7 +549,7 @@ function isCompleteUnsupportedClauseV2(tokens, allowIntransitive) {
   return false;
 }
 function splitIndependentConjunctionsV2(text) {
-  const separator = /,\s*(and|but)\s+|\s+(and|but)\s+/ig;
+  const separator = /,\s*(and|but)(?=\s)|\s+(and|but)(?=\s)/ig;
   const candidates = [];
   for (const match of text.matchAll(separator)) {
     const left = text.slice(0, match.index).trim();
@@ -1172,8 +1175,10 @@ function extractSubjectSet(ts,end){
   const byWhich=ts.findIndex((t,i)=>i+1<end&&t.lemma==='by'&&ts[i+1].lemma==='which');
   if(byWhich>=0)boundary=end;
   const raw=ts.slice(byWhich>=0?byWhich+2:subjectStart,boundary).map(t=>t.form).join(' ');
-  const memberSources=raw.split(/\s+(?:and|or|rather\s+than)(?=\s|$)\s*|,\s*/);
-  const hasOxfordCoordinator=/,\s*(?:and|or)\s+/i.test(raw);
+  // Leave delimiter-adjacent whitespace available to the next delimiter. This
+  // preserves an empty member between repeated conjunctions as well as commas.
+  const memberSources=raw.split(/\s+(?:and|or|rather\s+than)(?=\s|$)|,\s*/);
+  const hasOxfordCoordinator=/,\s*(?:and|or)(?:\s+|$)/i.test(raw);
   const malformedCoordinator=/^(?:and|or|rather\s+than)\b|(?:\b(?:and|or|rather\s+than)|,)\s*$/i.test(raw.trim());
   const determiners=new Set(['a','an','the','some']);
   const malformedHeads=new Set(['and','or','rather','but',',',';',':','.','!','?']);
@@ -1199,11 +1204,11 @@ function extractSubjectSet(ts,end){
   return{members,coordinator,validity:n===members.length&&n?'ALL_VALID':n?'MIXED_INVALID':'ALL_INVALID',shapeValid,start:subjectStart,end:boundary};
 }
 function subjectPhraseWellFormedV2(subject){return subject.shapeValid!==false&&subject.members.length>0&&!subject.members.some((member)=>member.determinerNumberMismatch);}
-function isRecognizableRoleSpanV2(subject) {
+function isRecognizableRoleSpanV2(subject, allowEmptyFinal = false) {
   if (subject.coordinator === 'COMMA') return false;
   if (subject.shapeValid !== false) return true;
   if (subject.coordinator !== 'AND' || !subject.members.some((member) => member.valid)) return false;
-  if (!subject.members.at(-1)?.surface) return false;
+  if (!allowEmptyFinal && !subject.members.at(-1)?.surface) return false;
   const members = subject.members.filter((member) => member.surface);
   if (members.length === subject.members.length) return false;
   const tokens = tokenizeV2(members.map((member) => member.surface).join(' and '));
@@ -1290,7 +1295,9 @@ function validateActiveFinitePredicateV2(ts,index,verb,subject,auxiliary,control
 }
 function startsIndependentSupportedClauseV2(text) {
   const tokens = tokenizeV2(text);
-  if (bindLocalPassiveAgent(tokens)) return true;
+  // Passive occurrence discovery recognizes its head before consuming its
+  // agent role or validating a following sibling's tail.
+  if (findPassiveHeadV2(tokens)) return true;
   for (let index = 1; index < tokens.length; index += 1) {
     const predicate = validateFinitePredicate(tokens, index);
     if (!predicate) continue;
@@ -1299,7 +1306,7 @@ function startsIndependentSupportedClauseV2(text) {
     if (['a', 'an', 'the', 'some'].includes(tokens[0]?.form)
       && !subject.members.some((member) => member.surface)) continue;
     const malformedEmptyAnd = subject.shapeValid === false && subject.coordinator === 'AND'
-      && isRecognizableRoleSpanV2(subject);
+      && isRecognizableRoleSpanV2(subject, true);
     if (subject.shapeValid === false && !malformedEmptyAnd) continue;
     const boundarySubject = malformedEmptyAnd ? { ...subject, shapeValid: true } : subject;
     if (hasSupportedBoundaryPrefixV2(tokens, index, boundarySubject)) return true;
@@ -1439,7 +1446,7 @@ function validateActiveTailV2(tokens, objectEnd, pronoun, subject, antecedentObj
   const continuation = trimActiveTailForms(tail.slice(butIndex + 1));
   return frameValid && isCompleteContrastContinuationV2(continuation, subject, antecedentObject);
 }
-function bindLocalPassiveAgent(ts){
+function findPassiveHeadV2(ts){
   const object=bindDirectObject(ts,0);
   if(object?.role!=='LIGHT_OBJECT')return null;
   const light=ts[0]?.form==='the'?1:0,lightEnd=object.tokenEnd-1;
@@ -1452,6 +1459,12 @@ function bindLocalPassiveAgent(ts){
   if(!hasPassiveAuxiliary)return null;
   const verb=validateFinitePredicate(ts,verbIndex);
   if(!verb)return null;
+  return{light,lightEnd,by,verbIndex,verb,auxiliaryChain};
+}
+function bindLocalPassiveAgent(ts){
+  const head=findPassiveHeadV2(ts);
+  if(!head)return null;
+  const{light,lightEnd,by,verbIndex,verb,auxiliaryChain}=head;
   const agent=extractSubjectSet(ts.slice(by+1),ts.length-by-1);
   const tail=ts.slice(by+1+agent.end).map((token)=>token.form),terminal=tail.at(-1);
   if(['.','!','?'].includes(terminal))tail.pop();

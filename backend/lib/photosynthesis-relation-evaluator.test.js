@@ -2576,7 +2576,7 @@ test('NEW-A/NEW-B/NEW-C mutations execute and lose their intended semantic prope
   const mutants = [
     replace("return candidate.commaDelimited && passive\n        && isRecognizableRoleSpanV2(passive.agent);", 'return candidate.commaDelimited && passive;'),
     replace('|| !isSupportedPassiveAuxiliaryChain(passive.auxiliaryChain)', '|| false'),
-    replace("&& isRecognizableRoleSpanV2(subject);", "&& subject.members.some((member) => member.valid) && subject.members.every((member) => member.valid || member.surface === '');"),
+    replace("&& isRecognizableRoleSpanV2(subject, true);", "&& subject.members.some((member) => member.valid) && subject.members.every((member) => member.valid || member.surface === '');"),
   ];
   mutants.forEach((m, i) => {
     oracle(exact[i]);
@@ -2622,4 +2622,174 @@ test('fresh deterministic holdout stresses all three mechanisms with source/pack
   assert.equal(failures.length, 0, JSON.stringify(failures.slice(0, 8)));
 });
 
+}
+
+// Structural discovery preserves coordinated members before semantic validation.
+{
+const e = require('./photosynthesis-relation-evaluator');
+const source = readFileSync(join(__dirname, 'photosynthesis-relation-evaluator.js'), 'utf8');
+const projection = (r) => r[Object.getOwnPropertySymbols(r).find((s) => s.description === 'V2_FRAME_PROJECTIONS')];
+const nouns = ['plants', 'green plants', 'algae', 'photosynthetic bacteria', 'some bacteria'];
+const verbs = ['capture', 'absorb', 'harness', 'convert', 'transform', 'store'];
+const separators = [' and ', ', and ', ' but ', ', but ', '; ', '. '];
+const seeds = [0x19A7D4C3, 0xE63B9025];
+const lemma = (s) => e.normalizeExactFormLemmaV2(s);
+const participle = (v) => v + (v.endsWith('e') ? 'd' : 'ed');
+function role(members, kind) {
+  if (kind === 'gap') return { text: `${members[0]}, , and ${members[1]}`, members: [members[0], '', members[1]], malformed: true };
+  if (kind === 'duplicate') return { text: `${members[0]} and and ${members[1]}`, members: [members[0], '', members[1]], malformed: true };
+  if (kind === 'comma-duplicate') return { text: `${members[0]}, and and ${members[1]}`, members: [members[0], '', members[1]], malformed: true };
+  if (kind === 'oxford-gap') return { text: `${members[0]}, ${members[1]}, , and ${members[2]}`, members: [members[0], members[1], '', members[2]], malformed: true };
+  if (kind === 'after-and-gap') return { text: `${members[0]}, ${members[1]}, and , ${members[2]}`, members: [members[0], members[1], '', members[2]], malformed: true };
+  if (kind === 'final-gap') return { text: `${members[0]}, ${members[1]}, and`, members: [members[0], members[1], ''], malformed: true };
+  const text = members.length === 1 ? members[0] : members.length === 2 ? members.join(' and ')
+    : members.slice(0, -1).join(', ') + (kind === 'serial' ? ' and ' : ', and ') + members.at(-1);
+  return { text, members, malformed: false };
+}
+function block(members, kind, voice = 'ACTIVE', verb = 'absorb', mode = 'plain', light = 'sunlight', context = '') {
+  const r = role(members, kind);
+  const auxiliary = voice === 'PASSIVE' ? { plain: 'is', modal: 'must be', uncertain: 'may be', perfect: 'has been', progressive: 'is being' }[mode]
+    : { plain: '', modal: 'must', uncertain: 'may', perfect: 'have', progressive: 'are' }[mode];
+  const surface = voice === 'PASSIVE' || mode === 'perfect' ? participle(verb) : mode === 'progressive' ? verb.replace(/e$/, '') + 'ing' : verb;
+  const prefix = voice === 'PASSIVE' ? `${light} ${auxiliary} ${surface} by ` : '';
+  const predicate = voice === 'PASSIVE' ? '' : ` ${mode === 'mediated' ? 'use chlorophyll to ' : auxiliary ? auxiliary + ' ' : ''}${surface} ${light}`;
+  return { text: prefix + r.text + predicate + context, members: r.members, malformed: r.malformed, voice, verb,
+    morphology: voice === 'PASSIVE' ? 'PAST_PARTICIPLE' : mode === 'perfect' ? 'PAST' : mode === 'progressive' ? 'PRESENT_PARTICIPLE' : 'BASE',
+    auxiliary: auxiliary ? auxiliary.split(' ') : [], mode, context, qualifies: !r.malformed && mode !== 'uncertain', supports: mode === 'mediated' && !r.malformed };
+}
+function compose(blocks, boundaries) { return { blocks, boundaries, text: blocks.map((b, i) => (i ? boundaries[i - 1] : '') + b.text).join('') }; }
+function check(item, api = e) {
+  const r = api.evaluatePhotosynthesisRelationsV2(item.text), frames = projection(r);
+  assert.equal(frames.length, item.blocks.length, `frame count: ${item.text}`);
+  assert.equal(r.hasMalformed, item.blocks.some((b) => b.malformed), `malformed: ${item.text}`);
+  assert.equal(r.passed, !item.blocks.some((b) => b.malformed) && item.blocks.some((b) => b.qualifies), `decision: ${item.text}`);
+  let sentence = 0, clause = 0;
+  item.blocks.forEach((b, i) => {
+    if (i && item.boundaries[i - 1] === '. ') { sentence++; clause = 0; }
+    else if (i) clause++;
+    const f = frames[i];
+    assert.equal(f.frameId, i, `frame identity: ${item.text}`);
+    assert.deepEqual(f.topology, [[sentence, clause]], `frame topology: ${item.text}`);
+    assert.equal(f.malformed, b.malformed, `neighbor locality: ${item.text}`);
+    assert.deepEqual(f.coordinationTopology[0].orderedMembers.map(([s]) => s), b.members.map(lemma), `role membership: ${item.text}`);
+    assert.equal(f.coordinationTopology[0].cardinality, b.members.length, `role cardinality: ${item.text}`);
+    const records = f.records.filter((x) => x.relationType === 'CORE_LIGHT_RELATION');
+    assert.ok(f.records.every((x) => x.evidenceSpan.text === f.text), `relation ownership: ${item.text}`);
+    if (b.malformed) assert.ok(f.records.every((x) => !x.qualifies), `malformed qualification: ${item.text}`);
+    else {
+      assert.deepEqual(records.map((x) => x.subjectSet.lemma), b.members.map(lemma), `subjects/agents: ${item.text}`);
+      assert.ok(records.every((x) => x.voice === b.voice && x.verbLemma === b.verb && x.verbForm === b.morphology && x.qualifies === b.qualifies), `morphology/qualification: ${item.text}`);
+      assert.deepEqual(records.map((x) => x.auxiliaryChain?.chain || []), b.members.map(() => b.auxiliary), `auxiliary ownership: ${item.text}`);
+      assert.equal(f.records.filter((x) => x.relationType === 'CHLOROPHYLL_SUPPORT').length, b.supports ? b.members.length : 0, `support ownership: ${item.text}`);
+      if (b.voice === 'PASSIVE') assert.ok(records.every((x) => x.lightObject.binding === 'PASSIVE_SUBJECT' && x.processContext === (b.context ? 'LOCAL_ADJUNCT' : null)), `passive context: ${item.text}`);
+    }
+  });
+  return r;
+}
+async function packaged() { return (await import(require('node:url').pathToFileURL(join(__dirname, '../scripts/run-photosynthesis-relation-mutations.mjs')).href)).createDerivedEvaluator(); }
+const exact = [
+  compose([block(['plants'], 'oxford', 'ACTIVE', 'capture', 'plain', 'light'), block(['plants', 'algae', 'photosynthetic bacteria'], 'oxford', 'PASSIVE', 'store', 'modal', 'light'), block(['plants'], 'oxford', 'ACTIVE', 'capture', 'plain', 'light')], [' and ', ' and ']),
+  compose([block(['plants'], 'oxford'), block(['plants', 'algae'], 'duplicate')], [' but ']),
+  compose([block(['green plants', 'algae', 'photosynthetic bacteria'], 'oxford-gap')], []),
+];
+test('current structural roots retain frame discovery, modal Oxford ownership, and malformed identity', async () => {
+  const p = await packaged();
+  for (const item of exact) { const r = check(item); const pr = check(item, p); assert.deepEqual(pr, r); assert.deepEqual(projection(pr), projection(r)); assert.equal(p.semanticCaseFingerprint(pr), e.semanticCaseFingerprint(r)); }
+});
+test('three-frame passive ownership and empty-member locality properties', () => {
+  let count = 0;
+  for (const kind of ['oxford', 'serial', 'gap', 'duplicate', 'comma-duplicate', 'oxford-gap', 'after-and-gap', 'final-gap'])
+    for (const mode of ['plain', 'modal', 'uncertain', 'perfect', 'progressive']) for (const boundary of separators) for (let position = 0; position < 3; position++) {
+      const blocks = [block(['green plants'], 'oxford', 'ACTIVE', 'capture'), block(['algae'], 'oxford', 'ACTIVE', 'harness', 'mediated'), block(['photosynthetic bacteria'], 'oxford', 'ACTIVE', 'transform', 'modal')];
+      blocks[position] = block(['plants', 'algae', 'photosynthetic bacteria'], kind, 'PASSIVE', 'store', mode, 'light');
+      check(compose(blocks, [boundary, boundary])); count++;
+    }
+  console.log(`STRUCTURAL_PASSIVE_PROPERTIES ${count}`);
+});
+test('multiword coordinated subjects preserve empty/duplicate members and valid-malformed fingerprints', async () => {
+  const p = await packaged();
+  let count = 0;
+  for (let rotation = 0; rotation < nouns.length; rotation++) {
+    const members = [...nouns.slice(rotation), ...nouns.slice(0, rotation)].slice(0, 3);
+    for (const voice of ['ACTIVE', 'PASSIVE']) for (const kind of ['oxford', 'serial', 'gap', 'duplicate', 'comma-duplicate', 'oxford-gap', 'after-and-gap', 'final-gap']) {
+      const b = block(members, kind, voice, 'absorb'); const r = check(compose([b], []));
+      const pr = check(compose([b], []), p);
+      assert.deepEqual(pr, r); assert.deepEqual(projection(pr), projection(r));
+      assert.equal(p.semanticCaseFingerprint(pr), e.semanticCaseFingerprint(r));
+      const cosmetic = b.text.toUpperCase().replaceAll(' ', '  ');
+      assert.equal(p.semanticCaseFingerprint(cosmetic), e.semanticCaseFingerprint(r), b.text);
+      if (b.malformed) {
+        const control = block(b.members.filter(Boolean), 'oxford', voice, 'absorb'); check(compose([control], []));
+        assert.deepEqual(p.evaluatePhotosynthesisRelationsV2(control.text), e.evaluatePhotosynthesisRelationsV2(control.text));
+        assert.notEqual(e.semanticCaseFingerprint(r), e.semanticCaseFingerprint(control.text), b.text);
+        assert.equal(e.semanticCaseFingerprint(b.text), e.semanticCaseFingerprint(b.text.toUpperCase().replaceAll(' ', '  ')), b.text);
+      }
+      count++;
+    }
+  }
+  for (const voice of ['ACTIVE', 'PASSIVE']) for (const members of [nouns.slice(0, 1), nouns.slice(0, 2), nouns.slice(1, 3), nouns.slice(2, 4)]) { check(compose([block(members, 'oxford', voice)], [])); count++; }
+  console.log(`STRUCTURAL_MULTIWORD_PROPERTIES ${count}`);
+});
+test('malformed sibling discovery and three-frame neighbor locality properties', () => {
+  let count = 0;
+  for (const kind of ['duplicate', 'comma-duplicate', 'gap', 'oxford-gap', 'after-and-gap', 'final-gap'])
+    for (const voice of ['ACTIVE', 'PASSIVE']) for (const mode of voice === 'PASSIVE' ? ['plain', 'modal'] : ['plain', 'mediated'])
+      for (const boundary of separators) for (let position = 0; position < 3; position++) {
+        const blocks = [block(['green plants'], 'oxford'), block(['plants', 'algae', 'photosynthetic bacteria'], 'oxford', 'PASSIVE', 'store', 'modal', 'light'), block(['some bacteria'], 'oxford', 'ACTIVE', 'harness', 'mediated')];
+        blocks[position] = block(['green plants', 'algae', 'photosynthetic bacteria'], kind, voice, 'absorb', mode);
+        check(compose(blocks, [boundary, boundary])); count++;
+      }
+  console.log(`STRUCTURAL_SIBLING_PROPERTIES ${count}`);
+});
+test('NEW-D–G mutations execute and fail their structural semantic threat models', () => {
+  const replace = (needle, replacement) => { assert.equal(source.split(needle).length, 2); const m = { exports: {} }; new Function('require', 'module', 'exports', source.replace(needle, replacement))(require, m, m.exports); return m.exports; };
+  const mutants = [
+    replace('if (findPassiveHeadV2(tokens)) return true;', 'if (bindLocalPassiveAgent(tokens)) return true;'),
+    replace('const memberSources=raw.split(/\\s+(?:and|or|rather\\s+than)(?=\\s|$)|,\\s*/);', 'const memberSources=raw.split(/\\s+(?:and|or|rather\\s+than)(?=\\s|$)|,\\s*/).filter((member) => member.trim());'),
+    replace("const malformedEmptyAnd = subject.shapeValid === false && subject.coordinator === 'AND'\n      && isRecognizableRoleSpanV2(subject, true);", 'const malformedEmptyAnd = false;'),
+    replace('if (rolePrefix.end === index + 1 && rolePrefix.members.at(-1)?.valid) continue;', 'if (false) continue;'),
+  ];
+  const cases = [exact[0], compose([block(['green plants', 'algae'], 'gap', 'PASSIVE', 'store', 'plain', 'light'), block(['plants'], 'oxford')], [' but ']), exact[1], exact[2]];
+  mutants.forEach((m, i) => { check(cases[i]); assert.doesNotThrow(() => m.evaluatePhotosynthesisRelationsV2(cases[i].text)); assert.throws(() => check(cases[i], m), { code: 'ERR_ASSERTION' }); });
+  console.log('STRUCTURAL_MUTATIONS 4/4 MEANINGFUL; zero crashes');
+});
+function random(seed) { let x = seed; return () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return (x >>> 0) / 0x100000000; }; }
+test('fresh structural closure holdout and false-positive defense have exact source/package parity', async () => {
+  const p = await packaged(), keys = new Set(), inputs = new Set(), fingerprints = new Set(), fingerprintInputs = new Map(), equivalences = [], cases = [], families = [0, 0, 0, 0, 0, 0];
+  for (const seed of seeds) {
+    const rng = random(seed), pick = (a) => a[Math.floor(rng() * a.length)];
+    for (let attempts = 0, accepted = 0; accepted < 1500 && attempts < 60000; attempts++) {
+      const family = attempts % 6;
+      const shuffled = [...nouns]; for (let i = shuffled.length - 1; i; i--) { const j = Math.floor(rng() * (i + 1)); [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]; }
+      const members = shuffled.slice(0, 3), light = pick(['light', 'sunlight', 'solar energy']), context = pick(['', ' in photosynthesis', ' during photosynthesis', ' for photosynthesis']);
+      const goodActive = block(members.slice(0, pick([1, 2, 3])), pick(['oxford', 'serial']), 'ACTIVE', pick(verbs), pick(['plain', 'modal', 'mediated']), light, context);
+      const goodPassive = block(members.slice(0, pick([1, 2, 3, 3, 3])), pick(['oxford', 'serial']), 'PASSIVE', pick(verbs), pick(['plain', 'modal', 'uncertain', 'perfect', 'progressive']), light, context);
+      const bad = block(members, pick(['gap', 'duplicate', 'comma-duplicate', 'oxford-gap', 'after-and-gap', 'final-gap']), family % 2 ? 'PASSIVE' : 'ACTIVE', pick(verbs), family % 2 ? pick(['plain', 'modal']) : pick(['plain', 'mediated']), light, context);
+      const third = block([pick(nouns)], 'oxford', 'ACTIVE', pick(verbs), pick(['plain', 'modal', 'mediated']), light);
+      const blocks = [[goodActive, goodPassive, third], [goodActive, bad], [bad, goodPassive], [goodActive, bad, third], [bad, goodPassive, third], [goodPassive, third, bad]][family];
+      const item = compose(blocks, blocks.slice(1).map(() => pick(separators)));
+      // Construction semantics form the independent key; surface light synonyms,
+      // whitespace and equivalent comma-before-conjunction forms are excluded.
+      const key = JSON.stringify({ blocks: blocks.map(({ text, ...b }) => ({ ...b, members: b.members.map(lemma), context: !!b.context })), topology: item.boundaries.map((b) => b === '. ' ? 'sentence' : 'clause') });
+      if (keys.has(key) || inputs.has(item.text)) continue;
+      keys.add(key); inputs.add(item.text); cases.push({ ...item, key }); families[family]++; accepted++;
+    }
+  }
+  assert.equal(cases.length, 3000); assert.ok(keys.size >= 2200);
+  const failures = [];
+  for (const item of cases) {
+    try {
+      const r = check(item), pr = check(item, p); assert.deepEqual(pr, r); assert.deepEqual(projection(pr), projection(r));
+      const fp = e.semanticCaseFingerprint(r); assert.equal(p.semanticCaseFingerprint(pr), fp); fingerprints.add(fp);
+      if (fingerprintInputs.has(fp)) {
+        const previous = fingerprintInputs.get(fp);
+        assert.equal(item.key, previous.key, `distinct constructed semantic ownership collides: ${previous.text} / ${item.text}`);
+        equivalences.push([previous.text, item.text]);
+      } else fingerprintInputs.set(fp, item);
+    }
+    catch (error) { failures.push({ input: item.text, message: error.message }); }
+  }
+  console.log(`STRUCTURAL_HOLDOUT ${JSON.stringify({ seeds: seeds.map((s) => '0x' + s.toString(16).toUpperCase()), cases: cases.length, uniqueKeys: keys.size, uniqueFingerprints: fingerprints.size, families, failures: failures.length, examples: failures.slice(0, 10), equivalences })}`);
+  assert.equal(failures.length, 0, JSON.stringify(failures.slice(0, 10)));
+});
 }

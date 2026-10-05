@@ -2574,9 +2574,9 @@ test('Oxford ownership differential and normalization-equivalent forms preserve 
 });
 test('NEW-A/NEW-B/NEW-C mutations execute and lose their intended semantic property', () => {
   const mutants = [
-    replace("return candidate.commaDelimited && passive\n        && isRecognizableRoleSpanV2(passive.agent);", 'return candidate.commaDelimited && passive;'),
+    replace("return candidate.commaDelimited && passive\n        && isStructurallyOwnedRoleSpanV2(passive.agent)\n        && (passive.agent.members.at(-1)?.surface\n          || tokens[passive.by + passive.agent.end]?.form === 'and');", 'return candidate.commaDelimited && passive;'),
     replace('|| !isSupportedPassiveAuxiliaryChain(passive.auxiliaryChain)', '|| false'),
-    replace("&& isRecognizableRoleSpanV2(subject, true);", "&& subject.members.some((member) => member.valid) && subject.members.every((member) => member.valid || member.surface === '');"),
+    replace("const malformedEmptyAnd = subject.shapeValid === false && subject.coordinator === 'AND'\n      && isStructurallyOwnedRoleSpanV2(subject);", "const malformedEmptyAnd = subject.shapeValid === false && subject.coordinator === 'AND'\n      && subject.members.some((member) => member.valid) && subject.members.every((member) => member.valid || member.surface === '');"),
   ];
   mutants.forEach((m, i) => {
     oracle(exact[i]);
@@ -2746,7 +2746,7 @@ test('NEW-D–G mutations execute and fail their structural semantic threat mode
   const mutants = [
     replace('if (findPassiveHeadV2(tokens)) return true;', 'if (bindLocalPassiveAgent(tokens)) return true;'),
     replace('const memberSources=raw.split(/\\s+(?:and|or|rather\\s+than)(?=\\s|$)|,\\s*/);', 'const memberSources=raw.split(/\\s+(?:and|or|rather\\s+than)(?=\\s|$)|,\\s*/).filter((member) => member.trim());'),
-    replace("const malformedEmptyAnd = subject.shapeValid === false && subject.coordinator === 'AND'\n      && isRecognizableRoleSpanV2(subject, true);", 'const malformedEmptyAnd = false;'),
+    replace("const malformedEmptyAnd = subject.shapeValid === false && subject.coordinator === 'AND'\n      && isStructurallyOwnedRoleSpanV2(subject);", 'const malformedEmptyAnd = false;'),
     replace('if (rolePrefix.end === index + 1 && rolePrefix.members.at(-1)?.valid) continue;', 'if (false) continue;'),
   ];
   const cases = [exact[0], compose([block(['green plants', 'algae'], 'gap', 'PASSIVE', 'store', 'plain', 'light'), block(['plants'], 'oxford')], [' but ']), exact[1], exact[2]];

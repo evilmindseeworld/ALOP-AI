@@ -5562,5 +5562,111 @@
     },
     "networkProviderCalls": 0,
     "nextAllowedStep": "FRESH INDEPENDENT GPT-6.1-SOL MEDIUM STRUCTURAL CLOSURE AUDIT"
+  },
+  "malformedPassiveBoundaryClosure": {
+    "schemaVersion": 1,
+    "capturedAtUtc": "2026-10-05T21:27:38Z",
+    "finding": "P1-SOL-STRUCTURAL-OWNERSHIP-001",
+    "root": "ROOT_001B_MALFORMED_PASSIVE_BOUNDARY_COMMITMENT",
+    "status": "ROOT_FIXED_PRE_SOL",
+    "repairBase": {
+      "head": "4194b79924e4ea68cb367a267396addf9688cba3",
+      "tree": "fccbd487dff5bb77df04314e73d249973e9142e0"
+    },
+    "implementationHead": "2c00ce570889bd115778c9e3cd90efceb440395e",
+    "package": {
+      "bytes": 138469,
+      "sha256": "9ceae172fd5b1fcd47f9518f46d092b860333f5a1e50fca737cbb0b760d8f95f",
+      "deterministic": true
+    },
+    "properties": {
+      "forwardPassiveMemberMigration": "FIXED",
+      "backwardNextSiblingMemberMigration": "FIXED",
+      "malformedPassiveMemberLocality": "PASS",
+      "malformedFrameStateRetention": "PASS",
+      "falsePassiveQualification": 0,
+      "falseCoreRelationFabrication": 0,
+      "activeMediatedSupportOwnership": "PASS",
+      "fingerprintDifferential": "PASS",
+      "exactAuditorBlockers": [
+        "PASS",
+        "PASS"
+      ]
+    },
+    "directedMatrix": {
+      "passed": 2223,
+      "total": 2223,
+      "failures": 0,
+      "sourcePackageMismatches": 0
+    },
+    "implementationHoldout": {
+      "passed": 4500,
+      "total": 4500,
+      "uniqueStructuralKeys": 4500,
+      "failures": 0,
+      "seeds": [
+        "0x63C7A291",
+        "0xD48B5F06"
+      ]
+    },
+    "mutations": {
+      "newAC": "3/3 meaningful",
+      "newDG": "4/4 meaningful",
+      "newHI": "2/2 meaningful",
+      "M1M10": "10/10 meaningful",
+      "crashes": 0
+    },
+    "previousRoots": {
+      "previousThree": "PASS",
+      "previousTwo": "PASS",
+      "latestFour": "PASS",
+      "previousFive": "PASS",
+      "historicalRegressions": "PASS",
+      "threeFrameStress": "PASS"
+    },
+    "suites": {
+      "evaluator": "113/113",
+      "authoritative": "103/103",
+      "evaluation": "41/41",
+      "semanticCorpus": "103/103",
+      "coreV1": "22/22",
+      "backendIntelligenceV1": "21/21",
+      "v2ValidateOnly": "21/21",
+      "backend": {
+        "passed": 2658,
+        "total": 2659,
+        "candidateCausedFailures": 0,
+        "knownBaselineFailure": "deployment-config.test.js:372; Node policy assertion"
+      },
+      "frontend": {
+        "candidatePassed": 734,
+        "candidateTotal": 735,
+        "exactBasePassed": 735,
+        "exactBaseTotal": 735,
+        "singleFailure": "MagneticButton.test.jsx:72 timing/identity assertion",
+        "frontendFilesChanged": false
+      }
+    },
+    "providerValidation": {
+      "mode": "validate-only",
+      "providerCalls": 0,
+      "networkCalls": {
+        "fetch": 0,
+        "httpRequest": 0,
+        "httpsRequest": 0,
+        "netConnect": 0,
+        "tlsConnect": 0
+      }
+    },
+    "sourcePackageMismatches": 0,
+    "staticSpecialCaseSearchMatches": 0,
+    "quarantine": {
+      "commitShas": [
+        "8c5f9afef9151923539c6016a2d6c75947b2e639",
+        "090d1c99c1bbc3c85ef742fdbd0511e6ca728248"
+      ],
+      "ancestry": "ABSENT"
+    },
+    "nextAllowedStep": "FRESH_INDEPENDENT_GPT_6_1_SOL_MEDIUM_FINAL_SINGLE_ROOT_CLOSURE_AUDIT"
   }
 }

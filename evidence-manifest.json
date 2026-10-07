@@ -5849,7 +5849,7 @@
         "passed": 2659,
         "total": 2660,
         "candidateCausedFailures": 0,
-        "knownEnvironmentBaseline": "deployment-config.test.js:372; runtime Node 26.4.0 while repository policy requires 26.7.0"
+        "knownEnvironmentBaseline": "deployment-config.test.js:372; assertion expects engines range >=26, but package.json pins exact 26.7.0"
       },
       "frontend": {
         "firstCandidateRun": "732/735",

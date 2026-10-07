@@ -1210,7 +1210,7 @@ function subjectPhraseWellFormedV2(subject){return subject.shapeValid!==false&&s
 function isStructurallyOwnedRoleSpanV2(subject) {
   if (subject.coordinator === 'COMMA') return false;
   if (subject.shapeValid !== false) return true;
-  if (subject.coordinator !== 'AND' || !subject.members.some((member) => member.valid)) return false;
+  if (subject.coordinator !== 'AND') return false;
   const members = subject.members.filter((member) => member.surface);
   if (members.length === subject.members.length) return false;
   const tokens = tokenizeV2(members.map((member) => member.surface).join(' and '));

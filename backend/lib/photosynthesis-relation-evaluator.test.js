@@ -2824,6 +2824,21 @@ const exactCases = [
     activeMalformed: false,
     activeHasOwnedCoreAndSupport: true,
   },
+  {
+    input: 'Light is stored by animals and and rocks, and plants and algae absorb sunlight',
+    passiveMembers: ['animals', '', 'rocks'],
+    activeMembers: ['plants', 'algae'],
+    activeMalformed: false,
+    activeHasOwnedCore: true,
+  },
+  {
+    input: 'Light is stored by animals and and rocks, and green plants and photosynthetic bacteria use chlorophyll to capture sunlight',
+    passiveMembers: ['animals', '', 'rocks'],
+    activeMembers: ['green plants', 'photosynthetic bacteria'],
+    activeMalformed: false,
+    activeHasOwnedCore: true,
+    activeHasOwnedCoreAndSupport: true,
+  },
 ];
 
 function assertMalformedPassiveBoundary(item, api) {
@@ -2833,20 +2848,23 @@ function assertMalformedPassiveBoundary(item, api) {
   assert.equal(frames.length, 2, item.input);
   assert.equal(frames[0].malformed, true, item.input);
   assert.equal(frames[1].malformed, item.activeMalformed, item.input);
+  assert.ok(frames[0].records.every((record) => record.voice === 'PASSIVE' && !record.qualifies), item.input);
   assert.deepEqual(frames[0].coordinationTopology[0].rawMembers, item.passiveMembers, item.input);
   assert.equal(frames[0].coordinationTopology[0].cardinality, item.passiveMembers.length, item.input);
   assert.ok(frames[0].records.filter((record) => record.relationType === 'CORE_LIGHT_RELATION')
     .every((record) => !record.qualifies), item.input);
-  assert.deepEqual(frames[1].coordinationTopology[0].rawMembers
-    || frames[1].coordinationTopology[0].orderedMembers.map(([surface]) => surface), item.activeMembers, item.input);
-  if (item.activeHasOwnedCoreAndSupport) {
+  assert.equal(frames[0].records.some((record) => record.relationType === 'CHLOROPHYLL_SUPPORT' && record.qualifies), false, item.input);
+  assert.deepEqual(normalizedTopologyMembers(frames[1]), item.activeMembers.map((surface) => evaluator.normalizeExactFormLemmaV2(surface)), item.input);
+  assert.equal(frames[1].coordinationTopology[0].cardinality, item.activeMembers.length, item.input);
+  assert.ok(frames[1].records.every((record) => record.voice === 'ACTIVE'), item.input);
+  if (item.activeHasOwnedCore || item.activeHasOwnedCoreAndSupport) {
     const activeRecords = frames[1].records;
     const coreSubjects = activeRecords.filter((record) => record.relationType === 'CORE_LIGHT_RELATION' && record.qualifies)
       .map((record) => record.subjectSet.surface).sort();
+    assert.deepEqual(coreSubjects, item.activeMembers.slice().sort(), item.input);
     const supportSubjects = activeRecords.filter((record) => record.relationType === 'CHLOROPHYLL_SUPPORT' && record.qualifies)
       .map((record) => record.subjectSet.surface).sort();
-    assert.deepEqual(coreSubjects, item.activeMembers.slice().sort(), item.input);
-    assert.deepEqual(supportSubjects, item.activeMembers.slice().sort(), item.input);
+    assert.deepEqual(supportSubjects, item.activeHasOwnedCoreAndSupport ? item.activeMembers.slice().sort() : [], item.input);
   }
   return result;
 }
@@ -2899,11 +2917,16 @@ function assertMalformedPassiveMatrixCase(item, api) {
   assert.deepEqual(normalizedTopologyMembers(frames[0]), item.passiveMembers.map((x) => x ? evaluator.normalizeExactFormLemmaV2(x) : ''), item.input);
   assert.equal(frames[0].coordinationTopology[0].cardinality, item.passiveMembers.length, item.input);
   assert.deepEqual(normalizedTopologyMembers(frames[1]), item.sibling.members.map((x) => x ? evaluator.normalizeExactFormLemmaV2(x) : ''), item.input);
-  assert.ok(frames[0].records.filter((record) => record.relationType === 'CORE_LIGHT_RELATION')
-    .every((record) => !record.qualifies), item.input);
+  assert.equal(frames[1].coordinationTopology[0].cardinality, item.sibling.members.length, item.input);
+  assert.equal(frames[0].records.length > 0, true, item.input);
+  if (item.passiveValidity) {
+    const expectedSubjectValidity = item.passiveValidity === 'ALL_INVALID' ? 'ALL_INVALID' : 'MIXED_INVALID';
+    assert.ok(frames[0].records.every((record) => record.subjectValidity === expectedSubjectValidity), item.input);
+  }
+  assert.ok(frames[0].records.every((record) => !record.qualifies), item.input);
   assert.equal(frames[0].records.some((record) => record.relationType === 'CHLOROPHYLL_SUPPORT'), false, item.input);
   assert.ok(frames[0].records.every((record) => record.voice === 'PASSIVE'
-    && record.verbLemma === 'store' && record.verbForm === 'PAST_PARTICIPLE'), item.input);
+    && record.verbLemma === (item.passiveVerbLemma || 'store') && record.verbForm === 'PAST_PARTICIPLE'), item.input);
   if (item.sibling.malformed) {
     assert.ok(frames[1].records.every((record) => !record.qualifies), item.input);
     assert.equal(frames[1].records.some((record) => record.relationType === 'CHLOROPHYLL_SUPPORT'), false, item.input);
@@ -2924,6 +2947,138 @@ function assertMalformedPassiveMatrixCase(item, api) {
   return result;
 }
 
+const allInvalidRoleOrders = [
+  ['animals', 'rocks'], ['animals', 'bacteria'], ['rocks', 'animals'],
+  ['rocks', 'bacteria'], ['bacteria', 'animals'], ['bacteria', 'rocks'],
+  ['animals', 'rocks', 'bacteria'], ['animals', 'bacteria', 'rocks'],
+  ['rocks', 'animals', 'bacteria'], ['rocks', 'bacteria', 'animals'],
+  ['bacteria', 'animals', 'rocks'], ['bacteria', 'rocks', 'animals'],
+];
+const commaAndMalformedRoleShapes = [
+  { count: 2, render: ([a, b]) => `${a}, and and ${b}`, members: ([a, b]) => [a, '', b], barriers: ['COMMA_AND', 'DUPLICATE_CONJUNCTION'] },
+  { count: 2, render: ([a, b]) => `${a} and and ${b}`, members: ([a, b]) => [a, '', b], barriers: ['AND', 'DUPLICATE_CONJUNCTION'] },
+  { count: 2, render: ([a, b]) => `${a}, , and ${b}`, members: ([a, b]) => [a, '', b], barriers: ['COMMA', 'EMPTY_MEMBER', 'COMMA_AND'] },
+  { count: 2, render: ([a, b]) => `${a}, ${b}, and`, members: ([a, b]) => [a, b, ''], barriers: ['SERIAL_COMMA', 'TRAILING_CONJUNCTION'] },
+  { count: 3, render: ([a, b, c]) => `${a}, ${b}, , and ${c}`, members: ([a, b, c]) => [a, b, '', c], barriers: ['SERIAL_COMMA', 'EMPTY_MEMBER', 'COMMA_AND'] },
+  { count: 3, render: ([a, b, c]) => `${a} and ${b} and and ${c}`, members: ([a, b, c]) => [a, b, '', c], barriers: ['AND', 'DUPLICATE_CONJUNCTION', 'AND'] },
+  { count: 3, render: ([a, b, c]) => `${a}, and and ${b} and and ${c}`, members: ([a, b, c]) => [a, '', b, '', c], barriers: ['COMMA_AND', 'DUPLICATE_CONJUNCTION', 'AND', 'DUPLICATE_CONJUNCTION'] },
+];
+const directedPassiveConfigurations = commaAndMalformedRoleShapes.flatMap((shape, shapeIndex) =>
+  allInvalidRoleOrders.filter((subjects) => subjects.length === shape.count).map((subjects) => ({ shape, shapeIndex, subjects })));
+const directedSiblingPairs = [
+  ['plants', 'algae'], ['plants', 'green plants'], ['plants', 'photosynthetic bacteria'], ['plants', 'some bacteria'],
+  ['algae', 'plants'], ['algae', 'green plants'], ['algae', 'photosynthetic bacteria'], ['algae', 'some bacteria'],
+  ['green plants', 'plants'], ['green plants', 'algae'], ['green plants', 'photosynthetic bacteria'], ['green plants', 'some bacteria'],
+  ['photosynthetic bacteria', 'plants'], ['photosynthetic bacteria', 'algae'], ['photosynthetic bacteria', 'green plants'], ['photosynthetic bacteria', 'some bacteria'],
+  ['some bacteria', 'plants'], ['some bacteria', 'algae'], ['some bacteria', 'green plants'], ['some bacteria', 'photosynthetic bacteria'],
+];
+const directedActiveVariants = [
+  ...['capture', 'absorb', 'harness', 'convert', 'transform'].map((verbLemma) => ({
+    type: 'coordinated-active', verbLemma, verbForm: 'BASE', malformed: false, voice: 'ACTIVE',
+    render: (subjects, light) => `${subjects[0]} and ${subjects[1]} ${verbLemma} ${light}`,
+    supportMembers: [],
+  })),
+  {
+    type: 'mediated-active', verbLemma: 'capture', verbForm: 'BASE', malformed: false, voice: 'ACTIVE',
+    render: (subjects, light) => `${subjects[0]} and ${subjects[1]} use chlorophyll to capture ${light}`,
+    supportMembers: (subjects) => subjects.slice(),
+  },
+];
+const directedPassiveVerbs = ['store', 'capture', 'absorb', 'harness', 'convert', 'transform'];
+const directedLightForms = ['light', 'sunlight', 'solar energy'];
+const directedContexts = [
+  { text: '', type: 'NONE', variant: 'NONE' },
+  { text: ' in photosynthesis', type: 'EXPLICIT_SUBJECT', variant: 'IN' },
+  { text: ' for photosynthesis', type: 'EXPLICIT_SUBJECT', variant: 'FOR' },
+];
+const directedExpectedLemma = (surface) => evaluator.normalizeExactFormLemmaV2(surface);
+const directedSemanticKey = (item) => JSON.stringify({
+  frames: [
+    {
+      grammarShape: 'PASSIVE_LOCAL_AGENT',
+      orderedSubjectLemmasAndRoleClasses: item.passiveMembers.map((surface) => ({ lemma: directedExpectedLemma(surface), roleClass: surface ? 'UNSUPPORTED_AGENT' : 'EMPTY_MEMBER' })),
+      coordinationTypeAndCardinality: { type: 'AND', cardinality: item.passiveMembers.length },
+      voice: 'PASSIVE',
+      verbLemmaAndMorphology: { lemma: item.passiveVerbLemma, form: 'PAST_PARTICIPLE' },
+      directObjectRoleAndNormalizedLightForm: { role: 'LIGHT_OBJECT', form: 'light-energy' },
+      objectBindingOrigin: 'PASSIVE_SUBJECT',
+      auxiliaryChain: ['is'], modal: null, controlChain: null, polarityStructure: 'AFFIRMED',
+      orderedBarrierTypes: item.passiveBarriers,
+      clauseSentenceTopology: 'FRAME_0_OF_2_SAME_SENTENCE', contextBindingType: 'NONE',
+      pronounAntecedentTopology: [], pigmentIdentity: null, invalidClaimType: 'UNSUPPORTED_PASSIVE_AGENT', expectedDecision: false,
+    },
+    {
+      grammarShape: item.sibling.type === 'mediated-active' ? 'ACTIVE_INFINITIVAL_MEDIATED' : 'ACTIVE_SIMPLE',
+      orderedSubjectLemmasAndRoleClasses: item.sibling.members.map((surface) => ({ lemma: directedExpectedLemma(surface), roleClass: 'SUPPORTED_BIOLOGICAL_AGENT' })),
+      coordinationTypeAndCardinality: { type: 'AND', cardinality: item.sibling.members.length },
+      voice: 'ACTIVE',
+      verbLemmaAndMorphology: { lemma: item.sibling.verbLemma, form: item.sibling.verbForm },
+      directObjectRoleAndNormalizedLightForm: { role: 'LIGHT_OBJECT', form: 'light-energy' },
+      objectBindingOrigin: 'ACTIVE_DIRECT_OBJECT',
+      auxiliaryChain: [], modal: null, controlChain: item.sibling.type === 'mediated-active' ? ['USE', 'INFINITIVAL_TO'] : null,
+      polarityStructure: 'AFFIRMED', orderedBarrierTypes: ['COORDINATED_SUBJECT_AND'],
+      clauseSentenceTopology: 'FRAME_1_OF_2_SAME_SENTENCE', contextBindingType: 'EXPLICIT_SUBJECT',
+      pronounAntecedentTopology: [], pigmentIdentity: item.sibling.type === 'mediated-active' ? 'chlorophyll' : null,
+      invalidClaimType: null, expectedDecision: false,
+    },
+  ],
+  orderedBarrierTypes: ['COMMA_AND'],
+  clauseSentenceTopology: 'ONE_SENTENCE_TWO_FRAMES',
+});
+
+test('directed all-invalid passive comma-and family preserves active and mediated sibling ownership', async () => {
+  const packaged = await packageEvaluator();
+  const targetCases = 3000;
+  const totalVariants = directedPassiveConfigurations.length * directedPassiveVerbs.length
+    * directedSiblingPairs.length * directedActiveVariants.length * directedLightForms.length * directedContexts.length;
+  const keys = new Set();
+  const counts = { allInvalid: 0, coordinated: 0, mediated: 0, contextBindings: Object.create(null), contextVariants: Object.create(null), patterns: Array(commaAndMalformedRoleShapes.length).fill(0) };
+  for (let index = 0; index < targetCases; index += 1) {
+    let ordinal = Math.floor((index + 0.5) * totalVariants / targetCases);
+    const context = directedContexts[ordinal % directedContexts.length]; ordinal = Math.floor(ordinal / directedContexts.length);
+    const lightForm = directedLightForms[ordinal % directedLightForms.length]; ordinal = Math.floor(ordinal / directedLightForms.length);
+    const activeVariant = directedActiveVariants[ordinal % directedActiveVariants.length]; ordinal = Math.floor(ordinal / directedActiveVariants.length);
+    const siblingMembers = directedSiblingPairs[ordinal % directedSiblingPairs.length]; ordinal = Math.floor(ordinal / directedSiblingPairs.length);
+    const passiveVerbLemma = directedPassiveVerbs[ordinal % directedPassiveVerbs.length]; ordinal = Math.floor(ordinal / directedPassiveVerbs.length);
+    const configuration = directedPassiveConfigurations[ordinal % directedPassiveConfigurations.length];
+    const { shape, shapeIndex, subjects: passiveSubjects } = configuration;
+    const passiveMembers = shape.members(passiveSubjects);
+    const past = (verb) => verb + (verb.endsWith('e') ? 'd' : 'ed');
+    const siblingText = activeVariant.render(siblingMembers, lightForm);
+    const input = `Light is ${past(passiveVerbLemma)} by ${shape.render(passiveSubjects)}, and ${siblingText}${context.text}`;
+    const supportMembers = typeof activeVariant.supportMembers === 'function' ? activeVariant.supportMembers(siblingMembers) : activeVariant.supportMembers;
+    const sibling = { ...activeVariant, members: siblingMembers, supportMembers };
+    const item = { input, passiveMembers, passiveValidity: 'ALL_INVALID', passiveVerbLemma, passiveBarriers: shape.barriers, lightForm, contextType: context.type, sibling };
+    item.structuralKey = directedSemanticKey(item);
+    assert.equal(keys.has(item.structuralKey), false, `duplicate normalized semantic key at directed case ${index}`);
+    keys.add(item.structuralKey);
+    counts.allInvalid += 1;
+    counts[activeVariant.type === 'mediated-active' ? 'mediated' : 'coordinated'] += 1;
+    counts.contextBindings[context.type] = (counts.contextBindings[context.type] || 0) + 1;
+    counts.contextVariants[context.variant] = (counts.contextVariants[context.variant] || 0) + 1;
+    counts.patterns[shapeIndex] += 1;
+
+    const source = assertMalformedPassiveMatrixCase(item, evaluator);
+    const built = assertMalformedPassiveMatrixCase(item, packaged);
+    assert.deepEqual(built, source, input);
+    assert.deepEqual(frameProjection(built), frameProjection(source), input);
+    assert.equal(packaged.semanticCaseFingerprint(built), evaluator.semanticCaseFingerprint(source), input);
+    const validSubjects = passiveSubjects.length === 2 ? ['plants', 'algae'] : ['plants', 'algae', 'green plants'];
+    const validTwin = `Light is ${past(passiveVerbLemma)} by ${validSubjects.join(' and ')}, and ${siblingText}${context.text}`;
+    const validSource = evaluator.evaluatePhotosynthesisRelationsV2(validTwin);
+    const validBuilt = packaged.evaluatePhotosynthesisRelationsV2(validTwin);
+    assert.deepEqual(validBuilt, validSource, validTwin);
+    assert.equal(validSource.passed, true, validTwin);
+    assert.equal(validSource.hasMalformed, false, validTwin);
+    assert.equal(frameProjection(validSource)[0].malformed, false, validTwin);
+  }
+  assert.equal(counts.allInvalid, targetCases);
+  assert.equal(counts.coordinated + counts.mediated, targetCases);
+  assert.equal(counts.mediated > 0, true);
+  assert.equal(keys.size, targetCases);
+  console.log(`ALL_INVALID_COMMA_AND_DIRECTED ${targetCases}/${keys.size}; categories=${JSON.stringify(counts)}; failures=0; source/package mismatches=0`);
+});
+
 const directedPassiveShapes = [
   { id: 'A', render: ([a, b]) => `${a}, and and ${b}`, members: ([a, b]) => [a, '', b] },
   { id: 'B', render: ([a, b]) => `${a} and and ${b}`, members: ([a, b]) => [a, '', b] },
@@ -2939,7 +3094,18 @@ const directedPassiveSubjects = [
   ['green plants', 'algae'],
   ['green plants', 'photosynthetic bacteria'],
   ['plants', 'algae', 'photosynthetic bacteria'],
+  ['plants', 'rocks'],
+  ['rocks', 'plants'],
+  ['algae', 'animals'],
+  ['animals', 'algae'],
+  ['plants', 'rocks', 'bacteria'],
+  ['animals', 'algae', 'rocks'],
 ];
+const unsupportedPassiveEntitySurfaces = new Set(['animals', 'rocks', 'bacteria']);
+const passiveValidityOf = (subjects) => {
+  const validCount = subjects.filter((surface) => !unsupportedPassiveEntitySurfaces.has(surface)).length;
+  return validCount === subjects.length ? 'ALL_VALID' : validCount === 0 ? 'ALL_INVALID' : 'MIXED_INVALID';
+};
 const directedSiblings = [
   { id: 'simple-active', render: (xs, light) => `${xs[0]} captured ${light}`, members: (xs) => [xs[0]], voice: 'ACTIVE', verbLemma: 'capture', verbForm: 'PAST', malformed: false, supportMembers: [] },
   { id: 'coordinated-active', render: (xs, light) => `${xs[0]} and ${xs[1]} absorb ${light}`, members: (xs) => xs.slice(0, 2), voice: 'ACTIVE', verbLemma: 'absorb', verbForm: 'BASE', malformed: false, supportMembers: [] },
@@ -2969,7 +3135,7 @@ const directedSiblings = [
       const key = JSON.stringify({ shape: shape.id, passiveMembers, sibling: sibling.id, boundary, context, passiveSubjects });
       assert.equal(keys.has(key), false, input);
       keys.add(key);
-      const item = { input, passiveMembers, sibling: { ...sibling, members: sibling.members(siblingSubjects), supportMembers: sibling.supportMembers } };
+      const item = { input, passiveMembers, passiveValidity: passiveValidityOf(passiveSubjects), sibling: { ...sibling, members: sibling.members(siblingSubjects), supportMembers: sibling.supportMembers } };
       const source = assertMalformedPassiveMatrixCase(item, evaluator);
       const built = assertMalformedPassiveMatrixCase(item, packaged);
       assert.deepEqual(built, source, input);
@@ -2988,7 +3154,7 @@ const directedSiblings = [
       assert.notEqual(evaluator.semanticCaseFingerprint(source), evaluator.semanticCaseFingerprint(validSource), input);
       cases += 1;
     }
-  assert.equal(cases, 2223);
+  assert.equal(cases, 4797);
   assert.equal(keys.size, cases);
   console.log(`MALFORMED_PASSIVE_BOUNDARY_MATRIX ${cases}/${keys.size}; failures=0; source/package mismatches=0`);
 });
@@ -3072,8 +3238,8 @@ test('H-I boundary-commitment mutations produce semantic ownership failures with
     "if (['and', 'or', 'rather', 'but'].includes(tokens[0]?.form)) return false;",
     'if (false) return false;'));
   const i = loadMutant(replaceOnce(sourceText,
-    "if (subject.coordinator !== 'AND' || !subject.members.some((member) => member.valid)) return false;",
-    "if (subject.coordinator !== 'AND' || !subject.members.some((member) => member.valid) || !subject.members.at(-1)?.surface) return false;"));
+    "if (subject.coordinator !== 'AND') return false;",
+    "if (subject.coordinator !== 'AND' || !subject.members.at(-1)?.surface) return false;"));
   const first = exactCases[0].input;
   const second = exactCases[1].input;
   assert.doesNotThrow(() => h.evaluatePhotosynthesisRelationsV2(first));
@@ -3086,7 +3252,14 @@ test('H-I boundary-commitment mutations produce semantic ownership failures with
   assert.deepEqual(normalizedTopologyMembers(iFrames[1]), ['photosynthetic bacteria']);
   assert.equal(iFrames[1].records.some((record) => record.relationType === 'CHLOROPHYLL_SUPPORT'
     && record.subjectSet.surface === 'green plants'), false);
-  console.log('NEW_H-I_MUTATIONS 2/2 MEANINGFUL; crashes=0');
+  const j = loadMutant(replaceOnce(sourceText,
+    "if (subject.coordinator !== 'AND') return false;",
+    "if (subject.coordinator !== 'AND' || !subject.members.some((member) => member.valid)) return false;"));
+  assert.doesNotThrow(() => j.evaluatePhotosynthesisRelationsV2(exactCases[2].input));
+  assert.throws(() => assertMalformedPassiveBoundary(exactCases[2], j), { code: 'ERR_ASSERTION' });
+  assert.doesNotThrow(() => j.evaluatePhotosynthesisRelationsV2(exactCases[3].input));
+  assert.throws(() => assertMalformedPassiveBoundary(exactCases[3], j), { code: 'ERR_ASSERTION' });
+  console.log('NEW_H-I_MUTATIONS 2/2 MEANINGFUL; NEW_J_MUTATION 1/1 MEANINGFUL; crashes=0');
 });
 
 
@@ -3151,42 +3324,56 @@ function holdoutRandom(seed) {
   };
 }
 
-function createMalformedPassiveHoldoutCase(random, familyIndex) {
+function createMalformedPassiveHoldoutCase(random, familyIndex, validityMode) {
   const subjects = ['plants', 'algae', 'green plants', 'photosynthetic bacteria', 'some bacteria'];
+  const unsupportedSubjects = ['animals', 'rocks', 'bacteria'];
+  const supportedSubjectForms = new Set(['plant', 'plants', 'green plant', 'green plants', 'alga', 'algae', 'some bacteria', 'photosynthetic bacterium', 'photosynthetic bacteria', 'photosynthesis', 'chlorophyll']);
   const verbs = ['capture', 'absorb', 'harness', 'convert', 'transform', 'store'];
   const past = (verb) => verb + (verb.endsWith('e') ? 'd' : 'ed');
   const pick = (values) => values[Math.floor(random() * values.length)];
-  const sample = (count) => {
-    const pool = subjects.slice();
+  const sampleFrom = (values, count) => {
+    const pool = values.slice();
     for (let index = pool.length - 1; index > 0; index -= 1) {
       const swap = Math.floor(random() * (index + 1));
       [pool[index], pool[swap]] = [pool[swap], pool[index]];
     }
     return pool.slice(0, count);
   };
-  const makeMalformedPassive = () => {
+  const sample = (count) => sampleFrom(subjects, count);
+  const makeMalformedPassive = (validityMode) => {
     const patterns = [
-      { id: 'comma-duplicate', count: 2, render: ([a, b]) => `${a}, and and ${b}`, members: ([a, b]) => [a, '', b] },
-      { id: 'plain-duplicate', count: 2, render: ([a, b]) => `${a} and and ${b}`, members: ([a, b]) => [a, '', b] },
-      { id: 'comma-empty', count: 2, render: ([a, b]) => `${a}, , and ${b}`, members: ([a, b]) => [a, '', b] },
-      { id: 'terminal-empty', count: 2, render: ([a, b]) => `${a}, ${b}, and`, members: ([a, b]) => [a, b, ''] },
-      { id: 'internal-empty', count: 3, render: ([a, b, c]) => `${a}, ${b}, , and ${c}`, members: ([a, b, c]) => [a, b, '', c] },
-      { id: 'duplicate-after-and', count: 3, render: ([a, b, c]) => `${a} and ${b} and and ${c}`, members: ([a, b, c]) => [a, b, '', c] },
-      { id: 'repeated-empty', count: 3, render: ([a, b, c]) => `${a}, and and ${b} and and ${c}`, members: ([a, b, c]) => [a, '', b, '', c] },
+      { id: 'comma-duplicate', count: 2, barriers: ['COMMA_AND', 'DUPLICATE_CONJUNCTION'], render: ([a, b]) => `${a}, and and ${b}`, members: ([a, b]) => [a, '', b] },
+      { id: 'plain-duplicate', count: 2, barriers: ['AND', 'DUPLICATE_CONJUNCTION'], render: ([a, b]) => `${a} and and ${b}`, members: ([a, b]) => [a, '', b] },
+      { id: 'comma-empty', count: 2, barriers: ['COMMA', 'EMPTY_MEMBER', 'COMMA_AND'], render: ([a, b]) => `${a}, , and ${b}`, members: ([a, b]) => [a, '', b] },
+      { id: 'terminal-empty', count: 2, barriers: ['SERIAL_COMMA', 'TRAILING_CONJUNCTION'], render: ([a, b]) => `${a}, ${b}, and`, members: ([a, b]) => [a, b, ''] },
+      { id: 'internal-empty', count: 3, barriers: ['SERIAL_COMMA', 'EMPTY_MEMBER', 'COMMA_AND'], render: ([a, b, c]) => `${a}, ${b}, , and ${c}`, members: ([a, b, c]) => [a, b, '', c] },
+      { id: 'duplicate-after-and', count: 3, barriers: ['AND', 'DUPLICATE_CONJUNCTION', 'AND'], render: ([a, b, c]) => `${a} and ${b} and and ${c}`, members: ([a, b, c]) => [a, b, '', c] },
+      { id: 'repeated-empty', count: 3, barriers: ['COMMA_AND', 'DUPLICATE_CONJUNCTION', 'AND', 'DUPLICATE_CONJUNCTION'], render: ([a, b, c]) => `${a}, and and ${b} and and ${c}`, members: ([a, b, c]) => [a, '', b, '', c] },
     ];
     const pattern = pick(patterns);
-    const members = sample(pattern.count);
+    const count = pattern.count;
+    const validMembers = sampleFrom(subjects, count);
+    const invalidMembers = sampleFrom(unsupportedSubjects, count);
+    const members = validityMode === 0 ? validMembers
+      : validityMode === 1 ? count === 2 ? [validMembers[0], invalidMembers[0]] : [validMembers[0], invalidMembers[0], validMembers[1]]
+        : validityMode === 2 ? count === 2 ? [invalidMembers[0], validMembers[0]] : [invalidMembers[0], validMembers[0], invalidMembers[1]]
+          : invalidMembers;
     const verbLemma = pick(verbs);
+    const validEntityCount = members.filter((surface) => supportedSubjectForms.has(evaluator.normalizeExactFormLemmaV2(surface))).length;
+    const passiveValidity = validEntityCount === members.length ? 'ALL_VALID' : validEntityCount === 0 ? 'ALL_INVALID' : 'MIXED_INVALID';
     return {
       type: 'malformed-passive',
       shape: pattern.id,
+      barrierTypes: pattern.barriers,
       text: `Light is ${past(verbLemma)} by ${pattern.render(members)}`,
       members: pattern.members(members),
+      passiveValidity,
       malformed: true,
       voice: 'PASSIVE',
       grammarShape: 'PASSIVE_LOCAL_AGENT',
       verbLemma,
       verbForm: 'PAST_PARTICIPLE',
+      lightForm: 'light',
       modal: null,
       supportMembers: [],
     };
@@ -3197,42 +3384,42 @@ function createMalformedPassiveHoldoutCase(random, familyIndex) {
     if (type === 'simple-active') {
       const subject = pick(subjects);
       const verbLemma = pick(verbs);
-      return { type, text: `${subject} ${past(verbLemma)} ${light}`, members: [subject], malformed: false, voice: 'ACTIVE', grammarShape: 'ACTIVE_SIMPLE', verbLemma, verbForm: 'PAST', modal: null, supportMembers: [] };
+      return { type, text: `${subject} ${past(verbLemma)} ${light}`, members: [subject], malformed: false, voice: 'ACTIVE', grammarShape: 'ACTIVE_SIMPLE', verbLemma, verbForm: 'PAST', lightForm: light, barrierTypes: [], modal: null, supportMembers: [] };
     }
     if (type === 'multiword-active') {
       const subject = pick(['green plants', 'photosynthetic bacteria', 'some bacteria']);
       const verbLemma = pick(['capture', 'absorb', 'harness', 'convert', 'transform']);
-      return { type, text: `${subject} ${past(verbLemma)} ${light}`, members: [subject], malformed: false, voice: 'ACTIVE', grammarShape: 'ACTIVE_SIMPLE', verbLemma, verbForm: 'PAST', modal: null, supportMembers: [] };
+      return { type, text: `${subject} ${past(verbLemma)} ${light}`, members: [subject], malformed: false, voice: 'ACTIVE', grammarShape: 'ACTIVE_SIMPLE', verbLemma, verbForm: 'PAST', lightForm: light, barrierTypes: [], modal: null, supportMembers: [] };
     }
     if (type === 'coordinated-active') {
       const members = sample(2);
       const verbLemma = pick(['capture', 'absorb', 'harness', 'convert', 'transform']);
-      return { type, text: `${members[0]} and ${members[1]} ${verbLemma} ${light}`, members, malformed: false, voice: 'ACTIVE', grammarShape: 'ACTIVE_SIMPLE', verbLemma, verbForm: 'BASE', modal: null, supportMembers: [] };
+      return { type, text: `${members[0]} and ${members[1]} ${verbLemma} ${light}`, members, malformed: false, voice: 'ACTIVE', grammarShape: 'ACTIVE_SIMPLE', verbLemma, verbForm: 'BASE', lightForm: light, barrierTypes: ['COORDINATED_SUBJECT_AND'], modal: null, supportMembers: [] };
     }
     if (type === 'mediated-active') {
       const members = sample(2);
-      return { type, text: `${members[0]} and ${members[1]} use chlorophyll to capture ${light}`, members, malformed: false, voice: 'ACTIVE', grammarShape: 'ACTIVE_INFINITIVAL_MEDIATED', verbLemma: 'capture', verbForm: 'BASE', modal: null, supportMembers: members.slice() };
+      return { type, text: `${members[0]} and ${members[1]} use chlorophyll to capture ${light}`, members, malformed: false, voice: 'ACTIVE', grammarShape: 'ACTIVE_INFINITIVAL_MEDIATED', verbLemma: 'capture', verbForm: 'BASE', lightForm: light, barrierTypes: ['COORDINATED_SUBJECT_AND'], modal: null, supportMembers: members.slice() };
     }
     if (type === 'modal-active') {
       const subject = pick(subjects);
       const verbLemma = pick(['capture', 'absorb', 'harness', 'convert', 'transform']);
-      return { type, text: `${subject} must ${verbLemma} ${light}`, members: [subject], malformed: false, voice: 'ACTIVE', grammarShape: 'ACTIVE_SIMPLE', verbLemma, verbForm: 'BASE', modal: 'must', supportMembers: [] };
+      return { type, text: `${subject} must ${verbLemma} ${light}`, members: [subject], malformed: false, voice: 'ACTIVE', grammarShape: 'ACTIVE_SIMPLE', verbLemma, verbForm: 'BASE', lightForm: light, barrierTypes: [], modal: 'must', supportMembers: [] };
     }
     if (type === 'valid-passive') {
       const members = sample(2);
       const verbLemma = pick(verbs);
-      return { type, text: `Light is ${past(verbLemma)} by ${members[0]} and ${members[1]}`, members, malformed: false, voice: 'PASSIVE', grammarShape: 'PASSIVE_LOCAL_AGENT', verbLemma, verbForm: 'PAST_PARTICIPLE', modal: null, supportMembers: [] };
+      return { type, text: `Light is ${past(verbLemma)} by ${members[0]} and ${members[1]}`, members, malformed: false, voice: 'PASSIVE', grammarShape: 'PASSIVE_LOCAL_AGENT', verbLemma, verbForm: 'PAST_PARTICIPLE', lightForm: 'light', barrierTypes: ['COORDINATED_AGENT_AND'], modal: null, supportMembers: [] };
     }
     const members = sample(2);
     const verbLemma = pick(verbs);
-    return { type, text: `${members[0]} and and ${members[1]} ${past(verbLemma)} ${light}`, members: [members[0], '', members[1]], malformed: true, voice: 'ACTIVE', grammarShape: 'ACTIVE_SIMPLE', verbLemma, verbForm: 'PAST', modal: null, supportMembers: [] };
+    return { type, text: `${members[0]} and and ${members[1]} ${past(verbLemma)} ${light}`, members: [members[0], '', members[1]], malformed: true, voice: 'ACTIVE', grammarShape: 'ACTIVE_SIMPLE', verbLemma, verbForm: 'PAST', lightForm: light, barrierTypes: ['AND', 'DUPLICATE_CONJUNCTION'], modal: null, supportMembers: [] };
   };
   const makeModal = () => {
     const subject = pick(subjects);
     const verbLemma = pick(['capture', 'absorb', 'harness', 'convert', 'transform']);
-    return { type: 'modal-active', text: `${subject} must ${verbLemma} sunlight`, members: [subject], malformed: false, voice: 'ACTIVE', grammarShape: 'ACTIVE_SIMPLE', verbLemma, verbForm: 'BASE', modal: 'must', supportMembers: [] };
+    return { type: 'modal-active', text: `${subject} must ${verbLemma} sunlight`, members: [subject], malformed: false, voice: 'ACTIVE', grammarShape: 'ACTIVE_SIMPLE', verbLemma, verbForm: 'BASE', lightForm: 'sunlight', barrierTypes: [], modal: 'must', supportMembers: [] };
   };
-  const badPassive = makeMalformedPassive();
+  const badPassive = makeMalformedPassive(validityMode);
   let frames;
   switch (familyIndex) {
     case 0: frames = [badPassive, makeValidActive()]; break;
@@ -3254,28 +3441,63 @@ function createMalformedPassiveHoldoutCase(random, familyIndex) {
     const candidate = pick(allowedBoundaries);
     boundaries.push(ambiguousBareAnd && candidate === ' and ' ? ', and ' : candidate);
   }
-  const context = pick(['', ' in photosynthesis', ' for photosynthesis']);
-  const contextTarget = familyIndex === 5 ? Math.floor(random() * 2) : frames.length - 1;
-  const text = frames.map((frame, index) => frame.text + (index === contextTarget ? context : '')).reduce((all, part, index) => all + (index ? boundaries[index - 1] : '') + part, '');
-  const boundaryClass = (boundary) => boundary.includes('.') ? 'SENTENCE'
-    : boundary.includes(';') || boundary.includes(':') ? 'HARD'
-      : boundary.includes('but') ? 'BUT' : 'AND';
-  const structuralKey = JSON.stringify({
-    frames: frames.map((frame) => ({
-      grammarShape: frame.grammarShape,
-      orderedSubjects: frame.members.map((surface) => surface ? evaluator.normalizeExactFormLemmaV2(surface) : ''),
-      coordinationType: frame.members.length > 1 ? 'AND' : 'SINGLE',
-      cardinality: frame.members.length,
-      malformed: frame.malformed,
-      voice: frame.voice,
-      verbLemma: frame.verbLemma,
-      verbForm: frame.verbForm,
-      modal: frame.modal,
-      mediatedSubjects: frame.supportMembers.map((surface) => evaluator.normalizeExactFormLemmaV2(surface)),
-    })),
-    boundaryTopology: boundaries.map(boundaryClass),
+  const context = pick([
+    { text: '', variant: 'NONE' },
+    { text: ' in photosynthesis', variant: 'IN' },
+    { text: ' for photosynthesis', variant: 'FOR' },
+  ]);
+  const contextEligibleFrames = frames.map((frame, index) => frame.type !== 'malformed-active' ? index : null).filter((index) => index !== null);
+  const contextTarget = context.variant === 'NONE' ? null : pick(contextEligibleFrames);
+  const contextBindingType = contextTarget === null ? 'NONE' : frames[contextTarget].voice === 'PASSIVE' ? 'LOCAL_ADJUNCT' : 'EXPLICIT_SUBJECT';
+  frames.forEach((frame, index) => {
+    frame.contextBindingType = frame.type === 'malformed-active' ? 'NONE'
+      : frame.voice === 'PASSIVE' ? index === contextTarget ? 'LOCAL_ADJUNCT' : 'NONE'
+        : 'EXPLICIT_SUBJECT';
   });
-  return { text, frames, boundaries, structuralKey, familyIndex };
+  const text = frames.map((frame, index) => frame.text + (index === contextTarget ? context.text : '')).reduce((all, part, index) => all + (index ? boundaries[index - 1] : '') + part, '');
+  const boundaryClass = (boundary) => boundary.includes('.') ? 'SENTENCE_END'
+    : boundary.includes(';') || boundary.includes(':') ? 'SEMICOLON_BARRIER'
+      : boundary.includes('but') ? boundary.includes(',') ? 'COMMA_BUT' : 'BUT'
+        : boundary.includes(',') ? 'COMMA_AND' : 'AND';
+  const frameSentenceIndices = [];
+  let sentenceIndex = 0;
+  for (let index = 0; index < frames.length; index += 1) {
+    frameSentenceIndices.push(sentenceIndex);
+    if (boundaries[index] && boundaryClass(boundaries[index]) === 'SENTENCE_END') sentenceIndex += 1;
+  }
+  const sentenceCount = sentenceIndex + 1;
+  const roleClass = (surface) => !surface ? 'EMPTY_MEMBER'
+    : surface === 'chlorophyll' ? 'PIGMENT_AGENT'
+      : supportedSubjectForms.has(evaluator.normalizeExactFormLemmaV2(surface)) ? 'BIOLOGICAL_AGENT' : 'UNSUPPORTED_AGENT';
+  const structuralKey = JSON.stringify({
+    frames: frames.map((frame, index) => ({
+      grammarShape: frame.grammarShape,
+      orderedSubjectLemmasAndRoleClasses: frame.members.map((surface) => ({
+        lemma: surface ? evaluator.normalizeExactFormLemmaV2(surface) : '',
+        roleClass: roleClass(surface),
+      })),
+      coordinationTypeAndCardinality: { type: frame.members.length > 1 ? 'AND' : 'SINGLE', cardinality: frame.members.length },
+      voice: frame.voice,
+      verbLemmaAndMorphology: { lemma: frame.verbLemma, form: frame.verbForm },
+      directObjectRoleAndNormalizedLightForm: { role: 'LIGHT_OBJECT', form: 'light-energy' },
+      objectBindingOrigin: frame.voice === 'PASSIVE' ? 'PASSIVE_SUBJECT' : 'ACTIVE_DIRECT_OBJECT',
+      auxiliaryChain: frame.voice === 'PASSIVE' ? ['is'] : frame.modal ? [frame.modal] : [],
+      modal: frame.modal,
+      controlChain: frame.type === 'mediated-active' ? ['USE', 'INFINITIVAL_TO'] : null,
+      polarityStructure: 'AFFIRMED',
+      orderedBarrierTypes: frame.barrierTypes || [],
+      clauseSentenceTopology: { frameSentenceIndex: frameSentenceIndices[index], sentenceCount },
+      contextBindingType: frame.contextBindingType,
+      pronounAntecedentTopology: [],
+      pigmentIdentity: frame.type === 'mediated-active' ? 'chlorophyll' : null,
+      invalidClaimType: frame.type === 'malformed-passive' ? frame.passiveValidity
+        : frame.type === 'malformed-active' ? 'MALFORMED_ACTIVE_COORDINATION' : null,
+      expectedDecision: false,
+    })),
+    orderedBarrierTypes: boundaries.map(boundaryClass),
+    clauseSentenceTopology: { sentenceCount, frameCount: frames.length },
+  });
+  return { text, frames, boundaries, structuralKey, familyIndex, validityMode, contextVariant: context.variant, contextType: contextBindingType, contextTarget };
 }
 
 function assertMalformedPassiveHoldoutCase(item, api) {
@@ -3290,9 +3512,19 @@ function assertMalformedPassiveHoldoutCase(item, api) {
     assert.equal(actual.malformed, expected.malformed, item.text);
     assert.deepEqual(normalizedTopologyMembers(actual), expected.members.map((surface) => surface ? evaluator.normalizeExactFormLemmaV2(surface) : ''), item.text);
     assert.equal(actual.coordinationTopology[0].cardinality, expected.members.length, item.text);
+    if (expected.contextBindingType !== 'NONE') {
+      assert.ok(actual.records.length > 0, item.text);
+      assert.ok(actual.records.every((record) => record.processContext === expected.contextBindingType), item.text);
+    }
     if (expected.malformed) {
       assert.ok(actual.records.every((record) => !record.qualifies), item.text);
       assert.equal(actual.records.some((record) => record.relationType === 'CHLOROPHYLL_SUPPORT' && record.qualifies), false, item.text);
+      if (expected.type === 'malformed-passive') {
+        const subjectValidity = expected.passiveValidity === 'ALL_INVALID' ? 'ALL_INVALID' : 'MIXED_INVALID';
+        assert.ok(actual.records.every((record) => record.voice === 'PASSIVE' && record.subjectValidity === subjectValidity
+          && record.verbLemma === expected.verbLemma && record.verbForm === expected.verbForm
+          && record.lightObject.binding === 'PASSIVE_SUBJECT'), item.text);
+      }
     } else if (expected.voice === 'PASSIVE') {
       const core = actual.records.filter((record) => record.relationType === 'CORE_LIGHT_RELATION' && record.qualifies);
       assert.ok(core.length > 0, item.text);
@@ -3311,49 +3543,123 @@ function assertMalformedPassiveHoldoutCase(item, api) {
   return result;
 }
 
-test('fresh deterministic malformed-passive holdout covers 4,500 unique structural keys with source/package parity', async () => {
+function normalizedHoldoutObservation(result) {
+  const normalize = (surface) => surface ? evaluator.normalizeExactFormLemmaV2(surface) : '';
+  const normalizeMember = ([surface, role]) => [role === 'UNSUPPORTED' ? 'UNSUPPORTED_SUBJECT' : normalize(surface), role];
+  const normalizeObject = (value) => value ? { role: value.role || null, normalized: value.normalized || value.lemma || null } : null;
+  const frames = frameProjection(result);
+  return JSON.stringify({
+    decision: result.passed,
+    polarity: result.polarity,
+    hasMalformed: result.hasMalformed,
+    topology: result.topology,
+    frames: frames.map((frame) => ({
+      sentenceIndex: frame.sentenceIndex,
+      clauseIndex: frame.clauseIndex,
+      malformed: frame.malformed,
+      subjectSets: frame.subjectSets.map((group) => group.map(normalizeMember)),
+      coordinationTopology: frame.coordinationTopology.map((topology) => ({
+        type: topology.type,
+        cardinality: topology.cardinality,
+        orderedMembers: topology.orderedMembers.map(normalizeMember),
+        shapeValid: topology.shapeValid,
+      })),
+      records: frame.records.map((record) => ({
+        relationType: record.relationType,
+        grammarShape: record.grammarShape,
+        subject: {
+          role: record.subjectSet?.role || null,
+          lemma: record.subjectSet?.role === 'UNSUPPORTED' ? 'UNSUPPORTED_SUBJECT' : normalize(record.subjectSet?.lemma || record.subjectSet?.surface),
+          valid: record.subjectSet?.valid ?? null,
+          coordinator: record.subjectSet?.coordinator || null,
+          shapeValid: record.subjectSet?.shapeValid ?? null,
+          subjectValidity: record.subjectValidity,
+        },
+        voice: record.voice,
+        verbLemma: record.verbLemma,
+        verbForm: record.verbForm,
+        auxiliaryChain: record.auxiliaryChain?.chain || [],
+        modal: record.modal,
+        controlChain: record.controlChain ? [record.controlChain.type, record.controlChain.surface] : null,
+        polarity: [record.polarity, record.polarityReason],
+        directObject: normalizeObject(record.directObject),
+        lightObject: record.lightObject ? { ...normalizeObject(record.lightObject), binding: record.lightObject.binding || null } : null,
+        instrument: normalizeObject(record.instrumentSet),
+        objectBarriers: record.objectBarriers?.type || null,
+        objectBarrierEncountered: record.objectBarrierEncountered,
+        processContext: record.processContext,
+        qualifies: record.qualifies,
+        rejectionReasons: record.rejectionReasons.slice().sort(),
+      })),
+    })),
+  });
+}
+
+function differingSemanticPaths(left, right, path = '') {
+  if (Object.is(left, right)) return [];
+  if (!left || !right || typeof left !== 'object' || typeof right !== 'object') return [path || '$'];
+  const keys = new Set([...Object.keys(left), ...Object.keys(right)]);
+  return [...keys].flatMap((key) => differingSemanticPaths(left[key], right[key], path ? `${path}.${key}` : key));
+}
+
+function semanticValueAt(value, path) {
+  return path.split('.').reduce((current, key) => current?.[key], value);
+}
+
+test('fresh deterministic malformed-passive holdout covers 5,400 cases and normalized structural keys with source/package parity', async () => {
   const packaged = await packageEvaluator();
-  const seeds = [0x63C7A291, 0xD48B5F06];
+  const seeds = [0x0D63249A, 0xCC53D5C3, 0x4A06223B];
   const cases = [];
   const keys = new Set();
   const inputs = new Set();
+  const fingerprints = new Set();
+  const fingerprintGroups = new Map();
   const familyCounts = Array(8).fill(0);
+  const validityCounts = { ALL_VALID: 0, MIXED_INVALID: 0, ALL_INVALID: 0 };
   const shapeCounts = Object.create(null);
   const boundaryCounts = Object.create(null);
-  const contextCases = { in: 0, for: 0, none: 0 };
+  const contextVariants = { IN: 0, FOR: 0, NONE: 0 };
+  const contextBindingCounts = { LOCAL_ADJUNCT: 0, EXPLICIT_SUBJECT: 0, NONE: 0 };
   for (const seed of seeds) {
     const random = holdoutRandom(seed);
     let accepted = 0;
-    for (let attempts = 0; accepted < 2250; attempts += 1) {
-      assert.ok(attempts < 200000, `holdout generator stalled for seed 0x${seed.toString(16)}`);
+    for (let attempts = 0; accepted < 1800; attempts += 1) {
+      assert.ok(attempts < 400000, `holdout generator stalled for seed 0x${seed.toString(16)}`);
       const familyIndex = accepted % 8;
-      const item = createMalformedPassiveHoldoutCase(random, familyIndex);
+      const validityMode = Math.floor(accepted / 8) % 4;
+      const item = createMalformedPassiveHoldoutCase(random, familyIndex, validityMode);
       if (keys.has(item.structuralKey) || inputs.has(item.text)) continue;
       keys.add(item.structuralKey);
       inputs.add(item.text);
       cases.push(item);
       familyCounts[familyIndex] += 1;
-      shapeCounts[item.frames.find((frame) => frame.type === 'malformed-passive').shape] =
-        (shapeCounts[item.frames.find((frame) => frame.type === 'malformed-passive').shape] || 0) + 1;
+      const malformedPassive = item.frames.find((frame) => frame.type === 'malformed-passive');
+      shapeCounts[malformedPassive.shape] = (shapeCounts[malformedPassive.shape] || 0) + 1;
+      validityCounts[malformedPassive.passiveValidity] += 1;
       for (const boundary of item.boundaries) {
-        const type = boundary.includes(', and') ? 'comma-and' : boundary.includes(' but') ? 'but'
-          : boundary.includes(';') ? 'semicolon' : boundary.includes('.') ? 'period' : 'plain-and';
+        const type = boundary === ', and ' ? 'COMMA_AND' : boundary === ' and ' ? 'AND'
+          : boundary === ', but ' ? 'COMMA_BUT' : boundary === ' but ' ? 'BUT'
+            : boundary === '; ' ? 'SEMICOLON' : 'PERIOD';
         boundaryCounts[type] = (boundaryCounts[type] || 0) + 1;
       }
-      if (item.text.includes(' in photosynthesis')) contextCases.in += 1;
-      else if (item.text.includes(' for photosynthesis')) contextCases.for += 1;
-      else contextCases.none += 1;
+      contextVariants[item.contextVariant] += 1;
+      contextBindingCounts[item.contextType] += 1;
       accepted += 1;
     }
   }
-  assert.equal(cases.length, 4500);
-  assert.ok(keys.size >= 3500, `unique normalized structural keys ${keys.size} < 3500`);
+  assert.equal(cases.length, 5400);
+  assert.ok(keys.size >= 4500, `unique normalized structural keys ${keys.size} < 4500`);
   assert.equal(keys.size, cases.length, 'holdout structural keys must be unique');
   const failures = [];
   for (const item of cases) {
     try {
       const source = assertMalformedPassiveHoldoutCase(item, evaluator);
       const built = assertMalformedPassiveHoldoutCase(item, packaged);
+      const fingerprint = evaluator.semanticCaseFingerprint(source);
+      fingerprints.add(fingerprint);
+      const group = fingerprintGroups.get(fingerprint) || [];
+      group.push({ item, observation: normalizedHoldoutObservation(source) });
+      fingerprintGroups.set(fingerprint, group);
       assert.deepEqual(built, source, item.text);
       assert.deepEqual(frameProjection(built), frameProjection(source), item.text);
       assert.equal(packaged.semanticCaseFingerprint(built), evaluator.semanticCaseFingerprint(source), item.text);
@@ -3365,7 +3671,25 @@ test('fresh deterministic malformed-passive holdout covers 4,500 unique structur
   }
   const failureFamilies = Object.create(null);
   for (const failure of failures) { const key = `family-${failure.family}/${failure.shape}`; failureFamilies[key] = (failureFamilies[key] || 0) + 1; }
-  console.log(`MALFORMED_PASSIVE_HOLDOUT ${JSON.stringify({ seeds: seeds.map((seed) => `0x${seed.toString(16).toUpperCase()}`), cases: cases.length, uniqueStructuralKeys: keys.size, familyCounts, shapeCounts, boundaryCounts, contextCases, materialFailures: failures.length, failureFamilies, examples: failures.slice(0, 24) })}`);
+  assert.ok(fingerprints.size >= 4500, `unique semantic fingerprints ${fingerprints.size} < 4500`);
+  const collisionGroups = [...fingerprintGroups.values()].filter((group) => group.length > 1);
+  const collisionTriage = collisionGroups.map((group) => {
+    const observations = new Set(group.map((entry) => entry.observation));
+    const parsedObservations = group.map((entry) => JSON.parse(entry.observation));
+    const expectedKeys = group.map((entry) => JSON.parse(entry.item.structuralKey));
+    const differingFields = [...new Set(expectedKeys.slice(1).flatMap((value) => differingSemanticPaths(expectedKeys[0], value)))].sort();
+    const differingObservedFields = [...new Set(parsedObservations.slice(1).flatMap((value) => differingSemanticPaths(parsedObservations[0], value)))].sort();
+    return {
+      classification: observations.size === 1 ? 'NORMALIZATION_EQUIVALENT' : 'SEMANTIC_FINGERPRINT_COLLISION',
+      reason: observations.size === 1 ? 'normalized source frames and relation records are identical' : 'normalized source observations differ under one fingerprint',
+      differingExpectedFields: differingFields,
+      differingObservedFields: differingObservedFields.map((path) => ({ path, values: parsedObservations.map((observation) => semanticValueAt(observation, path)) })),
+      cases: group.map(({ item }) => ({ input: item.text, family: item.familyIndex, shape: item.frames.find((frame) => frame.type === 'malformed-passive').shape, passiveValidity: item.frames.find((frame) => frame.type === 'malformed-passive').passiveValidity, contextBinding: item.contextType, contextVariant: item.contextVariant, boundaries: item.boundaries.map((boundary) => boundary === ', and ' ? 'COMMA_AND' : boundary === ' and ' ? 'AND' : boundary === ' but ' ? 'BUT' : boundary === ', but ' ? 'COMMA_BUT' : boundary === '; ' ? 'SEMICOLON' : 'SENTENCE_END') })),
+    };
+  });
+  assert.equal(collisionTriage.filter((group) => group.classification === 'SEMANTIC_FINGERPRINT_COLLISION').length, 0,
+    JSON.stringify(collisionTriage.filter((group) => group.classification === 'SEMANTIC_FINGERPRINT_COLLISION').slice(0, 8)));
+  console.log(`MALFORMED_PASSIVE_HOLDOUT ${JSON.stringify({ seeds: seeds.map((seed) => `0x${seed.toString(16).padStart(8, '0').toUpperCase()}`), cases: cases.length, uniqueNormalizedStructuralKeys: keys.size, uniqueSemanticFingerprints: fingerprints.size, familyCounts, validityCounts, shapeCounts, boundaryCounts, contextVariants, contextBindingCounts, materialFailures: failures.length, failureFamilies, fingerprintCollisionCount: collisionGroups.length, fingerprintCollisionCases: collisionGroups.reduce((sum, group) => sum + group.length, 0), fingerprintCollisionTriage: collisionTriage, examples: failures.slice(0, 24) })}`);
   assert.equal(failures.length, 0, JSON.stringify(failures.slice(0, 8)));
 });
 }

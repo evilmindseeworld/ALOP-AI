@@ -1,4 +1,4 @@
-// p1-static-compose-v1; evaluator-blob=3f33f42318578858eb93dd2d6a91b4519130efd0; runner-blob=2d0441ae9942be224ae27d2cc911b177a8d41eab; recipe-blob=2440f6c5c9c42248ca6439150fa6deea58be8848
+// p1-static-compose-v1; evaluator-blob=61ddd84be506be04ab3042cd9f97e6a7be6d1685; runner-blob=2d0441ae9942be224ae27d2cc911b177a8d41eab; recipe-blob=2440f6c5c9c42248ca6439150fa6deea58be8848
 import * as __p1Crypto from 'node:crypto';
 import { closeSync, openSync, readFileSync, unlinkSync, writeSync } from 'node:fs';
 import { createRequire, Module } from 'node:module';
@@ -1218,7 +1218,7 @@ function subjectPhraseWellFormedV2(subject){return subject.shapeValid!==false&&s
 function isStructurallyOwnedRoleSpanV2(subject) {
   if (subject.coordinator === 'COMMA') return false;
   if (subject.shapeValid !== false) return true;
-  if (subject.coordinator !== 'AND' || !subject.members.some((member) => member.valid)) return false;
+  if (subject.coordinator !== 'AND') return false;
   const members = subject.members.filter((member) => member.surface);
   if (members.length === subject.members.length) return false;
   const tokens = tokenizeV2(members.map((member) => member.surface).join(' and '));

@@ -10,7 +10,7 @@
   "repairBaseSha": "07e6cf5a2283c53a098b001978fec2a313384cb7",
   "repairBaseTreeSha": "71e6ab93e611d450ebe81ce85dd1f5ca5385c2a6",
   "repairStartHead": "07e6cf5a2283c53a098b001978fec2a313384cb7",
-  "implementationCommitSha": "a6d4cda81f8548f701232cee7932bc3cb2551b4c",
+  "implementationCommitSha": "38e974973e26be5b5af00aeae106eadfc0c6e591",
   "implementationTreeSha": "100733ca9dd45977816adaba4fae9e007047a35a",
   "implementationParentSha": "07e6cf5a2283c53a098b001978fec2a313384cb7",
   "implementationCommitShas": [
@@ -18,7 +18,8 @@
     "c72b03456fbb0065dab7b8993e9e08f153bec936",
     "d86afac5516847773ed55773f5d23150a0fea201",
     "44d5a21356e064f44968374dfbf7889f04c3cea1",
-    "a6d4cda81f8548f701232cee7932bc3cb2551b4c"
+    "a6d4cda81f8548f701232cee7932bc3cb2551b4c",
+    "38e974973e26be5b5af00aeae106eadfc0c6e591"
   ],
   "phase": "FINAL_EVIDENCE",
   "status": "PASS_P1_FINAL_STRUCTURAL_OWNERSHIP_MALFORMED_DISCOVERY_REPAIR_PRE_SOL",
@@ -5668,5 +5669,365 @@
       "ancestry": "ABSENT"
     },
     "nextAllowedStep": "FRESH_INDEPENDENT_GPT_6_1_SOL_MEDIUM_FINAL_SINGLE_ROOT_CLOSURE_AUDIT"
+  },
+  "allInvalidPassiveStructuralOwnershipRepair": {
+    "schemaVersion": 1,
+    "attemptId": "P1-ROOT-001B-ALL-INVALID-PASSIVE-OWNERSHIP-20261007",
+    "capturedAtUtc": "2026-10-07T14:36:06.395Z",
+    "finding": "P1-SOL-STRUCTURAL-OWNERSHIP-001",
+    "root": "ROOT_001B_MALFORMED_PASSIVE_BOUNDARY_COMMITMENT",
+    "status": "ROOT_FIXED_PRE_SOL",
+    "repairBase": {
+      "head": "9da5d06f3d146c8dc5bbd74bdb387e4adc367673",
+      "tree": "13660902bc6d4ff4006d014fe562ac8d6c3ccc2b"
+    },
+    "implementation": {
+      "head": "38e974973e26be5b5af00aeae106eadfc0c6e591",
+      "tree": "9a9d5b6764c3298baab471e4401ba5b624c586d4",
+      "parent": "9da5d06f3d146c8dc5bbd74bdb387e4adc367673",
+      "changedFiles": [
+        "backend/lib/photosynthesis-relation-evaluator.js",
+        "backend/lib/photosynthesis-relation-evaluator.test.js",
+        "backend/scripts/run-photosynthesis-relation-mutations.mjs"
+      ]
+    },
+    "structuralTrace": {
+      "stage": "splitIndependentConjunctionsV2 / isStructurallyOwnedRoleSpanV2",
+      "earliestPredicateBeforeRepair": "subject.coordinator !== AND OR no subject.members.some(member.valid)",
+      "allInvalidLeftSpanResult": "false",
+      "afterSiblingFirstValidMemberWasAbsorbed": "true",
+      "ownershipEffect": "semantic validity controlled whether the malformed passive span counted as structurally owned, changing comma-and boundary selection",
+      "repair": "removed only the semantic-validity requirement; retained AND shape, non-empty-member, and structural-terminus checks",
+      "sourceAfterRepair": "backend/lib/photosynthesis-relation-evaluator.js"
+    },
+    "package": {
+      "path": "backend/scripts/run-photosynthesis-relation-mutations.mjs",
+      "bytes": 138418,
+      "sha256": "2017efaa63b718bba27457df26d9319ed6b1f30a1f5022aaf041500efc8b46fd",
+      "deterministic": true,
+      "sourceBytes": 118150,
+      "evaluatorGitBlob": "61ddd84be506be04ab3042cd9f97e6a7be6d1685",
+      "builds": [
+        {
+          "name": "E",
+          "location": "independent final-build-e-20261007",
+          "bytes": 138418,
+          "sha256": "2017efaa63b718bba27457df26d9319ed6b1f30a1f5022aaf041500efc8b46fd"
+        },
+        {
+          "name": "F",
+          "location": "independent final-build-f-20261007",
+          "bytes": 138418,
+          "sha256": "2017efaa63b718bba27457df26d9319ed6b1f30a1f5022aaf041500efc8b46fd"
+        }
+      ],
+      "candidateAndBuildsByteIdentical": true,
+      "canonicalBuildRecipe": "all-invalid-passive-structural-ownership/logs/canonical-build-recipe.cjs",
+      "byteComparisonLog": "all-invalid-passive-structural-ownership/logs/package-byte-comparison.json"
+    },
+    "preservedOriginalAttestation": {
+      "path": "C:\\Users\\LENOVO\\Documents\\Codex\\2026-10-03\\files-pasted-by-the-user-alop-3\\outputs\\structural-closure-attestation.json",
+      "sha256": "ec314b7ded31e1c18121ec7b835fb03f63160ef5b3885074bd0eed7d63616837",
+      "unchanged": true
+    },
+    "frozenDesign": {
+      "path": "C:\\Users\\LENOVO\\Documents\\AI-Classroom-supervisor\\.alop-supervisor\\evidence\\designs\\photosynthesis-clause-relation-v2.json",
+      "sha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
+      "unchanged": true,
+      "binderPath": "C:\\Users\\LENOVO\\Documents\\AI-Classroom-supervisor\\tools\\supervisor\\design-binding.mjs",
+      "binderSha256": "01aac01eb74cdd312410d5ba8be5140bef9bed1163c75c2d966d980a0c29e0f8",
+      "binderUnchanged": true
+    },
+    "properties": {
+      "structuralOwnershipIndependentOfSemanticValidity": "PASS",
+      "backwardNextSiblingAbsorption": "FIXED",
+      "forwardPassiveMemberMigration": "PASS",
+      "allInvalidPassiveMemberLocality": "PASS",
+      "mixedValidityPassiveMemberLocality": "PASS",
+      "emptyMemberRetention": "PASS",
+      "activeSiblingOwnership": "PASS",
+      "mediatedSiblingSupportOwnership": "PASS",
+      "falsePassiveQualification": 0,
+      "falseCoreRelationFabrication": 0,
+      "exactNewAuditorBlocker": "PASS",
+      "exactNewMediatedVariant": "PASS",
+      "previousSolBlocker1": "PASS",
+      "previousSolBlocker2": "PASS",
+      "previousRoots": "PASS",
+      "historicalRegressions": "PASS",
+      "threeFrameStress": "PASS",
+      "sourcePackageMismatches": 0
+    },
+    "rootSpecificPropertyMatrix": {
+      "passed": 3000,
+      "total": 3000,
+      "failures": 0,
+      "allInvalidCases": 3000,
+      "coordinated": 2520,
+      "mediated": 480,
+      "contexts": {
+        "NONE": 1080,
+        "PROCESS_IN": 960,
+        "PURPOSE_FOR": 960
+      },
+      "patterns": [
+        429,
+        428,
+        429,
+        428,
+        429,
+        428,
+        429
+      ]
+    },
+    "broaderDirectedMatrix": {
+      "passed": 4797,
+      "total": 4797,
+      "failures": 0,
+      "sourcePackageMismatches": 0
+    },
+    "implementationHoldout": {
+      "cases": 5400,
+      "actualUniqueNormalizedSourceSemanticFingerprints": 5395,
+      "oracleNormalizedStructuralKeys": 5400,
+      "seeds": [
+        "0x0D63249A",
+        "0xCC53D5C3",
+        "0x4A06223B"
+      ],
+      "validityCounts": {
+        "ALL_VALID": 1368,
+        "MIXED_INVALID": 2688,
+        "ALL_INVALID": 1344
+      },
+      "familyCounts": [
+        675,
+        675,
+        675,
+        675,
+        675,
+        675,
+        675,
+        675
+      ],
+      "fingerprintCollisionGroups": 5,
+      "collisionCases": 10,
+      "collisionClassification": "NORMALIZATION_EQUIVALENT",
+      "differingObservedFields": [],
+      "materialFailures": 0
+    },
+    "propertiesByFamily": {
+      "passiveRole": 720,
+      "multiwordSubject": 88,
+      "malformedSibling": 432
+    },
+    "mutations": {
+      "newAC": "3/3 MEANINGFUL",
+      "newDG": "4/4 MEANINGFUL",
+      "newHI": "2/2 MEANINGFUL",
+      "newJ": "1/1 MEANINGFUL",
+      "newK": "NOT_ADDED_WITH_REASON",
+      "newKReason": "J kills active-core loss and mediated core/support loss for this retained root; K had no distinct mechanism",
+      "M1M10": "10/10 MEANINGFUL",
+      "semanticCorpusCases": 206,
+      "baselinePassed": 206,
+      "crashes": 0
+    },
+    "suites": {
+      "authoritative": "103/103",
+      "evaluator": "114/114",
+      "evaluation": "41/41",
+      "semanticCorpus": {
+        "cases": 206,
+        "uniqueFingerprints": 206,
+        "sourcePackageMismatches": 0
+      },
+      "v1Core": "22/22",
+      "backendIntelligenceV1": "21/21",
+      "v2BackendValidateOnly": "21/21",
+      "fullBackend": {
+        "passed": 2659,
+        "total": 2660,
+        "candidateCausedFailures": 0,
+        "knownEnvironmentBaseline": "deployment-config.test.js:372; runtime Node 26.4.0 while repository policy requires 26.7.0"
+      },
+      "frontend": {
+        "firstCandidateRun": "732/735",
+        "candidateRepeat": "734/735",
+        "exactBase": "734/735",
+        "candidateCausedFailures": 0,
+        "sharedBaselineFailure": "MagneticButton.test.jsx:72 identity/timing assertion",
+        "frontendFilesChanged": false
+      }
+    },
+    "providerValidation": {
+      "mode": "validate-only",
+      "providerCalls": 0,
+      "networkCalls": 0,
+      "modelInferenceTraffic": 0,
+      "deployments": 0,
+      "dataMutations": 0,
+      "v1Core": "22/22",
+      "backendIntelligenceV1": "21/21",
+      "v2Backend": "21/21"
+    },
+    "staticSpecialCaseSearchMatches": 0,
+    "holdoutSeedHistoricalHits": 0,
+    "quarantine": {
+      "commitShas": [
+        "8c5f9afef9151923539c6016a2d6c75947b2e639",
+        "090d1c99c1bbc3c85ef742fdbd0511e6ca728248"
+      ],
+      "ancestry": "ABSENT",
+      "firstIsAncestor": false,
+      "secondIsAncestor": false
+    },
+    "logEvidence": [
+      {
+        "name": "all-invalid-directed-final.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/all-invalid-directed-final.log",
+        "bytes": 532,
+        "sha256": "541d6c198a258e6a29b69038b747acb0069e0de79d148a885a55173c8c488b05"
+      },
+      {
+        "name": "authoritative.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/authoritative.log",
+        "bytes": 9753,
+        "sha256": "87c3f774929cc830109b1fe96fdcfc1a032bf13b09ba6994e49cd79195306bf4"
+      },
+      {
+        "name": "build-E-final.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/build-E-final.log",
+        "bytes": 328,
+        "sha256": "7665a21684612197cb970b0f8ec8cffc0457ed31e5525a46bf001968891c3eda"
+      },
+      {
+        "name": "build-F-final.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/build-F-final.log",
+        "bytes": 328,
+        "sha256": "0ad6bbc0f3604f77ee5d1d1ef8f45af8e97d971264c770a491608cefca9364ce"
+      },
+      {
+        "name": "canonical-build-recipe.cjs",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/canonical-build-recipe.cjs",
+        "bytes": 2012,
+        "sha256": "d104ced2b3c113be1807748a3a7092646c56ff647702db4700dc88ded8604900"
+      },
+      {
+        "name": "deterministic-build-e.mjs",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/deterministic-build-e.mjs",
+        "bytes": 138418,
+        "sha256": "2017efaa63b718bba27457df26d9319ed6b1f30a1f5022aaf041500efc8b46fd"
+      },
+      {
+        "name": "deterministic-build-f.mjs",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/deterministic-build-f.mjs",
+        "bytes": 138418,
+        "sha256": "2017efaa63b718bba27457df26d9319ed6b1f30a1f5022aaf041500efc8b46fd"
+      },
+      {
+        "name": "directed-matrix-final.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/directed-matrix-final.log",
+        "bytes": 692,
+        "sha256": "080f34ccff000508fb5de99953ee7d83560783e545493e4b990c8098b01e4b83"
+      },
+      {
+        "name": "evaluation.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/evaluation.log",
+        "bytes": 3573,
+        "sha256": "dc9540b9b5eaad51452056c016156e4476797f8bf2cf5008e2b5e6f3c1338651"
+      },
+      {
+        "name": "evaluator.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/evaluator.log",
+        "bytes": 18325,
+        "sha256": "7398fd3628bf8b3f233125479e1c3ffe7e49c61f865834222755495292f629a7"
+      },
+      {
+        "name": "frontend-candidate-repeat.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/frontend-candidate-repeat.log",
+        "bytes": 27286,
+        "sha256": "ad211f401df521585a5102996bef6c6e7105a7921b162fb9b2ea1f35c9475815"
+      },
+      {
+        "name": "frontend-exact-base.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/frontend-exact-base.log",
+        "bytes": 27756,
+        "sha256": "645dc8f1359a312f38757ba9fcfdeb4882a6df779dbfc69adc2aa696deeabb2d"
+      },
+      {
+        "name": "frontend.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/frontend.log",
+        "bytes": 27868,
+        "sha256": "2f0f87efe508ed9400f9ee1778bf17db74b9f95b47eb3c9c8bf690bc41969d41"
+      },
+      {
+        "name": "full-backend-installed.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/full-backend-installed.log",
+        "bytes": 215428,
+        "sha256": "a3dc94f446da158e162a7c068c91a0e62cb7c58a54f7bedaf417128d07218e27"
+      },
+      {
+        "name": "holdout-seed-search.json",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/holdout-seed-search.json",
+        "bytes": 437,
+        "sha256": "be38a0a0b0546b7dc92d79a1b44e4276e643734685995fe321623b8a5e64571a"
+      },
+      {
+        "name": "implementation-holdout-final.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/implementation-holdout-final.log",
+        "bytes": 6082,
+        "sha256": "df5521d1e451b7e3bf0f91c35fddd4899a99fa9bb948af3755604a143368ae9c"
+      },
+      {
+        "name": "implementation-holdout-triage.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/implementation-holdout-triage.log",
+        "bytes": 6178,
+        "sha256": "9f83e00a35edc098e8a42077c58f434c2398165f1a870c58ea9ebe8d1a1b5521"
+      },
+      {
+        "name": "M1-M10-runner.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/M1-M10-runner.log",
+        "bytes": 3462,
+        "sha256": "103de151f7a257f1da3b8548e36c2a0400582e2fe713d582ac9e1327ce381669"
+      },
+      {
+        "name": "mutations.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/mutations.log",
+        "bytes": 10578,
+        "sha256": "1a736454c68aafbedee3df5640dec84d9d9b85c49ce958caa99ed659e6e7ae0f"
+      },
+      {
+        "name": "package-byte-comparison.json",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/package-byte-comparison.json",
+        "bytes": 869,
+        "sha256": "574ad3e29171a8d81b5ad139b1885153030f81032dc75487672b2a01114cff4c"
+      },
+      {
+        "name": "static-special-case-search.json",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/static-special-case-search.json",
+        "bytes": 1280,
+        "sha256": "22c69e3bc23960c223db4c68ead96a22edad290eb33027a9c6cc118c547dd6e3"
+      },
+      {
+        "name": "v1-backend-validate.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/v1-backend-validate.log",
+        "bytes": 95,
+        "sha256": "a949a8a0c072b90f28be07a83dd78b272a725cbc1533253b29c3a441df18f79b"
+      },
+      {
+        "name": "v1-core-validate.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/v1-core-validate.log",
+        "bytes": 79,
+        "sha256": "6fe6785f4bbb6b14e98394e9947466dbca8c5f021abe0b7fef0a648714e50de5"
+      },
+      {
+        "name": "v2-backend-validate.log",
+        "relativePath": "all-invalid-passive-structural-ownership/logs/v2-backend-validate.log",
+        "bytes": 95,
+        "sha256": "11a887e42686af89b2f9c04ce71a808ad91a8a776eb334234a2e6893788ee27e"
+      }
+    ],
+    "nextAllowedStep": "FRESH_INDEPENDENT_GPT_6_1_SOL_MEDIUM_ALL_INVALID_PASSIVE_CLOSURE_AUDIT"
   }
 }

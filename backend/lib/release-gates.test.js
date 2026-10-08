@@ -9,6 +9,7 @@ const GOOD = {
   coverageRate: 1,
   acceptanceRate: 1,
   factualityPassRate: 1,
+  factualityMeasuredCases: 5,
   citationRate: 1,
   latencyP95Ms: 30_000,
   costCentsPerTurn: 2,
@@ -50,6 +51,24 @@ test("hard metric samples use measured denominators, not the total dataset size"
   assert.equal(verdict.results.find((r) => r.name === "cost-per-turn").sample, 9);
   assert.equal(verdict.results.find((r) => r.name === "cache-precision").sample, 2);
   assert.equal(verdict.passed, false);
+});
+
+test("factuality minimum sample uses the factuality denominator, not all cases", () => {
+  const verdict = evaluateGates({ ...GOOD, cases: 21, factualityMeasuredCases: 1 });
+  const factuality = verdict.results.find((result) => result.name === "factuality");
+  assert.equal(factuality.sample, 1);
+  assert.equal(factuality.status, "inconclusive");
+  assert.equal(verdict.passed, false);
+});
+
+test("factuality gate is pinned at 0.95, independent of the other quality thresholds", () => {
+  assert.equal(evaluateGates({ ...GOOD, factualityPassRate: 0.95 }).passed, true);
+  const below = evaluateGates({ ...GOOD, factualityPassRate: 0.949 });
+  assert.ok(below.failed.includes("factuality"), JSON.stringify(below));
+  const loweredThresholdMutantResult = evaluateGates({ ...GOOD, factualityPassRate: 0.75 });
+  assert.ok(loweredThresholdMutantResult.failed.includes("factuality"));
+  assert.equal(DEFAULT_GATES.find((gate) => gate.name === "factuality").threshold, 0.95);
+  assert.equal(DEFAULT_GATES.find((gate) => gate.name === "factuality").minSample, 5);
 });
 
 test("a measured breach fails at ANY sample size, and --allow-inconclusive cannot rescue it", () => {

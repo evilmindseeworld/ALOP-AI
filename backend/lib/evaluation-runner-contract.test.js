@@ -16,6 +16,7 @@ const BACKEND_ROOT = join(__dirname, '..');
 const RUNNER = join(BACKEND_ROOT, 'scripts', 'run-evals.mjs');
 const RUNNER_FIXTURE_FILES = [
   'lib/evaluation.js',
+  'lib/evaluation-diagnostics.js',
   'lib/release-gates.js',
   'lib/turn-accounting-meta.js',
   'lib/cache-validation.js',
@@ -114,6 +115,14 @@ test('fresh evaluation requires both the explicit CLI mode and its secret', () =
   assert.match(SOURCE, /cache_bypass_unconfirmed/);
 });
 
+test('runner persists bounded replay diagnostics without changing the grader input', () => {
+  assert.match(SOURCE, /answerReplayDiagnostics/);
+  assert.match(SOURCE, /withDiagnostics/);
+  assert.match(SOURCE, /diagnostics:\s*answerReplayDiagnostics\(observation\)/);
+  assert.doesNotMatch(SOURCE, /\.\.\.answerReplayDiagnostics\(observation\)/);
+  assert.match(SOURCE, /answer: observation\.answer\.slice\(0, 2000\)/);
+});
+
 test('a live gate requires a zero-price catalog freshness preflight before model calls', () => {
   assert.match(SOURCE, /zero-price-preflight/);
   assert.match(SOURCE, /ZERO_PRICE_PREFLIGHT/);
@@ -133,7 +142,7 @@ test('the cache validation phase is fixed, separate, and explicitly non-bypass',
 });
 
 test('quality manifests remain the cache-bypassed set', () => {
-  for (const name of ['core-v1', 'backend-intelligence-v1', 'backend-intelligence-v2', 'backend-intelligence-v1-recovery10']) {
+  for (const name of ['core-v1', 'backend-intelligence-v1', 'backend-intelligence-v1-recovery10', 'backend-intelligence-v2', 'backend-intelligence-v2-recovery10']) {
     assert.match(SOURCE, new RegExp(`"${name}"`));
   }
   assert.match(SOURCE, /QUALITY_CACHE_BYPASS_DATASETS/);
@@ -185,7 +194,7 @@ test('a present cache secret does not change validate-only behavior', async () =
 });
 
 test('validate-only keeps normal quality manifests offline and unchanged', async () => {
-  const names = ['core-v1', 'backend-intelligence-v1', 'backend-intelligence-v2', 'backend-intelligence-v1-recovery10'];
+  const names = ['core-v1', 'backend-intelligence-v1', 'backend-intelligence-v1-recovery10', 'backend-intelligence-v2', 'backend-intelligence-v2-recovery10'];
   const results = await Promise.all(names.map((name) => runRunner(['--validate-only', '--dataset', name])));
   for (const [index, result] of results.entries()) {
     assert.equal(result.code, 0, result.stderr);

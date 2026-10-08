@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "taskId": "alop-implementation-luna-photosynthesis-light-relation-v1",
+  "phase": "red",
+  "designVersion": "photosynthesis-light-relation-v1",
+  "designSha256": "70d5e9f2bff01bc85540726ce24e5cf481fb31dbc3a1fdb1ac6e034d46ed9a7e",
+  "approvedBaseSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
+  "redCommitSha": "2680e87540328e1eeb5da4a8212a6308e6c3d667",
+  "generatedCaseCount": 823,
+  "command": "cd backend && node --test lib/photosynthesis-relation-evaluator.test.js lib/p1-authoritative-repair-v2.test.js lib/p1-authoritative-repair-v2-mutation.test.js",
+  "exitCode": 1,
+  "expectedRed": true,
+  "passedBeforeIntentionalFailures": 39,
+  "failures": [
+    {
+      "test": "lib/photosynthesis-relation-evaluator.test.js",
+      "behavior": "The evaluator module does not exist yet."
+    },
+    {
+      "test": "photosynthesis evaluator integration uses the approved semantic evaluator",
+      "behavior": "The current regex factuality grader accepts a semantically false melanin/no-role answer."
+    },
+    {
+      "test": "photosynthesis M1 integration remains red until the semantic evaluator is wired",
+      "behavior": "The current regex factuality grader accepts the same semantically false answer."
+    }
+  ]
+}

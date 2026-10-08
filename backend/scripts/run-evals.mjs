@@ -24,8 +24,8 @@
  *   --allow-inconclusive  do not fail the run on an unmeasured gate
  *   --validate-only       check the dataset and exit, spending nothing
  *
- * IT COSTS REAL MONEY AND REAL QUOTA. Twenty-two cases is up to twenty-two
- * council turns, four of them research turns with the full roster, against an
+ * IT COSTS REAL MONEY AND REAL QUOTA. A full backend intelligence manifest is
+ * up to twenty-one council turns, four of them research turns with the full roster, against an
  * account-wide OpenRouter limit that the handoff measured at 20 requests a
  * minute. So: cases run ONE AT A TIME with a pause between them, never
  * concurrently. A parallel runner would be faster and would spend the whole run
@@ -55,6 +55,7 @@ import { randomUUID } from "node:crypto";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const require = createRequire(import.meta.url);
 const { loadDataset, gradeCase, summarise } = require("../lib/evaluation");
+const { answerReplayDiagnostics } = require("../lib/evaluation-diagnostics");
 const { mergeGates, evaluateGates, formatGates } = require("../lib/release-gates");
 const { measurementFromFrames, metricMeasurementFlags } = require("../lib/turn-accounting-meta");
 const {
@@ -86,8 +87,9 @@ const cacheBypassSecret = process.env.EVAL_CACHE_BYPASS_SECRET || "";
 const QUALITY_CACHE_BYPASS_DATASETS = new Set([
   "core-v1",
   "backend-intelligence-v1",
-  "backend-intelligence-v2",
   "backend-intelligence-v1-recovery10",
+  "backend-intelligence-v2",
+  "backend-intelligence-v2-recovery10",
 ]);
 
 if (cacheValidation && cacheBypass) {
@@ -125,7 +127,7 @@ if (!cacheValidation && !bool("validate-only") && QUALITY_CACHE_BYPASS_DATASETS.
  * writes that wait down as product latency.
  *
  * Ten requests a case against twenty a minute is one case per thirty seconds.
- * That makes a 22-case run about eleven minutes instead of ninety seconds, and
+ * That makes a 21-case run about eleven minutes instead of ninety seconds, and
  * the eleven minutes are the honest ones.
  *
  * IF THE ROSTER OR THE ROUTER CHANGES ITS REQUEST COUNT, THIS NUMBER IS WRONG.
@@ -408,6 +410,10 @@ async function runCase(testCase, {
   const firstByteAt = { value: null };
   const firstAnswerTokenAt = { value: null };
   const firstUsefulStageAt = { value: null };
+  const withDiagnostics = (observation) => ({
+    ...observation,
+    diagnostics: answerReplayDiagnostics(observation),
+  });
 
   try {
     const res = await fetch(`${base}/api/council`, {
@@ -458,7 +464,7 @@ async function runCase(testCase, {
       const body = await res.text().catch(() => "");
       let parsed = {};
       try { parsed = JSON.parse(body); } catch { /* not an envelope */ }
-      return {
+      return withDiagnostics({
         id: testCase.id,
         answer: "",
         frames,
@@ -467,13 +473,13 @@ async function runCase(testCase, {
         textSource: null,
         error: { code: parsed.code || `http_${res.status}`, text: parsed.error || body.slice(0, 200) },
         cacheStatus: res.headers.get("x-alop-cache-status"),
-      };
+      });
     }
 
     cacheStatus = res.headers.get("x-alop-cache-status");
     if (useCacheBypass && cacheStatus !== "bypass") {
       await res.body.cancel().catch(() => {});
-      return {
+      return withDiagnostics({
         id: testCase.id,
         answer: "",
         frames: [],
@@ -488,7 +494,7 @@ async function runCase(testCase, {
           code: "cache_bypass_unconfirmed",
           text: `The server did not confirm X-ALOP-Cache-Status=bypass (saw ${cacheStatus || "no header"}).`,
         },
-      };
+      });
     }
 
     // Frames are `data: {json}\n\n`, so buffer until a blank line rather than
@@ -528,7 +534,7 @@ async function runCase(testCase, {
   }
 
   const measurement = measurementFromFrames(frames, cacheStatus);
-  return {
+  return withDiagnostics({
     id: testCase.id,
     answer,
     frames,
@@ -543,7 +549,7 @@ async function runCase(testCase, {
     provenance: measurement.provenance,
     accounting: measurement.accounting,
     error,
-  };
+  });
 }
 
 /* ---- the run --------------------------------------------------------- */

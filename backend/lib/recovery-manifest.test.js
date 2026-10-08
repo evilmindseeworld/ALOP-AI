@@ -8,30 +8,51 @@ const { join } = require('node:path');
 const ROOT = join(__dirname, '..');
 const BACKEND_PATH = join(ROOT, 'evals', 'backend-intelligence-v1.json');
 const RECOVERY_PATH = join(ROOT, 'evals', 'backend-intelligence-v1-recovery10.json');
+const BACKEND_V2_PATH = join(ROOT, 'evals', 'backend-intelligence-v2.json');
+const RECOVERY_V2_PATH = join(ROOT, 'evals', 'backend-intelligence-v2-recovery10.json');
 
 const readJson = (path) => JSON.parse(readFileSync(path, 'utf8'));
 
 test('recovery manifest is a ten-case exact projection in fixed order', async () => {
   const {
-    RECOVERY_CASE_IDS,
+    RECOVERY_CASE_IDS_V1,
     assertRecoveryProjection,
     projectRecoveryManifest,
   } = await import('../scripts/recovery-manifest.mjs');
   const backend = readJson(BACKEND_PATH);
   const recovery = readJson(RECOVERY_PATH);
+  const projected = projectRecoveryManifest(backend, RECOVERY_CASE_IDS_V1);
+
+  assert.equal(RECOVERY_CASE_IDS_V1.length, 10);
+  assert.equal(new Set(RECOVERY_CASE_IDS_V1).size, 10);
+  assert.deepEqual(recovery.cases.map(({ id }) => id), RECOVERY_CASE_IDS_V1);
+  assert.deepEqual(recovery.cases, projected.cases);
+  assertRecoveryProjection(backend, recovery, RECOVERY_CASE_IDS_V1);
+});
+
+test('v2 recovery manifest is a deterministic ten-case projection of the v2 backend manifest', async () => {
+  const {
+    RECOVERY_CASE_IDS,
+    assertRecoveryProjection,
+    projectRecoveryManifest,
+  } = await import('../scripts/recovery-manifest.mjs');
+  const backend = readJson(BACKEND_V2_PATH);
+  const recovery = readJson(RECOVERY_V2_PATH);
   const projected = projectRecoveryManifest(backend);
 
+  assert.equal(backend.cases.length, 21);
   assert.equal(RECOVERY_CASE_IDS.length, 10);
-  assert.equal(new Set(RECOVERY_CASE_IDS).size, 10);
   assert.deepEqual(recovery.cases.map(({ id }) => id), RECOVERY_CASE_IDS);
   assert.deepEqual(recovery.cases, projected.cases);
+  assert.equal(recovery.name, 'backend-intelligence-v2-recovery10');
   assertRecoveryProjection(backend, recovery);
 });
 
 test('model-disagreement-value keeps the current backend expectation exactly', async () => {
   const { projectRecoveryManifest } = await import('../scripts/recovery-manifest.mjs');
   const backend = readJson(BACKEND_PATH);
-  const projected = projectRecoveryManifest(backend);
+  const { RECOVERY_CASE_IDS_V1 } = await import('../scripts/recovery-manifest.mjs');
+  const projected = projectRecoveryManifest(backend, RECOVERY_CASE_IDS_V1);
   const backendCase = backend.cases.find(({ id }) => id === 'model-disagreement-value');
   const recoveryCase = projected.cases.find(({ id }) => id === 'model-disagreement-value');
 

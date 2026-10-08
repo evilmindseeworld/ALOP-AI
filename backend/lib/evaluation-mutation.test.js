@@ -32,6 +32,16 @@ const mutateLine = (needle, replacement) => {
   return loadMutant(lines.join('\n'));
 };
 
+const mutateSource = (mutations) => {
+  let source = SOURCE;
+  for (const [needle, replacement] of mutations) {
+    const index = source.indexOf(needle);
+    assert.notEqual(index, -1, 'mutation anchor vanished from evaluation.js: ' + needle);
+    source = source.slice(0, index) + replacement + source.slice(index + needle.length);
+  }
+  return loadMutant(source);
+};
+
 const POEM = 'Endpoints whisper soft\nLogs scream in silent rows\nRetries spin, nothing works\nCoffee fuels the fix';
 
 /* ---- completeness mutants -------------------------------------------- */
@@ -302,4 +312,260 @@ test('M26: a final diminishing stance must survive earlier redundancy setup', ()
   );
   assert.equal(mutant.hasDiminishingValueReasoning(answer), false,
     'earlier positive wording must not veto the final diminishing stance');
+});
+
+/* ---- P1 authoritative repair v2 mutants ----------------------------- */
+
+const P1_SUMMARY = 'When a job fails, the worker retries it after a delay. A lease prevents two workers from owning the same job, but if the lease expires another worker may safely reclaim the job.';
+const P1_FACT_CASE = {
+  id: 'p1-fact',
+  question: 'What is the capital of Japan?',
+  expect: {},
+  factualityChecks: {
+    modelInvolved: true,
+    stableWhy: 'stable fixture',
+    assertions: [{
+      id: 'capital',
+      claim: "Japan's capital is Tokyo.",
+      patterns: ['\\btokyo\\b[^.!?;]{0,60}\\bcapital\\b[^.!?;]{0,60}\\bjapan\\b'],
+      forbiddenPatterns: ['\\b(?:tokyo|japan)\\b[^.!?;]{0,70}\\b(?:is|are|was|were)\\s+not\\b[^.!?;]{0,80}\\bcapital\\b'],
+    }],
+  },
+};
+
+test('M27: every summary relation must remain required', () => {
+  const answer = 'The worker retries healthy jobs after a delay. A lease prevents two workers from owning the same job. If the lease expires, another worker reclaims it.';
+  assert.equal(current.hasSummarySemantics(answer), false);
+  const mutant = mutateLine(
+    'failureRetryRelation: clauses.some(hasFailureRetryRelation),',
+    '    failureRetryRelation: true,',
+  );
+  assert.equal(mutant.hasSummarySemantics(answer), true,
+    'a retry without a failure relation must remain red');
+});
+
+test('M28: lease ownership must remain distinct from a lease and a worker', () => {
+  const answer = 'A worker retries a failed job. If the lease expires, another worker reclaims the job.';
+  assert.equal(current.hasSummarySemantics(answer), false);
+  const mutant = mutateLine(
+    'leaseOwnership: clauses.some(hasLeaseOwnershipRelation),',
+    '    leaseOwnership: true,',
+  );
+  assert.equal(mutant.hasSummarySemantics(answer), true,
+    'a lease without an ownership relation must remain red');
+});
+
+test('M29: reclaim-after-expiry must remain required', () => {
+  const answer = 'A worker retries a failed job. A lease prevents two workers from owning the same job.';
+  assert.equal(current.hasSummarySemantics(answer), false);
+  const mutant = mutateLine(
+    'reclaimAfterExpiry: clauses.some(hasReclaimAfterExpiryRelation),',
+    '    reclaimAfterExpiry: true,',
+  );
+  assert.equal(mutant.hasSummarySemantics(answer), true,
+    'reclaim without expiry must remain red');
+});
+
+test('M30: plural and inflected retry wording must not regress to the literal retry stem', () => {
+  assert.equal(current.hasSummarySemantics(P1_SUMMARY), true);
+  const mutant = mutateLine(
+    'const SUMMARY_RETRY_RE = /\\bretr(?:y|ies|ied|ying)\\b/i;',
+    'const SUMMARY_RETRY_RE = /\\bretry\\b/i;',
+  );
+  assert.equal(mutant.hasSummarySemantics(P1_SUMMARY), false,
+    'the stored retries wording must remain accepted');
+});
+
+test('M31: explicit negation must veto an otherwise topical retry relation', () => {
+  const answer = 'A worker does not retry a failed job. A lease prevents two workers from owning the same job. If the lease expires, another worker reclaims it.';
+  assert.equal(current.hasSummarySemantics(answer), false);
+  const mutant = mutateLine(
+    'if (SUMMARY_NEGATION_RE.test(text.replace(/\\bretr(?:y|ies|ied|ying)\\b/i, \'\'))) return false;',
+    '  if (false) return false;',
+  );
+  assert.equal(mutant.hasSummarySemantics(answer), true,
+    'negated retry claims must remain red');
+});
+
+test('M37: removing bounded hold support is caught by the exact live answer', () => {
+  const answer = 'A worker retries a failed job after a delay, and a lease mechanism ensures that only one worker can hold the job at any time. When the lease expires, another worker can safely take over the job.';
+  assert.equal(current.hasSummarySemantics(answer), true);
+  const mutant = mutateLine(
+    'const boundedPossession = /',
+    '  const boundedPossession = /a^/;',
+  );
+  assert.equal(mutant.hasSummarySemantics(answer), false,
+    'removing the bounded hold relation must be caught');
+});
+
+test('M38: removing take-over support is caught by the exact live answer', () => {
+  const answer = 'A worker retries a failed job after a delay, and a lease mechanism ensures that only one worker can hold the job at any time. When the lease expires, another worker can safely take over the job.';
+  assert.equal(current.hasSummarySemantics(answer), true);
+  const mutant = mutateLine(
+    'const SUMMARY_TRANSFER_RE = /',
+    'const SUMMARY_TRANSFER_RE = /\\breclaim(?:s|ed|ing)?\\b/i;',
+  );
+  assert.equal(mutant.hasSummarySemantics(answer), false,
+    'removing take-over vocabulary must be caught');
+});
+
+test('M39: hold without lease exclusivity must remain red', () => {
+  const answer = 'A worker retries a failed job. A lease is associated with a worker that can hold the job. If the lease expires, another worker reclaims the job.';
+  assert.equal(current.hasSummarySemantics(answer), false);
+  const mutant = mutateLine(
+    'const boundedPossession = /',
+    '  const boundedPossession = /\\blease\\b[^.!?;]{0,120}\\bworkers?\\b[^.!?;]{0,100}\\b(?:hold|holds|holding)\\b[^.!?;]{0,50}\\bjobs?\\b/i;',
+  );
+  assert.equal(mutant.hasSummarySemantics(answer), true,
+    'lease plus worker plus hold plus job must not be enough');
+});
+
+test('M40: takeover before expiry must remain red', () => {
+  const answer = 'A worker retries a failed job. A lease prevents two workers from owning the same job. Another worker can take over before the lease expires.';
+  assert.equal(current.hasSummarySemantics(answer), false);
+  const mutant = mutateLine(
+    'const cue = matchAfter(text, /\\b(?:after|when|once|upon|following)\\b/i, transfer?.end',
+    '  const cue = matchAfter(text, /\\b(?:after|before|when|once|upon|following)\\b/i, transfer?.end ?? text.length);',
+  );
+  assert.equal(mutant.hasSummarySemantics(answer), true,
+    'the expiry direction must remain part of the relation');
+});
+
+test('M41: takeover negation must remain a rejection', () => {
+  const answer = 'A worker retries a failed job. A lease prevents two workers from owning the same job. When the lease expires, another worker cannot take over the job.';
+  assert.equal(current.hasSummarySemantics(answer), false);
+  const mutant = mutateLine(
+    'if (SUMMARY_TRANSFER_NEGATION_RE.test(text)) return false;',
+    '  if (false) return false;',
+  );
+  assert.equal(mutant.hasSummarySemantics(answer), true,
+    'negated takeover must not pass');
+});
+
+test('M42: hold negation must remain a rejection', () => {
+  const answer = 'A worker retries a failed job. A lease does not ensure that only one worker holds the job. If the lease expires, another worker reclaims the job.';
+  assert.equal(current.hasSummarySemantics(answer), false);
+  const mutant = mutateLine(
+    'if (SUMMARY_OWNERSHIP_NEGATION_RE.test(text)) return false;',
+    '  if (false) return false;',
+  );
+  assert.equal(mutant.hasSummarySemantics(answer), true,
+    'negated hold exclusivity must not pass');
+});
+
+test('M43: wildcard lease ownership must remain red', () => {
+  const answer = 'A worker retries a failed job. Lease worker hold job one. If the lease expires, another worker reclaims the job.';
+  assert.equal(current.hasSummarySemantics(answer), false);
+  const relationGuard = [
+    '  if (!bounded.test(text) && !boundedExclusive.test(text) && !boundedWorkerExclusive.test(text)',
+    '    && !boundedPossession.test(text) && !boundedControlPossession.test(text)',
+    '    && !boundedJobWorkerControl.test(text)',
+    '    && !boundedJobWithWorker.test(text) && !reverse.test(text)) return false;',
+  ].join('\n');
+  const mutant = mutateSource([[relationGuard, '  if (false) return false;']]);
+  assert.equal(mutant.hasSummarySemantics(answer), true,
+    'a wildcard lease relation must be caught');
+});
+
+test('M44: wildcard expiry reclaim must remain red', () => {
+  const answer = 'A worker retries a failed job. A lease prevents two workers from owning the same job. Another worker takes over the job.';
+  assert.equal(current.hasSummarySemantics(answer), false);
+  const expiryGate = '  if (!SUMMARY_EXPIRY_RE.test(text) || !SUMMARY_WORKER_RE.test(text) || !SUMMARY_TRANSFER_RE.test(text)) return false;';
+  const relationGuard = '  if (!positive.some((pattern) => pattern.test(text)) && !hasForwardExpiryTransfer(text) && !hasReverseExpiryTransfer(text)) return false;';
+  const mutant = mutateSource([
+    [expiryGate, '  if (!SUMMARY_WORKER_RE.test(text) || !SUMMARY_TRANSFER_RE.test(text)) return false;'],
+    [relationGuard, '  if (false) return false;'],
+  ]);
+  assert.equal(mutant.hasSummarySemantics(answer), true,
+    'a wildcard expiry relation must be caught');
+});
+
+test('M32: a positive factuality pattern cannot be replaced with unconditional truth', () => {
+  const answer = "Japan's capital is unknown.";
+  const currentGrade = current.gradeCase(P1_FACT_CASE, { answer, frames: [] });
+  assert.equal(currentGrade.factuality.passed, false);
+  const mutant = mutateLine(
+    "new RegExp(normaliseUnicodeText(pattern), 'i').test(normalisedAnswer));",
+    '      true);',
+  );
+  assert.equal(mutant.gradeCase(P1_FACT_CASE, { answer, frames: [] }).factuality.passed, true,
+    'removing the positive assertion must be caught');
+});
+
+test('M33: forbidden factuality patterns cannot be discarded', () => {
+  const answer = 'Plants use chlorophyll to capture light energy, but plants do not use chlorophyll.';
+  const factCase = {
+    id: 'p1-plant-fact',
+    question: 'What is photosynthesis?',
+    expect: {},
+    factualityChecks: {
+      modelInvolved: true,
+      stableWhy: 'stable fixture',
+      assertions: [{
+        id: 'plant-claim',
+        claim: 'Plants use chlorophyll to capture light energy.',
+        patterns: ['\\bplants?\\b[^.!?;]{0,80}\\buse\\b[^.!?;]{0,60}\\bchlorophyll\\b[^.!?;]{0,100}\\blight\\s+energy\\b'],
+        forbiddenPatterns: ['\\bplants?\\b[^.!?;]{0,100}\\bdo\\s+not\\b[^.!?;]{0,60}\\buse\\b[^.!?;]{0,50}\\bchlorophyll\\b'],
+      }],
+    },
+  };
+  assert.equal(current.gradeCase(factCase, { answer, frames: [] }).factuality.passed, false);
+  const mutant = mutateLine(
+    'const forbidden = (assertion.forbiddenPatterns || []).filter((pattern) =>',
+    '    const forbidden = [].filter((pattern) =>',
+  );
+  assert.equal(mutant.gradeCase(factCase, { answer, frames: [] }).factuality.passed, true,
+    'a negated claim must remain red');
+});
+
+test('M34: factuality must not inherit the whole-case pass result', () => {
+  const factCase = { ...P1_FACT_CASE, expect: { maxLatencyMs: 50 } };
+  const grade = current.gradeCase(factCase, { answer: 'Tokyo is the capital of Japan.', frames: [], latencyMs: 100 });
+  assert.equal(grade.passed, false);
+  assert.equal(grade.factuality.passed, true);
+  assert.equal(current.summarise([grade], [{ id: factCase.id, answer: 'Tokyo is the capital of Japan.' }]).factualityPassRate, 1);
+  const mutant = mutateLine(
+    '.map((grade) => grade.factuality)',
+    '.map((grade) => ({ eligible: true, modelInvolved: true, measured: true, inconclusive: false, passed: grade.passed, assertions: [] }))',
+  );
+  assert.equal(mutant.summarise([grade], [{ id: factCase.id, answer: 'Tokyo is the capital of Japan.' }]).factualityPassRate, 0,
+    'a whole-case latency failure must not become factuality failure');
+});
+
+test('M35: model-free deterministic cases must stay out of model factuality', () => {
+  const deterministic = {
+    ...P1_FACT_CASE,
+    factualityChecks: { ...P1_FACT_CASE.factualityChecks, modelInvolved: false },
+  };
+  const observation = { answer: 'Tokyo is the capital of Japan.', frames: [] };
+  assert.equal(current.summarise(
+    [current.gradeCase(deterministic, observation)], [{ id: deterministic.id, ...observation }],
+  ).factualityEligibleModelCases, 0);
+  const mutant = mutateLine(
+    "if (spec.modelInvolved !== true) return { ...base, reason: 'model_not_involved' };",
+    '  if (false) return { ...base, reason: \'model_not_involved\' };',
+  );
+  assert.equal(mutant.summarise(
+    [mutant.gradeCase(deterministic, observation)], [{ id: deterministic.id, ...observation }],
+  ).factualityEligibleModelCases, 1,
+    'bypassing the model-involved guard must be caught');
+});
+
+test('M36: wildcard-only factuality assertions must remain invalid', () => {
+  const invalid = {
+    id: 'wildcard-fact',
+    question: 'q',
+    expect: {},
+    factualityChecks: {
+      modelInvolved: true,
+      stableWhy: 'stable fixture',
+      assertions: [{ id: 'a', claim: 'claim', patterns: ['.*'], forbiddenPatterns: [] }],
+    },
+  };
+  assert.ok(current.validateCase(invalid).some((problem) => problem.includes('wildcard-only')));
+  const mutant = mutateLine(
+    'if (/^(?:\\^)?\\.\\*(?:\\$)?$/.test(pattern.trim())) {',
+    '        if (false) {',
+  );
+  assert.deepEqual(mutant.validateCase(invalid), [], 'wildcard validation mutant must be caught');
 });

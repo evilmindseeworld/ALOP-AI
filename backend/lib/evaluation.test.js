@@ -596,16 +596,28 @@ test("toolSuccessRate counts tool_result frames, failures included", () => {
   assert.equal(summarise(grades, observations).toolSuccessRate, 2 / 3);
 });
 
-test("factualityPassRate reads the tag, so an untagged failure cannot dilute it", () => {
+test("factualityPassRate uses explicit model assertions and stays separate from whole-case acceptance", () => {
   const cases = [
-    caseOf({ mustInclude: ["4"] }, { id: "f1", tags: ["factuality"] }),
-    caseOf({ mustInclude: ["nope"] }, { id: "x1", tags: ["style"] }),
+    caseOf({ maxLatencyMs: 50 }, {
+      id: "f1",
+      tags: ["factuality"],
+      factualityChecks: {
+        modelInvolved: true,
+        stableWhy: "stable fixture",
+        assertions: [{ id: "fact", claim: "the answer says four", patterns: ["\\bfour\\b"], forbiddenPatterns: [] }],
+      },
+    }),
+    caseOf({}, { id: "x1", tags: ["style"] }),
   ];
-  const observations = [obs({ id: "f1", answer: "4" }), obs({ id: "x1", answer: "something else" })];
+  const observations = [obs({ id: "f1", answer: "The answer is four.", latencyMs: 100000 }), obs({ id: "x1", answer: "something else" })];
   const grades = cases.map((c) => gradeCase(c, observations.find((o) => o.id === c.id)));
   const metrics = summarise(grades, observations);
   assert.equal(metrics.factualityPassRate, 1);
+  assert.equal(metrics.factualityEligibleModelCases, 1);
+  assert.equal(metrics.factualityMeasuredCases, 1);
+  assert.equal(metrics.factualityAssertionCount, 1);
   assert.equal(metrics.acceptanceRate, 0.5);
+  assert.equal(grades[0].passed, false, "a broad whole-case failure must not erase the factuality result");
 });
 
 test("fresh-execution timing fields stay null until the runner observes them", () => {

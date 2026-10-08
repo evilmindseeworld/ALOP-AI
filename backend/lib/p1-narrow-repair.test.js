@@ -5,7 +5,6 @@ const assert = require('node:assert/strict');
 const { readFileSync } = require('node:fs');
 const { join } = require('node:path');
 const { gradeCase, loadDataset, summarise, inspectCompletionMetadata } = require('./evaluation');
-const { evaluateGates } = require('./release-gates');
 const { classifyFailureKind } = require('./failure-kind');
 const { degradeAnswer } = require('./synthesis-degrade');
 
@@ -34,10 +33,6 @@ const completeObservation = (id, answer, over = {}) => ({
 
 const caseById = (manifest, id) => manifest.cases.find((testCase) => testCase.id === id);
 
-/* This is the saved false negative on the clean base: the summary contains
- * the concepts, but `retry` is not a substring of `retries` and `failed` is
- * not a substring of `fails`. The versioned case fixes the expectation, not
- * the evaluator's general matching semantics. */
 test('the historical summary is red on its own valid concept-preserving output', () => {
   const testCase = caseById(oldManifest, 'user-text-summary');
   const answer = 'When a job fails, the worker retries it after a delay. A lease prevents two workers from owning the same job, but another worker may reclaim it after expiration.';
@@ -47,7 +42,7 @@ test('the historical summary is red on its own valid concept-preserving output',
   assert.ok(grade.failures.includes('mustMatch:retry|failed'));
 });
 
-test('the repaired summary accepts required retry and failure inflections', () => {
+test('summary inflections without reclaim-after-expiry remain incomplete', () => {
   const testCase = caseById(repairedManifest, 'user-text-summary-v2');
   const answers = [
     'The worker can retry a failed job after a delay. A lease prevents two workers from owning the same job.',
@@ -59,7 +54,7 @@ test('the repaired summary accepts required retry and failure inflections', () =
   ];
 
   const grades = answers.map((answer) => gradeCase(testCase, completeObservation(testCase.id, answer)));
-  assert.ok(grades.every((grade) => grade.passed), grades.map((grade) => grade.failures.join('|')).join('\n'));
+  assert.ok(grades.every((grade) => !grade.passed), grades.map((grade) => grade.failures.join('|')).join('\n'));
   assert.equal(grades.length, 6);
 });
 
@@ -73,26 +68,23 @@ test('summary negative controls without retry and failure concepts still fail', 
 
   const grades = answers.map((answer) => gradeCase(testCase, completeObservation(testCase.id, answer)));
   assert.ok(grades.every((grade) => !grade.passed), grades.map((grade) => grade.failures.join('|')).join('\n'));
-  assert.ok(grades.every((grade) => grade.failures.some((failure) => failure.startsWith('mustMatch:'))));
+  assert.ok(grades.every((grade) => grade.checks.some((check) => check.name === 'mustPreserveSummary' && !check.ok)));
 });
 
 test('the versioned manifest validates while the historical manifest stays unchanged', () => {
   assert.deepEqual(loadDataset(oldManifest).problems, []);
   assert.deepEqual(loadDataset(repairedManifest).problems, []);
   assert.equal(caseById(oldManifest, 'user-text-summary').expect.mustMatch.join('|'), 'retry|failed|lease|worker');
-  assert.equal(caseById(repairedManifest, 'user-text-summary-v2').expect.mustMatch[0], '\\b(?:retry|retries|retried)\\b');
+  assert.equal(caseById(repairedManifest, 'user-text-summary-v2').expect.mustPreserveSummary, 'worker-lease-retry-reclaim-v1');
 });
 
-const FACTUAL_FIXTURES = new Map([
-  ['simple-fact-japan-capital', 'Tokyo is the capital of Japan.'],
-  ['simple-explanation-photosynthesis', 'Photosynthesis is how plants use chlorophyll to capture light energy, make sugar, and release oxygen.'],
-  ['multi-step-break-even', 'The expected average is about 44 ms: 80% of requests take 5 ms and 20% miss to the 200 ms path. The cache needs invalidation to avoid stale results and must preserve consistency under load.'],
-  ['search-not-needed-binary-search', 'Binary search examines the middle of a sorted list and halves the remaining ordered range at each step, so its time complexity is logarithmic, O(log n). Each comparison discards half of the remaining candidates.'],
-  ['full-council-overkill-arithmetic', '57.8'],
-  ['timeless-definition-idempotency', 'Idempotency means repeating the same API request or operation has the same effect. For example, repeating a payment request with the same idempotency key does not create a second charge.'],
-  ['stable-fact-water-formula-v2', 'The chemical formula of water is H2O.'],
-  ['stable-fact-speed-of-light-v2', 'The speed of light in a vacuum is approximately 299,792,458 metres per second.'],
-]);
+const FACTUAL_FIXTURES = new Map(Object.entries({
+  'simple-fact-japan-capital': 'Tokyo is the capital of Japan.',
+  'simple-explanation-photosynthesis': 'Photosynthesis is how plants use chlorophyll to capture light energy and make food.',
+  'moderate-cache-tradeoff': 'A cache makes responses faster by reducing latency, but a stale cache can return wrong data, so invalidation and refresh matter.',
+  'search-not-needed-binary-search': 'Binary search works on a sorted array. It checks the middle and halves the remaining range, giving logarithmic time.',
+  'timeless-definition-idempotency': 'An idempotent API operation has the same effect when the request is repeated, without creating a duplicate side effect.',
+}));
 
 test('v1 factuality is genuinely unknown, not a zero or a hidden denominator', () => {
   const { cases, problems } = loadDataset(oldManifest);
@@ -104,30 +96,29 @@ test('v1 factuality is genuinely unknown, not a zero or a hidden denominator', (
   assert.equal(metrics.factualityPassRate, null);
 });
 
-test('v2 factuality is measurable over eight stable cases with only eligible cases counted', () => {
-  const factualCases = repairedManifest.cases.filter((testCase) => testCase.tags.includes('factuality'));
-  assert.equal(factualCases.length, 8);
+test('v2 factuality is measurable over five stable model-involved cases', () => {
+  const factualCases = repairedManifest.cases.filter((testCase) => testCase.factualityChecks?.modelInvolved);
+  assert.equal(factualCases.length, 5);
   assert.deepEqual(new Set(factualCases.map((testCase) => testCase.id)), new Set(FACTUAL_FIXTURES.keys()));
 
   const observations = factualCases.map((testCase) => completeObservation(testCase.id, FACTUAL_FIXTURES.get(testCase.id)));
   const grades = factualCases.map((testCase, index) => gradeCase(testCase, observations[index]));
-  assert.ok(grades.every((grade) => grade.passed), grades.map((grade) => grade.failures.join('|')).join('\n'));
+  assert.ok(grades.every((grade) => grade.factuality.passed), grades.map((grade) => grade.failures.join('|')).join('\n'));
   const metrics = summarise(grades, observations);
   assert.equal(metrics.factualityPassRate, 1);
-  assert.equal(metrics.evaluatedCases, 8);
-  assert.equal(metrics.factualityPassRate, 8 / 8);
+  assert.equal(metrics.evaluatedCases, 5);
+  assert.equal(metrics.factualityPassRate, 5 / 5);
 });
 
 test('an unmeasured factuality observation remains fail-closed', () => {
-  const testCase = caseById(repairedManifest, 'stable-fact-water-formula-v2');
+  const testCase = caseById(repairedManifest, 'simple-fact-japan-capital');
   const observation = completeObservation(testCase.id, '', { error: { code: 'provider_error', text: 'synthetic provider failure' } });
   const grade = gradeCase(testCase, observation);
   assert.equal(grade.inconclusive, true);
 
   const metrics = summarise([grade], [observation]);
   assert.equal(metrics.factualityPassRate, null);
-  const gate = evaluateGates({ ...metrics, cases: 8, evaluatedCases: 8, coverageRate: 1 });
-  assert.ok(gate.inconclusive.includes('factuality'));
+  assert.equal(metrics.factualityMeasuredCases, 0);
 });
 
 test('volatile current-information cases are not frozen into factuality', () => {

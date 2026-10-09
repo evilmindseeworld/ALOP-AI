@@ -1,0 +1,283 @@
+{
+  "schemaVersion": 1,
+  "designVersion": "photosynthesis-light-relation-v2",
+  "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
+  "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
+  "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
+  "repairAttemptId": "P1-FIVE-ROOT-CLOSURE-REPAIR-20261002",
+  "capturedAtUtc": "2026-10-02T00:51:17.494Z",
+  "repairBaseSha": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
+  "repairBaseTreeSha": "25e7623f2734ce2e111ef3da92dcac15a999d6d4",
+  "repairStartHead": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
+  "implementationCommitSha": "ca12d884731f772ef4048e547fae96be1dafffe6",
+  "implementationTreeSha": "c0b444d047fcb9fdbf71df79143ba4fcd152cd14",
+  "implementationParentSha": "d23f208d892542d9c984d83e587816a249bdd6df",
+  "implementationCommitShas": [
+    "d711c01b230b4095cf17ff3aa56e800436c51732",
+    "789cedff0091213315a0c33674f8081feb4b1a29",
+    "b56fd878325be4ba25bca6046234cd3bf51a7c6f",
+    "d23f208d892542d9c984d83e587816a249bdd6df",
+    "ca12d884731f772ef4048e547fae96be1dafffe6"
+  ],
+  "redCommitSha": null,
+  "redEvidenceCommitSha": null,
+  "phase": "SEMANTIC_COVERAGE",
+  "status": "PASS",
+  "projectionContract": {
+    "fieldCount": 18,
+    "fields": [
+      "grammarShape",
+      "orderedSubjectLemmasAndRoleClasses",
+      "coordinationTypeAndCardinality",
+      "voice",
+      "verbLemmaAndMorphology",
+      "directObjectRoleAndNormalizedLightForm",
+      "objectBindingOrigin",
+      "auxiliaryChain",
+      "modal",
+      "controlChain",
+      "polarityStructure",
+      "orderedBarrierTypes",
+      "clauseSentenceTopology",
+      "contextBindingType",
+      "pronounAntecedentTopology",
+      "pigmentIdentity",
+      "invalidClaimType",
+      "expectedDecision"
+    ],
+    "frameIdIncluded": false
+  },
+  "sourceCaseCount": 206,
+  "rawUniqueTextCount": 206,
+  "rawUniqueFingerprintCount": 206,
+  "uniqueSemanticFingerprintCount": 206,
+  "uniqueSemanticProjectionCount": 206,
+  "legitimateSemanticProjections": true,
+  "canonicalCaseCount": 54,
+  "canonicalCasesMatchFrozenDesign": true,
+  "classCounts": {
+    "AFFIRMATIVE_ACTIVE": 17,
+    "INFINITIVAL_CHLOROPHYLL_MEDIATED": 6,
+    "COORDINATED_PREDICATES": 6,
+    "COORDINATED_SUBJECTS_VALID": 6,
+    "UNCERTAIN_MODALITY": 12,
+    "KNOWN_REGRESSIONS": 8,
+    "DETACHED_OBJECT_DECOYS": 8,
+    "DIRECT_OBJECT_BARRIERS": 6,
+    "MALFORMED_SYNTAX": 9,
+    "DOUBLE_NEGATION": 6,
+    "NESTED_CONTROL": 10,
+    "AFFIRMATIVE_PASSIVE": 6,
+    "COORDINATED_SUBJECTS_MIXED_INVALID": 8,
+    "FINITE_PREDICATE_BARRIERS": 6,
+    "SENTENCE_BOUNDARY": 7,
+    "LOCAL_NEGATION": 8,
+    "NEGATED_MODALITY": 8,
+    "AFFIRMED_MODALITY": 4,
+    "UNRELATED_NEGATION": 6,
+    "CLAUSE_BOUNDARY": 8,
+    "PRONOUN_CONTINUATION": 9,
+    "INVALID_SUBJECT": 8,
+    "INVALID_OBJECT": 8,
+    "DESTRUCTIVE_RELATION": 6,
+    "WRONG_PIGMENT": 6,
+    "CONTRADICTION": 6,
+    "PUNCTUATION_ABUSE": 9,
+    "NO_STITCHING": 8
+  },
+  "allCorpusDecisionsMatch": true,
+  "expectationChanges": 0,
+  "semanticCoveragePass": true,
+  "mediatedPredicateCoverage": {
+    "rawValidationPropertyCases": 88,
+    "validControls": 44,
+    "frameBoundaryCases": 18,
+    "mediatedPredicatePaths": 21,
+    "mediatedSupportCases": 121,
+    "fingerprintOwnershipCases": 40,
+    "crossRootCompositions": 972,
+    "uniqueStructuralKeys": 972,
+    "sourcePackageMismatches": 0
+  },
+  "sourcePackageEquivalence": {
+    "status": "PASS",
+    "mismatches": 0,
+    "exceptions": 0,
+    "mediatedPredicate": {
+      "standaloneMalformedCases": 980,
+      "validControlCases": 245,
+      "sourcePackageParityReported": 1960,
+      "twoFrameSimpleSiblingCases": 1960,
+      "mediatedSiblingCases": 56,
+      "threeFrameCases": 84,
+      "crossSentenceCases": 84,
+      "totalCompositionCases": 2184,
+      "compositionParityChecked": true,
+      "compositionMismatches": 0,
+      "compositionExceptions": 0,
+      "mutationKills": {
+        "validationBypass": 980,
+        "wrongSubjectEnd": 980,
+        "droppedAttachment": 980,
+        "droppedFindingsProducedBeforeDrop": 980
+      }
+    },
+    "existingFrameLifecycle": {
+      "twoFrameCases": 1024,
+      "threeFrameCases": 256,
+      "sourcePackageParityInputs": 1280,
+      "mismatches": 0,
+      "exceptions": 0
+    },
+    "fiveRootClosure": {
+      "rawValidationPropertyCases": 88,
+      "validControls": 44,
+      "frameBoundaryCases": 18,
+      "mediatedPredicatePaths": 21,
+      "mediatedSupportCases": 121,
+      "fingerprintOwnershipCases": 40,
+      "crossRootCompositions": 972,
+      "uniqueStructuralKeys": 972,
+      "sourcePackageMismatches": 0
+    }
+  },
+  "datasetValidation": {
+    "status": "PASS",
+    "mode": "validate-only",
+    "validationOnly": true,
+    "liveAuth": false,
+    "noMutations": true,
+    "networkCalls": 0,
+    "providerCalls": 0,
+    "v1": {
+      "validated": 21,
+      "total": 21
+    },
+    "v2": {
+      "validated": 21,
+      "total": 21
+    }
+  },
+  "testMatrix": {
+    "authoritative": {
+      "passed": 103,
+      "total": 103,
+      "skipped": 0
+    },
+    "evaluator": {
+      "passed": 81,
+      "total": 81,
+      "skipped": 0
+    },
+    "evaluatorMutations": {
+      "passed": 27,
+      "total": 27,
+      "skipped": 0
+    },
+    "evaluation": {
+      "passed": 41,
+      "total": 41,
+      "skipped": 0
+    },
+    "authoritativeMutations": {
+      "passed": 20,
+      "total": 20,
+      "skipped": 0
+    },
+    "mediatedPredicateProperties": {
+      "passed": 3,
+      "total": 3,
+      "skipped": 0,
+      "malformedStandaloneCases": 980,
+      "validControlCases": 245,
+      "sourcePackageParityReported": 1960,
+      "compositionCases": 2184,
+      "compositionParityMismatches": 0,
+      "compositionParityExceptions": 0,
+      "mutationKills": {
+        "validationBypass": 980,
+        "wrongSubjectEnd": 980,
+        "droppedAttachment": 980
+      }
+    },
+    "frameLifecycleProperties": {
+      "twoFrameCases": 1024,
+      "threeFrameCases": 256,
+      "sourcePackageParityInputs": 1280,
+      "mismatches": 0,
+      "exceptions": 0
+    },
+    "fullBackend": {
+      "passed": 2602,
+      "total": 2603,
+      "failed": 1,
+      "skipped": 0,
+      "exitCode": 1,
+      "soleFailure": "every declared Node major is the one deploy/targets.json names; backend/package.json engines is 26.7.0",
+      "candidateCausedFailures": 0
+    },
+    "frontend": {
+      "passed": 735,
+      "total": 735,
+      "filesPassed": 58,
+      "filesTotal": 58,
+      "skipped": 0,
+      "command": "npm test -- --run --maxWorkers=1 --minWorkers=1"
+    },
+    "datasetV1": {
+      "validated": 21,
+      "total": 21,
+      "mode": "validate-only",
+      "providerCalls": 0,
+      "networkCalls": 0
+    },
+    "datasetV2": {
+      "validated": 21,
+      "total": 21,
+      "mode": "validate-only",
+      "providerCalls": 0,
+      "networkCalls": 0
+    },
+    "semanticCorpus": {
+      "passed": 206,
+      "total": 206,
+      "uniqueFingerprints": 206,
+      "expectationChanges": 0
+    },
+    "mutationRunnerM1M10": {
+      "killed": 10,
+      "total": 10,
+      "baselinePassed": 206,
+      "baselineFailed": 0
+    },
+    "newRootMutations": {
+      "killed": 5,
+      "total": 5
+    },
+    "fiveRootClosure": {
+      "rawValidationPropertyCases": 88,
+      "framePartitionPropertyCases": 972,
+      "multiMediatedSupportCases": 121,
+      "fingerprintOwnershipCases": 40,
+      "morphologyCases": 21,
+      "crossRootCompositions": 972,
+      "uniqueStructuralKeys": 972
+    },
+    "testChangeAccounting": {
+      "testsRemoved": 0,
+      "testsSkipped": 0,
+      "assertionsLoosened": 0,
+      "expectationsChanged": 0
+    }
+  },
+  "runtime": "v26.4.0",
+  "scopeGates": {
+    "astra": false,
+    "cq": false,
+    "candidateQualification": false,
+    "sol": false,
+    "release": false,
+    "deployment": false,
+    "p2": false
+  }
+}

@@ -1,0 +1,1929 @@
+{
+  "schemaVersion": 1,
+  "designVersion": "photosynthesis-light-relation-v2",
+  "designSha256": "7f66d836d88e0ab758a9c60884e1747b1dc3053a11706693614eb6d6bd607272",
+  "approvedBaseSha": "03c01ce23ead82762437286ebdab94d3485e0519",
+  "lineageRootSha": "2e5418bb06ceb4466abbd864391950f070570fb6",
+  "repairAttemptId": "P1-FIVE-ROOT-CLOSURE-REPAIR-20261002",
+  "capturedAtUtc": "2026-10-02T00:51:17.494Z",
+  "repairBaseSha": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
+  "repairBaseTreeSha": "25e7623f2734ce2e111ef3da92dcac15a999d6d4",
+  "repairStartHead": "5b6fc5909da0176d65ffa93599937db6dffe4b93",
+  "implementationCommitSha": "ca12d884731f772ef4048e547fae96be1dafffe6",
+  "implementationTreeSha": "c0b444d047fcb9fdbf71df79143ba4fcd152cd14",
+  "implementationParentSha": "d23f208d892542d9c984d83e587816a249bdd6df",
+  "implementationCommitShas": [
+    "d711c01b230b4095cf17ff3aa56e800436c51732",
+    "789cedff0091213315a0c33674f8081feb4b1a29",
+    "b56fd878325be4ba25bca6046234cd3bf51a7c6f",
+    "d23f208d892542d9c984d83e587816a249bdd6df",
+    "ca12d884731f772ef4048e547fae96be1dafffe6"
+  ],
+  "redCommitSha": "8a60634b867c14726f0b9530f389d96969e32b10",
+  "redEvidenceCommitSha": "9ce4424fc2f73f4fff6ed1aaaf00e9a52ff7b1ef",
+  "phase": "FINGERPRINT_INDEX",
+  "duplicatePolicy": "reject-global-duplicate",
+  "sourceCaseCount": 206,
+  "indexedCaseCount": 206,
+  "uniqueCount": 206,
+  "totalCaseCount": 206,
+  "canonicalCaseCount": 54,
+  "canonicalCaseBytesEncoding": "lowercase-hex-of-exact-UTF8-case-text",
+  "reproducedBy": "backend/lib/photosynthesis-relation-evaluator.js#semanticCaseFingerprint",
+  "rejectedDuplicates": [],
+  "classMinima": {
+    "AFFIRMATIVE_ACTIVE": 8,
+    "AFFIRMATIVE_PASSIVE": 6,
+    "INFINITIVAL_CHLOROPHYLL_MEDIATED": 6,
+    "COORDINATED_PREDICATES": 6,
+    "COORDINATED_SUBJECTS_VALID": 6,
+    "COORDINATED_SUBJECTS_MIXED_INVALID": 8,
+    "DETACHED_OBJECT_DECOYS": 8,
+    "DIRECT_OBJECT_BARRIERS": 6,
+    "FINITE_PREDICATE_BARRIERS": 6,
+    "MALFORMED_SYNTAX": 9,
+    "LOCAL_NEGATION": 8,
+    "UNCERTAIN_MODALITY": 12,
+    "NEGATED_MODALITY": 8,
+    "AFFIRMED_MODALITY": 4,
+    "NESTED_CONTROL": 10,
+    "DOUBLE_NEGATION": 6,
+    "UNRELATED_NEGATION": 6,
+    "CLAUSE_BOUNDARY": 8,
+    "SENTENCE_BOUNDARY": 6,
+    "PRONOUN_CONTINUATION": 6,
+    "INVALID_SUBJECT": 8,
+    "INVALID_OBJECT": 8,
+    "DESTRUCTIVE_RELATION": 6,
+    "WRONG_PIGMENT": 6,
+    "CONTRADICTION": 6,
+    "PUNCTUATION_ABUSE": 8,
+    "NO_STITCHING": 8,
+    "KNOWN_REGRESSIONS": 8
+  },
+  "entries": [
+    {
+      "caseId": "ACT-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206c6967687420656e6572677920696e746f206368656d6963616c20656e657267792e",
+      "semanticFingerprint": "7d04b019cb5f4a7a50ae3200a27c1ce50b9dac0ad4540a109f93b325a5bef343",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE"
+      ]
+    },
+    {
+      "caseId": "INF-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "12839845239d18a7cbbc82959b9c2433e1e40a5408326577e47a636848099d5a",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "INFINITIVAL_CHLOROPHYLL_MEDIATED"
+      ]
+    },
+    {
+      "caseId": "CP-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320616e642073746f726573206c6967687420656e657267792e",
+      "semanticFingerprint": "7830380efd8f89999e18c0a6ab2d413c09913d46dba8fc70aa6c85ba72a9fea5",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "COORDINATED_PREDICATES"
+      ]
+    },
+    {
+      "caseId": "CSV-001",
+      "canonicalCaseBytes": "506c616e747320616e6420616c6761652063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "9352a86ec2031c01cd22f61294351e39b4c264d251484e108305e8d6a8aeea29",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "COORDINATED_SUBJECTS_VALID"
+      ]
+    },
+    {
+      "caseId": "ADV001",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206d6179207573652063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "79f94706d71384752c7e60eb591fb29439152e85c433892c2a7604569efc9a53",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "UNCERTAIN_MODALITY",
+        "KNOWN_REGRESSIONS"
+      ]
+    },
+    {
+      "caseId": "ADV002",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f206361707475726520636172626f6e2064696f7869646520616e64206c69676874206973206e65617262792e",
+      "semanticFingerprint": "9dce189bc37e9931c0dd8ddd88b9aefcc6eb0fb8a4bf8c285af19a0800ecb790",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DETACHED_OBJECT_DECOYS",
+        "DIRECT_OBJECT_BARRIERS",
+        "KNOWN_REGRESSIONS"
+      ]
+    },
+    {
+      "caseId": "ADV003",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732063686c6f726f7068796c6c2063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "ea0e7ccebc5e42746b57d929abf2eb396ae11208b0a45af0b83b3e1051b3de74",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "MALFORMED_SYNTAX",
+        "KNOWN_REGRESSIONS"
+      ]
+    },
+    {
+      "caseId": "ADV004",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f74206661696c20746f207573652063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "c641f8924a0900868c16f3b01588fa519c6ae20628fcb455c980fd60797bf581",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "DOUBLE_NEGATION",
+        "NESTED_CONTROL",
+        "KNOWN_REGRESSIONS"
+      ]
+    },
+    {
+      "caseId": "ADV005",
+      "canonicalCaseBytes": "4c6967687420656e657267792069732063617074757265642062792063686c6f726f7068796c6c20647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "1f8b592073d9fc127c15e9069298cae6884643bdba79d97b23ec5b18f55ef34c",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_PASSIVE",
+        "KNOWN_REGRESSIONS"
+      ]
+    },
+    {
+      "caseId": "ADV006",
+      "canonicalCaseBytes": "416e696d616c7320616e6420706c616e7473207573652063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "b910ec78fee5dd88d7994f21e2a334c110724e54db2d05e471f782dda64dded9",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "COORDINATED_SUBJECTS_MIXED_INVALID",
+        "KNOWN_REGRESSIONS"
+      ]
+    },
+    {
+      "caseId": "CSI-002",
+      "canonicalCaseBytes": "506c616e747320616e6420616e696d616c73207573652063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "7c2bb9d0249ffdea55e4ac98aada09c7b48d71bf61396d738a0d71408392b49e",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "COORDINATED_SUBJECTS_MIXED_INVALID"
+      ]
+    },
+    {
+      "caseId": "CSI-003",
+      "canonicalCaseBytes": "506c616e74732c20616c6761652c20616e6420616e696d616c732063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "35e69c4f2eeb3fb990396b584c04a8c2281e4c633ddf8dcbd944f0ba27386a38",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "COORDINATED_SUBJECTS_MIXED_INVALID"
+      ]
+    },
+    {
+      "caseId": "SEP-001",
+      "canonicalCaseBytes": "416e696d616c73206d6f7665206e65617262792c20616e6420706c616e74732063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "e30029fcbd5b0ffcf7cf00f752f7f8df9450836c6ba0ef595a8aecaaabcb61a1",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "COORDINATED_SUBJECTS_VALID"
+      ]
+    },
+    {
+      "caseId": "DOB-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f78696465206e656172206c6967687420656e657267792e",
+      "semanticFingerprint": "4d9a5c156fcf0fd44229d57623f3352658e71f10be70d4e25d08edb3ab36501f",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DIRECT_OBJECT_BARRIERS"
+      ]
+    },
+    {
+      "caseId": "FPB-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f78696465207768696c65206c6967687420656e657267792069732070726573656e742e",
+      "semanticFingerprint": "01bc24d2e62b88eed22bfc0ce0fbce50f0620838757f14e599e41dfa17307598",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "FINITE_PREDICATE_BARRIERS"
+      ]
+    },
+    {
+      "caseId": "SB-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c732e204c6967687420656e65726779206578697374732e",
+      "semanticFingerprint": "39a9c3ba757ce26cfbb7452813742824c7a5c14acd0749d9b5249c91ce70efa7",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "SENTENCE_BOUNDARY"
+      ]
+    },
+    {
+      "caseId": "MAL-002",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206c6967687420656e6572677920636170747572652063686c6f726f7068796c6c2e",
+      "semanticFingerprint": "4d60db5aeb619d45c1071b218e56d2f4b9b6f868edb9a622450e7c06ebfaede9",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "MALFORMED_SYNTAX"
+      ]
+    },
+    {
+      "caseId": "MAL-003",
+      "canonicalCaseBytes": "43686c6f726f7068796c6c206c696768742070686f746f73796e74686573697320636170747572657320656e657267792e",
+      "semanticFingerprint": "34afdef9ddb81e88210d2a8c38eb4ff89a78643a0a0accf520b2a047d78ccadf",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "MALFORMED_SYNTAX"
+      ]
+    },
+    {
+      "caseId": "NEG-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f742063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "e9be9e071a345612d16220c63e884d188b6e21154c7a08144b555c4e9b20ab94",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "LOCAL_NEGATION"
+      ]
+    },
+    {
+      "caseId": "MOD-CAN",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732063616e2063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "6bed1f3fb3f1330fd0fcb830d6225a4118ae8625779b7d93232943b024d4c4a0",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "UNCERTAIN_MODALITY"
+      ]
+    },
+    {
+      "caseId": "MOD-CANNOT",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732063616e6e6f742063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "192d59977e20423f2edd84793839a04277dd78527dd997aaebe68007409b540f",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NEGATED_MODALITY"
+      ]
+    },
+    {
+      "caseId": "MOD-CANT",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732063616e27742063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "f071f0434941d8d2de4451e4a358aa8570c46eab0c5cf0308ab8a2df701bf2a4",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NEGATED_MODALITY"
+      ]
+    },
+    {
+      "caseId": "MOD-MAY",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206d61792063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "92d3666956e2d6debe33bd5caa6b56a51ce7e791b38a38c6a83fa6afbfd7c3a0",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "UNCERTAIN_MODALITY"
+      ]
+    },
+    {
+      "caseId": "MOD-MAYNOT",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206d6179206e6f742063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "31a77186b8baa571b2fff957fc92538977742e68a5ec38d669412a92c5ffc830",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "UNCERTAIN_MODALITY"
+      ]
+    },
+    {
+      "caseId": "MOD-MIGHT",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206d696768742063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "2946c4b7c3079f1f50ed98bb5f12c5d23a4b15c40175eec26498296c59e285e2",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "UNCERTAIN_MODALITY"
+      ]
+    },
+    {
+      "caseId": "MOD-MIGHTNOT",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206d69676874206e6f742063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "45dc6a0bd8caa740fc50469817ced955f850f1c144e1015670b9e11fc2a8ef8f",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "UNCERTAIN_MODALITY"
+      ]
+    },
+    {
+      "caseId": "MOD-COULD",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f756c642063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "1698b926033f149a155ddacf28c51d093b3c9e2d209ff0beee03b0c9b8b05753",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "UNCERTAIN_MODALITY"
+      ]
+    },
+    {
+      "caseId": "MOD-COULDNOT",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f756c64206e6f742063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "347bb92c82414f080f7241f143bf2fffb5a48ae9e0c70e3cbade60c886dd3678",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NEGATED_MODALITY"
+      ]
+    },
+    {
+      "caseId": "MOD-MUST",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206d7573742063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "4bf754297bd846b1a7141789b0ecac22383ca0a2ae1b462b78065f3d460544ff",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMED_MODALITY"
+      ]
+    },
+    {
+      "caseId": "MOD-MUSTNOT",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206d757374206e6f742063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "4299b9968857c2e24dd26c373044890ada88152e1a7a874b3dc41ab01e9b409a",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NEGATED_MODALITY"
+      ]
+    },
+    {
+      "caseId": "MOD-SHOULD",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732073686f756c642063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "bdd5453084c13e1b2aa684378111db8259ddb199f2ba39ae893aae5cb538a614",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "UNCERTAIN_MODALITY"
+      ]
+    },
+    {
+      "caseId": "MOD-SHOULDNOT",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732073686f756c64206e6f742063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "9cc157fa60f7935a9743d6e7289a947c166622e2f3ac3701b96fbc7770cb57d8",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "UNCERTAIN_MODALITY"
+      ]
+    },
+    {
+      "caseId": "MOD-WOULD",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320776f756c642063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "4418dab6185d68a145db7596c8ecc6864345fd387e1644814435c814ad7caa1c",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "UNCERTAIN_MODALITY"
+      ]
+    },
+    {
+      "caseId": "MOD-WOULDNOT",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320776f756c64206e6f742063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "71d5648944322d98d3467e54e46d835a3aa859148d73e6c8aba8fd197f53039f",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "UNCERTAIN_MODALITY"
+      ]
+    },
+    {
+      "caseId": "CTRL-FAIL",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206661696c7320746f2063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "e051d8d2d9660e1f437e3996cc4cea4b9bc8807c93ac0759b73b361857111b47",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NESTED_CONTROL"
+      ]
+    },
+    {
+      "caseId": "CTRL-FAILED",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206661696c656420746f2063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "be64ec806f0719ef710c1be5bace756a82808d542ddcaff7b3ac6a9734328a83",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NESTED_CONTROL"
+      ]
+    },
+    {
+      "caseId": "CTRL-DIDNOTFAIL",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320646964206e6f74206661696c20746f2063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "bd2f40aa777e96df5f836fca5b7d9bbe2830bea3497275056dad739618874f5f",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "DOUBLE_NEGATION"
+      ]
+    },
+    {
+      "caseId": "CTRL-NEVERFAIL",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206e65766572206661696c7320746f2063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "ed334dd50f65052b2e514151cd76bc508349c84fbe37ea09dbf974970c1eec33",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "DOUBLE_NEGATION"
+      ]
+    },
+    {
+      "caseId": "CTRL-NOTAPPEAR",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f742061707065617220746f2063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "6deec489d97d3dfbc6a6b9246e8db3b97b5b5aeb68dd8d73d1e96a70fc24a4af",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NESTED_CONTROL"
+      ]
+    },
+    {
+      "caseId": "CTRL-APPEARNOT",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732061707065617273206e6f7420746f2063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "ceae1ac32892c038021ccee467f1ccdcbc61a05860aada8c816b225616d96f6d",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NESTED_CONTROL"
+      ]
+    },
+    {
+      "caseId": "CTRL-NOTSEEM",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f74207365656d20746f2063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "ab6763c3db88bc388276e5ea408f6ecd664611176c3f40aa57628daa52792961",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NESTED_CONTROL"
+      ]
+    },
+    {
+      "caseId": "CTRL-SEEMNOT",
+      "canonicalCaseBytes": "50686f746f73796e746865736973207365656d73206e6f7420746f2063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "78a88de8ea28c484a837bd8f73f63fbf6edede05c64dcf3a3be3a9e5460371ba",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NESTED_CONTROL"
+      ]
+    },
+    {
+      "caseId": "UNN-001",
+      "canonicalCaseBytes": "416e696d616c7320646f206e6f74206d6f76652c20616e642070686f746f73796e746865736973206361707475726573206c6967687420656e657267792e",
+      "semanticFingerprint": "5644330f14f8940b16faa65599046b050af6a85a33a54451a5b482ce420f4b8a",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "UNRELATED_NEGATION"
+      ]
+    },
+    {
+      "caseId": "CB-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653b206c6967687420656e657267792069732070726573656e742e",
+      "semanticFingerprint": "a60269eec50776b46847174bc84fe404116907b433a860da2721aab0395135d9",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "CLAUSE_BOUNDARY"
+      ]
+    },
+    {
+      "caseId": "PRON-001",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206361707475726573206c6967687420656e6572677920616e642073746f7265732069742e",
+      "semanticFingerprint": "67d4dfaf11fdf3d7b7fbf7ac96db160db4caeb69647f64fb83b39fbccf65c22a",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "PRONOUN_CONTINUATION"
+      ]
+    },
+    {
+      "caseId": "PRON-002",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f7869646520616e642073746f726573206974206e656172206c6967687420656e657267792e",
+      "semanticFingerprint": "f979e6b9f0004131e0831c80f990576c29b266e9729357f01944c77a0ef81fce",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "PRONOUN_CONTINUATION"
+      ]
+    },
+    {
+      "caseId": "IS-001",
+      "canonicalCaseBytes": "416e696d616c732063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "432eb923a2e6215dc9a0c989fe7b255288b3722b65779853e38b7af092ba29b2",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "INVALID_SUBJECT"
+      ]
+    },
+    {
+      "caseId": "IO-001",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206361707475726573206865617420656e657267792e",
+      "semanticFingerprint": "1cecde0ef35e2053e9c75ccea2347fff7fdc4054dad2af3c6e9aaea3edcf95df",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "INVALID_OBJECT"
+      ]
+    },
+    {
+      "caseId": "DEST-001",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732064657374726f7973206c6967687420656e657267792e",
+      "semanticFingerprint": "2d666b0a02d61f631c49e08ef29545c0244198574e83fe05c44d014723f803d3",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DESTRUCTIVE_RELATION"
+      ]
+    },
+    {
+      "caseId": "WP-001",
+      "canonicalCaseBytes": "4d656c616e696e20726174686572207468616e2063686c6f726f7068796c6c20636170747572657320746865206c6967687420666f722070686f746f73796e7468657369732e",
+      "semanticFingerprint": "cbf993423ce2be715b3da596d7548768ef09d7c9c8e79b5288402ca42feb1038",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "WRONG_PIGMENT"
+      ]
+    },
+    {
+      "caseId": "CON-001",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206361707475726573206c6967687420656e657267792062757420646f6573206e6f742063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "b595b085e36632c3c3c6a8e2a4175e0fafb22030d3ff267569d185cd7104cdfb",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "CONTRADICTION"
+      ]
+    },
+    {
+      "caseId": "PUN-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f78696465212121204c6967687420656e65726779206578697374732e",
+      "semanticFingerprint": "b86982566ab0ad38c06fdc87d4038f5f63c7628c1967555831ff391d05e11135",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "PUNCTUATION_ABUSE"
+      ]
+    },
+    {
+      "caseId": "NS-001",
+      "canonicalCaseBytes": "43686c6f726f7068796c6c2069732070726573656e743b20616e696d616c732063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "ac85c15d8da0945157073f7f48ef3a5eec243ffc339e7627593c481a774b32ce",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NO_STITCHING"
+      ]
+    },
+    {
+      "caseId": "KREG-001",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206973207468652070726f6365737320627920776869636820677265656e20706c616e74732c20616c6761652c20616e6420736f6d6520626163746572696120636f6e76657274206c6967687420656e6572677920696e746f206368656d6963616c20656e657267792c2073746f72696e6720697420696e20676c75636f7365206d6f6c6563756c65732e204974207573657320636172626f6e2064696f7869646520616e642077617465722c2072656c656173696e67206f787967656e206173206120627970726f647563742c20616e642069732064726976656e2062792063686c6f726f7068796c6c20696e207468652070726573656e6365206f662073756e6c696768742e",
+      "semanticFingerprint": "a9abc8f81408caf1e6e9bb4bac92705f69ecaa99351ffb8cf81edc89ba0c93f3",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE",
+        "KNOWN_REGRESSIONS"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_ACTIVE-001",
+      "canonicalCaseBytes": "506c616e74732063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "8f5c7a4b60e1419d4b36ade29a6c907fe7321d0d3aa34dbab1e765b943dc1720",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_ACTIVE-002",
+      "canonicalCaseBytes": "506c616e7473206162736f7262206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "03eb5ddee0652f8dd25c06d72c9865b6d30d9a24847aac0462866c8a7495c873",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_ACTIVE-003",
+      "canonicalCaseBytes": "506c616e7473206861726e657373206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "0dfe7598f7e8c81268b1d39b9e5677b70dbb04508cedefb390ab19deda6f19d2",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_ACTIVE-004",
+      "canonicalCaseBytes": "506c616e747320757365206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "e918db8f340c414aa43652aa773bd59d3a4703e527ced979ea8aec71b57b1527",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_ACTIVE-005",
+      "canonicalCaseBytes": "506c616e747320636f6e76657274206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "e841050fe3d2b3c549bb9ddb61d9387a8553058ed989c864922c0251b4bdc025",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_ACTIVE-006",
+      "canonicalCaseBytes": "506c616e7473207472616e73666f726d206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "86e298ded4dac2d6b50955899a8211b25670b8c8be2dfe0cd1b2e64c287c3301",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_ACTIVE-007",
+      "canonicalCaseBytes": "506c616e74732073746f7265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "c9e2ef8cefe36c09d6ab6fc2619d7a22c6e572298010ec41c0a91e99ee12518c",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_ACTIVE-008",
+      "canonicalCaseBytes": "477265656e20706c616e74732063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "b19587b419373dc56b67c9a2702bfec9487e27f3d369cc2f9f9b2d02aa00159d",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_ACTIVE-009",
+      "canonicalCaseBytes": "477265656e20706c616e7473206162736f7262206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "8da8c29540f571325fed878e57d9bb99719d1f2129d54e59665019f619037365",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_ACTIVE-010",
+      "canonicalCaseBytes": "477265656e20706c616e7473206861726e657373206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "7c0158d6e56aee4e26c5a800e04f252e4138ce7e081b364b545f403e4b5b1150",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_ACTIVE-011",
+      "canonicalCaseBytes": "477265656e20706c616e747320757365206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "28d97ac93aa85bdb492b180885ebfbaee57a45e8325a2a5793499a57b8b9add7",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_ACTIVE-012",
+      "canonicalCaseBytes": "477265656e20706c616e747320636f6e76657274206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "79d42b0e84313374eb0d68dd652d81644f795446682975845e64f9603ef43f0e",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_ACTIVE-013",
+      "canonicalCaseBytes": "477265656e20706c616e7473207472616e73666f726d206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "fb8d19a6fd97331ea641105c09077c0393b4dee573e05ba2096de6a67294fbc5",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_ACTIVE-014",
+      "canonicalCaseBytes": "477265656e20706c616e74732073746f7265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "4c27235bf8140fc267baf49e80001456ff15001312d86abbaa9899183bae30c3",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_ACTIVE-015",
+      "canonicalCaseBytes": "416c6761652063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "f2cfa1a8a5b445ee26ba44911aacf7659611cf3094fdb242318a28d6ee66d5d8",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_ACTIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_PASSIVE-001",
+      "canonicalCaseBytes": "4c6967687420656e65726779206973206162736f726265642062792063686c6f726f7068796c6c20647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "b32f4737a2b8d4a8456e4dd6d4ff0bd9798b5324b27a263acf5c7a24f6feb11f",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_PASSIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_PASSIVE-002",
+      "canonicalCaseBytes": "4c6967687420656e65726779206973206861726e65737365642062792063686c6f726f7068796c6c20647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "20f1b3a4a73e8af1a4de65020b1a8de0668f5fcdee28a910577ff30acb4ea3b4",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_PASSIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_PASSIVE-003",
+      "canonicalCaseBytes": "4c6967687420656e6572677920697320757365642062792063686c6f726f7068796c6c20647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "8702d4e0590e65e60d434fbb7a3c46b5a176cc939fe79043620c52d828dc352e",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_PASSIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_PASSIVE-004",
+      "canonicalCaseBytes": "4c6967687420656e6572677920697320636f6e7665727465642062792063686c6f726f7068796c6c20647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "6de478af7d51818f8f010cca5281ffcb75917b1464bc4750506e5bddb7c7169a",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_PASSIVE"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMATIVE_PASSIVE-005",
+      "canonicalCaseBytes": "4c6967687420656e65726779206973207472616e73666f726d65642062792063686c6f726f7068796c6c20647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "a92bd3cfd613073c6e86cfc56e179e2c29be1a3cec7a5cfe8c672bb979b02175",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMATIVE_PASSIVE"
+      ]
+    },
+    {
+      "caseId": "V2-INFINITIVAL_CHLOROPHYLL_MEDIATED-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f206162736f7262206c6967687420656e657267792e",
+      "semanticFingerprint": "524e8f68eaf8bb248b70c2190dbd3229d3c8855fa6cc1abbf69eba47c7086f14",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "INFINITIVAL_CHLOROPHYLL_MEDIATED"
+      ]
+    },
+    {
+      "caseId": "V2-INFINITIVAL_CHLOROPHYLL_MEDIATED-002",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f206861726e657373206c6967687420656e657267792e",
+      "semanticFingerprint": "f3f19072dc17ad9711d12f48048ff2511b394f6ac8871979be8249c3a7840475",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "INFINITIVAL_CHLOROPHYLL_MEDIATED"
+      ]
+    },
+    {
+      "caseId": "V2-INFINITIVAL_CHLOROPHYLL_MEDIATED-003",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f20757365206c6967687420656e657267792e",
+      "semanticFingerprint": "771b2256bbbc4f2585afb64409c58e4056d682c9f792bafc1a6bdeee65cce7cd",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "INFINITIVAL_CHLOROPHYLL_MEDIATED"
+      ]
+    },
+    {
+      "caseId": "V2-INFINITIVAL_CHLOROPHYLL_MEDIATED-004",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f20636f6e76657274206c6967687420656e657267792e",
+      "semanticFingerprint": "99caf5fdf41a5183e9f2c09c5a836cec400293232c58b185839d978ba7d9d335",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "INFINITIVAL_CHLOROPHYLL_MEDIATED"
+      ]
+    },
+    {
+      "caseId": "V2-INFINITIVAL_CHLOROPHYLL_MEDIATED-005",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f207472616e73666f726d206c6967687420656e657267792e",
+      "semanticFingerprint": "4414834c48718abda5ea368deaff6b4908b0bef6c1e7ec05497d4a48e77755e1",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "INFINITIVAL_CHLOROPHYLL_MEDIATED"
+      ]
+    },
+    {
+      "caseId": "V2-COORDINATED_PREDICATES-001",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206162736f72627320616e642073746f726573206c6967687420656e657267792e",
+      "semanticFingerprint": "48b075a911cf7c1399f2978b5a0654c3ddca7a4747116edf3daac86fa36c7fe2",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "COORDINATED_PREDICATES"
+      ]
+    },
+    {
+      "caseId": "V2-COORDINATED_PREDICATES-002",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206861726e657373657320616e642073746f726573206c6967687420656e657267792e",
+      "semanticFingerprint": "5cd59f764a72fcf2310dc923fa6a3b7c0ec729870cbe6eb1ec649c122b605499",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "COORDINATED_PREDICATES"
+      ]
+    },
+    {
+      "caseId": "V2-COORDINATED_PREDICATES-003",
+      "canonicalCaseBytes": "50686f746f73796e746865736973207573657320616e642073746f726573206c6967687420656e657267792e",
+      "semanticFingerprint": "481cf8ad658f77c28f71c3d8b1ae0e1601c89f0c406d5aea85d613871ce80eb1",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "COORDINATED_PREDICATES"
+      ]
+    },
+    {
+      "caseId": "V2-COORDINATED_PREDICATES-004",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e766572747320616e642073746f726573206c6967687420656e657267792e",
+      "semanticFingerprint": "88cca322c6e15d08fff2afd28f66dd66e7f218c883eccbeebded56c9e10956a7",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "COORDINATED_PREDICATES"
+      ]
+    },
+    {
+      "caseId": "V2-COORDINATED_PREDICATES-005",
+      "canonicalCaseBytes": "50686f746f73796e746865736973207472616e73666f726d7320616e642073746f726573206c6967687420656e657267792e",
+      "semanticFingerprint": "dfd090d85c2a748470852e74d1616538560175403312ecb85b87afc4f04d5fbd",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "COORDINATED_PREDICATES"
+      ]
+    },
+    {
+      "caseId": "V2-COORDINATED_SUBJECTS_VALID-001",
+      "canonicalCaseBytes": "416c67616520616e6420706c616e74732063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "bc1b1c476e39371405f8f1792d153ee078e75edf556dec0afd56cf8a68cfff7c",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "COORDINATED_SUBJECTS_VALID"
+      ]
+    },
+    {
+      "caseId": "V2-COORDINATED_SUBJECTS_VALID-002",
+      "canonicalCaseBytes": "506c616e74732c20616c6761652c20616e6420736f6d652062616374657269612063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "b1161cf4e9513cf3f961dbd26f6e7a22980523862a222aca7bb57947d6385194",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "COORDINATED_SUBJECTS_VALID"
+      ]
+    },
+    {
+      "caseId": "V2-COORDINATED_SUBJECTS_VALID-003",
+      "canonicalCaseBytes": "477265656e20706c616e747320616e6420616c6761652063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "e1e8c780b81b0f38fedee6f8d1d6c42cf4b1c6a147b447dffe77956e305f93f9",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "COORDINATED_SUBJECTS_VALID"
+      ]
+    },
+    {
+      "caseId": "V2-COORDINATED_SUBJECTS_VALID-004",
+      "canonicalCaseBytes": "416c67616520616e642070686f746f73796e7468657469632062616374657269612063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "59edbd952bd0876c1f9c9550ea1d9a1455cd8488a36130ed0817f154d1a7c74a",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "COORDINATED_SUBJECTS_VALID"
+      ]
+    },
+    {
+      "caseId": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-001",
+      "canonicalCaseBytes": "416e696d616c7320616e6420616c676165207573652063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "82d2d6c62f443b9e286ed96418ea54a6749c0f4c2bef745f79c91e10fd7f4fc2",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "COORDINATED_SUBJECTS_MIXED_INVALID"
+      ]
+    },
+    {
+      "caseId": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-002",
+      "canonicalCaseBytes": "416c67616520616e6420726f636b73207573652063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "3978f053b323c094b8096e6ba36c4e5d568d131f36d09edc03c557fb47f87a34",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "COORDINATED_SUBJECTS_MIXED_INVALID"
+      ]
+    },
+    {
+      "caseId": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-003",
+      "canonicalCaseBytes": "416e696d616c7320616e6420677265656e20706c616e7473207573652063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "c0380d815f2345d211707fa4f11142b636d248572ed956cdff513ae599079f6a",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "COORDINATED_SUBJECTS_MIXED_INVALID"
+      ]
+    },
+    {
+      "caseId": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-004",
+      "canonicalCaseBytes": "416e696d616c7320616e6420736f6d65206261637465726961207573652063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "06114aa6194be64f7695ab1f2c7590fc9d2e24fb2eb38f0ad1e5e7e084e5acbf",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "COORDINATED_SUBJECTS_MIXED_INVALID"
+      ]
+    },
+    {
+      "caseId": "V2-COORDINATED_SUBJECTS_MIXED_INVALID-005",
+      "canonicalCaseBytes": "526f636b732c20706c616e74732c20616c6761652c20616e6420736f6d65206261637465726961207573652063686c6f726f7068796c6c20746f2063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "99fdfdab4a46436ef62100c431670350acc4e210b01f00734d14aa89f255053a",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "COORDINATED_SUBJECTS_MIXED_INVALID"
+      ]
+    },
+    {
+      "caseId": "V2-DETACHED_OBJECT_DECOYS-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f206162736f72622073746172636820616e64206c69676874206973206e65617262792e",
+      "semanticFingerprint": "46b6b13c7888aae00b3522f03f1863ec85971608cb6885e20ec1d41d27f083d5",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DETACHED_OBJECT_DECOYS"
+      ]
+    },
+    {
+      "caseId": "V2-DETACHED_OBJECT_DECOYS-002",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f206861726e657373207761746572207661706f7220616e64206c69676874206973206e65617262792e",
+      "semanticFingerprint": "7b4922ef7c19df127ae7299fa6dad2a073b0088df39b70004c1d2eadec70a16d",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DETACHED_OBJECT_DECOYS"
+      ]
+    },
+    {
+      "caseId": "V2-DETACHED_OBJECT_DECOYS-003",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f20757365206d696e6572616c2073616c747320616e64206c69676874206973206e65617262792e",
+      "semanticFingerprint": "dc088a7c0dbb8ad5261715417d28230d828612a06f37c888327d04077f8d973b",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DETACHED_OBJECT_DECOYS"
+      ]
+    },
+    {
+      "caseId": "V2-DETACHED_OBJECT_DECOYS-004",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f20636f6e7665727420756c74726176696f6c657420726164696174696f6e20616e64206c69676874206973206e65617262792e",
+      "semanticFingerprint": "e072ab967f3fed611db3ea14f46f669260607db3830826602f286247375ba342",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DETACHED_OBJECT_DECOYS"
+      ]
+    },
+    {
+      "caseId": "V2-DETACHED_OBJECT_DECOYS-005",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f207472616e73666f726d206c6561662074697373756520616e64206c69676874206973206e65617262792e",
+      "semanticFingerprint": "2fb2b8b8423953256321bbb2a3b004b3c2247b54fd1cc125e8fcfcdd6d5ba48e",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DETACHED_OBJECT_DECOYS"
+      ]
+    },
+    {
+      "caseId": "V2-DETACHED_OBJECT_DECOYS-006",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f2073746f7265207375676172206d6f6c6563756c657320616e64206c69676874206973206e65617262792e",
+      "semanticFingerprint": "400db47402d5f26e45381f5ce56aadf44df7e8e2a9528268dabf2aca64e40858",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DETACHED_OBJECT_DECOYS"
+      ]
+    },
+    {
+      "caseId": "V2-DETACHED_OBJECT_DECOYS-007",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c20746f2063617074757265206e6974726f67656e3b206c6967687420656e65726779206973206e65617262792e",
+      "semanticFingerprint": "f75abac8e63c8eb5fa47b363d2170b3128d004ad68b1e511151c05c5532f5f34",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DETACHED_OBJECT_DECOYS"
+      ]
+    },
+    {
+      "caseId": "V2-DIRECT_OBJECT_BARRIERS-001",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206162736f72627320636172626f6e2064696f78696465206e656172206c6967687420656e657267792e",
+      "semanticFingerprint": "a2deea23056d1f59b92b4833dc3cc8264759e329666e72b4466fe4d2d14ade7d",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DIRECT_OBJECT_BARRIERS"
+      ]
+    },
+    {
+      "caseId": "V2-DIRECT_OBJECT_BARRIERS-002",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206861726e657373657320636172626f6e2064696f78696465206e656172206c6967687420656e657267792e",
+      "semanticFingerprint": "753c24748da841bec2f2e9eb654279f3b6fe0ec9cf26cc7a4ba5126f24c8308c",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DIRECT_OBJECT_BARRIERS"
+      ]
+    },
+    {
+      "caseId": "V2-DIRECT_OBJECT_BARRIERS-003",
+      "canonicalCaseBytes": "50686f746f73796e746865736973207573657320636172626f6e2064696f78696465206e656172206c6967687420656e657267792e",
+      "semanticFingerprint": "02a3a71a9a85274ffaba340c8be44c0abdfb339c174daa97aef6197d01ab8127",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DIRECT_OBJECT_BARRIERS"
+      ]
+    },
+    {
+      "caseId": "V2-DIRECT_OBJECT_BARRIERS-004",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e766572747320636172626f6e2064696f78696465206e656172206c6967687420656e657267792e",
+      "semanticFingerprint": "770fb0e0fdf20eb0205e04026a4c82fbece514e11d062667913f1dfab8da828a",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DIRECT_OBJECT_BARRIERS"
+      ]
+    },
+    {
+      "caseId": "V2-FINITE_PREDICATE_BARRIERS-001",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206162736f72627320636172626f6e2064696f78696465207768696c65206c6967687420656e657267792069732070726573656e742e",
+      "semanticFingerprint": "a43cad81f01bb1a078f21c40d41ffe66bbb77d42624fa915cbaf46bf07d30217",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "FINITE_PREDICATE_BARRIERS"
+      ]
+    },
+    {
+      "caseId": "V2-FINITE_PREDICATE_BARRIERS-002",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206861726e657373657320636172626f6e2064696f78696465207768696c65206c6967687420656e657267792069732070726573656e742e",
+      "semanticFingerprint": "7cac38111bee04c0ef64cecc3977d24ede5afc53c043b1968ab7ce5907bcd608",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "FINITE_PREDICATE_BARRIERS"
+      ]
+    },
+    {
+      "caseId": "V2-FINITE_PREDICATE_BARRIERS-003",
+      "canonicalCaseBytes": "50686f746f73796e746865736973207573657320636172626f6e2064696f78696465207768696c65206c6967687420656e657267792069732070726573656e742e",
+      "semanticFingerprint": "b1e2bb2a59637d9ee8d513f767a7db55032eb92fb566bbcea989e154917b4b3b",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "FINITE_PREDICATE_BARRIERS"
+      ]
+    },
+    {
+      "caseId": "V2-FINITE_PREDICATE_BARRIERS-004",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e766572747320636172626f6e2064696f78696465207768696c65206c6967687420656e657267792069732070726573656e742e",
+      "semanticFingerprint": "3b25c778e09978554824d97a7cb80800b822c002f253618f40954a55c50e2a3a",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "FINITE_PREDICATE_BARRIERS"
+      ]
+    },
+    {
+      "caseId": "V2-FINITE_PREDICATE_BARRIERS-005",
+      "canonicalCaseBytes": "50686f746f73796e746865736973207472616e73666f726d7320636172626f6e2064696f78696465207768696c65206c6967687420656e657267792069732070726573656e742e",
+      "semanticFingerprint": "ed4461a51ea7027ffd59de1d7c846dc791931a50c3aea9b84590135181e4dd43",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "FINITE_PREDICATE_BARRIERS"
+      ]
+    },
+    {
+      "caseId": "V2-MALFORMED_SYNTAX-001",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732063686c6f726f7068796c6c206162736f7262206c6967687420656e657267792e",
+      "semanticFingerprint": "d6b0ea8fddb8e7698d5d54d5b218bf76515831483a0b4c19ac94b8a46ace387f",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "MALFORMED_SYNTAX"
+      ]
+    },
+    {
+      "caseId": "V2-MALFORMED_SYNTAX-002",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732063686c6f726f7068796c6c206861726e657373206c6967687420656e657267792e",
+      "semanticFingerprint": "d3641a8c9ce5f6a5a472a6ec0166c2c47b02f4c0250ba6fdb44f606815757099",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "MALFORMED_SYNTAX"
+      ]
+    },
+    {
+      "caseId": "V2-MALFORMED_SYNTAX-003",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732063686c6f726f7068796c6c20757365206c6967687420656e657267792e",
+      "semanticFingerprint": "4830baf0cf2362967e8035e9feb8a4af1a5a326db44c836c046f338e39b3e032",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "MALFORMED_SYNTAX"
+      ]
+    },
+    {
+      "caseId": "V2-MALFORMED_SYNTAX-004",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732063686c6f726f7068796c6c20636f6e76657274206c6967687420656e657267792e",
+      "semanticFingerprint": "435002fff2eda6049342187bcbafe6f64655a1ee5d51cf80da1dd7f34fcc80d1",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "MALFORMED_SYNTAX"
+      ]
+    },
+    {
+      "caseId": "V2-MALFORMED_SYNTAX-005",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732063686c6f726f7068796c6c207472616e73666f726d206c6967687420656e657267792e",
+      "semanticFingerprint": "f3eb94436cc3fb0448d83391b87898a1404ca9e280b17655c2b9b064331e26cc",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "MALFORMED_SYNTAX"
+      ]
+    },
+    {
+      "caseId": "V2-MALFORMED_SYNTAX-006",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732063686c6f726f7068796c6c2073746f7265206c6967687420656e657267792e",
+      "semanticFingerprint": "e90161508bad843270da8eaacd3fa011c65624c5fb349b876adc791a1ee4bb19",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "MALFORMED_SYNTAX"
+      ]
+    },
+    {
+      "caseId": "V2-LOCAL_NEGATION-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f7420636170747572652077617465722e",
+      "semanticFingerprint": "7febc2d067208b652516581853e558e95777716362a1ca3da9daa5d82d3dc629",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "LOCAL_NEGATION"
+      ]
+    },
+    {
+      "caseId": "V2-LOCAL_NEGATION-002",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f74206162736f7262206865617420656e657267792e",
+      "semanticFingerprint": "ceb463cab87461c566261f826ff88a275d48805ec24ee33a19df94f836dd905d",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "LOCAL_NEGATION"
+      ]
+    },
+    {
+      "caseId": "V2-LOCAL_NEGATION-003",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f74206861726e65737320636172626f6e2064696f786964652e",
+      "semanticFingerprint": "139d3bdefa83a7e1a2f4115f20927a7d48d246d66f7dd8cd385400bb69ed9c71",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "LOCAL_NEGATION"
+      ]
+    },
+    {
+      "caseId": "V2-LOCAL_NEGATION-004",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f7420757365206f787967656e2e",
+      "semanticFingerprint": "a580ae0252a86fb25f1bd2e5da471d4ebb209277684f1ecfbf6d3e5cff81cef2",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "LOCAL_NEGATION"
+      ]
+    },
+    {
+      "caseId": "V2-LOCAL_NEGATION-005",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f7420636f6e766572742073756761722e",
+      "semanticFingerprint": "b1042058aa3caa311c6b4d029f27503ad77f0c355cc9f9732574188dcda5553c",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "LOCAL_NEGATION"
+      ]
+    },
+    {
+      "caseId": "V2-LOCAL_NEGATION-006",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f74207472616e73666f726d206e75747269656e74732e",
+      "semanticFingerprint": "bed46a2210aadc0de6ebb222031b7f8e43fa2ec9c3ad00089117ac58cfdb3729",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "LOCAL_NEGATION"
+      ]
+    },
+    {
+      "caseId": "V2-LOCAL_NEGATION-007",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f742073746f7265207374617263682e",
+      "semanticFingerprint": "f2f1fa12a7146617b4cf78992bf57b9bffb64f956287d22c0147ea3cfb68bb0d",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "LOCAL_NEGATION"
+      ]
+    },
+    {
+      "caseId": "V2-UNCERTAIN_MODALITY-001",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206d6179207573652063686c6f726f7068796c6c20746f206162736f7262206c6967687420656e657267792e",
+      "semanticFingerprint": "322b5e0b252bcf87f2026235f496e624c0c15211faf4936ae27b524c1970d641",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "UNCERTAIN_MODALITY"
+      ]
+    },
+    {
+      "caseId": "V2-NEGATED_MODALITY-001",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732063616e6e6f74206162736f7262206c6967687420656e657267792e",
+      "semanticFingerprint": "022893de75c9edce9d56a9735e3d64174a83c38f73f030188dd6ab9daddaae80",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NEGATED_MODALITY"
+      ]
+    },
+    {
+      "caseId": "V2-NEGATED_MODALITY-002",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732063616e6e6f74206861726e657373206c6967687420656e657267792e",
+      "semanticFingerprint": "777f1c77fec9dfd56e6719152106d81569328ab40d1dd9647d8a151485dca1f8",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NEGATED_MODALITY"
+      ]
+    },
+    {
+      "caseId": "V2-NEGATED_MODALITY-003",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732063616e6e6f7420757365206c6967687420656e657267792e",
+      "semanticFingerprint": "47068559c7551872b4d6d0f7b008773a4726c8e0a8850048ea5e2cf41a634acf",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NEGATED_MODALITY"
+      ]
+    },
+    {
+      "caseId": "V2-NEGATED_MODALITY-004",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732063616e6e6f7420636f6e76657274206c6967687420656e657267792e",
+      "semanticFingerprint": "2a8961587429ca2727c273eb47b90334d5532eb3a36b2f014933384477611cf0",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NEGATED_MODALITY"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMED_MODALITY-001",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206d757374206162736f7262206c6967687420656e657267792e",
+      "semanticFingerprint": "2d8c17948b895c775346f060172d96211c0c64b376f330cf886ba5ebc47bb35d",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMED_MODALITY"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMED_MODALITY-002",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206d757374206861726e657373206c6967687420656e657267792e",
+      "semanticFingerprint": "3a8e1890b6f6e1b99e5da293b946e87504ee180a2a1b5f4f37632cf9f899b1e8",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMED_MODALITY"
+      ]
+    },
+    {
+      "caseId": "V2-AFFIRMED_MODALITY-003",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206d75737420757365206c6967687420656e657267792e",
+      "semanticFingerprint": "66b3ad3d93907769c0117773780ee45f108e427c07579087120a02f61f3b2f8f",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "AFFIRMED_MODALITY"
+      ]
+    },
+    {
+      "caseId": "V2-NESTED_CONTROL-001",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206661696c7320746f206162736f7262206c6967687420656e657267792e",
+      "semanticFingerprint": "7b32d9d19650b4b525e9a77d2248e946679bee546f563f669cc3b1ae352a0e53",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NESTED_CONTROL"
+      ]
+    },
+    {
+      "caseId": "V2-NESTED_CONTROL-002",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206661696c7320746f206861726e657373206c6967687420656e657267792e",
+      "semanticFingerprint": "ff0b8d27439fc9f218e72723ea66328570398eb88f2433020371b442a2a7d341",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NESTED_CONTROL"
+      ]
+    },
+    {
+      "caseId": "V2-NESTED_CONTROL-003",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206661696c7320746f20757365206c6967687420656e657267792e",
+      "semanticFingerprint": "4b1a9472eb383d2764f71feb0bbfb0f2af95bd8224b2beab0d549af9f7f172fb",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NESTED_CONTROL"
+      ]
+    },
+    {
+      "caseId": "V2-DOUBLE_NEGATION-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f74206661696c20746f207573652063686c6f726f7068796c6c20746f206162736f7262206c6967687420656e657267792e",
+      "semanticFingerprint": "438e97df9d90e50519eb32e976cf5e8ff5d33ebe06c57eadc3ab934fcb44af20",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "DOUBLE_NEGATION"
+      ]
+    },
+    {
+      "caseId": "V2-DOUBLE_NEGATION-002",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f74206661696c20746f207573652063686c6f726f7068796c6c20746f206861726e657373206c6967687420656e657267792e",
+      "semanticFingerprint": "0b51aafff06b58b473c62e1371281e1a6e79d53244b2926876034ba3f04bcf94",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "DOUBLE_NEGATION"
+      ]
+    },
+    {
+      "caseId": "V2-DOUBLE_NEGATION-003",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320646f6573206e6f74206661696c20746f207573652063686c6f726f7068796c6c20746f20757365206c6967687420656e657267792e",
+      "semanticFingerprint": "287ce7fde38e97ef63f86562385ba6248fd74cb98c563d01d405605cad89b0d5",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "DOUBLE_NEGATION"
+      ]
+    },
+    {
+      "caseId": "V2-UNRELATED_NEGATION-001",
+      "canonicalCaseBytes": "416e696d616c7320646f206e6f74206d6f76652c20616e642070686f746f73796e746865736973206162736f726273206c6967687420656e657267792e",
+      "semanticFingerprint": "d55efa7b1822d9fb6b3895a2a9d2f4b0b7cab9852fe7259f6ea05ddc35b15fe0",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "UNRELATED_NEGATION"
+      ]
+    },
+    {
+      "caseId": "V2-UNRELATED_NEGATION-002",
+      "canonicalCaseBytes": "416e696d616c7320646f206e6f74206d6f76652c20616e642070686f746f73796e746865736973206861726e6573736573206c6967687420656e657267792e",
+      "semanticFingerprint": "b0afd257a1f80a8d38784661d0474b6007ffaead0382c4dd95a43b0a76134ca3",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "UNRELATED_NEGATION"
+      ]
+    },
+    {
+      "caseId": "V2-UNRELATED_NEGATION-003",
+      "canonicalCaseBytes": "416e696d616c7320646f206e6f74206d6f76652c20616e642070686f746f73796e7468657369732075736573206c6967687420656e657267792e",
+      "semanticFingerprint": "ad1e5599c36b4b6de2170b7bc5cb44cd01c59c1404ddd356d66eece9a1f8dbef",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "UNRELATED_NEGATION"
+      ]
+    },
+    {
+      "caseId": "V2-UNRELATED_NEGATION-004",
+      "canonicalCaseBytes": "416e696d616c7320646f206e6f74206d6f76652c20616e642070686f746f73796e74686573697320636f6e7665727473206c6967687420656e657267792e",
+      "semanticFingerprint": "1c3d54ebb3c13597c26176db234970c635031f09583febe338c45025aa8b62ad",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "UNRELATED_NEGATION"
+      ]
+    },
+    {
+      "caseId": "V2-UNRELATED_NEGATION-005",
+      "canonicalCaseBytes": "416e696d616c7320646f206e6f74206d6f76652c20616e642070686f746f73796e746865736973207472616e73666f726d73206c6967687420656e657267792e",
+      "semanticFingerprint": "3d0b790304c43a188ea919d54fcb94d4c73e7cf753e52936bad1b5551c0ea12c",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "UNRELATED_NEGATION"
+      ]
+    },
+    {
+      "caseId": "V2-CLAUSE_BOUNDARY-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f7869646520616c74686f756768206c6967687420656e657267792069732070726573656e742e",
+      "semanticFingerprint": "1f4ac8641dee68a4127598a91f4c78ad43f4fffdc5692c6cd6d01f8e14947aba",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "CLAUSE_BOUNDARY"
+      ]
+    },
+    {
+      "caseId": "V2-CLAUSE_BOUNDARY-002",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964652062656361757365206c6967687420656e657267792069732070726573656e742e",
+      "semanticFingerprint": "e247c5a017f602ffbfeebffdc52f21fef8d3c2f47ec04117b184e118c74224f7",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "CLAUSE_BOUNDARY"
+      ]
+    },
+    {
+      "caseId": "V2-CLAUSE_BOUNDARY-003",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964652077686572656173206c6967687420656e657267792069732070726573656e742e",
+      "semanticFingerprint": "92f90cc8dd7fa5ecdd380e0f35ff20681856fd98f2bd92242551aedf4393c099",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "CLAUSE_BOUNDARY"
+      ]
+    },
+    {
+      "caseId": "V2-CLAUSE_BOUNDARY-004",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f78696465206966206c6967687420656e657267792069732070726573656e742e",
+      "semanticFingerprint": "42cf7ec0b4857be1946a00028ba8cd2c3a372999e36f4c96015a936faa3899c7",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "CLAUSE_BOUNDARY"
+      ]
+    },
+    {
+      "caseId": "V2-CLAUSE_BOUNDARY-005",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f7869646520756e6c657373206c6967687420656e657267792069732070726573656e742e",
+      "semanticFingerprint": "7b490747932469ff6e97884de09f8bf8f119a0390d7e136d11d5365087145566",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "CLAUSE_BOUNDARY"
+      ]
+    },
+    {
+      "caseId": "V2-CLAUSE_BOUNDARY-006",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f78696465207768656e206c6967687420656e657267792069732070726573656e742e",
+      "semanticFingerprint": "01af99b4694a1bc399a4103e81599b9f49a7eb7ec6c4fc0ebe321897da0a9f82",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "CLAUSE_BOUNDARY"
+      ]
+    },
+    {
+      "caseId": "V2-CLAUSE_BOUNDARY-007",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964652073696e6365206c6967687420656e657267792069732070726573656e742e",
+      "semanticFingerprint": "d00d4d340b795bc5bd6c7ee08a81bb6497f3fdff608a830fd4bf16e0b52676b8",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "CLAUSE_BOUNDARY"
+      ]
+    },
+    {
+      "caseId": "V2-SENTENCE_BOUNDARY-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c733b206c6967687420656e65726779206578697374732e",
+      "semanticFingerprint": "7b604ff33e30529e1f598a6b440b2cdb9e9b8a846b4a38c2a227a22db396e6af",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "SENTENCE_BOUNDARY"
+      ]
+    },
+    {
+      "caseId": "V2-SENTENCE_BOUNDARY-002",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c732e20506c616e747320636170747572652077617465722e204c6967687420656e65726779206578697374732e",
+      "semanticFingerprint": "c6825c88c0175b2762da7a29268c00c05d43a41c10c337b1348e4977a90f55a4",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "SENTENCE_BOUNDARY"
+      ]
+    },
+    {
+      "caseId": "V2-SENTENCE_BOUNDARY-003",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c732e2050686f746f73796e74686573697320636f6e7665727473206368656d6963616c732e204c6967687420656e65726779206578697374732e",
+      "semanticFingerprint": "56e9c6cce39dae4a4e17c9ad38202ee5221971b4b2c9e68418a156de6b8553ef",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "SENTENCE_BOUNDARY"
+      ]
+    },
+    {
+      "caseId": "V2-SENTENCE_BOUNDARY-004",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c732e2043686c6f726f7068796c6c2063617074757265732077617465722e204c6967687420656e65726779206578697374732e",
+      "semanticFingerprint": "9483eed9f9af095cd03c9d5d304699ed6b78f1ad9e5a24f2e2e6e7bcb7474712",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "SENTENCE_BOUNDARY"
+      ]
+    },
+    {
+      "caseId": "V2-SENTENCE_BOUNDARY-005",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c732e204c6967687420656e65726779206578697374732e20416e696d616c732063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "58ab6baf32adadfe8917523e554c72ead5592d72bfb7405d1fd9aab6f2e54548",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "SENTENCE_BOUNDARY"
+      ]
+    },
+    {
+      "caseId": "V2-SENTENCE_BOUNDARY-006",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206368656d6963616c732e204c6967687420656e65726779206578697374733b20706c616e7473206361707475726520636172626f6e2064696f786964652e",
+      "semanticFingerprint": "1a63d32cd77c20aad0d2a11b83bcc3ab3584fa45e18536d433773c5cc0900f8b",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "SENTENCE_BOUNDARY"
+      ]
+    },
+    {
+      "caseId": "V2-PRONOUN_CONTINUATION-001",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206361707475726573206c6967687420656e6572677920616e642063617074757265732069742e",
+      "semanticFingerprint": "f8ac3a11c94b927b2bfa0215cdbd9f1ba74501c761db330435f7ecb26c57458b",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "PRONOUN_CONTINUATION"
+      ]
+    },
+    {
+      "caseId": "V2-PRONOUN_CONTINUATION-002",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206361707475726573206c6967687420656e6572677920616e64206162736f7262732069742e",
+      "semanticFingerprint": "e4a3c07c68ec59ce8efbb0b062c7bac1a8f83d5969103ecd37109974270ab4e7",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "PRONOUN_CONTINUATION"
+      ]
+    },
+    {
+      "caseId": "V2-PRONOUN_CONTINUATION-003",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206361707475726573206c6967687420656e6572677920616e64206861726e65737365732069742e",
+      "semanticFingerprint": "e2640266579fa9f30829f44a7bcf779050573d2f07a6403dcd5c25b3a6ba7c84",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "PRONOUN_CONTINUATION"
+      ]
+    },
+    {
+      "caseId": "V2-PRONOUN_CONTINUATION-004",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206361707475726573206c6967687420656e6572677920616e6420757365732069742e",
+      "semanticFingerprint": "130b5b606c78329bdfce452f4f770571b8b6f0e5bcaec0d2f5222f734a11baf8",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "PRONOUN_CONTINUATION"
+      ]
+    },
+    {
+      "caseId": "V2-PRONOUN_CONTINUATION-005",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206361707475726573206c6967687420656e6572677920616e6420636f6e76657274732069742e",
+      "semanticFingerprint": "85206d955f2139dd2adbe55cd9eb0c20389ef5d0c47f13eb91e222596a899548",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "PRONOUN_CONTINUATION"
+      ]
+    },
+    {
+      "caseId": "V2-PRONOUN_CONTINUATION-006",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206361707475726573206c6967687420656e6572677920616e64207472616e73666f726d732069742e",
+      "semanticFingerprint": "957046b832cf206fd35facd453429ead3fe73f708ec06e74afc69ebd512a3001",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "PRONOUN_CONTINUATION"
+      ]
+    },
+    {
+      "caseId": "V2-PRONOUN_CONTINUATION-007",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206162736f726273206c6967687420656e6572677920616e642073746f7265732069742e",
+      "semanticFingerprint": "3b651d782bff36df23bc1caffc7eb70aff1a0defbede0954f78db5e85502f0e9",
+      "expectedDecision": "PASS",
+      "classIds": [
+        "PRONOUN_CONTINUATION"
+      ]
+    },
+    {
+      "caseId": "V2-INVALID_SUBJECT-001",
+      "canonicalCaseBytes": "526f636b7320616e6420616e696d616c732063617074757265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "1ec98cdaed6b3c40118317f486bf2e20cd5b6442b384dbdade020582718581ca",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "INVALID_SUBJECT"
+      ]
+    },
+    {
+      "caseId": "V2-INVALID_SUBJECT-002",
+      "canonicalCaseBytes": "416e696d616c73206162736f7262206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "a7fc5ce684bcdb47b3b7fcdec9a8f240e9c96916ffc7f0774925016985a1740f",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "INVALID_SUBJECT"
+      ]
+    },
+    {
+      "caseId": "V2-INVALID_SUBJECT-003",
+      "canonicalCaseBytes": "416e696d616c73206861726e657373206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "1b6d325afbeddd3b5085f1b23faf8e3e908dc20766d071907615dd731cf0d4fa",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "INVALID_SUBJECT"
+      ]
+    },
+    {
+      "caseId": "V2-INVALID_SUBJECT-004",
+      "canonicalCaseBytes": "416e696d616c7320757365206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "24c38603cc227dcf8248a2c3fb982c77c2037dee1f6357a17610fc1000091ed9",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "INVALID_SUBJECT"
+      ]
+    },
+    {
+      "caseId": "V2-INVALID_SUBJECT-005",
+      "canonicalCaseBytes": "416e696d616c7320636f6e76657274206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "67d5c0ee02b3c020f79decdc092f881e37771f98892abfb0fcf692f212281616",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "INVALID_SUBJECT"
+      ]
+    },
+    {
+      "caseId": "V2-INVALID_SUBJECT-006",
+      "canonicalCaseBytes": "416e696d616c73207472616e73666f726d206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "b9e0304f7b67dcfd9d534134eb6219f21654937a408436158cb1e8d7ad77737a",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "INVALID_SUBJECT"
+      ]
+    },
+    {
+      "caseId": "V2-INVALID_SUBJECT-007",
+      "canonicalCaseBytes": "416e696d616c732073746f7265206c6967687420656e6572677920647572696e672070686f746f73796e7468657369732e",
+      "semanticFingerprint": "8e1fd43bf4c8d81d32154c1f0644f4f57799878ad77b6e84358ef868afd385e5",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "INVALID_SUBJECT"
+      ]
+    },
+    {
+      "caseId": "V2-INVALID_OBJECT-001",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206162736f7262732077617465722e",
+      "semanticFingerprint": "e3d0c2aa2f28210d94e7da6aa38de401ac7b5d74e4326a425b04d4a5d533a0b6",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "INVALID_OBJECT"
+      ]
+    },
+    {
+      "caseId": "V2-INVALID_OBJECT-002",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206861726e657373657320636172626f6e2064696f786964652e",
+      "semanticFingerprint": "9ea0e08c2f4741ffc73077ea1fbc1184f735c2e58bdf2bde6e98149c460712c8",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "INVALID_OBJECT"
+      ]
+    },
+    {
+      "caseId": "V2-INVALID_OBJECT-003",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732075736573206f787967656e2e",
+      "semanticFingerprint": "4a5f0a2667f526696c895025ce8839d4481c6619dffe0f94750c21616dbed135",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "INVALID_OBJECT"
+      ]
+    },
+    {
+      "caseId": "V2-INVALID_OBJECT-004",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206e75747269656e74732e",
+      "semanticFingerprint": "8fa2505e1327d740a44c66bc23c18ba3070b59fea56b6f777391304164c09f79",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "INVALID_OBJECT"
+      ]
+    },
+    {
+      "caseId": "V2-INVALID_OBJECT-005",
+      "canonicalCaseBytes": "50686f746f73796e746865736973207472616e73666f726d73207374617263682e",
+      "semanticFingerprint": "cfeff5bf6f73832a181e73d249bbdf363d80edbd010efcbd7f794f42288c23f2",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "INVALID_OBJECT"
+      ]
+    },
+    {
+      "caseId": "V2-INVALID_OBJECT-006",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732073746f7265732073756761722e",
+      "semanticFingerprint": "cae40ebe5124462b986717aed87d4e4594ad99dad6e6f88d0fd9e94521cc9124",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "INVALID_OBJECT"
+      ]
+    },
+    {
+      "caseId": "V2-INVALID_OBJECT-007",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320757365732063686c6f726f7068796c6c207768696c65206c6967687420656e657267792069732070726573656e742e",
+      "semanticFingerprint": "041273bf4dade1c366313c8e4b404f5660e275d3e5f61b782a7016905727478d",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "INVALID_OBJECT"
+      ]
+    },
+    {
+      "caseId": "V2-DESTRUCTIVE_RELATION-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320776173746573206c6967687420656e657267792e",
+      "semanticFingerprint": "c4aa551e0bcf5e1edd8f032019006907c76fc645a8a79c0b1e1426b0dc5068f1",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DESTRUCTIVE_RELATION"
+      ]
+    },
+    {
+      "caseId": "V2-DESTRUCTIVE_RELATION-002",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732069676e6f726573206c6967687420656e657267792e",
+      "semanticFingerprint": "29bde90ef4f7dcb13268f23eb753997305b015fd5e50f6236587a4835e3ad6a3",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DESTRUCTIVE_RELATION"
+      ]
+    },
+    {
+      "caseId": "V2-DESTRUCTIVE_RELATION-003",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206c6f736573206c6967687420656e657267792e",
+      "semanticFingerprint": "519f2efbf13c0da672724d009483a67209829fe0903aa9e7fe0160ba425a16a0",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DESTRUCTIVE_RELATION"
+      ]
+    },
+    {
+      "caseId": "V2-DESTRUCTIVE_RELATION-004",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320626c6f636b73206c6967687420656e657267792e",
+      "semanticFingerprint": "5511982e4310ed1d44b02ac9e741cca3330e7b415928bae41b744cf5899c1062",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DESTRUCTIVE_RELATION"
+      ]
+    },
+    {
+      "caseId": "V2-DESTRUCTIVE_RELATION-005",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732072656a65637473206c6967687420656e657267792e",
+      "semanticFingerprint": "0555959f30bd2ca9fe558f25b207ca214820ea41e7f9d9f1202dc69dbf568aa0",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "DESTRUCTIVE_RELATION"
+      ]
+    },
+    {
+      "caseId": "V2-WRONG_PIGMENT-001",
+      "canonicalCaseBytes": "4d656c616e696e20726174686572207468616e2063686c6f726f7068796c6c206162736f72627320746865206c6967687420666f722070686f746f73796e7468657369732e",
+      "semanticFingerprint": "c50150689e4226874c32597196a748f69fa03fa147dfce65462801b23aebf1d5",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "WRONG_PIGMENT"
+      ]
+    },
+    {
+      "caseId": "V2-WRONG_PIGMENT-002",
+      "canonicalCaseBytes": "4d656c616e696e20726174686572207468616e2063686c6f726f7068796c6c206861726e657373657320746865206c6967687420666f722070686f746f73796e7468657369732e",
+      "semanticFingerprint": "0febd3d0486342c90624d23798c0fc75d907590c881ab88dc7987e8574740b5e",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "WRONG_PIGMENT"
+      ]
+    },
+    {
+      "caseId": "V2-WRONG_PIGMENT-003",
+      "canonicalCaseBytes": "4d656c616e696e20726174686572207468616e2063686c6f726f7068796c6c207573657320746865206c6967687420666f722070686f746f73796e7468657369732e",
+      "semanticFingerprint": "215a327bcca9875e75f6a8995e3cd442ca643b3604df728723426d0869446187",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "WRONG_PIGMENT"
+      ]
+    },
+    {
+      "caseId": "V2-WRONG_PIGMENT-004",
+      "canonicalCaseBytes": "4d656c616e696e20726174686572207468616e2063686c6f726f7068796c6c20636f6e766572747320746865206c6967687420666f722070686f746f73796e7468657369732e",
+      "semanticFingerprint": "af5b39ee51d5e60448709f7512f258a69f5116d92e2473ce7c1ba1fd429849ab",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "WRONG_PIGMENT"
+      ]
+    },
+    {
+      "caseId": "V2-WRONG_PIGMENT-005",
+      "canonicalCaseBytes": "4d656c616e696e20726174686572207468616e2063686c6f726f7068796c6c207472616e73666f726d7320746865206c6967687420666f722070686f746f73796e7468657369732e",
+      "semanticFingerprint": "8fcef83afcf24ecffc8be21fe77adc4f5a10a6f9b0c23072fcad04cda2bda86d",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "WRONG_PIGMENT"
+      ]
+    },
+    {
+      "caseId": "V2-CONTRADICTION-001",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206162736f726273206c6967687420656e657267792062757420646f6573206e6f74206162736f7262206c6967687420656e657267792e",
+      "semanticFingerprint": "93b759010d7941e2ad8b4b7030dbd03a5554142f451cfcd724629f7bc74db57e",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "CONTRADICTION"
+      ]
+    },
+    {
+      "caseId": "V2-CONTRADICTION-002",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206861726e6573736573206c6967687420656e657267792062757420646f6573206e6f74206861726e657373206c6967687420656e657267792e",
+      "semanticFingerprint": "a5b8d6566a2ea05f7217edd30d426d3a2c3d5f20dfb37f2acd8e63256c9e9e54",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "CONTRADICTION"
+      ]
+    },
+    {
+      "caseId": "V2-CONTRADICTION-003",
+      "canonicalCaseBytes": "50686f746f73796e7468657369732075736573206c6967687420656e657267792062757420646f6573206e6f7420757365206c6967687420656e657267792e",
+      "semanticFingerprint": "2957b486e3e524364ce14805f04e5edbd9f1ba330f1570e70b92e924354296de",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "CONTRADICTION"
+      ]
+    },
+    {
+      "caseId": "V2-CONTRADICTION-004",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636f6e7665727473206c6967687420656e657267792062757420646f6573206e6f7420636f6e76657274206c6967687420656e657267792e",
+      "semanticFingerprint": "b26e6cd9db018758fcc73af7d97fab0a9324949138d12b8332525c87af5a0d34",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "CONTRADICTION"
+      ]
+    },
+    {
+      "caseId": "V2-CONTRADICTION-005",
+      "canonicalCaseBytes": "50686f746f73796e746865736973207472616e73666f726d73206c6967687420656e657267792062757420646f6573206e6f74207472616e73666f726d206c6967687420656e657267792e",
+      "semanticFingerprint": "b396efb5e28ad784f32556a82faa663bbc5bb9685eca0358b211d3648aa0e6a2",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "CONTRADICTION"
+      ]
+    },
+    {
+      "caseId": "V2-PUNCTUATION_ABUSE-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653f21204c6967687420656e65726779206578697374732e20416e696d616c7320636170747572652077617465722121212043686c6f726f7068796c6c2069732070726573656e742e",
+      "semanticFingerprint": "cb96f1f01b950ae3d749afaf0f275bfc26f129c02dd44a26e3ff87911e59faca",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "PUNCTUATION_ABUSE"
+      ]
+    },
+    {
+      "caseId": "V2-PUNCTUATION_ABUSE-002",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653f20212043686c6f726f7068796c6c2063617074757265732077617465722e204c6967687420656e6572677920657869737473212121",
+      "semanticFingerprint": "e88f210a275275497ad9a45aba454a73ac52ee433b63dd535fc20d7639655e19",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "PUNCTUATION_ABUSE"
+      ]
+    },
+    {
+      "caseId": "V2-PUNCTUATION_ABUSE-003",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653f213f204c6967687420656e6572677920657869737473212043686c6f726f7068796c6c2069732070726573656e742e",
+      "semanticFingerprint": "7de7d29f52d24fff7f62cb0295abcd59b99a679cab45b9635c026c464f9e8d5f",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "PUNCTUATION_ABUSE"
+      ]
+    },
+    {
+      "caseId": "V2-PUNCTUATION_ABUSE-004",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653a20706c616e747320636170747572652077617465723b206c6967687420656e65726779206578697374732e",
+      "semanticFingerprint": "dc07724ad321d4ba62d5f907b4aaedeae79ff9f47cb91aad1a6d6a0516390c9a",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "PUNCTUATION_ABUSE"
+      ]
+    },
+    {
+      "caseId": "V2-PUNCTUATION_ABUSE-005",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653a213b204c6967687420656e65726779206578697374732e20416e696d616c7320636170747572652077617465722e",
+      "semanticFingerprint": "f41872021160a96e251d17d7167be8e1a626f20427bf53b3433252245506c626",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "PUNCTUATION_ABUSE"
+      ]
+    },
+    {
+      "caseId": "V2-PUNCTUATION_ABUSE-006",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653f21204c6967687420656e65726779206578697374732e20506c616e7473207472616e73666f726d20636172626f6e2064696f78696465212121",
+      "semanticFingerprint": "f56d92874b5770d5ceeefae1fda27fe29c636184f95e71da5d81f514df7731d1",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "PUNCTUATION_ABUSE"
+      ]
+    },
+    {
+      "caseId": "V2-PUNCTUATION_ABUSE-007",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f786964653f21204c6967687420656e65726779206578697374732e20416e696d616c732063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "38c8afec50bca2e55e99a0cf216cc3f2fcfd3110afc5bd994236a77cbbfa06ce",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "PUNCTUATION_ABUSE"
+      ]
+    },
+    {
+      "caseId": "V2-NO_STITCHING-001",
+      "canonicalCaseBytes": "43686c6f726f7068796c6c2069732070726573656e742e20416e696d616c732063617074757265206c6967687420656e657267792e",
+      "semanticFingerprint": "26feafb31da3f81f0bad9e58424dd041622887e3fc6fd07324a1b52c91c9223c",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NO_STITCHING"
+      ]
+    },
+    {
+      "caseId": "V2-NO_STITCHING-002",
+      "canonicalCaseBytes": "43686c6f726f7068796c6c2069732070726573656e743b206d656c616e696e206361707475726573206c6967687420656e657267792e",
+      "semanticFingerprint": "5ac64a592c5077b58df1759fa9c08b73bd4ad8abe0624fc17aff1eaa2ebe1140",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NO_STITCHING"
+      ]
+    },
+    {
+      "caseId": "V2-NO_STITCHING-003",
+      "canonicalCaseBytes": "43686c6f726f7068796c6c2069732070726573656e743b206361726f74656e65206361707475726573206c6967687420656e657267792e",
+      "semanticFingerprint": "8a999faa01bc83b097e24cd26048c9ba19d63e4fa65bd6e8873d93e3cc197fa1",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NO_STITCHING"
+      ]
+    },
+    {
+      "caseId": "V2-NO_STITCHING-004",
+      "canonicalCaseBytes": "43686c6f726f7068796c6c2069732070726573656e743b2078616e74686f7068796c6c206361707475726573206c6967687420656e657267792e",
+      "semanticFingerprint": "37ab5882a21b5d899642c23dec797dd7650dd4c1720b415543b5bc9fa63ee83d",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NO_STITCHING"
+      ]
+    },
+    {
+      "caseId": "V2-NO_STITCHING-005",
+      "canonicalCaseBytes": "43686c6f726f7068796c6c2069732070726573656e743b206c6967687420656e6572677920697320636170747572656420627920726f636b732e",
+      "semanticFingerprint": "d6171d5f47fd151c1d2fd37d48ca0f982d2d600944f3c25753a6dbc1e0ec1642",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NO_STITCHING"
+      ]
+    },
+    {
+      "caseId": "V2-NO_STITCHING-006",
+      "canonicalCaseBytes": "43686c6f726f7068796c6c2069732070726573656e743b2063686c6f726f7068796c6c2063617074757265732077617465722e",
+      "semanticFingerprint": "3d870463b4707e673ed44ab31a1956e00432be7c8806f077e2811d97181cc7c0",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NO_STITCHING"
+      ]
+    },
+    {
+      "caseId": "V2-NO_STITCHING-007",
+      "canonicalCaseBytes": "43686c6f726f7068796c6c2069732070726573656e743b20726f636b7320636170747572652077617465722e",
+      "semanticFingerprint": "923274a9c03c402a714f4e0c6c2112423bd57cb11ec0802ed0f282f99f870561",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "NO_STITCHING"
+      ]
+    },
+    {
+      "caseId": "V2-KNOWN_REGRESSIONS-001",
+      "canonicalCaseBytes": "50686f746f73796e746865736973206d6179207573652063686c6f726f7068796c6c20746f206861726e657373206c6967687420656e657267792e",
+      "semanticFingerprint": "1154bc05c8896dd210faabfdce8b061a0a4ba1fba179f8cc3050baa3de5930f9",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "KNOWN_REGRESSIONS"
+      ]
+    },
+    {
+      "caseId": "B5-PUNCTUATION_ABUSE-001",
+      "canonicalCaseBytes": "50686f746f73796e74686573697320636170747572657320636172626f6e2064696f7869646521204c6967687420656e6572677920657869737473212043686c6f726f7068796c6c2069732070726573656e7421204c6967687420656e657267792072656d61696e732e",
+      "semanticFingerprint": "f8f484d5deb1a93abbe9d165f8db5f646956ae1ca024ba86cb88e87648659b62",
+      "expectedDecision": "FAIL",
+      "classIds": [
+        "PUNCTUATION_ABUSE"
+      ]
+    }
+  ]
+}

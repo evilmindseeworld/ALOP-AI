@@ -42,13 +42,14 @@
       "expect": { "mustMatch": ["plant|chlorophyll|light|energy"], "expectNoTools": true, "minChars": 60, "maxLatencyMs": 30000 },
       "factualityChecks": {
         "modelInvolved": true,
+        "evaluatorId": "photosynthesis-light-relation-v2",
         "stableWhy": "The role of chlorophyll and light energy in plant photosynthesis is an established biology fact.",
         "assertions": [
           {
             "id": "photosynthesis-chlorophyll-light",
             "claim": "Plants use chlorophyll to capture or use light energy in photosynthesis.",
             "patterns": [
-              "\\bphotosynthesis\\b[\\s\\S]{0,260}\\bchlorophyll\\b[\\s\\S]{0,80}\\b(?:capture|captures|absorb|absorbs|use|uses|harness)\\b[\\s\\S]{0,80}\\b(?:light|sunlight|solar)\\b",
+            "(?:\\bphotosynthesis\\b[^.!?;]{0,260}\\bchlorophyll\\b[^.!?;]{0,80}\\b(?:capture|captures|absorb|absorbs|use|uses|harness)\\b[^.!?;]{0,80}\\b(?:light|sunlight|solar)\\b|\\bphotosynthesis\\b[^.!?;]{0,220}\\b(?:capture|captures|absorb|absorbs|use|uses|harness)\\b[^.!?;]{0,120}\\b(?:light|sunlight|solar)\\s+energy\\b[^.!?;]{0,120}\\bchlorophyll\\b|\\bphotosynthesis\\b[^.!?;]{0,220}\\b(?:convert|converts|converted|capture|captures|captured|absorb|absorbs|absorbed|use|uses|used|harness|harnesses|harnessed|transform|transforms|transformed|store|stores|stored)\\b[^.!?;]{0,120}\\b(?:light|sunlight|solar)\\s+energy\\b[^.!?;]{0,180}\\.\\s+(?:it|this\\s+process)\\b[^.!?;]{0,140}\\b(?:driven|powered)\\s+by\\s+chlorophyll\\b)",
               "\\bplants?\\b[^.!?;]{0,60}\\b(?:use|uses|using)\\b[^.!?;]{0,50}\\bchlorophyll\\b[^.!?;]{0,100}\\b(?:capture|absorb|harness|convert)\\b[^.!?;]{0,60}\\b(?:light|solar)\\b",
               "\\bchlorophyll\\b[^.!?;]{0,80}\\b(?:capture|captures|absorb|absorbs|harness|harnesses|use|uses)\\b[^.!?;]{0,80}\\b(?:light|sunlight|solar)(?:\\s+energy)?\\b[^.!?;]{0,80}\\b(?:in|during|for)\\s+photosynthesis\\b"
             ],
@@ -57,8 +58,13 @@
               "\\b(?:plants?|photosynthesis)\\b[^.!?;]{0,180}\\b(?:no|not|never|without)\\s+(?:oxygen|chlorophyll|light)\\b",
               "\\b(?:animals?|rocks?|bacteria)\\b[^.!?;]{0,80}\\b(?:use|uses)\\b[^.!?;]{0,50}\\bchlorophyll\\b",
               "\\b(?:photosynthesis|plants?)\\b[\\s\\S]{0,220}\\b(?:melanin|carotene|other\\s+pigment)\\b[\\s\\S]{0,80}\\b(?:rather\\s+than|instead\\s+of)\\b[\\s\\S]{0,60}\\bchlorophyll\\b",
+              "\\b(?:photosynthesis|plants?)\\b[\\s\\S]{0,120}\\b(?:use|uses|using)\\b[\\s\\S]{0,60}\\b(?:melanin|carotene|other\\s+pigment)\\b[\\s\\S]{0,60}\\bnot\\b[\\s\\S]{0,60}\\bchlorophyll\\b",
               "\\b(?:photosynthesis|plants?)\\b[\\s\\S]{0,260}\\bchlorophyll\\b[\\s\\S]{0,80}\\b(?:plays?\\s+no\\s+role|is\\s+unrelated|not\\s+related|not\\s+involved)\\b",
-              "\\b(?:photosynthesis|plants?)\\b[\\s\\S]{0,260}\\b(?:convert|capture|use|uses|harness)\\b[\\s\\S]{0,120}\\b(?:light|sunlight|solar)\\s+energy\\b[\\s\\S]{0,120}\\b(?:without|no|not)\\s+(?:the\\s+)?chlorophyll\\b"
+              "\\b(?:photosynthesis|plants?)\\b[\\s\\S]{0,260}\\b(?:convert|capture|use|uses|harness)\\b[\\s\\S]{0,120}\\b(?:light|sunlight|solar)\\s+energy\\b[\\s\\S]{0,120}\\b(?:without|no|not)\\s+(?:the\\s+)?chlorophyll\\b",
+              "\\b(?:photosynthesis|plants?)\\b[^.!?;]{0,140}\\b(?:not|never|no|without|cannot|can't|does\\s+not|doesn't|do\\s+not|don't)\\b[^.!?;]{0,80}(?:\\bchlorophyll\\b[^.!?;]{0,80}\\b(?:capture|captures|absorb|absorbs|use|uses|harness|harnesses)\\b[^.!?;]{0,80}\\b(?:light|sunlight|solar)(?:\\s+energy)?\\b|\\b(?:capture|captures|absorb|absorbs|use|uses|harness|harnesses)\\b[^.!?;]{0,80}\\b(?:light|sunlight|solar)(?:\\s+energy)?\\b[^.!?;]{0,80}\\bchlorophyll\\b)",
+              "\\b(?:photosynthesis|plants?)\\b[^.!?;]{0,140}\\bchlorophyll\\b[^.!?;]{0,80}\\b(?:capture|captures|absorb|absorbs|use|uses|harness|harnesses)\\b[^.!?;]{0,60}\\b(?:not|never|no|without|cannot|can't|does\\s+not|doesn't|do\\s+not|don't)\\b[^.!?;]{0,80}\\b(?:light|sunlight|solar)(?:\\s+energy)?\\b",
+              "\\b(?:photosynthesis|plants?)\\b[^.!?;]{0,140}\\bchlorophyll\\b[^.!?;]{0,80}\\b(?:not|never|no|without|cannot|can't|does\\s+not|doesn't|do\\s+not|don't)\\b[^.!?;]{0,60}\\b(?:capture|captures|absorb|absorbs|use|uses|harness|harnesses)\\b[^.!?;]{0,80}\\b(?:light|sunlight|solar)(?:\\s+energy)?\\b",
+              "\\bchlorophyll\\b[^.!?;]{0,80}\\b(?:not|never|no|without|cannot|can't|does\\s+not|doesn't)\\b[^.!?;]{0,80}\\b(?:capture|captures|absorb|absorbs|use|uses|harness|harnesses)\\b[^.!?;]{0,80}\\b(?:light|sunlight|solar)(?:\\s+energy)?\\b[^.!?;]{0,80}\\b(?:in|during|for)\\s+photosynthesis\\b"
             ]
           }
         ]
@@ -244,6 +250,7 @@
               "\\bidempot(?:ent|ency)\\b[^.!?;]{0,35}\\bmeans?\\b[^.!?;]{0,45}\\bperforming\\b[^.!?;]{0,50}\\b(?:same\\s+)?operation\\b[^.!?;]{0,55}\\b(?:multiple\\s+times|repeatedly|again)\\b[^.!?;]{0,65}\\b(?:leaves?|keeps?|produces?|results?\\s+in)\\b[^.!?;]{0,45}\\b(?:same\\s+(?:state|result|effect)|unchanged)\\b[^.!?;]{0,70}\\b(?:safe|without\\s+(?:a\\s+)?duplicate|no\\s+(?:additional\\s+)?effect)\\b",
               "\\bidempot(?:ent|ency)\\b[^.!?;]{0,60}\\b(?:api\\s+)?(?:operation|request)\\b[^.!?;]{0,80}\\b(?:without|does\\s+not|doesn't|never|no|will\\s+not|won't)\\b[^.!?;]{0,45}\\b(?:creat\\w*\\s+(?:an?\\s+)?(?:duplicate|additional|extra|another)|(?:additional|duplicate|extra|another)\\s+(?:side\\s+)?effect)\\b[^.!?;]{0,60}\\b(?:repeat(?:ed|ing|s)?|again|retr(?:y|ies|ied|ying))\\b",
               "\\b(?:retr(?:y|ies|ied|ying)|repeat(?:ed|ing|s)?)\\b[^.!?;]{0,80}\\b(?:leaves?|keeps?|produces?|yields?|results?\\s+in|has|have)\\b[^.!?;]{0,45}\\bsame\\s+(?:effect|result|state)\\b[^.!?;]{0,70}\\b(?:without|does\\s+not|doesn't|never|no|will\\s+not|won't)\\b[^.!?;]{0,45}\\b(?:creat\\w*\\s+(?:an?\\s+)?(?:duplicate|additional|extra|another)|(?:additional|duplicate|extra|another)\\s+(?:side\\s+)?effects?)\\b",
+              "\\bidempot(?:ent|ency)\\b[^.!?;]{0,100}\\bperforming\\b[^.!?;]{0,60}\\b(?:same\\s+)?operation\\b[^.!?;]{0,60}\\bmultiple\\s+times\\b[^.!?;]{0,60}\\b(?:yields?|produces?|gives?)\\b[^.!?;]{0,60}\\bsame\\s+result\\b[^.!?;]{0,100}\\b(?:as\\s+performing\\s+it\\s+once|no|without)\\b[^.!?;]{0,30}\\b(?:additional\\s+side\\s+effects?|side\\s+effects?)\\b",
               "\\b(?:repeat(?:ed|ing|s)?|again)\\b[^.!?;]{0,70}\\b(?:idempotent|idempotency)\\b(?:(?!\\b(?:never|without|does\\s+not|doesn't|will\\s+not|won't|no)\\b)[^.!?;]){0,80}\\bproduces?\\s+(?:an?\\s+)?(?:duplicate|another|additional|extra)\\b"
             ],
             "forbiddenPatterns": [
